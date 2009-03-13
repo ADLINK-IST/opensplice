@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.2</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.2</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.2<br>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4543<br>
+            dds244
+          </td>
+          <td>
+            <b>builtin topics are not removed from the system after node shutdown</b><br>
+            <i>
+              Builtin topics are not all removed from the system after node shutdown, 
+              reboot or disconnect from the network.<br>
+              <b>Solution:</b> A new cleanup mechanism has been implemented, solving the
+              problem.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds264
+          </td>
+          <td>
+            <b>Networking: Defragmentation garbage is not collected </b><br>
+            <i>
+              For non-reliable channels, data might get lost. If a packet that is part of a
+              fragmented message is lost, the remaining packets will never be collected into
+              a complete message. A mechanism is needed that identifies and collects such
+              packets.<br>
+              <b>Solution:</b> TBS
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4810<br>
+            dds483
+          </td>
+          <td>
+            <b>
+              set query arguments insufficient performance
+            </b><br>
+            <i>
+              The performance of OpenSplice operation DDS_QueryCondition_set_query_arguments is 
+              insufficient for legacy applications. For example, starting a secondary service using 
+              CORE-DDS infra requires: +/- 6500 set query field operations and +/- 5500 read 
+              operations, causing more than 2 seconds of 100% processing. Profiling using valgrind
+              shows that most of the time is spent in DDS_QueryCondition_set_query_arguments.
+              <b>Solution:</b>A performance improvement has been implemented.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds650
+          </td>
+          <td>
+            <b>
+              spliced uses unlimited resources during processing of builtin topics (is 100% CPU load)
+            </b><br>
+            <i>
+              During the processing of the built-in topic DCPSTopicInfo, the splicedaemon uses
+              100% CPU load.<br>
+              <b>Solution:</b> This was caused by the fact that each node created a different
+              DCPSTopicInfo instance for the same topic. This was not scaleable, so the key of
+              this topic has changed, so each node will produce the same instance for the same
+              topic.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5250<br>
+            dds671
+          </td>
+          <td>
+            <b>OpenSplice V3.1.1 not stable due to inconsistencies in the database</b><br>
+            <i>
+              When running a dynamic track scenario on two linux nodes running TACTICOS causes
+              some applications to loop within OpenSplice. Also a crash of the networking service
+              is detected. A stack trace indicates that the service has run out of stack space.<br>
+              <b>Solution:</b> a bug in de kernel of OpenSplice has been detected that caused 
+              this problem.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds674
+          </td>
+          <td>
+            <b>Default configuration file is not working on Windows</b><br>
+            <i>
+              When I then start the splice deamon I immediately get an error log stating that 
+              the durability service and networking service cannot be located/started.<br>              
+              <b>Solution:</b> The configuration file ospl.xml does not contain the '.exe'
+              extension in the 'Command'-tag for the services.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds682
+          </td>
+          <td>
+            <b>The custom_lib gives a compilation error when compiling common_object.cpp</b><br>
+            <i>
+              When compiling the custom_lib for dcps, the compiler aborts when processing
+              the common_object.cpp file. It states a number of macro's are not set.<br>
+              <b>Solution:</b> This compiler error is caused by the fact that the 
+              EORB_BUILD_DDS macro is not passed to the compiler. This flag has been added to 
+              the makefiles.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds683
+          </td>
+          <td>
+            <b>Durability service: injecting persistent data takes very long in specific situations</b><br>
+            <i>
+              When starting a node the durability service injects persistent data. This can take a
+              very long time. Also a continuous growth in the persistent store is detected.<br>
+              <b>Solution:</b> The durability service appends data to the persistent store for
+              efficiency (so when a persistent sample is overwritten in memory it is appended in
+              the persistent store). When the durability is started it will compress the persistent
+              store again by throwing away the overwritten samples. However a configuration option for the
+              durability service can be specified to perform this compressing on a regular basis and not only
+              at the start-up of the service. For example:
+              <pre><code>
+                &lt;DurabilityService&gt;
+                  &lt;Persistent&gt
+                    &lt;StoreOptimizeInterval&gt;100&lt;StoreOptimizeInterval&gt;
+                  &lt;/Persistent&gt
+                &lt;/DurabilityService&gt;
+              </code></pre>
+              This will instruct the durability service to optimize the persistent store after 100 writes of a
+              Topic in a Partition.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds686
+          </td>
+          <td>
+            <b>DDS::DCPSError exception has become a runtime exception</b><br>
+            <i>
+              The DCPSError exception is meant to be used whenever the infrastructure encounters a fatal 
+              problem, therefore it may be 'thrown' anywhere in any call. Because it is cumbersome to 
+              'catch' this exception everywhere it can occur it has been agreed upon to change this 
+              exception to a runtime exception in the next specification revision.<br>
+              <b>Solution:</b> For the C++ API nothing changes, as every exception is basically a runtime
+              exception. For the SAJ API the DCPSError exception now extends java.lang.RuntimeException 
+              instead of java.lang.Exception. This change is backwards compatible and does not require
+              any changes to application code.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        No changes were made affecting the API.
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

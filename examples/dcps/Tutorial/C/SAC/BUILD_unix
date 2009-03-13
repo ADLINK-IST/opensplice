@@ -1,0 +1,52 @@
+C_COMP=`which gcc 2> /dev/null`
+if [ -z "$C_COMP" ]
+then
+    echo "Setup the C environment first"
+    exit
+fi
+
+SPLICE_COMP=`which idlpp 2> /dev/null`
+if [ -z "$SPLICE_COMP" ]
+then
+    echo "Setup the SPLICE environment first"
+    exit
+fi
+
+mkdir -p bld
+mkdir -p exec
+cd bld
+
+echo "Compiling IDL with SPLICE IDL compiler"
+idlpp -S -l c ../Chat.idl
+
+echo "Compiling SAC User Types support code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ChatSacDcps.c
+
+echo "Compiling SPLICE User Types support code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ChatSplDcps.c
+
+echo "Compiling Status checking code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../CheckStatus.c
+
+echo "Compiling multitopic code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../multitopic.c
+
+echo "Compiling Chatter"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../Chatter.c
+
+echo "Compiling MessageBoard"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../MessageBoard.c
+
+echo "Compiling UserLoad"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../UserLoad.c
+
+echo "Linking Chatter"
+gcc -o ../exec/Chatter -L$OSPL_HOME/lib Chatter.o ChatSacDcps.o ChatSplDcps.o CheckStatus.o multitopic.o -lddsdatabase -ldcpssac
+
+echo "Linking MessageBoard"
+gcc -o ../exec/MessageBoard -L$OSPL_HOME/lib MessageBoard.o ChatSacDcps.o ChatSplDcps.o CheckStatus.o multitopic.o -lddsdatabase -ldcpssac
+
+echo "Linking UserLoad"
+gcc -o ../exec/UserLoad -L$OSPL_HOME/lib UserLoad.o ChatSacDcps.o ChatSplDcps.o CheckStatus.o multitopic.o -lddsdatabase -ldcpssac
+
+cd ..

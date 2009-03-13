@@ -1,0 +1,34 @@
+<OpenSplice>
+    <Domain>
+        <Name>OpenSplice__RELEASE__</Name>
+        <Database>
+            <Size>10485670</Size>
+        </Database>
+	<Lease>
+            <ExpiryTime update_factor="0.05">60.0</ExpiryTime>
+        </Lease>
+        <Service name="durability">
+            <Command>durability__EXE__</Command>
+        </Service>
+    </Domain>
+
+    <DurabilityService name="durability">
+        <Network>
+            <InitialDiscoveryPeriod>2.0</InitialDiscoveryPeriod>
+            <Alignment>
+                <RequestCombinePeriod>
+                    <Initial>2.5</Initial>
+                    <Operational>0.1</Operational>
+                </RequestCombinePeriod>
+            </Alignment>
+            <WaitForAttachment maxWaitCount="10">
+                <ServiceName>networking</ServiceName>
+            </WaitForAttachment>
+        </Network>
+        <NameSpaces>
+            <NameSpace durabilityKind="Durable" alignmentKind="Initial_and_Aligner">
+                <Partition>*</Partition>
+            </NameSpace>
+        </NameSpaces>
+    </DurabilityService>
+</OpenSplice>

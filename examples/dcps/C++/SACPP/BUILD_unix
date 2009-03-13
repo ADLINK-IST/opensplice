@@ -1,0 +1,59 @@
+# Include paths
+INCLUDES=-I./
+INCLUDES=$INCLUDES\ -I..
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include/dcps/C++/SACPP
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include/sys
+
+# C++ Compiler settings.
+CXX=g++
+CXXFLAGS="-g -c"
+CPPFLAGS=$INCLUDES
+
+# Linker settings.
+LD_SO=$CXX
+LD_FLAGS=
+LD_LIBS=-lstdc++
+
+CXX_COMP=`which $CXX 2> /dev/null`
+if [ -z "$CXX_COMP" ]
+then
+    echo "Setup the C++ environment first"
+    exit
+fi
+
+SPLICE_COMP=`which idlpp 2> /dev/null`
+if [ -z "$SPLICE_COMP" ]
+then
+    echo "Setup the SPLICE environment first"
+    exit
+fi
+
+mkdir -p bld
+mkdir -p exec
+cd bld
+
+echo "Compiling IDL with SPLICE IDL compiler"
+idlpp $INCLUDES -S -l cpp ../pingpong.idl
+
+echo "Compiling SPLICE User Types support code"
+$CXX $CPPFLAGS $CXXFLAGS pingpong.cpp
+$CXX $CPPFLAGS $CXXFLAGS pingpongSplDcps.cpp
+
+echo "Compiling Typed Interfaces support code"
+$CXX $CPPFLAGS $CXXFLAGS pingpongDcps.cpp
+$CXX $CPPFLAGS $CXXFLAGS pingpongDcps_impl.cpp
+
+echo "Compiling PING"
+$CXX $CPPFLAGS $CXXFLAGS ../ping.cpp
+
+echo "Compiling PONG"
+$CXX $CPPFLAGS $CXXFLAGS ../pong.cpp
+
+echo "Linking PING"
+$LD_SO $LD_FLAGS -o ../exec/ping $LD_LIBS -L$OSPL_HOME/lib ping.o pingpong.o pingpongDcps.o pingpongDcps_impl.o pingpongSplDcps.o -lddsdatabase -ldcpsgapi -ldcpssacpp -lddsos
+
+echo "Linking PONG"
+$LD_SO $LD_FLAGS -o ../exec/pong $LD_LIBS -L$OSPL_HOME/lib pong.o pingpong.o pingpongDcps.o pingpongDcps_impl.o pingpongSplDcps.o -lddsdatabase -ldcpsgapi -ldcpssacpp -lddsos
+
+cd ..

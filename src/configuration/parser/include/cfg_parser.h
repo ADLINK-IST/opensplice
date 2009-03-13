@@ -1,0 +1,35 @@
+#ifndef CFG_PARSER_H
+#define CFG_PARSER_H
+
+#include "cf_element.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+#include <os_if.h>
+
+#ifdef OSPL_BUILD_CONFPRS
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+typedef enum cfgprs_status_enum {
+    CFGPRS_OK,
+    CFGPRS_NO_INPUT,
+    CFGPRS_ERROR
+} cfgprs_status;
+
+OS_API cfgprs_status
+cfg_parse (
+    const char *uri,
+    cf_element *spliceElement);
+
+#undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
+
+#endif /* CFG_PARSER_H */

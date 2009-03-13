@@ -1,0 +1,368 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.4.1</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.4.1</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.4.1<br/>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4840<br/>
+            dds506
+          </td>
+          <td>
+            <b>
+              deadline missed -> no instance available in last_instance_handle
+            </b><br/>
+            <i>
+              Using the DDS_DeadlineQosPolicy does not return the instance for which
+              the deadline is missed. The following steps reproduce the problem:<br/>
+              <ul>
+                <li>
+                  create reader and writer on a topic with the following QOS settings:<br/>
+                  <code>qos->deadline.period.sec = 5;</code><br/>
+                  <code>qos->deadline.period.nanosec = 0;</code>
+                </li>
+                <li>
+                  Create a waitset that triggers on the following status condition:<br/>
+                  <code>DDS_StatusCondition condStatus;</code><br/>
+                  <code>condStatus = DDS_DataReader_get_statuscondition(*m_reader);</code><br/>
+                  <code>DDS_StatusCondition_set_enabled_statuses(_condStatus, DDS_REQUESTED_DEADLINE_MISSED_STATUS);</code><br/>
+                </li>
+                <li>
+                  Write the topic once (the deadline will be missed after 5 seconds).
+                </li>
+                <li>blocking wait on the waitset</li>
+                <li>
+                  When triggered, try to obtain the instance that missed deadline trigger:<br/>
+                  <code>DDS_RequestedDeadlineMissedStatus status;</code><br/>
+                  <code>status = DDS_DataReader_get_requested_deadline_missed_status(reader);</code>
+                </li
+              </ul>
+              now: <code>status.last_instance_handle</code> is a <code>NULL</code> pointer instead of
+              a pointer to the instance that caused this trigger. Repeating the above steps shows that: 
+              <code>status.total_count</code> and <code>status.total_count_change</code> are incremented,
+              and <code>status.last_instance_handle</code> remains <code>NULL</code><br/>
+              <b>Solution:</b> the instance handle is now copied from the kernel to the application.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5245<br/>
+            dds668
+          </td>
+          <td>
+            <b>
+              topics produced in "local" partitions should not be distributed
+            </b><br/>
+            <i>
+              Topics produced in "local" partitions should not be distributed to all nodes.
+              OpenSplice DDS does not have a facility that enables the system designer to
+              prevent topic data that can remain local from being processed by the networking
+              service to be sent to other nodes in the system. Every node has a unique partition,
+              which contains data that is only produced and consumed locally. However this data
+              is still distributed to other nodes (especially in case of non-volatile data, the
+              durability service aligns this data).<br/>
+              <b>Solution:</b> The local partition feature can be used by specifying ignored
+              partition-topic expressions in the network service configuration:
+              '//NetworkService/Partitioning/IgnoredPartitions'. For example: <br/>
+              <pre><code>
+
+&lt;NetworkService name="networking"&gt;
+    &lt;Partitioning&gt;
+        &lt;GlobalPartition Address="broadcast"/&gt;
+        &lt;NetworkPartitions&gt;
+            &lt;NetworkPartition Address="224.1.1.1" Connected="true" Name="networkPartition" /&gt; 
+        &lt;/NetworkPartitions&gt;
+        &lt;PartitionMappings&gt;
+            &lt;PartitionMapping DCPSPartitionTopic="Multicast.*" NetworkPartition="networkPartition" /&gt; 
+        &lt;/PartitionMappings&gt;
+        &lt;IgnoredPartitions&gt;
+            &lt;IgnoredPartition DCPSPartitionTopic="LocalPartion.*" /&gt;
+        &lt;/IgnoredPartitions&gt;       
+    &lt;/Partitioning&gt;
+&lt;/NetworkService&gt;
+              </code></pre>
+              The durability service will automatically slave to the networking service and will not
+              distribute the data across nodes.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5946<br/>
+            dds827
+          </td>
+          <td>
+            <b>
+              The last_publication_handle attribute of the LivelinessChangedStatus
+              is always set to HANLDE_NIL
+            </b><br/>
+            <i>
+              The last_publication_handle attribute of the LivelinessChangedStatus
+              structure is currently always set to HANDLE_NIL. According to the OMG DDS
+              specification, this attribute should contain the instance_handle of the
+              DCPSPublication sample that describes the state of the DataWriter whose
+              change in liveliness caused the most recent LivelinessChangedStatus trigger.<br/>
+              <b>Solution:</b> this bug has been fixed. The user must have retrieved the
+              builtin-in subscriber prior to using the 'last_publication_handle' (otherwise
+              the last_publication_handle will always be equal to HANDLE_NIL) as the
+              built-in readers are not created by default. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5625<br/>
+            dds890
+          </td>
+          <td>
+            <b>
+              ospltun valid data in sample info of database snapshot not correct
+            </b><br/>
+            <i>
+              The valid_data field in the sample info of samples from a datareader 
+              database snapshot in the OpenSplice DDS Tuner is not correctly set. The
+              valid_data field is set to FALSE in the snapshot. Another datareader
+              created in the OpenSplice DDS Tuner, reading the same sample shows that
+              the valid_data field is TRUE.<br/>
+              <b>Solution:</b> the Tuner now displays the valid_data field correctly.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5713<br/>
+            dds924
+          </td>
+          <td>
+            <b>
+              Sync OSPL reports to NFS file systems
+            </b><br/>
+            <i>
+              For a specific node the OpenSplice DDS reports are written to ospl-info.log
+              and ospl-error.log to a directory mounted on an NFS file system. The reports
+              are potentially delayed by NFS buffering and timeouts. If this node crashes
+              a significant part of the reports are missing.<br/>
+              <b>Solution:</b> A configuration option has been added to enable synchronized
+              output of OpenSplice DDS report messages. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5725<br/>
+            dds928
+          </td>
+          <td>
+            <b>
+              problem reading topic with union on vxworks using generic copy routine
+            </b><br/>
+            <i>
+              Reading the topic tt_to_trpu on vxworks returns wrong data. The topic contains
+              a union part where one of the union case consists of an array of enumerations
+              followed by an enumeration field. When read the contents of the enumeration field
+              is incorrect. The other cases of the union contain doubles.<br/>
+              <b>Solution:</b> Due to the doubles in the other union cases the field '_u' in the
+              union (idl-to-c mapping) should be aligned on 8 bytes. However the metadata repository
+              incorrectly aligned it on 4 bytes and as a result the size of the data type was 4 bytes
+              too small. As a result the last 4 bytes (which was the enumeration field) is written/read
+              out of bounds.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5729<br/>
+            dds936
+          </td>
+          <td>
+            <b>
+              Configurator tool does not allow more than 15 characters for an IP address.
+            </b><br/>
+            <i>
+              The Configurator tool does not allow more than 15 characters for an IP 
+              address. This is ok if the IP address is a true address, but this fails
+              when using the environment variable replacement feature of OpenSplice DDS,
+              like: 
+              <code>
+                <NetworkInterfaceAddress>${DDS_IP_ADDRESS}</NetworkInterfaceAddress>
+              </code> 
+              In this situation the Configurator throws an exception and replaces my
+              environment variable!<br/>
+              <b>Solution:</b> The Configurator now allows more characters for the IP address
+              field in case it detects an environment variable is being used.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds948
+          </td>
+          <td>
+            <b>
+              DBMSConnect service does not handle arrays correctly
+            </b><br/>
+            <i>
+              The DBMSConnect service is being used i.c.w. Touchstone. The Touchstone topic
+              types incorporate some arrays of structures. The DBMSConnect does not process
+              the correct values published in DDS on to the DBMS and vice versa. Besides that,
+              the column names in the database have a dot before the array index which is quite
+              unnatural (for instance 'an_array.[0].some_member' instead of 
+              an_array[0].some_member).<br/>
+              <b>Solution:</b> The DBMSConnect service now handles arrays correctly and the column
+              name in the database no longer has the extra dot in it. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds968
+          </td>
+          <td>
+            <b>
+              Tuner SOAP API encoding does not handle a quote (') correctly
+            </b><br/>
+            <i>
+              When a string is sent within a SOAP request, the special characters must be escaped
+              in that string before sending to ensure valid XML. The quote character (') is not
+              escaped and therefore using such a character will not work correctly.<br/>
+              <b>Solution:</b> the problem has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds969
+          </td>
+          <td>
+            <b>
+              The OpenSplice DDS Tuner should support environment variables
+            </b><br/>
+            <i>
+              The OpenSplice DDS Tuner should allow usage of environment variables when connecting to
+              a domain. The best option would be to use the same syntax as used in the configuration
+              file: <code>${ENV_VAR}</code>.<br/>
+              <b>Solution:</b> The OpenSplice DDS Tuner now allows the user to supply an environment
+              variable in the connect dialog.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds971
+          </td>
+          <td>
+            <b>
+              Networking hangs on VxWorks when calling os_nanosleep() with a negative duration
+            </b><br/>
+            <i>
+              The sending thread of networking calls os_nanosleep to schedule the next time slot
+              when it should send some data. Sometimes the calculation of the sleep-interval
+              results in a small negative value. On VxWorks this negative value is interpreted as
+              unsigned and as a result the sending thread will not wake-up for several years.<br/>
+              <b>Solution:</b> A check has been implemented to prevent negative values to be passed
+              to the VxWorks system call.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5878<br/>
+            dds976
+          </td>
+          <td>
+            <b>
+              OpenSplice DDS fails to create task on vxWorks if private environment is already set.
+            </b><br/>
+            <i>
+              When OpenSplice creates a new task, the private environment is set and unset. However
+              this is not allowed if the private environment is already set before the call to create
+              a new task.<br/>
+              <b>Solution:</b> A check is implemented to determine whether setting/unsetting the private
+              environment is allowed.   
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5879<br/>
+            dds977
+          </td>
+          <td>
+            <b>
+              deadlock in two DDS calls from different threads
+            </b><br/>
+            <i>
+              An application calling DDS_DomainParticipant_contains_entity() and
+              DDS_Publisher_create_datawriter() simultaneously from two different threads, occasionally
+              causes the application to hang.<br/>
+              <b>Solution:</b> Incorrect locking order caused the deadlock, this has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds981
+          </td>
+          <td>
+            <b>
+              Configuration attribute update_factor must be update_frequency for DBMSConnect in Configurator
+            </b><br/>
+            <i>
+              The NameSpace attribute has an update_frequency parameter for the DBMSConnectService
+              configuration. However, the OpenSplice DDS Configurator tool incorrectly calls it 
+              'update_factor'.<br/>
+              <b>Solution:</b> The configurator has been adapted.   
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        No changes were made affecting the API.
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br/>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

@@ -1,0 +1,674 @@
+<project>
+  <shortName>OpenSpliceDDS</shortName>
+  <fullName>OpenSpliceDDS __VERSION__ - __FULLINSTTYPE__</fullName>
+  <version>__VERSION__</version>
+  <installerFilename>${product_shortname}${product_version}-__PLATFORM__-__INSTTYPE__-installer.${platform_exec_suffix}</installerFilename>
+  <readmeFile></readmeFile>
+  <licenseFile></licenseFile>
+  <wrapLicenseFileText>1</wrapLicenseFileText>
+  <leftImage>images/leftImage.png</leftImage>
+  <logoImage>images/logo.png</logoImage>
+  <splashImage>images/splashImage.png</splashImage>
+  <defaultLanguage>en</defaultLanguage>
+  <allowLanguageSelection>0</allowLanguageSelection>
+  <postInstallationScript></postInstallationScript>
+  <postInstallationScriptArguments></postInstallationScriptArguments>
+  <showPostInstallationScriptResult>0</showPostInstallationScriptResult>
+  <preUninstallationScript></preUninstallationScript>
+  <preUninstallationScriptArguments></preUninstallationScriptArguments>
+  <allowedLanguages></allowedLanguages>
+  <cdromDirectory>${product_shortname}-${product_version}-cdrom</cdromDirectory>
+  <cdromDiskSize>700000000</cdromDiskSize>
+  <cdromFirstDiskSize>650000000</cdromFirstDiskSize>
+  <defaultInstallationMode>xwindow</defaultInstallationMode>
+  <defaultUnixDirectoryPermissions>755</defaultUnixDirectoryPermissions>
+  <defaultUnixFilePermissions>644</defaultUnixFilePermissions>
+  <description>OpenSpliceDDS - __FULLINSTTYPE__</description>
+  <outputDirectory>__OUTPUTDIR__</outputDirectory>
+  <projectSchemaVersion>1.2</projectSchemaVersion>
+  <saveRelativePaths>1</saveRelativePaths>
+  <slideShowLoop>1</slideShowLoop>
+  <slideShowTiming>5</slideShowTiming>
+  <startMenuGroupName>${product_fullname}</startMenuGroupName>
+  <style>standard</style>
+  <summary>OpenSpliceDDS -- __FULLINSTTYPE__</summary>
+  <uninstallerDirectory>${installdir}</uninstallerDirectory>
+  <uninstallerName>uninstall-__PLATFORM__-__INSTTYPE__</uninstallerName>
+  <validatorProgram></validatorProgram>
+  <vendor>PrismTech</vendor>
+  <componentList>
+    <component>
+      <name>default</name>
+      <description>Default Component</description>
+      <canBeEdited>1</canBeEdited>
+      <detailedDescription></detailedDescription>
+      <selected>1</selected>
+      <show>1</show>
+      <desktopShortcutList/>
+      <folderList>
+        <folder>
+          <description>Program Files</description>
+          <destination>${installdir}</destination>
+          <name>programfiles</name>
+          <platforms>all</platforms>
+          <shortcutList/>
+        </folder>
+        <folder>
+          <description>__INSTTYPE__</description>
+          <destination>${installdir}/__INSTTYPE__</destination>
+          <name>__INSTTYPE__</name>
+          <platforms>__BUILDERPLATFORM__</platforms>
+          <distributionFileList>
+            <distributionDirectory>
+              <origin>__INSTTYPE__/__PLATFORM__</origin>
+            </distributionDirectory>
+          </distributionFileList>
+        </folder>
+      </folderList>
+      <startMenuShortcutList>
+        <startMenuShortcut>
+          <comment>Uninstall ${product_fullname}</comment>
+          <name>Uninstall ${product_fullname}</name>
+          <windowsExec>${installdir}\uninstall-__PLATFORM__-__INSTTYPE__.exe</windowsExec>
+          <windowsExecArgs></windowsExecArgs>
+          <windowsIcon></windowsIcon>
+          <windowsPath>${installdir}\</windowsPath>
+        </startMenuShortcut>
+        <startMenuShortcut>
+          <comment>Stop services (default domain)</comment>
+          <name>Stop OpenSpliceDDS</name>
+          <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\bin\ospl.exe</windowsExec>
+          <windowsExecArgs>stop</windowsExecArgs>
+          <windowsIcon></windowsIcon>
+          <windowsPath>${installdir}\</windowsPath>
+        </startMenuShortcut>
+        <startMenuShortcut>
+          <comment>Start services (default domain)</comment>
+          <name>Start OpenSpliceDDS</name>
+          <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\bin\ospl.exe</windowsExec>
+          <windowsExecArgs>start</windowsExecArgs>
+          <windowsIcon></windowsIcon>
+          <windowsPath>${installdir}\</windowsPath>
+        </startMenuShortcut>
+        <startMenuShortcut>
+          <comment>Configuration tool for OpenSpliceDDS</comment>
+          <name>OpenSpliceDDS Configurator</name>
+          <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\jar\osplconf.jar</windowsExec>
+          <windowsExecArgs></windowsExecArgs>
+          <windowsIcon></windowsIcon>
+          <windowsPath>${installdir}\</windowsPath>
+        </startMenuShortcut>
+        <startMenuShortcut>
+          <comment>Control and Monitoring tool for OpenSpliceDDS</comment>
+          <name>OpenSpliceDDS Tuner</name>
+          <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\jar\ospltun.jar</windowsExec>
+          <windowsExecArgs></windowsExecArgs>
+          <windowsIcon></windowsIcon>
+          <windowsPath>${installdir}\</windowsPath>
+        </startMenuShortcut>
+        <startMenuFolder>
+          <name>Examples</name>
+          <startMenuShortcutList>
+            <startMenuShortcut>
+              <comment>Examples</comment>
+              <name>examples.sln</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\examples\examples.sln</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+          </startMenuShortcutList>
+        </startMenuFolder>
+        <startMenuFolder>
+          <name>Documents</name>
+          <startMenuShortcutList>
+            <startMenuShortcut>
+              <comment>Documentation set</comment>
+              <name>All Documentation</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\index.html</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>Getting Started Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_GettingStarted.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>Deployment Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_Deployment.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>Tuner Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_Tuner_usermanual.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DCPS C Reference Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_refman_C.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DCPS C++ Reference Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_refman_CPP.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DCPS Java Reference Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_refman_Java.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>IDL PreProcessor Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_PreProcessor_usermanual.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DCPS C Tutorial Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_Tutorial_C.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DLRL Code Generator Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_DCG_Guide.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>DLRL Java Reference Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\html\dds\dlrl\saj\index.html</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+            <startMenuShortcut>
+              <comment>Documentation</comment>
+              <name>V2-V3 Migration Guide</name>
+              <windowsExec>${installdir}\__INSTTYPE__\__PLATFORM__\docs\pdf\OpenSplice_V2_V3_Migration_Guide.pdf</windowsExec>
+              <windowsExecArgs></windowsExecArgs>
+              <windowsIcon></windowsIcon>
+              <windowsPath>${installdir}\</windowsPath>
+              <ruleList><compareText text="__INSTTYPE__" logic="equals" value="HDE"/></ruleList>
+            </startMenuShortcut>
+          </startMenuShortcutList>
+        </startMenuFolder>
+      </startMenuShortcutList>
+    </component>
+  </componentList>
+  <customLanguageFileList/>
+  <finalPageActionList/>
+  <parameterList>
+    <directoryParameter>
+      <name>installdir</name>
+      <title></title>
+      <description>Installer.Parameter.installdir.description</description>
+      <explanation>Installer.Parameter.installdir.explanation</explanation>
+      <value>${platform_install_prefix}/PrismTech/${product_shortname}/${product_version}</value>
+      <default>${platform_install_prefix}/PrismTech/${product_shortname}/${product_version}</default>
+      <allowEmptyValue>0</allowEmptyValue>
+      <ask>yes</ask>
+      <cliOptionName>prefix</cliOptionName>
+      <leftImage></leftImage>
+      <mustBeWritable>yes</mustBeWritable>
+      <mustExist>0</mustExist>
+      <width>30</width>
+    </directoryParameter>
+    <booleanParameter>
+      <name>nw_already_has_license</name>
+      <title>Obtaining a license</title>
+      <explanation>This installer will automatically resolve the information that is required to obtain a license for the OpenSpliceDDS product. This information is available after installation in file: '${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt'. Select option below to automatically configure your installation with an existing license file.</explanation>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>does_not_equal</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+      <default>0</default>
+      <value>0</value>
+    </booleanParameter>
+    <booleanParameter>
+      <name>w_already_has_license</name>
+      <title>Obtaining a license</title>
+      <explanation>This installer will automatically resolve the information that is required to obtain a license for the OpenSpliceDDS product. This information is available after installation in file: '${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt'. Select option below to automatically configure your installation with an existing license file.</explanation>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+      <default>0</default>
+      <value>0</value>
+    </booleanParameter>
+    <fileParameter>
+      <name>providedLicenseFile</name>
+      <title>Please provide an existing license file (if available ...)</title>
+      <explanation>If you already received a license file for this release, provide it here to get it installed automatically.</explanation>
+      <description>License file to install automatically.</description>
+      <value></value>
+      <default></default>
+      <allowEmptyValue>1</allowEmptyValue>
+      <ask>yes</ask>
+      <cliOptionName>providedLicenseFile</cliOptionName>
+      <leftImage></leftImage>
+      <mustBeWritable>no</mustBeWritable>
+      <mustExist>1</mustExist>
+      <width>30</width>
+      <ruleEvaluationLogic>or</ruleEvaluationLogic>
+      <ruleList>
+        <compareValues>
+          <value1>${nw_already_has_license}</value1>
+          <logic>does_not_equal</logic>
+          <value2>0</value2>
+        </compareValues>
+        <compareValues>
+          <value1>${w_already_has_license}</value1>
+          <logic>does_not_equal</logic>
+          <value2>0</value2>
+        </compareValues>        
+      </ruleList>
+    </fileParameter>
+  </parameterList>
+  <platformOptionsList/>
+  <preInstallationActionList>
+    <actionGroup>
+      <actionList>
+        <autodetectJava>
+          <validVersionList>
+            <validVersion>
+              <vendor>sun</vendor>
+              <minVersion>1.5</minVersion>
+            </validVersion>
+          </validVersionList>
+          <abortOnError>0</abortOnError>
+          <showMessageOnError>0</showMessageOnError>
+        </autodetectJava>
+      </actionList>
+      <ruleList>
+        <compareText>
+          <text>__PERFORM_JAVA_CHECK__</text>
+          <logic>equals</logic>
+          <value>yes</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+    <showWarning>
+      <text>The installer could not find a valid Java(tm) on this machine.
+Supported versions:
+Vendor: sun min: 1.5 max. any</text>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareValues>
+          <value1>${java_version_major}</value1>
+          <logic>less</logic>
+          <value2>1.5</value2>
+        </compareValues>
+      </ruleList>
+    </showWarning>
+  </preInstallationActionList>
+  <postInstallationActionList>
+    <substitute>
+      <files>${installdir}/__INSTTYPE__/__PLATFORM__/__SCRIPT_NAME__;${installdir}/__INSTTYPE__/__PLATFORM__/etc/service_info.txt;${installdir}/__INSTTYPE__/__PLATFORM__/bin/__GETLIC_INFO__</files>
+      <type>regexp</type>
+      <substitutionList>
+        <substitution>
+          <pattern>@@INSTALLDIR@@</pattern>
+          <value>${installdir}</value>
+        </substitution>
+        <substitution>
+          <pattern>@@INSTTYPE@@</pattern>
+          <value>__INSTTYPE__</value>
+        </substitution>
+        <substitution>
+          <pattern>@@PLATFORM@@</pattern>
+          <value>__PLATFORM__</value>
+        </substitution>
+      </substitutionList>
+    </substitute>
+    <changePermissions>
+      <files>${installdir}/__INSTTYPE__/__PLATFORM__/__SCRIPT_NAME__</files>
+      <permissions>444</permissions>
+    </changePermissions>
+    <changePermissions>
+      <files>${installdir}/__INSTTYPE__/__PLATFORM__/bin/getlic_info</files>
+      <permissions>444</permissions>
+    </changePermissions>
+    <changePermissions>
+      <files>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</files>
+      <permissions>775</permissions>
+    </changePermissions>
+    <actionGroup>
+      <actionList>
+        <addEnvironmentVariable>
+          <name>OSPL_HOME</name>
+          <value>${installdir}\__INSTTYPE__\__PLATFORM__</value>
+          <scope>system</scope>
+        </addEnvironmentVariable>
+        <addEnvironmentVariable>
+          <name>OSPL_TARGET</name>
+          <value>__PLATFORM__</value>
+          <scope>system</scope>
+        </addEnvironmentVariable>
+        <addEnvironmentVariable>
+          <name>PTECH_LICENSE_FILE</name>
+          <value>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license.lic</value>
+          <scope>system</scope>
+        </addEnvironmentVariable>
+        <addEnvironmentVariable>
+          <name>OSPL_TMPL_PATH</name>
+          <value>${installdir}\__INSTTYPE__\__PLATFORM__\etc\idlpp</value>
+          <scope>system</scope>
+        </addEnvironmentVariable>
+        <addEnvironmentVariable>
+          <name>OSPL_URI</name>
+          <value>"file://${installdir}\__INSTTYPE__\__PLATFORM__\etc\config\ospl.xml"</value>
+          <scope>system</scope>
+        </addEnvironmentVariable>
+        <addDirectoryToPath>
+          <path>${installdir}\__INSTTYPE__\__PLATFORM__\bin</path>
+        </addDirectoryToPath>
+        <addDirectoryToPath>
+          <path>${installdir}\__INSTTYPE__\__PLATFORM__\lib</path>
+        </addDirectoryToPath>
+        <registrySet>
+          <key>HKEY_LOCAL_MACHINE\SOFTWARE\PrismTech\${product_shortname}</key>
+          <name>INSTALL_DIR</name>
+          <value>${installdir}</value>
+          <type>REG_SZ</type>
+        </registrySet>
+        <registrySet>
+          <key>HKEY_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager</key>
+          <name>PTECH_LICENSE_FILE</name>
+          <!-- keep this value with slashes! Despite the fact that this is for windows! -->
+          <value>${installdir}/__INSTTYPE__/__PLATFORM__/etc</value>
+          <type>REG_SZ</type>
+        </registrySet>
+      </actionList>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+    <actionGroup>
+      <actionList>
+        <runProgram>
+          <program>${installdir}\__INSTTYPE__\__PLATFORM__\bin\ServiceUtil.exe</program>
+          <programArguments>-install "${installdir}\__INSTTYPE__\__PLATFORM__\etc\service_info.txt"</programArguments>
+        </runProgram>
+      </actionList>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+        <compareText>
+          <text>__INSTTYPE__</text>
+          <logic>equals</logic>
+          <value>RTS</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+    <actionGroup>
+      <actionList>
+        <runProgram>
+          <program>${installdir}\__INSTTYPE__\__PLATFORM__\redist\vcredist_x86\vcredist_x86.exe</program>
+          <programArguments/>
+        </runProgram>
+      </actionList>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+    <actionGroup>
+      <actionList>
+        <addTextToFile>
+          <file>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt</file>
+          <text>PRODUCT=${product_fullname}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt</file>
+          <text>VERSION=${product_version}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt</file>
+          <text>PLATFORM=${platform_name}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt</file>
+          <text>HOSTNAME=${machine_hostname}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt</file>
+          <text>IPADDR=${machine_ipaddr}
+HOSTID=</text>
+        </addTextToFile>
+<!--
+dds830
+Workaround for BitRock problem. Uncomment this line when bitrock has solved the issue.
+        <runProgram>
+          <program>${installdir}\__INSTTYPE__\__PLATFORM__\bin\lmutil.exe</program>
+          <programArguments>lmhostid -n &gt;&gt; "${installdir}\__INSTTYPE__\__PLATFORM__\etc\license_info.txt"</programArguments>
+        </runProgram>
+-->
+        <runProgram>
+          <program>${installdir}\__INSTTYPE__\__PLATFORM__\bin\getlic_info.bat</program>
+          <programArguments></programArguments>
+        </runProgram>
+      </actionList>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>__WITHLICENSE__</text>
+          <logic>equals</logic>
+          <value>true</value>
+        </compareText>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+    <actionGroup>
+      <actionList>
+        <addTextToFile>
+          <file>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</file>
+          <text>PRODUCT=${product_fullname}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</file>
+          <text>VERSION=${product_version}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</file>
+          <text>PLATFORM=${platform_name}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</file>
+          <text>HOSTNAME=${machine_hostname}
+</text>
+        </addTextToFile>
+        <addTextToFile>
+          <file>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</file>
+          <text>IPADDR=${machine_ipaddr}
+HOSTID=</text>
+        </addTextToFile>
+        <runProgram>
+          <program>${installdir}/__INSTTYPE__/__PLATFORM__/bin/lmutil</program>
+          <programArguments>lmhostid -n &gt;&gt; ${installdir}/__INSTTYPE__/__PLATFORM__/etc/license_info.txt</programArguments>
+        </runProgram>
+      </actionList>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>__WITHLICENSE__</text>
+          <logic>equals</logic>
+          <value>true</value>
+        </compareText>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>does_not_equal</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+  </postInstallationActionList>
+  <finalPageActionList>
+    <copyFile>
+      <origin>${providedLicenseFile}</origin>
+      <destination>${installdir}/__INSTTYPE__/__PLATFORM__/etc/license.lic</destination>
+      <progressText>Installing provided license file</progressText>
+      <ruleEvaluationLogic>or</ruleEvaluationLogic>
+      <ruleList>
+        <compareValues>
+          <value1>${w_already_has_license}</value1>
+          <logic>does_not_equal</logic>
+          <value2>0</value2>
+        </compareValues>
+        <compareValues>
+          <value1>${nw_already_has_license}</value1>
+          <logic>does_not_equal</logic>
+          <value2>0</value2>
+        </compareValues>
+      </ruleList>
+    </copyFile>
+    <launchBrowser url="file://${installdir}/__INSTTYPE__/__PLATFORM__/index.html" progressText="View OpenSpliceDDS documentation." />
+  </finalPageActionList>
+  <postUninstallationActionList>
+    <actionGroup>
+      <actionList>
+        <deleteEnvironmentVariable>
+          <name>OSPL_HOME</name>
+          <scope>system</scope>
+        </deleteEnvironmentVariable>
+        <deleteEnvironmentVariable>
+          <name>OSPL_TARGET</name>
+          <scope>system</scope>
+        </deleteEnvironmentVariable>
+        <deleteEnvironmentVariable>
+          <name>PTECH_LICENSE_FILE</name>
+          <scope>system</scope>
+        </deleteEnvironmentVariable>
+        <deleteEnvironmentVariable>
+          <name>OSPL_TMPL_PATH</name>
+          <scope>system</scope>
+        </deleteEnvironmentVariable>
+        <deleteEnvironmentVariable>
+          <name>OSPL_URI</name>
+          <scope>system</scope>
+        </deleteEnvironmentVariable>
+        <removeDirectoryFromPath>
+          <path>${installdir}\__INSTTYPE__\__PLATFORM__\bin</path>
+        </removeDirectoryFromPath>
+        <removeDirectoryFromPath>
+          <path>${installdir}\__INSTTYPE__\__PLATFORM__\lib</path>
+        </removeDirectoryFromPath>
+        <registryDelete>
+          <key>HKEY_LOCAL_MACHINE\SOFTWARE\PrismTech\${product_shortname}</key>
+          <name>INSTALL_DIR</name>
+        </registryDelete>
+        <registryDelete>
+          <key>HKEY_LOCAL_MACHINE\SOFTWARE\FLEXlm License Manager</key>
+          <name>PTECH_LICENSE_FILE</name>
+        </registryDelete>
+      </actionList>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+  </postUninstallationActionList>
+  <preBuildActionList/>
+  <preInstallationActionList/>
+  <preUninstallationActionList>
+    <actionGroup>
+      <actionList>
+        <runProgram>
+          <program>${installdir}\__INSTTYPE__\__PLATFORM__\bin\ServiceUtil.exe</program>
+          <programArguments>-remove "${installdir}\__INSTTYPE__\__PLATFORM__\etc\service_info.txt"</programArguments>
+        </runProgram>
+      </actionList>
+      <ruleEvaluationLogic>and</ruleEvaluationLogic>
+      <ruleList>
+        <compareText>
+          <text>${platform_name}</text>
+          <logic>equals</logic>
+          <value>windows</value>
+        </compareText>
+        <compareText>
+          <text>__INSTTYPE__</text>
+          <logic>equals</logic>
+          <value>RTS</value>
+        </compareText>
+      </ruleList>
+    </actionGroup>
+  </preUninstallationActionList>
+  <slideShowImageList>
+    <slideShowImage>
+      <path>images/billboard.png</path>
+    </slideShowImage>
+    <slideShowImage>
+      <path>images/billboard2.png</path>
+    </slideShowImage>
+  </slideShowImageList>
+</project>
+

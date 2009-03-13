@@ -1,0 +1,16 @@
+SIOCGIFCONF EXPECT 0276, 1250, 1253, 1255, 1277; ignore warnings for externally defined macro
+SIOCGIFBRDADDR EXPECT 0276, 1250, 1253, 1255, 1277; ignore warnings for externally defined macro
+SIOCGIFFLAGS EXPECT 0276, 1250, 1253, 1255, 1277; ignore warnings for externally defined macro
+SOL_SOCKET EXPECT 1277; ignore warnings for externally defined macro
+SO_REUSEADDR EXPECT 1277; ignore warnings for externally defined macro
+SO_SNDBUF EXPECT 1277; ignore warnings for externally defined macro
+SO_RCVBUF EXPECT 1277; ignore warnings for externally defined macro
+FD_ZERO EXPECT 0702; ignore warnings for externally defined macro
+FD_SET EXPECT 0702, 3760, 3784, 3795, 4130 ; ignore warnings for externally defined macro
+isupper EXPECT 0489, 1253, 1277, 2100; ignore warnings for externally defined macro
+islower EXPECT 0489, 1253, 1277, 2100; ignore warnings for externally defined macro
+SD_FLAG_IS_SET EXPECT 1259, 1277; ignore side-effects of externally defined macro
+SK_ADDRESS EXPECT 0306; conversion from pointer to integer is done carefully
+SK_POINTER EXPECT 0306; conversion from integer to pointer is done carefully
+NW_ADDRESS EXPECT 0306; conversion from pointer to integer is done carefully
+NW_DISPLACE EXPECT 0306; conversion from pointer to integer is done carefully

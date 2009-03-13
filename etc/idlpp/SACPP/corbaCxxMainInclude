@@ -1,0 +1,10 @@
+#ifndef CCPP_$upper($(basename))_H
+#define CCPP_$upper($(basename))_H
+
+#include "ccpp.h"
+#include "$(basename).h"
+#include "$(basename)Dcps.h"
+#include <orb_abstraction.h>
+#include "$(basename)Dcps_impl.h"
+
+#endif /* CCPP_$upper($(basename))_H */

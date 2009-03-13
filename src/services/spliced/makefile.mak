@@ -1,0 +1,34 @@
+#
+# included by bld/$(SPLICE_HOST)/makefile
+
+
+TARGET_EXEC	:= spliced
+
+include		$(OSPL_HOME)/setup/makefiles/test_idl_c.mak
+
+IDL_C		 = $(IDL_FILES:%.idl=%_register.c)
+IDL_H		 = $(IDL_FILES:%.idl=%_register.h)
+IDLPPTYPES	 = DDS::Time_t,DDS::Duration_t
+IDLPPFLAGS	:= -S -l c
+
+include		$(OSPL_HOME)/setup/makefiles/target.mak
+
+LDLIBS		+= -l$(DDS_USER) -l$(DDS_SERIALIZATION) -l$(DDS_CONF) -l$(DDS_CONFPARSER) -l$(DDS_UTIL) -l$(DDS_KERNEL) -l$(DDS_DATABASE) -l$(DDS_OS)
+
+INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
+INCLUDE		+= -I$(OSPL_HOME)/src/database/serialization/include
+INCLUDE		+= -I$(OSPL_HOME)/src/kernel/include
+INCLUDE		+= -I$(OSPL_HOME)/src/user/include
+INCLUDE		+= -I$(OSPL_HOME)/src/license/include
+
+.PHONY: make_idl_preprocessor
+
+$(IDL_FILES): make_idl_preprocessor
+
+make_idl_preprocessor:
+	cd $(OSPL_HOME)/src/cpp; make
+	cd $(OSPL_HOME)/src/tools/idlpp; make
+
+-include $(DEPENDENCIES)
+## seems TARGET_DEP is not defined anymore
+## -include $(TARGET_DEP)

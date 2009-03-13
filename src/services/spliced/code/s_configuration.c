@@ -1,0 +1,749 @@
+#include "s_configuration.h"
+#include "report.h"
+
+#include "u_service.h"
+
+#include "os.h"
+
+/*********************** static functions *************************/
+static void
+s_configurationSetDuration(
+    v_duration *timeOut,
+    c_float    seconds)
+{
+    os_time tmp;
+
+    tmp = os_realToTime(seconds);
+
+    timeOut->seconds     = tmp.tv_sec;
+    timeOut->nanoseconds = tmp.tv_nsec;
+}
+
+static void
+s_configurationSetTime(
+    os_time *timeOut,
+    c_float seconds)
+{
+    *timeOut = os_realToTime(seconds);
+}
+
+/* Configuration retrieve functions */ 
+static void
+s_configurationAttrValueLong(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    const char      *attr,
+    void            (* const setAction)(s_configuration config, c_long longValue))
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_long   longValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if (a) {
+            found = u_cfAttributeLongValue(a, &longValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, longValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationAttrValueFloat(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    const char      *attr,
+    void            (* const setAction)(s_configuration config, c_float floatValue))
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_float   floatValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if (a) {
+            found = u_cfAttributeFloatValue(a, &floatValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, floatValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationAttrValueString(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    const char      *attr,
+    void            (* const setAction)(s_configuration config, const c_char *strValue))
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_char   *strValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if (a) {
+            found = u_cfAttributeStringValue(a, &strValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, strValue);
+                os_free(strValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationAttrValueBoolean(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    const char      *attr,
+    void            (* const setAction)(s_configuration config, c_bool boolValue))
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_bool   boolValue, found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if (a) {
+            found = u_cfAttributeBoolValue(a, &boolValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, boolValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationValueLong(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(s_configuration config, c_long longValue))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_long   longValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+
+    while (data != NULL) {
+        found = u_cfDataLongValue(data, &longValue);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            setAction(configuration, longValue);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+d_configurationValueULong(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(s_configuration config, c_ulong longValue))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_long   longValue;
+    c_ulong  ulongValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+    while (data != NULL) {
+        found = u_cfDataLongValue(data, &longValue);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            if (longValue < 0) {
+                longValue = -longValue;
+                if (longValue < 0) {
+                    longValue++;
+                    longValue = -longValue;
+                }
+            }
+            ulongValue = (c_ulong)longValue;
+            setAction(configuration, ulongValue);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationValueFloat(
+    s_configuration configuration,
+    u_cfElement     element,
+    const c_char    *tag,
+    void            (* const setAction)(s_configuration config, c_float floatValue))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_bool   found;
+    c_float  floatValue;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+
+    while (data != NULL) {
+        found = u_cfDataFloatValue(data, &floatValue);
+
+        if (found == TRUE) {
+            setAction(configuration, floatValue);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationValueBoolean(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(s_configuration config, c_bool str))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_bool   found;
+    c_bool   b;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+
+    while (data) {
+        found = u_cfDataBoolValue(data, &b);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            setAction(configuration, b);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationValueString(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(s_configuration config, const c_char * str) )
+{
+    c_iter   iter;
+    u_cfData data;
+    c_bool   found;
+    c_char *   str;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+
+    while (data) {
+        found = u_cfDataStringValue(data, &str);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            setAction(configuration, str);
+            os_free(str);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+/* Set functions */
+static void
+s_configurationSetServiceTerminatePeriod(
+    s_configuration config,
+    c_float sec)
+{
+    if (sec < S_CFG_SERVICETERMINATEPERIOD_MINIMUM) {
+        sec = S_CFG_SERVICETERMINATEPERIOD_MINIMUM;
+    }
+    if (sec > S_CFG_SERVICETERMINATEPERIOD_MAXIMUM) {
+        sec = S_CFG_SERVICETERMINATEPERIOD_MAXIMUM;
+    }
+    
+    s_configurationSetTime(&(config->serviceTerminatePeriod), sec);
+}
+
+static void
+s_configurationSetLeasePeriod(
+    s_configuration config,
+    c_float sec)
+{
+    if (sec < S_CFG_LEASEPERIOD_MINIMUM) {
+        sec = S_CFG_LEASEPERIOD_MINIMUM;
+    }
+    
+    s_configurationSetDuration(&(config->leasePeriod), sec);
+}
+
+static void
+s_configurationSetLeaseRenewalPeriod(
+    s_configuration config,
+    c_float frac)
+{
+    os_time leasePeriod;
+    if (frac < S_CFG_LEASERENEWALPERIOD_MINIMUM) {
+        frac = S_CFG_LEASERENEWALPERIOD_MINIMUM;
+    }
+    
+    if (frac > S_CFG_LEASERENEWALPERIOD_MAXIMUM) {
+        frac = S_CFG_LEASERENEWALPERIOD_MAXIMUM;
+    }
+    
+    leasePeriod.tv_sec = config->leasePeriod.seconds; 
+    leasePeriod.tv_nsec = config->leasePeriod.nanoseconds;
+    frac = frac*(c_float)os_timeToReal(leasePeriod);
+    s_configurationSetDuration(&(config->leaseRenewalPeriod), frac);
+}
+
+static void
+s_configurationSetKernelManagerSchedulingClass(
+    s_configuration config,
+    const c_char* class)
+{
+    if (os_strcasecmp(class, "Timeshare") == 0) {
+        config->kernelManagerScheduling.schedClass = OS_SCHED_TIMESHARE;
+    } else if (os_strcasecmp(class, "Realtime") == 0) {
+        config->kernelManagerScheduling.schedClass = OS_SCHED_REALTIME;
+    } else {
+        config->kernelManagerScheduling.schedClass = OS_SCHED_DEFAULT;
+    }
+}
+
+static void
+s_configurationSetKernelManagerSchedulingPriority(
+    s_configuration config,
+    c_long priority)
+{
+    config->kernelManagerScheduling.schedPriority = priority;
+}
+
+static void
+s_configurationSetGCSchedulingClass(
+    s_configuration config,
+    const c_char* class)
+{
+    if (os_strcasecmp(class, "Timeshare") == 0) {
+        config->garbageCollectorScheduling.schedClass = OS_SCHED_TIMESHARE;
+    } else if (os_strcasecmp(class, "Realtime") == 0) {
+        config->garbageCollectorScheduling.schedClass = OS_SCHED_REALTIME;
+    } else {
+        config->garbageCollectorScheduling.schedClass = OS_SCHED_DEFAULT;
+    }
+}
+
+static void
+s_configurationSetGCSchedulingPriority(
+    s_configuration config,
+    c_long priority)
+{
+    config->garbageCollectorScheduling.schedPriority = priority;
+}
+
+static void
+s_configurationSetTracingSynchronous(
+    s_configuration config,
+    const c_bool synchronous)
+{
+    config->tracingSynchronous = synchronous;
+}
+
+static void
+s_configurationSetTracingOutputFile(
+    s_configuration config,
+    const c_char *value)
+{
+    if (value) {
+        if (config->tracingOutputFileName) {
+            if ((os_strcasecmp(config->tracingOutputFileName, "stdout") != 0) &&
+                (os_strcasecmp(config->tracingOutputFileName, "stderr") != 0)) {
+                if  (config->tracingOutputFile) {
+                    fclose(config->tracingOutputFile);
+                    config->tracingOutputFile = NULL;
+                }
+            }
+            os_free(config->tracingOutputFileName);
+            config->tracingOutputFileName = NULL;
+        }
+
+        if (os_strcasecmp(value, "stdout") == 0) {
+            config->tracingOutputFileName = os_strdup("stdout");
+            config->tracingOutputFile = stdout; /* default */
+        } else {
+            if (os_strcasecmp(value, "stderr") == 0) {
+                config->tracingOutputFileName = os_strdup("stderr");
+                config->tracingOutputFile = stderr;
+            } else {
+                char * filename = os_fileNormalize(value); 
+                config->tracingOutputFile = fopen(filename, "a");
+                config->tracingOutputFileName = os_strdup(value);
+            }
+        }
+    }
+}
+
+static void
+s_configurationSetTracingTimestamps(
+    s_configuration  config,
+    c_bool useTimestamp)
+{
+    if (config) {
+        config->tracingTimestamps = useTimestamp;
+    }
+}
+
+static void
+s_configurationSetTracingRelativeTimestamps(
+    s_configuration config,
+    u_cfElement element,
+    const c_char* timestampsPath,
+    const c_char* absoluteName)
+{
+    u_cfElement timestampsElement;
+    c_iter elements;
+    c_bool success, absolute;
+
+    elements = u_cfElementXPath(element, timestampsPath);
+
+    if(elements){
+        timestampsElement = u_cfElement(c_iterTakeFirst(elements));
+
+        while(timestampsElement){
+            success = u_cfElementAttributeBoolValue(timestampsElement, absoluteName, &absolute);
+
+            if(success == TRUE){
+                config->tracingRelativeTimestamps = (!absolute);
+            }
+            u_cfElementFree(timestampsElement);
+            timestampsElement = u_cfElement(c_iterTakeFirst(elements));
+        }
+        c_iterFree(elements);
+    }
+}
+
+static void
+s_configurationSetTracingVerbosity(
+    s_configuration config,
+    const c_char* value)
+{
+    if (value) {
+        if (os_strcasecmp(value, "SEVERE") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_SEVERE;
+        } else if (os_strcasecmp(value, "WARNING") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_WARNING;
+        } else if (os_strcasecmp(value, "INFO") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_INFO;
+        } else if (os_strcasecmp(value, "CONFIG") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_CONFIG;
+        } else if (os_strcasecmp(value, "FINE") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_FINE;
+        } else if (os_strcasecmp(value, "FINER") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_FINER;
+        } else if (os_strcasecmp(value, "FINEST") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_FINEST;
+        } else if (os_strcasecmp(value, "NONE") == 0) {
+            config->tracingVerbosityLevel = S_RPTLEVEL_NONE;
+        }
+    }
+}
+/* Init/deinit */
+static void
+s_configurationInit(
+    s_configuration config)
+{
+    assert(config != NULL);
+    if (config != NULL) {
+        /** First apply defaults for tracing */
+        config->tracingOutputFile           = NULL;
+        config->tracingOutputFileName       = NULL;
+        config->tracingSynchronous          = FALSE;
+        config->tracingVerbosityLevel       = S_RPTLEVEL_NONE;
+        config->tracingTimestamps           = TRUE;
+        config->tracingRelativeTimestamps   = FALSE;
+        config->startTime                   = os_timeGet();
+
+        //s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");
+
+        s_configurationSetTime(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
+        s_configurationSetDuration(&(config->leasePeriod), S_CFG_LEASEPERIOD_DEFAULT);
+        s_configurationSetDuration(&(config->leaseRenewalPeriod), S_CFG_LEASERENEWALPERIOD_DEFAULT);
+        
+        /* Apply defaults to rest of configuration */
+        os_threadAttrInit(&config->kernelManagerScheduling);
+        config->kernelManagerScheduling.stackSize = 512*1024; /* 512KB */
+        s_configurationSetKernelManagerSchedulingClass(config, S_CFG_KERNELMANAGERSCHEDULING_CLASS_DEFAULT);
+        s_configurationSetKernelManagerSchedulingPriority(config, S_CFG_KERNELMANAGERSCHEDULING_PRIORITY_DEFAULT);
+        
+        os_threadAttrInit(&config->garbageCollectorScheduling);
+        config->garbageCollectorScheduling.stackSize = 512*1024; /* 512KB */
+        s_configurationSetGCSchedulingClass(config, S_CFG_GCSCHEDULING_CLASS_DEFAULT);
+        s_configurationSetGCSchedulingPriority(config, S_CFG_GCSCHEDULING_PRIORITY_DEFAULT);
+    }
+}
+
+static void
+s_configurationDeinit(
+    s_configuration config)
+{
+    assert(config);
+    if (config) {
+        if (config->tracingOutputFileName) {
+            if( (strcmp(config->tracingOutputFileName, "stdout") != 0) &&
+                (strcmp(config->tracingOutputFileName, "stderr") != 0)) {
+                if (config->tracingOutputFile) {
+                    fclose(config->tracingOutputFile);
+                    config->tracingOutputFile = NULL;
+                }
+            }
+            os_free(config->tracingOutputFileName);
+            config->tracingOutputFileName = NULL;
+        }
+
+    }
+    return;
+}
+
+/* report functions */
+static void
+s_configurationReport(
+    s_configuration config,
+    spliced daemon)
+{
+    const c_char* verbosity;
+    const c_char* timestamps;
+    const c_char* relativeTimestamps;
+
+    switch(config->tracingVerbosityLevel){
+    case S_RPTLEVEL_NONE:
+        verbosity = "NONE";
+    break;
+    case S_RPTLEVEL_SEVERE:
+        verbosity = "SEVERE";
+    break;
+    case S_RPTLEVEL_WARNING:
+        verbosity = "WARNING";
+    break;
+    case S_RPTLEVEL_CONFIG:
+        verbosity = "CONFIG";
+    break;
+    case S_RPTLEVEL_INFO:
+        verbosity = "INFO";
+    break;
+    case S_RPTLEVEL_FINE:
+        verbosity = "FINE";
+    break;
+    case S_RPTLEVEL_FINER:
+        verbosity = "FINER";
+    break;
+    case S_RPTLEVEL_FINEST:
+        verbosity = "FINEST";
+    break;
+    default:
+        assert(FALSE);
+        verbosity = "UNKNOWN";
+    break;
+    }
+    if(config->tracingTimestamps == TRUE){
+        timestamps = "TRUE";
+    } else {
+        timestamps = "FALSE";
+    }
+    if(config->tracingRelativeTimestamps == TRUE){
+        relativeTimestamps = "TRUE";
+    } else {
+        relativeTimestamps = "FALSE";
+    }
+    s_printEvent(daemon, S_RPTLEVEL_CONFIG,
+            "- Tracing.Verbosity                           : %s\n" \
+            "- Tracing.OutputFile                          : %s\n" \
+            "- Tracing.Timestamps                          : %s\n" \
+            "- Tracing.RelativeTimestamps                  : %s\n"
+            , verbosity
+            , config->tracingOutputFileName
+            , timestamps
+            , relativeTimestamps);
+}
+
+/************* public **********************/
+
+s_configuration
+s_configurationNew(void)
+{
+    s_configuration config;
+
+    config = s_configuration(os_malloc(C_SIZEOF(s_configuration)));
+    if (config != NULL) {
+        s_configurationInit(config);
+    }
+    return config;
+}
+
+void
+s_configurationFree(
+    s_configuration config)
+{
+    assert(config);
+
+    if (config) {
+        s_configurationDeinit(config);
+        os_free(config);
+    }
+}
+
+void
+s_configurationRead(
+    s_configuration config,
+    spliced daemon)
+{
+    u_cfElement root;
+    u_cfElement element;
+    u_cfElement domain;
+    u_cfElement dcfg;
+    u_cfAttribute attribute;
+    u_cfNode node;
+    c_iter iter;
+    c_char *name;
+    
+    root = u_participantGetConfiguration(u_participant(splicedGetService(daemon)));
+    if (root) {
+        iter = u_cfElementXPath(root, "Domain");
+        domain = u_cfElement(c_iterTakeFirst(iter));
+        element = u_cfElement(c_iterTakeFirst(iter));
+        while (element) {
+            u_cfElementFree(element);
+            element = u_cfElement(c_iterTakeFirst(iter));
+        }
+        c_iterFree(iter);
+        
+        iter = u_cfElementXPath(root, "Domain/Daemon");
+        dcfg = u_cfElement(c_iterTakeFirst(iter));
+        element = u_cfElement(c_iterTakeFirst(iter));
+        while (element) {
+            u_cfElementFree(element);
+            element = u_cfElement(c_iterTakeFirst(iter));
+        }
+        c_iterFree(iter);
+    } else {
+        domain = NULL;
+        dcfg = NULL;
+    }
+
+    if (domain) {
+        /* Enable statistics */
+        iter = u_cfElementXPath(domain,
+                                "Statistics/Category[@enabled='true']");
+        node = u_cfNode(c_iterTakeFirst(iter));
+        while (node != NULL) {
+            if (u_cfNodeKind(node) == V_CFELEMENT) {
+                attribute = u_cfElementAttribute(u_cfElement(node), "name");
+                if (attribute) {
+                    u_cfAttributeStringValue(attribute, &name);
+                    if (name) {
+                        u_serviceEnableStatistics(u_service(splicedGetService(daemon)), name);
+                        os_free(name);
+                    }
+                    u_cfAttributeFree(attribute);
+                }
+            }
+            u_cfNodeFree(node);        
+            node = u_cfNode(c_iterTakeFirst(iter));
+         }
+         c_iterFree(iter);
+        s_configurationValueFloat(config, domain, "ServiceTerminatePeriod/#text", s_configurationSetServiceTerminatePeriod);
+        s_configurationValueFloat(config, domain, "Lease/ExpiryTime/#text", s_configurationSetLeasePeriod);
+        s_configurationAttrValueFloat(config, domain, "Lease/ExpiryTime", "update_factor", s_configurationSetLeaseRenewalPeriod);
+    }
+    
+    if (dcfg) {
+        s_configurationAttrValueBoolean (config, dcfg, "Tracing", "synchronous", s_configurationSetTracingSynchronous);
+        s_configurationValueString      (config, dcfg, "Tracing/Verbosity/#text", s_configurationSetTracingVerbosity);
+        s_configurationValueString      (config, dcfg, "Tracing/OutputFile/#text", s_configurationSetTracingOutputFile);
+        s_configurationValueBoolean     (config, dcfg, "Tracing/Timestamps/#text", s_configurationSetTracingTimestamps);
+        s_configurationSetTracingRelativeTimestamps(config, dcfg, "Tracing/Timestamps", "absolute");
+        
+        /* Kernelmanager */
+        s_configurationValueString(config, dcfg, "KernelManager/Scheduling/Class/#text", s_configurationSetKernelManagerSchedulingClass);
+        s_configurationValueLong(config, dcfg, "KernelManager/Scheduling/Priority/#text", s_configurationSetKernelManagerSchedulingPriority);
+         
+        /* GarbageCollector */
+        s_configurationValueString(config, dcfg, "GarbageCollector/Scheduling/Class/#text", s_configurationSetGCSchedulingClass);
+        s_configurationValueLong(config, dcfg, "GarbageCollector/Scheduling/Priority/#text", s_configurationSetGCSchedulingPriority);
+
+    }
+    
+        
+    
+    /* Finally report the configuration */
+    s_configurationReport(config, daemon);
+    
+    if (domain) {
+        u_cfElementFree(domain);
+    }
+    if (dcfg) {
+        u_cfElementFree(dcfg);
+    }
+    
+    if (root) {
+        u_cfElementFree(root);
+    }
+}

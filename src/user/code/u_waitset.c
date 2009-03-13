@@ -1,0 +1,514 @@
+#include "u_waitset.h"
+#include "u_waitsetEvent.h"
+#include "u__types.h"
+#include "u__entity.h"
+#include "u__participant.h"
+#include "u_kernel.h"
+#include "v_waitset.h"
+#include "v_observable.h"
+#include "v_observer.h"
+#include "v_entity.h"
+#include "v_event.h"
+#include "os_report.h"
+
+#include "u__user.h"
+
+u_result
+u_waitsetClaim(
+    u_waitset _this,
+    v_waitset *waitset)
+{
+    u_result result = U_RESULT_OK;
+
+    if ((_this != NULL) && (waitset != NULL)) {
+        *waitset = v_waitset(u_entityClaim(u_entity(_this)));
+        if (*waitset == NULL) {
+            OS_REPORT_2(OS_WARNING, "u_waitsetClaim", 0,
+                        "Claim Waitset failed. "
+                        "<_this = 0x%x, waitset = 0x%x>.",
+                         _this, waitset);
+            result = U_RESULT_ILL_PARAM;
+        }
+    } else {
+        OS_REPORT_2(OS_ERROR,"u_waitsetClaim",0,
+                    "Illegal parameter. "
+                    "<_this = 0x%x, waitset = 0x%x>.",
+                    _this, waitset);
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_waitsetRelease(
+    u_waitset _this)
+{
+    u_result result = U_RESULT_OK;
+
+    if (_this != NULL) {
+        result = u_entityRelease(u_entity(_this));
+    } else {
+        OS_REPORT_1(OS_ERROR,"u_waitsetRelease",0,
+                    "Illegal parameter. <_this = 0x%x>.", _this);
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_waitset
+u_waitsetNew(
+    u_participant p)
+{
+    u_waitset _this = NULL;
+    u_result result;
+    v_entity ke;
+    v_participant kp = NULL;
+
+    if (p != NULL) {
+        result = u_participantClaim(p,&kp);
+        if ((result == U_RESULT_OK) && (kp != NULL)) {
+            ke = v_entity(v_waitsetNew(kp));
+            if (ke != NULL) {                
+                v_observerSetEventMask(v_observer(ke), V_EVENTMASK_ALL);
+                _this = u_entityAlloc(p,u_waitset,ke,TRUE);
+                if (_this != NULL) {
+                    result = u_waitsetInit(_this);
+                    if (result != U_RESULT_OK) {
+                        OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
+                                    "Initialisation failed. "
+                                    "For Participant (0x%x)", p);
+                        u_entityFree(u_entity(_this));
+                    }
+                } else {
+                    OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
+                                "Create user proxy failed. "
+                                "For Participant (0x%x)", p);
+                }
+                c_free(ke);
+            } else {
+                OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
+                            "Create kernel entity failed. "
+                            "For Participant (0x%x)", p);
+            }
+            result = u_participantRelease(p);
+        } else {
+            OS_REPORT_1(OS_WARNING, "u_waitsetNew", 0,
+                        "Claim Participant (0x%x) failed.", p);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,"u_waitsetNew",0,
+                  "No Participant specified.");
+    }
+    return _this;
+}
+
+u_result
+u_waitsetInit(
+    u_waitset _this)
+{
+    u_result result;
+
+    if (_this != NULL) {
+        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        result = U_RESULT_OK;
+    } else {
+        OS_REPORT(OS_ERROR,"u_waitsetInit",0, "Illegal parameter.");
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_waitsetFree(
+    u_waitset _this)
+{
+    u_result result;
+
+    if (_this != NULL) {
+        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
+            result = u_waitsetDeinit(_this);
+            os_free(_this);
+        } else {
+            result = u_entityFree(u_entity(_this));
+        }
+    } else {
+        OS_REPORT(OS_WARNING,"u_waitsetFree",0,
+                  "The specified Waitset = NIL.");
+        result = U_RESULT_OK;
+    }
+    return result;
+}
+
+u_result
+u_waitsetDeinit(
+    u_waitset _this)
+{
+    u_result result;
+
+    if (_this != NULL) {
+        result = u_entityDeinit(u_entity(_this));
+    } else {
+        OS_REPORT(OS_ERROR,"u_waitsetDeinit",0, "Illegal parameter.");
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+static void
+collectEntities(
+    v_waitsetEvent e,
+    c_voidp arg)
+{
+    c_iter *list;
+
+    list = (c_iter *)arg;
+    *list = c_iterInsert(*list, e->userData);
+}
+
+u_result
+u_waitsetNotify(
+    u_waitset w,
+    c_voidp eventArg)
+{
+    u_result r = U_RESULT_OK;
+    v_waitset kw;
+
+    if (w != NULL) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            v_waitsetTrigger(kw, eventArg);
+            r = u_waitsetRelease(w);
+        }
+    }
+    return r;
+}
+
+u_result
+u_waitsetWait(
+    u_waitset w,
+    c_iter *list)
+{
+    u_result r;
+    v_waitset kw;
+
+    if ((w != NULL) && (list != NULL)) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            *list = NULL;
+            r = u_resultFromKernel(v_waitsetWait(kw,collectEntities,list));
+            u_waitsetRelease(w);
+        }
+    } else {
+        OS_REPORT_2(OS_ERROR, "u_waitsetWait", 0,
+                    "Illegal parameter specified (ws=0x"
+                    PA_ADDRFMT
+                    ",list=0x"
+                    PA_ADDRFMT
+                    ")",
+                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
+        r = U_RESULT_ILL_PARAM;
+    }
+
+    return r;
+}
+
+u_result
+u_waitsetTimedWait(
+    u_waitset w,
+    const c_time t,
+    c_iter *list)
+{
+    u_result r;
+    v_waitset kw;
+
+    if ((w != NULL) && (list != NULL)) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            *list = NULL;
+            r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEntities,list,t));
+            u_waitsetRelease(w);
+        }
+    } else {
+        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
+                    "Illegal parameter specified (ws=0x"
+                    PA_ADDRFMT
+                    ",list=0x"
+                    PA_ADDRFMT
+                    ")",
+                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
+        r = U_RESULT_ILL_PARAM;
+    }
+
+    return r;
+}
+
+u_result
+u_waitsetWaitAction (
+    u_waitset w,
+    u_waitsetAction action,
+    c_voidp arg)
+{
+    u_result r;
+    v_waitset kw;
+
+    if (w != NULL) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            r = u_resultFromKernel(v_waitsetWait(kw,action,arg));
+            u_waitsetRelease(w);
+        }
+    }else    {
+        OS_REPORT(OS_ERROR, "u_waitsetWaitAction", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetTimedWaitAction (
+    u_waitset w,
+    u_waitsetAction action,
+    c_voidp arg,
+    const c_time t)
+{
+    u_result r;
+    v_waitset kw;
+
+    if (w != NULL) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            r = u_resultFromKernel(v_waitsetTimedWait(kw,action,arg,t));
+            u_waitsetRelease(w);
+        }
+    } else    {
+        OS_REPORT(OS_ERROR, "u_waitsetTimedWaitAction", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+static void
+collectEvents(
+    v_waitsetEvent e,
+    c_voidp arg)
+{
+    c_iter *list;
+    u_waitsetEvent ev;
+    v_waitsetEventHistoryDelete evd;
+    v_waitsetEventHistoryRequest evr;
+    list = (c_iter *)arg;
+
+    if(e->kind == V_EVENT_HISTORY_DELETE){
+        evd = (v_waitsetEventHistoryDelete)e;
+        ev  = u_waitsetHistoryDeleteEventNew(u_entity(e->userData),
+                                             e->kind,
+                                             evd->partitionExpr,
+                                             evd->topicExpr,
+                                             evd->deleteTime);
+    } else if(e->kind == V_EVENT_HISTORY_REQUEST){
+        evr = (v_waitsetEventHistoryRequest)e;
+        ev = u_waitsetHistoryRequestEventNew(
+                    u_entity(e->userData), e->kind, e->source,
+                    evr->request->filter,
+                    evr->request->filterParams,
+                    evr->request->resourceLimits,
+                    evr->request->minSourceTimestamp,
+                    evr->request->maxSourceTimestamp);
+    } else {
+        ev = u_waitsetEventNew(u_entity(e->userData), e->kind);
+    }
+    if (ev) {
+        *list = c_iterInsert(*list,ev);
+    }
+}
+
+u_result
+u_waitsetWaitEvents(
+    u_waitset w,
+    c_iter *list)
+{
+    u_result r;
+    v_waitset kw;
+
+    if ((w != NULL) && (list != NULL)) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            *list = NULL;
+            r = u_resultFromKernel(v_waitsetWait(kw,collectEvents,list));
+            u_waitsetRelease(w);
+        }
+    }else    {
+        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
+                    "Illegal parameter specified (ws=0x"
+                    PA_ADDRFMT
+                    ",list=0x"
+                    PA_ADDRFMT
+                    ")",
+                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetTimedWaitEvents(
+    u_waitset w,
+    const c_time t,
+    c_iter *list)
+{
+    u_result r;
+    v_waitset kw;
+
+    if ((w != NULL) && (list != NULL)) {
+        r = u_waitsetClaim(w, &kw);
+        if (r == U_RESULT_OK) {
+            *list = NULL;
+            r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEvents,list,t));
+            u_waitsetRelease(w);
+        }
+    }else    {
+        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
+                    "Illegal parameter specified (ws=0x"
+                    PA_ADDRFMT
+                    ",list=0x"
+                    PA_ADDRFMT
+                    ")",
+                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetAttach(
+    u_waitset w,
+    u_entity e,
+    c_voidp context)
+{
+    u_result r;
+    v_waitset kw;
+    v_entity ke;
+
+    if ((w != NULL) && (e != NULL)) {
+        r = u_waitsetClaim(w,&kw);
+        if(r == U_RESULT_OK) {
+            ke = u_entityClaim(e);
+            if (ke) {
+                v_waitsetAttach(kw,v_observable(ke),context);
+                u_entityRelease(e);
+            } else {
+                OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
+                          "Could not claim supplied entity.");
+                r = U_RESULT_ILL_PARAM;
+            }
+            u_waitsetRelease(w);
+        } else {
+            OS_REPORT(OS_WARNING, "u_waitSetAttach", 0,
+                      "Could not claim waitset.");
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetDetach(
+    u_waitset w,
+    u_entity e)
+{
+    u_result r;
+    v_waitset kw;
+    v_entity ke;
+
+    if ((w != NULL) && (e != NULL)) {
+        r = u_waitsetClaim(w,&kw);
+        if ((r == U_RESULT_OK) && (kw != NULL)) {
+            ke = u_entityClaim(e);
+            if (ke) {
+                v_waitsetDetach(kw,v_observable(ke));
+                u_entityRelease(e);
+            } else {
+                OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
+                          "Could not claim supplied entity.");
+                r = U_RESULT_ILL_PARAM;
+            }
+            u_waitsetRelease(w);
+        } else {
+            OS_REPORT(OS_WARNING, "u_waitSetDetach", 0,
+                      "Could not claim waitset.");
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetGetEventMask(
+    u_waitset w,
+    c_ulong *eventMask)
+{
+    v_waitset kw;
+    u_result r;
+
+    if ((w != NULL) && (eventMask != NULL)) {
+        r = u_waitsetClaim(w,&kw);
+        if ((r == U_RESULT_OK) && (kw != NULL)) {
+            if (C_TYPECHECK(kw,v_waitset)) {
+                *eventMask = v_observerGetEventMask(v_observer(kw));
+            } else {
+                OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
+                          "Class mismatch.");
+                r = U_RESULT_CLASS_MISMATCH;
+            }
+            u_waitsetRelease(w);
+        } else {
+            OS_REPORT(OS_WARNING, "u_waitGetEventMask", 0,
+                      "Could not claim waitset.");
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+
+u_result
+u_waitsetSetEventMask(
+    u_waitset w,
+    c_ulong eventMask)
+{
+    v_waitset kw;
+    u_result r;
+
+    if (w != NULL) {
+        r = u_waitsetClaim(w,&kw);
+        if ((r == U_RESULT_OK) && (kw != NULL)) {
+            if (C_TYPECHECK(kw,v_waitset)) {
+                v_observerSetEventMask(v_observer(kw), eventMask);
+            } else {
+                OS_REPORT(OS_ERROR, "u_waitSetEventMask", 0,
+                          "Class mismatch.");
+                r = U_RESULT_CLASS_MISMATCH;
+            }
+            u_waitsetRelease(w);
+        } else {
+            OS_REPORT(OS_WARNING, "u_waitsetSetEventMask", 0,
+                      "Could not claim waitset.");
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
+                  "Illegal parameter specified.");
+        r = U_RESULT_ILL_PARAM;
+    }
+    return r;
+}
+

@@ -1,0 +1,75 @@
+# Include paths
+INCLUDES=-I./
+INCLUDES=$INCLUDES\ -I..
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include/dcps/C++/SACPP
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include
+INCLUDES=$INCLUDES\ -I$OSPL_HOME/include/sys
+
+# C++ Compiler settings.
+CXX=g++
+CXXFLAGS="-g -c"
+CPPFLAGS=$INCLUDES
+
+# Linker settings.
+LD_SO=$CXX
+LD_FLAGS=
+LD_LIBS=-lstdc++
+
+CXX_COMP=`which $CXX 2> /dev/null`
+if [ -z "$CXX_COMP" ]
+then
+    echo "Setup the C++ environment first"
+    exit
+fi
+
+SPLICE_COMP=`which idlpp 2> /dev/null`
+if [ -z "$SPLICE_COMP" ]
+then
+    echo "Setup the SPLICE environment first"
+    exit
+fi
+
+mkdir -p bld
+mkdir -p exec
+cd bld
+
+echo "Compiling IDL with SPLICE IDL compiler"
+idlpp $INCLUDES -S -l cpp ../Chat.idl
+
+echo "Compiling User Types support code"
+$CXX $CPPFLAGS $CXXFLAGS Chat.cpp
+
+echo "Compiling SPLICE User Types support code"
+$CXX $CPPFLAGS $CXXFLAGS ChatSplDcps.cpp
+
+echo "Compiling Typed Interfaces support code"
+$CXX $CPPFLAGS $CXXFLAGS ChatDcps.cpp
+
+echo "Compiling Application Foo Types support code"
+$CXX $CPPFLAGS $CXXFLAGS ChatDcps_impl.cpp
+
+echo "Compiling Status checking code"
+$CXX $CPPFLAGS $CXXFLAGS ../CheckStatus.cpp
+
+echo "Compiling multitopic code"
+$CXX $CPPFLAGS $CXXFLAGS ../multitopic.cpp
+
+echo "Compiling Chatter"
+$CXX $CPPFLAGS $CXXFLAGS ../Chatter.cpp
+
+echo "Compiling MessageBoard"
+$CXX $CPPFLAGS $CXXFLAGS ../MessageBoard.cpp
+
+echo "Compiling UserLoad"
+$CXX $CPPFLAGS $CXXFLAGS ../UserLoad.cpp
+
+echo "Linking Chatter"
+$LD_SO $LD_FLAGS -o ../exec/Chatter -L$OSPL_HOME/lib Chatter.o Chat.o ChatDcps.o ChatDcps_impl.o ChatSplDcps.o CheckStatus.o -lddsdatabase -ldcpsgapi -ldcpssacpp -lddsos $LD_LIBS
+
+echo "Linking MessageBoard"
+$LD_SO $LD_FLAGS -o ../exec/MessageBoard -L$OSPL_HOME/lib MessageBoard.o Chat.o ChatDcps.o ChatDcps_impl.o ChatSplDcps.o CheckStatus.o multitopic.o -lddsdatabase -ldcpsgapi -ldcpssacpp -lddsos $LD_LIBS
+
+echo "Linking UserLoad"
+$LD_SO $LD_FLAGS -o ../exec/UserLoad -L$OSPL_HOME/lib UserLoad.o Chat.o ChatDcps.o ChatDcps_impl.o ChatSplDcps.o CheckStatus.o -lddsdatabase -ldcpsgapi -ldcpssacpp -lddsos $LD_LIBS
+
+cd ..

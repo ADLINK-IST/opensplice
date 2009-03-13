@@ -1,0 +1,30 @@
+ospl start
+
+BLOKSIZE=100
+BLOKCOUNT=100
+
+exec/$SPLICE_TARGET/pong PongRead PongWrite &
+
+sleep 2
+
+exec/$SPLICE_TARGET/ping $BLOKSIZE $BLOKCOUNT m PongRead PongWrite
+
+sleep 2
+
+exec/$SPLICE_TARGET/ping $BLOKSIZE $BLOKCOUNT q PongRead PongWrite
+
+sleep 2
+
+exec/$SPLICE_TARGET/ping $BLOKSIZE $BLOKCOUNT s PongRead PongWrite
+
+sleep 2
+
+exec/$SPLICE_TARGET/ping $BLOKSIZE $BLOKCOUNT f PongRead PongWrite
+
+sleep 2
+
+exec/$SPLICE_TARGET/ping 1  10 t PongRead PongWrite 
+
+sleep 4
+
+ospl stop

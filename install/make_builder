@@ -1,0 +1,92 @@
+# $1 = release type   : HDE or RTS
+# $2 = full release name : Host Development Environment of Runtime System
+# $3 = source target  : x86.linux-2.6 or sparc.solaris8
+# $4 = builder target : linux or solaris-sparc
+# $5 = name of script to setup environment
+# $6 = environment : for example '-release' or '-dev'
+# $7 = name of script to obtain license information
+
+INSTTYPE="$1"
+INSTTYPE_FULL="$2"
+if [ "$3" = "x86.win32" ]
+then
+    SOURCE_TARGET="x86.win32"
+else
+    SOURCE_TARGET="$3"
+fi
+BUILDER_TARGET="$4"
+SCRIPT_NAME="$5"
+SOURCE_ENV="$6"
+GETLIC_INFO_NAME="$7"
+
+if [ "${SOURCE_ENV}" = "-release" ]
+then
+    TARGET_ENV="";
+else
+    TARGET_ENV=${SOURCE_ENV}
+fi
+
+#determine if licensing is enabled
+if [ -z "${FLEX_HOME}" ]
+then
+    WITHLICENSE=false;
+else
+    WITHLICENSE=true;
+fi
+
+echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
+
+echo Release is ${PACKAGE_VERSION}
+echo Date is ${PACKAGE_DATE}
+
+#set output directory, currently no parameter
+OUTPUTDIR="VC"
+mkdir -p $OUTPUTDIR
+
+# Build the builder
+if [ "${OSPL_BUILDER}" = "/usr/bin/tar" -o "${OSPL_BUILDER}" = "/bin/tar" ]
+then
+    PLATFORM=${SOURCE_TARGET}${TARGET_ENV}
+
+    echo ${OSPL_BUILDER} -cf ${OUTPUTDIR}/OpenSpliceDDS${PACKAGE_VERSION}-${PLATFORM}-${INSTTYPE}.tar ${INSTTYPE}
+    ${OSPL_BUILDER} -cf ${OUTPUTDIR}/OpenSpliceDDS${PACKAGE_VERSION}-${PLATFORM}-${INSTTYPE}.tar ${INSTTYPE}
+else
+    TMPL_PROJECTFILE=opensplice.xml
+    PATCHED_PROJECTFILE="${SOURCE_TARGET}${TARGET_ENV}.${INSTTYPE}.${TMPL_PROJECTFILE}"
+
+    echo projectfile is ${PATCHED_PROJECTFILE}
+
+    # determine whether to check for availability of JRE/JDK
+    PERFORM_JAVA_CHECK=no
+    if [ "${INCLUDE_TOOLS_TUNER}" = "yes" ]
+    then
+      PERFORM_JAVA_CHECK=yes
+    fi
+    
+    if [ "${INSTTYPE}" = "HDE" ]
+    then
+      if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+      then
+        PERFORM_JAVA_CHECK=yes
+      fi
+      if [ "${INCLUDE_API_DLRL_SAJ}" = "yes" ]
+      then
+        PERFORM_JAVA_CHECK=yes
+      fi
+    fi
+
+    # Substitute variables in template projectfile
+    sed -e "s/__VERSION__/${PACKAGE_VERSION}/g" \
+        -e "s/__INSTTYPE__/${INSTTYPE}/g" \
+        -e "s/__FULLINSTTYPE__/${INSTTYPE_FULL}/g" \
+        -e "s/__PLATFORM__/${SOURCE_TARGET}${TARGET_ENV}/g" \
+        -e "s/__BUILDERPLATFORM__/${BUILDER_TARGET}/g" \
+        -e "s/__SCRIPT_NAME__/${SCRIPT_NAME}/g" \
+        -e "s/__WITHLICENSE__/${WITHLICENSE}/g" \
+        -e "s/__GETLIC_INFO__/${GETLIC_INFO_NAME}/g" \
+        -e "s/__PERFORM_JAVA_CHECK__/${PERFORM_JAVA_CHECK}/g" \
+        -e "s/__OUTPUTDIR__/${OUTPUTDIR}/g" ${TMPL_PROJECTFILE} > ${PATCHED_PROJECTFILE}
+
+   echo ${OSPL_BUILDER} build ${PATCHED_PROJECTFILE} ${BUILDER_TARGET}
+   ${OSPL_BUILDER} build ${PATCHED_PROJECTFILE} ${BUILDER_TARGET}
+fi

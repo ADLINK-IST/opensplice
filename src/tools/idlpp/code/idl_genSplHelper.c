@@ -1,0 +1,250 @@
+#include "idl_genSplHelper.h"
+#include "idl_tmplExp.h"
+
+#include <os_stdlib.h>
+
+/* Print the specified indentation the the default output file,
+   the indent is specified in units of 4 space characters
+*/
+void
+idl_printIndent (
+    c_long indent)
+{
+    c_long i;
+
+    for (i = 0; i < indent; i++) {
+        idl_fileOutPrintf (idl_fileCur(), "    ");
+    }
+}
+
+/* Return the type name from its type specification */
+c_char *
+idl_typeFromTypeSpec (
+    const idl_typeSpec typeSpec)
+{
+    return idl_typeSpecName(typeSpec);
+}
+
+/* Return the scoped type name where for the user types,
+   scopes are separated by "_" chracters.
+*/
+c_char *
+idl_scopedTypeName (
+    const idl_typeSpec typeSpec)
+{
+    const char *scopedTypeName;
+
+    /* QAC EXPECT 3416; No unexpected side effects here */
+    if (idl_typeSpecType(typeSpec) == idl_tseq) {
+	/* Sequences map to c_array */
+	scopedTypeName = "c_array";
+        /* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+	/* For basic types take the corresponding type name supported by the splice database */
+	/* QAC EXPECT 3416; No unexpected side effects here */
+	if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+	    /* in case of bounded string the type name must become c_string 	*/
+	    /* type name is of form "C_STRING<xx>"				*/
+	    scopedTypeName = "c_string";
+	} else {
+	    scopedTypeName = idl_typeSpecName(idl_typeSpec(typeSpec));
+	}
+    } else {
+	/* Build a name for user types from scope and its own name */
+	scopedTypeName = idl_scopeStack (
+            idl_typeUserScope(idl_typeUser(typeSpec)),
+            "_",
+            idl_typeSpecName(idl_typeSpec(typeSpec)));
+    }
+
+    return os_strdup(scopedTypeName);
+}
+
+/* Return the scoped type name where for the user types,
+   scopes are separated by "_" chracters.
+*/
+c_char *
+idl_scopedSplTypeName (
+    const idl_typeSpec typeSpec)
+{
+    char scopedTypeName[256];
+
+    /* QAC EXPECT 3416; No unexpected side effects here */
+    if (idl_typeSpecType(typeSpec) == idl_tseq) {
+	/* Sequences map to c_array */
+	strncpy (scopedTypeName, "c_array", sizeof(scopedTypeName));
+        /* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+	/* For basic types take the corresponding type name supported by the splice database */
+	/* QAC EXPECT 3416; No unexpected side effects here */
+	if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+	    /* in case of bounded string the type name must become c_string 	*/
+	    /* type name is of form "C_STRING<xx>"				*/
+	    strncpy (scopedTypeName, "c_string", sizeof(scopedTypeName));
+	} else {
+	    strncpy (scopedTypeName, idl_typeSpecName(idl_typeSpec(typeSpec)), sizeof(scopedTypeName));
+	}
+    } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
+	idl_typeSpecType(typeSpec) == idl_tunion) {
+	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "struct _%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+    } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
+	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "enum _%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+    } else {
+	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "_%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+    }
+
+    return os_strdup(scopedTypeName);
+}
+
+/* Return the scoped type specification where for the user types,
+   scopes are separated by "_" chracters. 
+   IDL strings (bounded and unbounded) are mapped on: c_string, other
+       basic types are mapped on corresponding splice types
+   IDL structures are identified by: struct <scoped-struct-name>
+   IDL unions are identified by: struct <scoped-union-name> becuase
+   the union mapping is:
+       struct <union-name> {
+           <tag-type> _d;
+	   union {
+		<union-case-specifications>
+	   } _u;
+	}
+    IDL enumerations are identified by: enum <scoped-enum-name>
+    IDL typedefs are formed by the scoped type name
+    IDL sequences are mapped on: c_array
+*/
+c_char *
+idl_scopedTypeIdent (
+    const idl_typeSpec typeSpec)
+{
+    c_char scopedTypeIdent[256];
+
+    /* QAC EXPECT 3416; No unexpected side effects here */
+    if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+	/* QAC EXPECT 3416; No unexpected side effects here */
+	if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_string");
+	} else {
+	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
+	        idl_typeSpecName(idl_typeSpec(typeSpec)));
+	}
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "enum %s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct %s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct %s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_array");
+    } else {
+	/* Do nothing, only to prevent dangling else-ifs QAC messages */
+    }
+
+    return os_strdup(scopedTypeIdent);
+}
+
+/* Return the scoped type specification where for the user types,
+   scopes are separated by "_" chracters. 
+   IDL strings (bounded and unbounded) are mapped on: c_string, other
+       basic types are mapped on corresponding splice types
+   IDL structures are identified by: struct <scoped-struct-name>
+   IDL unions are identified by: struct <scoped-union-name> becuase
+   the union mapping is:
+       struct <union-name> {
+           <tag-type> _d;
+	   union {
+		<union-case-specifications>
+	   } _u;
+	}
+    IDL enumerations are identified by: enum <scoped-enum-name>
+    IDL typedefs are formed by the scoped type name
+    IDL sequences are mapped on: c_array
+*/
+
+c_char *
+idl_scopedSplTypeIdent (
+    const idl_typeSpec typeSpec)
+{
+    c_char scopedTypeIdent[256];
+
+    /* QAC EXPECT 3416; No unexpected side effects here */
+    if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+	/* QAC EXPECT 3416; No unexpected side effects here */
+	if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_string");
+	} else {
+	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
+	        idl_typeSpecName(idl_typeSpec(typeSpec)));
+	}
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "enum _%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct _%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct _%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "_%s",
+	    idl_scopeStack (
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(idl_typeSpec(typeSpec))));
+	/* QAC EXPECT 3416; No unexpected side effects here */
+    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_array");
+    } else {
+	/* Do nothing, only to prevent dangling else-ifs QAC messages */
+    }
+
+    return os_strdup(scopedTypeIdent);
+}

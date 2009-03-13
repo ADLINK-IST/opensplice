@@ -1,0 +1,32 @@
+#ifndef NW__PLUGRECEIVECHANNEL_H_
+#define NW__PLUGRECEIVECHANNEL_H_
+
+#include "nw_plugReceiveChannel.h"
+#include "nw_plugChannel.h"
+#include "nw_plugPartitions.h"
+
+/* Constructor, to be called by plugNetwork only */
+
+nw_plugChannel nw_plugReceiveChannelNew(
+                   nw_seqNr seqNr,
+                   nw_networkId nodeId,
+                   nw_plugPartitions plugPartitions,
+                   nw_userData *userDataPtr,
+                   const char *pathName,
+                   nw_onFatalCallBack onFatal,
+                   c_voidp onFatalUsrData);                   
+
+void nw_plugReceiveChannelFree(
+                   nw_plugChannel channel);
+
+
+#ifdef _PROFILE_
+os_time *
+nw_plugReceiveChannelLastHolderTimestamps (
+    nw_plugChannel channel);
+os_time *
+nw_plugReceiveChannelLastBufferTimestamps (
+    nw_plugChannel channel);
+#endif
+
+#endif /*NW__PLUGRECEIVECHANNEL_H_*/

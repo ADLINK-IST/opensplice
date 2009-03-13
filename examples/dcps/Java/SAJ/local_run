@@ -1,0 +1,34 @@
+cd bld/$SPLICE_TARGET
+
+ospl start
+
+BLOKSIZE=100
+BLOKCOUNT=100
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar pong PongRead PongWrite&
+
+sleep 2
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar ping $BLOKSIZE $BLOKCOUNT m PongRead PongWrite
+
+sleep 2
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar ping $BLOKSIZE $BLOKCOUNT q PongRead PongWrite
+
+sleep 2
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar ping $BLOKSIZE $BLOKCOUNT s PongRead PongWrite
+
+sleep 2
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar ping $BLOKSIZE $BLOKCOUNT f PongRead PongWrite
+
+sleep 2
+
+java -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar ping 1 10 t PongRead PongWrite 
+
+sleep 4
+
+ospl stop
+
+cd ../..

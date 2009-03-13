@@ -1,0 +1,54 @@
+SPLICE_HOST=x86.linux2.6-purify
+SPLICE_TARGET=x86.linux2.6-purify
+export SPLICE_HOST SPLICE_TARGET
+
+# Set purify runtime options
+PURIFYOPTIONS="-add-suppression-files=$OSPL_HOME/etc/purify_suppress -append-logfile -chain-length=30 -max_threads=40"
+export PURIFYOPTIONS
+
+# setup environment
+. /opt/ospldev/gcc/v3.2.3/release.com
+. /opt/ospldev/gdb/v6.4/release.com
+. /opt/ospldev/ddd/v3.3.11/release.com
+. /opt/ospldev/make/v3.80/release.com
+. /opt/ospldev/bison/v1.875/release.com
+. /opt/ospldev/flex/v2.5.4/release.com
+. /opt/ospldev/JDK/v1.5.0_07/release.com
+. /opt/ospldev/tcl/v8.4.12/release.com
+. /opt/ospldev/tk/v8.4.12/release.com
+. /opt/ospldev/expect/v5.44.1/release.com
+. /opt/ospldev/gsoap/v2.7.8/release.com
+. /opt/ospldev/gawk/v3.1.5/release.com
+. /opt/ospldev/mico/v2.3.11/release.com
+#. /opt/ospldev/FLEXnet/v11.3/release.com
+. /opt/ospldev/BitRock/v5.4.2/x86.linux/release.com
+. /opt/ospldev/PurifyPlus/v7.0/release.com
+. /opt/ospldev/junit/v3.8.1/release.com
+. /opt/ospldev/openorb/v1.4.0/release.com
+. /opt/ospldev/ANTs/v3.60/release.com
+. /opt/ospldev/odbc/v2.2.12/release.com
+
+# setup TAO environment
+
+SPLICE_ORB=DDS_OpenFusion_1_4_1
+export SPLICE_ORB
+
+if [ "$SPLICE_ORB" = "DDS_OpenFusion_1_4_1" ]
+then
+  . /opt/ospldev/TAO/openFusion_1.4.1/release.com
+fi
+
+if [ "$SPLICE_ORB" = "DDS_ACE_TAO_1_4_1" ]
+then
+  . /opt/ospldev/ACE_wrappers/ACE-5.4.1+TAO-1.4.1/release.com
+fi
+
+# setup standalone CPP ORB environment
+
+SPLICE_SA_ORB=DDS_Eorb_3_0_SA
+export SPLICE_SA_ORB
+
+if [ "$SPLICE_SA_ORB" = "DDS_Eorb_3_0_SA" ]
+then
+. /opt/ospldev/eorb/v1.5.4dds_30_10_2007/release.com
+fi

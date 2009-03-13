@@ -1,0 +1,67 @@
+/*
+ * in_connectivityReaderFacade.h
+ *
+ */
+
+#ifndef IN_CONNECTIVITYREADERFACADE_H_
+#define IN_CONNECTIVITYREADERFACADE_H_
+
+
+#include "Coll_Set.h"
+
+#include "in_commonTypes.h"
+#include "in_ddsiElements.h"
+#include "in_connectivityReaderFacade.h"
+#include "in_connectivityPeerWriter.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+/* \brief mapping internal entity onto external ddsi entity  */
+
+
+/* The usual cast-method for class in_connectivityReaderFacade. Note that because
+ * in_connectivityReaderFacade does not contain any metadata there is no type checking
+ * performed.
+ */
+#define in_connectivityReaderFacade(facade) ((in_connectivityReaderFacade)facade)
+
+/**
+ * Calls the destructor of the parent class. When the reference count of the
+ * base object reaches 0, the deinitializer is called automatically.
+ */
+#define in_connectivityReaderFacadeFree(c) in_objectFree(in_object(c))
+
+#define in_connectivityReaderFacadeKeep(c) in_objectKeep(in_object(c))
+
+#define in_connectivityReaderFacadeIsValid(c) \
+    in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_READER_FACADE)
+
+in_connectivityReaderFacade
+in_connectivityReaderFacadeNew(
+    struct v_subscriptionInfo *info);
+
+in_result
+in_connectivityReaderFacadeAddMatchedPeer(
+    in_connectivityReaderFacade _this,
+    in_connectivityPeerWriter peer);
+
+in_result
+in_connectivityReaderFacadeRemoveMatchedPeer(
+    in_connectivityReaderFacade _this,
+    in_connectivityPeerWriter peer);
+
+struct v_subscriptionInfo *
+in_connectivityReaderFacadeGetInfo(
+    in_connectivityReaderFacade _this);
+
+Coll_Set*
+in_connectivityReaderFacadeGetMatchedWriters(
+    in_connectivityReaderFacade _this);
+
+#if defined (__cplusplus)
+}
+#endif
+
+#endif /* IN_CONNECTIVITYREADERFACADE_H_ */

@@ -1,0 +1,8 @@
+# Get path to this script
+OSPL_HOME=`dirname $0`
+# Make relative paths absolute by prefixing pwd
+( echo $OSPL_HOME | grep '^/' > /dev/null ) || OSPL_HOME=`pwd`/$OSPL_HOME
+
+#Remove any /./'s from path and trailing /.
+OSPL_HOME=`echo $OSPL_HOME | sed 's@/\./@/@g'`
+OSPL_HOME=`echo $OSPL_HOME | sed 's@/\.$@@g'`

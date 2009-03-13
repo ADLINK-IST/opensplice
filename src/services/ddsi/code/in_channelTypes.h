@@ -1,0 +1,23 @@
+/* Prevent failure due to multiple inclusion of this file. */
+#ifndef IN_CHANNEL_TYPES_H
+#define IN_CHANNEL_TYPES_H
+
+/* OS abstraction includes. */
+#include "os_defs.h"
+#include "os_classbase.h"
+#include "os_stdlib.h"
+/**
+ * Allow usage of this C code from C++ code.
+ */
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
+
+/* Close the brace that allows the usage of this code in C++. */
+#if defined (__cplusplus)
+}
+#endif
+
+#endif /* IN_CHANNEL_TYPES_H */

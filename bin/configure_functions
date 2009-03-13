@@ -1,0 +1,261 @@
+print_usage () 
+{
+    echo "usage: configure [options] [target-type]"
+    echo "-? : print this message"
+    echo "If no target-type is specified the target-types" \
+         "are listed to choose from."
+}
+
+source_package_info ()
+{
+   . $OSPL_HOME/release_info/RELEASE
+   export PACKAGE_VERSION
+
+   echo
+   echo "Setup for ${PACKAGE_NAME} - Version ${PACKAGE_VERSION} - Date ${PACKAGE_DATE}"
+   echo 
+}
+
+set_home ()
+{
+   OSPL_HOME=`pwd`
+}
+
+reset_old_vars ()
+{
+   OLD_SPLICE_BIN_PATH=${SPLICE_BIN_PATH}
+   OLD_SPLICE_EXEC_PATH=${SPLICE_EXEC_PATH}
+   OLD_SPLICE_LIBRARY_PATH=${SPLICE_LIBRARY_PATH}
+   OLD_SPLICE_TEST_LIBRARY_PATH=${SPLICE_LIBRARY_TEST_PATH}
+
+   SPLICE_TARGET=
+   if [ "$1" != "KEEP_OSPL_HOME" ]
+   then
+      OSPL_HOME=
+   fi
+   SPLICE_ORB=
+}
+
+print_setup ()
+{
+    echo
+    echo "SPLICE_TARGET =" $SPLICE_TARGET
+    echo "SPLICE_HOST =" $SPLICE_HOST
+    echo "OSPL_HOME =" $OSPL_HOME
+    echo "SPLICE_ORB =" $SPLICE_ORB
+}
+
+display_and_get_target ()
+{
+    while [ -z "$SPLICE_TARGET" ]
+    do
+        echo "Available targets are:"
+        n=1
+        for i in $SELECTED_TARGETS
+        do
+            echo $n ">" $i
+            n=`expr $n + 1`
+        done
+        echo -n "Please select a target number:"
+        read ARGUMENT
+        n=1
+        for i in $SELECTED_TARGETS
+        do
+            if [ "$n" = "$ARGUMENT" ]
+            then
+                SPLICE_TARGET=$i
+            fi
+            n=`expr $n + 1`
+        done
+        if [ -z "$SPLICE_TARGET" ]
+        then
+            echo
+            echo "Invalid selection, try again!"
+        fi
+    done
+}
+
+get_avail_targets ()
+{
+    ENV_DIR="$1/setup/environment"
+
+    TARGETS=`ls $ENV_DIR`
+    # Remove uninteresting targets
+    host=`uname -s`
+    for target in $TARGETS
+    do
+        case $host in
+        Linux)
+            required_host=`grep "SPLICE_HOST=.*linux" $ENV_DIR/$target`
+            if [ -n "$required_host" ]
+            then
+                SELECTED_TARGETS="$SELECTED_TARGETS $target"
+            fi
+        ;;
+        SunOS)
+            os_version=`uname -r`
+            os_number=`echo $os_version | sed 's/.*\.//'`
+            required_host=`grep "SPLICE_HOST=.*solaris$os_number" $ENV_DIR/$target`
+            if [ -n "$required_host" ]
+            then
+                SELECTED_TARGETS="$SELECTED_TARGETS $target"
+            fi
+        ;;
+        AIX)    
+            required_host=`grep "SPLICE_HOST=.*AIX" $ENV_DIR/$target`
+            if [ -n "$required_host" ]
+            then
+                SELECTED_TARGETS="$SELECTED_TARGETS $target"
+            fi
+        ;;
+        CYGWIN*)
+            CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
+            export CYGWIN_INSTALL_DRIVE
+            required_host=`grep "SPLICE_HOST=.*win32" $ENV_DIR/$target`
+            if [ -n "$required_host" ]
+            then
+                SELECTED_TARGETS="$SELECTED_TARGETS $target"
+            fi
+        ;;
+        *)
+            SELECTED_TARGETS="$SELECTED_TARGETS $target"
+        ;;
+        esac
+    done
+    export SELECTED_TARGETS
+}
+
+set_target_alternate ()
+{
+    while [ $# -gt 0 ]
+    do
+        case $1 in
+            -I)
+                shift 1
+                FIRST_HOME=$1
+                shift 1
+                ;;
+            -O)
+                shift 1
+                SECOND_HOME=$1
+                shift 1
+                ;;
+            -T)
+                shift 1
+                TARGET_ARG=$1
+                shift 1
+                ;;
+        esac
+    done
+
+    SPLICE_TARGET=$TARGET_ARG
+    if [ ! -z "$SPLICE_PLATFORM" ]
+    then
+        SPLICE_TARGET=$SPLICE_PLATFORM
+    fi
+
+    if [ ! -f $FIRST_HOME/setup/environment/${SPLICE_TARGET} -a \
+        ! -f $SECOND_HOME/setup/environment/${SPLICE_TARGET} ]
+    then
+	    echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
+        echo
+        return 1
+    fi
+}
+
+setup_pathed_vars ()
+{
+    SPLICE_BIN_PATH=${OSPL_HOME}/bin
+    if [ -n "${OLD_SPLICE_BIN_PATH}" ]
+    then
+        PATH=`echo ${PATH} | \
+            sed "s#${OLD_SPLICE_BIN_PATH}:##"`
+    fi
+    PATH=${SPLICE_BIN_PATH}:${PATH}
+    export SPLICE_BIN_PATH PATH
+    
+    SPLICE_EXEC_PATH=${OSPL_HOME}/exec/${SPLICE_TARGET}
+    if [ -n "${OLD_SPLICE_EXEC_PATH}" ]
+    then
+        PATH=`echo ${PATH} | \
+            sed "s#${OLD_SPLICE_EXEC_PATH}:##"`
+    fi
+    PATH=${SPLICE_EXEC_PATH}:${PATH}
+    export SPLICE_EXEC_PATH PATH
+    
+    SPLICE_LIBRARY_PATH=${OSPL_HOME}/lib/${SPLICE_TARGET}
+    if [ -n "${OLD_SPLICE_LIBRARY_PATH}" ]
+    then
+        LD_LIBRARY_PATH=`echo ${LD_LIBRARY_PATH} | \
+            sed "s#${OLD_SPLICE_LIBRARY_PATH}:##"`
+    fi
+    LD_LIBRARY_PATH=${SPLICE_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+    export SPLICE_LIBRARY_PATH LD_LIBRARY_PATH
+    
+    if [ -n "$OSPL_OUTER_HOME" ]
+    then 
+        SPLICE_LIBRARY_TEST_PATH=${OSPL_OUTER_HOME}/testsuite/lib/${SPLICE_TARGET}
+        if [ -n "${OLD_SPLICE_LIBRARY_TEST_PATH}" ]
+        then
+            LD_LIBRARY_PATH=`echo ${LD_LIBRARY_PATH} | \
+                sed "s#${OLD_SPLICE_LIBRARY_TEST_PATH}:##"`
+        fi
+        LD_LIBRARY_PATH=${SPLICE_LIBRARY_TEST_PATH}:${LD_LIBRARY_PATH}
+        export SPLICE_LIBRARY_TEST_PATH 
+    fi
+    export LD_LIBRARY_PATH
+    
+    if [ "_${SPLICE_HOST}" != "_${SPLICE_TARGET}" ]
+    then
+        if [ -n "${OLD_SPLICE_HOST}" ]
+        then
+            LD_LIBRARY_PATH=`echo ${LD_LIBRARY_PATH} | \
+                sed "s#${OSPL_HOME}/lib/${OLD_SPLICE_HOST}:##"`
+            PATH=`echo ${PATH} | \
+                sed "s#${OSPL_HOME}/exec/${OLD_SPLICE_HOST}:##"`
+        fi
+        
+        LD_LIBRARY_PATH=${OSPL_HOME}/lib/${SPLICE_HOST}:${LD_LIBRARY_PATH}
+        PATH=${OSPL_HOME}/exec/${SPLICE_HOST}:${PATH}
+        export LD_LIBRARY_PATH PATH
+    fi
+
+}
+
+export_vars ()
+{
+    export OSPL_HOME 
+    export SPLICE_TARGET
+
+    OSPL_TMPL_PATH=${OSPL_HOME}/etc/idlpp
+    case $host in
+        CYGWIN_NT*)
+            OSPL_TMPL_PATH=`cygpath -d $OSPL_HOME/etc/idlpp`
+            ;;
+    esac
+    export OSPL_TMPL_PATH
+}
+
+cleanup ()
+{
+    unset ARGUMENT 
+    unset TARGETS 
+    unset target 
+    unset i 
+    unset n
+    unset OLD_SPLICE_BIN_PATH 
+    unset OLD_SPLICE_EXEC_PATH 
+    unset OLD_SPLICE_LIBRARY_PATH
+    unset SELECTED_TARGETS
+    unset ENV_DIR
+
+    unset print_usage 
+    unset reset_old_vars
+    unset set_home
+    unset source_package_info
+    unset get_avail_targets
+    unset display_and_get_target
+    unset set_target_alternate
+    unset export_vars
+    unset cleanup
+}

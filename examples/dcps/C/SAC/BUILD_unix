@@ -1,0 +1,40 @@
+C_COMP=`which gcc 2> /dev/null`
+if [ -z "$C_COMP" ]
+then
+    echo "Setup the C environment first"
+    exit
+fi
+
+SPLICE_COMP=`which idlpp 2> /dev/null`
+if [ -z "$SPLICE_COMP" ]
+then
+    echo "Setup the SPLICE environment first"
+    exit
+fi
+
+mkdir -p bld
+mkdir -p exec
+cd bld
+
+echo "Compiling IDL with SPLICE IDL compiler"
+idlpp -S -l c ../pingpong.idl
+
+echo "Compiling SAC User Types support code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c pingpongSacDcps.c
+
+echo "Compiling SPLICE User Types support code"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c pingpongSplDcps.c
+
+echo "Compiling PING"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../ping.c
+
+echo "Compiling PONG"
+gcc -g -I./ -I$OSPL_HOME/include/dcps/C/SAC -c ../pong.c
+
+echo "Linking PING"
+gcc -o ../exec/ping -L$OSPL_HOME/lib ping.o pingpongSacDcps.o pingpongSplDcps.o -lddsdatabase -ldcpssac
+
+echo "Linking PONG"
+gcc -o ../exec/pong -L$OSPL_HOME/lib pong.o pingpongSacDcps.o pingpongSplDcps.o -lddsdatabase -ldcpssac
+
+cd ..

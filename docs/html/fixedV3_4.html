@@ -1,0 +1,803 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.4</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.4</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.4<br>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds147
+          </td>
+          <td>
+            <b>
+              idlpp generates incorrect C++ code for typedef of sequence of typedef
+              of sequence
+            </b><br>
+            <i>
+              idlpp generates incorrect C++ code for the following construction:
+              <pre><code>
+              typedef sequence&lt;InterRunwayInfo&gt; InterRunwayInfoList;
+              typedef sequence&lt;InterRunwayInfoList&gt; InterRunwayInfoListList;
+              </code></pre>
+              Rewriting to the following equivalent results in correct code:
+              <pre><code>
+              typedef sequence&lt;InterRunwayInfo&gt; InterRunwayInfoList;
+              typedef sequence&lt; sequence&lt;InterRunwayInfo&gt; &gt; InterRunwayInfoListList;
+              </code></pre>
+              <b>Solution:</b> The code generator for the copy-out and copy-in routines has been
+              fixed to generate the correct code.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds148
+          </td>
+          <td>
+            <b>idlpp generates incorrect C++ code for typedef of typedef of sequence</b><br>
+            <i>
+              Incorrect C++ code is generated for the following IDL definition:
+              <pre><code>
+              typedef sequence&lt;AvBsut::LatLong2DPosition&gt; LatLong2DPositionList;
+              typedef AvBsut::LatLong2DPositionList HPositionList; //usual name
+              </code></pre>
+              Rewriting this construction to the following equivalent does work fine:
+              <pre><code>
+              typedef sequence&lt;AvBsut::LatLong2DPosition&gt; HPositionList; //usual name
+              </code></pre>
+              <b>Solution:</b> The code generator for the copy-out routines has been fixed
+              to generate the correct code.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds149
+          </td>
+          <td>
+            <b>
+              idlpp generates incorrect C++ code for union types with non-primitive
+              branch type(s)
+            </b><br>
+            <i>
+              When an IDL union is defined with one of its branches a non-primitive type,
+              the generated C++ copy-out routine will lead to a segmentation fault. <br>
+              The copy-out routine calls the getter of a branch on an allocated union 
+              (allocated with default constructor), which returns a null pointer. According
+              the IDL to C++ mapping this is valid as the union member does not need to be
+              initialized (e.g. TAO performs a memset(0) as initialization). <br>
+              <b>Solution:</b> The code generator for the copy-out routine has been
+              fixed, so the getter of the branch is not called anymore. Instead the branch
+              is allocated and then the setter is used to set the appropriate branch in the
+              union.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4689<br>
+            dds407
+          </td>
+          <td>
+            <b>set_listener on participant containing contentfilteredtopic crashes</b><br>
+            <i>
+              When a listener is installed on a DomainParticipant (for inconsistent topic)
+              and the DomainParticipant contains ContentFilteredTopics then the set_listener
+              operation leads to a segmentation violation. <br>
+              <b>Solution:</b> setting a listener for inconsistent topics on a DomainParticipant
+              conceptually means setting a listener on the status of all topics created by the
+              DomainParticipant. In the DCPS API implementation this action was also performed
+              on ContentFilteredTopic's, which doesn't have a status. This action has been removed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds542
+          </td>
+          <td>
+            <b>
+              DCPS SAJ: Build of copy cache does not deal with java keywords correctly
+            </b><br>
+            <i>
+              example:
+              <pre><code>
+              struct aTopic{
+                  string class;//class is a java keyword
+              };
+              </code></pre>
+              The above idl code generates correct code with idlpp (i.e. a struct with a 
+              field "_class"), however if we attempt to register this type an error 
+              occurs. During the building of the copy cache such key words are not prefixed
+              at all, so during the build copy cache it will attempt to find a field with the
+              name "class", but only a field with the name "_class" is available. This will
+              result in an error. However the error might not appear directly, but later
+              during for example a read or write call. <br>
+              <b>Solution:</b> the generic copy routines in the SAJ implementation have been
+              adapted to cope with java keywords.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds663
+          </td>
+          <td>
+            <b>calling register_instance can crash application</b><br>
+            <i>
+              Calling register_instance() can crash your application in the
+              following scenario. Suppose we have a reliable writer with
+              history settings KEEPLAST and depth=1. The writer publishes in
+              a partition called A. The networking service has a reader for
+              all partitions, so also for partition A. The networking reader
+              has a fixed (configurable) cache size. When the cache is exceeded
+              the networking reader will reject the sample. As a consequence
+              the writer should store the data in it's history buffer and resent
+              it later. When the writer has already written the instance before
+              it will see the rejection but will not return the instance handle,
+              which consequently causes a crash in the upper layers.<br>
+              <b>Solution:</b> the writer now also returns the instance handle when
+              the registration is rejected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5412<br>
+            dds750
+          </td>
+          <td>
+            <b>suspend_publications - writer stores samples which are too old</b><br>
+            <i>
+              First DDS_Publisher_suspend_publications is called when the process is
+              put in hotstandby. Then the writer writes more than one sample per
+              instance. Then after some time DDS_Publisher_resume_publications is
+              called to put the process in operation. In this case a reader receives
+              samples that are too old, e.g. which should be discarded because of the
+              expiry of the autopurge_suspended_samples_delay. It seems that the
+              autopurge_suspended_samples_delay affects only instances and not the
+              samples within that instance.<br>
+              For hotstandby writers the following QosPolicies apply:
+              <ul>
+                <li>resource_limits.max_samples = 1000</li>
+                <li>resource_limits.max_instances = unlimited</li>
+                <li>resource_limits.max_samples_per_instance = 1000</li>
+                <li>writer_data_lifecycle.autopurge_suspended_instance_delay = 1 sec</li>
+              </ul>
+              <b>Solution:</b> The algorithm to determine which samples should be purged
+              was incorrect and has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds800
+          </td>
+          <td>
+            <b>Attempt to create built-in topic while entity creation already failed</b><br>
+            <i>
+              Attempt to create a builtin topic while the entity creation already failed, due to
+              an inconsistent QoS, results in an error report in ospl-error.log. <br>
+              <b>Solution:</b> The algorithm of creating an entity has been adapted. The QoS
+              consistency is now performed before the entity is created. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds801
+          </td>
+          <td>
+            <b>inconsistent topic not detected when inconsistent QoS</b><br>
+            <i>
+              When a topic is created on a different node with different QoS settings, this will
+              not result in an inconsistent topic notification. <br>
+              <b>Solution:</b> the splicedaemon is responsible for checking topic consistency, the
+              qos consistency checking is added to this responsibility.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds812
+          </td>
+          <td>
+            <b>
+              Problem with QoS setting combination: history QoS 'KEEP_ALL', 
+              resource_limits.max_samples_per_instance to '1' as writer QoS
+            </b><br>
+            <i>
+              OpenSplice DDS misbehaves when specifying a writer QoS of 'KEEP_ALL' and
+              limiting the resources to 1 sample per instance. This misbehavior caused
+              repeated time outs when writing a sample of a specific instance which was
+              successfully written before. The following scenario illustrates:
+              <ul>
+                <li>Writer history QoS: KEEP_ALL</li>
+                <li>Writer resource_limits QoS: max_samples_per_instance 1</li>
+                <li>Application uses a total of 50,000 instances</li>
+                <li>
+                  Application writes 2400 samples (1 sample for 2400 different instances)
+                  every 40 milliseconds, thus 60,000 samples per second. It cycles through
+                  the list of 50,000 instances. Each write action the instance number is
+                  increased by 1. By using MaxBurstSize the speed is reduced to 35000
+                  samples per second, time out period is set to default. As a result of
+                  this setting we will see that the writer slows down when all queues are
+                  full.
+                </li>
+                <li>
+                  After 2-3 times writing all instances once, a timeout occurs for a
+                  specific instance. The application then tries to write that instance again
+                  and again until it is successful, but never is...
+                </li>
+              </ul>
+              Problem: Once the instance starts to timeout it does not seem to recover at all.
+              Note that a few 'early' timeouts ARE recovered from, it is a timeout in the 2nd
+              or 3rd loop over the instances which causes this issue.<br>
+              <b>Solution:</b> an incorrect internal writer instance state caused the problem
+              that the samples were not resent anymore. This has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds814
+          </td>
+          <td>
+            <b>Increase kernel resend frequency from 5  Hz to 20 Hz</b><br>
+            <i>
+              Samples that are stored in the writer-history, after being rejected
+              by a datareader (e.g. NetworkDataReader) are being resend by a seperate
+              resend thread. This thread currently retries at a frequency of 5 Hz. To
+              minimize latency and NetworkQueueSize while still maintaining maximum
+              throughput, this frequency should be increased to 20 Hz.<br>
+              <b>Solution:</b> frequency has been increased.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds815
+          </td>
+          <td>
+            <b>Proper Error-logging missing when Networking shuts down due to fatal error.</b><br>
+            <i>
+              When the networking runs out of the maximum configured number of Defrag-buffers,
+              it will shutdown the networking service. This will however not always be reported
+              correctly in the error-log. <br>
+              <b>Solution:</b> problem has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds816
+          </td>
+          <td>
+            <b>Networking service: stability problems in overload situations</b><br>
+            <i>
+              There is a reference counting problem in the networking service. In overload
+              situations a reference counter in the defragmentation administration is decremented
+              too early, resulting in a release of a buffer that is still in use. This may lead to
+              instabilities of the networking service. <br>
+              <b>Solution:</b> the reference counting problem has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds824
+          </td>
+          <td>
+            <b>
+              Networking service improvement by asynchronous database insertion option
+            </b><br>
+            <i>
+              The receiving part of a network channel has a thread responsible for receiving data from the
+              network, demarshalling it and inserting it into the OpenSplice DDS database. The channel
+              throughput can be increased by dividing the work load over multiple threads. The additional
+              thread will be responsible for inserting the data into the reader(s) cache.<br>
+              <b>Solution:</b> Each receiving channel is by default configured without this additional thread.
+              To enable the additional thread add the following line into the receiving part of the channel
+              configuration:
+              <pre><code>
+&lt;Channel&gt;
+  &lt;Receiving&gt;
+    &lt;SMPOptimization enabled="true"/&gt;
+  &lt;/Receiving&gt
+&lt;/Channel&gt;
+              </code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5534<br>
+            dds836
+          </td>
+          <td>
+            <b>durability memPartAlloc fails</b><br>
+            <i>
+              Startup of durability on a PPC604 node reports a memPartAlloc failure.<br>
+              The VxWorks scheduling priority of the durability main thread is set to 253.<br>
+              The VxWorks scheduling priority of the durability watchdog thread is set to 66.<br>
+              If the durability watchdog thread priority setting is removed, the memPartAlloc
+              failure is not reported.<br>
+              <b>Solution:</b> This problem is related to the incorrect initialization of thread
+              attributes, which resulted in an incorrect stack size to be requested for a thread. The
+              initialization has been corrected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds838
+          </td>
+          <td>
+            <b>Order preservation while resending data from the writer-history</b><br>
+            <i>
+              When a writer is unable to deliver a sample to every reader (e.g. NetworkReader,
+              because the NetworkQueue is full) the message is stored in the writer-history,
+              and will be scheduled for a resend. When a new sample is written, while there are
+              still samples scheduled to be resent in the writer-history, the writer will try
+              to send this new sample to all readers. Thus this new sample may arrive earlier
+              at the reader than the sample that is scheduled to be resent. This violates the
+              order-preservation.<br>
+              The writer should always check if there are samples scheduled to be resent and
+              if so, make sure that the new sample is send after the scheduled samples have
+              been resent. <br>
+              <b>Solution:</b> ordering is now also preserved when samples have to be resent.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds840
+          </td>
+          <td>
+            <b>Abort resending from writer-history on the first rejected sample.</b><br>
+            <i>
+              When samples are resend from the writer history, the resend thread tries to
+              resend every sample in the history of a writer even if a previous sample was
+              rejected by a reader (e.g. the reader of the networking service). This is
+              inefficient (since once a sample is rejected it is very likely the next
+              sample is also rejected), but it also breaks the order preservation. The
+              correct behavior is to stop resending for this writer and wait for the next
+              scheduled resend to try again.<br>
+              <b>Solution:</b> Resending from the writer history is now stopped when the 
+              first sample is rejected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds841
+          </td>
+          <td>
+            <b>Networking: ResolutionTime interval not correct under MaxBurstSize overload</b><br>
+            <i>
+              Normally the output per networking channel is limited by MaxBurstSize bytes per
+              ResolutionTime interval. However, if this boundary is reached the determination
+              of the next ResolutionTime interval is no longer correct, and will be longer than
+              the configured amount, resulting in a  drop in maximum output to below the desired
+              level. The resolutionTime interval should be maintained at the configured level,
+              also under overload situations. <br>
+              <b>Solution:</b> the calculation of the next ResolutionTime has been adapted to ensure
+              correct timing.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds849
+          </td>
+          <td>
+            <b>Improve networking robustness by auto-throttling on reliable channels</b><br>
+            <i>
+              If the networking service structurally receives more data through the network than it
+              can process and insert into the database, it will run out of the configured
+              defragmentation buffers. At that point it can no longer keep up the reliability of
+              reliable channels and it will terminate itself, thereby disconnecting the node from the
+              network.<br>
+              To prevent such an overload situation, senders in the network should throttle down their
+              output rate to a level, where each node in the network is able to process and insert all
+              data that it receives from the network. <br>
+              <b>Solution:</b> The wire protocol of the networking service has been adapted in order to
+              to automatically throttle up or down the sending rate depending on the capabilities of the
+              receiver. Auto-throttling can be configured with the following parameters in the sending part
+              of the channel configuration:<br>
+              <pre><code>
+&lt;Channel&gt;
+  &lt;Sending&gt;
+    &lt;ThrottleLimit&gt;10000&lt;/ThrottleLimit&gt;
+  &lt;/Sending&gt
+&lt;/Channel&gt;
+              </code></pre>
+              The ThrottleLimit defines the lower limit of the throttle range, which specifies the minimum 
+              number of bytes sent per Resolution tick. Setting the ThrottleLimit to
+              the same value as the MaxBurstSize (which is upper limit of the throttle range, also in bytes
+              per Resolution tick), disables auto-throttling<br>
+              As a result the default values had to be changed to fit the auto-throttling capability:
+              <ul>
+                <li>
+                  Channels/Channel/Receiving/ReceiveBufferSize: default value changed from 65,500 to 1,000,000.
+                </li>
+                <li>
+                  Channels/Channel/Receiving/DefragBufferSize: default value changed from 1,000 to 5,000 for 
+                  best-effort channels and to 100,000 for reliable channels.
+                </li>
+                <li>
+                  Channels/Channel/Sending/MaxBurstSize: Default value changed from 4,000 to 200,000.
+                </li>
+                <li>
+                  Channels/Channel/Sending/RecoveryFactor: default value changed from 50 to 3. Minimimum
+                  configurable value is now 2.
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5539<br>
+            dds851
+          </td>
+          <td>
+            <b>Fatal crash using Listeners in Windows C version of OpenSplice</b><br>
+            <i>
+              There appears to be a problem in the OpenSplice V3.3 DDS on Windows with using C
+              Listeners. If the on_data_on_readers listener function or on_sample_lost listener
+              function is assigned, the application crashes. This problem can be easily
+              reproduced with the following code:
+              <pre><code>
+int _tmain(int argc, _TCHAR* argv[])
+{
+    DDS_DomainParticipantListener* listener = DDS_DomainParticipantListener__alloc();
+    Listener->on_data_on_readers = my_on_data_on_readers; //Needs to be declared!
+    DDS_free(listener);
+    return 0;
+}
+              </code></pre>
+              If you change the error line for on_sample_lost, it will also crash. However,
+              changing it for any other event works fine. <br>
+              <b>Solution:</b> not enough memory was allocated for the listener object, causing
+              the application to crash on the free operation.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5558<br>
+            dds853
+          </td>
+          <td>
+            <b>idlpp silently gives up on very large IDL file</b><br>
+            <i>
+              We have an IDL file that contains 1205 topics. idlpp stops generating
+              code after 1019 topics without any warning or error. idlpp is called with:<br>
+              <code>idlpp -I/opt/core-dds/infralib/2.0.3/include -S -l java -o dds-types S142MODULE.idl</code>
+              <br>
+              <b>Solution:</b> the handle to one of the file descriptors was closed conditionally. The file
+              handle is now always closed, so all the generated code is written to disc.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds861
+          </td>
+          <td>
+            <b>
+              Compiling C++ API shows warnings about additional ';' characters after the bodies of
+              some functions
+            </b><br>
+            <i>
+              In some of the idlpp templates the body of the function ends with ';'. For example in
+              corbaCxxClassBody:
+              <pre><code>
+DDS_API DDS::DataWriter_ptr 
+$(scopedtypename)TypeSupportFactory::create_datawriter (gapi_dataWriter handle)
+{
+    return new $(scopedtypename)DataWriter_impl(handle);
+};
+              </code></pre>
+              Also the C++ API implementation files contain these constructions.<br>
+              <b>Solution:</b> all redundant ';' characters have been removed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds863
+          </td>
+          <td>
+            <b>the cmsoap service does not stop when the daemon is stopped</b><br>
+            <i>
+              When we want to stop OpenSplice DDS (ospl -a stop) and the cmsoap service
+              running, the cmsoap service doesn't stop. <br>
+              <b>Solution:</b> Problem in the abstraction layer in the function to wait
+              for a thread being terminated has been fixed.
+            </i>
+          </td>
+        </tr>        
+        <tr>
+          <td>
+            dds864
+          </td>
+          <td>
+            <b>Configuration file: change default for &lt;lease&gt;&lt;expiryTime&gt;</b><br>
+            <i>
+              The current default setting for the lease expirytime (5 seconds) and update
+              factor (0.5) is too small when running the services in non-realtime. As a
+              result in high load scenario's the services will terminate when the splicedaemon
+              is not able to renew its lease. <br>
+              <b>Solution:</b> the default settings are now set to 60 seconds for expirytime and
+              an update factor of 0.05 (effectively meaning that the lease is renewed every
+              0.05*60=3 seconds). If no lease update is received for 60 seconds then the services
+              will terminate. In timesharing this should be sufficient even in high load
+              scenario's.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds869
+          </td>
+          <td>
+            <b>Services do not initialize QoS correctly</b><br>
+            <i>
+              All services (splicedaemon, networking, durability, cmsoap) do not correctly initialize
+              their QoS. As a result clicking on the QoS-tab of a service in the Tuner leads to
+              closing the service information window.<br>
+              <b>Solution:</b> the QoS initialization has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds872
+          </td>
+          <td>
+            <b>
+              Networking: error in case of best effort data and no avail buffers repeatedly reported
+              and shouldnt be an error
+            </b><br>
+            <i>
+              When the networking service has no more 'defragmentation' buffers left for a best effort
+              channel, it will try to recover by using the following mechanism:
+              <ul>
+                <li>
+                  try to garbage collect old and incomplete buffers. These are buffers received earlier
+                  but containing incomplete messages (i.e. more buffers are needed to complete the message
+                  and process it). If this succeeds it reports an error message in the error logfile stating
+                  dropped messages. 
+                </li>
+                <li>
+                  If the garbage collection does increase the available buffers (no incomplete buffers are
+                  present), then it will simply drop incoming data until the data it already read is
+                  processed first and defragmentation buffers become available again. It will report an 
+                  error message stating this has happened.
+                </li>
+              </ul>
+              There are two issues with this approach. First, the error messages are reported each time the
+              limit on the defragmentation buffers is reached, which can be many times in case of high frequency
+              data, flooding the error log. Second, these events are not errors at all! At most these messages
+              should be considered as warnings, as networking is simply using it's mechanisms to ensure it can
+              keep processing data without increasing memory usage (i.e. it will not continue to claim memory,
+              but halt when there is just too much data to process and drop a little of that data, after all it
+              is best effort).<br>
+              <b>Solution:</b>
+              <ul>
+                <li>
+                  The error messages have been changed to warnings and will now be reported in the info log.
+                </li>
+                <li>
+                  The messages will only be reported once to inform interested parties that this situation has
+                  occurred.
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds873
+          </td>
+          <td>
+            <b>
+              Networking: Garbage collecting of best effort defragmentation buffers assumes buffers could be
+              garbage collected
+            </b><br>
+            <i>
+              When networking runs out of defragmentation buffers for a best effort channel, it tries to garbage
+              collect defragbuffers that contain incomplete messages. It is assumed the garbage collection will
+              always make more buffers available, while sometimes there are no defragmentation buffers that
+              contain incomplete messages. This invalid assumption could cause a segmentation fault and
+              consequently a crash from the networking service.<br>
+              <b>Solution:</b> the assumption has been removed and if the number of available buffers is not
+              increased incoming messages are dropped until more buffers become available.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds874
+          </td>
+          <td>
+            <b>
+              Networking crashes or leaks memory when freeing defragmentation
+              buffers.
+            </b><br>
+            <i>
+              When networking tries to free defragmentation buffers (by discarding incomplete messages)
+              it can crash or leaks memory.<br>
+              <b>Solution:</b> the problem was caused by an incorrect condition, which has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds893
+          </td>
+          <td>
+            <b>Networking partitions result in warnings and incorrect behavior</b><br>
+            <i>
+              The problem occurs with the following testscenario containing 6 publishers and 6 subscribers
+              using 6 partitions on 6 different multicast addresses as shown below:
+              <ul>
+                <li>Node P1 publishing topic A on partition A at priority 0</li>
+                <li>Node P1 publishing topic B on partition B at priority 10</li>
+                <li>Node P2 publishing topic C on partition C at priority 0</li>
+                <li>Node P2 publishing topic D on partition D at priority 10</li>
+                <li>Node P3 publishing topic E on partition E at priority 0</li>
+                <li>Node P3 publishing topic F on partition F at priority 10</li>
+              </ul>
+              Node P1 is connected to partitions A&amp;B, P2 to C&amp;D, and P3 to E&amp;F. The
+              6 subscribers are allocated on 6 different nodes which are connected to only one partition.
+              Attempting to publish 40000 instances on each partition results in warnings in the ospl-info.log
+              stating “Received data from disconnected partition” when registering instances on all nodes which
+              are not connected to the partition. For example registering the 40000 instances on Topic B
+              (Partition B) I get thousands of these messages on all nodes except P1 and its associated
+              subscriber.<br>
+              This problem only occurs in case of reliable channels, as the published node tries to resend data
+              to nodes not connected to the partition.<br>
+              <b>Solution:</b> the networking service will only resend data to connected partitions.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds896
+          </td>
+          <td>
+            <b>Strength-based filtering at dataReader should occur outside the datareader-lock</b><br>
+            <i>
+              The current implementation of discarding lower strength data (ownership policy) locks
+              the datareader, while this is not needed. Performing this action without locking the
+              datareader, will cause less interference with other traffic for the same datareader.<br>
+              <b>Solution:</b> comparing the ownership of an incoming message with the current
+              owner of the instance is now executed without locking the datareader.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds899
+          </td>
+          <td>
+            <b>splicedaemon detection of node failure incorrect</b><br>
+            <i>
+              The splicedaemon sends heartbeats to notify other nodes of its existence. Both when a node
+              terminates or fails (crashes or connection failure, etc.) the heartbeat will be missed and
+              all other splicedaemons will check whether resources left by the departing node has to be
+              freed. The detection of missing a heartbeat is incorrect, causing low reactivity.<br>
+              <b>Solution:</b> The detection algorithm of missing a heartbeat has been adapted to increase
+              reactivity.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds900
+          </td>
+          <td>
+            <b>splicedaemon garbage collection takes too long</b><br>
+            <i>
+              The garbage collector of the splicedaemon is responsible for cleaning up resources in case a
+              node crashes or does not cleanly shutdown. The garbage collector is currently paced to reduce
+              CPU load.<br>
+              <b>Solution:</b> The pacing has been reduced to speed-up the availability of more resources.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds901
+          </td>
+          <td>
+            <b>Kernel: Removed invalid error report when working with ownership and different strength writers</b><br>
+            <i>
+              When we have a system with multiple writers working with exclusive ownership, different ownership
+              strength and writing the same instances, then the receiving node will discard the messages of
+              the weaker strength node for those instances. For each discarded message an internal error is
+              reported flooding the error report. This error report is also incorrect.<br>
+              <b>Solution:</b> The incorrect error report has been removed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds905
+          </td>
+          <td>
+            <b>Free of DomainParticipant with built-in subscriber leads to crash</b><br>
+            <i>
+              When the built-in subscriber of a domainparticipant has been used, freeing the participant
+              crashes the application. <br>
+              <b>Solution:</b> the problem has been corrected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds910
+          </td>
+          <td>
+            <b>Services should block signals</b><br>
+            <i>
+              OpenSplice services do not handle signals correctly. Sending a signal (like SIGINT or SIGQUIT)
+              now causes deadlocks in the service and therefore 'normal' termination by means of 'ospl stop'
+              fails afterwards.<br>
+              <b>Solution:</b> the services now ignore all signals, only when the splicedaemon terminates the
+              services are terminated.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        No changes were made affecting the API.
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

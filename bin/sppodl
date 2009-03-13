@@ -1,0 +1,19 @@
+options="-C -I. "
+odlpp_options=""
+if test $# -eq 0; then
+  echo "Usage: sppodl [<cpp_options>] <filename>"
+else
+  while test $# -ne 0
+  do
+    case $1 in
+    -m) odlpp_options="$odlpp_options $1";;
+    -*) options="$options $1";;
+    *)
+       cpp $options $1 $1.$$.odl
+       odlpp $odlpp_options $1.$$.odl
+       rm -f $1.$$.odl
+    ;;
+    esac
+    shift
+  done
+fi

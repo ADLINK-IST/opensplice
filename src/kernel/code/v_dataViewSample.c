@@ -1,0 +1,128 @@
+
+
+#include "v_dataViewSample.h"
+#include "v_dataViewInstance.h"
+#include "v_dataView.h"
+#include "v__reader.h"
+#include "v_time.h"
+#include "v_state.h"
+#define _EXTENT_
+#ifdef _EXTENT_
+#include "c_extent.h"
+#endif
+
+#define PRINT_REFCOUNT(functionName, sample)
+
+
+#ifdef EXTENDED_CHECKING
+void checkInstance(v_dataViewInstance instance, c_bool isNotEmpty);
+#define CHECK_INSTANCE(instance) checkInstance(instance, TRUE)
+#define CHECK_ZERO_INSTANCE(instance) checkInstance(instance, FALSE)
+#else
+#define CHECK_INSTANCE(instance)
+#define CHECK_ZERO_INSTANCE(instance)
+#endif
+
+
+v_dataViewSample
+v_dataViewSampleNew(
+    v_dataViewInstance instance,
+    v_readerSample masterSample)
+{
+    v_dataView dataView;
+    v_dataViewSample sample;
+
+    assert(instance != NULL);
+    assert(masterSample != NULL);
+    assert(C_TYPECHECK(masterSample,v_readerSample));
+
+    dataView = v_dataView(instance->dataView);
+#ifdef _EXTENT_
+    sample = v_dataViewSample(c_extentCreate(dataView->sampleExtent));
+#else
+    sample = v_dataViewSample(c_new(dataView->sampleType));
+#endif
+    v_readerSample(sample)->instance = (c_voidp)instance;
+#if 0
+    /* must be a bug because NEW is an instance state and
+     * not a sample state. */
+
+    v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
+#else
+    v_readerSample(sample)->sampleState = 0;
+#endif
+    v_dataViewSampleList(sample)->next = NULL;
+    v_dataViewSampleList(sample)->prev = NULL;
+    sample->prev = NULL;
+    v_dataViewSampleTemplate(sample)->sample = c_keep(masterSample);
+    return sample;
+}
+
+
+void
+v_dataViewSampleFree(
+    v_dataViewSample sample)
+{
+    assert(sample != NULL);
+    assert(C_TYPECHECK(sample, v_dataViewSample));
+    
+ PRINT_REFCOUNT(v_dataViewSampleFree, sample);
+    /* Free the slave-samples as well */
+
+ PRINT_REFCOUNT(v_dataViewSampleFree, sample);
+}
+
+void
+v_dataViewSampleRemove(
+    v_dataViewSample sample)
+{
+    v_dataViewInstance instance;
+
+    assert(C_TYPECHECK(sample,v_dataViewSample));
+
+    instance = v_dataViewInstance(v_readerSample(sample)->instance);
+    CHECK_INSTANCE(instance);
+
+    if (instance->sampleCount > 1) {
+        if (sample->next != NULL) {
+            v_dataViewSample(sample->next)->prev = sample->prev;
+        } else {
+            v_dataViewInstanceTemplate(instance)->sample = sample->prev;
+        }
+        if (sample->prev != NULL) {
+            v_dataViewSample(sample->prev)->next = sample->next;
+        }
+        sample->prev = NULL;
+        sample->next = NULL;
+        c_free(sample);
+    }
+    instance->sampleCount--;
+    if (instance->sampleCount > 0) {
+        CHECK_INSTANCE(instance);
+    } else {
+        CHECK_ZERO_INSTANCE(instance);
+    }
+}
+
+void
+v_dataViewSampleListRemove(
+    v_dataViewSampleList sample)
+{
+    assert(C_TYPECHECK(sample,v_dataViewSampleList));
+    assert(v_dataViewInstance(v_readerSample(sample)->instance)->sampleCount > 0);
+    CHECK_INSTANCE(v_dataViewInstance(v_readerSample(sample)->instance));
+
+    if (sample->next != NULL) {
+        v_dataViewSampleList(sample->next)->prev = sample->prev;
+    }
+    if (sample->prev != NULL) {
+        v_dataViewSampleList(sample->prev)->next = sample->next;
+    } else {
+        assert(v_dataViewSampleTemplate(sample)->sample->viewSamples == sample);
+        v_dataViewSampleTemplate(sample)->sample->viewSamples = sample->next;
+    }
+    sample->prev = NULL;
+    sample->next = NULL;
+    CHECK_INSTANCE(v_dataViewInstance(v_readerSample(sample)->instance));
+}
+

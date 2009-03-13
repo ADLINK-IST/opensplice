@@ -1,0 +1,623 @@
+#
+# Setup variables
+#
+HDE=$OSPL_HOME/install/HDE
+#
+# Copy contents of specified directory 
+#
+install_dir ()
+{
+    source=$1
+    target=$2
+    dir=$3
+    mode=$4
+
+    if [ -d $source ]
+    then
+	mkdir -p $HDE/$target/$dir
+	cp $source/* $HDE/$target/$dir
+	chmod -R $mode $HDE/$target/$dir/* 2> /dev/null
+    fi
+}
+
+#
+# Copy specified file to the specified directory 
+#
+install_file ()
+{
+    source=$1
+    target=$2
+    dir=$3
+    file=$4
+    mode=$5
+    if [ -d $source ]
+    then
+	mkdir -p $HDE/$target/$dir
+	chmod 755 $HDE/$target/$dir 2> /dev/null
+	if [ -f $source/$file ]
+	then
+	    printf "*       copy $file ... "
+	    cp $source/$file $HDE/$target/$dir
+	    chmod $mode $HDE/$target/$dir/$file 2> /dev/null
+	    echo "Ready"
+	else
+	    echo "* ##    file $file not found"
+	fi
+	chmod 555 $HDE/$target/$dir 2> /dev/null
+    fi
+}
+
+#
+# Copy specified file to the specified directory
+#
+install_bin_file ()
+{
+    source=$1
+    target=$2
+    dir=$3
+    file=$4
+    mode=$5
+    if [ -d $source ]
+    then
+	mkdir -p $HDE/$target/$dir
+	chmod 755 $HDE/$target/$dir 2> /dev/null
+	if [ -f $source/$file ]
+	then
+	    printf "*       copy $file ... "
+	    cp $source/$file $HDE/$target/$dir
+	    # strip $HDE/$target/$dir/$file
+	    chmod $mode $HDE/$target/$dir/$file 2> /dev/null
+	    echo "Ready"
+	else
+	    echo "* ##    file $file not found"
+	fi
+	chmod 555 $HDE/$target/$dir 2> /dev/null
+    fi
+}
+
+install_target ()
+{
+    target=$1
+    target_os=`expr "$target" : '[a-zA-Z0-9]*\.\([a-zA-Z]*\)'`
+    host=$2
+    host_os=`expr "$host" : '[a-zA-Z0-9]*\.\([a-zA-Z]*\)'`
+
+    echo "*   Prepare HDE for target $target"
+    #
+    # Copy IDL preprocessor configuration files
+    #
+    echo "*     Copy IDL preprocessor configuration files"
+    mkdir $HDE/$target
+    mkdir $HDE/$target/etc
+    mkdir $HDE/$target/etc/idlpp
+
+    #
+    # Copy IDL preprocessor configuration file for CCPP
+    #
+    if [ "$INCLUDE_API_DCPS_CCPP" = "yes" ]
+    then
+        printf "*       For CCPP ... "
+        mkdir $HDE/$target/etc/idlpp/CCPP
+        cp $OSPL_HOME/etc/idlpp/CCPP/corba* $HDE/$target/etc/idlpp/CCPP/
+        chmod 444 $HDE/$target/etc/idlpp/CCPP/* 2> /dev/null
+        chmod 555 $HDE/$target/etc/idlpp/CCPP 2> /dev/null
+        echo "Ready"
+    fi
+
+    #
+    # Copy IDL preprocessor configuration file for SAJ
+    #
+    if [ "$INCLUDE_API_DCPS_SAJ" = "yes" ]
+    then
+        printf "*       For SAJ ... "
+        mkdir $HDE/$target/etc/idlpp/SAJ
+        cp $OSPL_HOME/etc/idlpp/SAJ/tmpl* $HDE/$target/etc/idlpp/SAJ/
+        chmod 444 $HDE/$target/etc/idlpp/SAJ/* 2> /dev/null
+        chmod 555 $HDE/$target/etc/idlpp/SAJ 2> /dev/null
+        echo "Ready"
+    fi
+
+    #
+    # Copy IDL preprocessor configuration file for SAC
+    #
+    if [ "$INCLUDE_API_DCPS_SAC" = "yes" ]
+    then
+        printf "*       For SAC ... "
+        mkdir $HDE/$target/etc/idlpp/SAC
+        cp $OSPL_HOME/etc/idlpp/SAC/sac* $HDE/$target/etc/idlpp/SAC/
+        chmod 444 $HDE/$target/etc/idlpp/SAC/* 2> /dev/null
+        chmod 555 $HDE/$target/etc/idlpp/SAC 2> /dev/null
+        echo "Ready"
+    fi
+
+    echo "*     IDL preprocessor configuration files Ready"
+
+    #
+    # Copy interface file for SPLICE-DDS
+    #
+    printf "*     Copy splice-dds IDL interface file "
+    cp $OSPL_HOME/etc/idlpp/dds_dcps.idl $HDE/$target/etc/idlpp
+    chmod 444 $HDE/$target/etc/idlpp/dds_dcps.idl 2> /dev/null
+        chmod 555 $HDE/$target/etc/idlpp 2> /dev/null
+    echo "Ready"
+
+    #
+    # Copy default configuration file for SPLICE-DDS
+    #
+    if [ "$target_os" = "$host_os" ]
+    then
+        printf "*     Copy splice-dds default configuration file "
+        mkdir $HDE/$target/etc/config
+        cp $OSPL_HOME/etc/ospl.xml $HDE/$target/etc/config
+        chmod 444 $HDE/$target/etc/config/* 2> /dev/null
+        chmod 555 $HDE/$target/etc/config 2> /dev/null
+        echo "Ready"
+    fi
+
+    # done with etc dir
+    chmod 555 $HDE/$target/etc 2> /dev/null
+
+    #
+    # Copy libray files
+    #
+    if [ "$target_os" != "vxworks" -a "$target_os" != "integrity5.0.9" ]
+    then
+        echo "*     Copy target library files"
+        release=`ls -d $OSPL_HOME/lib/$target-release 2>/dev/null`
+        if [ -z "$release" ]
+        then
+            echo "* ##    -release target not found checking -$target_build"
+            release=`ls -d $OSPL_HOME/lib/$target-$target_build 2>/dev/null`
+        fi
+        if [ -n "$release" ]
+        then
+            mkdir $HDE/$target/lib
+            install_dir $release $target lib 744
+            chmod 744 $HDE/$target/lib 2> /dev/null
+	    chmod 444 $HDE/$target/lib/*
+            chmod 555 $HDE/$target/lib 2> /dev/null
+        else
+            echo "* ##    No target library files detected"
+        fi
+        echo "*     Library files Ready"
+    fi
+    if [ "$target_os" != "$host_os" ]
+    then
+        echo "*     Copy host library files"
+        release=`ls -d $OSPL_HOME/lib/$host-release 2>/dev/null`
+        if [ -z "$release" ]
+        then
+            echo "* ##    -release target not found checking -$target_build"
+            release=`ls -d $OSPL_HOME/lib/$host-$target_build 2>/dev/null`
+        fi
+        if [ -n "$release" ]
+        then
+            mkdir $HDE/$target/host
+            mkdir $HDE/$target/host/lib
+            install_dir $release $target /host/lib 744
+            chmod 744 $HDE/$target/host/lib 2> /dev/null
+	    chmod 444 $HDE/$target/host/lib/*
+            chmod 555 $HDE/$target/host/lib 2> /dev/null
+            chmod 555 $HDE/$target/host 2> /dev/null
+        else
+            echo "* ##    No host library files detected"
+        fi
+        echo "*     Library host Ready"
+    fi
+    
+    #
+    # Copy java archive files
+    #
+    if [ "$INCLUDE_JAVA" = "yes" ]
+    then
+        echo "*     Copy JAVA target archive files"
+        release=`ls -d $OSPL_HOME/jar/$target-release 2>/dev/null`
+        if [ -z "$release" ]
+        then
+            echo "* ##    -release target not found checking -$target_build"
+            release=`ls -d $OSPL_HOME/jar/$target-$target_build 2>/dev/null`
+        fi
+        if [ -n "$release" ]
+        then
+            mkdir -p $HDE/$target/jar
+            install_dir $release $target jar 444
+            chmod 555 $HDE/$target/jar 2> /dev/null
+        else
+            echo "* ##    No JAVA archive files detected"
+        fi
+        echo "*     JAVA target archive Ready"
+    elif [ "$target_os" != "$host_os" ]
+    then
+        echo "*     Copy JAVA host archive files"
+        release=`ls -d $OSPL_HOME/jar/$host-release 2>/dev/null`
+        if [ -z "$release" ]
+        then
+            echo "* ##    -release target not found checking -$target_build"
+            release=`ls -d $OSPL_HOME/jar/$host-$target_build 2>/dev/null`
+        fi
+        if [ -n "$release" ]
+        then
+            mkdir -p $HDE/$target/jar
+            install_dir $release $target jar 444
+            chmod 555 $HDE/$target/jar 2> /dev/null
+        else
+            echo "* ##    No JAVA archive files detected"
+        fi
+        echo "*     JAVA host archive Ready"
+    fi
+
+    #
+    # Copy script files
+    #
+    echo "*     Copy script files"
+    release=`ls -d $OSPL_HOME/install/bin 2>/dev/null`
+    if [ -n "$release" ]
+    then
+        mkdir -p $HDE/$target/bin
+        install_file $release $target bin ospltun 555
+        chmod 555 $HDE/$target/bin 2> /dev/null
+    else
+        echo "* ##    No script files detected"
+    fi
+    echo "*     Script files Ready"
+
+    #
+    # Copy execuatble files
+    #
+    echo "*     Copy executable files"
+    target_release=`ls -d $OSPL_HOME/exec/$target-release 2>/dev/null`
+    if [ -z "$target_release" ]
+    then
+        echo "* ##    -release target not found checking -$target_build"
+        target_release=`ls -d $OSPL_HOME/exec/$target-$target_build 2>/dev/null`
+    fi
+    host_release=`ls -d $OSPL_HOME/exec/$host-release 2>/dev/null`
+    if [ -z "$host_release" ]
+    then
+        echo "* ##    -release target not found checking -$target_build"
+        host_release=`ls -d $OSPL_HOME/exec/$host-$target_build 2>/dev/null`
+    fi
+    if [ -n "$target_release"  -a -n "$host_release" ]
+    then
+        mkdir -p $HDE/$target/bin
+        chmod 755 $HDE/$target/bin 2> /dev/null
+        mkdir -p $HDE/$target/exec
+        install_bin_file $host_release $target exec idlpp 555
+	ln -s ../exec/idlpp $HDE/$target/bin
+        if [ "$target_os" = "$host_os" ]
+        then
+            install_bin_file $host_release $target exec spliced 555
+	    ln -s ../exec/spliced $HDE/$target/bin
+            install_bin_file $host_release $target exec networking 555
+	    ln -s ../exec/networking $HDE/$target/bin
+            install_bin_file $host_release $target exec durability 555
+	    ln -s ../exec/durability $HDE/$target/bin
+            install_bin_file $host_release $target exec mmstat 555
+	    ln -s ../exec/mmstat $HDE/$target/bin
+            install_bin_file $host_release $target exec shmdump 555
+	    ln -s ../exec/shmdump $HDE/$target/bin
+            install_bin_file $host_release $target exec ospl 555
+	    ln -s ../exec/sdds $HDE/$target/bin
+            install_bin_file $host_release $target exec cmsoap 555
+	    ln -s ../exec/cmsoap $HDE/$target/bin
+	    if [ -f $host_release/dat ]
+	    then
+		install_bin_file $host_release $target exec dat 555
+		ln -s ../exec/dat $HDE/$target/bin
+	    fi
+	fi
+        chmod 555 $HDE/$target/exec 2> /dev/null
+        chmod 555 $HDE/$target/bin 2> /dev/null
+    else
+        echo "* ##    No executable files detected"
+    fi
+    echo "*     executable files Ready"
+
+    #
+    # Copy include files
+    #
+    echo "*     Copy language specific interface files"
+    mkdir $HDE/$target/include
+    mkdir $HDE/$target/include/sys
+    mkdir $HDE/$target/include/include
+    mkdir $HDE/$target/include/common
+    mkdir $HDE/$target/include/common/include
+    printf "*       Referenced SPLICE includes ... "
+
+    os=`expr "$target" : '[A-Za-z0-9_-]*\.\(.*\)'`
+
+    mkdir $HDE/$target/include/posix
+    mkdir $HDE/$target/include/posix/include
+    cp $OSPL_HOME/src/abstraction/os/posix/include/os_*.h $HDE/$target/include/posix/include/
+    chmod 444 $HDE/$target/include/posix/include/*.h 2> /dev/null
+    chmod 555 $HDE/$target/include/posix/include 2> /dev/null
+    chmod 555 $HDE/$target/include/posix 2> /dev/null
+
+    mkdir $HDE/$target/include/svr4
+    mkdir $HDE/$target/include/svr4/include
+    chmod 555 $HDE/$target/include/svr4/include 2> /dev/null
+    chmod 555 $HDE/$target/include/svr4 2> /dev/null
+
+    cp $OSPL_HOME/src/abstraction/os/$os/include/os_*.h $HDE/$target/include/include
+#    cp $OSPL_HOME/src/abstraction/os/$os/include/pa_*.h $HDE/$target/include/include
+    cp $OSPL_HOME/src/abstraction/os/common/include/os_*.h $HDE/$target/include/common/include
+    if [ "$target_os" = "vxworks" ]
+    then
+        cp $OSPL_HOME/src/abstraction/os/$os/include/vxworks/*.h $HDE/$target/include
+        cp $OSPL_HOME/src/abstraction/os/$os/include/vxworks/sys/*.h $HDE/$target/include/sys
+    fi
+
+    if [ "$target_os" = "integrity5.0.9" ]
+    then
+        cp $OSPL_HOME/src/abstraction/os/int509/include/*.h $HDE/$target/include
+    fi
+    chmod 444 $HDE/$target/include/sys/*.h 2> /dev/null
+    chmod 444 $HDE/$target/include/include/*.h 2> /dev/null
+    chmod 444 $HDE/$target/include/common/include/*.h 2> /dev/null
+
+    cp $OSPL_HOME/src/abstraction/os/include/os_*.h $HDE/$target/include/sys
+    cp $OSPL_HOME/src/abstraction/os/include/os.h $HDE/$target/include/sys
+#    cp $OSPL_HOME/src/abstraction/os/include/pa_*.h $HDE/$target/include/sys
+    cp $OSPL_HOME/src/database/database/include/[cq]_*.h $HDE/$target/include/sys
+    cp $OSPL_HOME/src/kernel/include/v_*.h $HDE/$target/include/sys
+    cp $OSPL_HOME/src/user/include/u_*.h $HDE/$target/include/sys
+    cp $OSPL_HOME/src/include/kernelModule.h $HDE/$target/include/sys
+
+    chmod 444 $HDE/$target/include/sys/* 2> /dev/null
+    chmod 555 $HDE/$target/include/sys 2> /dev/null
+    chmod 555 $HDE/$target/include/include 2> /dev/null
+    chmod 555 $HDE/$target/include/common/include 2> /dev/null
+    chmod 555 $HDE/$target/include/common 2> /dev/null
+
+    echo "Ready"
+
+    #
+    # Copy DCPS related include files
+    #
+    echo "*       For DCPS"
+
+    mkdir -p $HDE/$target/include/dcps
+    #
+    # DCPS C++ CCPP
+    #
+    if [ "$INCLUDE_API_DCPS_CCPP" = "yes" ]
+    then
+        release=`ls -d $OSPL_HOME/src/api/dcps/ccpp/bld/$target-release 2>/dev/null`
+        if [ -z "$release" ]
+        then
+            echo "* ##    -release target not found checking -$target_build"
+            release=`ls -d $OSPL_HOME/src/api/dcps/ccpp/bld/$target-$target_build 2>/dev/null`
+        fi
+        if [ "$target_os" != "vxworks" -a "$target_os" != "integrity5.0.9" ]
+        then
+            echo "*         For C++"
+            printf "*           For CCPP ... "
+            mkdir $HDE/$target/include/dcps/C++
+            mkdir $HDE/$target/include/dcps/C++/CCPP
+            mkdir $HDE/$target/include/dcps/C++/CCPP/OpenFusion
+            cp $release/*.[ih] $HDE/$target/include/dcps/C++/CCPP/OpenFusion
+	    rm -f $HDE/$target/include/dcps/C++/CCPP/OpenFusion/ccpp_dds_dcps.h # This file may not be transferred
+            cp $OSPL_HOME/src/api/dcps/ccpp/include/*.[ih] $HDE/$target/include/dcps/C++/CCPP
+            cp $OSPL_HOME/src/api/dcps/ccpp/idl/*.idl $HDE/$target/include/dcps/C++/CCPP
+            cp $OSPL_HOME/src/api/dcps/gapi/include/gapi.h $HDE/$target/include/dcps/C++/CCPP
+            cp $OSPL_HOME/src/api/dcps/gapi/include/gapi_loanRegistry.h $HDE/$target/include/dcps/C++/CCPP
+            chmod 444 $HDE/$target/include/dcps/C++/CCPP/* 2> /dev/null
+            chmod 444 $HDE/$target/include/dcps/C++/CCPP/OpenFusion/* 2> /dev/null
+            chmod 555 $HDE/$target/include/dcps/C++/CCPP/OpenFusion 2> /dev/null
+            chmod 555 $HDE/$target/include/dcps/C++/CCPP 2> /dev/null
+            chmod 555 $HDE/$target/include/dcps/C++ 2> /dev/null
+            echo "Ready"
+            echo "*         C++ Ready"
+        fi
+    fi
+    #
+    # DCPS C SAC
+    #
+    if [ "$INCLUDE_API_DCPS_SAC" = "yes" ]
+    then
+        echo "*         For C"
+        printf "*           For SAC ... "
+        mkdir $HDE/$target/include/dcps/C
+        mkdir $HDE/$target/include/dcps/C/SAC
+        cp $OSPL_HOME/src/api/dcps/sac/include/*.h $HDE/$target/include/dcps/C/SAC
+        chmod 444 $HDE/$target/include/dcps/C/SAC/* 2> /dev/null
+        chmod 555 $HDE/$target/include/dcps/C/SAC 2> /dev/null
+        chmod 555 $HDE/$target/include/dcps/C 2> /dev/null
+        echo "Ready"
+        echo "*         C Ready"
+        #
+        chmod 555 $HDE/$target/include/dcps 2> /dev/null
+        echo "*       DCPS Ready"
+        #
+        echo "*     Language specific interface files Ready"
+        chmod 555 $HDE/$target/include 2> /dev/null
+    fi
+
+    #
+    # Copy custom CCPP
+    #
+    if [ "$INCLUDE_API_DCPS_CCPP" = "yes" ]
+    then
+	printf "*    Copy custom CCPP support ... "
+        release=`ls -d $OSPL_HOME/src/api/dcps/ccpp 2>/dev/null`
+        mkdir -p $HDE/$target/custom_lib
+        mkdir -p $HDE/$target/custom_lib/ccpp
+
+        cp $release/code/*.cpp $HDE/$target/custom_lib/ccpp
+        cp $release/idl/*.idl $HDE/$target/custom_lib/ccpp
+        cp $release/custom/makefile $HDE/$target/custom_lib/ccpp
+        cp $release/custom/README $HDE/$target/custom_lib/ccpp
+        cp $release/custom/setup $HDE/$target/custom_lib/ccpp
+        cp $release/custom/orbdeps.mak $HDE/$target/custom_lib/ccpp
+        chmod 444 $HDE/$target/custom_lib/ccpp/* 2> /dev/null
+        chmod 555 $HDE/$target/custom_lib/ccpp 2> /dev/null
+        chmod 555 $HDE/$target/custom_lib 2> /dev/null
+        echo "Ready"
+    fi
+
+    #
+    # Examples
+    #
+    echo "*     Copy examples"
+    mkdir $HDE/$target/examples
+    echo "*       For DCPS"
+    mkdir $HDE/$target/examples/dcps
+
+    if [ "$INCLUDE_CXX" = "yes" ]
+    then
+        echo "*         For C++"
+        mkdir $HDE/$target/examples/dcps/C++
+        printf "*           For CCPP ... "
+        mkdir $HDE/$target/examples/dcps/C++/CCPP
+        mkdir $HDE/$target/examples/dcps/C++/CCPP/OpenFusion
+        chmod 775 $HDE/$target/examples/dcps/C++/CCPP/OpenFusion 2> /dev/null
+        cp $OSPL_HOME/examples/dcps/C++/CCPP/OpenFusion/*.idl $HDE/$target/examples/dcps/C++/CCPP/OpenFusion
+        cp $OSPL_HOME/examples/dcps/C++/CCPP/OpenFusion/*.cpp $HDE/$target/examples/dcps/C++/CCPP/OpenFusion
+        cp $OSPL_HOME/examples/dcps/C++/CCPP/OpenFusion/BUILD $HDE/$target/examples/dcps/C++/CCPP/OpenFusion
+        cp $OSPL_HOME/examples/dcps/C++/CCPP/OpenFusion/RUN   $HDE/$target/examples/dcps/C++/CCPP/OpenFusion
+        chmod 555 $HDE/$target/examples/dcps/C++/CCPP/* 2> /dev/null
+        chmod 555 $HDE/$target/examples/dcps/C++/CCPP 2> /dev/null
+        echo "Ready"
+        if [ "$INCLUDE_C" = "yes" ]
+        then
+            printf "*           For SAC ... "
+            mkdir $HDE/$target/examples/dcps/C++/SAC
+            chmod 775 $HDE/$target/examples/dcps/C++/SAC 2> /dev/null
+            cp $OSPL_HOME/examples/dcps/C++/SAC/*.idl $HDE/$target/examples/dcps/C++/SAC
+            cp $OSPL_HOME/examples/dcps/C++/SAC/*.cpp $HDE/$target/examples/dcps/C++/SAC
+            cp $OSPL_HOME/examples/dcps/C++/SAC/BUILD $HDE/$target/examples/dcps/C++/SAC
+            cp $OSPL_HOME/examples/dcps/C++/SAC/RUN   $HDE/$target/examples/dcps/C++/SAC
+            echo "Ready"
+	fi
+        chmod 555 $HDE/$target/examples/dcps/C++/* 2> /dev/null
+        chmod 555 $HDE/$target/examples/dcps/C++ 2> /dev/null
+        echo "*         C++ Ready"
+    fi
+    if [ "$INCLUDE_C" = "yes" ]
+    then
+        echo "*         For C"
+        mkdir $HDE/$target/examples/dcps/C
+        printf "*           For SAC ... "
+        mkdir $HDE/$target/examples/dcps/C/SAC
+        chmod 775 $HDE/$target/examples/dcps/C/SAC 2> /dev/null
+        cp $OSPL_HOME/examples/dcps/C/SAC/*.idl $HDE/$target/examples/dcps/C/SAC
+        cp $OSPL_HOME/examples/dcps/C/SAC/*.c $HDE/$target/examples/dcps/C/SAC
+        if [ "$target_os" != "vxworks" ]
+        then
+	    if [ "$target_os" != "integrity5.0.9" ]
+            then 
+               cp $OSPL_HOME/examples/dcps/C/SAC/BUILD $HDE/$target/examples/dcps/C/SAC
+               cp $OSPL_HOME/examples/dcps/C/SAC/RUN   $HDE/$target/examples/dcps/C/SAC
+	    else
+	       cp $OSPL_HOME/examples/dcps/C/SAC/BUILD_int509 $HDE/$target/examples/dcps/C/SAC/BUILD
+            fi
+        else
+	    cp $OSPL_HOME/examples/dcps/C/SAC/BUILD_vxworks $HDE/$target/examples/dcps/C/SAC/BUILD
+        fi
+        echo "Ready"
+        chmod 555 $HDE/$target/examples/dcps/C/* 2> /dev/null
+        chmod 555 $HDE/$target/examples/dcps/C 2> /dev/null
+        echo "*         C Ready"
+    fi
+    if [ "$INCLUDE_JAVA" = "yes" ]
+    then
+        echo "*         For Java"
+        mkdir $HDE/$target/examples/dcps/Java
+        printf "*           For SAJ ... "
+        mkdir $HDE/$target/examples/dcps/Java/SAJ
+        chmod 775 $HDE/$target/examples/dcps/Java/SAJ 2> /dev/null
+        cp $OSPL_HOME/examples/dcps/Java/SAJ/*.idl  $HDE/$target/examples/dcps/Java/SAJ
+        cp $OSPL_HOME/examples/dcps/Java/SAJ/*.java $HDE/$target/examples/dcps/Java/SAJ
+        cp $OSPL_HOME/examples/dcps/Java/SAJ/BUILD  $HDE/$target/examples/dcps/Java/SAJ
+        cp $OSPL_HOME/examples/dcps/Java/SAJ/RUN    $HDE/$target/examples/dcps/Java/SAJ
+        echo "Ready"
+        chmod 555 $HDE/$target/examples/dcps/Java/* 2> /dev/null
+        chmod 555 $HDE/$target/examples/dcps/Java 2> /dev/null
+        echo "*         Java Ready"
+    fi
+    chmod 555 $HDE/$target/examples/dcps 2> /dev/null
+    echo "*       DCPS Ready"
+    chmod 555 $HDE/$target/examples 2> /dev/null
+    echo "*     Copy examples Ready"
+
+    #
+    # Online documents
+    #
+    printf "*     Copy documents ... "
+    tar cf - -C $OSPL_HOME docs | (cd $HDE/$target; tar xf -)
+    echo "Ready"
+
+    md5sum --help 2> /dev/null > /dev/null
+    md5=$?
+    if [ $md5 -eq 0 ]
+    then
+        echo "*     Computing MD5 checksums (take a break)"
+	cwd=`pwd`
+	cd $HDE/$target
+	find . -type f -exec md5sum {} \; | tee /tmp/$$md5.sum
+	cp /tmp/$$md5.sum $HDE/$target/md5.sum
+	rm -f /tmp/$$md5.sum
+	echo "*     Computing MD5 checksums Ready"
+	cd $cwd
+    else
+	echo "* ##  Cannot compute MD5 checksums"
+    fi
+
+    printf "*     Prepare default release.com ... "
+    RELF=$HDE/$target/release.com
+    echo "echo \"<<< OpenSplice HDE Release <RELEASE> For $target Date <DATE> >>>\"" >> $RELF
+    echo "OSPL_HOME=$HDE/$target" >> $RELF
+    echo "OSPL_TARGET=$target" >> $RELF
+    echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
+    if [ "$target_os" != "$host_os" ]
+    then
+        echo "LD_LIBRARY_PATH=\$OSPL_HOME/host/lib:\$LD_LIBRARY_PATH" >> $RELF
+    else
+        echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\$LD_LIBRARY_PATH" >> $RELF
+    fi
+    echo "CPATH=\$OSPL_HOME/include:\$OSPL_HOME/include/sys:\$CPATH" >> $RELF
+    echo "OSPL_TMPL_PATH=\$OSPL_HOME/etc/idlpp" >> $RELF
+    echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
+    echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
+    chmod 555 $RELF 2> /dev/null
+    echo "Ready"
+
+    chmod 555 $HDE/$target 2> /dev/null
+
+    printf "*     Prepare package ... "
+    wd=`pwd`
+    cd $HDE
+    version=`grep "^PACKAGE_VERSION" $OSPL_HOME/release_info/RELEASE | sed -e "s/PACKAGE_VERSION=\"//" | sed -e "s/\"//"`
+    tar cf OpenSpliceDDS${version}-${target}-HDE.tar $target
+    cd $wd
+    echo "Ready"
+
+    echo "*   HDE prepared for target $target Ready"
+}
+
+echo "* Build SPLICE HDE"
+
+target=`IFS="-"; set $SPLICE_TARGET; echo $1`
+target_build=`IFS="-"; set $SPLICE_TARGET; echo $2`
+host=`IFS="-"; set $SPLICE_HOST; echo $1`
+
+#
+# Prepare HDE master directory
+#
+printf "*   Prepare HDE master directory ... "
+mkdir -p $HDE; echo "Ready"
+
+#
+# Remove old HDE first
+#
+if [ -d $HDE/${target} ]
+then
+    printf "*   Remove old HDE/$target directory ... "
+    chmod -R 777 $HDE/${target} 2> /dev/null
+    rm -rf $HDE/OpenSpliceDDS*-${target}-HDE.tar
+    rm -rf $HDE/${target}; echo "Ready"
+fi
+install_target $target $host $version
+
+echo "* SPLICE HDE Ready"
+

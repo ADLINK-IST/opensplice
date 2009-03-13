@@ -1,0 +1,756 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.3</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.3</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.3<br>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds400
+          </td>
+          <td>
+            <b>OpenSplice Tuner: incorrect destination_order policy setting</b><br>
+            <i>
+              When manually creating a reader and writer in the OpenSplice Tuner for
+              a topic that has the 'destination_order' set to 'BY_RECEPTION_TIME'
+              the configured 'destination_order' setting for the reader and writer
+              are not properly taken over. I have tested all combinations using all
+              possible values for the two parameters 'copy_by_topic_qos' and
+              'destination_order' defined in the QoS. The only situation that
+              triggers the error is the case in which both (reader and writer) Qos
+              are manually configured (so the 'copy_by_topic_qos' is turned off) and
+              have different values for the 'destination_order' setting. In this case
+              the writer setting is always used.<br>
+              <b>Solution:</b> Problem was related to the a static default, which has
+              been corrected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds434
+          </td>
+          <td>
+            <b>Unix style newlines in ascii files on Windows</b><br>
+            <i>
+              All batch files and text files contain unix style newlines on
+              Windows. In notepad they appear as oneliners.<br>
+              <b>Solution:</b> The installer has been adapted to automatically
+              convert text files into text files with the platform specific
+              line-endings.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4737<br>
+            dds450
+          </td>
+          <td>
+            <b>selections on automatic refresh mode</b><br>
+            <i>
+              The automatic refresh mode is not supported for selections. As a result
+              the user should perform the refresh actions manually, which basically
+              requires walking over all selections. Therefore the selection mechanism
+              is expensive but can be improved by evaluating only DLRL objects that
+              have been created or updated. This can be achieved by supporting the
+              automatic refresh mode for selections.<br>
+              <b>Solution:</b> The DLRL now supports selections created with the
+              auto_refresh boolean set to TRUE on the SAJ and SACPP language
+              bindings. A selection in auto refresh mode is slaved to the Cache it
+              belongs too. So if that Cache has updates enabled (i.e., updates are
+              applied as soon as they arrive), then the selection will also be
+              updated and the appropriate SelectionListener callbacks will be
+              triggered. However if that Cache has updates disabled (i.e.,
+              updates are only applied when an explicit call is made to the 'refresh()'
+              operation of the Cache), then any updates found during that refresh will
+              also be automatically applied to selections working in auto update
+              mode. SelectionListeners will NOT be triggered in that case though. So
+              when using a Cache in disabled update mode, one can still create a
+              selection in auto update mode and have it updated when one refreshes the
+              Cache. Because SelectionListeners are not supported in this configuration,
+              one can use three newly added operations to retrieve the 
+              inserted/modified/removed members, these operations may also be used from
+              within any listener callback.<br>
+              The following changes have been made to realize this:
+              <ul>
+                <li>
+                  the 'create_selection(...)' operation now accepts 'true' as valid value
+                  for the auto_refresh parameter.
+                </li>
+                <li>
+                  the 'auto_refresh()' operation on the selection will now return 'true'
+                  or 'false' depending on the value of the 'auto_update' parameter given
+                  at creation time.
+                </li>
+                <li>
+                  The SelectionListener along with all it's operations is now fully
+                  supported. The listener callbacks will only be invoked if the Cache to
+                  which the (auto_refresh) selection belongs  has it's updates enabled.
+                </li>
+                <li>
+                  Three operations have been added, they are not yet a part of the DDS
+                  specification but have been submitted as an extension. These operations
+                  allow access to the inserted/modified/removed members of a selection when
+                  it is refreshed by the DLRL. The operations will not give the 
+                  inserted/modified/removed members when the selection is refreshed by a
+                  call to the 'refresh' operation of the selection class itself. Exact IDL
+                  specification of these operations for a fictional type 'Foo' defined in
+                  module 'test' is as follows:
+                  <code><pre>
+local interface FooSelection : DDS::Selection {
+    ...
+    test::FooSeq get_inserted_members() raises (DDS::AlreadyDeleted);
+    test::FooSeq get_modified_members() raises (DDS::AlreadyDeleted);
+    test::FooSeq get_removed_members() raises (DDS::AlreadyDeleted);
+    ...
+};
+                  </pre></code>
+                </li>
+              </ul>
+              <b>Important notes:</b>
+              <ul>
+                <li>
+                  a selection created with the auto_refresh boolean set to 'true' will NOT
+                  be lined up with the current status of objects within the Cache! To
+                  accomplish this one should call the 'refresh()' operation on the
+                  selection just after creation for a one time line up with all objects
+                  known within a Cache. Naturally this problem does not exist if one
+                  creates the selection before the Cache received any updates (e.g.,
+                  before the call to the 'enable_all_for_pubsub()' operation on the Cache).
+                </li>
+                <li>
+                  If one changes the parameter of the criterion associated with the selection,
+                  then the selection will NOT automatically re-evaluate all objects within the
+                  Cache! It will simply evaluate all incoming object updates/creations to the
+                  changed criterion parameters. To re-evaluate the entire selection after
+                  changing the criterion parameters simply use a call to the 'refresh()'
+                  operation of the Selection.
+                </li>
+                <li>
+                  Use case for selection in auto_refresh mode: we recommend using selections
+                  in auto_refresh mode when you deploy a (relatively) static filter and when
+                  you wish to keep the selection in line with the contents of the Cache at all
+                  times. If you use a dynamic filter (e.g., you frequently change the parameters
+                  to which the selection must evaluate each object), then it's best to use a
+                  selection refresh 'manually' and which has auto_update set to 'false'. Also
+                  if you do not require to examine the selection every time an update arrives
+                  for that type of Object, then one should consider not using selections in
+                  auto_refresh mode, but simply refreshing the contents of the selection
+                  'manually'. However the validity of this last statement highly depends on the
+                  number of Objects of the concerned type updated each refresh round and the
+                  total number of objects of that type present within the Cache. If there are
+                  a lot of Objects present within the Cache and updates for such objects are
+                  sparse, then auto_refresh set to 'true' is a good option for a selection. However
+                  if there are only a few objects present within the Cache, but a lot of updates
+                  each round (i.e. a lot of creations/deletions) and you're not interested in
+                  what happens each round then a selection with auto_refresh set to 'false' is
+                  probably better performance wise.
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds586
+          </td>
+          <td>
+            <b>Add compiler option -D_CRT_SECURE_NO_DEPRECATE to example's build.bat files</b><br>
+            <i>
+              When compiling the examples, the message "warning C4996: 'strcpy' was declared deprecated
+              c:\Programme\Microsoft Visual Studio 8\VC\include\string.h(73) : see declaration of 'strcpy'
+              Message: 'This function or variable may be unsafe. Consider using strcpy_s instead. To
+              disable deprecation, use _CRT_SECURE_NO_DEPRECATE. See online help for details.'" is
+              reported.<br>
+              <b>Solution:</b> The suggested option has been added.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds626
+          </td>
+          <td>
+            <b>Tutorial comments</b><br>
+            <i>
+              <ul>
+                <li>
+                  Substitute "(n" with "(in" at page 8 (file page 22) Section 1.4.1
+                </li>
+                <li>
+                  Tutorial: Figures Caption is often on the next page!
+                </li>
+                <li>
+                  Section 3.1 why isn't "Instance" defined before "Sample"?
+                  <ul>
+                    <li>
+                      sample needs to be redefined: it is a written or read set of
+                      attribute-values of a topic
+                    </li>
+                    <li>
+                      and instance also has to be clarified
+                    </li>
+                  </ul>
+                  <li>
+                    Section 4.2. The difference between TRANSIENT_LOCAL and TRANSIENT is
+                    not explained.
+                  </li>
+                  <li>
+                    Section 4.3. The code snip has a badly indented main
+                  </li>
+                  <li>
+                    Section 4.3. The explanation on how to build the example wouldbe
+                    greatly simplified if we would provide Makefiles.
+                  </li>
+                  <li>
+                    Table 3, Pag. 42, introduces the concept of RxO policy matching. However
+                    this would perhaps deserve some longer discussion in some earlier
+                    section. Perhaps 4.2
+                  </li>
+                  <li>
+                    Section 5.1 (end of) page 58. Could we make a concrete example of when a
+                    DataWriter would override the Topic QoS?
+                  </li>
+                </ul>
+              <b>Solution:</b> All comments have been processed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds627
+          </td>
+          <td>
+            <b>Installation issues</b><br>
+            <i>
+              Generic installation issues:
+              <ul>
+                <li>add popup to ask for license key file</li>
+                <li>add README's to examples</li>
+                <li>add build and run scripts for C++ pingpong</li>
+              </ul>
+              <b>Solution:</b> The files have been added and the installer has been adapted.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds634
+          </td>
+          <td>
+            <b>Installation directory doesn't match with PowerTools</b><br>
+            <i>
+              By default, OpenSplice DDS installs into "C:\Program Files\OpenSpliceV3.1". However all
+              PrismTech products are installed within the directory "C:\Program Files\PrismTech".<br>
+              <b>Solution:</b> The default installation directory has been adapted. The user is still able
+              to define its own installation directory.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds653
+          </td>
+          <td>
+            <b>
+              DLRL module: Generational transitions of collection owners result in an incorrect
+              (temporary) state
+            </b><br>
+            <i>
+              Consider the following scenario:<br>
+              Object A has a collection of Object B. We already received an instance of Object A
+              and an instance of Object B, furthermore Object B was added to the collection managed
+              by Object A as each element in a collection is represented by an instance in the
+              DataReader for that collection. At the DCPS level we'll see three DataReaders with
+              each one instance. Now the writer for Object A is deleted, making it that the
+              instance at DCPS level representing Object A is set to NO_WRITERS. Now a new writer
+              is created and writes a new sample of Object A. This causes Object A to be changed
+              to DELETED and a new instance of Object A to be created, i.e., a generational change
+              of Object A. Now two Object A's exist, the deleted one and the new one, because
+              nothing has changed to the collection element or to Object B they won't be updated at
+              all, as one would expect. This results in the 'deleted' Object A still having one
+              element in its collection, but the new one does not having any. The next refresh round
+              however the 'deleted' Object A is really cleaned (all memory and administration
+              cleaned) and this will result in the userData of the instance being cleaned as
+              well. The refresh round then continues and the element pointing to Object B
+              automatically becomes a part of the collection of the new Object A. So DLRL finally
+              is able to restore itself, in this scenario.<br>
+              Changing the scenario to disposing Object B before creating a new generation of Object A,
+              you'll see that the collection element pointing to Object B will become unresolved,
+              which is not much of a problem. Then continue the scenario in the same way and you will
+              NOT see the DLRL restoring itself, because the instance user data of the element is
+              never cleaned when the collection is cleaned. Wrongly the unresolved element pointing
+              to Object B will stay in the unresolved list forever until Object B arrives again and
+              will then probably access the collection that is waiting for Object B only to find
+              it is already deleted and thus resulting in errors. If Object B never arrives again
+              we'll see an unresolved element which probably won't disappear.<br>
+              <b>Solution:</b> The incorrect behaviour has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5256<br>
+            dds673
+          </td>
+          <td>
+            <b>Problem with QoS and multiple readers in DLRL</b><br>
+            <i>
+              When one DCPS topic is mapped onto two different DLRL classes (for example two classes
+              located in different packages), then it is impossible to access and set the QoS of both
+              readers as only one of the two readers can be retrieved be means of
+              subscriber.lookup_datareader(topic_name) call. This results in one of the readers
+              possibly having an incompatible QoS with the rest of the system and thus not communicating
+              with the rest of the system.<br>
+              <b>Solution:</b> The DLRL API has been extended to support this functionality. The added 
+              interface allows direct access to DCPS entities, which is described in the IDL PSM and
+              available for the SAJ and SACPP language mappings of DLRL:
+              <code><pre>
+local interface Cache : CacheBase {
+    ...
+    readonly attribute DDS::DomainParticipant the_participant;
+    ...
+}
+
+local interface ObjectHome {
+    ...
+    DDS::DataReader get_datareader (in string topic_name) raises (PreconditionNotMet);
+    DDS::DataWriter get_datawriter (in string topic_name) raises (PreconditionNotMet);
+    DDS::Topic get_topic (in string topic_name) raises (PreconditionNotMet);
+    ...
+}
+              </pre></code>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5266<br>
+            dds675
+          </td>
+          <td>
+            <b>leakage when string is used as key</b><br>
+            <i>
+              When the following topic definition with a string as key is used for
+              writing and taking by a DataWriter and DataReader, the string leaks
+              in the OpenSplice DDS shared database. When the string is not defined
+              as key, it does not leak.
+              <pre><code>
+module latency {
+
+  struct LatencyMsg {
+    DDS::Time_t prod_time;
+    string host;
+  };
+
+#pragma keylist LatencyMsg host
+
+};
+              </code></pre>
+              <b>Solution:</b> The problem has been found and fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds692
+          </td>
+          <td>
+            <b>
+              Changes to the DCPS Tutorial to bring it in line with the DLRL Tutorial
+            </b><br>
+            <i>
+              To bring the DCPS Tutorial in line with the DLRL Tutorial, the Chatter
+              now no longer disposes its user once it terminates. The User administration
+              remains available (as NOT_ALIVE_NO_WRITERS) for other applications like
+              the WhiteListEditor. That means all DCPS tutorial applications will need
+              to be modified to handle this situation:
+              <ul>
+                <li>
+                  multitopic.c needs to handle samples that have their valid_data flag
+                  set to false.
+                </li>
+                <li>
+                  UserLoad.c must now report a user as exiting when it is NO_WRITERS
+                  instead of DISPOSED.
+                </li>
+                <li>
+                  The NameService topic must change its DataWriterQos to have
+                  auto_dispose_unregistered_instances to false.
+                </li>
+              </ul>
+              Also the DCPS Tutorial Manual needs to be updated to represent these changes
+              in code.<br>
+              <b>Solution:</b> The code has been adapted according the problem description.
+              The changes have been reflected in the DCPS Tutorial Manual.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5311<br>
+            dds705
+          </td>
+          <td>
+            <b>On fatal error disconnect from the network</b><br>
+            <i>
+              When a fatal error occurs on a node, that node should be disconnected from
+              the network. When the networking service can no longer guarantee reliability
+              the node must be disconnected from the system.<br>
+              <b>Solution:</b> A solution has been implemented when exceeding the DefragBufferSize
+              configuration for an reliable channel.  This is an error we can't recover from, as we
+              can no longer sustain the reliability for that channel. It this case the network
+              service is terminated, and thereby the node is disconnected from the rest of the network.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5317<br>
+            dds707
+          </td>
+          <td>
+            <b>Problem creating a content filtered topic</b><br>
+            <i>
+              When creating a content filtered topic the creation of the topic fails if the
+              name of the content filtered topic is longer than the name of the topic.<br>
+              <b>Solution:</b> The problem was in comparing the names, which has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5326<br>
+            dds712
+          </td>
+          <td>
+            <b>Repeatedly reporting the same error causes log files to exceed max filesize</b><br>
+            <i>
+              Repeatedly reporting the same error at high frequency causes log files to exceed max
+              filesize (2 GB on Linux). This causes a writing application to terminate with signal
+              25 (SIGXFSZ) on Linux.<br>
+              <b>Solution:</b> Sequences of the same socketerrors are reported only once.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5343<br>
+            dds719
+          </td>
+          <td>
+            <b>crash in WaitForHistoricalData during startup</b><br>
+            <i>
+              An application sometimes crashes during startup in WaitForHistoricalData.<br>
+              <b>Solution:</b> A re-entrancy problem was found, causing this error, which
+              has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds728
+          </td>
+          <td>
+            <b>RefMans are missing a description about a number of operations.</b><br>
+            <i>
+              The Reference Manuals are missing descriptions for the following operations:
+              <ul>
+                <li>Entity::get_instance_handle</li>
+                <li>DomainParticipant::get_discovered_participants</li>
+                <li>DomainParticipant::get_discovered_participant_data</li>
+                <li>DomainParticipant::get_discovered_topics</li>
+                <li>DomainParticipant::get_discovered_topic_data</li>
+                <li>Subscriber::notify_datareaders</li>
+              </ul>
+              <b>Solution:</b> The reference manuals have been updated.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5411<br>
+            dds749
+          </td>
+          <td>
+            <b>trackgenerator crash in resendManager</b><br>
+            <i>
+              Using the dynamic track scenario the trackgenerator crashes in the OpenSplice
+              resendManager.<br>
+              <b>Solution:</b> There was an error in the test to determine if the application
+              has to be triggered. This error has been solved.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5415<br>
+            dds753
+          </td>
+          <td>
+            <b>networking crash in garbage collection</b><br>
+            <i>
+              This problem occurs in an overload situation on a best-effort channel.<br>
+              <b>Solution:</b> An error in networking daemon was fixed, which would cause
+              defragmentationbuffer leakages in certain circumstances when
+              defragmentationbuffers were in short supply.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5428<br>
+            dds759
+          </td>
+          <td>
+            <b>Durability stores topic metadata if master for Transient namespace</b><br>
+            <i>
+              The durability service stores persistent topic metadata if it is master in the
+              system for a Namespace that is configured "durabilityKind=TRANSIENT". The next
+              time it will be started, the service will inject the partitions and topics in
+              the namespace again. This is not the required behaviour for the specified
+              durabilityKind.<br>
+              <b>Solution:</b> The durability service no longer store the topic metadata in
+              case the service is master for the namespace configured with "durabilityKind=TRANSIENT".
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds761
+          </td>
+          <td>
+            <b>Windows: durability service does not inject persistent data on startup</b><br>
+            <i>
+              The durability service is not able to detect persistent data files on disk
+              during startup. Therefore persistent data is not injected at startup on windows.<br>
+              <b>Solution:</b> A bug in the abstraction layer of the product has been changed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds763
+          </td>
+          <td>
+            <b>
+              The information in the OpenSplice configurator is not always up to date and
+              correct
+            </b><br>
+            <i>
+              There are some bugs in the information that is displayed by the OpenSplice DDS
+              Configurator:
+              <ul>
+                <li>
+                  MaxBurstSize is expressed in kilobytes, while it should be bytes.
+                </li>
+                <li>
+                  In a Channel it offers an option to add a Multicast property, which 
+                  is no longer supported by OpenSplice DDS.
+                </li>
+                <li>
+                  For the Discovery it offers the option to add a Multicast property, which
+                  is no longer relevant since all discovery is one using the GlobalPartition.
+                </li>
+              </ul>
+              <b>Solution:</b> The Configurator has been adapted as well as the help information
+              in the configurator.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds766
+          </td>
+          <td>
+            <b>sparc: pa_increment and pa_decrement not implemented properly
+            </b><br>
+            <i>
+              The current implementation of pa_increment() and pa_decrement is not thread safe.
+              This can result in shared memory leaks or even crashes.<br>
+              <b>Solution:</b> A thread safe implementation has been implemented.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5451<br>
+            dds767
+          </td>
+          <td>
+            <b>
+              idlpp hangs when no newline at end of #pragma line  
+            </b><br>
+            <i>
+              Generating code for the following IDL file (there is no character after the last
+              line - not even the carriage return character):
+              <pre><code>
+struct ChatMessage
+{
+ long userID;
+ long index;
+ string content;
+};
+#pragma keylist ChatMessage userID
+              </code></pre>
+              The command used is: 
+              <code>idlpp -I"%OSPL_HOME%\include\dcps\C++\SACPP" -I".."  -S -l cpp Chat.idl</code>
+              When the command is executed, it cannot generate the code (it just stop there forever),
+              and the process has to be killed every time. To make thing worse, it will eat up all
+              memory on the node. Adding a '//'comment after the pragma line solves the problem.<br>
+              <b>Solution:</b> The preprocessor could not handle an EOF after a #pragma line, which
+              has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds769
+          </td>
+          <td>
+            <b>DomainParticipantfactory->get/set_qos() method segfaults.</b><br>
+            <i>
+              The function DDS::DomainparticipanFactory->get_qos method sometimes segfaults. This
+              also applies for its counter part the set_qos method.<br>
+              <b>Solution:</b> The problem has been located and fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds775
+          </td>
+          <td>
+            <b>
+              Caching of instance is not always functioning
+            </b><br>
+            <i>
+              To optimize performance the kernel uses a single place cache for an instance. This cache
+              is only used when calling the destructor of the instance directly. When the generic
+              destructor is used, the cache is bypassed, which reduces performance.<br>
+              <b>Solution:</b> The code has been adapted in order to use the single place cache.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds776
+          </td>
+          <td>
+            <b>
+              Performance improvement for networking service writing sample into shared memory
+            </b><br>
+            <i>
+              When the networking service writes a sample into shared memory, it needs to find the
+              associated instance. In order to find the associated instance, the networking service
+              must create a register message first. This object creation is expensive and by adding
+              a single place cache for these kind of objects, performance is improved considerably.<br>
+              <b>Solution:</b> A single place cache is added for register messages.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5467<br>
+            dds779
+          </td>
+          <td>
+            <b>Only 5 networking channels can be created</b><br>
+            <i>
+              We are trying to use and configure channels with OpenSplice. When we create more than 4
+              channels we get some problems:<br>
+              <ul>
+                <li>
+                  6 channels : Networking process takes 100% of CPU
+                </li>
+                <li>
+                  7 channels : Networking process takes 100% of CPU and sometimes we get a crash of
+                  networking daemon
+                </li>
+                <li>
+                  8 channels :  we always get a crash networking daemon as soon as we start OpenSplice.
+                </li>
+              </ul>
+              <b>Solution:</b> The limit has been extended to 42.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds786
+          </td>
+          <td>
+            <b>For C++, the return_loan call does not seem to be freeing memory</b><br>
+            <i>
+              For C++, the return_loan call does not seem to be freeing memory. Using the return_loan
+              method and periodically printing the heap size shows it growing rapidly. The heap size
+              does not grow if I use pre-allocated buffers.<br>
+              <b>Solution:</b> A problem in the generated code has been detected and solved.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds791
+          </td>
+          <td>
+            <b>optimization writer resend thread</b><br>
+            <i>
+              The writer resend thread will resend all samples that are marked to be resend even if it
+              detects that the network queue is full. In an overload situation the resend thread will
+              start spinning inefficiently against the network queue.<br>
+              <b>Solution:</b> When the writer resend thread detects that the network queue is full,
+              it will slow down the resending.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        No changes were made affecting the API.
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

@@ -1,0 +1,731 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.1</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.1</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.1.<br>
+    In general the following changes are made:
+    <ul>
+      <li>
+        Compliancy with OMG DDS specification 1.2 (formal/07-01-01):
+        <ul>
+          <li>
+            all create methods now contain additional parameter for a status mask
+          </li>
+          <li>
+            listener behaviour has changed: the ON_DATA_AVAILABLE flag is reset before
+            the listener is called. As a consequence when the reader cache is updated
+            and the flag is set again the listener is also called again.
+          </li>
+          <li>
+            changes in WaitSet operations: a call to the wait() methods now requires
+            also input (changed from out to inout).
+          </li>
+          <li>
+            some methods now return a return_code instead of void.
+          </li>
+        </ul>
+        For a complete list see the migration guide (TODO).
+      </li>
+      <li>
+        Beta-release of DBMS-Connect: a pluggable service connecting OpenSplice with any
+        enterprise DataBase Management System (e.g. ANTs and MySQL)
+      </li>
+      <li>
+        IDL preprocessor now requires that the user specifies the CORBA mode (standalone or not)
+      </li>
+      <li>
+        DLRL functional extensions: 
+        <ul>
+          <li>automatic updates</li>
+          <li>support for default mapping</li>
+        </ul>
+      </li>
+    </ul>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds150
+          </td>
+          <td>
+            <b>
+              idlpp generates incorrect C++ and Java (SAJ) code for structs defined
+              without any module
+            </b><br>
+            <i>
+              A struct defined without any module results in incorrect C++ code
+              starting with '::'. Take for example the following definition:
+              <pre><code>
+              struct MonitorTopic{
+	              long dcpsInches;
+              };
+              #pragma keylist MonitorTopic
+              </code></pre>
+              This result in the following C++ code (rejected by some compilers):
+              <pre><code>
+              DDS::DataWriter_ptr
+              ::MonitorTopicTypeSupportFactory::create_datawriter(
+                   gapi_dataWriter handle,
+                   DDS::ccpp_UserData_ptr &statusConditionData
+              );
+              </code></pre>
+              For the SAJ API it leads to errors during the register_type() operation.<br>
+              <b>Solution:</b> idlpp has been adapted to cope with this construction.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4483<br>
+            dds193
+          </td>
+          <td>
+            <b>
+              Not possible to configure Durability Service not to store for a 
+              namespace
+            </b><br>
+            <i>
+              With the OpenSplice Durability Service configuration it is not possible to
+              specify for a specific namespace that persistent data should not be stored
+              on disk while the transiency functionality for that data should be fully
+              operational.<br>
+              <b>Solution:</b> a configuration option has been introduced to specify this
+              behaviour of the durability service (see deployment guide).
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4487<br>
+            dds195
+          </td>
+          <td>
+            <b>IDLPP Java: No argument constructor should create valid object</b><br>
+            <i>
+              For attributes which are of a user defined type which are implemented with
+              a Java class, an object must be allocated. The copy routines in the current
+              OpenSplice implementation generate a segmentation fault when the default
+              constructor is used to allocated a sample, which is consequently written by
+              a writer.<br>
+              <b>Solution:</b> all attributes of the following idl types are being 
+              allocated: array, sequence, struct, string, union, enum. In case of a 
+              constructed type (like the struct or union) all its members are also allocated.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds270
+          </td>
+          <td>
+            <b>OpenSplice Tuner: add sample_info attributes to tabular form</b><br>
+            <i>
+              The sample_info attributes are displayed in a seperate frame after selecting
+              an instance in the table. It would be more convenient to have the sample_info
+              displayed for each instance in the table.<br>
+              <b>Solution:</b> by right-clicking on a sample_info attribute the user is 
+              presented with the option of adding the attribute to the table or adding all
+              attributes to the table.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4584<br>
+            dds284
+          </td>
+          <td>
+            <b>Bad example code in OpenSplice Version 2.2 C Tutorial Guide</b><br>
+            <i>
+              The OpenSplice Version 2.2 C Tutorial Guide contains sample that does not complile.
+              The code snaplets from chapter 4, 5 and 6 are copied from the chatter.c sample code
+              (appendix A), while the example starts building up in earlier sections using different
+              variable names for the same items. (for example "dp" instead of "participant"). The
+              tutorial needs an update for sample code in section 4, 5 and 6.<br>
+              <b>Solution:</b> Tutorial Guide has been adapted.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4676<br>
+            dds382
+          </td>
+          <td>
+            <b>Reference manuals specify RxO = No for LATENCY_BUDGET, OMG specifies Yes</b><br>
+            <i>
+              Reference manuals specify RxO = No for LATENCY_BUDGET, OMG specifies Yes. The
+              OpenSplice implementation also doesn't accept imcompatibility for this QoS. If the
+              data is produced with a QoS setting higher than the reader setting, the data will
+              not arrive. At least the following sections are incorrect: 3.1.3 table QosPolicy
+              Basics and 3.1.3.8<br>
+              <b>Solution:</b> all reference manuals have been adapted to comply with the OpenSplice
+              product.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds354
+          </td>
+          <td>
+            <b>SACPP should be available as customlib
+            </b><br>
+            <i>
+              In order to allow the customer to use a different compiler with the StandAlone C++
+              language binding, the API should be made available as a customlib.<br>
+              <b>Solution:</b> this language binding is also made available as a custom library
+              the customer can generate. Detailed instructions can be found in 
+              <code>$OSPL_HOME/custom_lib/sacpp/README</code>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds438
+          </td>
+          <td>
+            <b>DLRL Module: Bug in dealing with a dispose of an object</b><br>
+            <i>
+              When an object is deleted which is related from by at least two different
+              DLRL objects (at least one of these relations is a collection type) then
+              an exception occurs IF and only if the relation representing a collection 
+              is made as the last relation to the to-be-deleted object. If the 
+              get_modified_objects on each typed object home is called then a crash will
+              occur because the cleanup of the relations to the to-be-deleted object 
+              was erroneous and inserted different object types into one of the modified lists.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds439
+          </td>
+          <td>
+            <b>DLRL Module: Bug in constructing relations between DLRL objects</b><br>
+            <i>
+              When the DLRL tries to create a relation from an already existing DLRL Object
+              to a non existing DLRL Object it waits until it can correctly translate the
+              relation. If in a later update round the target related DLRL object arrives
+              AND a dispose arrives on the DLRL Object waiting for the relation then the
+              DLRL Object being disposed will be shown in the deleted and modified objects
+              list IF the disposed DLRL Object is processed AFTER the DLRL Object it has a
+              relation to.<br>
+              The same goes for a modify instead of a dispose, the object will then appear
+              twice in the modified list.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4735<br>
+            dds448
+          </td>
+          <td>
+            <b>
+              idlpp segfaults when passed a filename without extension or when the file does not exist
+            </b><br>
+            <i>
+              Use the following sequence to reproduce the problem:<br>
+              <ul>
+                <li>Create a file 'aaa', possibly with some idl code in it.</li>
+                <li>run idlpp -l java aaa</li>
+              </ul>
+              idlpp fails with a segmantation fault.<br>
+              <b>Solution:</b> idlpp has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds466
+          </td>
+          <td>
+            <b>
+              OSPLDCG: Not listing typename for the multiPlaceTopic element in the mapping XML
+              causes errors.
+            </b><br>
+            <i>
+              When entering the following XML into the mapping XML file required by the DCG an
+              error will occur in interpreting the XML, while it is valid input.
+              <pre><code>
+                &lt;multiPlaceTopic name='LinkTopic'&gt;
+                    &lt;keyDescription content='NoOid'&gt;
+                        &lt;keyField>pKey&lt;/keyField&gt;
+                    &lt;/keyDescription&gt;
+                &lt;/multiPlaceTopic&gt;
+              </code></pre>
+              <b>Solution:</b> DCG now accepts this input.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds475
+          </td>
+          <td>
+            <b>IDLPP: #pragma with leading white spaces not support in SACPP mode</b><br>
+            <i>
+              The IDL preprocessor does not allow #pragma with leading white spaces when
+              generating code for StandAlone C Plus Plus mode.<br>
+              <b>Solution:</b> a #pragma statement can be preceded by any amount of white space.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds476
+          </td>
+          <td>
+            <b>IDLPP: escape character '_' not supported</b><br>
+            <i>
+              The IDL preprocessor gives an error, when a member of a struct starts with an
+              '_': the escape character for IDL preprocessors. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds482
+          </td>
+          <td>
+            <b>IDLPP: unsupported types are handled inconsistently</b><br>
+            <i>
+              Although the 'long double' type is not supported it is also not correctly parsed.
+              idlpp treats the unsupported 'long double' type differently then other unsupported
+              types (like 'any'). For the 'long double' it produces the following error message:
+              <pre><code>
+                *** DDS error in file Foo.idl: syntax error near the token double (line: 17, column: 19)
+              </code></pre>
+              While for other unsupported types, for example 'any', it produces the following output:
+              <pre><code>
+                DDS warning not supported yet: any type at line 16 column 11, parsing is stopped
+              </code></pre>
+              Using the type 'Object' even leads to a segmentation fault.<br>
+              <b>Solution:</b> the idl preprocessor now aborts with an error message when the user tries
+              to use an unsupported type in a topic. So only when an unsupported type is used within a
+              structure or union that has been identified as a topic type (by means of the #pragma 
+              statement) the preprocessor will abort, otherwise the types are just ignored.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4701<br>
+            dds487
+          </td>
+          <td>
+            <b>idlpp returns zero (success) return code on error in #pragma keylist</b><br>
+            <i>
+              Generally idlpp returns a non-zero (=failure) error code when it reports 
+              errors. However, when errors in a #pragma keylist are reported, it returns
+              zero (=success). This is annoying when idlpp is invoked from generation
+              tools such as make and ant. Example: 
+              <pre><code>
+              module topics { 
+                  struct MyTopic { 
+                      long key; 
+                      string data; 
+                  }; 
+              #pragma keylist MyTopics key 
+              };
+              </code></pre>
+              idlpp also writes its error messages to stdout and its informational message
+              to stderr.<br>
+              <b>Solution:</b> fixed idlpp.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4822<br>
+            dds495
+          </td>
+          <td>
+            <b>OSPL report if license check fails</b><br>
+            <i>
+              Currently, there is no OSPL report if the license check fails. If the license
+              check fails, for example during a call to DDS_DataReader_create_querycondition,
+              the operation returns a NULL pointer, without an indication of the reason. 
+              <b>Solution:</b>When a process fails to check out a licensed feature, the error
+              is reported to standard error. To allow users that are not able to analyse the
+              licensing problems by means of the standard error, a license checkout failure
+              shall also be reported in the OpenSplice error log.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4965<br>
+            dds578
+          </td>
+          <td>
+            <b>idlpp does not allow specification of an output directory for generated files</b><br>
+            <i>
+              idlpp generates its output to the current working directory only. It will be very
+              convenient to have an option to specify the output directory.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4483<br>
+            dds193
+          </td>
+          <td>
+            <b>Not possible to configure Durability Service not to store for a namespace</b><br>
+            <i>
+              With the OpenSplice Durability Service configuration it is not possible to
+              specify for a specific namespace that persistent data should not be stored on
+              disk while the transiency functionality for that data should be fully
+              operational.
+              <b>Solution:</b>It is now possible to instruct the Durability Service not to store
+              data on persistent storage for a specific namespace. See deployment guide on how
+              to use this configuration setting.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4487<br>
+            dds195
+          </td>
+          <td>
+            <b>IDLPP Java: No argument constructor should create valid object</b><br>
+            <i>
+              For attributes which are of a user defined type which are implemented with
+              a Java class, an object must be allocated. If the default constructor for the
+              topic is used, the attribute is intialized to nil, which causes a segmentation
+              fault when reading or writing the topic. A Java exception would be more 
+              acceptable for better tracability, but allocating the object is more convenient
+              for the users.
+              <b>Solution:</b>All attributes types: arrays, sequences, structs, strings,
+              unions, enums and any possible combination of them are now recursively 
+              initialized. Sequences will always be initialized to 0 elements, unions
+              will always be initialized to their first branch, strings will always be
+              initialized to "", and enums will always be initialized to their first label.
+              Arrays will be initialized to their proper dimensions and when of non-primitive
+              types each individual element will be allocated separately.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds224
+          </td>
+          <td>
+            <b>OSPL DCG: Two mono relations may be mapped on the same foreign key</b><br>
+            <i>
+              It is currently possible to map two mono relations of a DLRL object onto the
+              same foreign key field in the underlying topic. This is a problem because it
+              now becomes possible to change the underlying topic foreign key field value
+              with two different relation setters resulting in a topic being distributed 
+              which does not match the DLRL object on which the topic is based. 
+              <b>Solution:</b>The DCG will now raise an error when it detects that one
+              foreign key is used for more then one mono relation. Take note that mapping
+              two relations on the same so-called 'shared' key is allowed, as in that case
+              the 'shared' key already defines the identity of the object and is therefore
+              immutable and the problems occurring with foreign keys can not occur here.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds228
+          </td>
+          <td>
+            <b>
+              DLRL Module & OSPL DCG: The DCG only supports keyDescription elements with
+              content attribute value 'NoOid'
+            </b><br>
+            <i>
+              The DLRL only supports a mapping where the topic model is leading and an 
+              object model is mapped onto the existing topic model. The DCG thus always
+              requires three input files (idl file containing the DLRL object model, idl
+              file containing the DCPS topic model and an XML file containing the mapping
+              between those files). This is known as 'predefined' mapping, where an Object
+              model is mapped onto an already existing topic model. The specification
+              however also defines a 'default' mapping, which is not supported by the DLRL.
+              <b>Solution:</b>The DLRL has now been enhanced with default mapping. The DCG
+              now supports default mapping and predefined mapping as defined in the
+              specification (version 1.2 formal/07-01-01).<br>
+              The DCG is also enhanced with a hybrid form where the user may choose to map
+              some files using predefined mapping and the rest following default mapping. In
+              this scenario the user must provide a DCPS idl file for all classes mapped
+              using predefined mapping (simply put: all dlrl valuetypes which have a
+              'classMapping' element with a 'mainTopic' element defined). The user may also
+              choose to only deviate from default mapping of a class for only one or more
+              attributes. The rule is simple; as long as no mainTopic element is defined for
+              a classMapping element the DLRL will try to complete the mapping following
+              default mapping rules and adhering to all deviations made by the user in the
+              XML file. For such deviations no DCPS idl needs to be provided, all DCPS idl
+              will be generated automatically.<br>
+              <br>
+              If the DCG needs to complete the Mapping XML file it will automatically generate
+              an XML file containing the complete mapping of the DLRL valuetypes to the DCPS
+              topics. This file contains the same information as the mapping XML provided to
+              the DCG extended with any mapping information the DCG had to generate. This file
+              will be generated in the output directory specified and be named after the value
+              of the 'Dlrl' element of the original XML element suffixed by '.xml'. The file
+              may be used as input for the DCG again, if so desired.<br>
+              The DCG will also generate a DCPS idl file containing all generated DCPS topic
+              model information, this file shall also be named after the value of the 'Dlrl'
+              element of the original XML element suffixed by '.idl'. This idl file should be
+              used as input for idlpp.<br>
+              <br>
+              Furthermore the DCG has been enhanced to generate files for any struct, union or
+              enum defined in the DLRL idl file (no matter if it's used by a DLRL object or
+              not). These files will be generated following the same idl to java mapping as
+              followed by idlpp. The DCG will not however interpret any #pragma keylist
+              directives. Such directives should not be inserted in the DLRL ild file, but in a
+              separate file.<br>
+              <br>
+              The DCG now thus supports 'SimpleOid' and 'FullOid' content types for
+              'keyDescription' elements. This means that for any class defined with such a
+              content type for it's 'mainTopic' the 'create_object' on the typed ObjectHome 
+              operation should be used to create an instance of that class. This is completely
+              in accordance with the specification, and different from creating objects mapped
+              following predefined mapping which use the 'create_unregistered_object and
+              'create_object' operations.<br>
+              The big advantage of default mapped objects is thus (next to not having to think
+              about the topic model, i.e., it's simpler) that one does not have to define a
+              unique key value for each instance. The DLRL will automatically take care of this.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds230
+          </td>
+          <td>
+            <b>DLRL module: Optional mono relations (cardinality of 0..1) are not supported
+            </b><br>
+            <i>
+              Currently all mono relations defined on DLRL objects behave as relations
+              with cardinality of 1. This means that each relation must be set for writeable
+              objects before being able to write the objects (else a DDS.InvalidObjects 
+              exception is raised). It also means that when the DLRL at reader side cannot
+              locate the related object it will raise a DDS.NotFound exception when attempting
+              to get the related object. This is exactly how relations with a cardinality of
+              1 should behave. Relations with a cardinality of 0..1 require support of null
+              pointer representation of which the semantics are currently missing from the
+              specification.
+              <b>Solution:</b>The DLRL now supports optional relations (cardinality of 
+              0..1). This change required the addition of a validityField element in the
+              DTD. The DTD is used to validate the so-called mapping XML file (the XML file
+              containing the mapping between DLRL and DCPS entities, needed by OSPLDCG). For
+              each monoRelation element a validityField element may be specified, if specified
+              it means that the monoRelation in question may be set to NULL. For DLRL 
+              writer applications it means that such relations can never cause an
+              InvalidObjects exception when trying to write changes. For DLRL reader
+              applications it means that such relations may return NULL when navigating
+              towards the related object. Take note that such optional relations may still
+              throw a NotFound exception if the related object could not be found, but was
+              not specified as NULL.<br>
+              The validityField refers to a field specified in the topic onto which the
+              object is mapped, the validity field may only be mapped once and must be on an
+              integer idl type (e.g., boolean, long, short). This validityField is used by the
+              DLRL to determine if it should try and resolve the related object (i.e. interpret
+              the foreign keys describing the relation) or simply set it to NIL.  The value '0'
+              (or 'FALSE' in case of boolean) indicates the foreign keys of the monoRelation
+              must not be interpreted, while the value '1' (or 'TRUE' in case of boolean)
+              indicates the foreign keys of the monoRelation must be interpreted, if the related
+              object can not be found a NotFound exception is raised when trying to navigate
+              towards the object.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds261
+          </td>
+          <td>
+            <b>
+              All historical data received by a late joining reader is marked ALIVE, even
+              if the instance has been unregistered before.
+            </b><br>
+            <i>
+              The following scenario illustrates the problem:
+              <ul>
+                <li>A writer for transient topic A is created.</li>
+                <li>The writer does a write, followed by an unregister.</li>
+                <li>A reader for transient topic A is created.</li>
+              </ul>
+              The reader receives the sample previously written by the writer. The 
+              corresponding instance state should now be NOT_ALIVE_NO_WRITERS but
+              instead, it is ALIVE.<br>
+              <b>Solution:</b> implementation has changed, so late joining readers see the 
+              instance as NOT_ALIVE_NO_WRITERS.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4702<br>
+            dds425
+          </td>
+          <td>
+            <b>DLRL: automatic update mode needed</b><br>
+            <i>
+              At this moment the DLRL provides the manual update mode. For a large number
+              of cases, this is the best mechanism to retrieve information by using the DLRL
+              However, in systems there are also a number of cases where applications need to
+              be triggered for updates on data. In the manual mode you have to poll, which is
+              not a very optimal way. A lot of resources are waisted this way.<br>
+              <b>Solution:</b> automatic update mode has been implemented.
+          </td>
+        </tr> 
+        <tr>
+          <td>
+            dds442
+          </td>
+          <td>
+            <b>DLRL Module: Several specification inconsistencies</b><br>
+            <i>
+              <ul>
+                <li>
+                  object_home() is defined on the typed ObjectRoot and thus 
+                  returns FooHome instead of ObjectHome, this is not compliant to the OMG DDS
+                  specification
+                </li>
+                <li>
+                  Values such as "module::topic" for the name attribute of the mainTopic
+                  element are allowed, while this does not conform to topic name rules as
+                  specified in the OMG DDS specification.
+                </li>
+              </ul>
+              <b>Solution:</b>
+              <ul>
+                <li>
+                  Moved the object_home() operation from the typed ObjectRoot to the
+                  generic ObjectRoot. It therefore should return the generic ObjectHome instead
+                  of the typed ObjectHome (e.g FooHome). 
+                </li>
+                <li>
+                  The DCG no longer allows "module::topic" as name for mainTopic elements in
+                  the mapping XML file. All topic names must adhere to the following regular
+                  expression: [a-zA-Z_-][a-zA-Z0-9_]*
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds458
+          </td>
+          <td>
+            <b>IDLPP: remove default mode (standalone or corba)</b><br>
+            <i>
+              Currently when using the IDLPP the user selects a programming language and the
+              preprocessor will generate code for a specific mode (standalone or corba 
+              cohabitation) by default. The default mode is different for each language binding,
+              which is very confusing.<br>
+              <b>Solution:</b> the idlpp now mandates the cohabitation mode. The user must specify
+              -S or -C (standalone or corba cohabitation).
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds486
+          </td>
+          <td>
+            <b>Request for atomic write and dispose operation</b><br>
+            <i>
+              With the dispose() operation only the key values of the given sample is communicated, 
+              which delivers at the reader side an invalid sample allowing the reader only to detect
+              the instance state change without knowing the last state of the instance. An operation
+              communicating the entire sample and disposing the instance can solve this problem.<br>
+              <b>Solution:</b> the operation write_dispose() has been added to OpenSplice. Read the
+              reference manual for the behaviour.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds541
+          </td>
+          <td>
+            <b>DCPS SAJ: reading topic with sequences of length 0 incorrect</b><br>
+            <i>
+              When reading a topic containing sequences of length 0 the buffer is
+              initialized with a NULL object instead of an array with zero elements.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds554
+          </td>
+          <td>
+            <b>Java representation of a union is not according to the IDL-Java mapping.</b><br>
+            <i>
+              The Java code generated by idlpp to represent an IDL union does not comply to the
+              IDL-Java language mapping. When trying to access a branch that is not currently
+              active (i.e. the current discriminator does not represent the branch that is
+              being accessed), the accessor method should throw a BAD_OPERATION exception. The
+              current code does not even check whether the current discriminator is compliant
+              to the selected branch.<br>
+              <b>Solution:</b> idlpp is adapted to generate correct code checking the
+              descriminator when accessing a union for a specific label.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

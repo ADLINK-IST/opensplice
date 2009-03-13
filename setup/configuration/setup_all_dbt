@@ -1,0 +1,153 @@
+#
+# Test environment setup
+#
+INCLUDE_DBT_ABSTRACTION=yes;			export INCLUDE_DBT_ABSTRACTION
+INCLUDE_DBT_CONFIGURATION=yes;			export INCLUDE_DBT_CONFIGURATION
+INCLUDE_DBT_USER=yes;				export INCLUDE_DBT_USER
+INCLUDE_DBT_KERNEL=yes;				export INCLUDE_DBT_KERNEL
+INCLUDE_DBT_DATABASE=yes;			export INCLUDE_DBT_DATABASE
+INCLUDE_DBT_UTILITIES=yes;			export INCLUDE_DBT_UTILITIES
+INCLUDE_DBT_DLRL=yes;				export INCLUDE_DBT_DLRL
+
+if [ -n "$INCLUDE_SERVICES" ]
+then
+    INCLUDE_DBT_SERVICES=yes
+    export INCLUDE_DBT_SERVICES
+    if [ -n "$INCLUDE_SERVICES_NETWORKING" ]; then
+        INCLUDE_DBT_SERVICES_NETWORKING=yes
+    export INCLUDE_DBT_SERVICES_NETWORKING
+    else
+    unset INCLUDE_DBT_SERVICES_NETWORKING
+    fi
+    if [ -n "$INCLUDE_SERVICES_DDSI" ]; then
+        INCLUDE_DBT_SERVICES_DDSI=yes
+    export INCLUDE_DBT_SERVICES_DDSI
+    else
+    unset INCLUDE_DBT_SERVICES_NETWORKING
+    fi
+    if [ -n "$INCLUDE_SERVICES_COMMON" ]; then
+        INCLUDE_DBT_SERVICES_COMMON=yes
+	export INCLUDE_DBT_SERVICES_COMMON
+    else
+	unset INCLUDE_DBT_SERVICES_COMMON
+    fi
+    if [ -n "$INCLUDE_SERVICES_SPLICED" ]; then
+        INCLUDE_DBT_SERVICES_SPLICED=yes
+	export INCLUDE_DBT_SERVICES_SPLICED
+    else
+	unset INCLUDE_DBT_SERVICES_SPLICED
+    fi
+    if [ -n "$INCLUDE_SERVICES_DURABILITY" ]; then
+        INCLUDE_DBT_SERVICES_DURABILITY=yes
+	export INCLUDE_DBT_SERVICES_DURABILITY
+    else
+	unset INCLUDE_DBT_SERVICES_DURABILITY
+    fi
+    if [ -n "$INCLUDE_SERVICES_DBMS" ]; then
+        INCLUDE_DBT_SERVICES_DBMS=yes
+	export INCLUDE_DBT_SERVICES_DBMS
+    else
+	unset INCLUDE_DBT_SERVICES_DBMS
+    fi
+else
+    unset INCLUDE_DBT_SERVICES
+fi
+
+if [ -n "$INCLUDE_TOOLS" ]
+then
+    INCLUDE_DBT_TOOLS=yes
+    export INCLUDE_DBT_TOOLS
+    if [ -n "$INCLUDE_TOOLS_TUNER" ]; then
+        INCLUDE_DBT_TOOLS_TUNER=yes
+	export INCLUDE_DBT_TOOLS_TUNER
+    else
+	unset INCLUDE_DBT_TOOLS_TUNER
+    fi
+    if [ -n "$INCLUDE_TOOLS_IDLPP" ]; then
+        INCLUDE_DBT_TOOLS_IDLPP=yes
+	export INCLUDE_DBT_TOOLS_IDLPP
+    else
+	unset INCLUDE_DBT_TOOLS_IDLPP
+    fi
+    if [ -n "$INCLUDE_TOOLS_SHMDUMP" ]; then
+        INCLUDE_DBT_TOOLS_SHMDUMP=yes
+	export INCLUDE_DBT_TOOLS_SHMDUMP
+    else
+	unset INCLUDE_DBT_TOOLS_SHMDUMP
+    fi
+else
+    unset INCLUDE_DBT_TOOLS
+fi
+
+if [ -n "$INCLUDE_API" ]
+then
+    INCLUDE_DBT_API=yes
+    export INCLUDE_DBT_API
+    if [ -n "$INCLUDE_API_DCPS" ]; then
+        INCLUDE_DBT_API_DCPS=yes
+	export INCLUDE_DBT_API_DCPS
+	if  [ -n "$INCLUDE_API_DCPS_GAPI" ]; then
+            INCLUDE_DBT_API_DCPS_GAPI=yes
+	    export INCLUDE_DBT_API_DCPS_GAPI
+	    if  [ -n "$INCLUDE_API_DCPS_SAC" ]; then
+                INCLUDE_DBT_API_DCPS_SAC=yes
+	        export INCLUDE_DBT_API_DCPS_SAC
+	    else
+		unset INCLUDE_DBT_API_DCPS_SAC
+	    fi
+	    if  [ -n "$INCLUDE_API_DCPS_SAJ" ]; then
+                INCLUDE_DBT_API_DCPS_SAJ=yes
+	        export INCLUDE_DBT_API_DCPS_SAJ
+	    else
+		unset INCLUDE_DBT_API_DCPS_SAJ
+	    fi
+	    if  [ -n "$INCLUDE_API_DCPS_CCPP" ]; then
+                INCLUDE_DBT_API_DCPS_CCPP=yes
+	        export INCLUDE_DBT_API_DCPS_CCPP
+	    else
+		unset INCLUDE_DBT_API_DCPS_CCPP
+	    fi
+	else
+	    unset INCLUDE_DBT_API_DCPS_SAC
+	fi
+	if  [ -n "$INCLUDE_API_DCPS_JAVA" ]; then
+            INCLUDE_DBT_API_DCPS_JAVA=yes
+	    export INCLUDE_DBT_API_DCPS_JAVA
+	else
+	    unset INCLUDE_DBT_API_DCPS_JAVA
+	fi
+	if  [ -n "$INCLUDE_API_DCPS_JNI" ]; then
+            INCLUDE_DBT_API_DCPS_JNI=yes
+	    export INCLUDE_DBT_API_DCPS_JNI
+	else
+	    unset INCLUDE_DBT_API_DCPS_JNI
+	fi
+    else
+	unset INCLUDE_DBT_API_DCPS_JNI
+    fi
+    if  [ -n "$INCLUDE_API_CM" ]; then
+        INCLUDE_DBT_API_CM=yes
+	export INCLUDE_DBT_API_CM
+    else
+	unset INCLUDE_DBT_API_CM
+    fi
+    if  [ -n "$INCLUDE_DLRL" ]; then
+	INCLUDE_DBT_LOC=yes
+	export INCLUDE_DBT_LOC
+        if  [ -n "$INCLUDE_API_DLRL" ]; then
+            INCLUDE_DBT_API_DLRL=yes
+      	    export INCLUDE_DBT_API_DLRL
+            if  [ -n "$INCLUDE_API_DLRL_SAJ" ]; then
+                INCLUDE_DBT_API_DLRL_SAJ=yes
+                export INCLUDE_DBT_API_DLRL_SAJ
+            else
+                unset INCLUDE_DBT_API_DLRL_SAJ
+            fi
+        else
+            unset INCLUDE_DBT_LOC
+            unset INCLUDE_DBT_API_DLRL
+        fi
+    fi
+else
+    unset INCLUDE_DBT_API
+fi

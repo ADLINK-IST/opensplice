@@ -1,0 +1,507 @@
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)TypeSupport DDS_TypeSupport
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) $(type_name)TypeSupport
+$sp($(spaces))$(type_name)TypeSupport__alloc (
+$sp($(spaces))    void
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)TypeSupport_register_type (
+$sp($(spaces))    $(type_name)TypeSupport _this,
+$sp($(spaces))    const DDS_DomainParticipant domain,
+$sp($(spaces))    const DDS_string name
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_string
+$sp($(spaces))$(type_name)TypeSupport_get_type_name (
+$sp($(spaces))    $(type_name)TypeSupport _this
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))#ifndef _DDS_sequence_$(type_name)_defined
+$sp($(spaces))#define _DDS_sequence_$(type_name)_defined
+$sp($(spaces))typedef struct {
+$sp($(spaces))    DDS_unsigned_long _maximum;
+$sp($(spaces))    DDS_unsigned_long _length;
+$sp($(spaces))    $(type_name) *_buffer;
+$sp($(spaces))    DDS_boolean _release;
+$sp($(spaces))} DDS_sequence_$(type_name);
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_sequence_$(type_name) *DDS_sequence_$(type_name)__alloc (void);
+$sp($(spaces))$(DLL_IMPORTEXPORT) $(type_name) *DDS_sequence_$(type_name)_allocbuf (DDS_unsigned_long len);
+$sp($(spaces))#endif /* _DDS_sequence_$(type_name)_defined */
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter DDS_DataWriter
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_enable DDS_Entity_enable
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_status_changes DDS_Entity_get_status_changes
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_statuscondition DDS_Entity_get_statuscondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_instance_handle DDS_Entity_get_instance_handle
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_assert_liveliness DDS_DataWriter_assert_liveliness
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_listener DDS_DataWriter_get_listener
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_liveliness_lost_status DDS_DataWriter_get_liveliness_lost_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_matched_subscription_data DDS_DataWriter_get_matched_subscription_data
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_matched_subscriptions DDS_DataWriter_get_matched_subscriptions
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_offered_deadline_missed_status DDS_DataWriter_get_offered_deadline_missed_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_offered_incompatible_qos_status DDS_DataWriter_get_offered_incompatible_qos_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_publication_match_status DDS_DataWriter_get_publication_match_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_publisher DDS_DataWriter_get_publisher
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_qos DDS_DataWriter_get_qos
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_get_topic DDS_DataWriter_get_topic
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_set_listener DDS_DataWriter_set_listener
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataWriter_set_qos DDS_DataWriter_set_qos
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_InstanceHandle_t
+$sp($(spaces))$(type_name)DataWriter_register_instance (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_InstanceHandle_t
+$sp($(spaces))$(type_name)DataWriter_register_instance_w_timestamp (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_Time_t *source_timestamp
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_unregister_instance (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_unregister_instance_w_timestamp (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t handle,
+$sp($(spaces))    const DDS_Time_t *source_timestamp
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_write (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_write_w_timestamp (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t handle,
+$sp($(spaces))    const DDS_Time_t *source_timestamp
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_dispose (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t instance_handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_dispose_w_timestamp (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t instance_handle,
+$sp($(spaces))    const DDS_Time_t *source_timestamp
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_writedispose (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t instance_handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_writedispose_w_timestamp (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *instance_data,
+$sp($(spaces))    const DDS_InstanceHandle_t instance_handle,
+$sp($(spaces))    const DDS_Time_t *source_timestamp
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataWriter_get_key_value (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    $(type_name) *key_holder,
+$sp($(spaces))    const DDS_InstanceHandle_t handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_InstanceHandle_t
+$sp($(spaces))$(type_name)DataWriter_lookup_instance (
+$sp($(spaces))    $(type_name)DataWriter _this,
+$sp($(spaces))    const $(type_name) *key_holder
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader DDS_DataReader
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_enable DDS_Entity_enable
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_status_changes DDS_Entity_get_status_changes
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_statuscondition DDS_Entity_get_statuscondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_instance_handle DDS_Entity_get_instance_handle
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_create_querycondition DDS_DataReader_create_querycondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_create_readcondition DDS_DataReader_create_readcondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_delete_contained_entities DDS_DataReader_delete_contained_entities
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_delete_readcondition DDS_DataReader_delete_readcondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_listener DDS_DataReader_get_listener
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_liveliness_changed_status DDS_DataReader_get_liveliness_changed_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_matched_publication_data DDS_DataReader_get_matched_publication_data
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_matched_publications DDS_DataReader_get_matched_publications
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_qos DDS_DataReader_get_qos
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_requested_deadline_missed_status DDS_DataReader_get_requested_deadline_missed_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_requested_incompatible_qos_status DDS_DataReader_get_requested_incompatible_qos_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_sample_lost_status DDS_DataReader_get_sample_lost_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_sample_rejected_status DDS_DataReader_get_sample_rejected_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_subscriber DDS_DataReader_get_subscriber
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_subscription_match_status DDS_DataReader_get_subscription_match_status
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_get_topicdescription DDS_DataReader_get_topicdescription
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_set_listener DDS_DataReader_set_listener
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_set_qos DDS_DataReader_set_qos
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReader_wait_for_historical_data DDS_DataReader_wait_for_historical_data
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read_w_condition (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take_w_condition (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read_next_sample (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    $(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfo *sample_info
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take_next_sample (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    $(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfo *sample_info
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read_instance (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take_instance (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read_next_instance (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take_next_instance (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_read_next_instance_w_condition (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_take_next_instance_w_condition (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_return_loan (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReader_get_key_value (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    $(type_name) *key_holder,
+$sp($(spaces))    const DDS_InstanceHandle_t handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_InstanceHandle_t
+$sp($(spaces))$(type_name)DataReader_lookup_instance (
+$sp($(spaces))    $(type_name)DataReader _this,
+$sp($(spaces))    const $(type_name) *key_holder
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView DDS_DataReaderView
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_enable DDS_Entity_enable
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_get_instance_handle DDS_Entity_get_instance_handle
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_get_qos DDS_DataReaderView_get_qos
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_get_datareader DDS_DataReaderView_get_datareader
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_set_qos DDS_DataReaderView_set_qos
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_create_readcondition DDS_DataReaderView_create_readcondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_create_querycondition DDS_DataReaderView_create_querycondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_delete_readcondition DDS_DataReaderView_delete_readcondition
+$sp($(spaces))
+$sp($(spaces))#define $(type_name)DataReaderView_delete_contained_entities DDS_DataReaderView_delete_contained_entities
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read_next_sample (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    $(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfo *sample_info
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take_next_sample (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    $(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfo *sample_info
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read_instance (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take_instance (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read_next_instance (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take_next_instance (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_SampleStateMask sample_states,
+$sp($(spaces))    const DDS_ViewStateMask view_states,
+$sp($(spaces))    const DDS_InstanceStateMask instance_states
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_return_loan (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read_w_condition (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take_w_condition (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_read_next_instance_w_condition (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_take_next_instance_w_condition (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    DDS_sequence_$(type_name) *received_data,
+$sp($(spaces))    DDS_SampleInfoSeq *info_seq,
+$sp($(spaces))    const DDS_long max_samples,
+$sp($(spaces))    const DDS_InstanceHandle_t a_handle,
+$sp($(spaces))    const DDS_ReadCondition a_condition
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_ReturnCode_t
+$sp($(spaces))$(type_name)DataReaderView_get_key_value (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    $(type_name) *key_holder,
+$sp($(spaces))    const DDS_InstanceHandle_t handle
+$sp($(spaces))    );
+$sp($(spaces))
+$sp($(spaces))$(DLL_IMPORTEXPORT) DDS_InstanceHandle_t
+$sp($(spaces))$(type_name)DataReaderView_lookup_instance (
+$sp($(spaces))    $(type_name)DataReaderView _this,
+$sp($(spaces))    $(type_name) *key_holder
+$sp($(spaces))    );
+$sp($(spaces))

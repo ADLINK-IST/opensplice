@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.1.1</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.1.1</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.1.1.<br>
+    In general the following changes are made:
+    <ul>
+      <li>
+        DLRL C++ language binding (see for limitations <a href="knownissues.html#dlrl">DLRL Known Issues</a>)
+      </li>
+      <li>
+        OpenSplice now provides shared libraries (with extension .so) for the AIX Power5+ platform.
+      </li>
+    </ul>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4651<br>
+            dds363
+          </td>
+          <td>
+            <b>
+              durability - alignment of transient data takes 100% cpu load
+            </b><br>
+            <i>
+              During startup of the system the durability service takes 100% CPU load for
+              a few seconds.<br>
+              <b>Solution:</b>It is not a problem that durability threads take 100%
+              CPU load during startup if other applications still are able to do processing. 
+              This can be achieved by configuring the priority and scheduling class
+              of durability threads.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds555
+          </td>
+          <td>
+            <b>
+              idlpp does not allow keylist on typedef-ed structs or unions
+            </b><br>
+            <i>
+              The following construction is not accepted by idlpp:
+              <pre><code>
+              struct b_type_struct {
+                  long member;
+              };
+              typedef b_type_struct b_type;
+
+              #pragma keylist b_type
+              </code></pre>
+              *** DDS error in file test.idl: Key can only be specified for struct
+              and union types near the token #pragma  keylist b_type (line: 15, column: 0)<br>
+              The typedef does not seem to be expanded to its basic typel.<br>
+              <b>Solution:</b>idlpp now accepts keylists on typedef-ed structures or unions.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4963,4964<br>
+            dds560,dds576,dds577
+          </td>
+          <td>
+            <b>Transient data leakage</b><br>
+            <i>
+              In many scenario's transient data is leaked. Even when an instance is disposed and
+              has no alive writers and the service_cleanup_delay has expired, the data is still
+              in the transient store.<br>
+              <b>Solution:</b>the leak has been found and fixed. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4940<br>
+            dds563
+          </td>
+          <td>
+            <b>Wait for historical data goes wrong during start-up of rtvtun
+            </b><br>
+            <i>
+              RTVTUN is started before OpenSplice and waits for connection to OpenSplice. When
+              connected, a DataReader for persistent data is created. For that DataReader, 
+              wait_for_historical_data is called, which passes, but no data is received in the
+              DataReader nor is any data received that is produced later.<br>
+              <b>Solution:</b>A problem in the startup synchronization has been detected and fixed.
+              Applications can now be started before OpenSplice is running.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds584
+          </td>
+          <td>
+            <b>IDLPP SAJ: generates incorrect code for constant assigned from other constant 
+            </b><br>
+            <i>
+              For the following IDL definition, IDLPP generates incorrect code:
+              <pre><code>
+              const long x = 10;
+              const long y = x;
+              </code></pre>
+              The second generated assignment references x instead of x.value.<br>
+              <b>Solution:</b>idlpp now generates the correct code.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5033<br>
+            dds600
+          </td>
+          <td>
+            <b>persistent data inconsistent after reboot during startup</b><br>
+            <i>
+              After reboot of a node during startup, if alignment of durable
+              data is not yet complete, the persistent data set is inconsistent.
+              <b>Solution:</b>an extra safety mechanism has been implemented to
+              prevent inconsistency in persistent data.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5043<br>
+            dds606
+          </td>
+          <td>
+            <b>OSPL: 3.1 gives a lot of erros in ospl-error.log</b><br>
+            <i>
+              In the ospl-error.log a lot of get userData errors are generated.
+              <pre><code>
+              ### Report Message ###
+              Type : ERROR
+              Context : User Entity
+              File : ../../code/u_entity.c
+              Line : 750
+              Code : 0
+              Description : No entity specified for get userData
+              Node : moc_1c1
+              Process : 6646
+              Thread : ListenerEventThread b6bfcbb0
+              Timestamp : 1187279513.149493000 (Thu Aug 16 15:51:53 2007)
+              </code></pre>
+              <b>Solution:</b>The error message has been removed as it was incorrect.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5044<br>
+            dds608
+          </td>
+          <td>
+            <b>waitset_wait triggers but reader take gives no data</b><br>
+            <i>
+              The infra lib deamons get in an endless loop. This is the code executed:
+              <pre><code>
+              while true {
+                  .
+                  .
+                  .
+                  conditionList = DDS_ConditionSeq__alloc();
+                  memset (conditionList, 0, sizeof(DDS_ConditionSeq));
+
+                  conditionList->_maximum = (DDS_unsigned_long)100;
+                  conditionList->_length = 0UL;
+                  conditionList->_release = TRUE;
+                  conditionList->_buffer = DDS_ConditionSeq_allocbuf((DDS_unsigned_long)100);
+
+                  ddsResult = ilibCheckDdsResult(DDS_WaitSet_wait(waitSet,
+                                 conditionList,&timeout), /* time out is inf */
+                                 "DDS_WaitSet_wait");
+                  /*** returns OK ******/
+                  if (ddsResult == DDS_RETCODE_OK && conditionList->_length) {
+                      ilibLogWrite1("conditionList->_length = %d", conditionList->_length);
+
+                      if (conditionList->_buffer[0] == nodeStateRequestReadCondition) {
+                          ddsResult = ilibCheckDdsResult(ILIB_node_state_requestDataReader_take_w_condition(ilib_ns_d_context->nodeStateRequestReader,
+                                          nodeStateRequestDataList,
+                                          nodeStateRequestInfoList,
+                                          1,
+                                          nodeStateRequestReadCondition),
+                                          "ILIB_node_state_requestDataReader_take_w_condition");
+                          /************ returns NO_DATA **************/
+                          if (ddsResult == DDS_RETCODE_OK && nodeStateRequestDataList->_length) {
+                              .
+                              .
+                              .
+                          }
+                      }
+                  }
+              }
+              </code></pre>
+              The read condition used is created from the same data reader as used in the
+              take operation. The read condition is also attached to the used waitset. The
+              DDS_WaitSet_wait operation returns with an DDS_RETCODE_OK, but the 
+              DataReader_take_w_condition operation returns with NO_DATA. This state will
+              not change in the while loop.<br>
+              <b>Solution:</b>problem is solved.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5046<br>
+            dds609
+          </td>
+          <td>
+            <b>Crash OpenSplice Tuner</b><br>
+            <i>
+              A topic is produced with 16 Hz., volatile, best_effort, write_dispose/unregistered.
+              On another node the SpliceTuner is started to monitor this topic. The user wants to
+              see all 16 samples per second, a new reader is created and the ReaderQoS is modified,
+              history KEEPALL, depth 1000, Latency_budget 0.3. Only a few samples are displayed
+              (very slow) and after approx. 5 - 6 samples displayed no new samples are displayed
+              anymore and the SpliceTuner is using 100% CPU load. After 3 minutes the SpliceTuner
+              crashes. Also the reliabled datachannel is blocked. The same happens when a 
+              ReaderQoOS history KEEPLAST, depth 1000, Latency_budget 0.3 is used, only the crash
+              isn't observed. Also when the monitor mode is not used (> or >> button), the tuner
+              will go to 100% CPU load. When the topic is not disposed/unregistered each time,
+              the problem disappears.<br>
+              <b>Solution:</b>The problem is fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5127
+            dds636
+          </td>
+          <td>
+            <b>unlimited writer samples if maxburstsize reached by reliable writer</b><br>
+            <i>
+              If maxburstsize of a network channel is reached by a reliable writer with history QoS policy
+              KEEP_ALL, unlimited writer samples are stored in memory. Qos settings for resource limits
+              and reliability max blocking time may solve this problem. If the writer has history QoS
+              policy KEEP_LAST samples are lost.<br>
+              <b>Solution:</b>The durability service uses the resource_limits qos policy (max_samples = 1)
+              to block the datawriter. The same mechanism can be used for each application datawriter
+              as well. In this case the datawriter blocks (for max_blocking_time) until data can be written
+              again.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5208<br>
+            dds656
+          </td>
+          <td>
+            <b>Tuner needs to support register, unregister and writeDispose</b><br>
+            <i>
+              The Tuner currently supports writing and disposing data. However, 
+              register_instance, unregister_instance and writeDispose actions
+              are not supported.<br>
+              <b>Solution:</b>The Tuner is extended with this functionality.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds659
+          </td>
+          <td>
+            <b>blocking writer cannot be deleted</b><br>
+            <i>
+              A dds writer can block on a call when the writer has set reliability
+              and resource limits. It then blocks for a maximum time of
+              max_blocking_time. When the writer is blocked and the application exits,
+              the writer cannot be deleted (application hangs).<br>
+              <b>Solution:</b>Problem has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5213<br>
+            dds660
+          </td>
+          <td>
+            <b>Tuner does not display all Query instance state conditions</b><br>
+            <i>
+              The OpenSplice Tuner does not display all instance state conditions set for
+              a query. The instance state is a mask of 3 instance state conditions:<br>
+              ALIVE (0x0001)<br>
+              NOT_ALIVE_DISPOSED (0x0002)<br>
+              NOT_ALIVE_NO_WRITERS (0x0004)<br>
+              There are two special definitions:<br>
+              ANY (0xffff)<br>
+              NOT_ALIVE (0x0006)<br>
+              When for instance both ALIVE and NOT_ALIVE_NO_WRITERS conditions are set, the
+              Tuner will only display NOT_ALIVE_NO_WRITERS.<br>
+              <b>Solution:</b>The OpenSplice Tuner now displays aal flags of the instance
+              state.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5249<br>
+            dds670
+          </td>
+          <td>
+            <b>Resend manager uses significant CPU load</b><br>
+            <i>
+              The OpenSplice resendManager threads use significant CPU load. The system
+              configuration consists of 6 AMD/linux nodes (mzk's autologin role maintain).
+              The CPU load was measured using sigma_spy with an interval of 1 second.<br>
+              The maximum CPU load measured for the resendManagers is 22%. Below the
+              output of sigma_spy for the resendManagers is included:
+              <pre><code>
+              taskId TaskName SwtCnt Min Max Mean Tot % 
+              ================================================================================ 
+              092bc9d0 resendManager 64 16 1014 386 24742 2.45 
+              080a96c0 resendManager 59 12 1973 621 36640 3.63 
+              0893bb80 resendManager 124 6 1963 363 45071 4.50 
+              07aed4e0 resendManager 70 30 1690 516 36175 3.62 
+              08b1d460 resendManager 96 10 1933 342 32839 3.30 
+              0a0303a0 resendManager 4 123 305 302 1210 0.12 
+              09928010 resendManager 54 13 1877 638 34501 3.63 
+              09a710d0 resendManager 16 14 280 79 1267 0.13 
+              083556f0 resendManager 9 20 720 168 1517 0.17 
+              09982d20 resendManager 5 23 175 78 391 0.04 
+              081dfeb0 resendManager 6 18 896 178 1070 0.13 
+              099f1a90 resendManager 11 17 494 240 2645 0.31 
+              ================================================================================
+              </code></pre>
+              <b>Solution:</b>The resend manager worked on a polling basis. This has been replaced
+              with an event mechanism. Only when there is really data to be resent, the resend
+              manager threads will also use CPU cycles.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <b></b><br>
+            <i>
+              <b>Solution:</b>
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

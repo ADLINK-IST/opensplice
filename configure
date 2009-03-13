@@ -1,0 +1,45 @@
+if [ ! -f "./bin/configure_functions" ]
+then
+    echo "ERROR: Cannot execute in directories other than that of the Splice root directory"
+    echo
+    return
+fi
+. ./bin/configure_functions
+
+reset_old_vars
+set_home
+source_package_info
+
+if [ -z "$1" -a -z "$SPLICE_PLATFORM" ]
+then
+    SELECTED_TARGETS=
+    get_avail_targets $OSPL_HOME
+    display_and_get_target
+else
+    if [ ! -z $1 ]
+    then
+        OPTIONS="-O $OSPL_HOME -T $1"
+    else
+        OPTIONS="-O $OSPL_HOME"
+    fi
+    if ! set_target_alternate -O $OSPL_HOME -T $1
+    then
+        return
+    fi
+fi
+
+export_vars
+
+TARGET_DIR=$OSPL_HOME
+if [ -f $OSPL_OUTER_HOME/setup/environment/${SPLICE_TARGET} ]
+then
+    TARGET_DIR=$OSPL_OUTER_HOME
+fi
+export TARGET_DIR
+. setup/environment/${SPLICE_TARGET}
+. setup/configuration/setup_components $OSPL_HOME
+
+setup_pathed_vars
+print_setup
+
+cleanup
