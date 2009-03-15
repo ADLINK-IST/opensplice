@@ -16,13 +16,15 @@ then
     get_avail_targets $OSPL_HOME
     display_and_get_target
 else
-    if [ ! -z $1 ]
+    if [ ! -z "$1" ]
     then
         OPTIONS="-O $OSPL_HOME -T $1"
     else
         OPTIONS="-O $OSPL_HOME"
     fi
-    if ! set_target_alternate -O $OSPL_HOME -T $1
+    set_target_alternate $OPTIONS
+    TEST=$?
+    if [ "$TEST" = "1" ]
     then
         return
     fi

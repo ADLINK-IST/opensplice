@@ -157,10 +157,11 @@ set_target_alternate ()
     if [ ! -f $FIRST_HOME/setup/environment/${SPLICE_TARGET} -a \
         ! -f $SECOND_HOME/setup/environment/${SPLICE_TARGET} ]
     then
-	    echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
+	echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
         echo
         return 1
     fi
+    return 0
 }
 
 setup_pathed_vars ()
