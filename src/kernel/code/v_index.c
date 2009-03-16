@@ -213,6 +213,7 @@ v_indexInit(
     if (keyProperty) {
         keyStructure = c_structure(keyProperty->type);
         nrOfKeys = c_arraySize(keyStructure->members);
+        c_free(keyProperty);
     } else {
         nrOfKeys = 0;
     }

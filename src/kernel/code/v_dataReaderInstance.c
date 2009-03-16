@@ -144,7 +144,8 @@ v_dataReaderInstanceInit (
         c_fieldAssign(instanceKeyList[i],_this,value);
         c_valueFreeRef(value);
     }
-
+    c_free(messageKeyList);
+    c_free(instanceKeyList);
 }
 
 v_dataReaderInstance
@@ -236,6 +237,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+
     index = v_index(_this->index);
     reader = v_dataReader(index->reader);
     entry = v_dataReaderEntry(index->entry);

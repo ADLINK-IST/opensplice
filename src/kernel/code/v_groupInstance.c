@@ -251,6 +251,7 @@ v_groupInstanceFree(
             for (i = 0; i < nrOfKeys; i++) {
                 c_fieldFreeRef(instanceKeyList[i], instance);
             }
+            c_free(instanceKeyList);
             group->cachedInstance = c_keep(instance);
         }
     }
