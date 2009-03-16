@@ -30,11 +30,13 @@ v_writerInstanceNew(
         instance = writer->cachedInstance;
         writer->cachedInstance = NULL;
     } else {
-        type = c_subType(writer->instances);
+
 #ifdef _EXTENT_
         instance = v_writerInstance(c_extentCreate(writer->instanceExtent));
 #else
+        type = c_subType(writer->instances);
         instance = v_writerInstance(c_new(type));
+        c_free(type);
 #endif
         v_object(instance)->kernel = v_objectKernel(writer);
         v_objectKind(instance) = K_WRITERINSTANCE;

@@ -246,6 +246,8 @@ v_dataViewInit(
     dataView->instanceExtent = c_extentSyncNew(dataViewInstanceType,_COUNT_,TRUE);
     dataView->sampleExtent = c_extentSyncNew(dataViewSampleType,_COUNT_,TRUE);
 #endif
+    c_free(dataViewInstanceType);
+    c_free(dataViewSampleType);
     os_free(keyExpr);
 
     /* finally add myself to the dataReader views set */

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define v_topicKeyType(o) (v_topic(o)->keyType)
+#define v_topicKeyType(o) (c_type(c_keep(v_topic(o)->keyType)))
 
 OS_API void
 v_topicDeinit(

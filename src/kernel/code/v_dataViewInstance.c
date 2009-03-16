@@ -113,11 +113,12 @@ v_dataViewInstanceNew(
     reader = dataView->reader;
     qos = v_reader(reader)->qos;
 
-    subtype = c_subType(dataView->instances);
 #ifdef _EXTENT_
     instance = v_dataViewInstance(c_extentCreate(dataView->instanceExtent));
 #else
+    subtype = c_subType(dataView->instances);
     instance = v_dataViewInstance(c_new(subtype));
+    c_free(subtype);
 #endif
     v_object(instance)->kernel = v_objectKernel(dataView);
     v_objectKind(instance) = K_DATAVIEWINSTANCE;

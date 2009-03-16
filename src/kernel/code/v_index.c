@@ -156,17 +156,21 @@ createInstanceType (
                     assert(sres == (length-1));
 #undef INSTANCE_NAME
 #undef INSTANCE_FORMAT
+                    c_free(foundType); /* Will be overwritten, so free */
                     foundType = c_type(c_metaBind(c_metaObject(base),
                                                   name,
                                                   c_metaObject(keyInstanceType)));
                     os_freea(name);
                     c_free(keyInstanceType);
                 }
-                c_free(instanceType);
+                c_free(keyType);
             }
+            c_free(instanceType);
+            c_free(baseType);
         } else {
-            foundType = baseType;
+            foundType = baseType; /* transfer refCount to caller */
         }
+        c_free(sampleType);
     }
 
     return foundType;
@@ -312,6 +316,8 @@ v__indexNew(
             index = v_index(v_objectNew(kernel,K_INDEX));
             v_indexInit(index, instanceType, keyList, v_reader(reader));
             c_free(keyList);
+            c_free(instanceType);
+
             if (action != NULL) {
                 action(index, topic, arg);
             }

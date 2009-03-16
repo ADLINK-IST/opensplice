@@ -103,7 +103,6 @@ v_serviceInit(
     c_char *typeName;
     v_duration lp = {300, 0};
     v_kernel kernel;
-    c_set newGroups;
 
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
@@ -111,8 +110,6 @@ v_serviceInit(
 
     kernel = v_objectKernel(service);
     v_participantInit(v_participant(service), name, qos, stats, TRUE);
-
-    newGroups = c_setNew(v_kernelType(v_objectKernel(service),K_GROUP));
 
     service->state = v_serviceManagerRegister(manager, service, extStateName);
     /* Overrule the liveliness lease of the participant and set a liveliness
