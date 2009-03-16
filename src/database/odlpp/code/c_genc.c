@@ -611,6 +611,8 @@ c_specifierSpec(
         case M_TYPEDEF:
         case M_CLASS:
         case M_INTERFACE:
+        case M_EXTENT:
+        case M_EXTENTSYNC:
             c_out(context,"%s%s",typeName,newName);
         break;
         case M_ENUMERATION:

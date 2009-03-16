@@ -2585,7 +2585,7 @@ c_subType (
         return NULL;
     }
 
-    return c_collectionType(type)->subType;
+    return c_keep(c_collectionType(type)->subType);
 }
 
 c_bool
@@ -3031,6 +3031,7 @@ c_tableNew(
 }
 #undef C_TABLE_ANONYMOUS_NAME
 
+#if 0
 c_collection
 c_queryNew(
     c_collection c,
@@ -3082,6 +3083,77 @@ c_queryNew(
 
     return (c_collection)q;
 }
+#else
+#define C_QUERY_ANONYMOUS_NAME "QUERY<******>"
+c_collection
+c_queryNew(
+    c_collection c,
+    q_expr predicate,
+    c_value params[])
+{
+    c_base base;
+    c_type subType;
+    c_qPred pred;
+    C_STRUCT(c_query) *q;
+    c_metaObject o;
+    c_string name;
+    c_long size;
+    c_qResult result;
+    c_metaObject found;
+
+    base = c__getBase(c);
+    subType = c_collectionType(c__getType(c))->subType;
+    result = c_qPredNew(subType,c_keyList(c),predicate,params,&pred);
+    if (result == CQ_RESULT_OK) {
+        if (pred == NULL) {
+            return NULL;
+        }
+
+        if (c_metaObject(subType)->name != NULL) {
+            size = strlen(c_metaObject(subType)->name)+8;
+            name = (char *)os_alloca(size);
+            sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
+            found = c_metaResolve(c_metaObject(base), name);
+        } else {
+            name = (char *)os_alloca(strlen(C_QUERY_ANONYMOUS_NAME) + 1);
+            strcpy(name, C_QUERY_ANONYMOUS_NAME);
+            found = NULL;
+        }
+
+        if (found == NULL) {
+            o = c_metaDefine(c_metaObject(base),M_COLLECTION);
+            //c_metaObject(o)->name = name;
+            c_metaObject(o)->name = NULL;
+            c_collectionType(o)->kind = C_QUERY;
+            c_collectionType(o)->subType = c_keep(subType);
+            c_collectionType(o)->maxSize = C_UNLIMITED;
+            c_metaFinalize(o);
+            if (strcmp(name, C_QUERY_ANONYMOUS_NAME) != 0) { /* only bind if not anonymous! */
+                found = c_metaBind(c_metaObject(base), name, o);
+                assert(found != NULL);
+                c_free(o); /* always free o, since when it is inserted refcount is increased by 2! */
+                if (found != o) {
+                     o = found;
+                }
+            }
+        } else {
+            o = found;
+            found = NULL;
+        }
+        os_freea(name);
+        q = c_query(c_new(c_type(o)));
+        c_free(o);
+        q->source = c;
+        q->pred = pred;
+
+        c_qPredOptimize(q->pred);
+    } else {
+        q = NULL;
+    }
+    return (c_collection)q;
+}
+#undef C_QUERY_ANONYMOUS_NAME
+#endif
 
 void
 c_clear (
@@ -3096,12 +3168,16 @@ c_clear (
     type = c_typeActualType(type);
     assert(type != NULL);
     assert(c_baseObject(type)->kind == M_COLLECTION);
+
     switch (c_collectionType(type)->kind) {
     case C_DICTIONARY:
         while ((o = c_take(c)) != NULL) {
             c_free(o);
         }
         c_free(c_table(c)->key);
+        if (c_table(c)->object) {
+            c_avlTreeFree(c_table(c)->object);
+        }
         c_mmCacheDestroy(c_table(c)->cache);
     break;
     case C_SET:
