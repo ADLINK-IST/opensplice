@@ -645,6 +645,28 @@ DDS_InstanceStateSeq_allocbuf (
 
 }
 
+DDS_sequence_octet *
+DDS_sequence_octet__alloc (
+    void
+    )
+{
+    return (DDS_sequence_octet *)
+        gapi_octetSeq__alloc ();
+
+}
+
+DDS_octet *
+DDS_sequence_octet_allocbuf (
+    DDS_unsigned_long len
+    )
+{
+    return (DDS_octet *)
+        gapi_octetSeq_allocbuf (
+            (gapi_unsigned_long) len
+    );
+
+}
+
 DDS_DomainParticipantFactoryQos *
 DDS_DomainParticipantFactoryQos__alloc (
     void
