@@ -1,0 +1,55 @@
+#!/bin/sh
+
+PATH=$PATH:/usr/bin
+
+. buildsys/functions
+
+ProcessArgs $*
+Assert LoadConfigs
+Assert SetupResFile
+
+cd ../../..
+
+SetState "Configuring"
+
+if [ "$DEP" != "none" ]
+then
+   OSPL_HOME=$DEPWORKDIR
+   export OSPL_HOME
+fi
+
+SPLICE_PLATFORM=$SETUP_TYPE
+export SPLICE_PLATFORM
+. ./configure
+
+SetState "Building"
+
+if [ "$DEP" = "none" ]
+then
+   if [ ! -n "$OSPL_HOME" ]
+   then
+       Fail  "ERROR: configuration - dcps_build"
+       SetState Failed
+       exit 1
+   fi
+else
+   if [ ! -n "$OSPL_OUTER_HOME" ]
+   then
+       Fail  "ERROR: configuration - dcps_build"
+       SetState Failed
+       exit 2
+   fi
+fi
+BUILD_LOGFILE=$LOGDIR/build.txt
+
+echo "BUILD=RUNNING" >> $RESFILE
+ArchiveLogs
+
+make >> $BUILD_LOGFILE 2>&1
+if [ $? = 0 ] 
+then
+    echo "BUILD=PASS" >> $RESFILE
+else
+    echo "BUILD=FAIL" >> $RESFILE
+    exit 3
+fi

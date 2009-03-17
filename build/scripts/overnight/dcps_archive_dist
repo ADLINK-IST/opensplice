@@ -1,0 +1,52 @@
+#!/bin/sh
+
+. buildsys/functions
+
+ProcessArgs $*
+Assert LoadConfigs
+Assert SetupLogDir
+Assert SetupResFile
+Assert SetupRemoteLogDir
+
+if [ "$KEEP_DIST" != "yes" ]
+then
+   echo "KEEP_DIST=SKIPPED" >> $RESFILE
+   exit 0
+fi
+
+if [ "$DEP" = "none" ]
+then
+   VCPATH=../../../install/VC
+else
+   VCPATH=$DEPWORKDIR/install/VC
+fi
+
+cd $VCPATH || { echo "KEEP_DIST=FAIL" >> $RESFILE ; exit 1; }
+
+SetState ArchivingDistribution
+
+echo "KEEP_DIST=RUNNING" >> $RESFILE
+ArchiveLogs
+
+mkdirOnStore -p $RLOGDIR/distro
+RES=$?
+if [ $RES = 0 ]
+then
+   for i in *
+   do 
+      if [ $RES = 0 ]
+      then
+         Store $i distro/
+         RES=$?
+      fi
+   done
+fi
+
+if [ $RES = 0 ]
+then
+   echo "KEEP_DIST=PASS" >> $RESFILE
+   exit 0
+else
+   echo "KEEP_DIST=FAIL" >> $RESFILE
+   exit 1
+fi
