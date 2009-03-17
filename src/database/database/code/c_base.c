@@ -133,8 +133,9 @@ c_stringMalloc(
         return NULL;
     }
 
-    header = (c_header)c_mmMalloc(c_baseMM(base),MEMSIZE(length));
+    header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length));
     header->type = c_keep(base->string_type);
+    pa_increment(&base->string_type->objectCount);
     header->refCount = 1;
 #ifndef NDEBUG
     header->confidence = CONFIDENCE;
@@ -148,6 +149,22 @@ c_stringMalloc(
 #endif
 
     s = (c_string)c_oid(header);
+    return s;
+}
+
+c_string
+c_stringNew(
+    c_base base,
+    const c_char *str)
+{
+    c_string s;
+    if (base == NULL || str == NULL) {
+        return NULL;
+    }
+
+    s = c_stringMalloc(base, strlen(str) + 1);
+
+    strcpy(s,str);
     return s;
 }
 
@@ -196,38 +213,6 @@ _TYPE_CACHE_(c_wstring)
 _TYPE_CACHE_(c_array)
 _TYPE_CACHE_(c_type)
 _TYPE_CACHE_(c_valueKind)
-
-c_string
-c_stringNew(
-    c_base base,
-    const c_char *str)
-{
-    c_header header;
-    c_string s;
-    if (base == NULL) {
-        return NULL;
-    }
-    if (str == NULL) {
-        return NULL;
-    }
-    header = (c_header)c_mmMalloc(c_baseMM(base),MEMSIZE(strlen(str)+1));
-    header->type = c_keep(base->string_type);
-    header->refCount = 1;
-#ifndef NDEBUG
-    header->confidence = CONFIDENCE;
-#ifdef OBJECT_WALK
-    header->nextObject = NULL;
-    c_header(base->lastObject)->nextObject = s;
-    header->prevObject = base->lastObject;
-    assert(base->firstObject != NULL);
-    base->lastObject = s;
-#endif
-#endif
-
-    s = (c_string)c_oid(header);
-    strcpy(s,str);
-    return s;
-}
 
 c_type
 c_getMetaType(
@@ -369,7 +354,7 @@ c_baseInit (
     found = c_metaBind(c_metaObject(base),"c_base",o);
     assert(found == o);
     c_free(found);
-    
+
     o = c_metaObject(base->metaType[M_CLASS]);
     found = c_metaBind(c_metaObject(base),"c_class",o);
     assert(found == o);
@@ -1314,7 +1299,7 @@ c_typeSize(
             break;
             default:
                 if (subType->size == 0) {
-                    subType->size = sizeof(void *); 
+                    subType->size = sizeof(void *);
                 }
                 size = c_collectionTypeMaxSize(type)*subType->size;
             break;
@@ -1374,10 +1359,8 @@ c_new (
     c_header header;
     c_object o;
     c_long size;
-    c_type t;
 
-    ACTUALTYPE(t,type);
-    size = c_typeSize(t, NULL);
+    size = c_typeSize(type, NULL);
 
     if (size <= 0) {
         OS_REPORT_1(OS_ERROR,
@@ -1385,28 +1368,29 @@ c_new (
                     "Illegal size %d specified",size);
         o = NULL;
     } else {
-        if ((c_baseObjectKind(t) == M_COLLECTION) &&
-            ((c_collectionTypeKind(t) == C_ARRAY) ||
-             (c_collectionTypeKind(t) == C_SEQUENCE))) {
+        if ((c_baseObjectKind(type) == M_COLLECTION) &&
+            ((c_collectionTypeKind(type) == C_ARRAY) ||
+             (c_collectionTypeKind(type) == C_SEQUENCE))) {
             c_arrayHeader hdr;
 
-            hdr = (c_arrayHeader)c_mmMalloc(t->base->mm,
+            hdr = (c_arrayHeader)c_mmMalloc(type->base->mm,
                                             ARRAYMEMSIZE(size));
-            hdr->size = c_collectionTypeMaxSize(t);
+            hdr->size = c_collectionTypeMaxSize(type);
             header = (c_header)&hdr->_parent;
         } else {
-            header = (c_header)c_mmMalloc(t->base->mm, MEMSIZE(size));
+            header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
         }
         header->refCount = 1;
         header->type = c_keep(type);
+        pa_increment(&header->type->objectCount);
 #ifndef NDEBUG
         header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
         header->nextObject = NULL;
-        c_header(t->base->lastObject)->nextObject = o;
-        header->prevObject = t->base->lastObject;
-        assert(t->base->firstObject != NULL);
-        t->base->lastObject = o;
+        c_header(type->base->lastObject)->nextObject = o;
+        header->prevObject = type->base->lastObject;
+        assert(type->base->firstObject != NULL);
+        type->base->lastObject = o;
 #endif
 #endif
 
@@ -1551,6 +1535,7 @@ c_newArray (
             header->refCount = 1;
             /* Keep reference to our type */
             header->type = c_keep(c_type(arrayType));
+            pa_increment(&header->type->objectCount);
 
             o = c_oid(header);
 
@@ -2023,6 +2008,10 @@ c_free (
 #endif
                c_mmFree(type->base->mm, header);
             }
+            /* Do not use type, as it refers to an actual type, while
+             * we incremented the header->type.
+             */
+            pa_decrement(&headerType->objectCount);
         }
         c_free(headerType); /* free the header->type */
     }
@@ -2058,7 +2047,7 @@ c__free(
 #ifndef NDEBUG
 #if 0
        {
-          /* Disabled so that we can detect mutex and conditon signatures 
+          /* Disabled so that we can detect mutex and conditon signatures
              when the memory is freed */
           c_long size;
           size = c_typeSize(type,object);
