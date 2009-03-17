@@ -1518,8 +1518,7 @@ nw_plugReceiveChannelReadSocket(
                         NW_REPORT_WARNING("receive data",
                              "received data with corrupted content");
                         str = nw_plugDataBufferToString(buffer);
-                        NW_REPORT_INFO_1("receive data",
-                             "corrupted content: %s", str);
+                        NW_REPORT_INFO_1(7, "receive data - corrupted content: %s", str);
                         os_free(str);
                         nw_plugReceiveChannelReleaseBuffer(channel, buffer);
                     }
