@@ -1,9 +1,5 @@
 include $(OSPL_HOME)/setup/makefiles/rules.mak
 
-ifneq (,$(wildcard /etc/lsb-release))
-CPPFLAGS	 += -D_GNU_SOURCE
-endif
-
 ifdef STATIC_LIB_ONLY
    ifneq "$(TARGET_DLIB)" ""
       TARGET_SLIB:=$(TARGET_DLIB)
