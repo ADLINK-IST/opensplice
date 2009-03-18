@@ -52,7 +52,6 @@ os_access(
         result = os_resultSuccess;
     } else {
         result = os_resultFail;
-        fprintf (stderr, "access errno = %d\n", errno);
     }
     return result;
 }
