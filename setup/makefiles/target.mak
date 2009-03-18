@@ -125,6 +125,8 @@ endif # windows or not
 
 endif # TARGET_DLIB
 
+PROC_CORE?=$(PROC)
+
 .PHONY: all compile link clean metre splint qac gcov analyse complexity correctness
 
 all:		link
