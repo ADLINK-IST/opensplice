@@ -45,5 +45,5 @@ export SPLICE_SA_ORB
 
 if [ "$SPLICE_SA_ORB" = "DDS_Eorb_3_0_SA" ]
 then
-. /opt/ospldev/eorb/v1.5.4dds_30_10_2007/release.com
+. /opt/ospldev/eorb/v1.5.9.1_17th_March_2009/release.com
 fi
