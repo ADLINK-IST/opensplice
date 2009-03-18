@@ -100,21 +100,24 @@ INCLUDE		 = -I.
 INCLUDE		+= -I../../include
 INCLUDE		+= -I$(CODE_DIR)
 
-
+ifndef OSPL_OUTER_HOME
 INCLUDE		+= -I$(OSPL_HOME)/src/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC)
-
-ifdef OSPL_OUTER_HOME
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/include
+else
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC)
+INCLUDE		+= -I$(OSPL_HOME)/src/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 endif
 
 C_FILES		?= $(notdir $(wildcard $(CODE_DIR)/*.c)) 
