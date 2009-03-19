@@ -942,8 +942,7 @@ idl_sequenceOpenClose(
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     idl_fileOutPrintf(
         idl_fileCur(),
-        "    return (%s *)DDS__malloc (DDS_sequence_free, 0, sizeof(%s));\n",
-        sequenceName,
+        "    return (%s *)DDS_sequence_malloc();\n",
         sequenceName);
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     /* Generate allocation routine for the sequence buffer */
