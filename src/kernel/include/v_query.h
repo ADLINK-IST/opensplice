@@ -93,6 +93,10 @@ OS_API c_bool
 v_queryTest(
     v_query q);
 
+OS_API c_bool
+v_queryTriggerTest(
+    v_query q);
+
 OS_API v_collection
 v_querySource(
     v_query q);

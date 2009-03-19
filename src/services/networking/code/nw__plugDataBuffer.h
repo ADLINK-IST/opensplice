@@ -13,15 +13,22 @@
 
 #define NW_PLUGDATABUFFER_ALIGNMENT      (4)
 #define NW_PLUGDATABUFFER_DATA_ALIGNMENT (4)
-#define NW_PLUGDATABUFFER_HEADERSIZE     (sizeof(NW_STRUCT(nw_plugDataBuffer)))
+#define NW_PLUGDATABUFFER_HEADERSIZE \
+        (sizeof(NW_STRUCT(nw_plugDataBuffer)))
+
 #define UI(val) ((nw_length)(val))
 
 #define NW_PLUGDATABUFFER_FIRSTMESSAGE(buffer) \
-    ((nw_messageHolder)(UI(buffer) + NW_PLUGDATABUFFER_HEADERSIZE))
-#define NW_PLUGDATABUFFER_DIFF(p1, p2) (UI(p2) - UI(p1))
-#define NW_MESSAGEHOLDER_SIZE (sizeof(NW_STRUCT(nw_messageHolder)))
+        ((nw_messageHolder)(UI(buffer) + NW_PLUGDATABUFFER_HEADERSIZE))
+
+#define NW_PLUGDATABUFFER_DIFF(p1, p2) \
+        (UI(p2) - UI(p1))
+
+#define NW_MESSAGEHOLDER_SIZE \
+        (sizeof(NW_STRUCT(nw_messageHolder)))
+
 #define NW_MESSAGEHOLDER_DATA(holder) \
-    ((nw_data)(UI(holder) + NW_MESSAGEHOLDER_SIZE))
+        ((nw_data)(UI(holder) + NW_MESSAGEHOLDER_SIZE))
 
 #ifdef NW_DEBUGGING
 #define NW_VALUE_DONT_CARE (0xD0BE900D)
@@ -91,29 +98,53 @@ NW_STRUCT(nw_plugDataBuffer) {
 
 /* Getters/Setters */
 
-#define nw_plugDataBufferGetPartitionId(buffer)                   nw_plugNetworkToHost(buffer->partitionId)
-#define nw_plugDataBufferSetPartitionId(buffer, value)            buffer->partitionId = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferGetPartitionId(buffer) \
+        nw_plugNetworkToHost(buffer->partitionId)
 
-#define nw_plugDataBufferGetNrOfMessages(buffer)                  nw_plugNetworkToHost(buffer->nrOfMessages)
-#define nw_plugDataBufferSetNrOfMessages(buffer, value)           buffer->nrOfMessages = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferSetPartitionId(buffer, value) \
+        buffer->partitionId = nw_plugHostToNetwork(value)
 
-#define nw_plugDataBufferGetPacketNr(buffer)                      nw_plugNetworkToHost(buffer->packetNr)
-#define nw_plugDataBufferSetPacketNr(buffer, value)               buffer->packetNr = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferGetNrOfMessages(buffer) \
+        nw_plugNetworkToHost(buffer->nrOfMessages)
 
-#define nw_plugDataBufferGetFragmentedMsgNr(buffer)               nw_plugNetworkToHost(buffer->fragmentedMsgNr)
-#define nw_plugDataBufferSetFragmentedMsgNr(buffer, value)        buffer->fragmentedMsgNr = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferSetNrOfMessages(buffer, value) \
+        buffer->nrOfMessages = nw_plugHostToNetwork(value)
 
-#define nw_plugDataBufferGetFragmentNr(buffer)                    nw_plugNetworkToHost(buffer->fragmentNr)
-#define nw_plugDataBufferSetFragmentNr(buffer, value)             buffer->fragmentNr = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferGetPacketNr(buffer) \
+        nw_plugNetworkToHost(buffer->packetNr)
 
-#define nw_plugDataBufferGetTerminatedMsgNr(buffer)               nw_plugNetworkToHost(buffer->terminatedMsgNr)
-#define nw_plugDataBufferSetTerminatedMsgNr(buffer, value)        buffer->terminatedMsgNr = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferSetPacketNr(buffer, value) \
+        buffer->packetNr = nw_plugHostToNetwork(value)
 
-#define nw_plugDataBufferGetTerminatingFragmentNr(buffer)         nw_plugNetworkToHost(buffer->terminatingFragmentNr)
-#define nw_plugDataBufferSetTerminatingFragmentNr(buffer, value)  buffer->terminatingFragmentNr = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferGetFragmentedMsgNr(buffer) \
+        nw_plugNetworkToHost(buffer->fragmentedMsgNr)
 
-#define nw_messageHolderGetLength(holder)                         nw_plugNetworkToHost(holder->length)
-#define nw_messageHolderSetLength(holder, value)                  holder->length = nw_plugHostToNetwork(value)
+#define nw_plugDataBufferSetFragmentedMsgNr(buffer, value) \
+        buffer->fragmentedMsgNr = nw_plugHostToNetwork(value)
+
+#define nw_plugDataBufferGetFragmentNr(buffer) \
+        nw_plugNetworkToHost(buffer->fragmentNr)
+
+#define nw_plugDataBufferSetFragmentNr(buffer, value) \
+        buffer->fragmentNr = nw_plugHostToNetwork(value)
+
+#define nw_plugDataBufferGetTerminatedMsgNr(buffer) \
+        nw_plugNetworkToHost(buffer->terminatedMsgNr)
+
+#define nw_plugDataBufferSetTerminatedMsgNr(buffer, value) \
+        buffer->terminatedMsgNr = nw_plugHostToNetwork(value)
+
+#define nw_plugDataBufferGetTerminatingFragmentNr(buffer) \
+        nw_plugNetworkToHost(buffer->terminatingFragmentNr)
+
+#define nw_plugDataBufferSetTerminatingFragmentNr(buffer, value) \
+        buffer->terminatingFragmentNr = nw_plugHostToNetwork(value)
+
+#define nw_messageHolderGetLength(holder) \
+        nw_plugNetworkToHost(holder->length)
+
+#define nw_messageHolderSetLength(holder, value) \
+        holder->length = nw_plugHostToNetwork(value)
 
 
 

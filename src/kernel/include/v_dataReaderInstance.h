@@ -39,21 +39,26 @@
 
 /* Getter functions for the instance state */
 
-#define v_dataReaderInstanceState(instance) \
-        (v_dataReaderInstance(instance)->instanceState)
+#define v_dataReaderInstanceState(_this) \
+        (v_dataReaderInstance(_this)->instanceState)
     
-#define v_dataReaderInstanceStateTest(instance, state)    \
-        (v_stateTest(v_dataReaderInstanceState(instance), state))
+#define v_dataReaderInstanceStateTest(_this, state)    \
+        (v_stateTest(v_dataReaderInstanceState(_this), state))
 
-#define v_dataReaderInstanceSampleCount(i) \
-        (v_dataReaderInstance(i)->sampleCount)
+#define v_dataReaderInstanceSampleCount(_this) \
+        (v_dataReaderInstance(_this)->sampleCount)
 
-#define v_dataReaderInstanceEmpty(i) \
-        ((v_dataReaderInstanceSampleCount(i) == 0) && \
-         (!v_dataReaderInstanceStateTest(i, L_STATECHANGED)))
+#if 0
+#define v_dataReaderInstanceEmpty(_this) \
+        ((v_dataReaderInstanceSampleCount(_this) == 0) && \
+         (!v_dataReaderInstanceStateTest(_this, L_STATECHANGED)))
+#else
+#define v_dataReaderInstanceEmpty(_this) \
+        (v_dataReaderInstanceHead(_this) == NULL)
+#endif
 
-#define v_dataReaderInstanceNoWriters(i) \
-        (v_dataReaderInstanceStateTest(i, L_NOWRITERS))
+#define v_dataReaderInstanceNoWriters(_this) \
+        (v_dataReaderInstanceStateTest(_this, L_NOWRITERS))
 
 #undef OS_API
 

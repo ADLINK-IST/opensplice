@@ -49,6 +49,10 @@ v_dataReaderQueryTest(
     v_dataReaderQuery _this);
 
 OS_API c_bool
+v_dataReaderQueryTriggerTest(
+    v_dataReaderQuery _this);
+
+OS_API c_bool
 v_dataReaderQueryRead(
     v_dataReaderQuery _this,
     v_readerSampleAction action,

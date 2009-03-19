@@ -128,12 +128,14 @@ _DataReaderSetDeleteAction (
     void *argument);
 
 
-gapi_boolean
-_DataReaderHasSamplesNotRead (
-    _DataReader _this);
-
 void
 _DataReaderTriggerNotify (
+    _DataReader _this);
+
+#if 1
+
+gapi_boolean
+_DataReaderHasSamplesNotRead (
     _DataReader _this);
 
 gapi_boolean
@@ -142,6 +144,7 @@ _DataReaderContainsSamples (
     const gapi_sampleStateMask   sample_states,
     const gapi_viewStateMask     view_states,
     const gapi_instanceStateMask instance_states);
+#endif
 
 gapi_returnCode_t
 _DataReaderRead (

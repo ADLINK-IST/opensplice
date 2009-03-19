@@ -18,7 +18,7 @@ NW_CLASS(nw_plugSendChannel);
  */
 
 /* Starting the writing of a message, returns a buffer of length to write into */
-void           nw_plugSendChannelMessageStart(
+nw_bool        nw_plugSendChannelMessageStart(
                    nw_plugChannel channel,
                    nw_data *buffer,
                    nw_length *length,

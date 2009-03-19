@@ -388,7 +388,8 @@ updatePurgeList(
             if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
                 if (v_timeCompare(purgeItem->insertionTime,
                                   instance->epoch) == C_EQ) {
-                    assert(v_groupInstanceStateTest(instance, L_NOWRITERS | L_EMPTY));
+//                    assert(v_groupInstanceStateTest(instance, L_NOWRITERS | L_EMPTY));
+                    assert(v_groupInstanceStateTest(instance, L_NOWRITERS));
                     removed = c_remove(group->instances,instance,NULL,NULL);
                     assert(removed != NULL);
                     v_groupInstanceFree(instance);
@@ -1526,7 +1527,8 @@ groupWrite (
         }
         assert(instance != NULL);
     } else {
-        if ((v_messageQos_durabilityKind(msg->qos) == V_DURABILITY_VOLATILE) &&
+        if ((qos->durability.kind == V_DURABILITY_VOLATILE) &&
+//        if ((v_messageQos_durabilityKind(msg->qos) == V_DURABILITY_VOLATILE) &&
             (v_messageStateTest(msg,L_UNREGISTER) &&
              v_groupInstanceStateTest(instance,L_NOWRITERS))) {
             purgeItem = c_new(v_kernelType(v_objectKernel(group),
@@ -1536,6 +1538,7 @@ groupWrite (
             v_groupInstanceSetEpoch(instance,
                                     purgeItem->insertionTime);
             v_groupInstanceDisconnect(instance);
+//assert(v_groupInstanceStateTest(instance,L_EMPTY));
             c_append(group->purgeListEmpty, purgeItem);
             c_free(purgeItem);
         }

@@ -465,6 +465,60 @@ v_dataReaderQueryTest(
             v_dataReaderLock(r);
             instanceSet = r->index->notEmptyList;
             if (c_tableCount(instanceSet) > 0) {
+                len = c_arraySize(_this->instanceQ);
+                i = 0;
+                while ((i<len) && (pass == FALSE)) {
+                    argument.query = _this->sampleQ[i];
+                    if (_this->instanceQ[i] != NULL) {
+                        c_readAction(_this->instanceQ[i],
+                                     testAction,&argument);
+                    } else {
+                        c_readAction(instanceSet, testAction, &argument);
+                    }
+                    pass = argument.result;
+                    i++;
+                }
+            }
+            if ( !pass ) {
+                _this->state = V_STATE_INITIAL;
+            }
+            v_dataReaderUnLock(r);
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_dataReaderQueryTest failed", 0,
+                      "source is not datareader");
+        }
+        c_free(src);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_dataReaderQueryTest failed", 0,
+                  "no source");
+    }
+    return pass;
+}
+
+c_bool
+v_dataReaderQueryTriggerTest(
+    v_dataReaderQuery _this)
+{
+    v_collection src;
+    v_dataReader r;
+    c_long len,i;
+    C_STRUCT(testActionArg) argument;
+    c_table instanceSet;
+    c_bool pass = FALSE;
+
+    assert(C_TYPECHECK(_this,v_dataReaderQuery));
+
+    argument.result = FALSE;
+    src = v_querySource(v_query(_this));
+    if (src != NULL) {
+        assert(v_objectKind(src) == K_DATAREADER);
+        if (v_objectKind(src) == K_DATAREADER) {
+            r = v_dataReader(src);
+            v_dataReaderLock(r);
+            instanceSet = r->index->notEmptyList;
+            if (c_tableCount(instanceSet) > 0) {
                 if ((r->triggerValue != NULL) &&
                     (r->triggerValue == _this->triggerValue))
                 {
@@ -513,13 +567,13 @@ v_dataReaderQueryTest(
             v_dataReaderUnLock(r);
         } else {
             OS_REPORT(OS_ERROR,
-                      "v_dataReaderQueryTest failed", 0,
+                      "v_dataReaderQueryTriggerTest failed", 0,
                       "source is not datareader");
         }
         c_free(src);
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_dataReaderQueryTest failed", 0,
+                  "v_dataReaderQueryTriggerTest failed", 0,
                   "no source");
     }
     return pass;
@@ -571,9 +625,6 @@ v_dataReaderQueryRead (
 
             r = v_dataReader(src);
 
-#ifdef _QUERYLOCK_
-            v_observerLock(v_observer(_this));
-#endif
             v_dataReaderLock(r);
             r->readCnt++;
 #ifdef _MAXPURGE_
@@ -615,42 +666,34 @@ v_dataReaderQueryRead (
                     }
                     proceed = FALSE;
                 }
-                if (_this->triggerValue) {
-                    c_free(v_readerSample(_this->triggerValue)->instance);
-                    c_free(_this->triggerValue);
-                    _this->triggerValue = NULL;
-                }
-                if (r->triggerValue) {
-                    c_free(v_readerSample(r->triggerValue)->instance);
-                    c_free(r->triggerValue);
-                    r->triggerValue = NULL;
-                }
             } else {
 
-            argument.action = action;
-            argument.arg = arg;
-            argument.query = NULL;
+                argument.action = action;
+                argument.arg = arg;
+                argument.query = NULL;
 
-            instanceSet = r->index->notEmptyList;
-            len = c_arraySize(_this->instanceQ);
-            for (i=0;(i<len) && proceed;i++) {
-                argument.query = _this->sampleQ[i];
-                if (_this->instanceQ[i] != NULL) {
-                    proceed = c_walk(_this->instanceQ[i],
-                                     (c_action)instanceReadSamples,
-                                     &argument);
-                } else {
-                    proceed = c_readAction(instanceSet,
-                                           (c_action)instanceReadSamples,
-                                           &argument);
+                instanceSet = r->index->notEmptyList;
+                len = c_arraySize(_this->instanceQ);
+                for (i=0;(i<len) && proceed;i++) {
+                    argument.query = _this->sampleQ[i];
+                    if (_this->instanceQ[i] != NULL) {
+                        proceed = c_walk(_this->instanceQ[i],
+                                         (c_action)instanceReadSamples,
+                                         &argument);
+                    } else {
+                        proceed = c_readAction(instanceSet,
+                                               (c_action)instanceReadSamples,
+                                               &argument);
+                    }
                 }
-            }
 
+            }
+            if (_this->triggerValue) {
+                c_free(v_readerSample(_this->triggerValue)->instance);
+                c_free(_this->triggerValue);
+                _this->triggerValue = NULL;
             }
             v_statisticsULongValueInc(v_query, numberOfReads, _this);
-#ifdef _QUERYLOCK_
-            v_observerUnlock(v_observer(_this));
-#endif
 
             action(NULL,arg); /* This triggers the action routine that
                                * the last sample is read. */
@@ -661,13 +704,6 @@ v_dataReaderQueryRead (
 
             v_dataReaderUnLock(r);
         } else {
-#ifdef _QUERYLOCK_
-            v_observerLock(v_observer(_this));
-#endif
-            v_statisticsULongValueInc(v_query, numberOfReads, _this);
-#ifdef _QUERYLOCK_
-            v_observerUnlock(v_observer(_this));
-#endif
             proceed = FALSE;
             OS_REPORT(OS_ERROR,
                       "v_dataReaderQueryRead failed", 0,
@@ -676,13 +712,6 @@ v_dataReaderQueryRead (
         }
         c_free(src);
     } else {
-#ifdef _QUERYLOCK_
-        v_observerLock(v_observer(_this));
-#endif
-        v_statisticsULongValueInc(v_query, numberOfReads, _this);
-#ifdef _QUERYLOCK_
-        v_observerUnlock(v_observer(_this));
-#endif
         proceed = FALSE;
         OS_REPORT(OS_ERROR,
                   "v_dataReaderQueryRead failed", 0,
@@ -883,9 +912,11 @@ instanceTakeSamples(
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     if (v_dataReaderInstanceEmpty(instance)) {
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
-        a->emptyList = c_iterInsert(a->emptyList,instance);
-#endif
+        if (!c_iterContains(a->emptyList, instance)) {
+             a->emptyList = c_iterInsert(a->emptyList,instance);
+        } else {
+             printf("instanceTakeSamples: found instance\n");
+        }
         return proceed;
     }
     oldCount = v_dataReaderInstanceSampleCount(instance);
@@ -904,11 +935,6 @@ instanceTakeSamples(
     }
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
-#ifndef _DELAYED_NOT_EMPTYLIST_INSERT_
-    if (v_dataReaderInstanceEmpty(instance)) {
-        a->emptyList = c_iterInsert(a->emptyList,instance);
-    }
-#endif
     return proceed;
 }
 
@@ -934,10 +960,6 @@ v_dataReaderQueryTake(
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
 
-
-#ifdef _QUERYLOCK_
-            v_observerLock(v_observer(_this));
-#endif
             v_dataReaderLock(r);
             r->readCnt++;
 #ifdef _MAXPURGE_
@@ -981,16 +1003,6 @@ v_dataReaderQueryTake(
                     }
                     proceed = FALSE;
                 }
-                if (_this->triggerValue) {
-                    c_free(v_readerSample(_this->triggerValue)->instance);
-                    c_free(_this->triggerValue);
-                    _this->triggerValue = NULL;
-                }
-                if (r->triggerValue) {
-                    c_free(v_readerSample(r->triggerValue)->instance);
-                    c_free(r->triggerValue);
-                    r->triggerValue = NULL;
-                }
             } else {
                 instanceSet = r->index->notEmptyList;
                 if (c_tableCount(instanceSet) > 0) {
@@ -1027,11 +1039,12 @@ v_dataReaderQueryTake(
                     }
                 }
             }
+            if (_this->triggerValue) {
+                c_free(v_readerSample(_this->triggerValue)->instance);
+                c_free(_this->triggerValue);
+                _this->triggerValue = NULL;
+            }
             v_statisticsULongValueInc(v_query, numberOfTakes, _this);
-#ifdef _QUERYLOCK_
-            v_observerUnlock(v_observer(_this));
-#endif
-
 
             if (r->sampleCount == 0) {
                 v_statusReset(v_entity(r)->status,V_EVENT_DATA_AVAILABLE);
@@ -1045,13 +1058,6 @@ v_dataReaderQueryTake(
 
             v_dataReaderUnLock(r);
         } else {
-#ifdef _QUERYLOCK_
-            v_observerLock(v_observer(_this));
-#endif
-            v_statisticsULongValueInc(v_query, numberOfTakes, _this);
-#ifdef _QUERYLOCK_
-            v_observerUnlock(v_observer(_this));
-#endif
             proceed = FALSE;
             OS_REPORT(OS_ERROR,
                       "v_dataReaderQueryTake failed", 0,
@@ -1059,13 +1065,6 @@ v_dataReaderQueryTake(
         }
         c_free(src);
     } else {
-#ifdef _QUERYLOCK_
-        v_observerLock(v_observer(_this));
-#endif
-        v_statisticsULongValueInc(v_query, numberOfTakes, _this);
-#ifdef _QUERYLOCK_
-        v_observerUnlock(v_observer(_this));
-#endif
         proceed = FALSE;
         OS_REPORT(OS_ERROR,
                   "v_dataReaderQueryTake failed", 0,
