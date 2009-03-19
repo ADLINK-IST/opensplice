@@ -23,17 +23,18 @@
 #define NW_PARTITIONID_NONE    (0xffffffff)
 
 #define NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel) \
-     /* The extra one is the default partition */ \
-    nw_plugPartitionsGetNofPartitions(nw_plugChannel(sendChannel)->partitions)
+        /* The extra one is the default partition */ \
+        nw_plugPartitionsGetNofPartitions(nw_plugChannel(sendChannel)->partitions)
+
 #define NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, id) \
-    sendChannel->receivingPartitions[id]
+        sendChannel->receivingPartitions[id]
 
 #define SC_PRINT_EVERY (5)
 
 #define NW_MAXBURSTSIZE_UNLIMITED (0x0fffffff)
 #define NW_MAXBURSTSIZE_NONE      NW_MAXBURSTSIZE_UNLIMITED
 
-
+#define nw_plugDataBufferReliabilityAdminFree(admin) os_free(admin)
 
 /* helper function */
 
@@ -67,15 +68,22 @@ NW_STRUCT(nw_plugDataBufferReliabilityAdmin) {
 };
 
 
-#define REL_ADMIN_LENGTH (UI(sizeof(NW_STRUCT(nw_plugDataBufferReliabilityAdmin))))
-#define REL_ADMIN(ptr)(((ptr) != NULL)?(nw_plugDataBufferReliabilityAdmin)(UI(ptr) - REL_ADMIN_LENGTH): NULL)
-#define REL_DATA(ptr) (((ptr) != NULL)?(nw_plugDataBuffer)(UI(ptr) + REL_ADMIN_LENGTH):NULL)
+#define REL_ADMIN_LENGTH \
+        (UI(sizeof(NW_STRUCT(nw_plugDataBufferReliabilityAdmin))))
 
+#define REL_ADMIN(ptr) \
+        (((ptr) != NULL)? \
+          (nw_plugDataBufferReliabilityAdmin)(UI(ptr) - REL_ADMIN_LENGTH): \
+           NULL)
+
+#define REL_DATA(ptr) \
+        (((ptr) != NULL)? \
+          (nw_plugDataBuffer)(UI(ptr) + REL_ADMIN_LENGTH): \
+           NULL)
 
 static nw_plugDataBufferReliabilityAdmin
     nw_plugSendChannelDataBufferReliabilityAdminCreate(
-        nw_plugSendChannel sendChannel,
-        nw_length dataLength);
+        nw_plugSendChannel sendChannel);
 
 static void
     nw_plugDataBufferReliabilityAdminInsert(
@@ -90,11 +98,6 @@ static void
 static nw_bool
     nw_plugDataBufferReliabilityAdminRelease(
         nw_plugDataBufferReliabilityAdmin admin);
-
-static void
-    nw_plugDataBufferReliabilityAdminFree(
-        nw_plugDataBufferReliabilityAdmin admin);
-
 
 
 /* --------- administration concerning flushable buffers ---------------- */
@@ -476,8 +479,16 @@ NW_STRUCT(nw_plugSendChannel) {
 #endif
 };
 
-static void nw_plugSendChannelInitializeDataBuffer(nw_plugSendChannel sendChannel, nw_plugDataBuffer buffer);
-static void nw_plugSendChannelCreateReceivingPartitions(nw_plugSendChannel sendChannel, nw_plugPartitions partitions);
+static void
+nw_plugSendChannelInitializeDataBuffer(
+    nw_plugSendChannel sendChannel,
+    nw_plugDataBuffer buffer);
+
+static void
+nw_plugSendChannelCreateReceivingPartitions(
+    nw_plugSendChannel sendChannel,
+    nw_plugPartitions partitions);
+
 #define NW_RECEIVING_NODES_HASHSIZE (256)
 
 nw_plugChannel
@@ -492,7 +503,6 @@ nw_plugSendChannelNew(
 {
     nw_plugSendChannel result;
     unsigned int i;
-    nw_plugDataBufferReliabilityAdmin relAdmin;
     c_char * tmpPath;
 
     result = (nw_plugSendChannel)os_malloc(sizeof(*result));
@@ -520,12 +530,6 @@ nw_plugSendChannelNew(
 
         result->flushableNewest = NULL;
         result->flushableOldest = NULL;
-
-        relAdmin =nw_plugSendChannelDataBufferReliabilityAdminCreate(result,
-            nw__plugChannelGetFragmentLength(nw_plugChannel(result)));
-        result->currentWriteBuffer = REL_DATA(relAdmin);
-        result->currentWriteBufferEnd = (nw_data)(UI(result->currentWriteBuffer) +
-            nw__plugChannelGetFragmentLength(nw_plugChannel(result)));
 
         result->controlWriteBuffer =
             (nw_plugControlBuffer)os_malloc(nw__plugChannelGetFragmentLength(nw_plugChannel(result)));
@@ -587,9 +591,7 @@ nw_plugSendChannelNew(
 
         result->currentPartition = NULL;
 
-        /* Initialize databuffer with standard values */
-        nw_plugSendChannelInitializeDataBuffer(result, result->currentWriteBuffer);
-
+        nw_plugSendChannelDataBufferReliabilityAdminCreate(result);
 #ifdef NW_DEBUGGING
         result->nextPrintTime = os_timeGet();
         result->nextPrintTime.tv_sec += SC_PRINT_EVERY;
@@ -684,9 +686,13 @@ nw_plugSendChannelCreateReceivingPartitions(
 
 #ifdef NW_DEBUGGING
 #define SC_PRINT_ATTR_GEN(format, a, attrName) \
-    printf("  "#attrName": "format"\n", a->attrName)
-#define SC_PRINT_ATTR_UINT(a, attrName) SC_PRINT_ATTR_GEN("%u", a, attrName)
-#define SC_PRINT_ATTR(type, a, attrName) SC_PRINT_ATTR_##type(a, attrName)
+        printf("  "#attrName": "format"\n", a->attrName)
+
+#define SC_PRINT_ATTR_UINT(a, attrName) \
+        SC_PRINT_ATTR_GEN("%u", a, attrName)
+
+#define SC_PRINT_ATTR(type, a, attrName) \
+        SC_PRINT_ATTR_##type(a, attrName)
 
 #endif
 
@@ -909,72 +915,6 @@ nw_plugSendChannelInitializeControlBuffer(
 }
 
 
-
-static void
-nw_plugSendChannelSetPartitionId(
-    nw_plugChannel channel,
-    nw_partitionId partitionId)
-{
-    nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
-    nw_plugReceivingPartition partition;
-
-#ifdef NW_DEBUGGING
-    if (sendChannel->currentPartition != NULL) {
-        NW_CONFIDENCE(partitionId == sendChannel->currentPartition->partitionId);
-    }
-#endif
-    partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId);
-    if (partition != NULL) {
-        sendChannel->currentPartition = partition;
-        nw_plugDataBufferSetPartitionId(sendChannel->currentWriteBuffer, partitionId);
-    } else {
-        NW_REPORT_WARNING_1("setPartitionId",
-            "Trying to send data to disconnected partition %u", partitionId);
-    }
-}
-
-
- /* Return value contains the number of bytes sent */
-static c_ulong
-nw_plugSendChannelFlushSingleWriteBuffer(
-    nw_plugSendChannel sendChannel,
-    nw_plugDataBuffer buffer,
-    nw_bool reliable)
-{
-    nw_plugChannel channel = nw_plugChannel(sendChannel);
-    nw_plugReceivingPartition partition;
-    nw_seqNr packetSeqNr;
-    nw_length length = 0;
-
-    partition = sendChannel->currentPartition;
-    NW_CONFIDENCE(partition != NULL);
-
-    NW_STAMP(buffer,NW_BUF_TIMESTAMP_FLUSH);
-
-    if (reliable) {
-        /* Insert data into resend admin */
-        packetSeqNr = nw_plugDataBufferGetPacketNr(buffer);
-        nw_plugReceivingPartitionDataSentReliably(partition, packetSeqNr,
-	    buffer);
-    }
-#ifdef NW_DEBUGGING
-    if (!(int)nw_configurationLoseSentMessage()) {
-#endif
-        /* Send data to network */
-        nw_plugSendChannelSetPartitionId(channel, partition->partitionId) ;
-        length = nw_plugBufferGetLength(nw_plugBuffer(buffer));
-        nw_socketSendDataToPartition(nw__plugChannelGetSocket(channel),
-            partition->partitionId, buffer, length);
-
-#ifdef NW_DEBUGGING
-    }
-#endif
-    /* Release current buffer */
-    nw_plugDataBufferReliabilityAdminRelease(REL_ADMIN(buffer));
-
-    return length;
-}
-
 /* Do a flush of data messages to the network
  * The function returns true if all bytes were sent, false otherwise */
 c_bool
@@ -988,15 +928,19 @@ nw_plugSendChannelMessagesFlush(
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_bool reliable;
     nw_plugDataBufferReliabilityAdmin currentBuffer;
+    nw_plugDataBuffer buffer;
+    nw_plugReceivingPartition partition;
+    nw_seqNr packetSeqNr;
 
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_SEND);
     NW_CONFIDENCE(!sendChannel->processingMessage);
 
+    partition = sendChannel->currentPartition;
     /* Only do something if we have written any messages */
     if (all && (sendChannel->currentMsgCount > 0) && sendChannel->inUse) {
-        nw_plugDataBufferSetPartitionId(sendChannel->currentWriteBuffer, sendChannel->currentPartition->partitionId);
-        nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendChannel->currentFragmentLength);
+        nw_plugSendChannelPushCurrentWriteBuffer(sendChannel,
+                                                 sendChannel->currentFragmentLength);
         SET_INUSE(sendChannel, FALSE);
         sendChannel->lastMessage = NULL;
     }
@@ -1005,9 +949,42 @@ nw_plugSendChannelMessagesFlush(
     reliable = (nw__plugChannelGetReliabilityOffered(channel) == NW_REL_RELIABLE);
 
     if (*bytesLeft > 0) {
+        bytesSent = 0;
         currentBuffer = nw_plugSendChannelFlushableBufferPop(sendChannel);
         while ((currentBuffer != NULL) && (*bytesLeft > 0)) {
-            bytesSent = nw_plugSendChannelFlushSingleWriteBuffer(sendChannel, REL_DATA(currentBuffer), reliable);
+            buffer = REL_DATA(currentBuffer);
+            NW_STAMP(buffer,NW_BUF_TIMESTAMP_FLUSH);
+            bytesSent = nw_plugBufferGetLength(nw_plugBuffer(buffer));
+            /* Valid Partition so Send data to network */
+#ifdef NW_DEBUGGING
+            if (!(int)nw_configurationLoseSentMessage()) {
+#endif
+                if (nw_plugDataBufferGetPartitionId(buffer) !=
+                    partition->partitionId)
+                {
+                    NW_REPORT_ERROR_2("nw_plugSendChannelMessagesFlush",
+                            "Partition Id of Channel (%u) differs from buffer (%u)",
+                             partition->partitionId,
+                             nw_plugDataBufferGetPartitionId(buffer));
+                }
+                nw_socketSendDataToPartition(
+                    nw__plugChannelGetSocket(channel),
+                    partition->partitionId,
+                    buffer,
+                    bytesSent);
+#ifdef NW_DEBUGGING
+            }
+#endif
+            if (reliable) {
+                /* Insert data into resend admin */
+                packetSeqNr = nw_plugDataBufferGetPacketNr(buffer);
+                nw_plugReceivingPartitionDataSentReliably(partition,
+                                                          packetSeqNr,
+                                                          buffer);
+            }
+            /* Release current buffer */
+            nw_plugDataBufferReliabilityAdminRelease(currentBuffer);
+
             *bytesLeft -= bytesSent;
             if (*bytesLeft > 0) {
                 currentBuffer = nw_plugSendChannelFlushableBufferPop(sendChannel);
@@ -1028,7 +1005,7 @@ nw_plugSendChannelMessagesFlush(
 }
 
 /* Starting the writing of a message, returns a buffer of length to write into */
-void
+nw_bool
 nw_plugSendChannelMessageStart(
     nw_plugChannel channel,
     nw_data *buffer,
@@ -1037,8 +1014,9 @@ nw_plugSendChannelMessageStart(
     nw_signedLength *bytesLeft /* in/out */)
 {
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+    nw_plugReceivingPartition partition;
     nw_length sendLength;
-    nw_bool reliable;
+    nw_bool result = TRUE;
 
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_SEND);
@@ -1052,50 +1030,73 @@ nw_plugSendChannelMessageStart(
              * Flush the buffer and set new partition Id.
              */
             nw_plugSendChannelMessagesFlush(channel,TRUE,bytesLeft);
-            nw_plugSendChannelSetPartitionId(channel, partitionId);
+            partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId);
+            if (partition == NULL) {
+                result = FALSE; /* no existing partition. */
+            } else {
+                sendChannel->currentPartition = partition;
+            }
         }
     } else {
-        nw_plugSendChannelSetPartitionId(channel, partitionId);
-    }
-
-    sendChannel->processingMessage = TRUE;
-    if (!sendChannel->inUse) {
-        SET_INUSE(sendChannel, TRUE);
-
-        sendChannel->currentMsgCount = 0;
-        sendChannel->currentFragmentsInMsgCount = 1;
-        sendChannel->lastMessage = NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
-        sendChannel->currentFragmentLength = NW_PLUGDATABUFFER_DIFF(
-            sendChannel->currentWriteBuffer, NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
-        nw_plugSendChannelInitializeDataBuffer(sendChannel, sendChannel->currentWriteBuffer);
-    } else {
-        NW_CONFIDENCE(sendChannel->lastMessage != NULL);
-        *length = NW_PLUGDATABUFFER_DIFF(sendChannel->lastMessage, sendChannel->currentWriteBufferEnd);
-
-
-        if (*length < 44) {
-            nw_plugBufferSetLength(nw_plugBuffer(sendChannel->currentWriteBuffer),
-                 sendChannel->currentFragmentLength);
-            nw_plugDataBufferSetNrOfMessages(sendChannel->currentWriteBuffer,
-                sendChannel->currentFragmentsInMsgCount);
-            reliable =(nw__plugChannelGetReliabilityOffered(channel) == NW_REL_RELIABLE);
-            sendLength = nw__plugChannelGetFragmentLength(channel) - *length;
-            nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendLength);
-
-            /* Sending done, now initialize the fragment for reuse */
-            sendChannel->currentFragmentsInMsgCount = 1;
-            sendChannel->lastMessage = NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
-            sendChannel->currentFragmentLength = NW_PLUGDATABUFFER_DIFF(
-                sendChannel->currentWriteBuffer, NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
-            nw_plugSendChannelInitializeDataBuffer(sendChannel, sendChannel->currentWriteBuffer);
+        partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId);
+        if (partition == NULL) {
+            result = FALSE; /* no existing partition. */
         } else {
-            sendChannel->currentFragmentsInMsgCount++;
-            sendChannel->currentFragmentLength += NW_MESSAGEHOLDER_SIZE;
+            sendChannel->currentPartition = partition;
         }
     }
-    NW_CONFIDENCE(sendChannel->lastMessage != NULL);
-    *buffer = NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage);
-    *length = NW_PLUGDATABUFFER_DIFF(*buffer, sendChannel->currentWriteBufferEnd);
+
+    if (result == TRUE) {
+        sendChannel->processingMessage = TRUE;
+        if (!sendChannel->inUse) {
+            SET_INUSE(sendChannel, TRUE);
+
+            sendChannel->currentMsgCount = 0;
+            sendChannel->currentFragmentsInMsgCount = 1;
+            sendChannel->lastMessage =
+                NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
+            sendChannel->currentFragmentLength =
+                NW_PLUGDATABUFFER_DIFF(sendChannel->currentWriteBuffer,
+                                       NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
+        } else {
+            NW_CONFIDENCE(sendChannel->lastMessage != NULL);
+            *length = NW_PLUGDATABUFFER_DIFF(sendChannel->lastMessage,
+                                             sendChannel->currentWriteBufferEnd);
+
+
+            if (*length < 44) {
+                nw_plugBufferSetLength(nw_plugBuffer(
+                     sendChannel->currentWriteBuffer),
+                     sendChannel->currentFragmentLength);
+                nw_plugDataBufferSetNrOfMessages(
+                     sendChannel->currentWriteBuffer,
+                     sendChannel->currentFragmentsInMsgCount);
+
+                sendLength = nw__plugChannelGetFragmentLength(channel) - *length;
+
+                nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendLength);
+
+                /* Sending done, now initialize the fragment for reuse */
+                sendChannel->currentFragmentsInMsgCount = 1;
+                sendChannel->lastMessage =
+                    NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
+                sendChannel->currentFragmentLength =
+                    NW_PLUGDATABUFFER_DIFF(sendChannel->currentWriteBuffer,
+                                           NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
+            } else {
+                sendChannel->currentFragmentsInMsgCount++;
+                sendChannel->currentFragmentLength += NW_MESSAGEHOLDER_SIZE;
+            }
+        }
+        NW_CONFIDENCE(sendChannel->lastMessage != NULL);
+        *buffer = NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage);
+        *length = NW_PLUGDATABUFFER_DIFF(*buffer, sendChannel->currentWriteBufferEnd);
+    } else {
+        NW_REPORT_WARNING_1("nw_plugSendChannelMessageStart",
+                            "Trying to send data to disconnected partition %u",
+                             partitionId);
+    }
+    return result;
 }
 
 
@@ -1145,26 +1146,43 @@ nw_plugSendChannelGetNextFragment(
     }
     sendChannel->currentFragmentLength = sendChannel->currentFragmentLength +
         NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, messageLength);
-    nw_plugBufferSetLength(nw_plugBuffer(sendChannel->currentWriteBuffer),
-         sendChannel->currentFragmentLength);
-    nw_plugDataBufferSetPartitionId(sendChannel->currentWriteBuffer, partition->partitionId);
-    nw_plugDataBufferSetNrOfMessages(sendChannel->currentWriteBuffer, sendChannel->currentFragmentsInMsgCount);
-    nw_plugBufferSetFragmentedFlag(nw_plugBuffer(sendChannel->currentWriteBuffer), TRUE);
-    nw_plugDataBufferSetFragmentedMsgNr(sendChannel->currentWriteBuffer, partition->fragmentedSeqNr);
-    nw_plugDataBufferSetFragmentNr(sendChannel->currentWriteBuffer,sendChannel->currentFragmentSeqNr);
+
+    nw_plugBufferSetLength(
+        nw_plugBuffer(sendChannel->currentWriteBuffer),
+        sendChannel->currentFragmentLength);
+
+    nw_plugDataBufferSetNrOfMessages(
+        sendChannel->currentWriteBuffer,
+        sendChannel->currentFragmentsInMsgCount);
+
+    nw_plugBufferSetFragmentedFlag(
+        nw_plugBuffer(sendChannel->currentWriteBuffer),
+        TRUE);
+
+    nw_plugDataBufferSetFragmentedMsgNr(
+        sendChannel->currentWriteBuffer,
+        partition->fragmentedSeqNr);
+
+    nw_plugDataBufferSetFragmentNr(
+        sendChannel->currentWriteBuffer,
+        sendChannel->currentFragmentSeqNr);
 
     reliable = (nw__plugChannelGetReliabilityOffered(channel) == NW_REL_RELIABLE);
     sendLength = nw__plugChannelGetFragmentLength(channel) - *length;
+
     nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendLength);
 
     /* Sending done, now initialize the fragment for reuse */
     sendChannel->currentFragmentsInMsgCount = 1;
-    sendChannel->lastMessage = NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
-    sendChannel->currentFragmentLength = NW_PLUGDATABUFFER_DIFF(
-        sendChannel->currentWriteBuffer, NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
-    nw_plugSendChannelInitializeDataBuffer(sendChannel, sendChannel->currentWriteBuffer);
+    sendChannel->lastMessage =
+        NW_PLUGDATABUFFER_FIRSTMESSAGE(sendChannel->currentWriteBuffer);
+
+    sendChannel->currentFragmentLength =
+        NW_PLUGDATABUFFER_DIFF(sendChannel->currentWriteBuffer,
+                               NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage));
 
     NW_CONFIDENCE(sendChannel->lastMessage != NULL);
+
     *buffer = NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage);
     *length = NW_PLUGDATABUFFER_DIFF(*buffer, sendChannel->currentWriteBufferEnd);
 }
@@ -1223,17 +1241,18 @@ nw_plugSendChannelMessageEnd(
 
 /* ------------------- nw_plugDataBufferReliabilityAdmin -------------------- */
 
-
 static nw_plugDataBufferReliabilityAdmin
 nw_plugSendChannelDataBufferReliabilityAdminCreate(
-    nw_plugSendChannel sendChannel,
-    nw_length dataLength)
+    nw_plugSendChannel sendChannel)
 {
     nw_plugDataBufferReliabilityAdmin admin = NULL;
+    nw_length dataLength;
 
     NW_CONFIDENCE(sendChannel != NULL);
     NW_CONFIDENCE((sendChannel->nofFreeRelBuffers == 0) ==
-        (sendChannel->freeRelBufferList == NULL));
+                  (sendChannel->freeRelBufferList == NULL));
+
+    dataLength = nw__plugChannelGetFragmentLength(nw_plugChannel(sendChannel));
 
     if (sendChannel->freeRelBufferList != NULL) {
         admin = sendChannel->freeRelBufferList;
@@ -1251,18 +1270,15 @@ nw_plugSendChannelDataBufferReliabilityAdminCreate(
         admin->usedCount = 1;
     }
 
+    sendChannel->currentWriteBuffer = REL_DATA(admin);
+    sendChannel->currentWriteBufferEnd =
+        (nw_data)(UI(sendChannel->currentWriteBuffer) + dataLength);
+
+    nw_plugSendChannelInitializeDataBuffer(sendChannel,
+                                           sendChannel->currentWriteBuffer);
 
     return admin;
 }
-
-
-static void
-nw_plugDataBufferReliabilityAdminFree(
-    nw_plugDataBufferReliabilityAdmin admin)
-{
-    os_free(admin);
-}
-
 
 static void
 nw_plugDataBufferReliabilityAdminInsert(
@@ -1334,42 +1350,39 @@ nw_plugSendChannelPushCurrentWriteBuffer(
     nw_plugSendChannel sendChannel,
     nw_length dataLength)
 {
-    nw_plugChannel channel = nw_plugChannel(sendChannel);
-    nw_plugDataBufferReliabilityAdmin relAdmin;
     nw_plugReceivingPartition partition;
-    nw_seqNr packetSeqNr;
+    nw_plugDataBuffer buffer;
     nw_plugDataBufferReliabilityAdmin *prevNext;
     nw_plugDataBufferReliabilityAdmin *nextPrev;
 
     partition = sendChannel->currentPartition;
     NW_CONFIDENCE(partition != NULL);
 
+    buffer = sendChannel->currentWriteBuffer;
+
     /* Fill in the remaining fields */
-    packetSeqNr = ++(partition->packetSeqNr);
-    nw_plugDataBufferSetPacketNr(sendChannel->currentWriteBuffer, packetSeqNr);
-    nw_plugDataBufferSetNrOfMessages(sendChannel->currentWriteBuffer, sendChannel->currentFragmentsInMsgCount);
-    nw_plugBufferSetLength(nw_plugBuffer(sendChannel->currentWriteBuffer), dataLength);
-    NW_STAMP(sendChannel->currentWriteBuffer,NW_BUF_TIMESTAMP_FILLED);
+    partition->packetSeqNr++;
+    nw_plugDataBufferSetPacketNr(buffer, partition->packetSeqNr);
+    nw_plugDataBufferSetNrOfMessages(buffer, sendChannel->currentFragmentsInMsgCount);
+    nw_plugBufferSetLength(nw_plugBuffer(buffer), dataLength);
+    NW_STAMP(buffer,NW_BUF_TIMESTAMP_FILLED);
+
+    nw_plugDataBufferSetPartitionId(buffer, partition->partitionId);
 
     /* Move buffer into flushable buffers list */
-    NW_CONFIDENCE((sendChannel->flushableNewest == NULL) == (sendChannel->flushableOldest == NULL));
+    NW_CONFIDENCE((sendChannel->flushableNewest == NULL) ==
+                  (sendChannel->flushableOldest == NULL));
+
     prevNext = &sendChannel->flushableNewest;
     if (sendChannel->flushableNewest == NULL) {
         nextPrev = &sendChannel->flushableOldest;
     } else {
         nextPrev = &(sendChannel->flushableNewest->prev);
     }
-    nw_plugDataBufferReliabilityAdminInsert(REL_ADMIN(sendChannel->currentWriteBuffer), prevNext, nextPrev);
+    nw_plugDataBufferReliabilityAdminInsert(REL_ADMIN(buffer), prevNext, nextPrev);
 
     /* Create new buffer for scratch */
-    relAdmin = nw_plugSendChannelDataBufferReliabilityAdminCreate(sendChannel,
-        nw__plugChannelGetFragmentLength(channel));
-    sendChannel->currentWriteBuffer = REL_DATA(relAdmin);
-    sendChannel->currentWriteBufferEnd = (nw_data)(UI(sendChannel->currentWriteBuffer) +
-        nw__plugChannelGetFragmentLength(channel));
-    /* and initialize it */
-    nw_plugSendChannelInitializeDataBuffer(sendChannel, sendChannel->currentWriteBuffer);
-
+    nw_plugSendChannelDataBufferReliabilityAdminCreate(sendChannel);
 }
 
 static nw_plugDataBufferReliabilityAdmin
