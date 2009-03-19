@@ -1517,8 +1517,9 @@ nw_plugReceiveChannelReadSocket(
                         /* DataLength <= 0, so invalid data */
                         NW_REPORT_WARNING("receive data",
                              "received data with corrupted content");
-                        str = nw_plugDataBufferToString(buffer);
-                        NW_REPORT_INFO_1(7, "receive data - corrupted content: %s", str);
+                        str = nw_plugDataBufferToString(nw_plugDataBuffer(buffer));
+                        NW_REPORT_WARNING_1("receive data",
+                             "corrupted content: %s", str);
                         os_free(str);
                         nw_plugReceiveChannelReleaseBuffer(channel, buffer);
                     }
@@ -1583,8 +1584,6 @@ nw_plugReceiveChannelProcessIncoming(nw_plugChannel channel)
     }
 }
 
-#define NW_REACTIONTIME_SEC  (0)
-#define NW_REACTIONTIME_MSEC (200) /* milliseconds */
 c_bool
 nw_plugReceiveChannelMessageStart(
     nw_plugChannel channel,
@@ -1596,8 +1595,6 @@ nw_plugReceiveChannelMessageStart(
     nw_bool messageWaiting;
     nw_plugBuffer buffer;
     nw_plugBufferDefragAdmin admin;
-    static os_time reactionTime = {
-        NW_REACTIONTIME_SEC, 1000*1000*NW_REACTIONTIME_MSEC};
     nw_seqNr sendingNodeId;
     nw_partitionId sendingPartitionId;
     nw_bool reliable;
@@ -1643,8 +1640,9 @@ nw_plugReceiveChannelMessageStart(
                     /* Do not release here, but keep the refcount to 1 */
                     /* nw_plugReceiveChannelReleaseBuffer(receiveChannel, buffer); */
                 } else {
+                    os_time timeout = {0, 200000000}; /* 200 milli seconds */
                     /* No data waiting to be processed, so wait for data in socket */
-                    read_result = nw_plugReceiveChannelReadSocket(receiveChannel, &reactionTime, &dummy);
+                    read_result = nw_plugReceiveChannelReadSocket(receiveChannel, &timeout, &dummy);
                     if (!read_result) {
                         /* Data could not be read from socket, because we're out of defrag buffers
                           * which could not be garbage collected. This is a Fatal error.
@@ -1674,10 +1672,6 @@ nw_plugReceiveChannelMessageStart(
     receiveChannel->inUse = (*data != NULL);
     return receiveChannel->inUse;
 }
-#undef NW_REACTIONTIME_SEC
-#undef NW_REACTIONTIME_MSEC
-
-
 
 void
 nw_plugReceiveChannelGetNextFragment(

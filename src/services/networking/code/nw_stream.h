@@ -20,7 +20,7 @@ nw_plugChannel
 nw_stream_channel (
     nw_stream _this);
 
-void
+nw_bool
 nw_stream_writeBegin (
     nw_stream _this,
     v_networkPartitionId partitionId,

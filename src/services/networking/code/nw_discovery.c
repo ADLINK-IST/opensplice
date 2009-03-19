@@ -98,17 +98,23 @@ nw_discoveryWriterWriteMessageToNetwork(
     NW_TRACE(Discovery, 6, "Sending heartbeat to the network");
     /* First retrieve a buffer to write in */
     maxBytes = 0; /* don't flush. */
-    nw_plugSendChannelMessageStart(discoveryWriter->sendChannel, &messageBuffer, &bufferLength, 0, &maxBytes);
-    /* Copy the message into the buffer */
-    NW_CONFIDENCE(bufferLength >= length);
-    memcpy((void *)messageBuffer, message, length);
-    /* Update buffer position and size */
-    messageBuffer = &(messageBuffer[length]);
-    /* Do write and flush immediately */
-    nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer);
-    maxBytes = bufferLength;
-    result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
-                                             TRUE, &maxBytes);
+    result = nw_plugSendChannelMessageStart(discoveryWriter->sendChannel,
+                                            &messageBuffer,
+                                            &bufferLength,
+                                            0,
+                                            &maxBytes);
+    if (result) {
+        /* Copy the message into the buffer */
+        NW_CONFIDENCE(bufferLength >= length);
+        memcpy((void *)messageBuffer, message, length);
+        /* Update buffer position and size */
+        messageBuffer = &(messageBuffer[length]);
+        /* Do write and flush immediately */
+        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer);
+        maxBytes = bufferLength;
+        result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
+                                                 TRUE, &maxBytes);
+    }
     NW_CONFIDENCE(result);
 }
 
@@ -132,11 +138,12 @@ NW_STRUCT(nw_discoveryMessage) {
 };
 NW_CLASS(nw_discoveryMessage);
 
-#define NW_DISCOVERY_MESSAGE_SIZE ((unsigned int)sizeof(NW_STRUCT(nw_discoveryMessage)))
+#define NW_DISCOVERY_MESSAGE_SIZE \
+        ((unsigned int)sizeof(NW_STRUCT(nw_discoveryMessage)))
 
 #define NW_HEARTBEATINTERVAL_TO_SLEEPTIME(time, interval, factor) \
-    time.seconds = (c_long)((factor) * (interval)) / 1000U;                \
-    time.nanoseconds = (1000000U * ((c_ulong)((factor) * (interval)) % 1000U))
+        time.seconds = (c_long)((factor) * (interval)) / 1000U;                \
+        time.nanoseconds = (1000000U * ((c_ulong)((factor) * (interval)) % 1000U))
 
 static void *
 nw_discoveryWriterMain(
@@ -173,7 +180,8 @@ nw_discoveryWriterMain(
 
     safetyFactor = NWCF_SIMPLE_PARAM(Float, path, SafetyFactor);
     if (safetyFactor < NWCF_MIN(SafetyFactor)) {
-        NW_REPORT_WARNING_2("retrieving discovery sending parameters",
+        NW_REPORT_WARNING_2(
+            "retrieving discovery sending parameters",
             "specified SafetyFactor %f too small, "
             "switching to %f",
             safetyFactor, NWCF_MIN(SafetyFactor));
@@ -182,7 +190,8 @@ nw_discoveryWriterMain(
 
     salvoSize = NWCF_SIMPLE_PARAM(ULong, path, SalvoSize);
     if (salvoSize < NWCF_MIN(SalvoSize)) {
-        NW_REPORT_WARNING_2("retrieving discovery sending parameters",
+        NW_REPORT_WARNING_2(
+            "retrieving discovery sending parameters",
             "specified SalvoSize %u too small, "
             "switching to %u",
             salvoSize, NWCF_MIN(SalvoSize));
@@ -203,8 +212,12 @@ nw_discoveryWriterMain(
 
     /* First give a salvo of starting messages so everybody knows about me */
     discoveryMessage.sign = NW_DISCOVERY_STARTING_SIGN;
-    NW_TRACE_1(Discovery, 2, "Liveliness state set to %s",
+
+    NW_TRACE_1(
+        Discovery, 2, 
+        "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
     terminationRequested = (int)nw_runnableTerminationRequested(runnable);
     for (i=0; (i<salvoSize) && (!terminationRequested); i++) {
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
@@ -217,8 +230,12 @@ nw_discoveryWriterMain(
     /* Now go into regular state */
     discoveryMessage.sign = NW_DISCOVERY_ALIVE_SIGN;
     respondCount = 0;
-    NW_TRACE_1(Discovery, 2, "Liveliness state set to %s",
+
+    NW_TRACE_1(
+        Discovery, 2, 
+        "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
     while (!terminationRequested) {
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
             (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE);
@@ -242,8 +259,12 @@ nw_discoveryWriterMain(
 
     /* Send a salvo of stopping messages so everybody can react quickly */
     discoveryMessage.sign = NW_DISCOVERY_STOPPING_SIGN;
-    NW_TRACE_1(Discovery, 2, "Liveliness state set to %s",
+
+    NW_TRACE_1(
+        Discovery, 2, 
+        "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
     for (i=0; i<salvoSize; i++) {
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
             (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE);
@@ -366,10 +387,13 @@ nw_discoveryReaderTrigger(
 
 #define NW_ALIVENODESHASH_HASHVALUE(reader, value) \
     ((value) % (reader)->aliveNodesHashSize)
+
 #define NW_ALIVENODESHASH_INDEXISVALID(reader, index) \
     (index < (reader)->alivedNodesHashSize)
+
 #define NW_ALIVENODESHASH_ITEMBYINDEX(reader, index) \
     (reader)->aliveNodesHash[(index) % (reader)->aliveNodesHashSize]
+
 #define NW_ALIVENODESHASH_ITEMBYVALUE(reader, value) \
     NW_ALIVENODESHASH_ITEMBYINDEX(reader, NW_ALIVENODESHASH_HASHVALUE(reader, value))
 
@@ -477,8 +501,13 @@ nw_discoveryReaderReceivedHeartbeat(
 
     memcpy(&discoveryMessage, messageBuffer, NW_DISCOVERY_MESSAGE_SIZE);
     networkId = nw_plugNetworkToHost(discoveryMessage.networkId);
-    NW_TRACE_2(Discovery, 6, "Received heartbeat from node with id 0x%x, "
-        "state is %s", networkId, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
+    NW_TRACE_2(
+        Discovery, 6, 
+        "Received heartbeat from node with id 0x%x, "
+        "state is %s", 
+        networkId, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
     switch (discoveryMessage.sign) {
         case NW_DISCOVERY_STOPPING_SIGN:
             nw_discoveryReaderRemoveNode(discoveryReader, networkId, address,

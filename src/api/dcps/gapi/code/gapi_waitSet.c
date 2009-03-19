@@ -227,7 +227,7 @@ TestAndList(
                     cd = u_entityGetUserData(ue);
                     if (cd) {
                         /* _ReadConditionGetTriggerValue(cd) =>
-                         *                  u_queryTest(cd->uQuery);
+                         *                  u_queryTriggerTest(cd->uQuery);
                          * _StatusConditionGetTriggerValue(cd) =>
                          *                  gapi_entity_get_status_changes(entity) &
                          *                  statuscondition->enabledStatusMask;
