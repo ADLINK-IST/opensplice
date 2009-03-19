@@ -170,6 +170,22 @@ DDS_sequence_create (
 
 }
 
+DDS_sequence_octet *
+DDS_sequence_octet__alloc (
+    void
+    )
+{
+   return (DDS_sequence_octet *)DDS_seqeuence_malloc();
+}
+
+DDS_octet *
+DDS_sequence_octet_allocbuf (
+    DDS_unsigned_long len
+    )
+{
+    return (DDS_octet *)DDS_sequence_allocbuf (NULL, sizeof (DDS_octet), len);
+}
+
 DDS_sequence_DDS_InstanceHandle_t *
 DDS_sequence_DDS_InstanceHandle_t__alloc (
     void

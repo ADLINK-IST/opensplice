@@ -4,6 +4,10 @@ else
 include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
 endif
 
+ifdef FLEX_HOME
+FLEX_LM_NEW     ?= lm_new$(OBJ_POSTFIX)
+endif
+
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
 JCODE_DIR  ?=code
@@ -100,21 +104,27 @@ INCLUDE		 = -I.
 INCLUDE		+= -I../../include
 INCLUDE		+= -I$(CODE_DIR)
 
-
+ifndef OSPL_OUTER_HOME
 INCLUDE		+= -I$(OSPL_HOME)/src/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
 INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC)
-
-ifdef OSPL_OUTER_HOME
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+else
+INCLUDE		+= -I$(OSPL_HOME)/src/include
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
 INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC)
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os
+INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC_CORE)
+INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
 endif
 
 C_FILES		?= $(notdir $(wildcard $(CODE_DIR)/*.c)) 
