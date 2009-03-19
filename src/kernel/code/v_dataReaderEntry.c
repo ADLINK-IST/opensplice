@@ -557,16 +557,10 @@ v_dataReaderEntryWrite(
             UPDATE_READER_STATISTICS(_this->index,found,oldState);
             if (qos->userKey.enable == FALSE) {
                 if (!v_dataReaderInstanceEmpty(found)) {
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
                     if (wasEmpty && !v_dataReaderInstanceInNotEmptyList(found)) {
                         c_tableInsert(_this->index->notEmptyList, found);
                         v_dataReaderInstanceInNotEmptyList(found) = TRUE;
                     }
-#else
-                    if (wasEmpty) {
-                        c_tableInsert(_this->index->notEmptyList, found);
-                    }
-#endif
                     if (v_dataReaderInstanceStateTest(found,L_DISPOSED)) {
                         if (!c_timeIsInfinite(qos->lifecycle.autopurge_disposed_samples_delay))
                         {

@@ -96,6 +96,10 @@ OS_API c_bool
 u_queryTest(
     u_query _this);
 
+OS_API c_bool      
+u_queryTriggerTest(
+    u_query _this);
+
 OS_API u_result    
 u_querySet(
     u_query _this,

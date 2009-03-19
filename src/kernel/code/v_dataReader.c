@@ -834,19 +834,10 @@ instanceReadSamples(
         }
         assert(v_dataReader(a->reader)->sampleCount >= 0);
 		/*A read behaves like a take for invalid samples*/
-#ifndef _DELAYED_NOT_EMPTYLIST_INSERT_
-        if (v_dataReaderInstanceEmpty(instance)) {
-            a->emptyList = c_iterInsert(a->emptyList,instance);
-        }
-#endif
     } else {
-#ifndef _DELAYED_NOT_EMPTYLIST_INSERT_
-        assert(FALSE);
-#else
         if (v_dataReaderInstanceInNotEmptyList(instance)) {
             a->emptyList = c_iterInsert(a->emptyList,instance);
         }
-#endif
     }
 
     return proceed;
@@ -1013,11 +1004,9 @@ instanceTakeSamples(
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     if (v_dataReaderInstanceEmpty(instance)) {
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
         if (v_dataReaderInstanceInNotEmptyList(instance)) {
             a->emptyList = c_iterInsert(a->emptyList,instance);
         }
-#endif
         return proceed;
     }
     oldCount = v_dataReaderInstanceSampleCount(instance);
@@ -1036,11 +1025,6 @@ instanceTakeSamples(
     }
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
-#ifndef _DELAYED_NOT_EMPTYLIST_INSERT_
-    if (v_dataReaderInstanceEmpty(instance)) {
-        a->emptyList = c_iterInsert(a->emptyList,instance);
-    }
-#endif
     return proceed;
 }
 
@@ -1054,18 +1038,12 @@ v_dataReaderRemoveInstance(
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(v_dataReaderInstanceEmpty(instance));
 
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
     if (v_dataReaderInstanceInNotEmptyList(instance)) {
         found = v_dataReaderInstance(c_remove(_this->index->notEmptyList,
                                               instance, NULL, NULL));
         v_dataReaderInstanceInNotEmptyList(instance) = FALSE;
         c_free(found);
     }
-#else
-    found = v_dataReaderInstance(c_remove(_this->index->notEmptyList,
-                                          instance, NULL, NULL));
-    c_free(found);
-#endif
 
     if (!v_reader(_this)->qos->userKey.enable) {
         if (v_dataReaderInstanceNoWriters(instance)) {
@@ -1176,17 +1154,10 @@ v_dataReaderTakeInstance(
                                      _this)) += count;
             }
             assert(_this->sampleCount >= 0);
-#ifndef _DELAYED_NOT_EMPTYLIST_INSERT_
-            if (v_dataReaderInstanceEmpty(instance)) {
-                v_dataReaderRemoveInstance(_this,instance);
-            }
-#endif
             v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
         }
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
     } else {
         v_dataReaderRemoveInstance(_this,instance);
-#endif
     }
     /* Now trigger the action routine that the last sample is read. */
     action(NULL,arg);

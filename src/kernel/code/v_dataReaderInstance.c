@@ -39,6 +39,27 @@
 #define CHECK_EMPTINESS(i)
 #endif
 
+#ifndef NDEBUG
+#define CHECK_INVALIDITY(_this) \
+        { \
+            if (!v_reader(v_index(_this->index)->reader)->qos->lifecycle.enable_invalid_samples) { \
+                if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED)) { \
+                    if (v_dataReaderInstanceHead(_this) != NULL) { \
+			printf("Error at line %d enable_invalid_samples = FALSE but invalid sample exists\n", __LINE__); \
+                    } else { \
+                        printf("Warning at line %d enable_invalid_samples = FALSE but L_STATECHANGED is set\n", __LINE__); \
+                    } \
+                } \
+                if (_this->sampleCount == 0) { \
+                    if (v_dataReaderInstanceHead(_this) != NULL) { \
+                        printf("Error at line %d enable_invalid_samples = FALSE but invalid sample exists\n", __LINE__); \
+                    } \
+                } \
+            } \
+        }
+#else
+#define CHECK_INVALIDITY(_this)
+#endif
 
 #ifndef NDEBUG
 #define CHECK_COUNT(_this) v_dataReaderInstanceCheckCount(_this)
@@ -144,7 +165,6 @@ v_dataReaderInstanceInit (
         c_fieldAssign(instanceKeyList[i],_this,value);
         c_valueFreeRef(value);
     }
-
 }
 
 v_dataReaderInstance
@@ -163,6 +183,7 @@ v_dataReaderInstanceNew(
     v_dataReaderInstanceInit(_this,message);
 
     CHECK_COUNT(_this);
+    CHECK_INVALIDITY(_this);
     return _this;
 }
 
@@ -173,6 +194,7 @@ v_dataReaderInstanceSetEpoch (
 {
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     CHECK_COUNT(_this);
+    CHECK_INVALIDITY(_this);
 
     _this->epoch = time;
 }
@@ -236,6 +258,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
     index = v_index(_this->index);
     reader = v_dataReader(index->reader);
     entry = v_dataReaderEntry(index->entry);
@@ -291,6 +314,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if (v_stateTest(messageState, L_UNREGISTER)) {
         if (_this->liveliness > 0) {
@@ -305,12 +329,13 @@ v_dataReaderInstanceInsert(
                                 v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
                             }
                         } else {
-                            if (v_stateTest(_this->instanceState,L_EMPTY)) {
-                            /* No valid nor invalid samples exist,
-                             * so need to create an invalid sample as
-                             * sample info carier to pass state change
-                             * at nest read or take operation.
-                             */
+                            if (v_dataReaderInstanceEmpty(_this)) {
+                                assert(v_stateTest(_this->instanceState,L_EMPTY));
+                                /* No valid nor invalid samples exist,
+                                 * so need to create an invalid sample as
+                                 * sample info carier to pass state change
+                                 * at nest read or take operation.
+                                 */
                                 sample = v_dataReaderSampleNew(_this,message);
                                 v_dataReaderInstanceStateClear(_this, L_EMPTY);
                                 v_dataReaderInstanceSetHead(_this,sample);
@@ -327,6 +352,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     /*
      * Test if ownerhsip is exclusive and whether the writer identified
@@ -387,6 +413,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     /* Only write and dispose messages do insert a message */
     if (v_stateTest(messageState,L_DISPOSED) &&
@@ -419,15 +446,17 @@ v_dataReaderInstanceInsert(
              */
             if (!v_stateTest(messageState,L_WRITE)) {
                 if (qos->lifecycle.enable_invalid_samples) {
-                    sample = v_dataReaderSampleNew(_this,message);
-                    v_dataReaderInstanceStateClear(_this, L_EMPTY);
-                    v_dataReaderInstanceSetHead(_this,sample);
-                    v_dataReaderInstanceSetTail(_this,sample);
-                    v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                    if (v_dataReaderInstanceEmpty(_this)) {
+                        sample = v_dataReaderSampleNew(_this,message);
+                        v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                        v_dataReaderInstanceSetHead(_this,sample);
+                        v_dataReaderInstanceSetTail(_this,sample);
+                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                    }
                 }
             }
         } else {
-            /* instance is not empty, (in)valid samples exist.
+            /* instance is not empty, valid samples exist.
              */
             if (qos->orderby.kind == V_ORDERBY_SOURCETIME) {
                 /* If order by source time then only set disposed if
@@ -457,6 +486,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if (v_stateTest(messageState,L_WRITE)) {
         if (_this->hasBeenAlive) {
@@ -468,6 +498,7 @@ v_dataReaderInstanceInsert(
             if (v_stateTest(_this->instanceState,L_EMPTY)) {
                 assert(v_dataReaderInstanceHead(_this) == NULL);
                 assert(v_dataReaderInstanceTail(_this) == NULL);
+                assert(v_dataReaderInstanceEmpty(_this));
             } else {
                 /* An invalid data sample exist.
                  * Remove it as the incomming sample will provide
@@ -627,6 +658,7 @@ v_dataReaderInstanceInsert(
 
         CHECK_COUNT(_this);
         CHECK_EMPTINESS(_this);
+        CHECK_INVALIDITY(_this);
 
         /* At this point the message is inserted into the history.
          * Now update internal instance state.
@@ -652,12 +684,14 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if ((reader->views != NULL) && (sample != NULL)) {
         c_walk(reader->views,writeSlave,sample);
     }
     CHECK_EMPTINESS(_this);
     CHECK_COUNT(_this);
+    CHECK_INVALIDITY(_this);
 
     if ((v_dataReaderInstanceStateTest(_this, L_STATECHANGED) ||
          v_stateTest(messageState,L_WRITE))) { 
@@ -676,6 +710,7 @@ v_dataReaderInstanceInsert(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
     assert(_this->sampleCount <= reader->depth);
 
     return V_DATAREADER_INSERTED;
@@ -697,9 +732,9 @@ v_dataReaderInstanceTest(
     }
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if (v_dataReaderInstanceEmpty(_this)) {
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
         v_dataReaderInstance found;
         if (v_dataReaderInstanceInNotEmptyList(_this)) {
             found = v_dataReaderInstance(c_remove(v_index(_this->index)->notEmptyList,
@@ -707,7 +742,6 @@ v_dataReaderInstanceTest(
             v_dataReaderInstanceInNotEmptyList(_this) = FALSE;
             c_free(found);
         }
-#endif
         return FALSE;
     }
     if (query == NULL) {
@@ -738,6 +772,7 @@ v_dataReaderInstanceTest(
 
     CHECK_EMPTINESS(_this);
     CHECK_COUNT(_this);
+    CHECK_INVALIDITY(_this);
 
     return sampleSatisfies;
 }
@@ -757,6 +792,7 @@ v_dataReaderSampleRead(
 
     CHECK_EMPTINESS(instance);
     CHECK_COUNT(instance);
+    CHECK_INVALIDITY(instance);
 
     state = v_dataReaderInstanceState(instance);
     mask = L_NEW | L_DISPOSED | L_NOWRITERS;
@@ -788,12 +824,14 @@ v_dataReaderSampleRead(
     V_MESSAGE_REPORT(v_dataReaderSampleMessage(_this),
                      v_dataReaderInstanceDataReader(instance));
     v_dataReaderInstanceStateClear(instance, L_NEW);
+    v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
     if (!v_readerSampleTestState(_this,L_READ)) {
         v_readerSampleSetState(_this,L_LAZYREAD);
     }
 
     CHECK_EMPTINESS(instance);
     CHECK_COUNT(instance);
+    CHECK_INVALIDITY(instance);
     return proceed;
 }
 
@@ -816,6 +854,7 @@ v_dataReaderInstanceReadSamples(
     }
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if (v_dataReaderInstanceEmpty(_this)) {
         /* No valid nor invalid samples exist,
@@ -832,10 +871,11 @@ v_dataReaderInstanceReadSamples(
         assert(sample);
         assert(sample == v_dataReaderInstanceTail(_this));
         proceed = v_dataReaderSampleTake(sample,action,arg);
-        v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
 
         CHECK_EMPTINESS(_this);
         CHECK_COUNT(_this);
+        CHECK_INVALIDITY(_this);
 
         return proceed;
     }
@@ -868,6 +908,7 @@ v_dataReaderInstanceReadSamples(
 
     CHECK_EMPTINESS(_this);
     CHECK_COUNT(_this);
+    CHECK_INVALIDITY(_this);
 
     return proceed;
 }
@@ -887,6 +928,7 @@ v_dataReaderInstanceWalkSamples(
     if (_this != NULL) {
         CHECK_COUNT(_this);
         CHECK_EMPTINESS(_this);
+        CHECK_INVALIDITY(_this);
 
         if (!v_dataReaderInstanceEmpty(_this)) {
             sample = v_dataReaderInstanceHead(_this);
@@ -896,6 +938,7 @@ v_dataReaderInstanceWalkSamples(
             }
             CHECK_COUNT(_this);
             CHECK_EMPTINESS(_this);
+            CHECK_INVALIDITY(_this);
         }
     }
     return proceed;
@@ -912,11 +955,13 @@ v_dataReaderSampleTake(
     v_state state;
     v_state mask;
     c_bool proceed;
+    v_dataReader r;
 
     instance = v_dataReaderSampleInstance(_this);
 
     CHECK_COUNT(instance);
     CHECK_EMPTINESS(instance);
+    CHECK_INVALIDITY(instance);
 
     state = v_dataReaderInstanceState(instance);
     mask = L_NEW | L_DISPOSED | L_NOWRITERS;
@@ -944,7 +989,8 @@ v_dataReaderSampleTake(
     V_MESSAGE_REPORT(v_dataReaderSampleMessage(_this),
                      v_dataReaderInstanceDataReader(instance));
     index = v_index(instance->index);
-    if (v_dataReader(index->reader)->views != NULL) {
+    r = v_dataReader(index->reader);
+    if (r->views != NULL) {
         v_dataReaderSampleWipeViews(v_dataReaderSample(_this));
     }
     v_dataReaderInstanceStateClear(instance, L_NEW);
@@ -956,6 +1002,8 @@ v_dataReaderSampleTake(
 #endif
     if (instance->sampleCount > 0) {
         instance->sampleCount--;
+    } else {
+        assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
     }
     /* Remove sample from history. */
     if (_this->next) {
@@ -978,17 +1026,25 @@ v_dataReaderSampleTake(
     _this->next = NULL;
     v_dataReaderSampleFree(_this);
 
+    v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
+
     if (instance->sampleCount == 0) {
+        assert(v_dataReaderInstanceEmpty(instance));
         v_dataReaderInstanceStateSet(instance, L_EMPTY);
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
-        if (v_reader(v_dataReader(v_index(instance->index)->reader))->qos->userKey.enable) {
+        if (v_reader(r)->qos->userKey.enable) {
             v_dataReaderInstanceStateSet(instance, L_NEW);
         }
-#endif
     }
 
     CHECK_COUNT(instance);
     CHECK_EMPTINESS(instance);
+    CHECK_INVALIDITY(instance);
+
+    if (r->triggerValue) {
+        c_free(v_readerSample(r->triggerValue)->instance);
+        c_free(r->triggerValue);
+        r->triggerValue = NULL;
+    }
 
     return proceed;
 }
@@ -1009,6 +1065,7 @@ v_dataReaderInstanceTakeSamples(
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if (!v_dataReaderInstanceEmpty(_this)) {
         readId = v_dataReaderInstanceDataReader(_this)->readCnt;
@@ -1037,7 +1094,7 @@ v_dataReaderInstanceTakeSamples(
                 if (sampleSatisfies) {
                     sample->readId = readId;
                     proceed = v_dataReaderSampleTake(sample,action,arg);
-                    v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+                    assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
                     CHECK_EMPTINESS(_this);
                 }
             }
@@ -1045,11 +1102,12 @@ v_dataReaderInstanceTakeSamples(
         }
 
         if (v_dataReaderInstanceEmpty(_this)) {
-            v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+              assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
         }
     }
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     return proceed;
 }
@@ -1060,38 +1118,51 @@ v_dataReaderInstancePurge(
 {
     v_index index;
     v_dataReaderSample sample, previous;
+    v_dataReader r;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     if ((_this != NULL) && !v_dataReaderInstanceEmpty(_this)) {
 
         index = v_index(_this->index);
+        r = v_dataReader(index->reader);
         sample = v_dataReaderInstanceHead(_this);
         while (sample != NULL) {
             previous = sample->prev;
-            _this->sampleCount--;
-
-            if (v_dataReader(index->reader)->views != NULL) {
-                v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
+            if (_this->sampleCount) {
+                /* Do not decrease sample count on invalid sample */
+                _this->sampleCount--;
+            } else {
+                assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
             }
-            if (previous == NULL) {
-                assert(_this->sampleCount == 0);
-                v_dataReaderSampleFree(sample);
-                v_dataReaderInstanceSetHead(_this,NULL);
-                v_dataReaderInstanceSetTail(_this,NULL);
-                v_dataReaderInstanceStateClear(_this, L_NEW);
-                v_dataReaderInstanceStateSet(_this, L_EMPTY);
+
+            if (r->views != NULL) {
+                v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
             }
             sample = previous;
         }
+        assert(_this->sampleCount == 0);
+        sample = v_dataReaderInstanceHead(_this);
+        v_dataReaderSampleFree(sample);
+        v_dataReaderInstanceSetHead(_this,NULL);
+        v_dataReaderInstanceSetTail(_this,NULL);
+        v_dataReaderInstanceStateClear(_this, L_NEW);
+        v_dataReaderInstanceStateSet(_this, L_EMPTY);
         v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+        if (r->triggerValue) {
+            c_free(v_readerSample(r->triggerValue)->instance);
+            c_free(r->triggerValue);
+            r->triggerValue = NULL;
+        }
     }
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 }
 
 c_voidp
@@ -1132,6 +1203,7 @@ v_dataReaderInstanceUnregister (
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 
     _this->liveliness -= count;
     if (_this->liveliness < 0) {
@@ -1149,6 +1221,7 @@ v_dataReaderInstanceUnregister (
                 v_dataReaderInstanceDeinit(_this);
                 CHECK_COUNT(_this);
                 CHECK_EMPTINESS(_this);
+                CHECK_INVALIDITY(_this);
                 c_free(_this);
             }
         }
@@ -1157,8 +1230,7 @@ v_dataReaderInstanceUnregister (
             if (qos->lifecycle.enable_invalid_samples) {
                 if (_this->sampleCount > 0) {
                     if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED)) {
-                        v_stateSet(v_dataReaderInstanceState(_this),
-                                   L_STATECHANGED);
+                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
                     }
                 }
             }
@@ -1168,4 +1240,5 @@ v_dataReaderInstanceUnregister (
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
 }
