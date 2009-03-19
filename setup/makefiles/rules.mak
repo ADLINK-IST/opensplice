@@ -4,6 +4,10 @@ else
 include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
 endif
 
+ifdef FLEX_HOME
+FLEX_LM_NEW     ?= lm_new$(OBJ_POSTFIX)
+endif
+
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
 JCODE_DIR  ?=code
