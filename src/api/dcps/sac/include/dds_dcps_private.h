@@ -16,7 +16,6 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-typedef void (*dealloactorType)(void *object);
 typedef void *(*bufferAllocatorType)(DDS_unsigned_long len);
 
 OS_API DDS_char *
@@ -69,16 +68,6 @@ DDS_sequence_free (
 OS_API void 
 DDS_sequence_clean (
     void *sequence);
-
-OS_API void *
-DDS_sequence_malloc (
-    void);
-
-OS_API void *
-DDS_sequence_allocbuf (
-    dealloactorType deallocator,
-    DDS_unsigned_long len,
-    DDS_unsigned_long count);
 
 OS_API void
 DDS_sequence_replacebuf (

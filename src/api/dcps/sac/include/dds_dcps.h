@@ -47,6 +47,11 @@ typedef void *                                  DDS_Object;
 /* Generic allocation/release functions */
 OS_API void DDS_free (void *);
 OS_API extern DDS_char *DDS_string_alloc (DDS_unsigned_long len);
+typedef void (*dealloactorType)(void *object);
+OS_API void * DDS_sequence_malloc (void);
+OS_API void * DDS_sequence_allocbuf (dealloactorType deallocator,
+                                     DDS_unsigned_long len,
+                                     DDS_unsigned_long count);
 
 /* Sequence support routines */
 OS_API extern void DDS_sequence_set_release (void *sequence, DDS_boolean release);

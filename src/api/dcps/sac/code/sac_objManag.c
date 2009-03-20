@@ -7,9 +7,6 @@
 
 #include "dds_dcps.h"
 #include "dds_dcps_private.h"
-
-
-
     
 void *
 DDS__malloc (
@@ -175,7 +172,7 @@ DDS_sequence_octet__alloc (
     void
     )
 {
-   return (DDS_sequence_octet *)DDS_seqeuence_malloc();
+   return (DDS_sequence_octet *)DDS_sequence_malloc();
 }
 
 DDS_octet *
@@ -656,28 +653,6 @@ DDS_InstanceStateSeq_allocbuf (
 {
     return (DDS_InstanceStateKind *)
         gapi_instanceStateSeq_allocbuf (
-            (gapi_unsigned_long) len
-    );
-
-}
-
-DDS_sequence_octet *
-DDS_sequence_octet__alloc (
-    void
-    )
-{
-    return (DDS_sequence_octet *)
-        gapi_octetSeq__alloc ();
-
-}
-
-DDS_octet *
-DDS_sequence_octet_allocbuf (
-    DDS_unsigned_long len
-    )
-{
-    return (DDS_octet *)
-        gapi_octetSeq_allocbuf (
             (gapi_unsigned_long) len
     );
 
