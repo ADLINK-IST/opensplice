@@ -33,7 +33,7 @@ export JAVA_HOME
 
 # setup compiler environment
 # cygwin is used for the make and bison/flex utilities
-PATH="/c/Program Files/Microsoft Visual Studio 8/VC/bin:/c/Program Files/Microsoft Visual Studio 8/Common7/IDE:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools/bin:/c/Program Files/Microsoft Visual Studio 8/PlatformSDK/bin:/c/Program Files/Microsoft Visual Studio 8/SDK/v2.0/bin:/c/windows/Microsoft.NET/Framework/v2.0.50727:/c/Program Files/Microsoft Visual Studio 8/VC/VCPackages:/usr/local/bin:/mingw/bin:/bin:/c/cygwin/bin:/C/Program Files/Java/jdk1.5.0_07/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin/client:$OSPL_HOME/exec/$SPLICE_HOST:$OSPL_HOME/lib/$SPLICE_HOST:$OSPL_HOME/testsuite/lib/$SPLICE_HOST"
+PATH="/c/Program Files/Microsoft Visual Studio 8/VC/bin:/c/Program Files/Microsoft Visual Studio 8/Common7/IDE:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools/bin:/c/Program Files/Microsoft Visual Studio 8/PlatformSDK/bin:/c/Program Files/Microsoft Visual Studio 8/SDK/v2.0/bin:/c/windows/Microsoft.NET/Framework/v2.0.50727:/c/Program Files/Microsoft Visual Studio 8/VC/VCPackages:/usr/local/bin:/mingw/bin:/bin:/c/cygwin/bin:/C/Program Files/Java/jdk1.5.0_07/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin/client:$OSPL_HOME/exec/$SPLICE_HOST:$OSPL_HOME/lib/$SPLICE_HOST:$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST"
 export PATH
 
 . /opt/nds/GSOAP2/gsoap-2.7/release.com
