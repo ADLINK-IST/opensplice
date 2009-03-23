@@ -31,8 +31,8 @@ C_CLASS(c_relation);
 C_CLASS(c_operation);
 C_CLASS(c_collectionType);
 C_CLASS(c_type);
-C_CLASS(c_extent);
 C_CLASS(c_typeDef);
+C_CLASS(c_extent);
 C_CLASS(c_primitive);
 C_CLASS(c_parameter);
 C_CLASS(c_member);
@@ -197,7 +197,6 @@ C_STRUCT(c_type) {
     c_base base;
     c_ulong objectCount;
     c_address size;
-    c_extent extent;
 };
 
 /*============================================================================*/

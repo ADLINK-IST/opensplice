@@ -62,7 +62,6 @@ typedef struct sd_specialAddresses_s {
             c_object base;
             c_object size;
             c_object objectCount;
-            c_object extent;
         } type;
         struct structure {
             c_object references;
@@ -156,8 +155,6 @@ sd_getSpecialAddresses(
         SD_CONFIDENCE(result->ignore.type.size);
         result->ignore.type.objectCount = c_metaResolve(metaObject, SD_EXTENTCOUNTNAME);
         SD_CONFIDENCE(result->ignore.type.objectCount);
-        result->ignore.type.extent = c_metaResolve(metaObject, SD_EXTENTNAME);
-        SD_CONFIDENCE(result->ignore.type.extent);
         c_free(metaObject);
         
         metaObject = (c_metaObject)c_resolve(base, SD_CSTRUCTURENAME);
@@ -778,6 +775,7 @@ sd_createOrLookupScope(
                currentDst = &(currentDst[1]);
                currentLastName = &(currentLastName[1]);
             }
+            /* result is already kept in the prevScope, so can already be freed */
             c_free(result);
             result = c_metaDeclare(result, lastName, M_MODULE);
             while (*currentSrc == ':') {
@@ -785,6 +783,7 @@ sd_createOrLookupScope(
                currentSrc = &(currentSrc[1]);
                currentDst = &(currentDst[1]);
             }
+            /* Do not free result as it is returned by this function */
         }
     } else {
         result = c_keep(foundScope);
@@ -858,16 +857,16 @@ sd_createOrLookupType(
     if (existingType != NULL) {
         /* Type already existed in the database */
         *typeExisted = TRUE;
-        *actualType = c_keep(existingType);
         /* Keep a reference to the found type */
-        /* No c_keep because c_resolve result is kept */
+        *actualType = c_keep(existingType);
+        /* transfer refcount from c_resolve */
         *(c_object *)(*objectPtr) = existingType;
     } else {
         /* Type did not yet exist, check if modules exist */
         *typeExisted = FALSE;
         /* Make an instance of the metadata of the found type */
         newObject = c_metaDefine(c_metaObject(base), kind);
-        *(c_object *)(*objectPtr) = newObject;
+        *(c_object *)(*objectPtr) = newObject; /* transfer refcount */
         *actualType = c_keep(c_getType(newObject));
         /* Bind it now */
         scope = c_metaResolve(c_metaObject(base), scopeName);
@@ -878,6 +877,8 @@ sd_createOrLookupType(
         SD_CONFIDENCE(scope != NULL);
         found = c_metaBind(scope, name, (c_metaObject)newObject);        
         assert(found == newObject);
+        c_free(found);
+        c_free(scope);
     }
 
     os_free(scopeName);
@@ -1215,6 +1216,7 @@ sd_XMLMetadataDeserHook(
                         sd_scanTaggedString(&scopedName, dataPtrPtr, memberName, NULL);
                         os_free(scopedName);
                         result = FALSE;
+                        c_free(typeInstance);
                     }
                 } else {
                     /* This is a special case. The type has already been set

@@ -18,7 +18,7 @@
         c_tableKeyList(v_index(_this)->objects)
 
 #define v_indexSourceKeyList(_this) \
-        (v_index(_this)->sourceKeyList)
+        (c_keep(v_index(_this)->sourceKeyList))
 
 #define v_indexTopic(o) \
          (v_index(o)->entry ? \

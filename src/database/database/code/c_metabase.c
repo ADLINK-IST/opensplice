@@ -11,7 +11,6 @@
 #include "c_stringSupport.h"
 #include "c_collection.h"
 #include "c_metafactory.h"
-#include "c_extent.h"
 #include "ctype.h"
 #include "c_module.h"
 
@@ -388,14 +387,12 @@ c_metaDefine(
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
         o->kind = kind;
         c_type(o)->base = base; /* REMARK c_keep(base); */
-        c_type(o)->extent = NULL; /* c_extentNew(o,0); */
     break;
     case M_UNION:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
         o->kind = kind;
         c_union(o)->scope = c_scopeNew(base);
         c_type(o)->base = base; /* REMARK c_keep(base); */
-        c_type(o)->extent = NULL; /* c_extentNew(o,0); */
     break;
     case M_STRUCTURE:
     case M_EXCEPTION:
@@ -403,7 +400,6 @@ c_metaDefine(
         o->kind = kind;
         c_structure(o)->scope = c_scopeNew(base);
         c_type(o)->base = base; /* REMARK c_keep(base); */
-        c_type(o)->extent = NULL; /* c_extentNew(o,0); */
     break;
     case M_MODULE:
           o = (c_baseObject)c_new(c_getMetaType(base,kind));
@@ -420,7 +416,6 @@ c_metaDefine(
         }
         c_interface(o)->scope = c_scopeNew(base);
         c_type(o)->base = base; /* REMARK c_keep(base); */
-        c_type(o)->extent = NULL; /* c_extentNew(o,0); */
     break;
     default:
         o = NULL;
@@ -467,6 +462,7 @@ c_metaDeclare(
             return NULL;
         }
     } else if (c_baseObjectKind(o) != kind) {
+        c_free(o);
         return NULL;
     } else {
         return o;
@@ -482,9 +478,6 @@ c_typeInit(
     c_type(o)->base = c__getBase(o);
     c_type(o)->alignment = alignment;
     c_type(o)->size = size;
-    if (c_type(o)->extent == NULL) {
-        c_type(o)->extent = c_extentNew(c_type(o),0);
-    }
 }
 
 
@@ -628,6 +621,8 @@ c_typeHasRef (
     switch(c_baseObjectKind(type)) {
     case M_CLASS:
     case M_INTERFACE:
+    case M_EXTENT:
+    case M_EXTENTSYNC:
         return TRUE;
     case M_COLLECTION:
         switch(c_collectionType(type)->kind) {
@@ -703,6 +698,8 @@ propertySize(
             return sizeof(void *);
         }
     case M_CLASS:
+    case M_EXTENT:
+    case M_EXTENTSYNC:
         return sizeof(void *);
     case M_TYPEDEF:
         return propertySize(c_typeDef(type)->alias);
@@ -932,6 +929,8 @@ c__metaFinalize(
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
                     case M_CLASS:
+                    case M_EXTENT:
+                    case M_EXTENTSYNC:
                     case M_BASE:
                         if (alignment < objectAlignment) {
                             alignment = objectAlignment;
@@ -1017,6 +1016,8 @@ c__metaFinalize(
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
                     case M_CLASS:
+                    case M_EXTENT:
+                    case M_EXTENTSYNC:
                     case M_BASE:
                         if (type->alignment > alignment) {
                             alignment = type->alignment;
@@ -1123,7 +1124,7 @@ c__metaFinalize(
         if (status != S_REDECLARED) {
             for (i=0; i<length; i++) {
                 c = c_constant(c_enumeration(o)->elements[i]);
-                c->type = c_keep(o);
+                c->type = c_keep(o); /* The constant has a managed ref. to type */
                 if (c->operand == NULL) { /* typical in the odlpp */
                     c->operand = (c_operand)c_metaDefine(c_metaObject(o),
                                                          M_LITERAL);
@@ -1200,6 +1201,8 @@ c__metaFinalize(
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
                     case M_CLASS:
+                    case M_EXTENT:
+                    case M_EXTENTSYNC:
                     case M_BASE:
                         if (alignment < objectAlignment) {
                             alignment = objectAlignment;
@@ -1780,9 +1783,6 @@ c_metaTypeInit(
     c_type(o)->base = c__getBase(o);
     c_type(o)->alignment = alignment;
     c_type(o)->size = size;
-    if (c_type(o)->extent == NULL) {
-        c_type(o)->extent = c_extentNew(o,0);
-    }
 }
 
 static void

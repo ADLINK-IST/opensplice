@@ -106,7 +106,6 @@ createGroupSampleType(
                                   c_metaObject(sampleType)));
     os_free(name);
     c_free(sampleType);
-    c_keep(foundType);
 
     return foundType;
 }
@@ -128,10 +127,11 @@ createGroupInstanceType(
     assert(baseType != NULL);
 
     instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(instanceType)->extends = c_keep(c_class(baseType));
-    if (v_topicKeyType(topic) != NULL) {
+    c_class(instanceType)->extends = c_class(baseType); /* transfer refCount */
+    foundType = v_topicKeyType(topic);
+    if ( foundType != NULL) {
         o = c_metaDeclare(c_metaObject(instanceType),"key",M_ATTRIBUTE);
-        c_property(o)->type = c_keep(v_topicKeyType(topic));
+        c_property(o)->type = foundType; /* transfer refcount */
         c_free(o);
     }
     c_metaObject(instanceType)->definedIn = c_keep(base);
@@ -663,6 +663,7 @@ v_groupInit(
     group->count = 0;
     group->infWait = infWait;
     c_free(instanceType);
+    c_free(sampleType);
 
     group->disposedInstances = c_listNew(v_kernelType(kernel, K_GROUPPURGEITEM));
 
@@ -2016,6 +2017,7 @@ resolveField(
         }
         os_freea(fieldName);
     }
+    c_free(instanceType);
     if(field){
         path = c_fieldPath(field);
         length = c_arraySize(path);

@@ -539,7 +539,7 @@ v_dataReaderNew (
         instanceType = v_dataReaderInstanceType(_this);
         sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
                                               "sample"));
-
+        c_free(instanceType);
 #ifdef _EXTENT_
 #define _COUNT_ (128)
         /* the sampleExtent is created with the synchronized parameter
@@ -1564,7 +1564,7 @@ v_dataReaderInstanceType(
     v_dataReader _this)
 {
     assert(C_TYPECHECK(_this,v_dataReader));
-    return c_subType(_this->index->objects);
+    return c_subType(_this->index->objects); /* pass refCount */
 }
 
 c_type
@@ -1628,6 +1628,7 @@ v_dataReaderIndexField(
         }
         os_freea(fieldName);
     }
+    c_free(instanceType);
     return field;
 }
 

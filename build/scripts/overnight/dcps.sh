@@ -72,32 +72,32 @@ fi
 ArchiveLogs
 
 ./dcps_build $ARGS
-
-BUILD_WORKED=$?
+LAST_STAGE_WORKED=$?
 
 ArchiveLogs
 
-if [ $BUILD_WORKED = 0 ]
+if [ $LAST_STAGE_WORKED = 0 ]
 then
     ./dcps_build_dist $ARGS
-    BUILD_DIST_WORKED=$?
+    LAST_STAGE_WORKED=$?
     ArchiveLogs
 fi
 
-if [ "$BUILD_DIST_WORKED" = 0 ]
+if [ $LAST_STAGE_WORKED = 0 ]
 then
     ./dcps_archive_dist $ARGS
+    LAST_STAGE_WORKED=$?
     ArchiveLogs
 fi
 
-if [ $BUILD_WORKED = 0 ]
+if [ $LAST_STAGE_WORKED = 0 ]
 then
     ./dcps_perform_tests $ARGS
-    BUILD_WORKED=$?
+    LAST_STAGE_WORKED=$?
     ArchiveLogs
 fi
 
-if [ $BUILD_WORKED = 0 ]
+if [ $LAST_STAGE_WORKED = 0 ]
 then
    SetState "Complete"
 else

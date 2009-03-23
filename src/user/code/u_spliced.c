@@ -107,10 +107,17 @@ lockPages(
                 } else {
                     OS_REPORT(OS_INFO,"lockPages", 0,
                         "Splicedaemon: MemoryLocking disabled");
+                    c_iterFree(iter);
                 }
             } else {
+                c_voidp e;
                 OS_REPORT(OS_WARNING,"lockPages", 0,
                     "Could not get configuration for Daemon (non-existent or too many): MemoryLocking disabled");
+                do{
+                    e = c_iterTakeFirst(iter);
+                    c_free(e);
+                } while(e != NULL);
+                c_iterFree(iter);
             }
             c_free(root);
         }

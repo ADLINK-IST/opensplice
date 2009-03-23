@@ -6,10 +6,10 @@ M   ospli/rhel4/PPC604.vxworks6.6-dev-inner 1 heads/master none
 M   ospli/ultra8/solaris-dev-inner 1 heads/master none
 M   ospli/fedora3/x86.linux2.6-dev-inner 1 heads/master none
 M   ospli/rhel4/x86.linux2.6-dev-inner 1 heads/master none
-M   ospli/dds1-win2k3/x86.win32-dev-inner 1 heads/master none
+M   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/master none
 
 
 M   ospli/fedora3/x86.linux2.6-dev 120 heads/master none
 M   ospli/rhel4/x86.linux2.6-dev 120 heads/master none
-M   ospli/dds1-win2k3/x86.win32-dev 120 heads/master none
+M   ospli/DDS1-WIN2K3/x86.win32-dev 120 heads/master none
 

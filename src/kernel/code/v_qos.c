@@ -46,6 +46,7 @@ v_qosCreate(
     }
 
     qos = v_qos(c_new(type));
+    c_free(type);
     qos->kind = kind;
     
     return qos;
