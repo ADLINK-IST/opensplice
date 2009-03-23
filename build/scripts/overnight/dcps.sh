@@ -4,6 +4,7 @@
 cd `dirname $0` || exit 1
 
 . buildsys/functions
+. ./dcps_functions
 
 DATE=`date +%Y/%m/%d`
 export DATE
