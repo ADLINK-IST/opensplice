@@ -10,6 +10,11 @@ ProcessArgs()
             WORKDIR=$1
             shift 1
             ;;
+         -runtype)
+            shift 1
+            RUNTYPE=$1
+            shift 1
+            ;;
          -depworkdir)
             shift 1
             DEPWORKDIR=$1
@@ -203,7 +208,7 @@ mkdirOnStore()
 
 SetupRemoteLogDir()
 {
-   RLOGDIR=results/$PRODUCT/$DATE/$REV/$OSNAME/$INDEX
+   RLOGDIR=results/$RUNTYPE/$PRODUCT/$DATE/$REV/$OSNAME/$INDEX
    Assert mkdirOnStore -p $RLOGDIR/logs
    export RLOGDIR
 }
