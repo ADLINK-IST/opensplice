@@ -38,7 +38,9 @@ then
    exit 1
 fi
 
-/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect dev > $LOGDIR/dbt.log 2>&1
+/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build run collect dev > $LOGDIR/dbt.log 2>&1
 echo "TESTS/DBT=Complete" >> $RESFILE
+
+cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results
 
 exit 0
