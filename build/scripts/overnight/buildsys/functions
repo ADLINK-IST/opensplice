@@ -112,15 +112,6 @@ SetupLogDir()
    export LOGDIR
 }
 
-SetState()
-{
-   if [ -z "$LOGDIR" ]
-   then
-      SetupLogDir
-   fi
-   echo "$1" > $LOGDIR/STATE
-}
-
 SetupResFile()
 {
    if [ -z "$LOGDIR" ]
@@ -238,39 +229,47 @@ ArchiveLogs ()
    done
 }
 
+SetState()
+{
+    if [ -z "$LOGDIR" ]
+    then
+        SetupLogDir
+    fi
+    echo "$1" > $LOGDIR/STATE
+    ArchiveLogs
+}
 
 WaitForParentBuild()
 {
-   if [ "$DEP" != "none" ]
-   then
-      SetState "Awaiting Parent"
-      MAXTRIES=150
-      TRY=0
-      grep Complete $DEPLOGDIR/STATE > /dev/null 2>&1
-      while [ $? != 0 ]
-      do
-         TRY=`echo $TRY 1 + p q | dc`
-         if [ $TRY = $MAXTRIES ]
-         then
-            echo "ERROR: Waited 5 hours for parent build - ABORTING"
-	    SetState Failed
-	    exit
-         fi
-         echo "Waiting for parent build to complete"
-	 ArchiveLogs
-         sleep 120
-         grep Failed $DEPLOGDIR/STATE > /dev/null 2>&1
-         if [ $? = 0 ]
-         then
-	    echo "ERROR: Parent build failed - ABORTING"
-	    SetState Failed
-         fi
-         grep Complete $DEPLOGDIR/STATE > /dev/null 2>&1
-      done
-      AddParentBuildInfo
-      SetState "Parent Ready"
-      ArchiveLogs
-   fi
+    if [ "$DEP" != "none" ]
+    then
+        SetState "Awaiting Parent"
+        MAXTRIES=150
+        TRY=0
+        grep Complete $DEPLOGDIR/STATE > /dev/null 2>&1
+        while [ $? != 0 ]
+        do
+            TRY=`echo $TRY 1 + p q | dc`
+            if [ $TRY = $MAXTRIES ]
+            then
+                echo "ERROR: Waited 5 hours for parent build - ABORTING"
+	            SetState Failed
+	            exit
+            fi
+            echo "Waiting for parent build to complete"
+	        ArchiveLogs
+            sleep 120
+            grep Failed $DEPLOGDIR/STATE > /dev/null 2>&1
+            if [ $? = 0 ]
+            then
+	            echo "ERROR: Parent build failed - ABORTING"
+	            SetState Failed
+            fi
+            grep Complete $DEPLOGDIR/STATE > /dev/null 2>&1
+        done
+        AddParentBuildInfo
+        SetState "Parent Ready"
+    fi
 }
 
 AddParentBuildInfo()
