@@ -44,7 +44,20 @@ cd testsuite ||
     echo "BUILD/RBT=FAIL" >> $RESFILE ; 
     exit 1; 
 }
-
+make
+if [ $? != 0 ] 
+then
+    echo "ERROR: building testsuite - dcps_build_rbt_tests"; 
+    echo "BUILD/RBT=FAIL" >> $RESFILE
+    exit 2
+fi
+ 
+cd testsuite/rbt ||
+{ 
+    echo "ERROR: could not cd to testsuite/rbt dir - dcps_build_rbt_tests"; 
+    echo "BUILD/RBT=FAIL" >> $RESFILE ; 
+    exit 1; 
+}
 make 
 if [ $? = 0 ] 
 then
