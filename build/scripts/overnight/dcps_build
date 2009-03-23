@@ -29,23 +29,20 @@ then
    if [ ! -n "$OSPL_HOME" ]
    then
        Fail  "ERROR: configuration - dcps_build"
-       SetState Failed
        exit 1
    fi
 else
    if [ ! -n "$OSPL_OUTER_HOME" ]
    then
        Fail  "ERROR: configuration - dcps_build"
-       SetState Failed
        exit 2
    fi
 fi
-BUILD_LOGFILE=$LOGDIR/build.txt
 
 echo "BUILD=RUNNING" >> $RESFILE
 ArchiveLogs
 
-make >> $BUILD_LOGFILE 2>&1
+make
 if [ $? = 0 ] 
 then
     echo "BUILD=PASS" >> $RESFILE
