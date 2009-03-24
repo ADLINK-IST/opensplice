@@ -180,6 +180,10 @@ os_free (
           unsigned char *cptr = (unsigned char *)ptr;
           size_t memsize = *((size_t *)(cptr - 24));
           assert (*(((uint64_t*)ptr)-1) != OS_FREE_MAGIC_SIG);
+          if (*(((uint64_t*)ptr)-1) != OS_MALLOC_MAGIC_SIG)
+          {
+             fprintf (stderr, "%s (%d): os_free error\n", __FILE__, __LINE__);
+          }
           assert (*(((uint64_t*)ptr)-1) == OS_MALLOC_MAGIC_SIG);
           *(((uint64_t*)ptr)-1) = OS_FREE_MAGIC_SIG;
           for ( i = 0; i+7 < memsize; i++ ) 
