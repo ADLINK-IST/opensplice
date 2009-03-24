@@ -49,12 +49,12 @@ if [ $? != 0 ]
 then
     echo "ERROR: building testsuite - dcps_build_rbt_tests"; 
     echo "BUILD/RBT=FAIL" >> $RESFILE
-    exit 2
+    exit 1
 fi
  
-cd testsuite/rbt ||
+cd rbt ||
 { 
-    echo "ERROR: could not cd to testsuite/rbt dir - dcps_build_rbt_tests"; 
+    echo "ERROR: could not cd to rbt dir - dcps_build_rbt_tests"; 
     echo "BUILD/RBT=FAIL" >> $RESFILE ; 
     exit 1; 
 }
@@ -64,6 +64,6 @@ then
     echo "BUILD/RBT=PASS" >> $RESFILE
 else
     echo "BUILD/RBT=FAIL" >> $RESFILE
-    exit 3
+    exit 1
 fi
 exit 0
