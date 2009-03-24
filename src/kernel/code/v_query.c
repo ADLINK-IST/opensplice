@@ -167,6 +167,36 @@ v_queryTest(
     return result;
 }
 
+c_bool
+v_queryTriggerTest(
+    v_query q)
+{
+    c_bool result = FALSE;
+
+    if (q == NULL) {
+        return FALSE;
+    }
+
+    assert(C_TYPECHECK(q,v_query));
+
+    switch (v_objectKind(q)) {
+    case K_DATAREADERQUERY:
+        result = v_dataReaderQueryTriggerTest(v_dataReaderQuery(q));
+    break;
+    case K_DATAVIEWQUERY:
+        result = v_dataViewQueryTest(v_dataViewQuery(q));
+    break;
+    default:
+        OS_REPORT_1(OS_ERROR,
+                    "v_queryTest failed",0,
+                    "illegal query kind (%d) specified",
+                    v_objectKind(q));
+        assert(FALSE);
+    }
+
+    return result;
+}
+
 static c_bool
 v_queryReadInternal(
     v_query q,

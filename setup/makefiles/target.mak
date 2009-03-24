@@ -1,9 +1,5 @@
 include $(OSPL_HOME)/setup/makefiles/rules.mak
 
-ifneq (,$(wildcard /etc/lsb-release))
-CPPFLAGS	 += -D_GNU_SOURCE
-endif
-
 ifdef STATIC_LIB_ONLY
    ifneq "$(TARGET_DLIB)" ""
       TARGET_SLIB:=$(TARGET_DLIB)
@@ -124,6 +120,8 @@ endif
 endif # windows or not
 
 endif # TARGET_DLIB
+
+PROC_CORE?=$(PROC)
 
 .PHONY: all compile link clean metre splint qac gcov analyse complexity correctness
 

@@ -1356,6 +1356,8 @@ _DataReaderSetDeleteAction (
     }
 }
 
+#if 1
+
 gapi_boolean
 _DataReaderHasSamplesNotRead (
     _DataReader dataReader)
@@ -1381,7 +1383,7 @@ _DataReaderContainsSamples (
 
     return u_queryTest(dataReader->uQuery);
 }
-
+#endif
 
 static void
 _DataReaderNotifyDataAvailable (

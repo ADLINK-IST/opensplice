@@ -8,6 +8,7 @@
  *
  ***********************************************************************/
 #include "c_avltree.h"
+#include "assert.h"
 
 /**
  * Local definitions:

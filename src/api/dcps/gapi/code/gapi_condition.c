@@ -263,7 +263,7 @@ _ReadConditionGetTriggerValue(
 {
     _ReadCondition readcondition = _ReadCondition(condition);
 
-    return u_queryTest(readcondition->uQuery);
+    return u_queryTriggerTest(readcondition->uQuery);
 }
 
 gapi_returnCode_t

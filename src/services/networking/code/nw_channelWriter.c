@@ -163,8 +163,18 @@ nw_channelWriterMain(
                     &sendBefore, &priority, &more);
                 NW_CONFIDENCE(message != NULL);
                 NW_CONFIDENCE(entry != NULL);
+
                 bytesWritten = nw_sendChannelWrite(channelWriter->sendChannel,
                                                    entry, message, &credits);
+                if (bytesWritten == 0) {
+                    NW_REPORT_WARNING_2(
+                        "nw_channelWriterMain",
+                        "Channel \"%s\" could not deliver message 0x%x : message dropped!",
+                         ((nw_runnable)channelWriter)->name,
+                         message);
+                }
+                assert(bytesWritten>0);
+
                 writtenCountBytesThisBurst += bytesWritten;
 
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')
@@ -177,7 +187,8 @@ nw_channelWriterMain(
                     writtenCountMessages++;
                     writtenCountMessagesReport++;
                     if (writtenCountMessagesReport == channelWriter->reportInterval) {
-                        NW_TRACE_3(Send, 3, "Channel %s: %u messages (%u bytes) "
+                        NW_TRACE_3(Send, 3,
+                            "Channel %s: %u messages (%u bytes) "
                             "taken from queue and written to network",
                             ((nw_runnable)channelWriter)->name,
                             writtenCountMessages, writtenCountBytes);
@@ -197,9 +208,10 @@ nw_channelWriterMain(
                                                TRUE, &credits);
         } 
     }
-    NW_TRACE_3(Send, 2, "Channel %s: %u messages (%u bytes) taken from queue and "
-        "written to network", ((nw_runnable)channelWriter)->name,
-            writtenCountMessages, writtenCountBytes);
+    NW_TRACE_3(Send, 2,
+               "Channel %s: %u messages (%u bytes) taken from queue and "
+               "written to network", ((nw_runnable)channelWriter)->name,
+                writtenCountMessages, writtenCountBytes);
 }
 
 static void *
@@ -225,7 +237,8 @@ nw_channelWriterTrigger(
 {
     nw_channelWriter channelWriter = (nw_channelWriter)runnable;
     /* Trigger if in the wait */
-    u_networkReaderTrigger(((nw_channelUser)channelWriter)->reader, channelWriter->queueId);
+    u_networkReaderTrigger(((nw_channelUser)channelWriter)->reader,
+                           channelWriter->queueId);
 }
 
 
@@ -293,8 +306,10 @@ nw_channelWriterNew(
         useAsDefault = NWCF_SIMPLE_ATTRIB(Bool, pathName, default);
         if (useAsDefault) {
             if (defaultDefined) {
-                NW_REPORT_WARNING_1("initializing network",
-                    "default channel redefined by channel \"%s\"", pathName);
+                NW_REPORT_WARNING_1(
+                    "initializing network",
+                    "default channel redefined by channel \"%s\"",
+                     pathName);
                 useAsDefault = FALSE;
             } else {
                 defaultDefined = TRUE;
@@ -302,7 +317,8 @@ nw_channelWriterNew(
         }
         resolutionMsecs = NWCF_SIMPLE_PARAM(ULong, pathName, Resolution);
         if (resolutionMsecs < NWCF_MIN(Resolution)) {
-            NW_REPORT_WARNING_3("initializing network",
+            NW_REPORT_WARNING_3(
+                "initializing network",
                 "Requested value %d for resolution period for channel \"%s\" is "
                 "too small, using %d instead",
                 resolutionMsecs, pathName, NWCF_MIN(Resolution));
@@ -311,24 +327,38 @@ nw_channelWriterNew(
         resolution.seconds = resolutionMsecs/1000;
         resolution.nanoseconds = 1000000*(resolutionMsecs % 1000);
 
-        tmpPathSize =  strlen(pathName) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Tx)) + 1;
+        tmpPathSize = strlen(pathName) +
+                      strlen(NWCF_SEP) +
+                      strlen(NWCF_ROOT(Tx)) + 1;
+
         tmpPath = os_malloc(tmpPathSize);
         sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
+
         result->reportInterval = NWCF_SIMPLE_PARAM(ULong, tmpPath, ReportInterval);
+
         if (result->reportInterval < NWCF_MIN(ReportInterval)) {
-            NW_REPORT_WARNING_3("initializing network",
-                "Requested value %d for sending report interval for channel \"%s\" is "
+            NW_REPORT_WARNING_3(
+                "initializing network",
+                "Requested report interval value %d for channel \"%s\" is "
                 "too small, using %d instead",
                 result->reportInterval, pathName, NWCF_MIN(ReportInterval));
             result->reportInterval = NWCF_MIN(ReportInterval);
         }
         os_free(tmpPath);
 
-        ures = u_networkReaderCreateQueue(reader, queueSize, priority, reliable, FALSE,
-            resolution, useAsDefault, &result->queueId);
+        ures = u_networkReaderCreateQueue(reader,
+                                          queueSize,
+                                          priority,
+                                          reliable,
+                                          FALSE,
+                                          resolution,
+                                          useAsDefault,
+                                          &result->queueId);
         if (ures != U_RESULT_OK) {
-            NW_REPORT_ERROR_1("initializing network",
-                "creation of network queue failed for channel \"%s\"", pathName);
+            NW_REPORT_ERROR_1(
+                "initializing network",
+                "creation of network queue failed for channel \"%s\"",
+                 pathName);
         }
 
     }

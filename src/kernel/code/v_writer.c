@@ -1107,9 +1107,10 @@ createWriterInstanceType(
 
     instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
     c_class(instanceType)->extends = c_keep(c_class(baseType));
-    if (v_topicKeyType(topic) != NULL) {
+    foundType = v_topicKeyType(topic);
+    if (foundType != NULL) {
         o = c_metaDeclare(c_metaObject(instanceType),"key",M_ATTRIBUTE);
-        c_property(o)->type = c_keep(v_topicKeyType(topic));
+        c_property(o)->type = foundType; /* Transfer refcount */
         c_free(o);
     }
     c_metaObject(instanceType)->definedIn = c_keep(base);

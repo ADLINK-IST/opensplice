@@ -1,5 +1,9 @@
-
 #include "c_mmCache.h"
+#include "assert.h"
+
+#ifndef NDEBUG
+#define C_MM_CONFIDENCE (0x214D444A)
+#endif /* NDEBUG */
 
 #define c_sample(o) ((c_sample)(o))
 #define c_block(o)  ((c_block)(o))
@@ -43,6 +47,9 @@ struct c_mmCache_s {
 struct c_sample_s {
     c_sample nextFree;   /* The next free sample in the block, only valid if the sample itself is free. */
     c_block  block;      /* The reference to the block that contains this sample. */
+#ifdef C_MM_CONFIDENCE
+    c_ulong confidence;
+#endif /* C_MM_CONFIDENCE */
 };
 
 struct c_block_s {
@@ -149,6 +156,9 @@ c_mmCacheMalloc (
         /** Get a reference to the first sample and initialise the sample.
         */
         sample = blockSample(block,_this->size,0);
+#ifdef C_MM_CONFIDENCE
+        sample->confidence = C_MM_CONFIDENCE;
+#endif /* C_MM_CONFIDENCE */
         sample->block = block;
         /** Get the address of the first object to be returned.
         */
@@ -162,12 +172,18 @@ c_mmCacheMalloc (
         if (block->firstFree == NULL) {
             assert(block->count <= _this->count);
             sample = blockSample(block,_this->size,block->count);
+#ifdef C_MM_CONFIDENCE
+            sample->confidence = C_MM_CONFIDENCE;
+#endif /* C_MM_CONFIDENCE */
             sample->block = block;
             object = sampleObject(sample);
             block->count++;
         } else {
             sample = block->firstFree;
             block->firstFree = sample->nextFree;
+#ifdef C_MM_CONFIDENCE
+            sample->confidence = C_MM_CONFIDENCE;
+#endif /* C_MM_CONFIDENCE */
             sample->nextFree = NULL;
             object = sampleObject(sample);
         }
@@ -273,7 +289,11 @@ c_mmCacheMalloc (
 #ifndef NDEBUG
     _this->access--;
     assert(_this->access == 0);
-#endif
+#endif /* NDEBUG */
+#ifdef C_MM_CONFIDENCE
+    sample = c_sample((c_address)object - sampleHeaderSize);
+    assert(sample->confidence == C_MM_CONFIDENCE);
+#endif /* C_MM_CONFIDENCE */
 
     return object;
 }
@@ -295,7 +315,11 @@ c_mmCacheFree (
     assert(_this->access == 1);
 #endif
 
-    sample = c_sample((c_address)memory - C_SIZEOF(c_sample));
+    sample = c_sample((c_address)memory - sampleHeaderSize);
+#ifdef C_MM_CONFIDENCE
+    assert(sample->confidence == C_MM_CONFIDENCE);
+    sample->confidence = 0;
+#endif /* C_MM_CONFIDENCE */
     block = sample->block;
     assert(block->used > 0);
     block->used--;

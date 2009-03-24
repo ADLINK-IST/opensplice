@@ -766,7 +766,7 @@ install_hde_target ()
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong BUILD
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
@@ -805,7 +805,7 @@ install_hde_target ()
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial BUILD
         else
             mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
             mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter

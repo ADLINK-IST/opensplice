@@ -396,6 +396,25 @@ u_queryTest(
     return result;
 }
 
+c_bool
+u_queryTriggerTest(
+    u_query _this)
+{
+    v_query query;
+    c_bool result;
+    u_result r;
+
+    r = u_queryClaim(_this,&query);
+    if ((r == U_RESULT_OK) && (query != NULL)) {
+        result = v_queryTriggerTest(query);
+        u_queryRelease(_this);
+    } else {
+        OS_REPORT(OS_WARNING, "u_queryTriggerTest", 0,"Could not claim query.");
+        result = FALSE;
+    }
+    return result;
+}
+
 u_result
 u_querySet(
     u_query _this,

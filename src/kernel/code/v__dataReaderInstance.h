@@ -5,8 +5,6 @@
 #include "v_dataReaderInstance.h"
 #include "v_index.h"
 
-#define _DELAYED_NOT_EMPTYLIST_INSERT_
-
 #define v_dataReaderInstance_t(scope) \
         c_type(c_resolve(c_getBase(scope), \
                           "kernelModule::v_dataReaderInstance"))
@@ -38,10 +36,8 @@
            ((state) == L_STATECHANGED));                            \
     v_stateClear(v_dataReaderInstanceState(instance), (state))
 
-#ifdef _DELAYED_NOT_EMPTYLIST_INSERT_
 #define v_dataReaderInstanceInNotEmptyList(_this) \
         (v_dataReaderInstance(_this)->inNotEmptyList)
-#endif
 
 v_dataReaderInstance
 v_dataReaderInstanceNew(

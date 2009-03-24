@@ -555,6 +555,8 @@ nw_stream__writePrimArraySwapped(
                     dstPtr[j-rest] = srcPtr[max-j];
                 }
                 restElements--;
+            } else {
+                nw_stream_renew(stream);
             }
         }
     }
@@ -967,18 +969,18 @@ nw_stream_writeOpen (
     return _this;
 }
 
-void
+nw_bool
 nw_stream_writeBegin (
     nw_stream _this,
     v_networkPartitionId partitionId,
     nw_signedLength *bytesLeft)
 {
     _this->bytesLeft = bytesLeft;
-    nw_plugSendChannelMessageStart(_this->channel,
-                                   &_this->bufferPtr,
-                                   &_this->length,
-                                   partitionId,
-                                   bytesLeft);
+    return nw_plugSendChannelMessageStart(_this->channel,
+                                          &_this->bufferPtr,
+                                          &_this->length,
+                                          partitionId,
+                                          bytesLeft);
 }
 
 c_ulong
@@ -1387,6 +1389,8 @@ nw_stream__readPrimArraySwapped(
                     dstPtr[max-j] = srcPtr[j-rest];
                 }
                 restElements--;
+            } else {
+                nw_stream_renew(stream);
             }
         }
     }
@@ -1693,12 +1697,17 @@ nw_stream_readArray (
         nw_stream_readPrim(stream, 1, &isValidRef);
         if (isValidRef) {
             nw_stream_readPrim(stream, sizeof(c_ulong), &length);
+#if 0
             if (*(c_voidp *)data) {
                 array = *(c_voidp *)data;
             } else {
                 array = c_newArray(ctype,length);
                 *(c_voidp *)data = array;
             }
+#else
+            array = c_newArray(ctype,length);
+            *(c_voidp *)data = array;
+#endif
         }
     }
     if (array) {
@@ -1745,12 +1754,17 @@ nw_stream_readSequence (
 
     if (isValidRef) {
         nw_stream_readPrim(stream, sizeof(c_ulong), &length);
+#if 0
         if (*(c_voidp *)data) {
             array = *(c_voidp *)data;
         } else {
             array = c_newArray(ctype,length);
             *(c_voidp *)data = array;
         }
+#else
+            array = c_newArray(ctype,length);
+            *(c_voidp *)data = array;
+#endif
     }
 
     if (array) {

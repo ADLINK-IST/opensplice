@@ -41,4 +41,4 @@ lib=`find . -name lib`; remove_dir $lib
 jar=`find . -name jar`; remove_dir $jar
 bld=`find . -name bld`; remove_dir $bld
 manifest=`find . -name manifest`; remove_dir $manifest
-rm -f $OSPL_HOME/src/components/include/*.h
+rm -f $OSPL_HOME/src/include/*.h
