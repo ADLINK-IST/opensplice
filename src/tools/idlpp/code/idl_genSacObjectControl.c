@@ -257,6 +257,7 @@ idl_structureMemberOpenClose(
             (idl_typeSpecType(typeSpec) == idl_tunion)) {
 
 	    /* case 6148 */
+            idl_fileOutPrintf(idl_fileCur(), "    {\n");
             idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
                 idl_scopedTypeName(typeSpec));
 
@@ -265,6 +266,7 @@ idl_structureMemberOpenClose(
                 "    %s__free (&o->%s);\n",
     	        idl_scopedSacTypeIdent((typeSpec)),
                 name);
+            idl_fileOutPrintf(idl_fileCur(), "    }\n");
             } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
                 idl_structureMemberOpenClose(scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
             } else if (idl_typeSpecType(typeSpec) == idl_tbasic &&
@@ -593,6 +595,8 @@ idl_typedefRemove(
 
 	/* case 6148 */
         idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    {\n");
+        idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
@@ -604,6 +608,8 @@ idl_typedefRemove(
             identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
+        idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
 	break;
     case idl_tbasic:
         idl_printIndent(indent);
@@ -646,6 +652,8 @@ idl_arrayLoopRemoveBody(
 
 	/* case 6148 */
         idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    {\n");
+        idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
@@ -657,6 +665,8 @@ idl_arrayLoopRemoveBody(
             identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
+        idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
 	break;
     case idl_ttypedef:
         idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent);
