@@ -7,15 +7,15 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-if [ "$BUILD_DIST" != "yes" ]
+if [ "$RUN_DBT" != "yes" ]
 then
-   echo "BUILD_DIST=SKIPPED" >> $RESFILE
+   echo "BUILD/DBT=SKIPPED" >> $RESFILE
    exit 0
 fi
 
 cd ../../..
 
-SetState BuildingDistribution
+SetState Testing
 ArchiveLogs
 
 if [ "$DEP" != "none" ]
@@ -28,20 +28,17 @@ SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
 
-echo "BUILD_DIST=RUNNING" >> $RESFILE
+echo "BUILD/DBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
 if [ ! -n "$OSPL_HOME" ]
 then
-   Fail  "ERROR: configuration - dcps_build_dist"
+   Fail  "ERROR: configuration - dcps_build_dbt_tests"
    SetState Failed
    exit 1
 fi
 
-cd install || 
-{ 
-    echo "ERROR: could not cd to install dir - dcps_build_dist"; 
-    echo "BUILD_DIST=FAIL" >> $RESFILE; 
-    exit 1; 
-}
-make
+/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build dev
+echo "BUILD/DBT=Complete" >> $RESFILE
+
+exit 0
