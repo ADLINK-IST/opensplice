@@ -1330,6 +1330,7 @@ typedef struct {
     DDS_octet *_buffer;
     DDS_boolean _release;
 } DDS_sequence_octet;
+OS_API DDS_sequence_octet *DDS_sequence_octet__alloc (void);
 OS_API DDS_octet *DDS_sequence_octet_allocbuf (DDS_unsigned_long len);
 #endif /* _DDS_sequence_octet_defined */
 
