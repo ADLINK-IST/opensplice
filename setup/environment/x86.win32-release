@@ -42,6 +42,7 @@ export PATH
 . /opt/ospldev/FLEXnet/v11.3/release.com
 . /opt/ospldev/junit/v3.8.1/release.com
 . /opt/ospldev/openorb/v1.4.0/release.com
+. /opt/ospldev/mico/v2.3.13/release.com
 
 SPLICE_ORB=DDS_OpenFusion_1_5_1
 export SPLICE_ORB
