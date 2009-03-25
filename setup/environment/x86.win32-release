@@ -2,7 +2,7 @@ SPLICE_HOST=x86.win32-release
 SPLICE_TARGET=x86.win32-release
 export SPLICE_HOST SPLICE_TARGET
 
-_CYGPATH=/c/cygwin/bin/cygpath
+_CYGPATH=/bin/cygpath
 _WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
 
 VSINSTALLDIR=`$_CYGPATH -d "C:/Program Files/Microsoft Visual Studio 8"`
@@ -33,13 +33,13 @@ export JAVA_HOME
 
 # setup compiler environment
 # cygwin is used for the make and bison/flex utilities
-PATH="/c/Program Files/Microsoft Visual Studio 8/VC/bin:/c/Program Files/Microsoft Visual Studio 8/Common7/IDE:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools:/c/Program Files/Microsoft Visual Studio 8/Common7/Tools/bin:/c/Program Files/Microsoft Visual Studio 8/PlatformSDK/bin:/c/Program Files/Microsoft Visual Studio 8/SDK/v2.0/bin:/c/windows/Microsoft.NET/Framework/v2.0.50727:/c/Program Files/Microsoft Visual Studio 8/VC/VCPackages:/usr/local/bin:/mingw/bin:/bin:/c/cygwin/bin:/C/Program Files/Java/jdk1.5.0_07/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin:/C/Program Files/Java/jdk1.5.0_07/jre/bin/client:$OSPL_HOME/exec/$SPLICE_HOST:$OSPL_HOME/lib/$SPLICE_HOST:$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST"
+PATH="/cygdrive/c/Program Files/Microsoft Visual Studio 8/VC/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/IDE:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/Tools:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/Tools/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/PlatformSDK/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/SDK/v2.0/bin:/cygdrive/c/windows/Microsoft.NET/Framework/v2.0.50727:/cygdrive/c/Program Files/Microsoft Visual Studio 8/VC/VCPackages:/usr/local/bin:/mingw/bin:/bin:/cygdrive/c/cygwin/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/jre/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/jre/bin/client:$OSPL_HOME/exec/$SPLICE_HOST:$OSPL_HOME/lib/$SPLICE_HOST:$OSPL_HOME/testsuite/lib/$SPLICE_HOST"
 export PATH
 
-. /opt/nds/GSOAP2/gsoap-2.7/release.com
+. /opt/ospldev/GSOAP2/gsoap-2.7/release.com
 . /opt/ospldev/TAO/openFusion_1.5.1/release.com
-. /opt/ospldev/BitRock/v5.4.2/x86.win32/release.com
-. /opt/ospldev/FLEXnet/v11.3/release.com
+#. /opt/ospldev/BitRock/v5.4.2/x86.win32/release.com
+#. /opt/ospldev/FLEXnet/v11.3/release.com
 . /opt/ospldev/junit/v3.8.1/release.com
 . /opt/ospldev/openorb/v1.4.0/release.com
 
