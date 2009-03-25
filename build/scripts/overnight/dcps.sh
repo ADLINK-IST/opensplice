@@ -119,6 +119,14 @@ if [ $LAST_STAGE_WORKED = 0 ]
 then
     ./dcps_build_dbt_tests $ARGS > $LOGDIR/build-dbt-tests.txt 2>&1
     LAST_STAGE_WORKED=$?
+
+    if test_build_dbt_tests $LOGDIR/build-dbt-tests.txt $LAST_STAGE_WORKED
+    then
+        echo "BUILD/DBT=PASS" >> $RESFILE
+    else
+        echo "BUILD/DBT=FAIL" >> $RESFILE
+        LAST_STAGE_WORKED=1
+    fi
     ArchiveLogs
 fi
 if [ $LAST_STAGE_WORKED = 0 ]
