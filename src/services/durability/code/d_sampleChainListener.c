@@ -501,7 +501,7 @@ d_sampleChainListenerTryFulfillChains(
     d_sampleChainListener listener,
     d_group group)
 {
-    c_iter copy;
+    c_iter copy, leftOver;
     d_chain chain;
     d_admin admin;
     d_durability durability;
@@ -513,6 +513,7 @@ d_sampleChainListenerTryFulfillChains(
 
     if(listener){
         d_listenerLock(d_listener(listener));
+        /*Check of length must be within lock*/
         length     = c_iterLength(listener->unfulfilledChains);
 
         if(length > 0){
@@ -535,7 +536,7 @@ d_sampleChainListenerTryFulfillChains(
                 topic = NULL;
             }
             d_listenerUnlock(d_listener(listener));
-
+            leftOver = c_iterNew(NULL);
             chain = d_chain(c_iterTakeFirst(copy));
 
             while(chain){
@@ -545,7 +546,7 @@ d_sampleChainListenerTryFulfillChains(
                     {
                         d_sampleChainListenerInsertRequest(listener, chain, FALSE);
                     } else {
-                        listener->unfulfilledChains = c_iterInsert(listener->unfulfilledChains, chain);
+                        leftOver = c_iterInsert(leftOver, chain);
                     }
                 } else {
                     d_sampleChainListenerInsertRequest(listener, chain, FALSE);
@@ -560,6 +561,16 @@ d_sampleChainListenerTryFulfillChains(
 
             /*Do NOT free chains themselves, this is handled by the insertRequest function.*/
             c_iterFree(copy);
+
+            d_listenerLock(d_listener(listener));
+            chain = d_chain(c_iterTakeFirst(leftOver));
+
+            while(chain){
+                listener->unfulfilledChains = c_iterInsert(listener->unfulfilledChains, chain);
+                chain = d_chain(c_iterTakeFirst(leftOver));
+            }
+            d_listenerUnlock(d_listener(listener));
+            c_iterFree(leftOver);
             d_printTimedEvent(durability, D_LEVEL_INFO,
                     D_THREAD_SAMPLE_CHAIN_LISTENER,
                     "Still waiting for alignment of %d groups.\n",

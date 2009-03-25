@@ -1,5 +1,5 @@
-
 #include "c_mmCache.h"
+#include "assert.h"
 
 #ifndef NDEBUG
 #define C_MM_CONFIDENCE (0x214D444A)

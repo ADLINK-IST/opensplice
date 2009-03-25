@@ -44,8 +44,26 @@ cd testsuite/bin ||
     echo "RUN/RBT=FAIL" >> $RESFILE ; 
     exit 1; 
 }
+
+mkdir $LOGDIR/RBT-results ||
+{ 
+    echo "ERROR: could not make directory $LOGDIR/RBT-results - dcps_perform_rbt_tests"; 
+    echo "RUN/RBT=FAIL" >> $RESFILE ; 
+    exit 1; 
+}
+
 sh run_rbt 
-sh RBT_management_data > $LOGDIR/RBT-results.log 2>&1
+sh RBT_management_data > $LOGDIR/RBT-results/RBT-results.log 2>&1
+for i in `find ../rbt/Results/ -type f`
+do
+    cp $i $LOGDIR/RBT-results/. ||
+    { 
+        echo "ERROR: could not copy $i - dcps_perform_rbt_tests"; 
+        echo "RUN/RBT=FAIL" >> $RESFILE ; 
+        exit 1; 
+    }
+done
+
 echo "RUN/RBT=Complete" >> $RESFILE
 
 exit 0
