@@ -1561,7 +1561,12 @@ d_groupLocalListenerHandleAlignment(
                         } else {
                             assert(FALSE);
                         }
-                        requestRemote = TRUE;
+                        if(d_groupIsPrivate(localGroup)){
+                            d_groupSetComplete(localGroup);
+                            requestRemote = FALSE;
+                        } else {
+                            requestRemote = TRUE;
+                        }
                     } else if(d_groupIsPrivate(localGroup)){
                         /* I am not the master, but this is a persistent group
                          * that exists on this node only, so inject data for
@@ -1570,7 +1575,6 @@ d_groupLocalListenerHandleAlignment(
                         result = d_storeMessagesInject(store, localGroup);
 
                         if(result == D_STORE_RESULT_OK){
-                            d_groupSetComplete(localGroup);
                             d_printTimedEvent(durability, D_LEVEL_FINE,
                                 D_THREAD_GROUP_LOCAL_LISTENER,
                                 "Data for local group %s.%s injected from disk. Group is complete now (3).\n",
@@ -1581,6 +1585,7 @@ d_groupLocalListenerHandleAlignment(
                                 "Injecting data from disk for local group %s.%s failed (3).\n",
                                 partition, topic);
                         }
+                        d_groupSetComplete(localGroup);
                         requestRemote = FALSE;
                     } else {
                         /*Only request if complete.*/
