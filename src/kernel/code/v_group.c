@@ -383,7 +383,7 @@ updatePurgeList(
         timestamp = c_timeSub(now, delay);
         purgeItem = c_removeAt(purgeList, 0);
         purgeCount = 0;
-        while ((purgeItem != NULL) ){ 
+        while ((purgeItem != NULL) ){
             instance = purgeItem->instance;
             if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
                 if (v_timeCompare(purgeItem->insertionTime,
@@ -472,11 +472,12 @@ v_groupEntrySetAdd (
 
     type = c_resolve(c_getBase(e),"kernelModule::v_groupEntry");
     proxy = c_new(type);
+    c_free(type);
     proxy->entry = c_keep(e);
     proxy->sequenceNumber = set->lastSequenceNumber;
     proxy->next = set->firstEntry;
     proxy->readerInstanceCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_OWNER);
-    set->firstEntry = proxy;
+    set->firstEntry = proxy; /* Transfer refCount */
     set->lastSequenceNumber++;
 
     return c_keep(proxy);
