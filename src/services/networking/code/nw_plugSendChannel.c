@@ -2332,7 +2332,7 @@ nw_autoThrottle( nw_plugChannel channel,nw_signedLength credits )
         sendChannel->currentPeriodBudget = (nw_length)maxBurstSigned;
     }
 
-    NW_TRACE_5(Send, 3, "plugChannel %s: Throttling: ThrottleValue: %d, TV_updated:%d, maxBurstSize:%d, actualData:%d",
+    NW_TRACE_5(Send, 5, "plugChannel %s: Throttling: ThrottleValue: %d, TV_updated:%d, maxBurstSize:%d, actualData:%d",
         nw__plugChannelGetName(channel),ThrottleValue,FreshThrottlevalue, sendChannel->currentPeriodBudget,ActualData);
 
 }
