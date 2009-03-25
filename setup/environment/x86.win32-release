@@ -38,8 +38,8 @@ export PATH
 
 . /opt/ospldev/GSOAP2/gsoap-2.7/release.com
 . /opt/ospldev/TAO/openFusion_1.5.1/release.com
-#. /opt/ospldev/BitRock/v5.4.2/x86.win32/release.com
-#. /opt/ospldev/FLEXnet/v11.3/release.com
+. /opt/ospldev/BitRock/v5.4.2/x86.win32/release.com
+. /opt/ospldev/FLEXnet/v11.3/release.com
 . /opt/ospldev/junit/v3.8.1/release.com
 . /opt/ospldev/openorb/v1.4.0/release.com
 
