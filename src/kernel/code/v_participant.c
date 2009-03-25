@@ -16,6 +16,7 @@
 #include "v_entity.h"
 #include "v_event.h"
 #include "v_public.h"
+#include "v_proxy.h"
 
 #include "v_topic.h"
 #include "v_subscriberQos.h"
@@ -75,6 +76,7 @@ v_participantInit(
     v_kernel kernel;
     c_base base;
     v_message builtinMsg;
+    c_type writerProxyType;
 
     assert(C_TYPECHECK(p,v_participant));
     /* Do not use C_TYPECHECK on qos parameter,
@@ -94,7 +96,9 @@ v_participantInit(
     p->resendQuit = FALSE;
     c_mutexInit(&p->resendMutex, SHARED_MUTEX);
     c_condInit(&p->resendCond, &p->resendMutex, SHARED_COND);
-    p->resendWriters = c_setNew(v_kernelType(kernel, K_WRITER));
+    writerProxyType = v_proxy_t(p);
+    p->resendWriters = c_tableNew(writerProxyType, "source.index,source.serial");
+    c_free(writerProxyType);
 
     p->builtinSubscriber = NULL;
     if (!v_observableAddObserver(v_observable(kernel),v_observer(p), NULL)) {
@@ -495,8 +499,10 @@ void
 v_participantResendManagerMain(
     v_participant p)
 {
-    c_iter writers;
+    c_iter writerProxies;
+    v_proxy wp;
     v_writer w;
+    v_handleResult r;
     c_time waitTime = { RESEND_SECS, RESEND_NANOSECS };
 
     assert(C_TYPECHECK(p,v_participant));
@@ -505,20 +511,26 @@ v_participantResendManagerMain(
     while (!p->resendQuit) {
 
         if (c_count(p->resendWriters) == 0) {
-	    c_condWait(&p->resendCond, &p->resendMutex);
+            c_condWait(&p->resendCond, &p->resendMutex);
         } else {
             c_condTimedWait(&p->resendCond, &p->resendMutex, waitTime);
         }
 
         if (!p->resendQuit) {
-            writers = c_select(p->resendWriters, 0);
+            writerProxies = c_select(p->resendWriters, 0);
             c_mutexUnlock(&p->resendMutex);
-            w = v_writer(c_iterTakeFirst(writers));
-            while (w != NULL) {
-                v_writerResend(w);
-                w = v_writer(c_iterTakeFirst(writers));
+            wp = v_proxy(c_iterTakeFirst(writerProxies));
+            while (wp != NULL) {
+                r = v_handleClaim(wp->source,(v_object *)&w);
+                if (r == V_HANDLE_OK) {
+                    assert(C_TYPECHECK(w,v_writer));
+                    v_writerResend(w);
+                    v_handleRelease(wp->source);
+                }
+                c_free(wp);
+                wp = v_proxy(c_iterTakeFirst(writerProxies));
             }
-            c_iterFree(writers);
+            c_iterFree(writerProxies);
             c_mutexLock(&p->resendMutex);
         } /* already quiting */
     }
@@ -542,14 +554,19 @@ v_participantResendManagerAddWriter(
     v_participant p,
     v_writer w)
 {
-    v_writer found;
+    v_proxy wp, found;
     assert(C_TYPECHECK(p,v_participant));
 
+    wp = v_proxyNew(v_objectKernel(w), v_publicHandle(v_public(w)), NULL);
+
     c_mutexLock(&p->resendMutex);
-    found = c_insert(p->resendWriters, w);
-    assert(found == w);
+    found = c_insert(p->resendWriters, wp);
+    assert((found->source.index == wp->source.index) &&
+            (found->source.serial == wp->source.serial));
     c_condBroadcast(&p->resendCond);
     c_mutexUnlock(&p->resendMutex);
+
+    c_free(wp);
 }
 
 void
@@ -557,11 +574,15 @@ v_participantResendManagerRemoveWriter(
     v_participant p,
     v_writer w)
 {
-    v_writer found;
+    v_proxy wp, found;
     assert(C_TYPECHECK(p,v_participant));
 
+    wp = v_proxyNew(v_objectKernel(w), v_publicHandle(v_public(w)), NULL);
+
     c_mutexLock(&p->resendMutex);
-    found = c_remove(p->resendWriters, w, NULL, NULL);
-     c_free(found); /* remove local reference transferred from collection */
+    found = c_remove(p->resendWriters, wp, NULL, NULL);
+    c_free(found); /* remove local reference transferred from collection */
     c_mutexUnlock(&p->resendMutex);
+
+    c_free(wp);
 }
