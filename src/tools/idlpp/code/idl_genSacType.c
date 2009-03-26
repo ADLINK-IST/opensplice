@@ -798,83 +798,88 @@ idl_sequenceOpenClose(
     }
     idl_definitionAdd("definition", sequenceName);
 
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "/* Definition for sequence of %s */\n",
-        idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "#ifndef _%s_defined\n",
-        sequenceName);
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "#define _%s_defined\n",
-        sequenceName);
-    if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tstruct) {
+    /* Already defined as part of the core implementation */
+    if (strcmp(sequenceName, "DDS_sequence_octet") != 0 &&
+        strcmp(sequenceName, "DDS_sequence_string") != 0)
+    {
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "/* Definition for sequence of %s */\n",
+          idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "#ifndef _%s_defined\n",
+          sequenceName);
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "#define _%s_defined\n",
+          sequenceName);
+       if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tstruct) {
         /* In case struct is refered, it can be a sequence definition within	*/
         /* within the structure with a reference to the struct itself. In that	*/
         /* case the struct or union is not defined yet, and a forward 		*/
         /* definition is required.						*/
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "#ifndef _%s_defined\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "#define _%s_defined\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_printIndent(indent_level); 
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "typedef struct %s %s;\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "#endif /* _%s_defined */\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-    } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tunion) {
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "#ifndef _%s_defined\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "#define _%s_defined\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_printIndent(indent_level); 
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "typedef struct %s %s;\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "#endif /* _%s_defined */\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+       } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tunion) {
         /* In case struct is refered, it can be a sequence definition within	*/
         /* within the structure with a reference to the struct itself. In that	*/
         /* case the struct or union is not defined yet, and a forward 		*/
         /* definition is required.						*/
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "#ifndef _%s_defined\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "#define _%s_defined\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "typedef struct %s %s;\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-        idl_fileOutPrintf(idl_fileCur(),
-            "#endif /* _%s_defined */\n",
-            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "#ifndef _%s_defined\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "#define _%s_defined\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_printIndent(indent_level);
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "typedef struct %s %s;\n",
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
+             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+          idl_fileOutPrintf(idl_fileCur(),
+                            "#endif /* _%s_defined */\n",
+                            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+       }
+       idl_fileOutPrintf(idl_fileCur(), "typedef struct {\n");
+       idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _maximum;\n");
+       idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _length;\n");
+       idl_fileOutPrintf(idl_fileCur(), "    %s *_buffer;\n",
+                         sequenceElementName);
+       idl_fileOutPrintf(idl_fileCur(), "    DDS_boolean _release;\n");
+       idl_fileOutPrintf(idl_fileCur(), "} %s;\n",
+                         sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
+                         idl_dllGetMacro(),
+                         sequenceName,
+                         sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (DDS_unsigned_long len);\n",
+                         idl_dllGetMacro(),
+                         sequenceElementName,
+                         sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",
+                         sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "\n");
     }
-    idl_fileOutPrintf(idl_fileCur(), "typedef struct {\n");
-    idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _maximum;\n");
-    idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _length;\n");
-    idl_fileOutPrintf(idl_fileCur(), "    %s *_buffer;\n",
-	   sequenceElementName);
-    idl_fileOutPrintf(idl_fileCur(), "    DDS_boolean _release;\n");
-    idl_fileOutPrintf(idl_fileCur(), "} %s;\n",
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
-        idl_dllGetMacro(),
-        sequenceName,
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (DDS_unsigned_long len);\n",
-        idl_dllGetMacro(),
-        sequenceElementName,
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "\n");
 }
 
 static void

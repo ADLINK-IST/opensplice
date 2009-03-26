@@ -1488,7 +1488,7 @@ class v_participant extends v_observer {
     attribute c_bool                         resendQuit;
     attribute c_cond                         resendCond;
     attribute c_mutex                        resendMutex;
-    attribute SET<v_writer>                  resendWriters;
+    attribute SET<v_proxy>                   resendWriters;
     attribute c_mutex                        builtinLock;
     attribute v_subscriber                   builtinSubscriber;
 };

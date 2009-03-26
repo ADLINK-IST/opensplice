@@ -257,6 +257,7 @@ idl_structureMemberOpenClose(
             (idl_typeSpecType(typeSpec) == idl_tunion)) {
 
 	    /* case 6148 */
+            idl_fileOutPrintf(idl_fileCur(), "    {\n");
             idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
                 idl_scopedTypeName(typeSpec));
 
@@ -265,6 +266,7 @@ idl_structureMemberOpenClose(
                 "    %s__free (&o->%s);\n",
     	        idl_scopedSacTypeIdent((typeSpec)),
                 name);
+            idl_fileOutPrintf(idl_fileCur(), "    }\n");
             } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
                 idl_structureMemberOpenClose(scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
             } else if (idl_typeSpecType(typeSpec) == idl_tbasic &&
@@ -593,6 +595,8 @@ idl_typedefRemove(
 
 	/* case 6148 */
         idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    {\n");
+        idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
@@ -604,6 +608,8 @@ idl_typedefRemove(
             identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
+        idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
 	break;
     case idl_tbasic:
         idl_printIndent(indent);
@@ -646,6 +652,8 @@ idl_arrayLoopRemoveBody(
 
 	/* case 6148 */
         idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    {\n");
+        idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
@@ -657,6 +665,8 @@ idl_arrayLoopRemoveBody(
             identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
+        idl_printIndent(indent);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
 	break;
     case idl_ttypedef:
         idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent);
@@ -928,33 +938,39 @@ idl_sequenceOpenClose(
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
-    if (idl_definitionExists("objManagImpl", sequenceName)) {
+    if (idl_definitionExists("objManagImpl", sequenceName)) 
+    {
         return;
     }
     idl_definitionAdd("objManagImpl", sequenceName);
 
-    /* Generate allocation routine for the sequence */
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "%s *%s__alloc (void)\n",
-        sequenceName,
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "{\n");
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "    return (%s *)DDS_sequence_malloc();\n",
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
-    /* Generate allocation routine for the sequence buffer */
-    idl_fileOutPrintf(
-        idl_fileCur(),
-        "%s *%s_allocbuf (DDS_unsigned_long len)\n",
-        sequenceElementName,
-        sequenceName);
-    idl_fileOutPrintf(idl_fileCur(), "{\n");
-    if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
+    /* Already defined as part of the core implementation */
+    if (strcmp(sequenceName, "DDS_sequence_octet") != 0 &&
+        strcmp(sequenceName, "DDS_sequence_string") != 0)
+    {
+       /* Generate allocation routine for the sequence */
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "%s *%s__alloc (void)\n",
+          sequenceName,
+          sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "{\n");
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "    return (%s *)DDS_sequence_malloc();\n",
+          sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+       /* Generate allocation routine for the sequence buffer */
+       idl_fileOutPrintf(
+          idl_fileCur(),
+          "%s *%s_allocbuf (DDS_unsigned_long len)\n",
+          sequenceElementName,
+          sequenceName);
+       idl_fileOutPrintf(idl_fileCur(), "{\n");
+       if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) 
+       {
+          idl_fileOutPrintf(
+             idl_fileCur(),
             "    void %s_freebuf (void *buffer);\n\n",
             sequenceName);
         idl_fileOutPrintf(
@@ -963,59 +979,69 @@ idl_sequenceOpenClose(
             sequenceElementName,
             sequenceName,
             sequenceElementName);
-    } else {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)DDS_sequence_allocbuf (NULL, sizeof (%s), len);\n",
-            sequenceElementName,
-            sequenceElementName);
-    }
-    idl_fileOutPrintf(idl_fileCur(), "}\n");
-    if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) {
-        /* Deallocation routine for the buffer is required */
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "\nvoid %s_freebuf (void *buffer)\n",
-            sequenceName);
-        idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_fileOutPrintf(idl_fileCur(),
-            "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
-            idl_fileOutPrintf(idl_fileCur(),
-            "    %s *b = (%s *)buffer;\n",
-            sequenceElementName,
-            sequenceElementName);
-        idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
-    	if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) {
-	        idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
-	        idl_fileOutPrintf(
+       } 
+       else 
+       {
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "    return (%s *)DDS_sequence_allocbuf (NULL, sizeof (%s), len);\n",
+             sequenceElementName,
+             sequenceElementName);
+       }
+       idl_fileOutPrintf(idl_fileCur(), "}\n");
+       if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) 
+       {
+          /* Deallocation routine for the buffer is required */
+          idl_fileOutPrintf(
+             idl_fileCur(),
+             "\nvoid %s_freebuf (void *buffer)\n",
+             sequenceName);
+          idl_fileOutPrintf(idl_fileCur(), "{\n");
+          idl_fileOutPrintf(idl_fileCur(),
+                            "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
+          idl_fileOutPrintf(idl_fileCur(),
+                            "    %s *b = (%s *)buffer;\n",
+                            sequenceElementName,
+                            sequenceElementName);
+          idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
+          if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) 
+          {
+             idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
+             idl_fileOutPrintf(
                 idl_fileCur(),
                 "        DDS_sequence_free (&b[i]);\n",
                 sequenceElementName);
-    	    idl_fileOutPrintf(idl_fileCur(), "    }\n");
-	    } else {
-            if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) ||
-                ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
-                (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic))) {
+             idl_fileOutPrintf(idl_fileCur(), "    }\n");
+          } 
+          else 
+          {
+             if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) ||
+                 ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
+                  (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic))) 
+             {
                 /* Only string has reference */
                 idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
                 idl_fileOutPrintf(idl_fileCur(), "        DDS_string_clean (&b[i]);\n");
                 idl_fileOutPrintf(idl_fileCur(), "    }\n");
-            } else {
+             } 
+             else 
+             {
                 idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    void %s__free (void *object);\n\n",
-                    sequenceElementName);
+                   idl_fileCur(),
+                   "    void %s__free (void *object);\n\n",
+                   sequenceElementName);
                 idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
                 idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "        %s__free (&b[i]);\n",
-                    sequenceElementName);
+                   idl_fileCur(),
+                   "        %s__free (&b[i]);\n",
+                   sequenceElementName);
                 idl_fileOutPrintf(idl_fileCur(), "    }\n");
-            }
-        }
-        idl_fileOutPrintf (idl_fileCur(), "}\n");
+             }
+          }
+          idl_fileOutPrintf (idl_fileCur(), "}\n");
+       }
+       idl_fileOutPrintf (idl_fileCur(), "\n");
     }
-    idl_fileOutPrintf (idl_fileCur(), "\n");
 }
 
 /**

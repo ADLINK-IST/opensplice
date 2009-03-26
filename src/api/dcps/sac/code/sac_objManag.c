@@ -227,27 +227,24 @@ DDS_InstanceHandleSeq_allocbuf (
 
 }
 
-DDS_sequence_string *
-DDS_sequence_string__alloc (
-    void
-    )
+void DDS_sequence_string_freebuf (void *buffer)
 {
-    return (DDS_sequence_string *)
-        gapi_stringSeq__alloc ();
-
+    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);
+    DDS_string *b = (DDS_string *)buffer;
+    DDS_unsigned_long i;
+    for (i = 0; i < *count; i++) {
+        DDS_string_clean (&b[i]);
+    }
 }
 
-
-DDS_string *
-DDS_sequence_string_allocbuf (
-    DDS_unsigned_long len
-    )
+DDS_sequence_string *DDS_sequence_string__alloc (void)
 {
-    return (DDS_string *)
-        gapi_stringSeq_allocbuf (
-            (gapi_unsigned_long) len
-    );
+    return (DDS_sequence_string *)DDS_sequence_malloc();
+}
 
+DDS_string *DDS_sequence_string_allocbuf (DDS_unsigned_long len)
+{
+    return (DDS_string *)DDS_sequence_allocbuf (DDS_sequence_string_freebuf, sizeof (DDS_string), len);
 }
 
 DDS_StringSeq *
