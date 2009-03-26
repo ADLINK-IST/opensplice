@@ -53,7 +53,7 @@ mkdir $LOGDIR/RBT-results ||
 }
 
 sh run_rbt 
-sh RBT_management_data > $LOGDIR/RBT-results/RBT-results.log 2>&1
+sh RBT_management_data
 for i in `find ../rbt/Results/ -type f`
 do
     cp $i $LOGDIR/RBT-results/. ||

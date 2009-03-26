@@ -2,3 +2,9 @@ test_build_dist ()
 {
     return $2 && `grep 'No such file or directory'  $1`
 }   
+
+test_build_dbt_tests()
+{
+    return $2 && `grep -E '\*\*\*.* Error [0-9]*' $1`
+}
+
