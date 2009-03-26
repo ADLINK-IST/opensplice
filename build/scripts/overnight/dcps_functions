@@ -1,6 +1,6 @@
 test_build_dist ()
 {
-    return $2 && `grep 'No such file or directory'  $1`
+    return $2 && `grep 'No such file or directory'  $1` && `grep ' ## '  $1`
 }   
 
 test_build_dbt_tests()
@@ -8,3 +8,49 @@ test_build_dbt_tests()
     return $2 && `grep -E '\*\*\*.* Error [0-9]*' $1`
 }
 
+test_perform_dbt_tests ()
+{
+    if [ ! -d $1 ]
+    then
+        return 1
+    fi
+    if [ ! -f $1/management_summary.txt ]
+    then
+        return 1
+    fi
+    PASS=`grep 'DBT PASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
+    FAIL=`grep 'DBT FAIL count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
+    XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
+    MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
+    if [ "$FAIL" = "0" -a "$XFAIL" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    then
+        return 0
+    else
+        DBT_INFO="P:$PASS XP:$XPASS F:$FAIL M:$MISSING"
+        return 1
+    fi
+}
+
+test_perform_rbt_tests ()
+{
+    if [ ! -d $1 ]
+    then
+        return 1
+    fi
+    TODAY_RBT=`date +'%Y%m%d'`
+    if [ ! -f $1/RBTmetrics_$TODAY_RBT ]
+    then
+        return 1
+    fi
+    PASS=`grep 'RBT PASS' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`
+    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
+    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
+    MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`
+    if [ "$FAIL" = "0" -a "$XFAIL" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    then
+        return 0
+    else
+        RBT_INFO="P:$PASS XP:$XPASS F:$FAIL M:$MISSING"
+        return 1
+    fi
+}
