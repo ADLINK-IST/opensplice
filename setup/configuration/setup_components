@@ -14,6 +14,11 @@ fi
 #strip -dev,-release,-purify,-quantify,-test,-devdat,-efence,dev64
 SEL_TARGET=`expr "$SPLICE_TARGET" : '\([^-]*\)'`
 
+TARGET_DIR=$OSPL_HOME
+if [ -f $OSPL_OUTER_HOME/setup/configuration/setup_${SEL_TARGET} ]
+then
+    TARGET_DIR=$OSPL_OUTER_HOME
+fi
 . $TARGET_DIR/setup/configuration/setup_${SEL_TARGET}
 
 unset SEL_TARGET
