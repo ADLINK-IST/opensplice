@@ -42,7 +42,7 @@
             if (!v_reader(v_dataReaderInstanceReader(_this))->qos->lifecycle.enable_invalid_samples) { \
                 if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED)) { \
                     if (v_dataReaderInstanceHead(_this) != NULL) { \
-			printf("Error at line %d enable_invalid_samples = " \
+                        printf("Error at line %d enable_invalid_samples = " \
                                "FALSE but invalid sample exists\n", __LINE__); \
                     } else { \
                         printf("Warning at line %d enable_invalid_samples = " \
@@ -1236,13 +1236,15 @@ v_dataReaderInstanceUnregister (
     CHECK_EMPTINESS(_this);
     CHECK_INVALIDITY(_this);
 
-    _this->liveliness -= count;
-    if (_this->liveliness < 0) {
-        _this->liveliness = 0;
+    if (_this->liveliness < count) {
         OS_REPORT(OS_ERROR,
                   "v_dataReaderInstance", 0,
                   "Incorrect instance liveliness state detected ");
         assert(FALSE);
+        /* Corrective measure */
+        _this->liveliness = 0;
+    } else {
+        _this->liveliness -= count;
     }
     /* reader internal state of the data has been modified.
      * so increase readers update count.
