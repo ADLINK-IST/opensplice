@@ -50,9 +50,7 @@
         (v_dataReader(_this)->index->objects)
         
 #define v_dataReaderNotEmptyInstanceSet(_this) \
-        (v_dataReaderQos(_this)->userKey.enable ? \
-             (v_dataReader(_this)->index->objects) : \
-             (v_dataReader(_this)->index->notEmptyList))
+        (v_dataReader(_this)->index->notEmptyList)
 
 static v_dataReaderInstance
 dataReaderLookupInstanceUnlocked(
@@ -68,7 +66,17 @@ dataReaderLookupInstanceUnlocked(
 
     instance = v_dataReaderInstanceNew(_this, keyTemplate);
 
-    found = c_find(v_dataReaderNotEmptyInstanceSet(_this),instance);
+    if (v_dataReaderQos(_this)->userKey.enable) {
+        /* In case of user defined keys the NotEmpty instance set contains all
+         * instances by definition and therefor the objects set that normally
+         * contains all instances is not used.
+         * So in that case the lookup instance must act on the Not Empty
+         * instance set.
+         */
+        found = c_find(v_dataReaderNotEmptyInstanceSet(_this),instance);
+    } else {
+        found = c_find(v_dataReaderAllInstanceSet(_this), instance);
+    }
 
     if (found != NULL) {
         if (v_dataReaderInstanceEmpty(found)) {
@@ -546,7 +554,7 @@ v_dataReaderNew (
         instanceType = v_dataReaderInstanceType(_this);
         sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
                                               "sample"));
-
+        c_free(instanceType);
         /* the sampleExtent is created with the synchronized parameter
          * set to TRUE.
          * So the extent will use a mutex to guarantee reentrancy.
@@ -1240,6 +1248,9 @@ v_dataReaderNotify(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
 
+    if (event != NULL) {
+#if 1
+
 #define _NOTIFICATION_MASK_ \
         V_EVENT_INCONSISTENT_TOPIC || \
         V_EVENT_SAMPLE_REJECTED || \
@@ -1249,9 +1260,7 @@ v_dataReaderNotify(
         V_EVENT_LIVELINESS_CHANGED || \
         V_EVENT_DATA_AVAILABLE 
 
-    if (event != NULL) {
-#if 1
-        if (event->kind && _NOTIFICATION_MASK_) {
+        if (event->kind & (_NOTIFICATION_MASK_)) {
             v_entity(_this)->status->state |= event->kind;
         } else {
             OS_REPORT_1(OS_WARNING,
@@ -1591,7 +1600,7 @@ v_dataReaderInstanceType(
     v_dataReader _this)
 {
     assert(C_TYPECHECK(_this,v_dataReader));
-    return c_subType(v_dataReaderAllInstanceSet(_this));
+    return c_subType(v_dataReaderAllInstanceSet(_this)); /* pass refCount */
 }
 
 c_type
@@ -1655,6 +1664,7 @@ v_dataReaderIndexField(
         }
         os_freea(fieldName);
     }
+    c_free(instanceType);
     return field;
 }
 

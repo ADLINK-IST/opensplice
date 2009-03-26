@@ -44,12 +44,11 @@ OS_API c_type   c_getMetaType (c_base base, c_metaKind kind);
 OS_API c_mm     c_baseMM      (c_base base);
 OS_API c_long   c_typeSize    (c_type type, c_voidp data);
 
-OS_API c_object c__new(c_type type);
 OS_API void     c__free(c_object object);
 
 OS_API c_long   c_memsize(c_type type);
-OS_API c_object c_mem2object(c_voidp mem, c_extent extent);
-OS_API c_voidp  c_object2mem(c_object o, c_type type);
+OS_API c_object c_mem2object(c_voidp mem, c_type type);
+OS_API c_voidp  c_object2mem(c_object o);
 
 #undef OS_API
 

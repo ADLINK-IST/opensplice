@@ -203,12 +203,18 @@ c_unionCaseNew (
 {
     c_unionCase o;
     c_long nrOfLabels;
+    c_type subType;
 
     nrOfLabels = c_iterLength(labels);
     o = c_unionCase(c_metaDefine(scope,M_UNIONCASE));
-    o->labels = c_arrayNew(c_type(c_metaResolve(scope,"c_literal")),nrOfLabels);
+    subType = c_type(c_metaResolve(scope,"c_literal"));
+    o->labels = c_arrayNew(subType,nrOfLabels);
+    c_free(subType);
     c_iterArray(labels,o->labels);
     c_specifier(o)->name = c_stringNew(c__getBase(scope),name);
+    /* Do not keep type as usage expects transferral of refcount.
+     * If changed then odlpp and idlpp must be adapted accordingly.
+     */
     c_specifier(o)->type = type;
     return o;
 }

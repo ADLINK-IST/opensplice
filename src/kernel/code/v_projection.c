@@ -96,7 +96,7 @@ getProjectionType(
     v_kernel kernel,
     q_expr type)
 {
-    c_metaObject scope;
+    c_metaObject scope, prevScope;
     q_expr term,expr;
     c_long i;
 
@@ -108,16 +108,18 @@ getProjectionType(
         return q_getTyp(term);
     }
     assert(q_getTag(term) == Q_EXPR_SCOPEDNAME);
-    scope = c_metaObject(c_getBase(kernel));
+    prevScope = c_metaObject(c_keep(c_getBase(kernel)));
     i=0;
     while ((expr = q_getPar(term,i)) != NULL) {
         assert(q_isId(expr));
-        scope = c_metaResolve(scope,q_getId(expr));
+        scope = c_metaResolve(prevScope,q_getId(expr));
+        c_free(prevScope);
+        prevScope = scope;
         i++;
     }
     assert(C_TYPECHECK(scope,c_type));
-c_free(scope);
-    return c_type(scope);
+
+    return c_type(scope); /* transfer refCount */
 }
 
 #define v_mappingArrayNew(kernel,nrOfRules) \
@@ -216,7 +218,7 @@ v_projectionNew(
     */
     p = c_new(v_kernelType(kernel, K_PROJECTION));
     p->rules = (c_array)rules;
-    p->resultType = c_keep(resultType);
+    p->resultType = resultType; /* transfer refcount */
 
     return p;
 }

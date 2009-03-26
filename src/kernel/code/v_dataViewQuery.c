@@ -158,7 +158,7 @@ v_dataViewQueryNew (
     c_long i,len;
     q_expr e,subExpr,keyExpr,progExpr;
     c_iter list;
-    c_type type;
+    c_type type, subtype;
     c_array keyList;
 
     assert(C_TYPECHECK(_this,v_dataView));
@@ -169,10 +169,14 @@ v_dataViewQueryNew (
         return NULL;
     }
     e = q_takePar(predicate,0);
-    if (!resolveFields(c_subType(_this->instances),e)) {
+    subtype = c_subType(_this->instances);
+    if (!resolveFields(subtype,e)) {
         q_dispose(e);
+        c_free(subtype);
         return NULL;
     }
+    c_free(subtype);
+
     v_dataViewLock(_this);
     query = v_dataViewQuery(v_objectNew(kernel,K_DATAVIEWQUERY));
 
@@ -956,6 +960,7 @@ v_dataViewQuerySetParams(
     c_char character, prevCharacter;
     c_char number[32];
     c_bool inNumber;
+    c_type subtype;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 
@@ -990,12 +995,15 @@ v_dataViewQuerySetParams(
 #endif
 
                 e = q_takePar(predicate,0);
-                if (!resolveFields(c_subType(v->instances),e)) {
+                subtype = c_subType(v->instances);
+                if (!resolveFields(subtype,e)) {
                     v_dataViewUnlock(v);
                     q_dispose(e);
                     q_dispose(expression);
+                    c_free(subtype);
                     return FALSE;
                 }
+                c_free(subtype);
 
                 _this->instanceMask = q_exprGetInstanceState(predicate);
                 _this->sampleMask   = q_exprGetSampleState(predicate);

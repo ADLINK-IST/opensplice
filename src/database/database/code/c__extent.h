@@ -17,10 +17,8 @@ C_CLASS(c_extentSync);
  * the order of the attributes must obey the meta data ordering rules.
  */
 C_STRUCT(c_extent) {
+    C_EXTENDS(c_typeDef);
     c_mmCache cache;
-    c_voidp   next;
-    c_voidp   prev;
-    c_type    type;
     c_bool    sync;
 };
 
@@ -32,15 +30,6 @@ C_STRUCT(c_extentSync) {
 void
 c_extentFree (
     c_extent _this);
-
-c_voidp
-c_extentMalloc (
-    c_extent _this,
-    c_long size);
-
-c_type
-c_extentRegister (
-    c_base base);
 
 #if defined (__cplusplus)
 }

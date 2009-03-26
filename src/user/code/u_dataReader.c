@@ -211,6 +211,7 @@ u_dataReaderDefaultCopy(
         c_copyOut(type,userData,&actionArg);
 
         c_free(topic);
+        c_free(type);
     }
     return FALSE;
 }
