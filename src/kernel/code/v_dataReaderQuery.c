@@ -150,6 +150,7 @@ v_dataReaderQueryNew (
     c_type type;
     c_array keyList;
     c_table instanceSet;
+    c_char *pr;
 
     assert(C_TYPECHECK(r,v_dataReader));
 
@@ -177,7 +178,9 @@ v_dataReaderQueryNew (
     }
     v_queryInit(v_query(query), name, v_statistics(queryStatistics),
                 v_collection(r), predicate, params);
-    query->expression   = c_stringNew(c_getBase(r), q_exprGetText(predicate));
+    pr = q_exprGetText(predicate);
+    query->expression   = c_stringNew(c_getBase(r), pr);
+    os_free(pr);
     query->params       = NULL;
     query->instanceMask = q_exprGetInstanceState(predicate);
     query->sampleMask   = q_exprGetSampleState(predicate);
