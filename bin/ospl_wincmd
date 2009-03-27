@@ -1,4 +1,4 @@
-CYGPATH=/cygdrive/c/cygwin/bin/cygpath
+CYGPATH=cygpath
 CMD=
 INCLUDE=
 while [ $# -gt 0 ]; do
