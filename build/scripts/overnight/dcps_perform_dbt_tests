@@ -39,8 +39,11 @@ then
 fi
 
 /bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect dev
-echo "RUN/DBT=Complete" >> $RESFILE
 
-cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results
-
+cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results ||
+{ 
+    echo "ERROR: could not cpoy to DBT Results - dcps_build_rbt_tests"; 
+    echo "RUN/DBT=FAIL" >> $RESFILE ; 
+    exit 1; 
+}
 exit 0

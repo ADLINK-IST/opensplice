@@ -403,6 +403,8 @@ class v_dataReaderQuery extends v_query {
     attribute c_string               expression;
     attribute c_string               params;
     attribute v_dataReaderSample     triggerValue;
+    attribute c_ulong                updateCnt;
+    attribute c_bool                 lastResult;
 };
 
 typedef v_dataReaderQuery v_dataViewQuery;
@@ -1768,10 +1770,8 @@ class v_dataReader extends v_reader {
     attribute c_extent                       sampleExtent;
 #endif
     attribute v_projection                   projection;
-    attribute v_dataReaderSample             eventSample;
-    attribute c_ulong                        eventCount;
     attribute v_dataReaderSample             triggerValue;
-    attribute c_bool                         trigger;
+    attribute c_ulong                        updateCnt;
     /* This Count is the read/take sequence number of the reader.
      * Any read or take operation will increment this value and mark
      * all processed samples with this value by assigning this value to

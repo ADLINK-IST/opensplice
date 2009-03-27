@@ -39,6 +39,3 @@ then
 fi
 
 /bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build dev
-echo "BUILD/DBT=Complete" >> $RESFILE
-
-exit 0

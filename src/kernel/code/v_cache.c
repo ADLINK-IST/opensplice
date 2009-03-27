@@ -2,6 +2,28 @@
 
 #include "v_cache.h"
 
+#if 0
+#define v_cacheNodeCheck(c)
+#else
+void
+v_cacheNodeCheck(
+    v_cacheNode node)
+{
+    if (node->owner.next) {
+        assert(v_cacheNode(node->owner.next)->owner.prev == node);
+    }
+    if (node->owner.prev) {
+        assert(v_cacheNode(node->owner.prev)->owner.next == node);
+    }
+    if (node->instance.next) {
+        assert(v_cacheNode(node->instance.next)->instance.prev == node);
+    }
+    if (node->instance.prev) {
+        assert(v_cacheNode(node->instance.prev)->instance.next == node);
+    }
+}
+#endif
+
 void
 v_cacheNodeInit (
     v_cacheNode node)
@@ -72,8 +94,6 @@ instanceCheck (
         prev = prev->instance.prev;
     }
 }
-
-#define v_cacheNodeCheck(c)
 
 void
 v_cacheDeinit (

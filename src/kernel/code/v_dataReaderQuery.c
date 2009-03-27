@@ -177,12 +177,13 @@ v_dataReaderQueryNew (
     }
     v_queryInit(v_query(query), name, v_statistics(queryStatistics),
                 v_collection(r), predicate, params);
-    query->expression    = c_stringNew(c_getBase(r), q_exprGetText(predicate));
-    query->params        = NULL;
+    query->expression   = c_stringNew(c_getBase(r), q_exprGetText(predicate));
+    query->params       = NULL;
     query->instanceMask = q_exprGetInstanceState(predicate);
     query->sampleMask   = q_exprGetSampleState(predicate);
     query->viewMask     = q_exprGetViewState(predicate);
-    query->triggerValue  = NULL;
+    query->triggerValue = NULL;
+    query->updateCnt    = 0;
 
     /* Normilize the query to the disjunctive form. */
     q_disjunctify(e);
@@ -517,49 +518,55 @@ v_dataReaderQueryTriggerTest(
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
             v_dataReaderLock(r);
-            instanceSet = r->index->notEmptyList;
-            if (c_tableCount(instanceSet) > 0) {
-                if ((r->triggerValue != NULL) &&
-                    (r->triggerValue == _this->triggerValue))
-                {
-                    v_dataReaderInstance instance;
-                    instance = v_dataReaderInstance(v_readerSample(r->triggerValue)->instance);
-                    /* This part should be moved to the notify method
-                     * as part of the producer query evaluation.
-                     */
-                    len = c_arraySize(_this->instanceQ);
-                    for (i=0;(i<len) && !pass;i++) {
-                        pass = TRUE;
-                        if (_this->instanceQ[i] != NULL) {
-                            pass = c_queryEval(_this->instanceQ[i],instance);
-                        }
-                        if ((_this->sampleQ[i] != NULL) && pass) {
-                            v_dataReaderSample head;
-                            head = v_dataReaderInstanceHead(instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+            if (r->updateCnt == _this->updateCnt) {
+                pass = _this->lastResult;
+            } else {
+                instanceSet = r->index->notEmptyList;
+                if (c_tableCount(instanceSet) > 0) {
+                    if ((r->triggerValue != NULL) &&
+                        (r->triggerValue == _this->triggerValue))
+                    {
+                        v_dataReaderInstance instance;
+                        instance = v_dataReaderInstance(v_readerSample(r->triggerValue)->instance);
+                        /* This part should be moved to the notify method
+                         * as part of the producer query evaluation.
+                         */
+                        len = c_arraySize(_this->instanceQ);
+                        for (i=0;(i<len) && !pass;i++) {
+                            pass = TRUE;
+                            if (_this->instanceQ[i] != NULL) {
+                                pass = c_queryEval(_this->instanceQ[i],instance);
                             }
-                            pass = c_queryEval(_this->sampleQ[i],instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,head);
+                            if ((_this->sampleQ[i] != NULL) && pass) {
+                                v_dataReaderSample head;
+                                head = v_dataReaderInstanceHead(instance);
+                                if (_this->triggerValue != head) {
+                                    v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                }
+                                pass = c_queryEval(_this->sampleQ[i],instance);
+                                if (_this->triggerValue != head) {
+                                    v_dataReaderInstanceSetHead(instance,head);
+                                }
                             }
                         }
-                    }
-                } else {
-                    len = c_arraySize(_this->instanceQ);
-                    i = 0;
-                    while ((i<len) && (pass == FALSE)) {
-                        argument.query = _this->sampleQ[i];
-                        if (_this->instanceQ[i] != NULL) {
-                            c_readAction(_this->instanceQ[i],
-                                         testAction,&argument);
-                        } else {
-                            c_readAction(instanceSet, testAction, &argument);
+                    } else {
+                        len = c_arraySize(_this->instanceQ);
+                        i = 0;
+                        while ((i<len) && (pass == FALSE)) {
+                            argument.query = _this->sampleQ[i];
+                            if (_this->instanceQ[i] != NULL) {
+                                c_readAction(_this->instanceQ[i],
+                                             testAction,&argument);
+                            } else {
+                                c_readAction(instanceSet, testAction, &argument);
+                            }
+                            pass = argument.result;
+                            i++;
                         }
-                        pass = argument.result;
-                        i++;
                     }
                 }
+                _this->updateCnt = r->updateCnt;
+                _this->lastResult = pass;
             }
             if ( !pass ) {
                 _this->state = V_STATE_INITIAL;
@@ -1362,6 +1369,7 @@ v_dataReaderQuerySetParams(
             r = v_dataReader(src);
 
             v_dataReaderLock(r);
+            _this->updateCnt = 0;
             len = c_arraySize(_this->instanceQ);
             for (i=0; (i<len) && (result == TRUE); i++) {
                 result = c_querySetParams(_this->instanceQ[i],params) &&

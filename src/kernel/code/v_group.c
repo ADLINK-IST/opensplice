@@ -201,12 +201,20 @@ doRegister (
         v_groupCacheWalk(a->instance->readerInstanceCache,
                          instanceUnknown, &unknownArg);
         if (unknownArg.cacheItem == NULL) {
+            /* Instance is not yet cached.
+             * So insert the instance in the cache.
+             */
             item = v_groupCacheItemNew(a->instance,instance);
             v_groupCacheInsert(a->proxy->readerInstanceCache,item);
             v_groupCacheInsert(a->instance->readerInstanceCache,item);
             c_free(item);
         } else {
+            /* Instance is already cached.
+             * So increase the registration count.
+             */
             unknownArg.cacheItem->registrationCount++;
+            assert(unknownArg.cacheItem->registrationCount <=
+                   v_dataReaderInstance(instance)->liveliness);
         }
     }
     c_free(instance);
@@ -243,6 +251,8 @@ doUnregister (
 
     item = v_groupCacheItem(node);
 
+    assert(item->registrationCount <=
+           v_dataReaderInstance(item->instance)->liveliness);
     v_instanceUnregister(item->instance,item->registrationCount);
     return TRUE;
 }
@@ -383,7 +393,7 @@ updatePurgeList(
         timestamp = c_timeSub(now, delay);
         purgeItem = c_removeAt(purgeList, 0);
         purgeCount = 0;
-        while ((purgeItem != NULL) ){ 
+        while ((purgeItem != NULL) ){
             instance = purgeItem->instance;
             if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
                 if (v_timeCompare(purgeItem->insertionTime,
@@ -472,11 +482,12 @@ v_groupEntrySetAdd (
 
     type = c_resolve(c_getBase(e),"kernelModule::v_groupEntry");
     proxy = c_new(type);
+    c_free(type);
     proxy->entry = c_keep(e);
     proxy->sequenceNumber = set->lastSequenceNumber;
     proxy->next = set->firstEntry;
     proxy->readerInstanceCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_OWNER);
-    set->firstEntry = proxy;
+    set->firstEntry = proxy; /* Transfer refCount */
     set->lastSequenceNumber++;
 
     return c_keep(proxy);
@@ -1145,6 +1156,8 @@ entryRegister(
                 c_free(item);
             } else {
                 unknownArg.cacheItem->registrationCount++;
+                assert(unknownArg.cacheItem->registrationCount <=
+                       v_dataReaderInstance(instance)->liveliness);
             }
         }
     }
@@ -1237,6 +1250,8 @@ instanceWrite(
         writeArg->deadCacheItems = c_iterInsert(writeArg->deadCacheItems, item);
     } else {
         if (v_objectKind(item->instance) == K_DATAREADERINSTANCE) {
+            assert(item->registrationCount <=
+                   v_dataReaderInstance(item->instance)->liveliness);
             result = v_dataReaderInstanceWrite(v_dataReaderInstance(item->instance),
                                                writeArg->message);
         } else {
@@ -1250,6 +1265,8 @@ instanceWrite(
                             c_iterInsert(writeArg->deadCacheItems, item);
                 }
             }
+            assert(item->registrationCount <=
+                   v_dataReaderInstance(item->instance)->liveliness);
         } else {
             writeArg->writeResult = result;
         }
@@ -1377,6 +1394,7 @@ groupWrite (
     qos = v_topicQosRef(group->topic);
 
     if ((instancePtr == NULL) || (*instancePtr == NULL)) {
+#if 1
         messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
         nrOfKeys = c_arraySize(messageKeyList);
         for (i=0;i<nrOfKeys;i++) {
@@ -1387,14 +1405,19 @@ groupWrite (
             instance = v_groupInstanceNew(group,msg);
             found = c_tableInsert(group->instances,instance);
             assert(found == instance);
-        } else {
-            c_keep(instance);
         }
         /* Key values have to be freed again */
         for (i=0;i<nrOfKeys;i++) {
             c_valueFreeRef(keyValues[i]);
         }
-
+#else
+        instance = v_groupInstanceNew(group,msg);
+        found = c_tableInsert(group->instances,instance);
+        if (found != instance) {
+            v_groupInstanceFree(instance);
+            instance = c_keep(found);
+        }
+#endif
         regMsg = NULL;
         result = v_groupInstanceRegister(instance,msg, &regMsg);
         if (result == V_WRITE_REGISTERED){
@@ -1527,9 +1550,11 @@ groupWrite (
         }
         assert(instance != NULL);
     } else {
-        if ((qos->durability.kind == V_DURABILITY_VOLATILE) &&
-//        if ((v_messageQos_durabilityKind(msg->qos) == V_DURABILITY_VOLATILE) &&
-            (v_messageStateTest(msg,L_UNREGISTER) &&
+        /* The message is VOLATILE. Only if the message is an UNREGISTER message
+         * we might need to add the instance to one of the 2 purgelists. As the
+         * message is volatile we can ignore the WRITE and DISPOSE messages.
+         */
+        if ((v_messageStateTest(msg,L_UNREGISTER) &&
              v_groupInstanceStateTest(instance,L_NOWRITERS))) {
             purgeItem = c_new(v_kernelType(v_objectKernel(group),
                               K_GROUPPURGEITEM));
@@ -1538,8 +1563,12 @@ groupWrite (
             v_groupInstanceSetEpoch(instance,
                                     purgeItem->insertionTime);
             v_groupInstanceDisconnect(instance);
-//assert(v_groupInstanceStateTest(instance,L_EMPTY));
-            c_append(group->purgeListEmpty, purgeItem);
+            if ((qos->durability.kind != V_DURABILITY_VOLATILE) &&
+                v_groupInstanceStateTest(instance,L_DISPOSED)) {
+                c_append(group->disposedInstances, purgeItem);
+            } else {
+                c_append(group->purgeListEmpty, purgeItem);
+            }
             c_free(purgeItem);
         }
     }
@@ -1656,6 +1685,8 @@ v_groupDeleteHistoricalData(
     return V_WRITE_SUCCESS;
 }
 
+#if 0
+/* BUG */
 static c_bool
 instanceResend(
     v_cacheNode node,
@@ -1677,6 +1708,10 @@ instanceResend(
     }
     return TRUE;
 }
+#else
+/* FIX */
+#define instanceResend instanceWrite
+#endif
 
 v_writeResult
 v_groupResend (

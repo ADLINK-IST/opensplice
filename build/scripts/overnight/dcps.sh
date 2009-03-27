@@ -89,61 +89,75 @@ fi
 ArchiveLogs
 
 ./dcps_build $ARGS > $LOGDIR/build.txt 2>&1
-LAST_STAGE_WORKED=$?
-
+BUILD_STAGE_WORKED=$?
 ArchiveLogs
 
-if [ $LAST_STAGE_WORKED = 0 ]
+if [ $BUILD_STAGE_WORKED = 0 ]
 then
     ./dcps_build_dist $ARGS > $LOGDIR/build-dist.txt 2>&1
-    LAST_STAGE_WORKED=$?
-
-    if test_build_dist $LOGDIR/build-dist.txt $LAST_STAGE_WORKED
+    BUILD_DIST_STAGE_WORKED=$?
+    if test_build_dist $LOGDIR/build-dist.txt $BUILD_DIST_STAGE_WORKED
     then
         echo "BUILD_DIST=PASS" >> $RESFILE
+        ./dcps_archive_dist $ARGS > $LOGDIR/archive-dist.txt 2>&1
+        ARCHIVE_STAGE_WORKED=$?
     else
         echo "BUILD_DIST=FAIL" >> $RESFILE
-        LAST_STAGE_WORKED=1
+        BUILD_DIST_STAGE_WORKED=1
+    fi
+    ArchiveLogs
+
+    ./dcps_build_dbt_tests $ARGS > $LOGDIR/build-dbt-tests.txt 2>&1
+    BUILD_DBT_STAGE_WORKED=$?
+    if test_build_dbt_tests $LOGDIR/build-dbt-tests.txt $BUILD_DBT_STAGE_WORKED
+    then
+        echo "BUILD/DBT=PASS" >> $RESFILE
+    else
+        echo "BUILD/DBT=FAIL" >> $RESFILE
+        BUILD_DBT_STAGE_WORKED=1
+    fi
+    ArchiveLogs
+
+    ./dcps_perform_dbt_tests $ARGS > $LOGDIR/perform-dbt-tests.txt 2>&1
+    PERFORM_DBT_STAGE_WORKED=$?
+    if test_perform_dbt_tests $LOGDIR/DBT-Results $PERFORM_DBT_STAGE_WORKED
+    then
+        echo "RUN/DBT=PASS" >> $RESFILE
+    else
+        echo "RUN/DBT=$DBT_INFO" >> $RESFILE
+        PERFORM_DBT_STAGE_WORKED=1
+    fi
+    ArchiveLogs
+    
+    ./dcps_build_rbt_tests $ARGS > $LOGDIR/build-rbt-tests.txt 2>&1
+    BUILD_RBT_STAGE_WORKED=$?
+    ArchiveLogs
+    ./dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests.txt 2>&1
+    PERFORM_RBT_STAGE_WORKED=$?
+    if test_perform_rbt_tests $LOGDIR/RBT-Results $PERFORM_RBT_STAGE_WORKED
+    then
+        echo "RUN/RBT=PASS" >> $RESFILE
+    else
+        echo "RUN/RBT=$RBT_INFO" >> $RESFILE
+        PERFORM_RBT_STAGE_WORKED=1
     fi
     ArchiveLogs
 fi
 
-if [ $LAST_STAGE_WORKED = 0 ]
+if [ "$BUILD_STAGE_WORKED" = 0 ]
 then
-    ./dcps_archive_dist $ARGS > $LOGDIR/archive-dist.txt 2>&1
-    LAST_STAGE_WORKED=$?
-    ArchiveLogs
-fi
-
-if [ $LAST_STAGE_WORKED = 0 ]
-then
-    ./dcps_build_dbt_tests $ARGS > $LOGDIR/build-dbt-tests.txt 2>&1
-    LAST_STAGE_WORKED=$?
-    ArchiveLogs
-fi
-if [ $LAST_STAGE_WORKED = 0 ]
-then
-    ./dcps_perform_dbt_tests $ARGS > $LOGDIR/perform-dbt-tests.txt 2>&1
-    LAST_STAGE_WORKED=$?
-    ArchiveLogs
-fi
-
-if [ $LAST_STAGE_WORKED = 0 ]
-then
-    ./dcps_build_rbt_tests $ARGS > $LOGDIR/build-rbt-tests.txt 2>&1
-    LAST_STAGE_WORKED=$?
-    ArchiveLogs
-fi
-if [ $LAST_STAGE_WORKED = 0 ]
-then
-    ./dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests.txt 2>&1
-    LAST_STAGE_WORKED=$?
-    ArchiveLogs
-fi
-
-if [ $LAST_STAGE_WORKED = 0 ]
-then
-   SetState "Complete"
+    if [ "$PERFORM_DBT_STAGE_WORKED" != 0 -o "$PERFORM_RBT_STAGE_WORKED" != 0 ]
+    then
+        SetState "TestsFailed"
+    else
+        if [ "$BUILD_DIST_STAGE_WORKED" = 0 -a "$ARCHIVE_STAGE_WORKED" = 0 -a \
+            "$BUILD_DBT_STAGE_WORKED" = 0 -a "$BUILD_RBT_STAGE_WORKED" = 0 ]
+        then
+            SetState "Complete"
+        else
+            SetState "Failed"
+        fi
+    fi
 else
    SetState "Failed"
 fi

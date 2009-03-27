@@ -62,8 +62,8 @@ make
 if [ $? = 0 ] 
 then
     echo "BUILD/RBT=PASS" >> $RESFILE
+    exit 0
 else
     echo "BUILD/RBT=FAIL" >> $RESFILE
     exit 1
 fi
-exit 0
