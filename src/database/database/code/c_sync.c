@@ -64,6 +64,7 @@ c_mutexUnlock (
 #ifdef NDEBUG
     result = os_mutexUnlock(mtx);
 #else
+    assert( mtx->owner == os_threadIdSelf() );
     result = os_mutexUnlock(&mtx->mtx);
     mtx->owner = 0;
 #endif
