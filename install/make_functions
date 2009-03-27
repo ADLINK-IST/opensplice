@@ -193,9 +193,9 @@ set_envs ()
         GETLIC_INFO_NAME="getlic_info"
     fi
             
-    if [ "${SOURCE_TARGET_SHORT}" = "win32" ]
+    if [ "${SOURCE_TARGET_SHORT}" = "win" ]
     then
-        (cd service_installer; make)
+        (cd ${OSPL_HOME}/install/service_installer; make)
         BUILDER_TARGET="windows"
         SCRIPT_NAME="release.bat"
         TXTFILE_CONVERTER="unix2dos -q -n"
