@@ -69,7 +69,7 @@ v_networkQueueUpdateNextWakeup(
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
     static c_time minSleepTime = MIN_SLEEPTIME;
-    
+
     *hasChanged = FALSE;
     if (queue->periodic) {
         now = v_timeGet();
@@ -139,7 +139,7 @@ v_networkQueueNew(
     result->priority = priority;
     result->reliable = reliable;
     result->P2P = P2P;
-    
+
     equality = c_timeCompare(C_TIME_ZERO, resolution);
     if (equality == C_EQ) {
         result->periodic = FALSE;
@@ -151,7 +151,7 @@ v_networkQueueNew(
         assert(equality == C_LT);
         result->periodic = TRUE;
         result->resolution = resolution;
-        TIME_TO_MSEC(resolution, result->msecsResolution);        
+        TIME_TO_MSEC(resolution, result->msecsResolution);
         /* A semi-random phase to avoid wake-ups at the same time */
         now = v_timeGet();
         result->phaseMilliSeconds = ((c_ulong)(now.nanoseconds/1000000 * 1.618)) %
@@ -160,9 +160,9 @@ v_networkQueueNew(
         assert(hasChanged);
     }
     result->threadWaiting = FALSE;
-    
+
     return result;
-}    
+}
 
 c_bool
 v_networkQueueWrite(
@@ -191,8 +191,8 @@ v_networkQueueWrite(
     c_equality eq;
     c_bool newMarkerCreated = FALSE;
     c_bool sendNow = FALSE;
-   
-    V_MESSAGE_STAMP(msg,readerInsertTime); 
+
+    V_MESSAGE_STAMP(msg,readerInsertTime);
 
     c_mutexLock(&queue->mutex);
 
@@ -229,7 +229,7 @@ v_networkQueueWrite(
             TIME_TO_MSEC(sendBeforeNoTrunc, msecsTime);
             msecsLeftOver = (c_ulonglong)((msecsTime - queue->phaseMilliSeconds) %
                                          queue->msecsResolution);
-            msecsResult = (c_ulong)(msecsTime - msecsLeftOver);
+            msecsResult = (c_ulonglong)(msecsTime - msecsLeftOver);
             MSEC_TO_TIME(msecsResult, sendBefore);
         }
         while ((currentMarker != NULL) && (!found)) {
@@ -288,7 +288,7 @@ v_networkQueueWrite(
             *currentMarkerPtr = marker; /* no keep, transfer refCount */
         }
     }
-    V_MESSAGE_STAMP(msg,readerLookupTime); 
+    V_MESSAGE_STAMP(msg,readerLookupTime);
     assert(marker != NULL);
     if (queue->freeSamples == NULL) {
         newHolder = c_new(queue->sampleType);
@@ -322,7 +322,7 @@ v_networkQueueWrite(
     }
 
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
 }
 
@@ -351,7 +351,7 @@ v_networkQueueTakeFirst(
     v_networkQueueSample sample;
 
     *more = FALSE;
-    
+
     c_mutexLock(&queue->mutex);
 
     currentMarker = queue->firstStatusMarker;
@@ -363,8 +363,8 @@ v_networkQueueTakeFirst(
         sample = currentMarker->firstSample;
         assert(sample != NULL);
         result = TRUE;
-        
-        V_MESSAGE_STAMP(sample->message,readerDataAvailableTime); 
+
+        V_MESSAGE_STAMP(sample->message,readerDataAvailableTime);
 
         /* Copy values */
         *message = sample->message;
@@ -375,7 +375,7 @@ v_networkQueueTakeFirst(
         *receiver = sample->receiver;
         *sendBefore = currentMarker->sendBefore;
         *priority = currentMarker->priority;
-        
+
         /* Remove and free holder */
         queue->currentMsgCount--;
         currentMarker->firstSample = sample->next; /* no keep, transfer refCount */
@@ -396,7 +396,7 @@ v_networkQueueTakeFirst(
         *more = FALSE;
     }
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
 }
 
@@ -436,7 +436,7 @@ v_networkQueueTakeAction(
     }
     c_mutexUnlock(&queue->mutex);
     proceed = action(NULL, arg);
-    
+
     return proceed;
 }
 
@@ -450,7 +450,7 @@ v_networkQueueWait(
     c_time interval;
     c_time minSleepTime = MIN_SLEEPTIME;
     c_equality eq;
-    
+
     c_mutexLock(&queue->mutex);
 
     /* First update nextWakeup */
@@ -458,17 +458,17 @@ v_networkQueueWait(
     if (hasChanged) {
         result |= V_WAITRESULT_TIMEOUT;
     }
-    
+
     /* With the new nextWakeup, check if any data is expiring */
     if ((int)v_networkQueueHasExpiringData(queue)) {
         result |= V_WAITRESULT_MSGWAITING;
     }
-    
+
     /* Also check if no request has been issued lately */
     if ((int)queue->triggered) {
         result |= V_WAITRESULT_TRIGGERED;
     }
-    
+
     /* Now go to sleep if needed */
     while (result == V_WAITRESULT_NONE) {
         if (queue->periodic) {
@@ -502,13 +502,13 @@ v_networkQueueWait(
             result |= V_WAITRESULT_MSGWAITING;
         }
     }
-    
+
     queue->triggered = 0;
-    
+
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
-}    
+}
 
 
 void
