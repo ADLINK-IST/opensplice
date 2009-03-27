@@ -1,11 +1,46 @@
+test_configure ()
+{
+    grep 'Outer Var Setup' $1 > /dev/null 2>&1
+    return $?
+}
+
+test_build ()
+{
+    test_configure $*
+    test $2 = 0 -a $? = 0 
+    return $?
+}
+
 test_build_dist ()
 {
-    return $2 && `grep 'No such file or directory'  $1` && `grep ' ## '  $1`
+    grep 'No such file or directory' $1 > /dev/null 2>&1
+    T1=$?
+    grep -v ' ## ' $1 > /dev/null 2>&1
+    T2=$?
+    grep 'Could not load project file' $1 > /dev/null 2>&1
+    T3=$?
+    test_configure $*
+    T4=$?
+
+    test $2 = 0 -a $T1 != 0 -a $T2 != 0 -a $T3 != 0 -a $T4 != 0 
+    return $?
 }   
+
+test_archive_dist ()
+{
+    test_configure $*
+    return $?
+}
 
 test_build_dbt_tests()
 {
-    return $2 && `grep -E '\*\*\*.* Error [0-9]*' $1`
+    grep -E '\*\*\*.* Error [0-9]*' $1 > /dev/null 2>&1
+    T1=$?
+    test_configure $*
+    T2=$?
+
+    test $2 = 0 -a $T1 != 0 -a $T2 != 0 
+    return $?
 }
 
 test_perform_dbt_tests ()
@@ -22,13 +57,23 @@ test_perform_dbt_tests ()
     FAIL=`grep 'DBT FAIL count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
     XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
     MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XFAIL" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
     then
-        return 0
+        test_configure $*
+        T1=$?
+        test $2 = 0 -a $T1 != 0
+        return $?
     else
-        DBT_INFO="P:$PASS XP:$XPASS F:$FAIL M:$MISSING"
+        DBT_TMP_INFO="P:$PASS_XP:$XPASS_F:$FAIL_M:$MISSING"
+        DBT_INFO=`echo $DBT_TMP_INFO | tr -d ' '`
         return 1
     fi
+}
+
+test_build_rbt_tests ()
+{
+    test_configure $*
+    return $?
 }
 
 test_perform_rbt_tests ()
@@ -46,11 +91,15 @@ test_perform_rbt_tests ()
     FAIL=`grep 'RBT FAIL' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
     XPASS=`grep 'RBT XPASS' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
     MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XFAIL" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
     then
-        return 0
+        test_configure $*
+        T1=$?
+        test $2 = 0 -a $T1 != 0
+        return $?
     else
-        RBT_INFO="P:$PASS XP:$XPASS F:$FAIL M:$MISSING"
+        RBT_TMP_INFO="P:$PASS_XP:$XPASS_F:$FAIL_M:$MISSING"
+        RBT_INFO=`echo $RBT_TMP_INFO | tr -d ' '`
         return 1
     fi
 }

@@ -7,12 +7,6 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-if [ "$RUN_DBT" != "yes" ]
-then
-   echo "RUN/DBT=SKIPPED" >> $RESFILE
-   exit 0
-fi
-
 cd ../../..
 
 SetState Testing
@@ -34,7 +28,6 @@ ArchiveLogs
 if [ ! -n "$OSPL_HOME" ]
 then
    Fail  "ERROR: configuration - dcps_perform_dbt_tests"
-   SetState Failed
    exit 1
 fi
 
@@ -43,7 +36,6 @@ fi
 cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results ||
 { 
     echo "ERROR: could not cpoy to DBT Results - dcps_build_rbt_tests"; 
-    echo "RUN/DBT=FAIL" >> $RESFILE ; 
-    exit 1; 
+    exit 2; 
 }
 exit 0

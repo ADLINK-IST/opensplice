@@ -7,12 +7,6 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-if [ "$RUN_RBT" != "yes" ]
-then
-   echo "RUN/RBT=SKIPPED" >> $RESFILE
-   exit 0
-fi
-
 cd ../../..
 
 SetState Testing
@@ -34,22 +28,19 @@ ArchiveLogs
 if [ ! -n "$OSPL_HOME" ]
 then
    Fail  "ERROR: configuration - dcps_perform_rbt_tests"
-   SetState Failed
    exit 1
 fi
 
 cd testsuite/bin ||
 { 
     echo "ERROR: could not cd to testsuite/bin dir - dcps_perform_rbt_tests"; 
-    echo "RUN/RBT=FAIL" >> $RESFILE ; 
-    exit 1; 
+    exit 2; 
 }
 
 mkdir $LOGDIR/RBT-results ||
 { 
     echo "ERROR: could not make directory $LOGDIR/RBT-results - dcps_perform_rbt_tests"; 
-    echo "RUN/RBT=FAIL" >> $RESFILE ; 
-    exit 1; 
+    exit 3; 
 }
 
 sh run_rbt 
@@ -59,11 +50,7 @@ do
     cp $i $LOGDIR/RBT-results/. ||
     { 
         echo "ERROR: could not copy $i - dcps_perform_rbt_tests"; 
-        echo "RUN/RBT=FAIL" >> $RESFILE ; 
-        exit 1; 
+        exit 4; 
     }
 done
-
-echo "RUN/RBT=Complete" >> $RESFILE
-
 exit 0

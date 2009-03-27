@@ -43,10 +43,7 @@ echo "BUILD=RUNNING" >> $RESFILE
 ArchiveLogs
 
 make
-if [ $? = 0 ] 
+if [ $? != 0 ] 
 then
-    echo "BUILD=PASS" >> $RESFILE
-else
-    echo "BUILD=FAIL" >> $RESFILE
     exit 3
 fi

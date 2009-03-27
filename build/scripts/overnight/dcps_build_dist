@@ -34,14 +34,12 @@ ArchiveLogs
 if [ ! -n "$OSPL_HOME" ]
 then
    Fail  "ERROR: configuration - dcps_build_dist"
-   SetState Failed
    exit 1
 fi
 
 cd install || 
 { 
     echo "ERROR: could not cd to install dir - dcps_build_dist"; 
-    echo "BUILD_DIST=FAIL" >> $RESFILE; 
     exit 1; 
 }
 make

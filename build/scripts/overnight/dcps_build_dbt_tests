@@ -7,12 +7,6 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-if [ "$RUN_DBT" != "yes" ]
-then
-   echo "BUILD/DBT=SKIPPED" >> $RESFILE
-   exit 0
-fi
-
 cd ../../..
 
 SetState Testing
@@ -34,8 +28,8 @@ ArchiveLogs
 if [ ! -n "$OSPL_HOME" ]
 then
    Fail  "ERROR: configuration - dcps_build_dbt_tests"
-   SetState Failed
    exit 1
 fi
 
 /bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build dev
+exit 0
