@@ -435,7 +435,7 @@ v_readerGetSampleRejectedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_UNLOCK(_this);
+        V_READER_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->sampleRejected, arg);
         if (reset) {
