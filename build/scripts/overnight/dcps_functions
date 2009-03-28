@@ -1,6 +1,6 @@
 test_configure ()
 {
-    grep 'Outer Var Setup' $1 > /dev/null 2>&1
+    grep 'Variable Setup' $1 > /dev/null 2>&1
     return $?
 }
 
@@ -64,7 +64,7 @@ test_perform_dbt_tests ()
         test $2 = 0 -a $T1 != 0
         return $?
     else
-        DBT_TMP_INFO="P:$PASS_XP:$XPASS_F:$FAIL_M:$MISSING"
+        DBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
         DBT_INFO=`echo $DBT_TMP_INFO | tr -d ' '`
         return 1
     fi
@@ -83,14 +83,14 @@ test_perform_rbt_tests ()
         return 1
     fi
     TODAY_RBT=`date +'%Y%m%d'`
-    if [ ! -f $1/RBTmetrics_$TODAY_RBT ]
+    if [ ! -f $1/RBTmetrics_${TODAY_RBT} ]
     then
         return 1
     fi
-    PASS=`grep 'RBT PASS' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`
-    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
-    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`    
-    MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_$TODAY_RBT | awk -F': ' '{ print $2 }'`
+    PASS=`grep 'RBT PASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
+    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
+    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
+    MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
     then
         test_configure $*
@@ -98,7 +98,7 @@ test_perform_rbt_tests ()
         test $2 = 0 -a $T1 != 0
         return $?
     else
-        RBT_TMP_INFO="P:$PASS_XP:$XPASS_F:$FAIL_M:$MISSING"
+        RBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
         RBT_INFO=`echo $RBT_TMP_INFO | tr -d ' '`
         return 1
     fi
