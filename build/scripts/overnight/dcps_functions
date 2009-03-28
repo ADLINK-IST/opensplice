@@ -1,7 +1,12 @@
 test_configure ()
 {
     grep 'Variable Setup' $1 > /dev/null 2>&1
-    return $?
+    T1=$?
+    if [ "$T1" = 0 ]
+    then
+        return 1
+    fi
+    return 0
 }
 
 test_build ()
