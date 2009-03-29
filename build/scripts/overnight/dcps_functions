@@ -15,7 +15,7 @@ test_build_dist ()
 {
     grep 'No such file or directory' $1 > /dev/null 2>&1
     T1=$?
-    grep -v ' ## ' $1 > /dev/null 2>&1
+    grep ' ## ' $1 > /dev/null 2>&1
     T2=$?
     grep 'Could not load project file' $1 > /dev/null 2>&1
     T3=$?
