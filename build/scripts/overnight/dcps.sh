@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 cd `dirname $0` || exit 1
 
 . buildsys/functions
@@ -107,7 +106,7 @@ then
     echo "BUILD=PASS" >> $RESFILE
 else
     echo "BUILD=FAIL" >> $RESFILE
-    BUILD_DIST_STAGE_WORKED=1
+    BUILD_STAGE_WORKED=1
 fi
 ArchiveLogs
 
@@ -128,10 +127,10 @@ then
             ARCHIVE_STAGE_WORKED=1
         fi
     else
-        echo "KEEP_DIST=ABORTED" >> $RESFILE
-        ARCHIVE_STAGE_WORKED=1
         echo "BUILD_DIST=FAIL" >> $RESFILE
         BUILD_DIST_STAGE_WORKED=1
+        echo "KEEP_DIST=ABORTED" >> $RESFILE
+        ARCHIVE_STAGE_WORKED=1
     fi
     ArchiveLogs
 
