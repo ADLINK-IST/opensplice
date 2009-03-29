@@ -34,9 +34,7 @@ test_build_dist ()
 
 test_archive_dist ()
 {
-    test_configure $*
-    T_ARCHIVE_1=$?
-    test $2 = 0 -a $T_ARCHIVE_1 != 0 
+    test $2 = 0
     return $?
 }
 
