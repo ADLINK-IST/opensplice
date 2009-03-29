@@ -55,20 +55,27 @@ test_perform_dbt_tests ()
     then
         return 1
     fi
+
     if [ ! -f $1/management_summary.txt ]
     then
         return 1
     fi
+
     PASS=`grep 'DBT PASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     FAIL=`grep 'DBT FAIL count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
     XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
     MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
     then
-        test_configure $*
+        test_configure $2
         T_PERFORM_DBT_1=$?
-        test $2 = 0 -a $T_PERFORM_DBT_1 != 0
-        return $?
+        if [ "$3" = 0 -a "$T_PERFORM_DBT_1" != 0 ]
+	then
+           return 0
+        else
+           DBT_INFO="RUN/DBT=FAIL"
+           return 1
+        fi
     else
         DBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
         DBT_INFO=`echo $DBT_TMP_INFO | tr -d ' '`
@@ -90,21 +97,28 @@ test_perform_rbt_tests ()
     then
         return 1
     fi
+
     TODAY_RBT=`date +'%Y%m%d'`
     if [ ! -f $1/RBTmetrics_${TODAY_RBT} ]
     then
         return 1
     fi
+
     PASS=`grep 'RBT PASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
     FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
     XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
     MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
+    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
     then
-        test_configure $*
+        test_configure $2
         T_PERFORM_RBT_1=$?
-        test $2 = 0 -a $T_PERFORM_RBT_1 != 0
-        return $?
+        if [ "$3" = 0 -a "$T_PERFORM_RBT_1" != 0 ]
+	then
+           return 0
+        else
+           RBT_INFO="RUN/RBT=FAIL"
+           return 1
+        fi
     else
         RBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
         RBT_INFO=`echo $RBT_TMP_INFO | tr -d ' '`

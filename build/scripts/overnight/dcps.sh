@@ -154,7 +154,7 @@ then
         
         ./dcps_perform_dbt_tests $ARGS > $LOGDIR/perform-dbt-tests.txt 2>&1
         PERFORM_DBT_STAGE_WORKED=$?
-        if test_perform_dbt_tests $LOGDIR/DBT-Results $PERFORM_DBT_STAGE_WORKED
+        if test_perform_dbt_tests $LOGDIR/DBT-Results $LOGDIR/perform-dbt-tests.txt $PERFORM_DBT_STAGE_WORKED
         then
             echo "RUN/DBT=PASS" >> $RESFILE
         else
@@ -173,17 +173,17 @@ then
     else
         ./dcps_build_rbt_tests $ARGS > $LOGDIR/build-rbt-tests.txt 2>&1
         BUILD_RBT_STAGE_WORKED=$?
-        if test_build_rbt_tests $LOGDIR/RBT-Results $BUILD_RBT_STAGE_WORKED
+        if test_build_rbt_tests $LOGDIR/build-rbt-tests.txt $BUILD_RBT_STAGE_WORKED
         then
             echo "BUILD/RBT=PASS" >> $RESFILE
         else
-            echo "BUILD/RBT=$RBT_INFO" >> $RESFILE
+            echo "BUILD/RBT=FAIL" >> $RESFILE
             BUILD_RBT_STAGE_WORKED=1
         fi
         ArchiveLogs
         ./dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests.txt 2>&1
         PERFORM_RBT_STAGE_WORKED=$?
-        if test_perform_rbt_tests $LOGDIR/RBT-Results $PERFORM_RBT_STAGE_WORKED
+        if test_perform_rbt_tests $LOGDIR/RBT-Results $LOGDIR/perform-rbt-tests.txt $PERFORM_RBT_STAGE_WORKED
         then
             echo "RUN/RBT=PASS" >> $RESFILE
         else
