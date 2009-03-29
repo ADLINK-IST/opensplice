@@ -1,8 +1,8 @@
 test_configure ()
 {
     grep 'Variable Setup' $1 > /dev/null 2>&1
-    T1=$?
-    if [ "$T1" = 0 ]
+    T_CONFIG=$?
+    if [ "$T_CONFIG" = 0 ]
     then
         return 1
     fi
@@ -12,42 +12,42 @@ test_configure ()
 test_build ()
 {
     test_configure $*
-    T1=$?
-    test $2 = 0 -a $T1 != 0 
+    T_BUILD_1=$?
+    test $2 = 0 -a $T_BUILD_1 != 0 
     return $?
 }
 
 test_build_dist ()
 {
     grep 'No such file or directory' $1 > /dev/null 2>&1
-    T1=$?
+    T_BUILD_DIST_1=$?
     grep ' ## ' $1 > /dev/null 2>&1
-    T2=$?
+    T_BUILD_DIST_2=$?
     grep 'Could not load project file' $1 > /dev/null 2>&1
-    T3=$?
+    T_BUILD_DIST_3=$?
     test_configure $*
-    T4=$?
+    T_BUILD_DIST_4=$?
 
-    test $2 = 0 -a $T1 != 0 -a $T2 != 0 -a $T3 != 0 -a $T4 != 0 
+    test $2 = 0 -a $T_BUILD_DIST_1 != 0 -a $T_BUILD_DIST_2 != 0 -a $T_BUILD_DIST_3 != 0 -a $T_BUILD_DIST_4 != 0 
     return $?
 }   
 
 test_archive_dist ()
 {
     test_configure $*
-    T1=$?
-    test $2 = 0 -a $T1 != 0 
+    T_ARCHIVE_1=$?
+    test $2 = 0 -a $T_ARCHIVE_1 != 0 
     return $?
 }
 
 test_build_dbt_tests()
 {
     grep -E '\*\*\*.* Error [0-9]*' $1 > /dev/null 2>&1
-    T1=$?
+    T_BUILD_DBT_1=$?
     test_configure $*
-    T2=$?
+    T_BUILD_DBT_2=$?
 
-    test $2 = 0 -a $T1 != 0 -a $T2 != 0 
+    test $2 = 0 -a $T_BUILD_DBT_1 != 0 -a $T_BUILD_DBT_2 != 0 
     return $?
 }
 
@@ -68,8 +68,8 @@ test_perform_dbt_tests ()
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
     then
         test_configure $*
-        T1=$?
-        test $2 = 0 -a $T1 != 0
+        T_PERFORM_DBT_1=$?
+        test $2 = 0 -a $T_PERFORM_DBT_1 != 0
         return $?
     else
         DBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
@@ -81,8 +81,8 @@ test_perform_dbt_tests ()
 test_build_rbt_tests ()
 {
     test_configure $*
-    T1=$?
-    test $2 = 0 -a $T1 != 0 
+    T_BUILD_RBT_1=$?
+    test $2 = 0 -a $T_BUILD_RBT_1 != 0 
     return $?
 }
 
@@ -104,8 +104,8 @@ test_perform_rbt_tests ()
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" -a "$2" = "0" ]
     then
         test_configure $*
-        T1=$?
-        test $2 = 0 -a $T1 != 0
+        T_PERFORM_RBT_1=$?
+        test $2 = 0 -a $T_PERFORM_RBT_1 != 0
         return $?
     else
         RBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
