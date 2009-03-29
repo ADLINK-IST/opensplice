@@ -33,7 +33,7 @@ ArchiveLogs
 
 if [ ! -n "$OSPL_HOME" ]
 then
-   Fail  "ERROR: configuration - dcps_build_dist"
+   echo  "ERROR: configuration - dcps_build_dist"
    exit 1
 fi
 
@@ -44,8 +44,4 @@ cd install ||
 }
 
 make
-if [ $? != 0 ] 
-then
-    exit 3
-fi
 exit 0
