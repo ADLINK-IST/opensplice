@@ -12,7 +12,8 @@ test_configure ()
 test_build ()
 {
     test_configure $*
-    test $2 = 0 -a $? = 0 
+    T1=$?
+    test $2 = 0 -a $T1 != 0 
     return $?
 }
 
@@ -34,6 +35,8 @@ test_build_dist ()
 test_archive_dist ()
 {
     test_configure $*
+    T1=$?
+    test $2 = 0 -a $T1 != 0 
     return $?
 }
 
@@ -78,6 +81,8 @@ test_perform_dbt_tests ()
 test_build_rbt_tests ()
 {
     test_configure $*
+    T1=$?
+    test $2 = 0 -a $T1 != 0 
     return $?
 }
 
