@@ -46,12 +46,16 @@ void preprocess(FILE *infile, char *infilename)
 
    init_io(infile, infilename);
 
-   cp = strrchr(infilename, CPP_FILESEPCHAR);
+   cp = strrchr(infilename, CPP_FILESEPCHAR_1);
+   if (!cp) {
+      cp = strrchr(infilename, CPP_FILESEPCHAR_2);
+   }
    if (cp)
    {
+      char save = *cp;
       *cp = '\0';
       init_incldir(infilename);
-      *cp = CPP_FILESEPCHAR;
+      *cp = save;
    }
    else
    {

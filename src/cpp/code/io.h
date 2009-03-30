@@ -7,7 +7,9 @@
 #define MAX_PUSHBACK 8192
 #define MAXFILES 20
 
-#define CPP_FILESEPCHAR OS_FILESEPCHAR
+#define CPP_FILESEPCHAR_DEF OS_FILESEPCHAR
+#define CPP_FILESEPCHAR_1   '/'
+#define CPP_FILESEPCHAR_2   '\\'
 
 extern int linefirst;
 extern int willbefirst;

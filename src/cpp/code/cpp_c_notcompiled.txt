@@ -216,12 +216,16 @@ int main (int ac, char ** av)
    outfile = outf;
    ifstack = 0;
    n_skipped_ifs = 0;
-   cp = strrchr(inname, CPP_FILESEPCHAR);
+   cp = strrchr(inname, CPP_FILESEPCHAR_1);
+   if (!cp) {
+       cp = strrchr(inname, CPP_FILESEPCHAR_2);
+   }
    if (cp)
    {
+      char save = *cp;
       *cp = '\0';
       init_incldir(inname);
-      *cp = CPP_FILESEPCHAR;
+      *cp = save;
    }
    else
    {
@@ -233,7 +237,10 @@ int main (int ac, char ** av)
    if (incldep)
    {
       char *dp;
-      cp = strrchr(inname, CPP_FILESEPCHAR);
+      cp = strrchr(inname, CPP_FILESEPCHAR_1);
+      if (!cp) {
+          cp = strrchr(inname, CPP_FILESEPCHAR_2);
+      }
       if (cp)
       {
          cp ++;
