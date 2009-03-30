@@ -28,13 +28,13 @@ if [ "$DEP" = "none" ]
 then
    if [ ! -n "$OSPL_HOME" ]
    then
-       Fail  "ERROR: configuration - dcps_build"
+       echo "ERROR: configuration - dcps_build"
        exit 1
    fi
 else
    if [ ! -n "$OSPL_OUTER_HOME" ]
    then
-       Fail  "ERROR: configuration - dcps_build"
+       echo "ERROR: configuration - dcps_build"
        exit 2
    fi
 fi
@@ -43,10 +43,8 @@ echo "BUILD=RUNNING" >> $RESFILE
 ArchiveLogs
 
 make
-if [ $? = 0 ] 
+if [ $? != 0 ] 
 then
-    echo "BUILD=PASS" >> $RESFILE
-else
-    echo "BUILD=FAIL" >> $RESFILE
     exit 3
 fi
+exit 0

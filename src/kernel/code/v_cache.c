@@ -22,7 +22,7 @@ v_cacheNodeCheck(
         assert(v_cacheNode(node->instance.prev)->instance.next == node);
     }
 }
-#endif
+#endif /* NDEBUG */
 
 void
 v_cacheNodeInit (
@@ -239,6 +239,7 @@ v_cacheNodeRemove (
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
+        v_cacheNodeCheck(node);
         c_free(node);
     break;
     case V_CACHE_INSTANCE:
@@ -251,6 +252,7 @@ v_cacheNodeRemove (
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
+        v_cacheNodeCheck(node);
         c_free(node);
     break;
     case V_CACHE_ANY:
@@ -260,6 +262,5 @@ v_cacheNodeRemove (
     default:
     break;
     }
-    v_cacheNodeCheck(node);
 }
 

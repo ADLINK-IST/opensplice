@@ -39,6 +39,7 @@ reset_old_vars ()
 print_setup ()
 {
     echo
+    echo "Variable Setup"
     echo "SPLICE_TARGET =" $SPLICE_TARGET
     echo "SPLICE_HOST =" $SPLICE_HOST
     echo "OSPL_HOME =" $OSPL_HOME

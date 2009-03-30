@@ -19,8 +19,8 @@
 #include "v_dataReader.h"
 #include "v_event.h"
 
-#define INITIALBUFFER_SIZE 256
-#define READBUFFERSIZE (1024)
+#define INITIALBUFFER_SIZE 32
+#define READBUFFERSIZE (32)
 
 C_STRUCT(_FooDataReader) {
     C_EXTENDS(_DataReader);
