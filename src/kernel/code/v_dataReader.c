@@ -1062,7 +1062,7 @@ v_dataReaderRemoveInstance(
 
     if (!v_reader(_this)->qos->userKey.enable) {
         if (v_dataReaderInstanceNoWriters(instance)) {
-            found = v_dataReaderInstance(c_remove(v_dataReaderAllInstanceSet(_this),
+            found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
                                                   instance, NULL, NULL));
             v_deadLineInstanceListRemoveInstance(_this->deadLineList,
                                                  v_instance(instance));
