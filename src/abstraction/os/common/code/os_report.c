@@ -155,6 +155,7 @@ os_open_error_file (
             char * filename;
             filename = os_fileNormalize(file_path);
             logfile = fopen(filename, "a");
+            os_free(filename);
          }
       }
    }
