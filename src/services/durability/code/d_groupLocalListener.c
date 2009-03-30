@@ -1482,7 +1482,12 @@ d_groupLocalListenerHandleAlignment(
 
             if(requestRemote == TRUE){
                 stamp = v_timeGet();
-                networkAttachTime    = stamp;
+
+                if(config->timeAlignment){
+                    networkAttachTime    = stamp;
+                } else {
+                    networkAttachTime = C_TIME_INFINITE;
+                }
                 timeRangeActive      = FALSE;
                 zeroTime.seconds     = 0;
                 zeroTime.nanoseconds = 0;
@@ -1606,7 +1611,12 @@ d_groupLocalListenerHandleAlignment(
 
                 if(requestRemote == TRUE){
                     stamp = v_timeGet();
-                    networkAttachTime    = stamp;
+
+                    if(config->timeAlignment){
+                        networkAttachTime    = stamp;
+                    } else {
+                        networkAttachTime = C_TIME_INFINITE;
+                    }
                     timeRangeActive      = FALSE;
                     zeroTime.seconds     = 0;
                     zeroTime.nanoseconds = 0;

@@ -192,6 +192,9 @@ void            d_configurationSetTracingOutputFile         (d_configuration con
 void            d_configurationSetTracingTimestamps         (d_configuration  config,
                                                              c_bool useTimestamp);
 
+void            d_configurationSetTimeAlignment             (d_configuration  config,
+                                                             c_bool alignment);
+
 void            d_configurationSetTracingRelativeTimestamps (d_configuration config,
                                                              u_cfElement element,
                                                              const c_char* timestampsPath,
