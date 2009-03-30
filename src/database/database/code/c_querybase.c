@@ -1,6 +1,7 @@
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "os_heap.h"
 #include "c__base.h"
 #include "c__metabase.h"
 #include "q_expr.h"
@@ -2076,9 +2077,11 @@ c_qKeyEval(
                 }
             }
             if (rangeResult) {
+                c_valueFreeRef(v);
                 return TRUE;
             }
         }
+        c_valueFreeRef(v);
         return FALSE;
     }
     return TRUE;
@@ -2120,6 +2123,8 @@ void
 c_qExprPrint(
     c_qExpr q)
 {
+    c_char* vi;
+        
     if (q == NULL) {
         return;
     }
@@ -2134,7 +2139,6 @@ c_qExprPrint(
         c_property property;
         c_member member;
         c_string metaName;
-
 
         path = c_fieldPath(c_qField(q)->field);
         if (path != NULL) {
@@ -2165,7 +2169,7 @@ c_qExprPrint(
         printf("%s",c_fieldName(c_qField(q)->field));
     }
     break;
-    case CQ_CONST: printf("%s",c_valueImage(c_qConst(q)->value)); break;
+    case CQ_CONST: vi = c_valueImage(c_qConst(q)->value); printf("%s", vi); os_free(vi); break;
     case CQ_AND:   _FUNC_(" AND "); break;
     case CQ_OR:    _FUNC_(" OR "); break;
     case CQ_NOT:   _FUNC_(" NOT "); break;
@@ -2189,18 +2193,19 @@ void
 c_qRangePrint(
     c_qRange q)
 {
+    c_char* vi;
     if (q == NULL) {
         return;
     }
     switch (q->startKind) {
     case B_UNDEFINED: printf("[*.."); break;
-    case B_INCLUDE:   printf("[%s..",c_valueImage(q->start)); break;
-    case B_EXCLUDE:   printf("<%s..",c_valueImage(q->start)); break;
+    case B_INCLUDE:   vi = c_valueImage(q->start); printf("[%s..",vi); os_free(vi); break;
+    case B_EXCLUDE:   vi = c_valueImage(q->start); printf("<%s..",vi); os_free(vi); break;
     }
     switch (q->endKind) {
     case B_UNDEFINED: printf("*]"); break;
-    case B_INCLUDE:   printf("%s]",c_valueImage(q->end)); break;
-    case B_EXCLUDE:   printf("%s>",c_valueImage(q->end)); break;
+    case B_INCLUDE:   vi = c_valueImage(q->end); printf("%s]",vi); os_free(vi); break;
+    case B_EXCLUDE:   vi = c_valueImage(q->end); printf("%s>",vi); os_free(vi); break;
     }
 }
 
