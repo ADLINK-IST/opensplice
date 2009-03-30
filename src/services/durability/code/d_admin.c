@@ -141,7 +141,7 @@ d_adminNew(
                                             admin, D_STATUS_TOPIC_NAME,
                                             D_STATUS_TYPE_NAME,
                                             D_STATUS_KEY_LIST,
-                                            V_RELIABILITY_BESTEFFORT,
+                                            V_RELIABILITY_RELIABLE,
                                             V_HISTORY_KEEPLAST,
                                             1);
 
