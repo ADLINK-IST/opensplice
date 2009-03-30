@@ -89,7 +89,8 @@ install_ascii_file()
             if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" -a -f ${install_ascii_file_source_file} ]
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
-                ${TXTFILE_CONVERTER} ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+                cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+                ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
                 echo "Ready"
             else
                 echo "* ##    file ${install_ascii_file_source_file} not found"
@@ -183,7 +184,7 @@ set_envs ()
     
     BUILDER_TARGET=""
     SCRIPT_NAME=""
-    TXTFILE_CONVERTER="cp -p"
+    TXTFILE_CONVERTER="echo done"
     GETLIC_INFO_NAME=""
     
     if [ "${SOURCE_TARGET_SHORT}" = "linux" ]
@@ -198,7 +199,7 @@ set_envs ()
         (cd ${OSPL_HOME}/install/service_installer; make)
         BUILDER_TARGET="windows"
         SCRIPT_NAME="release.bat"
-        TXTFILE_CONVERTER="unix2dos -q -n"
+        TXTFILE_CONVERTER="unix2dos"
         GETLIC_INFO_NAME="getlic_info.bat"
     fi
 }
