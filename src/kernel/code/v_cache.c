@@ -2,7 +2,7 @@
 
 #include "v_cache.h"
 
-#if 0
+#ifdef NDEBUG
 #define v_cacheNodeCheck(c)
 #else
 void
