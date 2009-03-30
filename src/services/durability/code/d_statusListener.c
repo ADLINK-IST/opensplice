@@ -98,7 +98,7 @@ d_statusListenerInit(
     d_readerListenerInit(   d_readerListener(listener),
                             d_statusListenerAction, subscriber,
                             D_STATUS_TOPIC_NAME, D_STATUS_TOP_NAME,
-                            V_RELIABILITY_BESTEFFORT,
+                            V_RELIABILITY_RELIABLE,
                             V_HISTORY_KEEPLAST,
                             1, config->heartbeatScheduling,
                             d_statusListenerDeinit);

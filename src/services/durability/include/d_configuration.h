@@ -56,6 +56,7 @@ C_STRUCT(d_configuration){
     os_threadAttr aligneeScheduling;
     os_time       initialRequestCombinePeriod;
     os_time       operationalRequestCombinePeriod;
+    c_bool        timeAlignment;
 };
 
 #define d_configuration(d) ((d_configuration)(d))

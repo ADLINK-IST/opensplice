@@ -66,7 +66,7 @@ d_publisherNew(
             publisher->deleteDataWriter        = NULL;
             writerQos                          = d_writerQosNew(
                                                     V_DURABILITY_VOLATILE,
-                                                    V_RELIABILITY_BESTEFFORT,
+                                                    V_RELIABILITY_RELIABLE,
                                                     config->heartbeatLatencyBudget,
                                                     config->heartbeatTransportPriority);
 

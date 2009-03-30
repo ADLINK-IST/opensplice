@@ -210,6 +210,7 @@ d_configurationInit(
         config->nameSpaces                  = NULL;
         config->tracingTimestamps           = TRUE;
         config->tracingRelativeTimestamps   = FALSE;
+        config->timeAlignment               = TRUE;
         config->startTime                   = os_timeGet();
 
         d_configurationSetTime(&(config->heartbeatExpiryTime), D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
@@ -290,6 +291,7 @@ d_configurationInit(
             d_configurationValueLong   (config, element, "Network/Heartbeat/Scheduling/Priority/#text", d_configurationSetHeartbeatSchedulingPriority);
 
             d_configurationValueFloat  (config, element, "Network/InitialDiscoveryPeriod/#text", d_configurationSetTimingInitialWaitPeriod);
+            d_configurationValueBoolean(config, element, "Network/Alignment/TimeAlignment", d_configurationSetTimeAlignment);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Initial/#text", d_configurationSetInitialRequestCombinePeriod);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Operational/#text", d_configurationSetOperationalRequestCombinePeriod);
             d_configurationValueString (config, element, "Network/Alignment/AlignerScheduling/Class/#text", d_configurationSetAlignerSchedulingClass);
@@ -1281,7 +1283,7 @@ d_configurationSetTracingOutputFile(
             config->tracingOutputFileName = os_strdup("stderr");
             config->tracingOutputFile = stderr;
         } else {
-            char * filename = os_fileNormalize(value); 
+            char * filename = os_fileNormalize(value);
             config->tracingOutputFile = fopen(filename, "a");
             config->tracingOutputFileName = os_strdup(filename);
         }
@@ -1295,6 +1297,16 @@ d_configurationSetTracingTimestamps(
 {
     if (config) {
         config->tracingTimestamps = useTimestamp;
+    }
+}
+
+void
+d_configurationSetTimeAlignment(
+    d_configuration  config,
+    c_bool alignment)
+{
+    if (config) {
+        config->timeAlignment = alignment;
     }
 }
 
