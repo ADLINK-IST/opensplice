@@ -25,7 +25,7 @@ DDS_DomainParticipant_create_publisher (
         sac_copySacPublisherListener(a_listener, &gListener);
         pListener = &gListener;
     }
-    
+
     return (DDS_Publisher)
         gapi_domainParticipant_create_publisher (
             (gapi_domainParticipant)this,
@@ -72,7 +72,7 @@ DDS_DomainParticipant_create_subscriber (
         sac_copySacSubscriberListener(a_listener, &gListener);
         pListener = &gListener;
     }
-    
+
     return (DDS_Subscriber)
         gapi_domainParticipant_create_subscriber (
             (gapi_domainParticipant)this,
@@ -136,7 +136,7 @@ DDS_DomainParticipant_create_topic (
         sac_copySacTopicListener(a_listener, &gListener);
         pListener = &gListener;
     }
-    
+
     return (DDS_Topic)
         gapi_domainParticipant_create_topic (
             (gapi_domainParticipant)this,
@@ -355,7 +355,7 @@ DDS_DomainParticipant_set_listener (
         sac_copySacDomainParticipantListener(a_listener, &gListener);
         pListener = &gListener;
     }
-        
+
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_set_listener (
             (gapi_domainParticipant)this,
@@ -509,7 +509,7 @@ DDS_DomainParticipant_get_default_publisher_qos (
         (gapi_domainParticipant)this,
         (gapi_publisherQos *)qos
     );
-    
+
 }
 
 /*     ReturnCode_t
@@ -544,7 +544,7 @@ DDS_DomainParticipant_get_default_subscriber_qos (
         (gapi_domainParticipant)this,
         (gapi_subscriberQos *)qos
     );
-    
+
 }
 
 /*     ReturnCode_t
@@ -579,7 +579,7 @@ DDS_DomainParticipant_get_default_topic_qos (
         (gapi_domainParticipant)this,
         (gapi_topicQos *)qos
     );
-    
+
 }
 
 
@@ -596,7 +596,7 @@ DDS_DomainParticipant_get_discovered_participants (
         gapi_domainParticipant_get_discovered_participants (
             (gapi_domainParticipant)this,
             (gapi_instanceHandleSeq *)participant_handles
-        );    
+        );
 }
 
 /*     ReturnCode_t
@@ -607,15 +607,15 @@ DDS_DomainParticipant_get_discovered_participants (
 DDS_ReturnCode_t
 DDS_DomainParticipant_get_discovered_participant_data (
     DDS_DomainParticipant this,
-    DDS_InstanceHandle_t  handle,
-    DDS_ParticipantBuiltinTopicData *participant_data)
+    DDS_ParticipantBuiltinTopicData *participant_data,
+    DDS_InstanceHandle_t  handle)
 {
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_get_discovered_participant_data (
             (gapi_domainParticipant)this,
-            (gapi_instanceHandle_t)handle,
-            (gapi_participantBuiltinTopicData *)participant_data
-        );    
+            (gapi_participantBuiltinTopicData *)participant_data,
+            (gapi_instanceHandle_t)handle
+        );
 }
 
 /*     ReturnCode_t
@@ -631,7 +631,7 @@ DDS_DomainParticipant_get_discovered_topics (
         gapi_domainParticipant_get_discovered_topics (
             (gapi_domainParticipant)this,
             (gapi_instanceHandleSeq *)topic_handles
-        );    
+        );
 }
 
 /*     ReturnCode_t
@@ -642,15 +642,15 @@ DDS_DomainParticipant_get_discovered_topics (
 DDS_ReturnCode_t
 DDS_DomainParticipant_get_discovered_topic_data (
     DDS_DomainParticipant this,
-    DDS_InstanceHandle_t  handle,
-    DDS_TopicBuiltinTopicData *topic_data)
+    DDS_TopicBuiltinTopicData *topic_data,
+    DDS_InstanceHandle_t  handle)
 {
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_get_discovered_topic_data (
             (gapi_domainParticipant)this,
-            (gapi_instanceHandle_t)handle,
-            (gapi_topicBuiltinTopicData *)topic_data
-        );    
+            (gapi_topicBuiltinTopicData *)topic_data,
+            (gapi_instanceHandle_t)handle
+        );
 }
 
 /*     Boolean
@@ -666,7 +666,7 @@ DDS_DomainParticipant_contains_entity (
         gapi_domainParticipant_contains_entity (
             (gapi_domainParticipant)this,
             (gapi_instanceHandle_t)a_handle
-        );        
+        );
 }
 
 /*     ReturnCode_t
@@ -682,7 +682,7 @@ DDS_DomainParticipant_get_current_time (
         gapi_domainParticipant_get_current_time (
             (gapi_domainParticipant)this,
             (gapi_time_t *)current_time
-        );        
+        );
 }
 
 /*     TypeSupport
@@ -698,7 +698,7 @@ DDS_DomainParticipant_lookup_typesupport (
         gapi_domainParticipant_lookup_typesupport (
             (gapi_domainParticipant)this,
             (const gapi_char *) type_name
-        );        
+        );
 }
 
 DDS_ReturnCode_t

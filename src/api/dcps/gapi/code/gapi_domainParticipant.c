@@ -29,7 +29,7 @@
 #define U_PARTICIPANT_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
 
 /* value to represent the platform dependent default */
-#define GAPI_DEFAULT_LISTENER_STACKSIZE 0 
+#define GAPI_DEFAULT_LISTENER_STACKSIZE 0
 
 
 typedef struct DeleteActionInfo_s {
@@ -141,7 +141,7 @@ copyParticipantQosOut (
 {
     assert(srcQos);
     assert(dstQos);
-    
+
     if ( dstQos->user_data.value._maximum > 0 ) {
         if ( dstQos->user_data.value._release ) {
             gapi_free(dstQos->user_data.value._buffer);
@@ -176,7 +176,7 @@ allocateParticipant (
     )
 {
     _DomainParticipant participant = _DomainParticipantAlloc();
-    
+
     if ( participant != NULL ) {
         participant->typeSupportMap = gapi_mapNew (gapi_stringCompare, TRUE, FALSE);
         participant->topicDescriptionSet = gapi_setNew (gapi_objectRefCompare);
@@ -198,7 +198,7 @@ allocateParticipant (
             }
             if ( participant->builtinTopicMap != NULL ) {
                 gapi_mapFree(participant->builtinTopicMap);
-            } 
+            }
             if ( participant->publisherSet != NULL ) {
                 gapi_setFree(participant->publisherSet);
             }
@@ -245,13 +245,13 @@ configurationResolveParameter(
     u_cfData result;
     c_iter nodes;
     u_cfNode tmp;
-    
+
     result = NULL;
-    
+
     if (e != NULL) {
         nodes = u_cfElementXPath(e, xpathExpr);
         tmp = u_cfNode(c_iterTakeFirst(nodes));
-        
+
         if (tmp != NULL) {
             if (u_cfNodeKind(tmp) == V_CFDATA) {
                 result = u_cfData(tmp);
@@ -260,12 +260,12 @@ configurationResolveParameter(
             }
             tmp = u_cfNode(c_iterTakeFirst(nodes));
         }
-        
+
         while (tmp != NULL) {
             u_cfNodeFree(tmp);
             tmp = u_cfNode(c_iterTakeFirst(nodes));
         }
-        c_iterFree(nodes);        
+        c_iterFree(nodes);
     }
     return result;
 }
@@ -294,7 +294,7 @@ initListenerThreadInfo (
     osMutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
     osResult = os_mutexInit (&info->mutex, &osMutexAttr);
 
-    if ( osResult == os_resultSuccess ) { 
+    if ( osResult == os_resultSuccess ) {
         info->threadId     = 0;
         info->running      = FALSE;
         info->waitset      = NULL;
@@ -303,8 +303,8 @@ initListenerThreadInfo (
         info->actionArg   = actionArg;
         info->scheduling  = qos->listener_scheduling;
         info->toAddList   = gapi_setNew(gapi_objectRefCompare);
-        info->stackSize   = GAPI_DEFAULT_LISTENER_STACKSIZE; 
-        
+        info->stackSize   = GAPI_DEFAULT_LISTENER_STACKSIZE;
+
         if ( info->toAddList ) {
             info->waitset = u_waitsetNew(uParticipant);
             if ( info->waitset ) {
@@ -316,7 +316,7 @@ initListenerThreadInfo (
 
         /* read stackSize from configuration */
         cfg = u_participantGetConfiguration(uParticipant);
-        
+
         if(cfg){
             cfg_data = configurationResolveParameter(cfg,"Domain/Listeners/StackSize/#text");
             if (cfg_data != NULL) {
@@ -327,14 +327,14 @@ initListenerThreadInfo (
             }
             u_cfElementFree(cfg);
         }
-        
 
-        
+
+
     }
 
     return initialized;
 }
-        
+
 static void
 deinitListenerThreadInfo (
     ListenerThreadInfo *info)
@@ -348,7 +348,7 @@ deinitListenerThreadInfo (
     }
     os_mutexDestroy (&info->mutex);
 }
-        
+
 _DomainParticipant
 _DomainParticipantNew (
     gapi_domainId_t                              domainId,
@@ -369,7 +369,7 @@ _DomainParticipantNew (
 
     newParticipant = allocateParticipant();
 
-    if (newParticipant != NULL) {        
+    if (newParticipant != NULL) {
         _EntityInit (_Entity(newParticipant), NULL, NULL, enable);
         if ( domainId ) {
             newParticipant->_DomainId = gapi_strdup(domainId);
@@ -398,7 +398,7 @@ _DomainParticipantNew (
 
         participantQos = newParticipantQos();
         if ( participantQos != NULL ) {
-            if ( !copyParticipantQosIn(qos, participantQos) ) { 
+            if ( !copyParticipantQosIn(qos, participantQos) ) {
                 gapi_errorReport(context, GAPI_ERRORCODE_OUT_OF_RESOURCES);
                 deallocateParticipant(newParticipant);
                 newParticipant = NULL;
@@ -424,10 +424,10 @@ _DomainParticipantNew (
             newParticipant = NULL;
         }
     }
-   
+
     if (newParticipant != NULL) {
         newParticipant->watchdogScheduling = qos->watchdog_scheduling;
-        if (!initListenerThreadInfo(&newParticipant->listenerThreadInfo, 
+        if (!initListenerThreadInfo(&newParticipant->listenerThreadInfo,
                                             uParticipant, startAction, stopAction, actionArg, qos)) {
             gapi_errorReport(context, GAPI_ERRORCODE_OUT_OF_RESOURCES);
             u_participantFree(uParticipant);
@@ -472,7 +472,7 @@ _DomainParticipantFree (
         _BuiltinSubscriberFree(participant->builtinSubscriber);
         participant->builtinSubscriber = NULL;
     }
-       
+
     _DomainParticipantStatusSetListener(_DomainParticipantStatus(_Entity(participant)->status), NULL, 0);
     _DomainParticipantStatusFree(_DomainParticipantStatus(_Entity(participant)->status));
 
@@ -495,13 +495,13 @@ _DomainParticipantFree (
     gapi_mapIterFree (iterMap);
 
     _EntityFreeStatusCondition(_Entity(participant));
-   
+
     stopListenerEventThread(participant);
     deinitListenerThreadInfo(&participant->listenerThreadInfo);
 
     u_participantFree (U_PARTICIPANT_GET(participant));
     U_PARTICIPANT_SET(participant, NULL);
-    
+
     gapi_mapFree (participant->typeSupportMap);
     participant->typeSupportMap = NULL;
     gapi_setFree (participant->topicDescriptionSet);
@@ -512,7 +512,7 @@ _DomainParticipantFree (
     participant->publisherSet = NULL;
     gapi_setFree (participant->subscriberSet);
     participant->subscriberSet = NULL;
-    
+
     gapi_publisherQos_free(&participant->_defPublisherQos);
     gapi_subscriberQos_free(&participant->_defSubscriberQos);
     gapi_topicQos_free(&participant->_defTopicQos);
@@ -520,7 +520,7 @@ _DomainParticipantFree (
     if ( participant->_DomainId ) {
         os_free(participant->_DomainId);
     }
-    
+
     _EntityDispose (_Entity(participant));
 
     return result;
@@ -612,7 +612,7 @@ _DomainParticipantFindBuiltinTopic (
         topic = _Topic(gapi_mapIterObject(iter));
         gapi_mapIterFree (iter);
     }
-      
+
     return topic;
 }
 
@@ -631,7 +631,7 @@ _DomainParticipantRegisterType (
     assert(participant);
     assert(typeSupport);
     assert(registryName);
-    
+
     result = gapi_mapAdd(participant->typeSupportMap,
                         (gapi_object)gapi_strdup(registryName),
                         (gapi_object)typeSupport);
@@ -643,15 +643,15 @@ _DomainParticipantRegisterType (
                 topic = _BuiltinTopicNew(participant, builtinInfo->topicName, typeSupport->type_name);
                 if ( topic ) {
                     result = gapi_mapAdd(participant->builtinTopicMap,
-                                (gapi_object)builtinInfo->topicName, 
+                                (gapi_object)builtinInfo->topicName,
                                 (gapi_object)topic);
- 
+
                     if ( participant->deleteActionInfo.action ) {
                         _TopicSetDeleteAction(topic,
                                               participant->deleteActionInfo.action,
                                               participant->deleteActionInfo.argument);
                     }
-                    _EntityRelease(topic);     
+                    _EntityRelease(topic);
                     if ( result != GAPI_RETCODE_OK ) {
                         _TopicFree(topic);
                         result = GAPI_RETCODE_ERROR;
@@ -722,7 +722,7 @@ _DomainParticipantContainsTypeSupport (
         }
         gapi_mapIterFree(iter);
     }
-    
+
     return contains;
 }
 
@@ -734,10 +734,10 @@ _DomainParticipantFindRegisteredTypeSupport (
     _TypeSupport registered = NULL;
     _TypeSupport ts;
     gapi_mapIter iter;
-    
+
     assert(participant);
     assert(typeSupport);
-    
+
     iter = gapi_mapFirst (participant->typeSupportMap);
     if ( iter ) {
         ts = _TypeSupport(gapi_mapIterObject(iter));
@@ -750,7 +750,7 @@ _DomainParticipantFindRegisteredTypeSupport (
         }
         gapi_mapIterFree(iter);
     }
-    
+
     return registered;
 }
 
@@ -816,7 +816,7 @@ _DomainParticipantFindTopicDescription (
             gapi_mapIterFree(it2);
         }
     }
-      
+
     return topicDescription;
 }
 
@@ -833,7 +833,7 @@ _DomainParticipantTopicDescriptionExists (
     assert(participant);
     assert(topicDescription);
 
-    it1 = gapi_setFind(participant->topicDescriptionSet, 
+    it1 = gapi_setFind(participant->topicDescriptionSet,
                         (gapi_object)topicDescription);
     if ( it1 ) {
         result = TRUE;
@@ -841,7 +841,7 @@ _DomainParticipantTopicDescriptionExists (
     }
 
     if ( !result ) {
-        it2 = gapi_mapFind(participant->builtinTopicMap, 
+        it2 = gapi_mapFind(participant->builtinTopicMap,
                 (gapi_object)topicDescription->topic_name);
         if ( it2 ) {
             result = TRUE;
@@ -860,22 +860,22 @@ _DomainParticipantGetQos (
 {
     v_participantQos participantQos;
     u_participant uParticipant;
-    
+
     assert(participant);
 
     uParticipant = U_PARTICIPANT_GET(participant);
-        
+
     if ( u_entityQoS(u_entity(uParticipant), (v_qos*)&participantQos) == U_RESULT_OK ) {
         copyParticipantQosOut(participantQos,  qos);
         u_participantQosFree(participantQos);
-        
+
         qos->watchdog_scheduling = participant->watchdogScheduling;
         qos->listener_scheduling = participant->listenerThreadInfo.scheduling;
     }
 
     return qos;
 }
-       
+
 /*     Publisher
  *     create_publisher(
  *         in PublisherQos qos,
@@ -917,7 +917,7 @@ gapi_domainParticipant_create_publisher (
     }
 
     _EntityRelease(participant);
-    
+
     return (gapi_publisher)_EntityRelease(publisher);
 }
 
@@ -940,10 +940,10 @@ gapi_domainParticipant_delete_publisher (
     if ( participant ) {
         publisher = gapi_publisherClaimNB(p, NULL);
     }
-    
+
     if ( publisher ) {
         gapi_setIter publisherIter;
-        
+
         publisherIter = gapi_setFind (participant->publisherSet, (gapi_object)publisher);
         if ( publisherIter != NULL ) {
             if (gapi_setIterObject(publisherIter) != NULL) {
@@ -960,7 +960,7 @@ gapi_domainParticipant_delete_publisher (
             } else {
                 /* publisher not created by this participant */
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-            } 
+            }
             gapi_setIterFree (publisherIter);
         } else {
             /* Iterator could not be allocated */
@@ -1008,7 +1008,7 @@ gapi_domainParticipant_create_subscriber (
             subscriber = _SubscriberNew(U_PARTICIPANT_GET(participant), qos, a_listener,mask, participant);
             if (subscriber != NULL) {
                 if (gapi_setAdd (participant->subscriberSet, (gapi_object)subscriber) == GAPI_RETCODE_OK) {
-                    _ENTITY_REGISTER_OBJECT(_Entity(participant), (_Object)subscriber);                    
+                    _ENTITY_REGISTER_OBJECT(_Entity(participant), (_Object)subscriber);
                 } else {
                     _SubscriberFree (subscriber);
                     subscriber = NULL;
@@ -1018,7 +1018,7 @@ gapi_domainParticipant_create_subscriber (
     }
 
     _EntityRelease(participant);
-    
+
     return (gapi_subscriber)_EntityRelease(subscriber);
 }
 
@@ -1035,13 +1035,13 @@ gapi_domainParticipant_delete_subscriber (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
     _Subscriber subscriber = NULL;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant ) {
         subscriber = gapi_subscriberClaimNB(s, NULL);
     }
-    
+
     if ( subscriber ) {
         if (subscriber != participant->builtinSubscriber) {
             gapi_setIter subscriberIter;
@@ -1062,7 +1062,7 @@ gapi_domainParticipant_delete_subscriber (
                 } else {
                     /* subscriber not created by this participant */
                     result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-                } 
+                }
                 gapi_setIterFree (subscriberIter);
             } else {
                 /* Iterator could not be allocated */
@@ -1077,8 +1077,8 @@ gapi_domainParticipant_delete_subscriber (
 
     _EntityRelease(subscriber);
     _EntityRelease(participant);
-    
-    return result;            
+
+    return result;
 }
 
 /*     Subscriber
@@ -1110,9 +1110,9 @@ gapi_domainParticipant_get_builtin_subscriber (
             subscriber = participant->builtinSubscriber;
         }
     }
-    
+
     _EntityRelease(participant);
-    
+
     return (gapi_subscriber)_EntityHandle(subscriber);
 }
 
@@ -1135,7 +1135,7 @@ addTopicDescription (
 
     assert(participant);
     assert(description);
-    
+
     if ( gapi_setAdd(participant->topicDescriptionSet, (gapi_object)description) == GAPI_RETCODE_OK ) {
         result = TRUE;
     }
@@ -1169,7 +1169,7 @@ gapi_domainParticipant_create_topic (
     _TypeSupport       typeSupport = NULL;
     gapi_string        typeName    = NULL;
     gapi_context       context;
-    gapi_topicQos    * found_qos   = NULL;  
+    gapi_topicQos    * found_qos   = NULL;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_CREATE_TOPIC);
 
@@ -1253,10 +1253,10 @@ gapi_domainParticipant_create_topic (
             newTopic = NULL;
         }
     }
-    
-    _EntityRelease(description);    
+
+    _EntityRelease(description);
     _EntityRelease(participant);
-    
+
     if ( newTopic ) {
         gapi_object statusHandle;
         statusHandle = _EntityHandle(_Entity(newTopic)->status);
@@ -1292,7 +1292,7 @@ gapi_domainParticipant_delete_topic (
 
     if ( topic != NULL ) {
         gapi_setIter topicIter;
-        
+
         topicIter = gapi_setFirst(participant->topicDescriptionSet);
         if ( topicIter ) {
             gapi_boolean found = FALSE;
@@ -1326,7 +1326,7 @@ gapi_domainParticipant_delete_topic (
             } else {
                 /* topic not created by this participant */
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-            } 
+            }
             gapi_setIterFree(topicIter);
         } else {
             /* Iterator could not be allocated */
@@ -1365,7 +1365,7 @@ gapi_domainParticipant_find_topic (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_FIND_TOPIC);
 
     participant = gapi_domainParticipantClaim(_this, NULL);
- 
+
     if ( participant &&
          _Entity(participant)->enabled &&
          topic_name &&
@@ -1389,7 +1389,7 @@ gapi_domainParticipant_find_topic (
                 uTopic = u_topic(c_iterTakeFirst(topicList));
                 c_iterFree (topicList);
             }
-            
+
             if (uTopic) {
                 typeName = (char *)u_topicTypeName(uTopic);
             }
@@ -1419,7 +1419,7 @@ gapi_domainParticipant_find_topic (
                                                   NULL, NULL, NULL);
                     os_free(keys);
                 }
-                
+
                 if (typeSupport) {
                     regTypeName = typeName;
                     result = _TypeSupportGenericCopyInit(typeSupport,
@@ -1429,8 +1429,8 @@ gapi_domainParticipant_find_topic (
                         typeSupport = NULL;
                     }
                 }
-                
-                if (typeSupport) { 
+
+                if (typeSupport) {
                     result = _DomainParticipantRegisterType(participant,
                                                             typeSupport,
                                                             regTypeName);
@@ -1451,7 +1451,7 @@ gapi_domainParticipant_find_topic (
                 if ( !topic ) {
                     u_topicFree(uTopic);
                 }
-            }                        
+            }
         }
         if ( topic ) {
             if ( addTopicDescription(participant,
@@ -1465,14 +1465,14 @@ gapi_domainParticipant_find_topic (
             }
         }
     }
-    
+
 
     if ( typeName ) {
         os_free (typeName);
     }
-            
-    _EntityRelease(participant);   
-    
+
+    _EntityRelease(participant);
+
     return _EntityRelease(topic);
 }
 
@@ -1490,13 +1490,13 @@ gapi_domainParticipant_lookup_topicdescription (
     _TopicDescription topicDescription = NULL;
 
     participant = gapi_domainParticipantClaim(_this, NULL);
- 
+
     if ( participant && _Entity(participant)->enabled && name ) {
         topicDescription = _DomainParticipantFindTopicDescription(participant, name);
     }
-    
+
     _EntityRelease(participant);
-    
+
     return (gapi_topicDescription)_EntityHandle(topicDescription);
 }
 
@@ -1527,7 +1527,7 @@ gapi_domainParticipant_create_contentfilteredtopic (
 
         if ( name && filter_expression && gapi_sequence_is_valid(filter_parameters) ) {
             participant = gapi_domainParticipantClaim(_this, NULL);
-        
+
             if ( participant != NULL ) {
                 _TopicDescription desc = _DomainParticipantFindTopicDescription(participant, name);
 
@@ -1551,7 +1551,7 @@ gapi_domainParticipant_create_contentfilteredtopic (
             }
             _EntityRelease(participant);
         }
-    }               
+    }
     return (gapi_contentFilteredTopic)_EntityRelease(newTopic);
 }
 
@@ -1580,7 +1580,7 @@ gapi_domainParticipant_delete_contentfilteredtopic (
 
     if ( contentfilteredtopic ) {
         gapi_setIter topicIter;
-        
+
         topicIter = gapi_setFind(participant->topicDescriptionSet, (gapi_object)contentfilteredtopic);
         if ( topicIter ) {
             if ( gapi_setIterObject(topicIter) ) {
@@ -1595,7 +1595,7 @@ gapi_domainParticipant_delete_contentfilteredtopic (
             } else {
                 /* topic not created by this participant */
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-            } 
+            }
             gapi_setIterFree(topicIter);
         } else {
             /* Iterator could not be allocated */
@@ -1626,7 +1626,7 @@ gapi_domainParticipant_create_multitopic (
     )
 {
     gapi_boolean licensed;
-    
+
     /* Function will operate indepenedent of the enable flag */
 
     licensed =  _DomainParticipantFactoryIsContentSubscriptionAvailable();
@@ -1634,7 +1634,7 @@ gapi_domainParticipant_create_multitopic (
     if(licensed == TRUE){
 
     }
-    return (gapi_multiTopic)0;    
+    return (gapi_multiTopic)0;
 }
 
 /*     ReturnCode_t
@@ -1649,10 +1649,10 @@ gapi_domainParticipant_delete_multitopic (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
-    if ( participant != NULL ) {        
+    if ( participant != NULL ) {
         result = GAPI_RETCODE_UNSUPPORTED;
     }
 
@@ -1670,15 +1670,15 @@ gapi_domainParticipant_delete_historical_data (
     u_result ur;
     gapi_returnCode_t result;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
         ur = u_participantDeleteHistoricalData(
-                    U_PARTICIPANT_GET(participant), 
+                    U_PARTICIPANT_GET(participant),
                     partition_expression,
                     topic_expression);
-                                                
+
         if(ur == U_RESULT_OK){
             result = GAPI_RETCODE_OK;
         } else {
@@ -1690,7 +1690,7 @@ gapi_domainParticipant_delete_historical_data (
     _EntityRelease(participant);
 
     return result;
-    
+
 }
 
 
@@ -1710,7 +1710,7 @@ deleteContainedEntities (
     while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
         _Publisher publisher = _Publisher(gapi_setIterObject(iterSet));
         result = gapi_publisher_delete_contained_entities(_EntityHandle(publisher), action, action_arg);
-        
+
         if(result == GAPI_RETCODE_OK){
             _EntityClaimNotBusy(publisher);
             userData = _ObjectGetUserData(_Object(publisher));
@@ -1730,7 +1730,7 @@ deleteContainedEntities (
     while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
         _Subscriber subscriber = _Subscriber(gapi_setIterObject(iterSet));
         result = gapi_subscriber_delete_contained_entities(_EntityHandle(subscriber), action, action_arg);
-        
+
         if(result == GAPI_RETCODE_OK){
             _EntityClaimNotBusy(subscriber);
             userData = _ObjectGetUserData(_Object(subscriber));
@@ -1747,7 +1747,7 @@ deleteContainedEntities (
     /* Delete all ContentFilteredTopics in the topicDescriptionSet */
     /* Call descructors based of their types */
     iterSet = gapi_setFirst (_this->topicDescriptionSet);
-    
+
     while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
         _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
         _EntityClaimNotBusy(topicDescription);
@@ -1765,11 +1765,11 @@ deleteContainedEntities (
         }
     }
     gapi_setIterFree (iterSet);
-    
+
     /* Delete all topicsdescriptions in the topicDescriptionSet */
     /* Call descructors based of their types */
     iterSet = gapi_setFirst (_this->topicDescriptionSet);
-    
+
     while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
         _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
         _EntityClaimNotBusy(topicDescription);
@@ -1786,7 +1786,7 @@ deleteContainedEntities (
         }
     }
     gapi_setIterFree (iterSet);
-    
+
     return result;
 }
 
@@ -1804,7 +1804,7 @@ gapi_domainParticipant_delete_contained_entities (
     _DomainParticipant participant;
 
     participant = gapi_domainParticipantClaim(_this, &result);
-    
+
     if ( participant != NULL ) {
         result = deleteContainedEntities(participant, action, action_arg);
         _EntityRelease(participant);
@@ -1834,7 +1834,7 @@ gapi_domainParticipant_set_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant && qos ) {
@@ -1842,14 +1842,14 @@ gapi_domainParticipant_set_qos (
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-        
+
     if ( result == GAPI_RETCODE_OK ) {
         gapi_domainParticipantQos * existing_qos = gapi_domainParticipantQos__alloc();
 
         result = gapi_domainParticipantQosCheckMutability(qos, _DomainParticipantGetQos(participant, existing_qos), &context);
         gapi_free(existing_qos);
     }
-    
+
     if ( result == GAPI_RETCODE_OK ) {
         participantQos = newParticipantQos();
         if (participantQos) {
@@ -1918,7 +1918,7 @@ gapi_domainParticipant_set_listener (
 
     if ( participant != NULL ) {
         _DomainParticipantStatus status;
-        
+
         if ( a_listener ) {
             participant->_Listener = *a_listener;
         } else {
@@ -1948,7 +1948,7 @@ gapi_domainParticipant_get_listener (
 {
     _DomainParticipant participant;
     struct gapi_domainParticipantListener listener;
-   
+
     participant = gapi_domainParticipantClaim(_this, NULL);
 
     if ( participant != NULL ) {
@@ -1974,19 +1974,19 @@ gapi_domainParticipant_ignore_participant (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
-        if ( _Entity(participant)->enabled ) {            
-            result = GAPI_RETCODE_UNSUPPORTED; 
+        if ( _Entity(participant)->enabled ) {
+            result = GAPI_RETCODE_UNSUPPORTED;
         } else {
             result = GAPI_RETCODE_NOT_ENABLED;
         }
     }
 
     _EntityRelease(participant);
-    
+
     return result;
 }
 
@@ -2002,19 +2002,19 @@ gapi_domainParticipant_ignore_topic (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
-        if ( _Entity(participant)->enabled ) {            
-            result = GAPI_RETCODE_UNSUPPORTED; 
+        if ( _Entity(participant)->enabled ) {
+            result = GAPI_RETCODE_UNSUPPORTED;
         } else {
             result = GAPI_RETCODE_NOT_ENABLED;
         }
     }
 
     _EntityRelease(participant);
-    
+
     return result;
 }
 
@@ -2030,19 +2030,19 @@ gapi_domainParticipant_ignore_publication (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
         if ( _Entity(participant)->enabled ) {
-            result = GAPI_RETCODE_UNSUPPORTED; 
+            result = GAPI_RETCODE_UNSUPPORTED;
         } else {
             result = GAPI_RETCODE_NOT_ENABLED;
         }
     }
 
     _EntityRelease(participant);
-    
+
     return result;
 }
 
@@ -2058,19 +2058,19 @@ gapi_domainParticipant_ignore_subscription (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DomainParticipant participant;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
         if ( _Entity(participant)->enabled ) {
-            result = GAPI_RETCODE_UNSUPPORTED; 
+            result = GAPI_RETCODE_UNSUPPORTED;
         } else {
             result = GAPI_RETCODE_NOT_ENABLED;
         }
     }
 
     _EntityRelease(participant);
-    
+
     return result;
 }
 
@@ -2084,7 +2084,7 @@ gapi_domainParticipant_get_domain_id (
 {
     _DomainParticipant participant;
     gapi_domainId_t domainId = 0;
-    
+
     participant = gapi_domainParticipantClaim(_this, NULL);
 
     if ( (participant != NULL) && _Entity(participant)->enabled) {
@@ -2133,7 +2133,7 @@ gapi_domainParticipant_set_default_publisher_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_PUBLISHER_QOS);
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant && qos ) {
@@ -2146,7 +2146,7 @@ gapi_domainParticipant_set_default_publisher_qos (
             result = GAPI_RETCODE_NOT_ENABLED;
         }
     }
-            
+
     _EntityRelease(participant);
 
     return result;
@@ -2164,7 +2164,7 @@ gapi_domainParticipant_get_default_publisher_qos (
 {
     _DomainParticipant participant;
     gapi_returnCode_t result;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant && _Entity(participant)->enabled && qos ) {
@@ -2226,7 +2226,7 @@ gapi_domainParticipant_get_default_subscriber_qos (
 {
     _DomainParticipant participant;
     gapi_returnCode_t result;
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( (participant != NULL) && _Entity(participant)->enabled && qos ) {
@@ -2253,7 +2253,7 @@ gapi_domainParticipant_set_default_topic_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_TOPIC_QOS);
-    
+
     participant = gapi_domainParticipantClaim(_this, &result);
     if ( participant ) {
         if ( qos ) {
@@ -2307,10 +2307,10 @@ _DomainParticipantSetListenerInterestOnChildren (
     _Entity      entity;
     gapi_boolean result = TRUE;
     _TopicDescription td;
-    
+
 
     assert(participant);
-    
+
     iterSet = gapi_setFirst (participant->topicDescriptionSet);
     td = (_TopicDescription)gapi_setIterObject(iterSet);
     while (result && td) {
@@ -2326,7 +2326,7 @@ _DomainParticipantSetListenerInterestOnChildren (
         td = (_TopicDescription)gapi_setIterObject(iterSet);
     }
     gapi_setIterFree (iterSet);
-    
+
     if ( participant->builtinSubscriber ) {
         iterMap = gapi_mapFirst (participant->builtinTopicMap);
         while (result && gapi_mapIterObject(iterMap)) {
@@ -2354,7 +2354,7 @@ _DomainParticipantSetListenerInterestOnChildren (
         gapi_setIterNext (iterSet);
     }
     gapi_setIterFree (iterSet);
-        
+
     return result;
 }
 
@@ -2521,7 +2521,7 @@ _DomainParticipantSetBuiltinDeleteAction (
             }
             gapi_mapIterFree(iter);
         }
-    }           
+    }
 }
 
 void
@@ -2555,13 +2555,13 @@ listenerEventThread (
 
     while ( info->running ) {
         gapi_setIter iter;
-        
+
         os_mutexLock(&info->mutex);
         iter = gapi_setFirst(info->toAddList);
         while ( gapi_setIterObject(iter) ) {
            gapi_object handle = (gapi_object) gapi_setIterObject(iter);
-           _Entity entity; 
-           
+           _Entity entity;
+
             os_mutexUnlock(&info->mutex);
             entity = gapi_entityClaim(handle, NULL);
             if ( entity ) {
@@ -2606,7 +2606,7 @@ listenerEventThread (
     return NULL;
 }
 
-    
+
 static gapi_boolean
 startListenerEventThread (
     _DomainParticipant participant)
@@ -2619,7 +2619,7 @@ startListenerEventThread (
     info = &participant->listenerThreadInfo;
 
     info->running = TRUE;
-    
+
     osResult = os_threadAttrInit(&osThreadAttr);
     if ( osResult == os_resultSuccess ) {
         /* Set scheduling attributes as specified by the DomainParticipantQos */
@@ -2643,7 +2643,7 @@ startListenerEventThread (
 
     return result;
 }
-    
+
 static gapi_boolean
 stopListenerEventThread (
     _DomainParticipant participant)
@@ -2732,8 +2732,8 @@ gapi_domainParticipant_get_discovered_participants (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participant_data (
     gapi_domainParticipant _this,
-    gapi_instanceHandle_t  handle,
-    gapi_participantBuiltinTopicData *participant_data)
+    gapi_participantBuiltinTopicData *participant_data,
+    gapi_instanceHandle_t  handle)
 {
     return GAPI_RETCODE_UNSUPPORTED;
 }
@@ -2758,8 +2758,8 @@ gapi_domainParticipant_get_discovered_topics (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topic_data (
     gapi_domainParticipant _this,
-    gapi_instanceHandle_t  handle,
-    gapi_topicBuiltinTopicData *topic_data)
+    gapi_topicBuiltinTopicData *topic_data,
+    gapi_instanceHandle_t  handle)
 {
     return GAPI_RETCODE_UNSUPPORTED;
 }
@@ -2815,7 +2815,7 @@ gapi_domainParticipant_contains_entity (
                 gapi_setIterFree (iterSet);
             }
         }
-        
+
         _EntityRelease(participant);
     }
 
@@ -2833,7 +2833,7 @@ gapi_domainParticipant_get_current_time (
 {
     _DomainParticipant participant;
     gapi_returnCode_t result;
-    
+
     participant = gapi_domainParticipantClaim (_this, &result);
     if ( participant ) {
         c_time t = u_timeGet();
@@ -2844,8 +2844,8 @@ gapi_domainParticipant_get_current_time (
     return result;
 }
 
-    
-    
+
+
 void
 _DomainParticipantCleanup (
     _DomainParticipant _this)

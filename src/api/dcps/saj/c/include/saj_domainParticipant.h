@@ -262,7 +262,7 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGet
  * Signature: (JLDDS/ParticipantBuiltinTopicDataHolder;)I
  */
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredParticipantData
-  (JNIEnv *, jobject, jlong, jobject);
+  (JNIEnv *, jobject, jobject, jlong);
 
 /*
  * Class:     org_opensplice_dds_dcps_DomainParticipantImpl
@@ -278,7 +278,7 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGet
  * Signature: (JLDDS/TopicBuiltinTopicDataHolder;)I
  */
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredTopicData
-  (JNIEnv *, jobject, jlong, jobject);
+  (JNIEnv *, jobject, jobject, jlong);
 
 /*
  * Class:     org_opensplice_dds_dcps_DomainParticipantImpl
