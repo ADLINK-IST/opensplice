@@ -15,7 +15,8 @@ ARGS=$*
 Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
-Assert setupBuildInfo
 
-ArchiveLogs
+# List the fields we want the display page to show.
+echo "BUILD_DISPLAY=/SETUP_TYPE,/BUILD_DIST,/KEEP_DIST,RUN/DBT,RUN/RBT,RUN/EXAMPLES" > $LOGDIR/BUILDINFO
+
 . ./stage2.sh

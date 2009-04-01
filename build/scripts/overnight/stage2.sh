@@ -1,6 +1,7 @@
 #!/bin/sh
 
-WaitForParentBuild
+Assert setupBuildInfo
+ArchiveLogs
 
 if [ "$BUILD" = "no" ]
 then

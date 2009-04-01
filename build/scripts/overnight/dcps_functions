@@ -18,9 +18,6 @@ setupBuildInfo()
    echo "VER=$VER" >> $LOGDIR/BUILDINFO
    echo "DEP=$DEP" >> $LOGDIR/BUILDINFO
 
-   # List the fields we want the display page to show.
-   echo "BUILD_DISPLAY=/SETUP_TYPE,/BUILD_DIST,/KEEP_DIST,RUN/DBT,RUN/RBT,RUN/EXAMPLES" >> $LOGDIR/BUILDINFO
-
    cp $LOGDIR/BUILDINFO $WORKDIR/build/etc/
 }
 
