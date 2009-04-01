@@ -1,8 +1,5 @@
 #!/bin/sh
 
-DATE=`date +%Y/%m/%d`
-export DATE
-
 WaitForParentBuild
 
 if [ "$BUILD" = "no" ]

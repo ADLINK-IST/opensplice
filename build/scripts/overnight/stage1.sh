@@ -7,6 +7,9 @@ IBSDIR=`pwd`
 . buildsys/functions
 . ./dcps_functions
 
+DATE=`date +%Y/%m/%d`
+export DATE
+
 ProcessArgs $*
 ARGS=$*
 Assert LoadConfigs
