@@ -291,7 +291,7 @@ d_configurationInit(
             d_configurationValueLong   (config, element, "Network/Heartbeat/Scheduling/Priority/#text", d_configurationSetHeartbeatSchedulingPriority);
 
             d_configurationValueFloat  (config, element, "Network/InitialDiscoveryPeriod/#text", d_configurationSetTimingInitialWaitPeriod);
-            d_configurationValueBoolean(config, element, "Network/Alignment/TimeAlignment", d_configurationSetTimeAlignment);
+            d_configurationValueBoolean(config, element, "Network/Alignment/TimeAlignment/#text", d_configurationSetTimeAlignment);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Initial/#text", d_configurationSetInitialRequestCombinePeriod);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Operational/#text", d_configurationSetOperationalRequestCombinePeriod);
             d_configurationValueString (config, element, "Network/Alignment/AlignerScheduling/Class/#text", d_configurationSetAlignerSchedulingClass);
@@ -441,6 +441,7 @@ d_configurationReport(
     const c_char* pstoreMode;
     const c_char* verbosity;
     const c_char* timestamps;
+    const c_char* timeAlignment;
     const c_char* relativeTimestamps;
     c_char serviceNames [512];
     c_char ns [4096];
@@ -666,7 +667,14 @@ d_configurationReport(
                 break;
         }
 
+    if(config->timeAlignment == TRUE){
+        timeAlignment = "TRUE";
+    } else {
+        timeAlignment = "FALSE";
+    }
+
     d_printEvent(durability, D_LEVEL_CONFIG,
+            "- Network.TimeAlignment                       : %s\n" \
             "- Network.Alignment.RequestCombine.Initial    : %d.%9.9d\n" \
             "- Network.Alignment.RequestCombine.Operational: %d.%9.9d\n" \
             "- Network.Alignment.LatencyBudget             : %d.%9.9d\n" \
@@ -675,6 +683,7 @@ d_configurationReport(
             "- Network.Alignment.AlignerScheduling.Priority: %d\n"  \
             "- Network.Alignment.AligneeScheduling.Class   : %s\n"  \
             "- Network.Alignment.AligneeScheduling.Priority: %d\n"  \
+            , timeAlignment
             , config->initialRequestCombinePeriod.tv_sec
             , config->initialRequestCombinePeriod.tv_nsec
             , config->operationalRequestCombinePeriod.tv_sec
