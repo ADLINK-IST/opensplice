@@ -378,7 +378,6 @@ v_groupInstanceRegister (
                                  found->message->writeTime) == C_GT) {
                     c_free(found->message);
                     found->message = createRegistration(instance,message);
-                    found->message = c_keep(message);
                 }
             }
             result = V_WRITE_SUCCESS;
