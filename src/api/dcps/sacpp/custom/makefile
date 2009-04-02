@@ -15,17 +15,17 @@ include ./orbdeps_sa.mak
 # This determines what will be processed 
 
 # OpenSplice Preprocessor (idlpp) output
-IDLPP_OBJ        = $(TOPIC_IDL:%.idl=%Dcps_impl.o) $(TOPIC_IDL:%.idl=%SplDcps.o)
-IDLPP_SRC        = $(IDLPP_OBJ:%.o=%.cpp)
-IDLPP_IDL        = $(TOPIC_IDL:%.idl=%Dcps.idl)
-IDLPP_HDR        = $(IDLPP_OBJ:%.o=%.h) ccpp_$(TOPIC_IDL:%.idl=%.h)
+IDLPP_OBJ = $(TOPIC_IDL:%.idl=%Dcps_impl.o) $(TOPIC_IDL:%.idl=%SplDcps.o)
+IDLPP_SRC = $(IDLPP_OBJ:%.o=%.cpp)
+IDLPP_IDL = $(TOPIC_IDL:%.idl=%Dcps.idl)
+IDLPP_HDR = $(IDLPP_OBJ:%.o=%.h) ccpp_$(TOPIC_IDL:%.idl=%.h)
 
 # API Classes.
-API_SRC          = $(wildcard ccpp_*.cpp)
-API_OBJ          = $(API_SRC:%.cpp=%.o)
+API_SRC = $(wildcard ccpp_*.cpp)
+API_OBJ = $(API_SRC:%.cpp=%.o)
 
 # EORB implementation classes.
-EORB_OBJ         = common_cobject.o CORBA_LocalObject.o
+EORB_OBJ = common_cobject.o CORBA_LocalObject.o
 
 # All objects
 OBJS = $(IDLPP_OBJ) $(ORB_TOP_OBJ) $(ORB_API_OBJ) $(API_OBJ) $(IDLPP_ORB_OBJ) $(EORB_OBJ)
@@ -37,15 +37,15 @@ DLIB_POSTFIX := .so
 
 TARGET = $(DLIB_PREFIX)$(TARGET_DLIB)$(DLIB_POSTFIX)
 
-INCLUDE += -I./
-INCLUDE += -I$(OSPL_HOME)/include
-INCLUDE += -I$(OSPL_HOME)/include/sys
-INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/SACPP
+CXXINCS += -I./
+CXXINCS += -I$(OSPL_HOME)/include
+CXXINCS += -I$(OSPL_HOME)/include/sys
+CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/SACPP
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := g++
 CXXFLAGS := -g $(ORB_SA_CXX_FLAGS) -fPIC
-CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(INCLUDE) $(ORB_SA_CPP_FLAGS)
+CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(ORB_SA_CPP_FLAGS)
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)

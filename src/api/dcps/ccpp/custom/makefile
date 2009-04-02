@@ -32,17 +32,17 @@ DLIB_POSTFIX := .so
 
 TARGET = $(DLIB_PREFIX)$(TARGET_DLIB)$(DLIB_POSTFIX)
 
-INCLUDE += -I./
-INCLUDE += -I$(OSPL_HOME)/include
-INCLUDE += -I$(OSPL_HOME)/include/sys
-INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/CCPP
-INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
-INCLUDE += $(ORB_INCLUDE)
+CXXINCS += -I./
+CXXINCS += -I$(OSPL_HOME)/include
+CXXINCS += -I$(OSPL_HOME)/include/sys
+CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/CCPP
+CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
+CXXINCS += $(ORB_INCLUDE)
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := g++
 CXXFLAGS := -g $(ORB_CXX_FLAGS) -fPIC
-CPPFLAGS = $(ORB_SELECT_FLAGS) $(INCLUDE) $(ORB_CPP_FLAGS)
+CPPFLAGS = $(ORB_SELECT_FLAGS) $(ORB_CPP_FLAGS)
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)

@@ -1,8 +1,8 @@
-JAR_MODULE	=dcpsapi.jar
-JAR_LOCATION	=`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)`
-JPACKAGES =	org/opensplice/dds/dcps/policy \
-		org/opensplice/dds/dcps/jni \
-		org/opensplice/dds/dcps \
+JAR_MODULE	 = dcpsapi.jar
+JAR_LOCATION =`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)`
+JPACKAGES    =	org/opensplice/dds/dcps/policy \
+		         org/opensplice/dds/dcps/jni \
+		         org/opensplice/dds/dcps \
 			
 all link: jar
 

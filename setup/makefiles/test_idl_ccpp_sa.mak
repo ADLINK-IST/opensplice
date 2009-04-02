@@ -1,8 +1,19 @@
 # default values for directory and idl-files to process 
-IDL_INC_FLAGS   = -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl 
+
+ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+  IDL_INC_FLAGS = -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
+else
+  TMP_IDL_DIR_INC_FLAG  =$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(IDL_DIR))
+  TMP_IDL_CCPP_INC_FLAG =$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/src/api/dcps/ccpp/idl)
+  IDL_INC_FLAGS = -I'$(TMP_IDL_DIR_INC_FLAG)' -I'$(TMP_IDL_CCPP_INC_FLAG)' 
+endif
 
 ifdef OSPL_OUTER_HOME
-IDL_INC_FLAGS  += -I$(OSPL_OUTER_HOME)/src/api/dlrl/ccpp/idl
+   ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+      IDL_INC_FLAGS += -I$(OSPL_OUTER_HOME)/src/api/dlrl/ccpp/idl
+   else
+      IDL_INC_FLAGS += -I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)/src/api/dlrl/ccpp/idl)'
+   endif
 endif
 
 vpath %.idl	$(IDL_DIR)
