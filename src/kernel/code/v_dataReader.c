@@ -48,7 +48,7 @@
 
 #define v_dataReaderAllInstanceSet(_this) \
         (v_dataReader(_this)->index->objects)
-        
+
 #define v_dataReaderNotEmptyInstanceSet(_this) \
         (v_dataReader(_this)->index->notEmptyList)
 
@@ -1249,7 +1249,6 @@ v_dataReaderNotify(
     assert(C_TYPECHECK(_this, v_dataReader));
 
     if (event != NULL) {
-#if 1
 
 #define _NOTIFICATION_MASK_ \
         V_EVENT_INCONSISTENT_TOPIC | \
@@ -1268,25 +1267,7 @@ v_dataReaderNotify(
                         "Notify encountered unknown event kind (%d)",
                         event->kind);
         }
-#else
-        switch(event->kind) {
-        case V_EVENT_INCONSISTENT_TOPIC:
-        case V_EVENT_SAMPLE_REJECTED:
-        case V_EVENT_SAMPLE_LOST:
-        case V_EVENT_DEADLINE_MISSED:
-        case V_EVENT_INCOMPATIBLE_QOS:
-        case V_EVENT_LIVELINESS_CHANGED:
-        case V_EVENT_DATA_AVAILABLE:
-            v_entity(_this)->status->state |= event->kind;
-        break;
-        default:
-            OS_REPORT_1(OS_WARNING,
-                        "DataReader",0,
-                        "Notify encountered unknown event kind (%d)",
-                        event->kind);
-        break;
-        }
-#endif
+#undef _NOTIFICATION_MASK_
     }
 }
 
