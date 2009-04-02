@@ -197,8 +197,8 @@ c_mmMalloc(
         mapIndex = ALIGN_COUNT(size) - 1;
         c_mutexLock(&mm->mapLock);
         if (mm->chunkMap[mapIndex] != NULL) {
-            mm->chunkMapStatus.garbage -= size;
-            mm->chunkMapStatus.used    += size;
+            mm->chunkMapStatus.garbage -= (size + ChunkHeaderSize);
+            mm->chunkMapStatus.used    += (size + ChunkHeaderSize);
             mm->chunkMapStatus.maxUsed  = GETMAX(mm->chunkMapStatus.used, mm->chunkMapStatus.maxUsed);
             mm->chunkMapStatus.count++;
             chunk = mm->chunkMap[mapIndex];
@@ -245,8 +245,8 @@ c_mmMalloc(
     }
 
     if (chunk != NULL) {
-        mm->chunkListStatus.garbage -= chunk->size;
-        mm->chunkListStatus.used    += chunk->size;
+        mm->chunkListStatus.garbage -= (chunk->size + ChunkHeaderSize);
+        mm->chunkListStatus.used    += (chunk->size + ChunkHeaderSize);
         mm->chunkListStatus.maxUsed  = GETMAX(mm->chunkListStatus.used, mm->chunkListStatus.maxUsed);
         mm->chunkListStatus.count++;
         if (prvChunk == NULL) {
@@ -293,8 +293,9 @@ c_mmMalloc(
     if (mm->listEnd < mm->mapEnd) {
         pa_increment(&mm->fails);
         c_mutexUnlock(&mm->mapLock);
-        OS_REPORT(OS_ERROR,"c_mmbase",0,
-                  "Memory claim denied: required size exceeds resources!");
+        OS_REPORT_2(OS_ERROR,"c_mmbase",0,
+                    "Memory claim denied: required size (%d) exceeds available resources (%d)!",
+                     ChunkSize(size),(mm->listEnd+ChunkSize(size)-mm->mapEnd));
         return NULL;
     }
 
@@ -305,9 +306,15 @@ c_mmMalloc(
     chunk->freed = FALSE;
 #endif
 
-    mm->chunkMapStatus.used   += size;
-    mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used, mm->chunkMapStatus.maxUsed);
-    mm->chunkMapStatus.count++;
+    if (size <= MAX_BUCKET_SIZE) {
+        mm->chunkMapStatus.used   += size;
+        mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used, mm->chunkMapStatus.maxUsed);
+        mm->chunkMapStatus.count++;
+    } else {
+        mm->chunkListStatus.used   += size;
+        mm->chunkListStatus.maxUsed = GETMAX(mm->chunkListStatus.used, mm->chunkListStatus.maxUsed);
+        mm->chunkListStatus.count++;
+    }
 
     c_mutexUnlock(&mm->mapLock);
     return ChunkAddress(chunk);
@@ -467,8 +474,8 @@ c_mmFree(
 #endif
         chunk->next = mm->chunkMap[mapIndex];
         mm->chunkMap[mapIndex] = chunk;
-        mm->chunkMapStatus.garbage += chunk->size;
-        mm->chunkMapStatus.used -= chunk->size;
+        mm->chunkMapStatus.garbage += (chunk->size + ChunkHeaderSize);
+        mm->chunkMapStatus.used -= (chunk->size + ChunkHeaderSize);
         mm->chunkMapStatus.count--;
         assert(mm->chunkMapStatus.used >= 0);
         c_mutexUnlock(&mm->mapLock);
@@ -491,6 +498,9 @@ c_mmFree(
         }
 #ifdef MM_CLUSTER
         chunk->prev = prvChunk;
+        if (curChunk) {
+            curChunk->prev = chunk;
+        }
 #endif
         chunk->next = curChunk;
         if (prvChunk == NULL) {
@@ -499,8 +509,8 @@ c_mmFree(
             prvChunk->next = chunk;
         }
 
-        mm->chunkListStatus.garbage += chunk->size;
-        mm->chunkListStatus.used -= chunk->size;
+        mm->chunkListStatus.garbage += (chunk->size + ChunkHeaderSize);
+        mm->chunkListStatus.used -= (chunk->size + ChunkHeaderSize);
         mm->chunkListStatus.count--;
         /* assert(mm->chunkListStatus.used >= 0);
          * the used of the chunkListStatus can become negative, since the
@@ -744,6 +754,44 @@ c_mmAddress (
 
 
 c_mmStatus
+c_mmMapState (
+    c_mm mm)
+{
+    c_mmStatus s;
+
+    s.fails = mm->fails;
+    s.size = CoreSize(mm);
+
+    c_mutexLock(&mm->mapLock);
+    s.used    = mm->chunkMapStatus.used;
+    s.maxUsed = mm->chunkMapStatus.maxUsed;
+    s.garbage = mm->chunkMapStatus.garbage;
+    s.count   = mm->chunkMapStatus.count;
+    c_mutexUnlock(&mm->mapLock);
+
+    return s;
+}
+
+c_mmStatus
+c_mmListState (
+    c_mm mm)
+{
+    c_mmStatus s;
+
+    s.fails = mm->fails;
+    s.size = CoreSize(mm);
+
+    c_mutexLock(&mm->listLock);
+    s.used    = mm->chunkListStatus.used;
+    s.maxUsed = mm->chunkListStatus.maxUsed;
+    s.garbage = mm->chunkListStatus.garbage;
+    s.count   = mm->chunkListStatus.count;
+    c_mutexUnlock(&mm->listLock);
+
+    return s;
+}
+
+c_mmStatus
 c_mmState (
     c_mm mm)
 {
@@ -761,7 +809,7 @@ c_mmState (
 
     c_mutexLock(&mm->listLock);
     s.used    += mm->chunkListStatus.used;
-    s.maxUsed  = GETMAX(s.maxUsed, mm->chunkListStatus.maxUsed);
+    s.maxUsed  = s.maxUsed + mm->chunkListStatus.maxUsed;
     s.garbage += mm->chunkListStatus.garbage;
     s.count   += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
