@@ -268,7 +268,7 @@ main (
     /* De-allocate the QoS policies. */
     DDS_free(reliable_topic_qos);
     DDS_free(setting_topic_qos);
-    DDS_free(sub_qos);  // Note that DDS_free recursively de-allocates all indirections as well!!
+    DDS_free(sub_qos);  /* Note that DDS_free recursively de-allocates all indirections as well!! */
 
     /* De-allocate the type-names and TypeSupport objects. */
     DDS_free(namedMessageTypeName);
