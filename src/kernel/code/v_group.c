@@ -1113,6 +1113,7 @@ C_STRUCT(v_entryWriteArg) {
     v_writeResult writeResult;
     c_iter deadCacheItems;
     v_entry entry;
+    c_bool resend; /* indicates if called from resend */
 };
 
 C_CLASS(v_entryWriteArg);
@@ -1269,6 +1270,10 @@ instanceWrite(
                    v_dataReaderInstance(item->instance)->liveliness);
         } else {
             writeArg->writeResult = result;
+            /* only increase pendingResends, when not called from instanceResend */
+            if (!writeArg->resend) {
+                item->pendingResends++;
+            }
         }
     }
     return TRUE;
@@ -1293,6 +1298,7 @@ forwardMessage (
     writeArg.instance         = instance;
     writeArg.deadCacheItems   = NULL;
     writeArg.entry            = entry;
+    writeArg.resend           = FALSE;
 
     group = v_groupInstanceOwner(instance);
 
@@ -1685,33 +1691,34 @@ v_groupDeleteHistoricalData(
     return V_WRITE_SUCCESS;
 }
 
-#if 0
-/* BUG */
 static c_bool
 instanceResend(
     v_cacheNode node,
     c_voidp arg)
 {
     v_groupCacheItem item;
-    v_writeResult result;
+    c_bool result;
     v_entryWriteArg writeArg = (v_entryWriteArg)arg;
 
     item = v_groupCacheItem(node);
 
-    result = v_instanceWrite(item->instance,writeArg->message);
-    if (result == V_WRITE_REJECTED) {
-        writeArg->writeResult = result;
+    result = TRUE;
+    /* Only resend when for this pipeline resends are pending */
+    if (item->pendingResends > 0) {
+        result = instanceWrite(node, arg);
+        if ((writeArg->writeResult != V_WRITE_SUCCESS) &&
+            (result != V_WRITE_INTRANSIT) && 
+            (result != V_WRITE_REJECTED)) {
+                OS_REPORT_1(OS_ERROR,
+                            "v_writerInstance::instanceResend",0,
+                            "Internal error (%d) occured",
+                            result);
+        } else {
+            item->pendingResends--;
+        }
     }
-
-    if (item->registrationCount == 0) {
-        writeArg->deadCacheItems = c_iterInsert(writeArg->deadCacheItems, item);
-    }
-    return TRUE;
+    return result;
 }
-#else
-/* FIX */
-#define instanceResend instanceWrite
-#endif
 
 v_writeResult
 v_groupResend (
@@ -1772,6 +1779,7 @@ v_groupResend (
     writeArg.instance = instance;
     writeArg.deadCacheItems = NULL;
     writeArg.entry = NULL;
+    writeArg.resend = TRUE;
 
     v_groupEntrySetWalk(&group->networkEntrySet,
                         nwEntryWrite,
