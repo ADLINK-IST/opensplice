@@ -28,3 +28,5 @@ M   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/master none
 
 M   ospli/rhel5a/x86.linux2.6-dev 20 heads/master none
 M   ospli/rhel5a/x86.linux2.6-dev-inner 1 heads/master none
+M   ospli/rhel5a/x86.linux2.6-release 20 heads/master none
+M   ospli/rhel5a/x86.linux2.6-release-inner 1 heads/master none
