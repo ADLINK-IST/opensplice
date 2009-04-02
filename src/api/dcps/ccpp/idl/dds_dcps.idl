@@ -625,8 +625,8 @@ module DDS {
 
         ReturnCode_t
         get_discovered_participant_data(
-            in InstanceHandle_t participant_handle,
-            inout ParticipantBuiltinTopicData participant_data);
+            inout ParticipantBuiltinTopicData participant_data,
+            in InstanceHandle_t participant_handle);
 
         ReturnCode_t
         get_discovered_topics(
@@ -634,8 +634,8 @@ module DDS {
 
         ReturnCode_t
         get_discovered_topic_data(
-            in InstanceHandle_t topic_handle,
-            inout TopicBuiltinTopicData topic_data);
+            inout TopicBuiltinTopicData topic_data,
+            in InstanceHandle_t topic_handle);
         
         boolean
         contains_entity(
@@ -956,7 +956,7 @@ module DDS {
 
 	ReturnCode_t
 	get_datareaders(
-	    out DataReaderSeq readers,
+	    inout DataReaderSeq readers,
 	    in SampleStateMask sample_states,
 	    in ViewStateMask view_states,
 	    in InstanceStateMask instance_states);

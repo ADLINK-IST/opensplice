@@ -43,7 +43,7 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t get_datareaders (
-        ::DDS::DataReaderSeq_out readers,
+        ::DDS::DataReaderSeq & readers,
         ::DDS::SampleStateMask sample_states,
         ::DDS::ViewStateMask view_states,
         ::DDS::InstanceStateMask instance_states
