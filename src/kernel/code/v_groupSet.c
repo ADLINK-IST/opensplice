@@ -74,7 +74,6 @@ v_groupSetCreate(
         group = v_groupNew(partition, topic, set->sequenceNumber);
         found = c_tableInsert(set->groups,group);
         assert(found == group);
-        c_free(found);
         set->sequenceNumber++;
         kernel = v_objectKernel(set);
 /* Keep groupset locked while triggering observers, otherwise

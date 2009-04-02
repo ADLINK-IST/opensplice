@@ -745,13 +745,6 @@ v_dataReaderInstanceTest(
     CHECK_INVALIDITY(_this);
 
     if (v_dataReaderInstanceEmpty(_this)) {
-        v_dataReaderInstance found;
-        if (v_dataReaderInstanceInNotEmptyList(_this)) {
-            found = v_dataReaderInstance(c_remove(v_index(_this->index)->notEmptyList,
-                                                  _this, NULL, NULL));
-            v_dataReaderInstanceInNotEmptyList(_this) = FALSE;
-            c_free(found);
-        }
         return FALSE;
     }
     if (query == NULL) {

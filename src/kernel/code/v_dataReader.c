@@ -1062,7 +1062,7 @@ v_dataReaderRemoveInstance(
 
     if (!v_reader(_this)->qos->userKey.enable) {
         if (v_dataReaderInstanceNoWriters(instance)) {
-            found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
+            found = v_dataReaderInstance(c_remove(v_dataReaderAllInstanceSet(_this),
                                                   instance, NULL, NULL));
             v_deadLineInstanceListRemoveInstance(_this->deadLineList,
                                                  v_instance(instance));
@@ -1074,7 +1074,7 @@ v_dataReaderRemoveInstance(
             c_free(found);
         }
     } else {
-        found = v_dataReaderInstance(c_remove(v_dataReaderAllInstanceSet(_this),
+        found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
                                               instance, NULL, NULL));
         v_publicFree(v_public(instance));
         c_free(found);
@@ -1249,23 +1249,25 @@ v_dataReaderNotify(
     assert(C_TYPECHECK(_this, v_dataReader));
 
     if (event != NULL) {
-        switch(event->kind) {
-        case V_EVENT_INCONSISTENT_TOPIC:
-        case V_EVENT_SAMPLE_REJECTED:
-        case V_EVENT_SAMPLE_LOST:
-        case V_EVENT_DEADLINE_MISSED:
-        case V_EVENT_INCOMPATIBLE_QOS:
-        case V_EVENT_LIVELINESS_CHANGED:
-        case V_EVENT_DATA_AVAILABLE:
+
+#define _NOTIFICATION_MASK_ \
+        V_EVENT_INCONSISTENT_TOPIC | \
+        V_EVENT_SAMPLE_REJECTED | \
+        V_EVENT_SAMPLE_LOST | \
+        V_EVENT_DEADLINE_MISSED | \
+        V_EVENT_INCOMPATIBLE_QOS | \
+        V_EVENT_LIVELINESS_CHANGED | \
+        V_EVENT_DATA_AVAILABLE 
+
+        if (event->kind & (_NOTIFICATION_MASK_)) {
             v_entity(_this)->status->state |= event->kind;
-        break;
-        default:
+        } else {
             OS_REPORT_1(OS_WARNING,
                         "DataReader",0,
                         "Notify encountered unknown event kind (%d)",
                         event->kind);
-        break;
         }
+#undef _NOTIFICATION_MASK_
     }
 }
 
