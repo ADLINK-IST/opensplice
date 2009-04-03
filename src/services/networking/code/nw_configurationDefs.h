@@ -123,7 +123,9 @@
 
 /* ---------------- Channels/Channel/Receiving/ReceiveBufferSize ------------------- */
 #define NWCF_NAME_ReceiveBufferSize   "ReceiveBufferSize"              /* ulong */
+#ifndef NWCF_DEF_ReceiveBufferSize
 #define NWCF_DEF_ReceiveBufferSize    (1000000U)
+#endif
 
 /* ------------------ Channels/Channel/Receiving/DefragBufferSize ---------------------- */
 #define NWCF_NAME_DefragBufferSize        "DefragBufferSize"                   /* ulong */
