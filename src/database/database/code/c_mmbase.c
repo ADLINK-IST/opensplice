@@ -307,11 +307,11 @@ c_mmMalloc(
 #endif
 
     if (size <= MAX_BUCKET_SIZE) {
-        mm->chunkMapStatus.used   += size;
+        mm->chunkMapStatus.used   += (size + ChunkHeaderSize);
         mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used, mm->chunkMapStatus.maxUsed);
         mm->chunkMapStatus.count++;
     } else {
-        mm->chunkListStatus.used   += size;
+        mm->chunkListStatus.used   += (size + ChunkHeaderSize);
         mm->chunkListStatus.maxUsed = GETMAX(mm->chunkListStatus.used, mm->chunkListStatus.maxUsed);
         mm->chunkListStatus.count++;
     }
