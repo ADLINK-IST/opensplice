@@ -4,6 +4,8 @@
 #include <cfg_parser.h>
 #include <cf_config.h>
 
+#define SPLICED_NAME "spliced" OS_EXESUFFIX
+
 static void
 print_usage(
     char *name)
@@ -412,6 +414,8 @@ safeUri(
     }
 }
 
+#if 0
+/* No longer needed, we now have os_locate */
 static int
 findSpliced(
     char **command)
@@ -470,6 +474,7 @@ findSpliced(
 
     return valid;
 }
+#endif
 
 int
 main(
@@ -569,8 +574,9 @@ main(
                 if (uri == NULL) {
                     uri = os_strdup("");
                 }
-                command = os_strdup("spliced.exe");
-                findSpliced(&command);
+                // command = os_strdup("spliced.exe");
+                // findSpliced(&command); */
+                command = os_locate(SPLICED_NAME, OS_ROK|OS_XOK);
                 os_procAttrInit(&pa);
                 os_procCreate(command, "OpenSplice Control Service", uri, &pa, &pi);
                 Sleep(2000); /* take time to first show the license message from spliced */

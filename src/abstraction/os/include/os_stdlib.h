@@ -93,6 +93,7 @@ OS_API const char *
 os_pathSep(void);
 
 #define OS_PATHSEPCHAR OS_OS_PATHSEPCHAR
+#define OS_EXESUFFIX   OS_OS_EXESUFFIX
 
 /** \brief Check user's permissions for a file 
  *
@@ -112,6 +113,30 @@ os_pathSep(void);
 OS_API os_result
 os_access(
     char *file_path,
+    os_int32 permission);
+
+/** \brief Locate an executable file in the path
+ *
+ * Precondition:
+ * - permission is a mask of:
+ *     OS_ROK check for read access
+ *     OS_WOK check for write access
+ *     OS_XOK check for execution access
+ *     OS_FOK check for existence of the file
+ *
+ * Possible results:
+ * - return an os_malloc-ed string if a file with
+ *     the given permission mask was found in
+ *     PATH. The return value contains the full
+ *     path name of the file found.
+ *     If the name of the file contains an
+ *     absolute or relative path, then no
+ *     search is done in the PATH.
+ * - return NULL if no file was found in PATH
+ */
+OS_API char *
+os_locate(
+    const char *name,
     os_int32 permission);
 
 /** \brief mkdir wrapper
