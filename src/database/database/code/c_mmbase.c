@@ -15,31 +15,28 @@
 #define ALIGN_SIZE(size)          (ALIGN_COUNT(size) * ALIGNMENT)
 #define ALIGN_ADDRESS(address)    (ALIGN_COUNT(address) * ALIGNMENT)
 
-#define MAX_BUCKET                (1500)
+#define MAX_BUCKET                (32*1024)
 #define MAX_BUCKET_SIZE           (ALIGN_SIZE(MAX_BUCKET))
-#define MAX_LISTS                 (64)
-#define TRESHOLD                  (100)
+#define MAX_LISTS                 (32*1024)
+#define TRESHOLD                  (0)
 
 #define GETMAX(a,b)               (((a)>(b))?(a):(b))
 
 #define MmSize                    (sizeof(struct c_mm_s))
 #define AdminSize                 (sizeof(struct c_mm_s))
-#define ChunkHeaderSize           (ALIGN_SIZE(sizeof(struct c_mmChunk)))
+#define ChunkHeaderSize           c_mmHeaderSize
 #define BindingSize               (sizeof(struct c_mmBinding))
-/*#define StatusSize                (sizeof(struct mmStatus_s))*/
 
 #define ChunkAddress(chunk)       ((void *)(C_ADDRESS(chunk)+ChunkHeaderSize))
-#define ChunkSize(size)           (ChunkHeaderSize + ALIGN_SIZE(size))
+#define ChunkSize(size)           (ChunkHeaderSize + size)
 
 #define CoreSize(mm)              ((mm)->listEnd - (mm)->mapEnd)
 
-#define SizeToMapIndex(size)      (ALIGN_COUNT(size) - 1)
-#define SizeToListIndex(size)     (ALIGN_COUNT(size) % MAX_LISTS)
+#define SizeToMapIndex(size)      (size/ALIGNMENT)
+#define SizeToListIndex(size)     (size%MAX_LISTS)
 
 typedef struct c_mmChunk   *c_mmChunk;
 typedef struct c_mmBinding *c_mmBinding;
-
-
 
 struct mmStatus_s {
     c_long used;
@@ -89,6 +86,8 @@ struct c_mmBinding {
     void        *start;
     c_long       refCount;
 };
+
+static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
 
 #if 0
 static void       *c_mmClaimNoLock    (c_mm mm, c_ulong size);
@@ -152,12 +151,15 @@ c_mmSplitChunk(
     c_long size)
 {
     c_mmChunk remnant;
+    c_ulong chunkSize;
     c_ulong restSize;
 
     assert(size >= 0);
 
-    restSize = chunk->size - (c_ulong)(size);
-    if (restSize < ChunkSize(1)) {
+    chunkSize = ChunkSize(size);
+    restSize = chunk->size - chunkSize;
+
+    if (restSize > 0) {
         return NULL;
     }
     if (size <= MAX_BUCKET_SIZE) {
@@ -166,7 +168,7 @@ c_mmSplitChunk(
         chunk->index = SizeToListIndex(size);
     }
     chunk->size = size;
-    remnant = C_DISPLACE(chunk,ChunkSize(size));
+    remnant = C_DISPLACE(chunk,chunkSize);
     remnant->next = NULL;
     remnant->prev = NULL;
     remnant->freed = FALSE;
@@ -197,6 +199,7 @@ c_mmMalloc(
     c_mmChunk  prvChunk;
     c_mmChunk  remnant;
     c_long     mapIndex, listIndex;
+    c_ulong    chunkSize;
 
     if (size == 0) {
         assert(size != 0);
@@ -207,6 +210,7 @@ c_mmMalloc(
     }
 
     size = ALIGN_SIZE(size);
+    chunkSize = ChunkSize(size);
 
     if (size <= MAX_BUCKET_SIZE) {
         mapIndex = SizeToMapIndex(size);
@@ -214,25 +218,28 @@ c_mmMalloc(
         if (mm->chunkMap[mapIndex] != NULL) {
             chunk = mm->chunkMap[mapIndex];
             mm->chunkMap[mapIndex] = chunk->next;
-            mm->chunkMapStatus.garbage -= (size + ChunkHeaderSize);
+            mm->chunkMapStatus.garbage -= chunkSize;
 #ifdef CHECK_FREEING
             mm->chunkCount[mapIndex]--;
 #endif
-        } else if (mm->listEnd >= (mm->mapEnd + ChunkSize(size))) {
+        } else if (mm->listEnd >= (mm->mapEnd + chunkSize)) {
             chunk = (c_mmChunk)mm->mapEnd;
-            mm->mapEnd  = mm->mapEnd + ChunkSize(size);
+            mm->mapEnd  = mm->mapEnd + chunkSize;
             chunk->size = size;
             chunk->index = mapIndex;
 	} else {
             pa_increment(&mm->fails);
             c_mutexUnlock(&mm->mapLock);
             OS_REPORT_2(OS_ERROR,"c_mmbase",0,
-                        "Memory claim denied: required size (%d) exceeds available resources (%d)!",
-                         ChunkSize(size),(mm->listEnd+ChunkSize(size)-mm->mapEnd));
+                        "Memory claim denied: required size (%d) "
+                        "exceeds available resources (%d)!",
+                         chunkSize,
+                         (mm->listEnd + chunkSize - mm->mapEnd));
             return NULL;
 	}
-        mm->chunkMapStatus.used   += (size + ChunkHeaderSize);
-        mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used, mm->chunkMapStatus.maxUsed);
+        mm->chunkMapStatus.used   += chunkSize;
+        mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used,
+                                            mm->chunkMapStatus.maxUsed);
         mm->chunkMapStatus.count++;
         c_mutexUnlock(&mm->mapLock);
     } else {
@@ -249,7 +256,7 @@ c_mmMalloc(
                     break;
                 } else {
 #ifdef MM_CLUSTER
-                    if (CoreSize(mm) < ChunkSize(size)) {
+                    if (CoreSize(mm) < chunkSize) {
                         /* No resources left in core memory.
                          * But have found a significant bigger freed block so will split the block.
 			 * Unlocking and re-locking is not efficient but at this point 
@@ -280,10 +287,10 @@ c_mmMalloc(
                 chunk->next->prev = chunk->prev;
             }
 #endif
-            mm->chunkListStatus.garbage -= (chunk->size + ChunkHeaderSize);
+            mm->chunkListStatus.garbage -= chunkSize;
         } else {
             c_mutexLock(&mm->mapLock);
-            mm->listEnd -= ChunkSize(size);
+            mm->listEnd -= chunkSize;
             if (mm->listEnd < mm->mapEnd) {
                 pa_increment(&mm->fails);
                 c_mutexUnlock(&mm->mapLock);
@@ -291,7 +298,8 @@ c_mmMalloc(
                 OS_REPORT_2(OS_ERROR,"c_mmbase",0,
                             "Memory claim denied: "
                             "required size (%d) exceeds available resources (%d)!",
-                             ChunkSize(size),(mm->listEnd+ChunkSize(size)-mm->mapEnd));
+                             chunkSize,
+                             (mm->listEnd + chunkSize - mm->mapEnd));
                 return NULL;
             }
             chunk = (c_mmChunk)mm->listEnd;
@@ -299,7 +307,7 @@ c_mmMalloc(
             chunk->index = listIndex;
             c_mutexUnlock(&mm->mapLock);
 	}
-        mm->chunkListStatus.used += (size + ChunkHeaderSize);
+        mm->chunkListStatus.used += chunkSize;
         mm->chunkListStatus.maxUsed = GETMAX(mm->chunkListStatus.used,
                                              mm->chunkListStatus.maxUsed);
         mm->chunkListStatus.count++;
@@ -411,6 +419,7 @@ c_mmFree(
     c_mmChunk  curChunk;
     c_mmChunk  prvChunk;
     c_long     mapIndex, listIndex;
+    c_ulong chunkSize;
 
     assert(mm != NULL);
 
@@ -426,6 +435,7 @@ c_mmFree(
     }
 
     chunk = (c_mmChunk)(C_ADDRESS(memory) - ChunkHeaderSize);
+    chunkSize = chunk->size + ChunkHeaderSize;
 
 #ifdef MM_CLUSTER
     chunk->freed = TRUE;
@@ -446,7 +456,6 @@ c_mmFree(
 #endif
 
     if (chunk->size <= MAX_BUCKET_SIZE) {
-//        mapIndex = SizeToMapIndex(chunk->size);
         mapIndex = chunk->index;
         c_mutexLock(&mm->mapLock);
 #ifdef CHECK_FREEING
@@ -469,14 +478,13 @@ c_mmFree(
 #endif
         chunk->next = mm->chunkMap[mapIndex];
         mm->chunkMap[mapIndex] = chunk;
-        mm->chunkMapStatus.garbage += (chunk->size + ChunkHeaderSize);
-        mm->chunkMapStatus.used -= (chunk->size + ChunkHeaderSize);
+        mm->chunkMapStatus.garbage += chunkSize;
+        mm->chunkMapStatus.used -= chunkSize;
         mm->chunkMapStatus.count--;
         assert(mm->chunkMapStatus.used >= 0);
         c_mutexUnlock(&mm->mapLock);
     } else {
         prvChunk = NULL;
-//        listIndex = SizeToListIndex(chunk->size);
         listIndex = chunk->index;
 
         c_mutexLock(&mm->listLock);
@@ -507,8 +515,8 @@ c_mmFree(
             prvChunk->next = chunk;
         }
 
-        mm->chunkListStatus.garbage += (chunk->size + ChunkHeaderSize);
-        mm->chunkListStatus.used -= (chunk->size + ChunkHeaderSize);
+        mm->chunkListStatus.garbage += chunkSize;
+        mm->chunkListStatus.used -= chunkSize;
         mm->chunkListStatus.count--;
         /* assert(mm->chunkListStatus.used >= 0);
          * the used of the chunkListStatus can become negative, since the

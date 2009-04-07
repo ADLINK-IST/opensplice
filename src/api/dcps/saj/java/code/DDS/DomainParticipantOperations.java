@@ -39,9 +39,9 @@ public interface DomainParticipantOperations  extends DDS.EntityOperations
   int set_default_topic_qos (DDS.TopicQos qos);
   int get_default_topic_qos (DDS.TopicQosHolder qos);
   int get_discovered_participants (DDS.InstanceHandleSeqHolder participant_handles);
-  int get_discovered_participant_data (long handle, DDS.ParticipantBuiltinTopicDataHolder participant_data);
+  int get_discovered_participant_data (DDS.ParticipantBuiltinTopicDataHolder participant_data, long handle);
   int get_discovered_topics (DDS.InstanceHandleSeqHolder topic_handles);
-  int get_discovered_topic_data (long handle, DDS.TopicBuiltinTopicDataHolder topic_data);
+  int get_discovered_topic_data (DDS.TopicBuiltinTopicDataHolder topic_data, long handle);
   boolean contains_entity (long a_handle);
   int get_current_time (DDS.Time_tHolder current_time);
 

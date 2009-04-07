@@ -2609,8 +2609,8 @@ gapi_domainParticipant_get_discovered_participants (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participant_data (
     gapi_domainParticipant _this,
-    gapi_instanceHandle_t  handle,
-    gapi_participantBuiltinTopicData *participant_data);
+    gapi_participantBuiltinTopicData *participant_data,
+    gapi_instanceHandle_t  handle);
 
 /*     ReturnCode_t
  *     get_discovered_topics (
@@ -2629,8 +2629,8 @@ gapi_domainParticipant_get_discovered_topics (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topic_data (
     gapi_domainParticipant _this,
-    gapi_instanceHandle_t  handle,
-    gapi_topicBuiltinTopicData *topic_data);
+    gapi_topicBuiltinTopicData *topic_data,
+    gapi_instanceHandle_t handle);
 
 /*     Boolean
  *     contains_entity (
@@ -3603,7 +3603,7 @@ gapi_subscriber_lookup_datareader (
 
 /*     ReturnCode_t
  *     get_datareaders(
- *         out DataReaderSeq readers,
+ *         inout DataReaderSeq readers,
  *         in SampleStateMask sample_states,
  *         in ViewStateMask view_states,
  *         in InstanceStateMask instance_states);
@@ -3611,7 +3611,7 @@ gapi_subscriber_lookup_datareader (
 OS_API gapi_returnCode_t
 gapi_subscriber_get_datareaders (
     gapi_subscriber _this,
-    gapi_dataReaderSeq **readers,
+    gapi_dataReaderSeq *readers,
     const gapi_sampleStateMask sample_states,
     const gapi_viewStateMask view_states,
     const gapi_instanceStateMask instance_states);
