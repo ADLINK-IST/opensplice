@@ -36,6 +36,10 @@ v_splicedKernelManager(
     v_spliced spliced);
     
 OS_API void
+v_splicedBuiltinResendManager(
+    v_spliced spliced);
+
+OS_API void
 v_splicedPrepareTermination(
     v_spliced spliced);
 

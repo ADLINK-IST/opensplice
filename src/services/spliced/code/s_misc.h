@@ -6,8 +6,9 @@ extern "C" {
 #endif
 
 #define S_THREAD_MAIN              "main"
-#define S_THREAD_KERNELMANAGER     "Splicedaemon kernelManager"
-#define S_THREAD_GARBAGE_COLLECTOR "OSPL garbageCollector"
+#define S_THREAD_KERNELMANAGER     "OSPL Kernel Manager"
+#define S_THREAD_RESENDMANAGER     "OSPL Builtin Resend Manager"
+#define S_THREAD_GARBAGE_COLLECTOR "OSPL Garbage Collector"
     
 #if defined (__cplusplus)
 }

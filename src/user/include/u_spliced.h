@@ -32,7 +32,11 @@ u_splicedGarbageCollector(
 OS_API u_result
 u_splicedKernelManager(
     u_spliced spliced);
-    
+
+OS_API u_result
+u_splicedBuiltinResendManager(
+    u_spliced spliced);
+
 OS_API u_result
 u_splicedPrepareTermination(
     u_spliced spliced);

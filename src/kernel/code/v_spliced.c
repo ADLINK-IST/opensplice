@@ -1251,11 +1251,25 @@ v_splicedKernelManager(
 }
 
 void
+v_splicedBuiltinResendManager(
+    v_spliced spliced)
+{
+    v_kernel k;
+
+    k = v_objectKernel(spliced);
+    v_participantResendManagerMain(k->builtin->participant);
+}
+
+void
 v_splicedPrepareTermination(
     v_spliced spliced)
 {
     C_STRUCT(v_event) term;
     v_observer o;
+    v_kernel k;
+
+    k = v_objectKernel(spliced);
+    v_participantResendManagerQuit(k->builtin->participant);
 
     term.kind = V_EVENT_TRIGGER;
     term.source = v_publicHandle(v_public(spliced));

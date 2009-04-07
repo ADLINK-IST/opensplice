@@ -333,6 +333,24 @@ u_splicedKernelManager(
 }
 
 u_result
+u_splicedBuiltinResendManager(
+    u_spliced spliced)
+{
+    u_result r;
+    v_spliced s;
+
+    r = u_splicedClaim(spliced, &s);
+    if ((r == U_RESULT_OK) && (s != NULL)) {
+        v_splicedBuiltinResendManager(s);
+        r = u_splicedRelease(spliced);
+    } else {
+        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
+                  "Could not claim spliced.");
+    }
+    return r;
+}
+
+u_result
 u_splicedGarbageCollector(
     u_spliced spliced)
 {
