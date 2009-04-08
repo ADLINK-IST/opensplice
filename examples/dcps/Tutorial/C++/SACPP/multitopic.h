@@ -293,8 +293,8 @@ public:
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_participant_data (
-        DDS::InstanceHandle_t participant_handle,
-        DDS::ParticipantBuiltinTopicData & participant_data
+        DDS::ParticipantBuiltinTopicData & participant_data,
+        DDS::InstanceHandle_t participant_handle
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_topics (
@@ -302,8 +302,8 @@ public:
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_topic_data (
-        DDS::InstanceHandle_t topic_handle,
-        DDS::TopicBuiltinTopicData & topic_data
+        DDS::TopicBuiltinTopicData & topic_data,
+        DDS::InstanceHandle_t topic_handle
     ) THROW_ORB_EXCEPTIONS;
 
     virtual Boolean contains_entity (

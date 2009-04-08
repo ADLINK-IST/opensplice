@@ -760,8 +760,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong            
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong BUILD
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
@@ -799,8 +797,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial BUILD
         else
             mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
             mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
@@ -841,8 +837,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong Makefile
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C++/PingPong BUILD
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/README.txt \
@@ -878,8 +872,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial Makefile
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C++/Tutorial BUILD
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/*.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
         else
@@ -923,8 +915,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/README.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong BUILD
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong Makefile
 
@@ -965,8 +955,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong Makefile
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C/PingPong BUILD
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
         else
@@ -999,8 +987,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/*.h" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/BUILD_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C/Tutorial BUILD
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT \
