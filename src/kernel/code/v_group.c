@@ -1547,6 +1547,18 @@ groupWrite (
                         }
                     }
                 }
+                if (v_timeIsZero(delay)) {
+                    assert(v_groupInstanceStateTest(instance,L_EMPTY));
+                    purgeItem = c_new(v_kernelType(v_objectKernel(group),
+                                      K_GROUPPURGEITEM));
+                    purgeItem->instance = c_keep(instance);
+                    purgeItem->insertionTime = now;
+                    v_groupInstanceSetEpoch(instance,
+                                            purgeItem->insertionTime);
+                    v_groupInstanceDisconnect(instance);
+                    c_append(group->purgeListEmpty, purgeItem);
+                    c_free(purgeItem);
+                }
             }
             if(stream == TRUE) {
                 forwardMessageToStreams(group, msg, now, actionKind);
