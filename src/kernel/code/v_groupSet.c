@@ -30,12 +30,12 @@ alwaysFalse(
     c_voidp arg)
 {
     v_group *groupFound = (v_group *)arg;
-    
+
     assert(groupFound != NULL);
     assert(*groupFound == NULL); /* out param */
-    
+
     *groupFound = c_keep(found);
-    
+
     return FALSE;
 }
 
@@ -68,11 +68,17 @@ v_groupSetCreate(
     /* Note: the following call does not execute the actual remove because
      *       the alwaysFalse function returns FALSE */
     found = NULL;
+    /* Note: The alwaysFalse function increases the refCount of
+     * found, which is the out-parameter of the tableRemove. */
     c_tableRemove(set->groups, &dummyGroup, alwaysFalse, &found);
 
     if (!found) {
         group = v_groupNew(partition, topic, set->sequenceNumber);
         found = c_tableInsert(set->groups,group);
+        /* Because understanding assertion holds true, we practically
+         * transferred the refCount from group to found. Because found
+         * is our return parameter, we do not free group here.
+         */
         assert(found == group);
         set->sequenceNumber++;
         kernel = v_objectKernel(set);

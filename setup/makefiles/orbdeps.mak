@@ -40,6 +40,7 @@ ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -si S.i -ci C.i
+    ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 ifneq (,$(findstring win32,$(SPLICE_TARGET)))
@@ -71,6 +72,7 @@ ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -Sv
+    ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 ifneq (,$(findstring win32,$(SPLICE_TARGET)))

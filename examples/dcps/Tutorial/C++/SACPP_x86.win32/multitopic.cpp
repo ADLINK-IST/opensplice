@@ -559,10 +559,10 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_participants (
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_participant_data (
-    DDS::InstanceHandle_t participant_handle,
-    DDS::ParticipantBuiltinTopicData & participant_data
+    DDS::ParticipantBuiltinTopicData & participant_data,
+    DDS::InstanceHandle_t participant_handle
 ) THROW_ORB_EXCEPTIONS {
-    return realParticipant->get_discovered_participant_data(participant_handle, participant_data);
+    return realParticipant->get_discovered_participant_data(participant_data, participant_handle);
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topics (
@@ -572,10 +572,10 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topics (
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topic_data (
-    DDS::InstanceHandle_t topic_handle,
-    DDS::TopicBuiltinTopicData & topic_data
+    DDS::TopicBuiltinTopicData & topic_data,
+    DDS::InstanceHandle_t topic_handle
 ) THROW_ORB_EXCEPTIONS {
-    return realParticipant->get_discovered_topic_data(topic_handle, topic_data);
+    return realParticipant->get_discovered_topic_data(topic_data, topic_handle);
 };
 
 DDS::Boolean DDS::ExtDomainParticipantImpl::contains_entity (
