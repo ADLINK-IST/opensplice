@@ -289,7 +289,8 @@ set_hde_envs ()
         	DDS_Eorb_3_0
         	DDS_Mico_2_3_11
         	DDS_OpenFusion_1_4_1
-        	DDS_OpenFusion_1_5_1"
+        	DDS_OpenFusion_1_5_1
+        	DDS_OpenFusion_1_6_1"
 
     PLATFORM_EXT=unix
 }
