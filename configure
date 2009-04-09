@@ -39,6 +39,12 @@ then
 fi
 export TARGET_DIR
 . setup/environment/${SPLICE_TARGET}
+if [ "$CONFIGURATION" != "OK" ]
+then
+    cleanup
+    return 1
+fi
+
 . setup/configuration/setup_components $OSPL_HOME
 
 setup_pathed_vars

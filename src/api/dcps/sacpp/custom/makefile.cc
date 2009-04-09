@@ -25,7 +25,8 @@ API_SRC          = $(wildcard ccpp_*.cpp)
 API_OBJ          = $(API_SRC:%.cpp=%.o)
 
 # EORB implementation classes.
-EORB_OBJ         = common_cobject.o localobject.o
+EORB_SRC         = common_cobject.cpp CORBA_LocalObject.cpp
+EORB_OBJ         = common_cobject.o CORBA_LocalObject.o
 
 # All objects
 OBJS = $(IDLPP_OBJ) $(ORB_TOP_OBJ) $(ORB_API_OBJ) $(API_OBJ) $(IDLPP_ORB_OBJ) $(EORB_OBJ)
@@ -59,9 +60,17 @@ IDLPPFLAGS := -P SACPP_API -S -l cpp
 
 #Dependencies
 
-all : $(TARGET)
+all : copyeorbinc $(TARGET)
 
 $(IDLPP_OBJ): $(IDLPP_ORB_HDR) $(ORB_TOP_HDR) $(ORB_API_HDR)
+
+$(EORB_SRC): copyeorbsrc
+
+copyeorbinc:
+	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
+
+copyeorbsrc:
+	cp $(EORBHOME)/src/*.cpp .
 
 #generic rules for IDL preprocessing
 

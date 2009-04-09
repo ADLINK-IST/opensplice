@@ -62,7 +62,7 @@
 
 /* -------------------- Channels/Channel/QueueSize -------------------------- */
 #define NWCF_NAME_QueueSize           "QueueSize"                      /* ulong */
-#define NWCF_DEF_QueueSize            (4000U)
+#define NWCF_DEF_QueueSize            (100U)
 #define NWCF_MIN_QueueSize            (1U)
 
 /* --------------------- Channels/Channel/PortNr ---------------------------- */

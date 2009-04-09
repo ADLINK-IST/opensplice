@@ -44,8 +44,20 @@ OUTPUTDIR="VC"
 mkdir -p $OUTPUTDIR
 
 # Build the builder
-if [ "${OSPL_BUILDER}" = "/usr/bin/tar" -o "${OSPL_BUILDER}" = "/bin/tar" ]
+
+if [ "${OSPL_BUILDER}" != "builder" ]
 then
+    if [ -z "${OSPL_BUILDER}" ]
+    then
+        #If empty try tar
+        OSPL_BUILDER=`which tar`
+        if [ -z "${OSPL_BUILDER}" ]
+        then
+            echo "OSPL_BUILDER empty please set to packager"
+            return 1
+        fi
+    fi
+
     PLATFORM=${SOURCE_TARGET}${TARGET_ENV}
 
     echo ${OSPL_BUILDER} -cf ${OUTPUTDIR}/OpenSpliceDDS${PACKAGE_VERSION}-${PLATFORM}-${INSTTYPE}.tar ${INSTTYPE}
