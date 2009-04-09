@@ -5,6 +5,7 @@ cd `dirname $0` || exit 1
 IBSDIR=`pwd`
 
 ######## MIN NEEDED FOR OSPLI HACK HACK REMOVE
+export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/JAVA
 export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO
 export EORBHOME=/home/dds/INSTALLED_FOR_DDS/eorb
 #############################
