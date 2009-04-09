@@ -43,6 +43,9 @@ static struct sigaction _SIGNALVECTOR_(SIGPOLL);
 static struct sigaction _SIGNALVECTOR_(SIGVTALRM);
 static struct sigaction _SIGNALVECTOR_(SIGPROF);
 
+#define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
+#define OSPL_SIGNALHANDLERTHREAD_EXIT      2 /* Instruct thread to call exit() */
+
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
 static pthread_mutex_t _ospl_signalHandlerThreadMutex;
@@ -70,7 +73,14 @@ signalHandler(
     }
 
     if (terminate) {
-        exit(0);
+        /* The signalHandlerThread will always perform the
+         * exit() call.
+         */
+        pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
+        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+        pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+        pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
+         
     }
 }
 
@@ -92,6 +102,9 @@ signalHandlerThread(
     }
     pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
 
+    if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
+        exit(0);
+    }
     return NULL;
 }
 
@@ -204,7 +217,7 @@ os_processModuleExit(void)
     _ospl_signalHandlerThreadTerminate = 1;
     if (_ospl_signalHandlerThreadId != pthread_self()) {
         pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
-        _ospl_signalHandlerThreadTerminate = 1;
+        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
         pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
         pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
     }

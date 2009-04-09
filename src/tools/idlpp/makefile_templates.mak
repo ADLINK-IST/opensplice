@@ -20,7 +20,8 @@ MICO_2_3_11_TMPLS 	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/D
 EORB_3_0_TMPLS 		= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_Eorb_3_0/, $(t)))
 OPENFUSION_1_4_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_4_1/, $(t)))
 OPENFUSION_1_5_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_5_1/, $(t)))
+OPENFUSION_1_6_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_6_1/, $(t)))
 SACPP_TMPLS		= $(foreach t, $(CCPP_TMPLS), $(addprefix $(SACPP_TMPL_PATH)/, $(t)))
 
-ORB_TEMPLATES = $(ACE_TAO_1_4_1_TMPLS) $(MICO_2_3_11_TMPLS) $(EORB_3_0_TMPLS) $(OPENFUSION_1_4_1_TMPLS) $(OPENFUSION_1_5_1_TMPLS) $(SACPP_TMPLS)
+ORB_TEMPLATES = $(ACE_TAO_1_4_1_TMPLS) $(MICO_2_3_11_TMPLS) $(EORB_3_0_TMPLS) $(OPENFUSION_1_4_1_TMPLS) $(OPENFUSION_1_5_1_TMPLS) $(OPENFUSION_1_6_1_TMPLS) $(SACPP_TMPLS)
 
