@@ -140,6 +140,8 @@ javac_check ()
             return 1
         fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
+        PATH=$JAVA_HOME/bin:$PATH
+        export PATH
     else
         # If not check the path for java
         pathcheck javac
@@ -151,7 +153,7 @@ javac_check ()
         T_JAVAC_EXE=`which javac`
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
-	
+
 	$JAVAC_EXE -version 2> javac.ver
     REAL_VERSION=`cat javac.ver | grep "javac" | awk '{ print $2 }'`  
 	JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
