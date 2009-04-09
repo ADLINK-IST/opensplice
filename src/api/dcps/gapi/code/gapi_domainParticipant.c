@@ -415,7 +415,7 @@ _DomainParticipantNew (
     if (newParticipant != NULL) {
         snprintf (participantId, sizeof (participantId), "DPCS Appl %d_%d_"PA_ADDRFMT,
             (int)os_procIdSelf(), (int)os_threadIdSelf(), (PA_ADDRCAST)newParticipant);
-        uParticipant = u_participantNew (domainId, 30, participantId, (v_qos)participantQos, enable);
+        uParticipant = u_participantNew (domainId, 1, participantId, (v_qos)participantQos, enable);
         if ( uParticipant != NULL ) {
              U_PARTICIPANT_SET(newParticipant, uParticipant);
         } else {
