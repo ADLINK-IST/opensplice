@@ -214,8 +214,14 @@ tao_check ()
         then
             SPLICE_ORB=DDS_OpenFusion_1_5_1
         else
-            echo "Error - Unrecognized TAO version - use Prismtech TAO 1.4.1 or 1.5.1"
-            return 1
+            T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.6.1\"`"
+            if [ $? = 0 ]
+            then
+                SPLICE_ORB=DDS_OpenFusion_1_6_1
+            else
+                echo "Error - Unrecognized TAO version - use Prismtech TAO 1.4.1, 1.5.1 or 1.6.1"
+                return 1
+            fi
         fi
     fi
     export SPLICE_ORB
