@@ -470,22 +470,8 @@ install_hde_target ()
             mkdir ${HDE_dir}/host/lib
             install_dir ${release} ${HDE_dir} /host/lib
             rm -f ${HDE_dir}/host/lib/*ddscpp*
-
-            # install eorb libs for idlcpp, but only if SACPP is enabled
-            if [ "${INCLUDE_API_DCPS_SACPP}" = "yes" ]
-            then
-                cp ${EORBHOME}/lib/${HOST_EORBENV}/* ${HDE_dir}/host/lib/
-            fi
         else
             echo "* ##    No host library files detected"
-        fi
-        echo "Ready"
-    else
-        printf "*         For host ... "
-        # install eorb libs for idlcpp, but only if SACPP is enabled
-        if [ "${INCLUDE_API_DCPS_SACPP}" = "yes" ]
-        then
-            cp ${EORBHOME}/lib/${HOST_EORBENV}/* ${HDE_dir}/lib
         fi
         echo "Ready"
     fi
@@ -530,10 +516,6 @@ install_hde_target ()
     then
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
-        if [ "${INCLUDE_API_DCPS_SACPP}" = "yes" ]
-        then
-            install_bin_file ${EORBHOME}/bin/${HOST_EORBENV} ${HDE_dir} bin idlcpp${suffix_exe}
-        fi
         # In the HDE we only need the other executables in case host and target are equal
         if [ "${target_os}" = "${host_os}" ]
         then
@@ -656,7 +638,6 @@ install_hde_target ()
         fi
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
         cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp -R ${EORBHOME}/include/* ${HDE_dir}/include/dcps/C++/SACPP
         cp ${OSPL_HOME}/src/api/dcps/sacpp/orb/${SPLICE_SA_ORB}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
         if [ -d  ${OSPL_HOME}/src/api/dcps/sacpp/orb_pa/${target} ]
         then
@@ -723,7 +704,6 @@ install_hde_target ()
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
         cp ${release}/custom/makefile ${HDE_dir}/custom_lib/sacpp
-        cp ${EORBHOME}/src/*.cpp ${HDE_dir}/custom_lib/sacpp
         cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps_sa.mak ${HDE_dir}/custom_lib/sacpp
 
