@@ -46,7 +46,7 @@ JAVA_INCLUDE	 += -I$(JAVA_HOME)/include/linux
 SOAPCPP		= soapcpp2
 
 # Identify compiler flags for building shared libraries
-SHCFLAGS         = -fpic
+SHCFLAGS         = -fPIC
 
 # Values of compiler flags can be overruled
 CFLAGS_OPT       = -O4 -DNDEBUG
@@ -59,7 +59,7 @@ CFLAGS		 = -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) 
 CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
-CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
+CPPFLAGS	 = -m64 -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
@@ -70,7 +70,7 @@ MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
 
 # Identify linker options for building shared libraries
-SHLDFLAGS	 = -shared -fpic
+SHLDFLAGS	 = -shared -fPIC
 
 # Set library context
 #RP: -lrt cannot be found
