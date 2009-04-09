@@ -1370,8 +1370,10 @@ v_dataReaderNotifyIncompatibleQos(
         event.kind = V_EVENT_INCOMPATIBLE_QOS;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
+v_observerLock(v_observer(_this));
         v_observerNotify(v_observer(_this), &event, NULL);
         v_observableNotify(v_observable(_this), &event);
+v_observerUnlock(v_observer(_this));
     }
 }
 
@@ -1841,7 +1843,6 @@ v_dataReaderCheckDeadlineMissed(
         instance = v_dataReaderInstance(c_iterTakeFirst(missed));
     }
     c_iterFree(missed);
-    v_dataReaderUnLock(_this);
 
     if (changed) {
         event.kind = V_EVENT_DEADLINE_MISSED;
@@ -1850,6 +1851,7 @@ v_dataReaderCheckDeadlineMissed(
         v_observerNotify(v_observer(_this), &event, NULL);
         v_observableNotify(v_observable(_this), &event);
     }
+    v_dataReaderUnLock(_this);
 }
 
 v_dataReaderInstance

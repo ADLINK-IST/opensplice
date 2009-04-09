@@ -61,8 +61,8 @@ struct c_mm_s {
     c_mutex      mapLock;
     c_mutex      listLock;
     c_mutex      bindLock;
-    struct mmStatus_s   chunkMapStatus; /* protect with mapLock */
-    struct mmStatus_s   chunkListStatus; /* protect with listLock */
+    struct mmStatus_s chunkMapStatus; /* protect with mapLock */
+    struct mmStatus_s chunkListStatus; /* protect with listLock */
     c_bool       shared;
 #ifdef CHECK_FREEING
     c_long       chunkCount[ALIGN_COUNT(MAX_BUCKET)];
@@ -89,11 +89,15 @@ struct c_mmBinding {
 
 static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
 
-#if 0
-static void       *c_mmClaimNoLock    (c_mm mm, c_ulong size);
-#endif
-static void        c_mmAdminInit      (c_mm mm, c_long size);
-static c_mmBinding c_mmAdminLookup    (c_mm mm, const c_char *name );
+static void
+c_mmAdminInit (
+    c_mm mm,
+    c_long size);
+
+static c_mmBinding
+c_mmAdminLookup (
+    c_mm mm,
+    const c_char *name);
 
 /**
  * Create a new memory manager. The memory manager will manage the piece of
@@ -320,49 +324,6 @@ c_mmMalloc(
 #endif
     return ChunkAddress(chunk);
 }
-
-#if 0
-/*
- * This is a special, lockless version of malloc, for initialization
- * purposes. It does not peek into buckets to see whether a piece of
- * memory of that size exists. This prevents us from having to implement
- * special lockless versions of find_chunk, core_claim etc.
- * Whenever you use this function, be sure that you are the only process
- * using the memory-manager!
- */
-static void *
-c_mmClaimNoLock(
-    c_mm mm,
-    c_ulong size)
-{
-    c_mmChunk  chunk;
-
-    size = ALIGN_SIZE( size );
-
-    if (size <= MAX_BUCKET_SIZE) {
-        chunk = (c_mmChunk)mm->mapEnd;
-        mm->mapEnd = mm->mapEnd + ChunkSize(size);
-    } else {
-        mm->listEnd -= ChunkSize(size);
-        chunk = (c_mmChunk)mm->listEnd;
-    }
-
-    if (mm->listEnd < mm->mapEnd) {
-        OS_REPORT(OS_ERROR,"c_mmbase",0,
-                  "Memory claim denied: required size exceeds resources!");
-        return NULL;
-    }
-
-    chunk->size = size;
-    chunk->next = NULL;
-#ifdef MM_CLUSTER
-    chunk->prev = NULL;
-    chunk->freed = FALSE;
-#endif
-
-    return ChunkAddress(chunk);
-}
-#endif
 
 #ifdef MM_CLUSTER
 static c_mmChunk
