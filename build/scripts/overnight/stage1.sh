@@ -4,6 +4,12 @@ cd `dirname $0` || exit 1
 
 IBSDIR=`pwd`
 
+######## MIN NEEDED FOR OSPLI HACK HACK REMOVE
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO
+export EORBHOME=/home/dds/INSTALLED_FOR_DDS/eorb
+#############################
+
+
 . buildsys/functions
 . ./dcps_functions
 
