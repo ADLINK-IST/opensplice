@@ -21,23 +21,13 @@ fi
 SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
+if [ "$CONFIGURATION" != "OK" ]
+then
+    echo "ERROR: configuration - dcps_build"
+    exit 1
+fi
 
 SetState "Building"
-
-if [ "$DEP" = "none" ]
-then
-   if [ ! -n "$OSPL_HOME" ]
-   then
-       echo "ERROR: configuration - dcps_build"
-       exit 1
-   fi
-else
-   if [ ! -n "$OSPL_OUTER_HOME" ]
-   then
-       echo "ERROR: configuration - dcps_build"
-       exit 2
-   fi
-fi
 
 echo "BUILD=RUNNING" >> $RESFILE
 ArchiveLogs
@@ -45,6 +35,6 @@ ArchiveLogs
 make
 if [ $? != 0 ] 
 then
-    exit 3
+    exit 2
 fi
 exit 0

@@ -25,7 +25,7 @@ export SPLICE_PLATFORM
 echo "RUN/RBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
-if [ ! -n "$OSPL_HOME" ]
+if [ "$CONFIGURATION" != "OK" ]
 then
    echo "ERROR: configuration - dcps_perform_rbt_tests"
    exit 1
