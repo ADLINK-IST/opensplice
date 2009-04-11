@@ -139,7 +139,7 @@ javac_check ()
             echo "Error - Not found"
             return 1
         fi
-        JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
         PATH=$JAVA_HOME/bin:$PATH
         export PATH
     else
@@ -155,7 +155,7 @@ javac_check ()
     fi
 
 	$JAVAC_EXE -version 2> javac.ver
-    REAL_VERSION=`cat javac.ver | grep "javac" | awk '{ print $2 }'`  
+    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`  
 	JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
 	rm javac.ver
     if [ -n "$JAVAC_VERSION" ]
