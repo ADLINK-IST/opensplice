@@ -151,6 +151,11 @@ javac_check ()
             return 1
         fi
         T_JAVAC_EXE=`which javac`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
 
@@ -197,6 +202,11 @@ tao_check ()
         fi
     else
         TAOIDL_EXE=`which tao_idl`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not TAO found"
+            return 1
+        fi
   		TAO_ROOT=`dirname \`dirname $TAOIDL_EXE\``
         export TAO_ROOT
     fi
@@ -252,6 +262,11 @@ eorb_check ()
         fi
     else
         IDLCPP_EXE=`which idlcpp`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not eOrb found"
+            return 1
+        fi
   		EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
   		EORBHOME=`dirname $EORB_BIN`
         export EORBHOME
