@@ -51,9 +51,9 @@ then
     then
         #If empty try tar
         OSPL_BUILDER=`which tar`
-        if [ -z "${OSPL_BUILDER}" ]
+        if [ "$?" != "0" ]
         then
-            echo "OSPL_BUILDER empty please set to packager"
+            echo "No packager found please set OSPL_BUILDER"
             return 1
         fi
     fi
