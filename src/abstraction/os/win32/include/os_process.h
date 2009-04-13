@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-typedef int os_os_procId;
+typedef unsigned int os_os_procId;
 
 #if defined (__cplusplus)
 }
