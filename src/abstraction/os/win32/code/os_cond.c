@@ -134,15 +134,16 @@ condTimedWait(
     HANDLE hQueue;
     HANDLE hMtx;
     char name[OS_SERVICE_ENTITY_NAME_MAX];
-    DWORD result;
+    DWORD wsr;
     LONG c;
     LONG lockCount;
     os_result osr;
+    os_result result;
     
     assert(cond != NULL);
     assert(mutex != NULL);
 
-    osr = os_resultSuccess;
+    result = os_resultSuccess;
     if (cond->scope == OS_SCOPE_SHARED) {
         _snprintf(name, sizeof(name), "%s%d",
             OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
@@ -169,19 +170,28 @@ condTimedWait(
     InterlockedIncrement(&cond->state);
     lockCount = InterlockedDecrement(&mutex->lockCount);
     if (lockCount > 0) {
-        result = SignalObjectAndWait(hMtx, hQueue, timeout, FALSE);
-        assert((result == WAIT_OBJECT_0) || (result == WAIT_FAILED) || (result == WAIT_ABANDONED) || (result == WAIT_TIMEOUT));
+        wsr = SignalObjectAndWait(hMtx, hQueue, timeout, FALSE);
     } else {
-        result = WaitForSingleObject(hQueue, timeout);
+        wsr = WaitForSingleObject(hQueue, timeout);
+    }
+    assert((wsr == WAIT_OBJECT_0) || (wsr == WAIT_FAILED) || (wsr == WAIT_ABANDONED) || (wsr == WAIT_TIMEOUT));
+    if (wsr == WAIT_TIMEOUT) {
+        result = os_resultTimeout;
+    } else if (wsr != WAIT_OBJECT_0) {
+        result = os_resultFail;
     }
 
     c = InterlockedDecrement(&cond->state);
     osr = os_mutexLock(mutex);
+    if (osr != os_resultSuccess) {
+        result = osr;
+    }
     if (cond->scope == OS_SCOPE_SHARED) {
         CloseHandle(hQueue);
         CloseHandle(hMtx);
     }
-    return osr;
+
+    return result;
 }
 
 static os_result

@@ -159,7 +159,15 @@ os_time
 os_timeGet(
     void)
 {
-    return _ospl_clockGet();
+    os_time result;
+
+    if (_ospl_clockGet) {
+        result = _ospl_clockGet();
+    } else {
+        /* This is not supposed to happen! */
+        assert(_ospl_clockGet != NULL);
+        result = _msTimeGet();
+    }
 }
 
 /** \brief Set the user clock
@@ -171,7 +179,20 @@ void
 os_timeSetUserClock(
     os_time (*userClock)(void))
 {
-    _ospl_clockGet = userClock;
+    if (userClock) {
+        _ospl_clockGet = userClock;
+    } else {
+        LARGE_INTEGER frequency;
+        /* Never set the null pointer, but choose a default
+         * in stead */
+        if (QueryPerformanceFrequency(&frequency) != 0) {
+            _ospl_clockGet = _hrTimeGet;
+        } else { /* no high performance timer available!
+                    so we fall back to a millisecond clock.
+                  */
+            _ospl_clockGet = _msTimeGet;
+        }
+    }
 }
 
 /** \brief Get high resolution time

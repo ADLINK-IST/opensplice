@@ -61,10 +61,12 @@ typedef HANDLE os_os_dirHandle;
 #define popen     _popen
 #define pclose    _pclose
 #define creat    _creat
+#define unlink   _unlink
 //#define read   _read   // Use function substitution: see below.
 #define isatty   _isatty
 #define fileno   _fileno
 #define unlink   _unlink
+#define getpid   _getpid
 
 /* Since 'read' is also a function on a DCPS DataReader, it is
  * abstracted in a separate function so that there is no macro

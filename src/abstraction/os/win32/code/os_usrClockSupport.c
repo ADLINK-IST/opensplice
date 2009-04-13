@@ -49,7 +49,8 @@ close_userClockModule (
     )
 {
     if (moduleHandle) {
-    	if (FreeLibrary ((HINSTANCE)moduleHandle) != 0) {
+        if (!FreeLibrary ((HINSTANCE)moduleHandle)) {
+            /* Zero is failure */
     	    OS_REPORT_1 (OS_ERROR, "close_userClockModule", 0,
                 "FreeLibrary error: %d", GetLastError());
         }
