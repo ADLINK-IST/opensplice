@@ -45,7 +45,9 @@ mkdir -p $OUTPUTDIR
 
 # Build the builder
 
-if [ "${OSPL_BUILDER}" != "builder" ]
+OSPL_BUILDER_APP=`echo $OSPL_BUILDER | awk -F'/' '{ print $NF }'`
+
+if [ "${OSPL_BUILDER_APP}" != "builder" ]
 then
     if [ -z "${OSPL_BUILDER}" ]
     then
