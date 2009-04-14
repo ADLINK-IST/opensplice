@@ -5,3 +5,5 @@ KEEP_DIST=yes
 RUN_DBT=no
 RUN_RBT=no
 RUN_EXAMPLES=no
+
+. configs/`hostname`/common
