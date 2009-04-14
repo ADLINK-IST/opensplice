@@ -28,10 +28,13 @@ DCPS_OBJ_FILES = $(patsubst %.cpp, %.o, $(DCPS_SRC_FILES))
 	@echo "Compiling $<"
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
-all : dirs exec/ping exec/pong
+all : dirs copyeorbinc exec/ping exec/pong
 	@echo ">>>> all done"
 	@echo ">>>> to execute, enter : sh RUN"
 	@echo ">>>> to clean, enter : make clean"
+
+copyeorbinc:
+	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
 
 dirs :
 	@mkdir -p bld
