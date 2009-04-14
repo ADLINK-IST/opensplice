@@ -1259,14 +1259,7 @@ v_dataReaderNotify(
         V_EVENT_LIVELINESS_CHANGED | \
         V_EVENT_DATA_AVAILABLE 
 
-        if (event->kind & (_NOTIFICATION_MASK_)) {
-            v_entity(_this)->status->state |= event->kind;
-        } else {
-            OS_REPORT_1(OS_WARNING,
-                        "DataReader",0,
-                        "Notify encountered unknown event kind (%d)",
-                        event->kind);
-        }
+        v_entity(_this)->status->state |= (event->kind & (_NOTIFICATION_MASK_));
 #undef _NOTIFICATION_MASK_
     }
 }
@@ -1370,10 +1363,10 @@ v_dataReaderNotifyIncompatibleQos(
         event.kind = V_EVENT_INCOMPATIBLE_QOS;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
-v_observerLock(v_observer(_this));
+        v_observerLock(v_observer(_this));
         v_observerNotify(v_observer(_this), &event, NULL);
+        v_observerUnlock(v_observer(_this));
         v_observableNotify(v_observable(_this), &event);
-v_observerUnlock(v_observer(_this));
     }
 }
 
@@ -1849,9 +1842,11 @@ v_dataReaderCheckDeadlineMissed(
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
         v_observerNotify(v_observer(_this), &event, NULL);
+        v_dataReaderUnLock(_this);
         v_observableNotify(v_observable(_this), &event);
+    } else {
+        v_dataReaderUnLock(_this);
     }
-    v_dataReaderUnLock(_this);
 }
 
 v_dataReaderInstance
