@@ -1,0 +1,15 @@
+Kernel
+        Filename                DynamicDownload
+EndKernel
+
+AddressSpace
+        Name                            shmdump
+        Filename                        shmdump
+        MemoryPoolSize                  0x100000
+        Language                        C
+        HeapSize                        0x200000
+
+        Task Initial
+                StackSize 0x10000
+        EndTask
+EndAddressSpace

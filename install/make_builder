@@ -45,15 +45,17 @@ mkdir -p $OUTPUTDIR
 
 # Build the builder
 
-if [ "${OSPL_BUILDER}" != "builder" ]
+OSPL_BUILDER_APP=`echo $OSPL_BUILDER | awk -F'/' '{ print $NF }'`
+
+if [ "${OSPL_BUILDER_APP}" != "builder" ]
 then
     if [ -z "${OSPL_BUILDER}" ]
     then
         #If empty try tar
         OSPL_BUILDER=`which tar`
-        if [ -z "${OSPL_BUILDER}" ]
+        if [ "$?" != "0" ]
         then
-            echo "OSPL_BUILDER empty please set to packager"
+            echo "No packager found please set OSPL_BUILDER"
             return 1
         fi
     fi

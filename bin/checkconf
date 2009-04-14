@@ -67,7 +67,7 @@ make_check ()
     return 0
 }
 
-# required Bison 2.x
+# required Bison
 bison_check ()
 {
     echo -n "BISON: "
@@ -78,18 +78,18 @@ bison_check ()
         return 1
     fi
     BISON_VERSION=`bison -V 2>/dev/null | head -1`
-    BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.' | cut -f 4 -d ' '`
-    if [ $BISON_MAJOR -lt 2 ]
-    then
-        echo "Error - Only bison 2.x and above is supported"
-        return 1
-    fi
+    #BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.' | cut -f 4 -d ' '`
+    #if [ $BISON_MAJOR -lt 2 ]
+    #then
+    #    echo "Error - Only bison 2.x and above is supported"
+    #    return 1
+    #fi
 
     echo "OK - using $BISON_VERSION"  
     return 0
 }
 
-# required Flex 2.5.x
+# required Flex
 flex_check ()
 {
     echo -n "FLEX: "
@@ -102,22 +102,22 @@ flex_check ()
 
     FLEX_VERSION=`flex -V | cut -f 2 -d ' '`
     # some flex versions say "flex version x" rather than "flex x"
-    if [ "$FLEX_VERSION" = "version" ]
-    then
-        FLEX_VERSION=`flex -V | cut -f 3 -d ' '`
-    fi
-    FLEX_MAJOR=`echo $FLEX_VERSION | cut -f 1 -d '.'`
-    if [ $FLEX_MAJOR -lt 2 ]
-    then
-        echo "Error - Only flex 2.5.x and above is supported"
-        return 1
-    fi
-    FLEX_MINOR=`echo $FLEX_VERSION | cut -f 2 -d '.'`
-    if [ $FLEX_MAJOR -eq 2 -a $FLEX_MINOR -lt 5 ]
-    then
-        echo "Error - Only flex 2.5.x and above is supported"
-        return 1
-    fi
+    #if [ "$FLEX_VERSION" = "version" ]
+    #then
+    #    FLEX_VERSION=`flex -V | cut -f 3 -d ' '`
+    #fi
+    #FLEX_MAJOR=`echo $FLEX_VERSION | cut -f 1 -d '.'`
+    #if [ $FLEX_MAJOR -lt 2 ]
+    #then
+    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    return 1
+    #fi
+    #FLEX_MINOR=`echo $FLEX_VERSION | cut -f 2 -d '.'`
+    #if [ $FLEX_MAJOR -eq 2 -a $FLEX_MINOR -lt 5 ]
+    #then
+    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    return 1
+    #fi
 
     echo "OK - using $FLEX_VERSION"  
     return 0
@@ -139,7 +139,9 @@ javac_check ()
             echo "Error - Not found"
             return 1
         fi
-        JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
+        PATH=$JAVA_HOME/bin:$PATH
+        export PATH
     else
         # If not check the path for java
         pathcheck javac
@@ -149,11 +151,16 @@ javac_check ()
             return 1
         fi
         T_JAVAC_EXE=`which javac`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
-	
+
 	$JAVAC_EXE -version 2> javac.ver
-    REAL_VERSION=`cat javac.ver | grep "javac" | awk '{ print $2 }'`  
+    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`  
 	JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
 	rm javac.ver
     if [ -n "$JAVAC_VERSION" ]
@@ -195,6 +202,11 @@ tao_check ()
         fi
     else
         TAOIDL_EXE=`which tao_idl`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not TAO found"
+            return 1
+        fi
   		TAO_ROOT=`dirname \`dirname $TAOIDL_EXE\``
         export TAO_ROOT
     fi
@@ -250,6 +262,11 @@ eorb_check ()
         fi
     else
         IDLCPP_EXE=`which idlcpp`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not eOrb found"
+            return 1
+        fi
   		EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
   		EORBHOME=`dirname $EORB_BIN`
         export EORBHOME
@@ -297,7 +314,8 @@ gawk_check ()
         echo "Error - Not found"
         return 1
     fi
-    echo "OK"
+    GAWK_VERSION=`gawk --version | head -1`
+    echo "OK - using GAWK_VERSION"  
     return 0
 }
 
@@ -315,5 +333,6 @@ cleanup_checks ()
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
+    unset GAWK_VERSION
 }
 

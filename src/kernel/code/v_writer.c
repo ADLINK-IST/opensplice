@@ -2455,7 +2455,6 @@ v_writerCheckDeadlineMissed(
         v_deadLineInstanceListSetDuration(w->deadlineList, period);
     }
 
-    v_observerUnlock(v_observer(w));
     if (changed) {
         e.kind = V_EVENT_DEADLINE_MISSED;
         e.source = v_publicHandle(v_public(w));
@@ -2463,6 +2462,7 @@ v_writerCheckDeadlineMissed(
         v_observerNotify(v_observer(w), &e, NULL);
         v_observableNotify(v_observable(w), &e);
     }
+    v_observerUnlock(v_observer(w));
 
 }
 

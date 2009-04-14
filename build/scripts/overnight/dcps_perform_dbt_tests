@@ -22,14 +22,14 @@ SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
 
-echo "RUN/DBT=RUNNING" >> $RESFILE
-ArchiveLogs
-
-if [ ! -n "$OSPL_HOME" ]
+if [ "$CONFIGURATION" != "OK" ]
 then
    echo  "ERROR: configuration - dcps_perform_dbt_tests"
    exit 1
 fi
+
+echo "RUN/DBT=RUNNING" >> $RESFILE
+ArchiveLogs
 
 /bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect dev
 

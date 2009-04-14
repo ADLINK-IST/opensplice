@@ -22,14 +22,14 @@ SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
 
-echo "BUILD/RBT=RUNNING" >> $RESFILE
-ArchiveLogs
-
-if [ ! -n "$OSPL_HOME" ]
+if [ "$CONFIGURATION" != "OK" ]
 then
    echo  "ERROR: configuration - dcps_build_rbt_tests"
    exit 1
 fi
+
+echo "BUILD/RBT=RUNNING" >> $RESFILE
+ArchiveLogs
 
 cd testsuite ||
 { 
