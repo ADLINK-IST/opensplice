@@ -155,11 +155,11 @@ v__observerWait(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    o->waitCount++;
-    while ((o->eventFlags == 0) && (result == os_resultSuccess)) {
+    if (o->eventFlags == 0) {
+        o->waitCount++;
         result = c_condWait(&o->cv,&o->mutex);
+        o->waitCount--;
     }
-    o->waitCount--;
     flags = o->eventFlags;
     /* Reset events but remember destruction event.
      * To avoid any further use of this observer in case of destruction.
@@ -197,21 +197,14 @@ v__observerTimedWait(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observer));
 
-    currentTime = v_timeGet();
-    o->waitCount++;
-    while ((o->eventFlags == 0) && (result == os_resultSuccess)) {
-        elapsedTime = c_timeSub(v_timeGet(),currentTime);
-        waitTime = c_timeSub(time,elapsedTime);
-        if (c_timeCompare(waitTime, C_TIME_ZERO) == C_GT) {
-            result = c_condTimedWait(&o->cv,&o->mutex,waitTime);
-            if (result == os_resultTimeout) {
-                o->eventFlags |= V_EVENT_TIMEOUT;
-            }
-        } else {
+    if (o->eventFlags == 0) {
+        o->waitCount++;
+        result = c_condTimedWait(&o->cv,&o->mutex,time);
+        o->waitCount--;
+        if (result == os_resultTimeout) {
             o->eventFlags |= V_EVENT_TIMEOUT;
         }
     }
-    o->waitCount--;
     flags = o->eventFlags;
     /* Reset events but remember destruction event.
      * To avoid any further use of this observer in case of destruction.
