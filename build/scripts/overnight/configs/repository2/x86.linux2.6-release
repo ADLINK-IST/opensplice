@@ -1,5 +1,5 @@
 BUILD=yes
-SETUP_TYPE=x86.linux2.6-dev
+SETUP_TYPE=x86.linux2.6-release
 BUILD_DIST=yes
 KEEP_DIST=yes
 RUN_DBT=no
