@@ -216,26 +216,46 @@ tao_check ()
     export PATH
 
     TAO_VERSION=`tao_idl -V 2>&1 | grep "PrismTech Version"`
-    T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.4.1\"`"
-    if [ $? = 0 ]
+    if [ $? != 0 ]
     then
-        SPLICE_ORB=DDS_OpenFusion_1_4_1 
-    else
-        T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.5.1\"`"
+        #ACE TAO
+        TAO_VERSION=`tao_idl -V 2>&1 | grep "TAO_IDL_BE, version "`
         if [ $? = 0 ]
         then
-            SPLICE_ORB=DDS_OpenFusion_1_5_1
+            T_VAR="`echo $TAO_VERSION | awk '{ print $2\" \"$3 }'`"
+            if [ $? != 0 ]
+            then
+                SPLICE_ORB=DDS_ACE_TAO_5_6_6
+            fi
         else
-            T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.6.1\"`"
+            echo "Error - Cannot setup TAO"
+            tao_idl -V
+            return 1
+        fi
+    else
+        T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.4.1\"`"
+        if [ $? = 0 ]
+        then
+            SPLICE_ORB=DDS_OpenFusion_1_4_1 
+        else
+            T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.5.1\"`"
             if [ $? = 0 ]
             then
-                SPLICE_ORB=DDS_OpenFusion_1_6_1
+                SPLICE_ORB=DDS_OpenFusion_1_5_1
             else
-                echo "Error - Unrecognized TAO version - use Prismtech TAO 1.4.1, 1.5.1 or 1.6.1"
-                return 1
+                T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.6.1\"`"
+                if [ $? = 0 ]
+                then
+                    SPLICE_ORB=DDS_OpenFusion_1_6_1
+                else
+                    echo "Error - Unsupported version of PrismTech TAO"
+                    tao_idl -V
+                    return 1
+                fi
             fi
         fi
     fi
+    
     export SPLICE_ORB
 
     echo "OK - using TAO $TAO_VERSION as SPLICE_ORB"
@@ -292,12 +312,20 @@ eorb_check ()
         echo "Error - unable to find $EORBHOME/bin/$EORBENV/idlcpp"
         return 1
     fi
+
+    EORB_VERSION=`$EORBHOME/bin/$EORBENV/idlcpp -version | awk '{ print $6 }'`
+    if [ $? != 0 ]
+    then
+        echo "Error - unable to setup eOrb"
+        $EORBHOME/bin/$EORBENV/idlcpp -version
+        return 1
+    fi
+
     PATH=$EORBHOME/bin/$EORBENV:$PATH
     export PATH
     SPLICE_SA_ORB=DDS_Eorb_3_0_SA
     export SPLICE_SA_ORB
 
-    EORB_VERSION=`idlcpp -version | awk '{ print $6 }'`
     echo "OK - using eOrb $EORB_VERSION as SPLICE_SA_ORB"
     echo "  setting EORBHOME to $EORBHOME"
     echo "  setting EORBENV to $EORBENV"
@@ -315,7 +343,7 @@ gawk_check ()
         return 1
     fi
     GAWK_VERSION=`gawk --version | head -1`
-    echo "OK - using GAWK_VERSION"  
+    echo "OK - using $GAWK_VERSION"  
     return 0
 }
 
