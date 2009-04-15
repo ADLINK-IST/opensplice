@@ -212,6 +212,7 @@ d_configurationInit(
         config->tracingRelativeTimestamps   = FALSE;
         config->timeAlignment               = TRUE;
         config->startTime                   = os_timeGet();
+        config->networkMaxWaitCount         = D_DEFAULT_NETWORK_MAX_WAITCOUNT;
 
         d_configurationSetTime(&(config->heartbeatExpiryTime), D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
         config->heartbeatExpiry = D_DEFAULT_HEARTBEAT_EXPIRY_TIME;
