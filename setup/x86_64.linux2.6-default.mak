@@ -52,7 +52,7 @@ SHCFLAGS         = -fPIC
 CFLAGS_OPT       = -O4 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W 
+CFLAGS_STRICT	 = -Wall -W -pedantic
 
 # Set compiler options for single threaded process
 CFLAGS		 = -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
