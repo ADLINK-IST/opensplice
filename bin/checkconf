@@ -102,10 +102,10 @@ flex_check ()
 
     FLEX_VERSION=`flex -V | cut -f 2 -d ' '`
     # some flex versions say "flex version x" rather than "flex x"
-    #if [ "$FLEX_VERSION" = "version" ]
-    #then
-    #    FLEX_VERSION=`flex -V | cut -f 3 -d ' '`
-    #fi
+    if [ "$FLEX_VERSION" = "version" ]
+    then
+        FLEX_VERSION=`flex -V | cut -f 3 -d ' '`
+    fi
     #FLEX_MAJOR=`echo $FLEX_VERSION | cut -f 1 -d '.'`
     #if [ $FLEX_MAJOR -lt 2 ]
     #then
