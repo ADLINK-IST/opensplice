@@ -21,7 +21,10 @@ M   ospli/ssso10/PPCE500.vxworks5.5-release-inner 1 heads/master none
 M   ospli/ssso10/solaris-dev-inner 1 heads/master none
 
 M   ospli/rhel4d/x86.linux2.6-dev 20 heads/master none
+M   ospli/rhel4d/x86.linux2.6-release 20 heads/master none
 M   ospli/rhel4d/x86.linux2.6-dev-inner 1 heads/master none
+M   ospli/rhel4d/x86.linux2.6-release-inner 1 heads/master none
+M   ospli/rhel4d/x86.linux2.6-release-lic-inner 1 heads/master none
 
 M   ospli/DDS1-WIN2K3/x86.win32-dev 50 heads/master none
 M   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/master none
