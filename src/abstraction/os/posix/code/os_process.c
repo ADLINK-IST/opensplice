@@ -76,11 +76,18 @@ signalHandler(
         /* The signalHandlerThread will always perform the
          * exit() call.
          */
-        pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
-        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
-        pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
-        pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
-         
+        /* Do not lock _ospl_signalHandlerThreadMutex when the
+         * signalHandler is called from the _ospl_signalHandlerThread
+         */
+        if (pthread_equal(pthread_self(), _ospl_signalHandlerThreadId)) {
+            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+        } else {
+            pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
+            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+            pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
+        } 
     }
 }
 

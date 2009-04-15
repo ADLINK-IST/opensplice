@@ -159,24 +159,24 @@ javac_check ()
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
 
-	$JAVAC_EXE -version 2> javac.ver
+    $JAVAC_EXE -version 2> javac.ver
     REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`  
-	JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
-	rm javac.ver
+    JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
+    rm -f javac.ver
     if [ -n "$JAVAC_VERSION" ]
-	then
-		if [ $JAVAC_VERSION -ge $REQUIRED_VERSION ]
-		then
-			JAVA_HOME=`echo $JAVAC_EXE | awk '{ print substr($1, 1, length($1)-9); }'`
-	        export JAVA_HOME
-		else
+    then
+        if [ $JAVAC_VERSION -ge $REQUIRED_VERSION ]
+        then
+            JAVA_HOME=`echo $JAVAC_EXE | awk '{ print substr($1, 1, length($1)-9); }'`
+            export JAVA_HOME
+        else
             echo "Error - Only JAVA 1.5 and above is supported"
             return 1
-		fi
-	else
+        fi
+    else
         echo "Error - Only JAVA 1.5 and above is supported"
         return 1
-	fi
+    fi
 
     echo "OK - using JAVAC version $REAL_VERSION" 
     echo "  setting JAVA_HOME to $JAVA_HOME"  
