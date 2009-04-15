@@ -8,6 +8,6 @@ RUN_EXAMPLES=no
 
 . configs/`hostname`/common
 
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/ACE_TAO_5_6_6
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Linux-gcc346-inline-64bit-090414
 export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.5.0_16_64
 
