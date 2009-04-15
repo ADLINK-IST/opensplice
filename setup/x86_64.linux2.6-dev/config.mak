@@ -1,6 +1,6 @@
 # Set target context
 PROC		 = x86_64
-OS		 = linux
+OS		     = linux
 OS_REV		 = 2.6
 SPECIAL		 = DEBUG
 
