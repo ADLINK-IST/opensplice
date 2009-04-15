@@ -395,28 +395,6 @@ main (
     char *argv[]
     )
 {
-#ifdef INTEGRITY
-    argc = 6;
-    argv[0] = "ping";
-    argv[1] = "10";
-    argv[2] = "100";
-
-#if defined (PING1)
-    argv[3] = "m";
-#elif defined (PING2)
-    argv[3] = "q";
-#elif defined (PING3)
-    argv[3] = "s";
-#elif defined (PING4)
-    argv[3] = "f";
-#elif defined (PING5)
-    argv[3] = "t";
-#endif 
-
-    argv[4] = "PongRead";
-    argv[5] = "PongWrite";
-#endif
-
     ConditionSeq_var                     conditionList = new ConditionSeq();
     WaitSet                              w;
     Condition_ptr                        exp_condition;
@@ -450,6 +428,23 @@ main (
     //
     // Evaluate cmdline arguments
     //
+#ifdef INTEGRITY
+    nof_blocks = 10;
+    nof_cycles = 100;
+    write_partition = "PongRead";
+    read_partition = "PongWrite";
+#if defined (PING1)
+    topic_id = 'm';
+#elif defined (PING2)
+    topic_id = 'q';
+#elif defined (PING3)
+    topic_id = 's';
+#elif defined (PING4)
+    topic_id = 'f';
+#elif defined (PING5)
+    topic_id = 't';
+#endif 
+#else
     if (argc != 1) {
 	if (argc != 6) {
             printf ("Invalid.....\n Usage: %s [blocks blocksize topic_id WRITE_PARTITION READ_PARTITION]\n", argv[0]);
@@ -461,6 +456,7 @@ main (
         write_partition = argv[4];
         read_partition  = argv[5];
     }
+#endif
 
     //
     // Create participant
