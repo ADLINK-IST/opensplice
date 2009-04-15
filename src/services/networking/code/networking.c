@@ -112,6 +112,7 @@ nw_serviceMain(
             os_nanoSleep(sleepTime);
 /* QAC EXPECT 2467; Control variable, terminate, not modified inside loop. That is correct, it is modified by another thread */
         }
+        u_serviceChangeState(service, STATE_TERMINATING);
         nw_controllerStop(controller);
         nw_controllerFree(controller);
         NW_REPORT_INFO(1, "Networking stopped");
