@@ -30,7 +30,7 @@ std_splitListNew(
          * have to be allocated */
         copy = os_strdup(str);
         ptr = copy;
-        inString = FALSE;
+        inString = 0;
         count = 0;
         while (*ptr) {
             if (*ptr == separator) {

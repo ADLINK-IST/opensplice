@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include <os_stdlib_locate.c>
+#include "os_stdlib_locate.c"
 
 char *
 os_getenv(
