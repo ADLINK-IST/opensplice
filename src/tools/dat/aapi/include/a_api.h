@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
  /* AAPI is built on both SPLICE-DDS's os- and database-layers. In
  * general, AAPI will create an exact copy of some currently existing
  * Shared Memory Segment, in which a SPLICE-DDS Database is running.
