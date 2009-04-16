@@ -1235,7 +1235,7 @@ install_rts_target ()
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_PreProcessor_usermanual.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_refman*.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_Tutorial*.pdf
-    rm -f ${RTS_dir}/docs/pdf/OpenSplice_V2_V3_Migration_Guide.pdf
+    rm -f ${RTS_dir}/docs/pdf/OpenSplice_V3_V4_Migration_Guide.pdf
 
     #
     # Platform specific redistributables
