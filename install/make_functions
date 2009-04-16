@@ -734,7 +734,7 @@ install_hde_target ()
 
         cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/ccpp
         cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/makefile ${HDE_dir}/custom_lib/ccpp
+        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp
         cp ${release}/custom/README ${HDE_dir}/custom_lib/ccpp
         cp ${release}/custom/setup ${HDE_dir}/custom_lib/ccpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps.mak ${HDE_dir}/custom_lib/ccpp
@@ -757,7 +757,7 @@ install_hde_target ()
 
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
-        cp ${release}/custom/makefile ${HDE_dir}/custom_lib/sacpp
+        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp
         cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps_sa.mak ${HDE_dir}/custom_lib/sacpp
 
