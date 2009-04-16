@@ -114,7 +114,7 @@ install_ascii_fileset()
 make_hde_mirror_and_builder ()
 {
     INSTTYPE="HDE"
-    FULLINSTTYPE="Host Development Environment"
+    FULLINSTTYPE="Host_Development_Environment"
     SOURCE_TARGET="$1"
     SOURCE_HOST="$2"
     BUILDER_TARGET="$3"
@@ -142,7 +142,7 @@ make_hde_mirror_and_builder ()
 make_rts_mirror_and_builder ()
 {
     INSTTYPE="RTS"
-    FULLINSTTYPE="Runtime System"
+    FULLINSTTYPE="Runtime_System"
     SOURCE_TARGET="$1"
     BUILDER_TARGET="$2"
     PACKAGE_VERSION="$3"
@@ -164,6 +164,49 @@ make_rts_mirror_and_builder ()
         sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
             "${BUILDER_TARGET}" "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}"
     fi
+}
+
+installer_setup ()
+{
+    # $1 = release type   : HDE or RTS
+    # $2 = full release name : Host Development Environment of Runtime System
+    # $3 = source target  : x86.linux-2.6 or sparc.solaris8
+    # $4 = builder target : linux or solaris-sparc
+    # $5 = name of script to setup environment
+    # $6 = environment : for example '-release' or '-dev'
+    # $7 = name of script to obtain license information
+
+    INSTTYPE="$1"
+    INSTTYPE_FULL="$2"
+    SOURCE_TARGET="$3"
+    BUILDER_TARGET="$4"
+    SCRIPT_NAME="$5"
+    SOURCE_ENV="$6"
+    GETLIC_INFO_NAME="$7"
+    
+    if [ "${SOURCE_ENV}" = "-release" ]
+    then
+        TARGET_ENV="";
+    else
+        TARGET_ENV=${SOURCE_ENV}
+    fi
+    
+    #determine if licensing is enabled
+    if [ -z "${FLEX_HOME}" ]
+    then
+        WITHLICENSE=false;
+    else
+        WITHLICENSE=true;
+    fi
+    
+    echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
+    
+    echo Release is ${PACKAGE_VERSION}
+    echo Date is ${PACKAGE_DATE}
+    
+    #set output directory, currently no parameter
+    OUTPUTDIR="$OSPL_HOME/install/VC"
+    mkdir -p $OUTPUTDIR
 }
 
 set_envs ()
