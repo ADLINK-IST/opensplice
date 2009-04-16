@@ -1719,13 +1719,13 @@ instanceResend(
     if (item->pendingResends > 0) {
         result = instanceWrite(node, arg);
         if ((writeArg->writeResult != V_WRITE_SUCCESS) &&
-            (writeArg->writeResult != V_WRITE_INTRANSIT) && 
+            (writeArg->writeResult != V_WRITE_INTRANSIT) &&
             (writeArg->writeResult != V_WRITE_REJECTED)) {
                 OS_REPORT_1(OS_ERROR,
                             "v_writerInstance::instanceResend",0,
                             "Internal error (%d) occured",
                             writeArg->writeResult);
-        } else {
+        } else if (writeArg->writeResult == V_WRITE_SUCCESS){
             item->pendingResends--;
         }
     }
