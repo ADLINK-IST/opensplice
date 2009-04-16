@@ -178,8 +178,28 @@ javac_check ()
         return 1
     fi
 
-    echo "OK - using JAVAC version $REAL_VERSION" 
-    echo "  setting JAVA_HOME to $JAVA_HOME"  
+    case `uname` in
+        Linux)
+            JAVA_PATH_EXT=i386
+            ;;
+        SunOS)
+            JAVA_PATH_EXT=sparc
+            ;;
+        *)
+            echo "Error - Not yet supported Java setup"
+            return 1
+            ;;
+    esac
+
+    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
+
+    export LD_LIBRARY_PATH
+
+    echo "OK - using JAVAC version $REAL_VERSION"
+    echo "  setting JAVA_HOME to $JAVA_HOME"
     return 0
 }
 
@@ -361,6 +381,6 @@ cleanup_checks ()
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
-    unset GAWK_VERSION
+    unset GAWK_VERSION JAVA_PATH_EXT
 }
 
