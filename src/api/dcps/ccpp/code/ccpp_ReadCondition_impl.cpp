@@ -50,7 +50,7 @@ DDS::DataReader_ptr DDS::ReadCondition_impl::get_datareader (
   if (handle)
   {
     ccpp_UserData_ptr drUD = NULL;
-    drUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+    drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
     if (drUD)
     {
       dataReader = dynamic_cast<DDS::DataReader_ptr>(drUD->ccpp_object);

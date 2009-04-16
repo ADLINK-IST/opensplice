@@ -43,7 +43,7 @@ DDS::ReadCondition_ptr DDS::DataReader_impl::create_readcondition (
       myUD = new ccpp_UserData(readCondition);
       if (myUD)
       {
-        gapi_object_set_user_data(handle, myUD);
+        gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
       }
       else
       {
@@ -93,7 +93,7 @@ DDS::QueryCondition_ptr DDS::DataReader_impl::create_querycondition (
         myUD = new DDS::ccpp_UserData(queryCondition);
         if (myUD)
         {
-          gapi_object_set_user_data(handle, myUD);
+	       gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
         }
         else
         {
@@ -130,7 +130,7 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_readcondition (
     handle = readCondition->_gapi_self;
     if (os_mutexLock(&(readCondition->rc_mutex)) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       result =  gapi_dataReader_delete_readcondition(_gapi_self, handle);
       if (result == DDS::RETCODE_OK)
       {
@@ -228,7 +228,7 @@ DDS::ReturnCode_t DDS::DataReader_impl::set_listener (
     if (result == DDS::RETCODE_OK)
     {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
       if (myUD)
       {
         myUD->setListener(a_listener);
@@ -288,7 +288,7 @@ DDS::TopicDescription_ptr DDS::DataReader_impl::get_topicdescription (
   {
     if (os_mutexLock(&dr_mutex) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         topicDescription = dynamic_cast<DDS::TopicDescription_impl_ptr>(myUD->ccpp_object);
@@ -330,7 +330,7 @@ DDS::Subscriber_ptr DDS::DataReader_impl::get_subscriber (
   {
     if (os_mutexLock(&dr_mutex) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         subscriber = dynamic_cast<DDS::Subscriber_impl_ptr>(myUD->ccpp_object);

@@ -44,8 +44,8 @@ DDS::DomainParticipantFactory::get_instance(
       {
         if (os_mutexUnlock(&(localMutex.dpf_mutex)) == os_resultSuccess)
         {
-          void * data = gapi_object_get_user_data(_gapi_self);
-          myUD = reinterpret_cast<ccpp_UserData_ptr>(data);
+          CORBA::Object * data = (CORBA::Object *)gapi_object_get_user_data(_gapi_self);
+          myUD = dynamic_cast<ccpp_UserData_ptr>(data);
           if (myUD) 
           {
              singletonSelf = dynamic_cast<DomainParticipantFactory_ptr>(myUD->ccpp_object);
@@ -75,7 +75,7 @@ DDS::DomainParticipantFactory::get_instance(
             myUD = new ccpp_UserData(singletonSelf);
             if (myUD)
             {
-              gapi_object_set_user_data(_gapi_self, myUD);
+              gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD);
             }
             else
             {
@@ -168,7 +168,7 @@ DDS::DomainParticipantFactory::create_participant (
           myUD = new ccpp_UserData(myParticipant, a_listener);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
@@ -217,7 +217,7 @@ DDS::DomainParticipantFactory::delete_participant (
 
       if (os_mutexLock(&(myParticipant->dp_mutex)) == os_resultSuccess)
       {
-        myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
         status = gapi_domainParticipantFactory_delete_participant_w_action_ext(_gapi_self, handle, DDS::ccpp_CallBack_DeleteUserData, NULL);
         if (os_mutexUnlock(&(myParticipant->dp_mutex)) == os_resultSuccess)
         { 
@@ -265,7 +265,7 @@ DDS::DomainParticipantFactory::lookup_participant (
 
         if (os_mutexLock(&(myParticipant->dp_mutex)) == os_resultSuccess)
         {
-          myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+          myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
           if (myUD)
           {
             myParticipant = dynamic_cast<DDS::DomainParticipant_impl_ptr>(myUD->ccpp_object);

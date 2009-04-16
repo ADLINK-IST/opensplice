@@ -16,7 +16,7 @@ DDS::WaitSet::WaitSet( )
      */
     if (myUD)
     {
-      gapi_object_set_user_data(_gapi_self, myUD);
+      gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD);
     }
     else
     {
@@ -29,7 +29,7 @@ DDS::WaitSet::WaitSet( )
 DDS::WaitSet::~WaitSet()
 {
   DDS::ccpp_UserData_ptr myUD;
-  myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
   if (myUD)
   {
   /* avoid another last release of the reference to this WaitSet */
@@ -61,8 +61,8 @@ DDS::ReturnCode_t DDS::WaitSet::wait (
     for (CORBA::ULong i=0; i<l; i++)
     {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>
-             (gapi_object_get_user_data(gapi_conditions->_buffer[i]));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>
+             ((CORBA::Object *)gapi_object_get_user_data(gapi_conditions->_buffer[i]));
       if (myUD)
       {
         active_conditions[i] = dynamic_cast<DDS::Condition_ptr>(myUD->ccpp_object);
@@ -132,8 +132,8 @@ DDS::ReturnCode_t DDS::WaitSet::get_conditions (
         for (CORBA::ULong i=0; i<l; i++)
         {
           DDS::ccpp_UserData_ptr myUD;
-          myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>
-                 (gapi_object_get_user_data(gapi_conditions->_buffer[i]));
+          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>
+                 ((CORBA::Object *)gapi_object_get_user_data(gapi_conditions->_buffer[i]));
           if (myUD)
           {
             attached_conditions[i] = dynamic_cast<DDS::Condition_ptr>(myUD->ccpp_object);

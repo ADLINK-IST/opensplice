@@ -245,16 +245,15 @@ gapi_handleFree (
                 os_free(handle->object);
                 handle->object = NULL;
             }
+            if ( action ) {
+               action(userData, actionData);
+            }
             assert(handle->registry == NULL);
             handle->magic  = 0;
             gapi_handleRelease(handle);
             os_condDestroy(&handle->cv);
             os_mutexDestroy(&handle->mutex);
         }
-    }
-
-    if ( action ) {
-        action(userData, actionData);
     }
 }
 

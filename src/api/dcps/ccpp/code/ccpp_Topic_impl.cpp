@@ -123,7 +123,7 @@ DDS::StatusMask mask
         if (result == DDS::RETCODE_OK)
         {
           DDS::ccpp_UserData_ptr myUD;
-          myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
           if (myUD)
           {
             myUD->setListener(a_listener);
