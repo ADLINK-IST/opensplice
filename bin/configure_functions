@@ -109,6 +109,8 @@ get_avail_targets ()
             fi
         ;;
         CYGWIN*)
+            CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
+            export CYGWIN_INSTALL_DRIVE
             required_host=`grep "SPLICE_HOST=.*win32" $ENV_DIR/$target`
             if [ -n "$required_host" ]
             then
