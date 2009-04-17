@@ -123,6 +123,9 @@ nw_serviceMain(
             os_nanoSleep(sleepTime);
 /* QAC EXPECT 2467; Control variable, terminate, not modified inside loop. That is correct, it is modified by another thread */
         }
+        leasePeriod.seconds = 20;
+        leasePeriod.nanoseconds = 0;
+        u_participantRenewLease(u_participant(service), leasePeriod);
         u_serviceChangeState(service, STATE_TERMINATING);
         nw_controllerStop(controller);
         nw_controllerFree(controller);
@@ -159,8 +162,8 @@ main(
     Error err;
     Semaphore networkSvcStartSem = SemaphoreObjectNumber(13);
     name = "networking";
-    config = "file:///ospl.xml";    
-    
+    config = "file:///ospl.xml";
+
     err = WaitForSemaphore(networkSvcStartSem);
     assert ( err == Success );
 
@@ -191,7 +194,7 @@ main(
         printf("\n");
     }
 #endif
-     
+
 #endif
     /* First check command line arguments */
     if (argc == 3)
