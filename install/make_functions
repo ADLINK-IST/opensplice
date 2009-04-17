@@ -641,7 +641,6 @@ install_hde_target ()
     #
     printf "*     Copy documentation... "
     cp -r ${OSPL_HOME}/docs ${HDE_dir}
-    cp ${OSPL_HOME}/index.html ${HDE_dir}
     # remove documentation for components that are not installed
     if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" ]
     then
@@ -655,8 +654,6 @@ install_hde_target ()
     then
         rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_CPP.pdf
     fi
-    # remove security guide as this is only in the special security release
-    rm -f ${HDE_dir}/docs/pdf/OpenSplice_SecurityConfiguration_Guide.pdf
     echo "Ready"
 
     #
@@ -748,7 +745,7 @@ install_hde_target ()
 
         cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/ccpp
         cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp
+        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp/makefile
         cp ${release}/custom/README ${HDE_dir}/custom_lib/ccpp
         cp ${release}/custom/setup ${HDE_dir}/custom_lib/ccpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps.mak ${HDE_dir}/custom_lib/ccpp
@@ -771,7 +768,7 @@ install_hde_target ()
 
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp
+        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
         cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps_sa.mak ${HDE_dir}/custom_lib/sacpp
 
@@ -1258,7 +1255,6 @@ install_rts_target ()
     #
     echo "*     Copy documentation"
     cp -r ${OSPL_HOME}/docs ${RTS_dir}
-    cp ${OSPL_HOME}/index.html ${RTS_dir}
     # remove documentation that does not apply to RTS
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_PreProcessor_usermanual.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_refman*.pdf

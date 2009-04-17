@@ -322,7 +322,7 @@ eorb_check ()
         EORBENV=`ls $EORBHOME/bin/`
         if [ "`echo $EORBENV | wc -w | tr -d ' '`" != "1" ]
         then
-            echo "Error - unable to set '$EORBENV'"
+            echo "Error - unable to set EORBENV"
             return 1
         fi
         export EORBENV
