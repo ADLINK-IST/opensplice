@@ -116,6 +116,44 @@
         </tr>
         <tr>
           <td>
+            5478<br/>
+            dds790
+          </td>
+          <td>
+            <b>Documentation does not describe <DefragBufferSize> networking configuration option</b><br/>
+            <i>
+              The deplyoment guide does not have any description of the channel configuration property:
+              <code><pre>
+&lt;Receiving&gt;
+  &lt;DefragBufferSize&gt;5000&lt;/DefragBufferSize&gt;
+&lt;/Receiving&gt;
+              </pre></code>
+              for the networking service. It is also not possible to add this option using the OpenSplice 
+              DDS Configurator tool.
+              <br/>
+              <b>Solution:</b> The deployment guide and the Configurator has been updated to describe this
+              configuration option.  
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6087<br/>
+            dds1052
+          </td>
+          <td>
+            <b>LIVELINESS_CHANGED status flag is not reset per DDS specification</b><br/>
+            <i>
+              During Performance testing, it was noticed that the LIVELINESS_CHANGED status flag is not reset
+              when the on_liveliness_changed method is invoked (should be per the DDS specification). A call
+              to the get_liveliness_changed_status() method had to be added within the listener to reset the
+              status flag.<br/>
+              <b>Solution:</b> The status flag is now reset after the on_liveliness_changed method is called. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
             6097<br/>
             dds1056
           </td>
