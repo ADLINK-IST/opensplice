@@ -36,22 +36,29 @@ print_usage(
 static char *key_file_path = NULL;
 static const char * const key_file_prefix = "osp";
 
+#define MAX_STATUSCHECKS (30)
+
 static void
 removeProcesses(
     int pid)
 {
     os_result r;
     os_int32 procResult;
+    int i = MAX_STATUSCHECKS;
 
     r = os_procDestroy(pid, OS_SIGTERM);
     r= os_procCheckStatus((os_procId)pid, &procResult);
-    while (r == os_resultBusy) {
+    while ((r == os_resultBusy) && (i > 0)) {
+        i--;
         printf (".");
         fflush(stdout);
         Sleep(1000);
         r = os_procCheckStatus((os_procId)pid, &procResult);
     }
 }
+
+#undef MAX_STATUSCHECKS
+
 
 static void
 removeKeyfile(
