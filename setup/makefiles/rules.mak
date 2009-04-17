@@ -49,7 +49,7 @@ ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
 else
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ `cygpath -w /`@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
 ifeq (,$(findstring win32,$(SPLICE_TARGET)))
@@ -57,7 +57,7 @@ ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
 else
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed 's@ [A-Za-z]\:@ `cygpath -w /`@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
 %$(OBJ_POSTFIX): %.c
