@@ -1,0 +1,486 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+   <title>OpenSplice DDS Known Issues</title>
+      <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+      <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+   </head>
+   <body>
+      <p class="back">
+         <a href="releasenotes.html">
+         Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+         height="25" width="30" alt="Back">
+         </a>
+      </p><p>
+      <h1>Contents</h1>
+      <p>
+        Possible problems and known errors in the product OpenSplice DDS V4.1:
+        <ul>
+          <li><a href="#dcps">DCPS Known Issues</a></li>
+          <li><a href="#dlrl">DLRL Known Issues</a></li>
+        </ul>
+      </p>
+      
+      <h1><a name="dcps">DCPS Known Issues</a></h1>
+      </p>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds124
+          </td>
+          <td>
+            <b>IDL Preprocessor does not warn for illegal keyfields</b><br/>
+            <i>
+              When assigning an array as keyfield for a datatype (using the
+              #pragma keylist statement in the IDL), the IDL preprocessor does not
+              give an error message stating that arrays are not supported as key field
+              defintions. Instead, code generation finishes successfully, but at run-time
+              the generated code doesn't work.<br/>
+              The pre-processor should therefore generate an error message when a type
+              is selected as keyfield that semantically cannot function as a key.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds184
+          </td>
+          <td>
+            <b>Query parser doesn't support escape characters</b><br/>
+            <i>
+              The internal OpenSplice DDS query parser does not support escape characters. This 
+              implicates that specific tokens cannot be used in query expressions (like 
+              for instance SQL keywords 'select', 'where', etc).<br/>
+              Impact at API level:
+              <ul>
+                <li>Topics with a SQL keyword as name cannot be created</li>
+                <li>
+                  QueryCondition expressions cannot refer to datafields with SQL keyword as name
+                </li>
+                <li>
+                  ContentFilteredTopic expressions cannot refer to datafields with SQL keyword as name
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4508<br/>
+            dds206
+          </td>
+          <td>
+            <b>typeSupport with invalid type name causes crash during register_type</b><br/>
+            <i>
+              When a type support object is created with an type name which is not known in
+              the meta database, the following register_type function crashes.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds492
+          </td>
+          <td>
+            <b>idlpp cannot handle same struct in a struct or forward declarations to structs</b><br/>
+            <i>
+            The following (faulty) idl code generates a 'floating point exception', instead idlpp should
+            not allow such constructs.
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct{
+                long x;
+                TestStruct someEnum;
+                string val;
+            };
+            </code></pre>
+            The following idl also fails (the forward declaration to the TestStruct is not correctly
+            processed):
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                long x;
+            };
+            </code></pre>
+            with the error: <code>***DDS parse error TestStruct undefined at line: 4</code>. The
+            following idl construct is not allowed, however the IDL preprocessor does not give 
+            a clear error:
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                TestStruct1 x;
+            };
+            </code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4821<br/>
+            dds494
+          </td>
+          <td>
+            <b>SQL RelOp like not supported</b><br/>
+            <i>
+              Using the SQL relational operator like is not supported.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds540
+          </td>
+          <td>
+            <b>
+              idlpp generates invalid Java code when a union does not mention its default case
+              as the last branch
+            </b><br/>
+            <i>
+              Idlpp assumes that when used, the default case in a union is always mentioned last. If
+              that is not the case, idlpp will choose the wrong discriminator value for the
+              default case. As a result the generated code is incorrect, causing unexpected failures
+              or incorrect data.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds747
+          </td>
+          <td>
+            <b>Ownership policy interface incorrect in DCPS API</b><br/>
+            <i>
+              As of OMG DDS specification 1.0 the OwnershipQosPolicy is defined for the TopicQos,
+              DataReaderQos and DataWriterQos. The TopicQos specifies the default and the 
+              DataWriterQos and DataReaderQos can override this value. The policy is RxO, which states
+              that the value between reader and writer must be equal in order to have writer to be connected
+              to the reader.<br/>
+              OpenSplice DDS only supports the OwnershipQosPolicy for the TopicQos, so the DataWriter
+              and DataReader take the value specified by the Topic. This is not according to the OMG DDS
+              specification.<br/>
+              As this change would involve an API change, this change will be incorporated in the next
+              major release.
+            </i>
+          </td>
+        </tr>
+      </table>
+
+      <h1><a name="dlrl">DLRL Known Issues</a></h1>
+      <p>
+        Possible problems and known errors in the DLRL profile.
+        <h2>C++ language binding</h2>
+        The C++ language binding for the DLRL profile is a beta version and has the
+        limitations listed below. An item that is striked-through no longer is a limitation.
+        <ul>
+          <li>
+            <b>Deviation from the DDS specification:</b><br/> The specification defines
+            an enumeration 'DCPSState' with labels 'INITIAL', 'REGISTERED' and
+            'ENABLED'. The 'REGISTERED' label however conflicts with an already
+            existing symbol on the Windows platform (imported by including the
+            Windows.h header file). Therefore the 'REGISTERED' label is renamed by
+            appending it with an underscore to 'REGISTERED_'. In later version this name
+            may be changed back or changed to another name altogether, so be aware of this
+            potential issue! 
+          </li>
+          <li>
+            <b>Only limited testing has been performed:</b><br/>Take note that this is a Beta
+            release of the DLRL C++ API, it is therefore not fully qualified and may still
+            contain some bugs other then the ones listed here. 
+          </li>
+          <li>
+            <b>Missing documentation:</b><br/>The Beta release of the DLRL C++ API is not
+            annotated with doxygen documentation. Until this documentation is added,
+            it's recommended to read the javadoc contained for the Java API of DLRL,
+            as the functions behave much in the same way.
+          </li>
+          <li>
+            <b>OSPL DCG limitation:</b>
+            <ul>
+              <li>
+                The DCG cannot use the mapping modes 'Topic Model leading mode' and 'Hybrid mode'
+                as described in Chapter 1.8 of the OpenSplice DCG manual
+              </li>
+              <li>
+                Annotating the DLRL valuetypes with local attributes is not yet supported. See
+                chapter 1.5.2.21 of the DCG manual.
+              </li>
+              <li>
+                Typedefs to forward valuetypes are not yet correctly resolved and will lead to
+                incorrect code being generated. Typedefs to non-forward valuetypes however do
+                function properly.
+              </li>
+              <li>
+                Annotating the DLRL valuetypes with local operations is not yet supported. See
+                the DLRL tutorial directory for file 'WhiteListObjects.idl' which contains an
+                example of local operations in DLRL valuetypes.<br/>
+                Note that the tutorial temporarily bypasses this limitation of the DCG by replacing
+                the generated files containing the local operation implementations with files that
+                have been written by hand. 
+              </li>
+              <li>
+                The 'ccpp_Foo_impl.h' and 'ccpp_Foo_impl.cpp' files described in Chapter 1.7.2 of
+                the DCG manual state that these files will not be overwritten by the DCG in 
+                subsequent runs of the DCG. This is not yet functional. 
+              </li>
+              <li>
+                The DCG does not correctly process all possible statemember types contained in
+                a valuetype. Some statemember types may lead to wrongly generated code (w.r.t.
+                signatures of the generated getter/setter operations or w.r.t. the semantics
+                for performing a deep-copy). The following overview details the currently 
+				supported types, the currently unsupported types and the types that are not
+				planned to be supported.<br/> 
+				<br/>
+				<ul>Currently supported types:<br/> 
+				<li>short<br/>
+				<li>long<br/>
+				<li>long long<br/>
+				<li>unsigned short<br/>
+				<li>unsigned long</li>
+				<li>unsigned long long</li>
+				<li>float</li>
+				<li>double</li>
+				<li>boolean</li>
+				<li>char</li>
+				<li>octet</li>
+				<li>(reference to an) enum</li>
+				<li>(reference to a) fixed/variable size struct</li>
+				<li>(reference to a) fixed/variable size union</li>
+				<li>string</li>
+				<li>bounded string</li>
+				<li>typedef to a bounded sequence</li>
+				<li>typedef to an unbounded sequence</li>
+				<li>(reference to a) (forward) valuetype</li>
+				</ul>
+				<br/>
+				<ul>Currently unsupported types:<br/>
+				<li>(reference to a) fixed/variable size array</li>
+				<li>anonymous fixed/variable size array</li>
+				<li>anonymous bounded sequence</li>
+				<li>anonymous unbounded sequence</li>
+				<li>anonymous enum</li>
+				<li>anonymous fixed/variable size struct</li>
+				<li>anonymous fixed/variable size union</li>
+				</ul>
+				<br/>
+				<ul>Not planned to be supported:</li>
+				<li>any</li>
+				<li>Object</li>
+				<li>fixed</li>
+				<li>bounded wstring</li>
+				<li>unbounded wstring</li>
+				<li>wchar</li>
+				<li>long double</li>
+				</ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <b>Nested modules may lead to compile problems:</b><br/> In some cases the usage of
+			nested modules may lead to compile issues. The following IDL snipnet illustrates the problem:
+			<pre><code>
+module A{
+  module B{
+    struct test {
+      long a[3][4];
+    };
+  };
+};
+			</code></pre>
+	      </li>
+          <li>
+            <b>Nested sequences unsupported</b><br/>Any kind of usage of nested sequences will cause compile problems.
+			An example illustrates:
+			<pre><code>
+sequence&lt;sequence&lt;long> > someSeq;
+			</code></pre>
+	      </li>
+          <li>
+            <b>Reference counting for managed valuetypes in sequences is incomplete.</b><br/>
+			When directly assigning an element of a sequence of valuetypes to another sequence of valuetypes
+			an error occurs and the reference count of the valuetype element is not correctly increased.
+			This will cause the reference count of that element to become corrupted and lead to problems.
+			An example illustrates:
+			<pre><code>
+// Assume a valuetype A;
+// and a typedef sequence&lt;A> ASeq;
+
+ASeq source;
+ASeq target;
+
+source.length[1];
+target.length[1];
+source[0] = new A();
+target[0] = source[0];
+			</code></pre>
+			<br/>
+			A work-around is available though by first assigning the valuetype to a temporary holder and
+			increasing the reference count manually. An example illustrates:
+			<pre><code>
+// Assume a valuetype A;
+// and a typedef sequence&lt;A> ASeq;
+
+ASeq source;
+ASeq target;
+A* temp;
+
+source.length[1];
+target.length[1];
+source[0] = new A();
+temp = source[0].in();
+temp->_add_ref();
+target[0] = temp;
+			</code></pre>
+	      </li>
+        </ul>
+      </p>
+      <p>
+      <h2>Open tickets</h2>
+      </p>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4512<br/>
+            dds210
+          </td>
+          <td>
+            <b>DCG should warn about attributes that are not explicitly mapped or declared 'local'</b><br/>
+            <i>
+              MDE/HDE expected error from DCG when <> attributes are not mapped. The problem is that DCG
+              should at least warn about attributes that are not explicitly mapped or declared 'local'.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds229
+          </td>
+          <td>
+            <b>OSPL DCG: does not support all elements which can be defined in the Mapping XML file</b><br/>
+            <i>
+              The DCG does not support the following elements: enumDef, associationDef, compoRelationDef,
+              extensionTopic, multiAttribute and placeTopic. The semantics of the mentioned elements are
+              ambiguous and need further clarification in the specification. The DCG allows the mentioned
+              elements to be defined, but ignores them during code generation. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds231
+          </td>
+          <td>
+            <b>DLRL module: READ_ONLY DLRL objects can be changed</b><br/>
+            <i>
+              Attributes which are mapping with the IDL types of struct, union, array or sequence or 
+              enum as one of it's attributes, will result in getters being generated which return a
+              direct pointer to the struct, union, etc object used by the READ_ONLY DLRL object instead
+              of a copy of the object. This wrongly enables the modification of these object contents and
+              thus the content of the DLRL object by use of a getter instead of a setter on a writeable
+              object. A getter for these types of attributes should always return a deep clone of the
+              attribute, instead of a direct pointer to the object itself.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds232
+          </td>
+          <td>
+            <b>
+              DLRL module: A second call to the register_all_for_pubsub operation of a DDS.Cache object
+              results in errors
+            </b><br/>
+            <i>
+              When a call to the register_all_for_pubsub() operation on a DDS.Cache fails, then all the
+              performed tasks until the error are not unrolled, creating memory leaks and leaving DCPS
+              entities alive and creating undefined behavior in the DLRL even if the error causing the
+              fail is fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds288
+          </td>
+          <td>
+            <b>Compositions not supported</b><br/>
+            <i>
+              The DLRL module does not yet support the notion of compositions. This has
+              impact on several levels:
+              <ul>
+                <li>
+                  <b>ObjectHome</b>: We do not yet support the boolean 
+                  concerns_contained_objects as defined in the attach_listener 
+                  operation. This has impact on listener management (attach) and how
+                  listeners are triggered.
+                </li>
+                <li>
+                  <b>ObjectRoot</b>:the CONTAINED_OBJECTS_SCOPE is treated as a
+                  SIMPLE_OBJECT_SCOPE for the is_modified(...) operation.
+                </li>
+                <li>
+                  <b>Mapping XML</b>:The compoRelationDef element is ignored.
+                </li>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds503
+          </td>
+          <td>
+            <b>DLRL Module: DLRLOid API change for SAJ</b><br/>
+            <i>
+              The DLRL Java API currently supports a DLRLOid with an integer array
+              with size 3 and name value. This array has been replaced by three separate
+              integers (systemId, localId and serial). The array has been marked as 
+              deprecated, as well as the constructor of the DLRLOid which takes an
+              integer array as parameter. This array will be removed from the API
+              in the next major release of OpenSplice DDS.<br/>
+              The DLRL currently supports both the three integer fields (which is the
+              preferred usage) and the old integer value array (which is deprecated).
+            </i>
+          </td>
+        </tr>
+      </table>
+
+      <br/>
+      <hr>
+      <p>
+         <a target="_top" href="http://www.prismtech.com">
+         <img src="../images/logo_prismtech2.jpg" align="right"
+         width="112" height="29" border="0" alt="PrismTech"></a> 
+         <a href="#top" target="_self">
+         <img src="../images/top.gif" width="32" 
+         height="32" border="0" alt="TOP"></a><br/>
+         <a href="#top" target="_self">Top</a>
+      </p>
+   </body>
+</html>

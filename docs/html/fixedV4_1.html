@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V4.1</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V4.1</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V4.1<br/>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4925<br/>
+            dds550
+          </td>
+          <td>
+            <b>numberOfTakes not updated in reader statistics</b><br/>
+            <i>
+              The reader statistics attribute numberOfTakes is not updated. The numberOfSamplesTaken
+              attribute is > 0 while numberOfTakes == 0.<br/>
+              <b>Solution:</b> The statistic was not updated when a query was used. Therefore statistics
+              have been added to queries. So the numberOfTakes statistic on reader entities is increased
+              for every take on the reader entity and the same applies to queries. So the total number of
+              takes is the sum of the statistic per query and reader. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4965<br/>
+            dds579
+          </td>
+          <td>
+            <b>would be convenient to allow for idl syntax to insert '#includes' into generated code</b><br/>
+            <i>
+              Due to some common types used in the generated code it would be convenient if we could also
+              insert #includes into the generated source. This would require a modification to the IDL syntax
+              to allow for specification of an include file.<br/>
+              <b>Solution:</b> The IDL preprocessor user manual has been updated on how to use include's in your
+              .idl files.  
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds593
+          </td>
+          <td>
+            <b>networking service cores on incoming messages with invalid partionId</b><br/>
+            <i>
+              The networking service is not robust against incoming messages with invalid content.<br/>
+              <b>Solution:</b> The networking service now validates the content of the incoming network
+              packets and ignores the packets that are invalid.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5302<br/>
+            dds709
+          </td>
+          <td>
+            <b>PRE_CONDITION not met on unregister_instance</b><br/>
+            <i>
+              If a topic is exclusive and has a deadline period on the writer, when the unregister_instance call
+              is made a PRECONDITION_NOT_MET error is thrown if the sleep period is longer than the deadline. If
+              the topic is not exclusive then this error is not thrown.<br/>
+              <b>Solution:</b> When the deadline was missed the instance handle was invalidated, which cause the
+              unregister_instance() call to fail. Now the instance handle is not invalidated, but the application
+              is still notified.  
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5331<br/>
+            dds717
+          </td>
+          <td>
+            <b>unregister triggers waitset but read returns NO_DATA</b><br/>
+            <i>
+              An unregister of an instance triggers the waitset containing a condition which matches that
+              particular instance. When the instance does not contain any samples, eg all samples are taken,
+              then the read operation on that instance returns NO_DATA. Both DataReader_read_w_condition and
+              DataReader_read_instance show the same behaviour.<br/>
+              <b>Solution:</b> The DataReader cache did not handle invalid samples correctly, which has been 
+              fixed. When an unregister message is received by the DataReader for an empty instance a sample
+              is created with the SampleInfo.valid_data flag set to FALSE. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5478<br/>
+            dds790
+          </td>
+          <td>
+            <b>Documentation does not describe <DefragBufferSize> networking configuration option</b><br/>
+            <i>
+              The deplyoment guide does not have any description of the channel configuration property:
+              <code><pre>
+&lt;Receiving&gt;
+  &lt;DefragBufferSize&gt;5000&lt;/DefragBufferSize&gt;
+&lt;/Receiving&gt;
+              </pre></code>
+              for the networking service. It is also not possible to add this option using the OpenSplice 
+              DDS Configurator tool.
+              <br/>
+              <b>Solution:</b> The deployment guide and the Configurator has been updated to describe this
+              configuration option.  
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6087<br/>
+            dds1052
+          </td>
+          <td>
+            <b>LIVELINESS_CHANGED status flag is not reset per DDS specification</b><br/>
+            <i>
+              During Performance testing, it was noticed that the LIVELINESS_CHANGED status flag is not reset
+              when the on_liveliness_changed method is invoked (should be per the DDS specification). A call
+              to the get_liveliness_changed_status() method had to be added within the listener to reset the
+              status flag.<br/>
+              <b>Solution:</b> The status flag is now reset after the on_liveliness_changed method is called. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6097<br/>
+            dds1056
+          </td>
+          <td>
+            <b>idlpp does not clean up intermediate idl files when option -d is used</b><br/>
+            <i>
+              When using the option -d for outputting the generated files in a sub-directory, idlpp does not
+              remove the intermediate fooDcps.idl file. It does remove fooDcps.idl when -d option is not used.<br/>
+              <b>Solution:</b> Intermediate resources are now cleaned when the -d option is used.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds691
+          </td>
+          <td>
+            <b>DLRL module to change liveliness behavior</b><br/>
+            <i>
+              When an Object in DLRL no longer has any writers it enters a final lifecycle state internally. It
+              can only exit this state if a new sample for that instance arrives. When this occurs the DLRL
+              destroys the 'old' Object and creates a new Object to signal that this has taken place. As a
+              result the user will see an Object in the 'created_objects' list and an Object in the 
+              'deleted_objects' list that represents the same instance. This is rather confusing when used
+              in applications as it means an Object can be destroyed in the Cache without ever receiving a
+              dispose event. So basically the no_writers situation is treated as a 'postponed' dispose event,
+              to be processed when a new sample for that instance arrives! It makes management of such
+              scenarios on application level rather tedious.<br/>
+              <b>Solution:</b> The DCPS concepts of NOT_ALIVE_DISPOSED and NOT_ALIVE_NO_WRITERS will now be
+              treated differently on DLRL level. Only an explicit dispose leads to Objects being destroyed
+              and changes from NOT_ALIVE_NO_WRITERS back to ALIVE and vice versa only lead to Object
+              modifications (if a new sample is available). 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds721
+          </td>
+          <td>
+            <b>Wrong API behavior on DLRL SAJ  for operation ObjectHome.content_filter()</b><br/>
+            <i>
+              By default the 'content_filter' operation returns an empty string (i.e. ""), but it should be
+              NULL, according to the specification.<br/>
+              <b>Solution:</b> The 'content_filter' operation now returns NULL by default. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds747
+          </td>
+          <td>
+            <b>Ownership policy interface incorrect in DCPS API</b><br/>
+            <i>
+              The DDS specification specifies an OWNERSHIP QoS policy. This policy applies to a Topic, DataReader
+              and a DataWriter. The Topic specifies the default and the DataWriter and/or DataReader can specify
+              their own. The RxO of this policy states the value should be equal.<br/>
+              In the OpenSplice DCPS API, the OWNERSHIP QoS policy is only available for the Topic. There is no
+              way for the DataWriter and/or DataReader to change the default setting.<br/>
+              <b>Solution:</b> The OWNERSHIP QoS policy has been added to the DataWriter QoS and DataReader QoS.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds765
+          </td>
+          <td>
+            <b>SampleRejectedStatus is not implemented according to the DDS1.2 spec.</b><br/>
+            <i>
+              The SampleRejectedStatus in OpenSplice DDS is not implemented according to the
+              DDS1.2 specification. According this specification, the last_reason should be an enumeration
+              defined as:
+              <code><pre>
+enum SampleRejectedStatusKind {
+  NOT_REJECTED,
+  REJECTED_BY_INSTANCES_LIMIT,
+  REJECTED_BY_SAMPLES_LIMIT,
+  REJECTED_BY_SAMPLES_PER_INSTANCE_LIMIT
+};
+              </pre></code>
+              If no sample is rejected the last_reason should be NOT_REJECTED, however it shows
+              REJECTED_BY_INSTANCE_LIMIT.<br/>
+              <b>Solution:</b> The reject reason was not properly implemented in the kernel. This has been
+              fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds822
+          </td>
+          <td>
+            <b>The operation lookup_instance is missing on the DataWriter.</b><br/>
+            <i>
+              According to the OMG DDS specification, each typed DataWriter should offer an operation called
+              lookup_instance, that accepts a sample for which the keyfields have been initialized and returns
+              the instance_handle that represents the DataWriter instance of the supplied sample.<br/> 
+              OpenSplice DDS does not provide the lookup_instance operation for a DataWriter.<br/>
+              <b>Solution:</b> The lookup_instance() operation has been implemented and the reference manuals
+              have been updated accordingly.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1024
+          </td>
+          <td>
+            <b>Develop request for subset of historical data</b><br/>
+            <i>
+              In some cases an application only requires a subset of available historical data. When the historical data
+              set is large, it is a waste of resources to align all available data. To improve resource usage in these
+              scenarios the DCPS API should be extended, so applications can define a subset of the available data.<br/>
+              <b>Solution:</b> The DCPS API has been extended with a DataReader operation called 
+              'wait_for_historical_data_w_condition()' which accepts additional parameters to define the subset of data
+              the DataReader is interested in.<br/>
+              The Durability Service can be instructed only to align data on request for specific namespace(s) (see
+              deployment guide).
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1389
+          </td>
+          <td>
+            <b>Some unsupported operations have method signatures that are not according to the DDS 1.2 spec</b><br/>
+            <i>
+              The order of the 2 parameters of the operations: 
+              <ul>
+                <li>DomainParticipant::get_participant_data()</li> 
+                <li>DomainParticipant::get_topic_data()</li>
+              </ul>
+              are switched.
+              Also, the 'readers' parameter of the Subscriber::get_datareaders() operation should have been 'inout'.<br/>
+              <b>Solution:</b> The signatures have been changed and comply to the OMG DDS 1.2 specification. The operations
+              are NOT implemented and return DDS_UNSUPPORTED as a return code.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br/>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>
