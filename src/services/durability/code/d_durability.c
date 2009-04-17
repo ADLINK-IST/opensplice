@@ -142,6 +142,7 @@ d_durabilityUpdateLease(
 {
     d_durability durability;
     os_time sleepTime;
+    v_duration expiryTime;
 
     durability = d_durability(args);
 
@@ -154,6 +155,9 @@ d_durabilityUpdateLease(
                             durability->configuration->livelinessExpiryTime);
             os_nanoSleep(sleepTime);
         }
+        expiryTime.seconds = 20;
+        expiryTime.nanoseconds = 0;
+        u_participantRenewLease(u_participant(durability->service), expiryTime);
     }
     return NULL;
 }
@@ -600,7 +604,7 @@ d_durabilityLoadModule(
 {
     c_base       base;
     c_bool       loaded;
-    
+
     assert(!args);
     base = c_getBase((c_object)entity);
     loaded = loaddurabilityModule2(base);
@@ -650,14 +654,14 @@ main(
 
     serviceName = "durability";
 
-    uri = "file:///ospl.xml";  
+    uri = "file:///ospl.xml";
 
     err = WaitForSemaphore(durabilitySvcStartSem);
     assert ( err == Success );
-             
+
 #else
     success = d_durabilityArgumentsProcessing(argc, argv, &uri, &serviceName);
-#endif    
+#endif
 
     if(success == TRUE){
         stop = FALSE;
@@ -966,8 +970,8 @@ d_durabilityUpdateStatisticsCallback(
     c_voidp args)
 {
     struct updateStatistics* update;
-    
-    
+
+
     if(entity->statistics){
         update = (struct updateStatistics*)args;
         update->callback(v_durabilityStatistics(entity->statistics), update->userData);
@@ -982,9 +986,9 @@ d_durabilityUpdateStatistics(
     c_voidp args)
 {
     struct updateStatistics update;
-    
+
     update.callback = callback;
     update.userData = args;
-    
+
     u_entityAction(u_entity(durability->service), d_durabilityUpdateStatisticsCallback, &update);
 }
