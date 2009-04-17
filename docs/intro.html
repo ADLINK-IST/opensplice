@@ -32,15 +32,15 @@
   <p>
     OpenSplice DDS has been developed and optimized over years of research and
     development along with deployments in the most demanding mission and business
-    critical distributed applications, such as, Combat Management Systems (CMS),
+    critical distributed applications, such as: Combat Management Systems (CMS),
     Air Traffic Management/Control (ATM/C), Transportation, Telecommunications
     and Financial Services.
   </p>
   <p>
     OpenSplice DDS provides integration with key technologies for expanding its
     applicability and easing its integration into your existing applications. 
-    Specifically, OpenSplice DDS has integration technologies with DBMS, such as
-    Oracle, ANTS, MySQL, etc., Web Services, Real-Time Java(TM), and CORBA. Moreover,
+    Specifically, OpenSplice DDS has integration technologies with DBMS (Oracle, 
+    ANTS, MySQL, etc.), Web Services, Real-Time Java(TM), and CORBA. Moreover,
     to boost your productivity OpenSplice DDS now comes with Model Driven Development
     (MDD) Power Tools, which guide you from the design of your system, to the tuning
     up to its final deployment.
@@ -50,6 +50,7 @@
   <h3>Key Features:</h3>
 
   <ul>
+    <li>All DCPS profiles available as open source</li> 
     <li>Most complete 2nd generation OMG-DDS implementation supporting all DDS profiles</li>
     <li>Field proven during a decade of deployment in mission critical environments</li>
     <li>Targeting both real-time embedded &amp; large-scale fault-tolerant systems</li>
@@ -67,6 +68,11 @@
       Support realtime network-scheduler that schedules traffic based upon DDS
       QoS-policies like 'latency-budget' and 'transport priority'.
     </li>
+    <li>
+      The DBMSConnect service provides integration with many DataBase Management Systems,
+      distributing data from and to the DBMS using the key networking features of OpenSplice
+      DDS.  
+    </li>
   </ul>
 
   <h3>What's new</h3>
@@ -74,11 +80,24 @@
     New in this release:
     <ul>
       <li>
-        The DBMSConnect service has been improved: bugfixes and supporting replication.  
+        OpenSplice DDS now available as open source (see <a href="http://www.opensplice.org">www.opensplice.org</a>)
       </li>
       <li>
-        The priorities and scheduling clasess of the Durability service and splicedaemon
-        threads can now be configured. Use OpenSplice DDS Configurator for explanation.
+        Improved the code generator 'idlpp':
+        <ul>
+          <li>code generation for complex data types</li>
+          <li>support for runtime bound checking (see OpenSplice Preprocessor user manual)</li>
+        </ul>
+      </li>
+      <li>
+        Performance improvements: 
+        <ul>
+          <li>major reduction in latency</li>
+          <li>major increase in throughput</li>
+        </ul>
+      </li>
+      <li>
+        Deployment Guide describes all configuration options for each service.
       </li>
     </ul>
   </p>
@@ -88,7 +107,7 @@
   <hr>
   <h3>IMPORTANT NOTICE</a></h3>
     <p><b>The following rights apply to PrismTech proprietary software contained in this distribution:</b></p>
-    <p><b>The Software and documentation are Copyright 2006 to 2008 PrismTech Limited.
+    <p><b>The Software and documentation are Copyright 2006 to 2009 PrismTech Limited.
     All rights reserved.</b></p>
     <p><b>The Software and documentation included herein are commercial items.</b></p>
     <p><b>If the Licensee is the U.S. Government or any agency or department thereof,

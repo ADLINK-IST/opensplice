@@ -320,7 +320,7 @@ eorb_check ()
     if [ -z "$EORBENV" ]
     then
         EORBENV=`ls $EORBHOME/bin/`
-        if [ "`echo $EORBENV | wc -w`" != "1" ]
+        if [ "`echo $EORBENV | wc -w | tr -d ' '`" != "1" ]
         then
             echo "Error - unable to set '$EORBENV'"
             return 1

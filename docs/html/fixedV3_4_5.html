@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V3.4.5</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V3.4.5</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V3.4.5<br/>
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+      <p>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds823
+          </td>
+          <td>
+            <b>Cross development platforms unclear</b><br/>
+            <i>
+              It is unclear which host platforms we support for certain target platforms 
+              (currently only VxWorks). The host platform/target platform combination
+              should be mentioned in the release notes.<br/>
+              <b>Solution:</b> The release notes have been adapted.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5723<br/>
+            dds932
+          </td>
+          <td>
+            <b>A lot of throttling related network logging reports</b><br/>
+            <i>
+              In OpenSplice DDS V3.4, a lot of throttling related logging reports are
+              written to the networking log file by the Sending thread of reliable
+              channels. The file size limit is reached within one day. The selected report
+              level is 3.<br/>
+              <b>Solution:</b> The throttling related reports are now reported with level 5
+              (the maximum report level).
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6085<br/>
+            dds1050
+          </td>
+          <td>
+            <b>OpenSplice hangs when node goes down</b><br/>
+            <i>
+              If any network interface on a node is down, OpenSplice DDS networking 
+              service will consume 100% CPU load.<br/>
+              <b>Solution:</b> The algorithm walking over all available network interfaces
+              was incorrect and has been fixed. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6107<br/>
+            dds1276
+          </td>
+          <td>
+            <b>transient store leakage with multiple writers</b><br/>
+            <i>
+              Endurance test running a track load scenario of 900 tracks with a life time of 
+              600 seconds and a lost time of 1200 seconds, shows a significant memory leakage
+              of transient samples and instances of the transient store of a specific transient
+              topic.<br/> 
+              Analysis shows that the problem is related to multiple writers of the same set of
+              instances. One application writes and disposes the instances for
+              lost tracks. A second application disposes the same set of instances again. Instances
+              are unregistered by means of the writer QoS autounregister_instance_delay, which is set
+              to 300 seconds. The topic QoS durability service_cleanup_delay is set to 300 seconds. All
+              writer and reader instances and samples are removed, but a significant part of the transient
+              store instances and samples are not removed (using the tool mmstat).<br/> 
+              If another warning reader is created with the OpenSplice DDS Tuner, the old samples are
+              still available as historical data, having an instance state of NOT_ALIVE_DISPOSED. If
+              the second application does not dispose the instances again, all instances are removed, and
+              the problem seems to be solved.<br/>
+              <b>Solution:</b> The transient store only looked at the QoS of the incoming message, while
+              it should decide whether to cleanup resources based on the DurabilityServiceQosPolicy of 
+              the Topic QoS.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1281
+          </td>
+          <td>
+            <b>Splicedaemon does not read Lease configuration</b><br/>
+            <i>
+              The Splicedaemon does not read the Lease configuration as it assumes it is an element of
+              'Domain/Daemon', while it should be an element of 'Domain'.<br/>
+              The following workaround can be applied: copy the lease configuration from the 'Domain'
+              element to the 'Domain/Daemon' element. <br/>
+              <b>Solution:</b> The Splicedaemon now reads the Lease configuration correctly as a sub-
+              element of 'Domain'.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6275<br/>
+            dds1296
+          </td>
+          <td>
+            <b>durability remains initializing if OSPL networking channel not responding</b><br/>
+            <i>
+              The Durability Service remains initializing if OpenSplice networking channel is not
+              responding. During restart of a node, the Durability Service remains initializing. Analysis
+              shows that one of the networking channels of a fellow node was not responding. The 
+              durability protocol does not recover automatically from this situation, but full system
+              restart is required.<br/>
+              <b>Solution:</b> The durability service can now cope with the described problem. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1359
+          </td>
+          <td>
+            <b>dbmsconnect: event-table columns are always set to NOT NULL, regardless of the monitored table</b><br/>
+            <i>
+              When DBMSConnect creates an event-table, the "allow NULLs" property is not copied from the original table,
+              but is always set to "NOT NULL". This can result in changes being missed in DDS.<br/>
+              <b>Solution:</b> DBMSConnect now copies the "allow NULLs" property from the original table for the
+              event-table.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1364
+          </td>
+          <td>
+            <b>Platform-dependent default UDP-receive-buffer sizes</b><br/>
+            <i>
+              OpenSplice DDS SHOULD use platform-dependent defaults for the setting of the default UDP 
+              receive-buffer sizes. The current statically defined value is invalid for Solaris-8 and
+              causes the out-of-the-box xml-file NOT to work.<br/>
+              <b>Solution:</b> The default value for UDP receive-buffer size is set to value, which fits
+              a default installation of the platform.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6322<br/>
+            dds1374
+          </td>
+          <td>
+            <b>Alignment of persistent and transient data fails</b><br/>
+            <i>
+              The alignment of persistent and transient data fails in the following scenario with 
+              14 Linux nodes (x86) and 3 VxWorks nodes (PPC604). The entire system is started and
+              during the startup phase one of the VxWorks nodes is powered off. In this case not
+              all active nodes will reach the alignment to completeness.<br/>
+              <b>Solution:</b> A concurrency problem in the durability service caused this problem,
+              which has been fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1392
+          </td>
+          <td>
+            <b>Builtin writers do not resend when samples are rejected</b><br/>
+            <i>
+              The builtin writers (for the built-in topics and the DCPSHeartbeat) does not resend
+              samples when they are rejected. This is caused by the fact that the built-in participant
+              does not have a resend thread. This can be fixed by letting the splicedaemon start a
+              thread for resending rejected builtin samples.<br/>
+              <b>Solution:</b> The splicedaemon starts a thread that takes care of resending rejected
+              built-in samples. The scheduling class and priority of this thread are the same of the
+              one configured for the kernelManager.
+            </i>
+          </td>
+        </tr>
+        </table>
+      </p>
+      
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+      <p>
+        No changes were made affecting the API.
+      </p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br/>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>
