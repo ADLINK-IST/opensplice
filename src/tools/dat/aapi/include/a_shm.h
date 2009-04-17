@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
  * detaching Shared Memory in order to attach to an existing
  * SPLICE-DDS Shared Memory Segment and creating a new shm segment
  * that can be considered a "private segment" (although to the OS it

@@ -403,12 +403,26 @@ install_hde_target ()
     target_env=$9
 
     #
+    # Copy general license file
+    #
+    printf "*     Copy General LICENSE file in place "
+    cp ${OSPL_HOME}/LICENSE ${HDE_dir}/.
+    echo "Ready"
+
+    #
     # Copy interface file for OpenSplice
     #
     printf "*     Copy OpenSplice IDL interface files "
     mkdir ${HDE_dir}/etc
     mkdir ${HDE_dir}/etc/idl
     cp ${OSPL_HOME}/etc/idlpp/dds_dcps.idl ${HDE_dir}/etc/idl/
+    #
+    # Copy in the buildinfo if produced from the scoreboard
+    #
+    if [ -f "${OSPL_HOME}/etc/BUILDINFO" ]
+    then
+        cp ${OSPL_HOME}/etc/BUILDINFO ${HDE_dir}/etc/.
+    fi
     echo "Ready"
 
     #
@@ -1139,6 +1153,13 @@ install_rts_target ()
     mkdir -p ${RTS_dir}
 
     #
+    # Copy general license file
+    #
+    printf "*     Copy General LICENSE file in place "
+    cp ${OSPL_HOME}/LICENSE ${RTS_dir}/.
+    echo "Ready"
+
+    #
     # Copy default configuration file for OpenSplice
     #
     printf "*     Copy OpenSplice default configuration file "
@@ -1147,6 +1168,13 @@ install_rts_target ()
     sed -e "s/__RELEASE__/${target_version}/g" \
         -e "s/__EXE__/${suffix_exe}/g" \
         ${OSPL_HOME}/etc/ospl.xml > ${RTS_dir}/etc/config/ospl.xml
+    #
+    # Copy in the buildinfo if produced from the scoreboard
+    #
+    if [ -f "${OSPL_HOME}/etc/BUILDINFO" ]
+    then
+        cp ${OSPL_HOME}/etc/BUILDINFO ${RTS_dir}/etc/.
+    fi
     echo "Ready"
 
     # done with etc dir
@@ -1235,7 +1263,7 @@ install_rts_target ()
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_PreProcessor_usermanual.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_refman*.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_Tutorial*.pdf
-    rm -f ${RTS_dir}/docs/pdf/OpenSplice_V2_V3_Migration_Guide.pdf
+    rm -f ${RTS_dir}/docs/pdf/OpenSplice_V3_V4_Migration_Guide.pdf
 
     #
     # Platform specific redistributables

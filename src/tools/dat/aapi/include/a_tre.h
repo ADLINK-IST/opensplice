@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
  *
  * This file implements an AVL-Tree and uses pointers to user defined
  * data structures, to keep its use generic. The tree is balanced at
