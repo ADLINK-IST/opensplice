@@ -31,13 +31,6 @@ main (
     int argc,
     char *argv[])
 {
-#ifdef INTEGRITY
-    argc = 3;
-    argv[0] = "pong";
-    argv[1] = "PongRead";
-    argv[2] = "PongWrite";
-#endif
-
     DomainId_t                        myDomain           = NULL;
     DomainParticipantFactory_ptr      dpf                = NULL;
     DomainParticipant_ptr             dp                 = NULL;
@@ -110,6 +103,10 @@ main (
     // Evaluate cmdline arguments
     //
 
+#ifdef INTEGRITY
+    read_partition = "PongRead";
+    write_partition = "PongWrite";
+#else
     if (argc != 1) {
         if (argc != 3) {
             printf ("Invalid.....\n Usage: %s [READ_PARTITION WRITE_PARTITION]\n", argv[0]);
@@ -118,6 +115,7 @@ main (
         read_partition  = argv[1];
         write_partition = argv[2];
     }
+#endif
 
     //
     // Create participant

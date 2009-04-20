@@ -568,11 +568,11 @@ gapi_dataReader_delete_contained_entities (
             _EntityClaim(readCondition);
             userData = _ObjectGetUserData(_Object(readCondition));
             _ReadConditionPrepareDelete(readCondition);
-            _ReadConditionFree(readCondition);
-            gapi_setIterRemove(iterSet);
             if ( action ) {
                 action(userData, action_arg);
             }
+            _ReadConditionFree(readCondition);
+            gapi_setIterRemove(iterSet);
         }
         gapi_setIterFree (iterSet);
         iterSet = gapi_setFirst(datareader->viewSet);

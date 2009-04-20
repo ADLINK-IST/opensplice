@@ -124,13 +124,14 @@ make_hde_mirror_and_builder ()
     TXTFILE_CONVERTER="$7"
     ENV="$8"
     GETLIC_INFO_NAME="$9"
-    NOINSTALLER="$10"
-    PLATFORM_EXT="$11"
+    NOINSTALLER="${10}"
+    PLATFORM_EXT="${11}"
+    SOURCE_TARGET_SHORT="${12}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
     sh ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
-        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}"
+        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
@@ -317,7 +318,8 @@ set_hde_envs ()
     fi
     
     TXTFILE_CONVERTER="$6"
-    
+    SOURCE_TARGET_SHORT="$8"
+
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
     then
@@ -556,7 +558,7 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
-    if [ "${target_os}" != "${host_os}" ]
+    if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" ]
     then
         printf "*     Copy JAVA host archive files... "
         release=${OSPL_HOME}/jar/${host}${source_env}
@@ -791,85 +793,87 @@ install_hde_target ()
 
     if [ "${INCLUDE_CXX}" = "yes" ]
     then
-        echo "*         For CORBA C++ OpenFusion... "
-        mkdir ${HDE_dir}/examples/dcps/CORBA
-        mkdir ${HDE_dir}/examples/dcps/CORBA/C++
-        mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion
-        echo "*           For PingPong... "
-        mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-        if [ "${target}" != "x86.win32" ]
+        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.idl" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.cpp" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong            
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-        else
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Ping
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Pong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.idl" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/Ping/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Ping
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/Pong/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Pong
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/README.txt \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
-        fi
-        echo "*           Ready"
+            echo "*         For CORBA C++ OpenFusion... "
+            mkdir ${HDE_dir}/examples/dcps/CORBA
+            mkdir ${HDE_dir}/examples/dcps/CORBA/C++
+            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion
+            echo "*           For PingPong... "
+            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+            if [ "${target}" != "x86.win32" ]
+            then
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.idl" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong            
+                install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+            else
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Ping
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Pong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.idl" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/Ping/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Ping
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/Pong/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/Pong
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/README.txt \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+            fi
+            echo "*           Ready"
 
-        echo "*           For Tutorial... "
-        mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-        if [ "${target}" != "x86.win32" ]
-        then
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.idl" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.cpp" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.h" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.txt" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
-        else
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/MessageBoard
-            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/UserLoad
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.idl" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.h" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.txt" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-            install_ascii_fileset \
-                "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/ChatBoxUtil/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
-            install_ascii_fileset \
-                "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/Chatter/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
-            install_ascii_fileset \
-                "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/MessageBoard/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/MessageBoard
-            install_ascii_fileset \
-                "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/UserLoad/*.vcproj" \
-                ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/UserLoad
+            echo "*           For Tutorial... "
+            mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+            if [ "${target}" != "x86.win32" ]
+            then
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.idl" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.h" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.txt" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
+            else
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/MessageBoard
+                mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/UserLoad
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.idl" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.h" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/*.txt" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
+                install_ascii_fileset \
+                    "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/ChatBoxUtil/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
+                install_ascii_fileset \
+                    "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/Chatter/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
+                install_ascii_fileset \
+                    "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/MessageBoard/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/MessageBoard
+                install_ascii_fileset \
+                    "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP_x86.win32/OpenFusion/UserLoad/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/UserLoad
+           fi
+           echo "*           Ready"
         fi
-        echo "*           Ready"
-
         echo "*         For standalone C++... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C++
         echo "*           For PingPong... "
@@ -1064,7 +1068,7 @@ install_hde_target ()
         echo "*         C Ready"
     fi
 
-    if [ "${INCLUDE_JAVA}" = "yes" ]
+    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" ]
     then
         echo "*         For standalone Java"
         mkdir ${HDE_dir}/examples/dcps/standalone/Java

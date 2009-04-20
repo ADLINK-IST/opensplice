@@ -72,7 +72,8 @@ namespace DDS
 
     typedef struct ccpp_UserData *ccpp_UserData_ptr;
 
-    struct ccpp_UserData {
+    struct ccpp_UserData : virtual public CORBA::LocalObject
+    {
 
         CORBA::Object_ptr ccpp_object;
         ::DDS::Listener_ptr ccpp_listener;

@@ -78,12 +78,6 @@ main (
     char  *                         chatMessageTypeName = NULL;
     char  *                         nameServiceTypeName = NULL;
     char  *                         namedMessageTypeName = NULL;
-    
-#ifdef INTEGRITY
-    argc = 2;
-    argv[0] = "MessageBoard";
-    argv[1] = "1";
-#endif
 
     /* Options: MessageBoard [ownID] */
     /* Messages having owner ownID will be ignored */
