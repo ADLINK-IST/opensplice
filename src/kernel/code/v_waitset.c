@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v__waitset.h"
 #include "v__observer.h"
 #include "v_observable.h"
@@ -104,22 +115,24 @@ v_waitsetEventNew(
     return event;
 }
 
-void
+static void
 v_waitsetEventFree(
     v_waitset _this,
     v_waitsetEvent event)
 {
-    v_waitsetLock(_this);
+//    v_waitsetLock(_this);
 
-    if (v_eventTest(event->kind,V_EVENT_HISTORY_DELETE)) {
-        c_free(event);
-    } else if(event->kind == V_EVENT_HISTORY_REQUEST) {
-        c_free(event);
-    } else {
-        event->next = _this->eventCache;
-        _this->eventCache = event;
+    if (event) {
+        if (v_eventTest(event->kind,V_EVENT_HISTORY_DELETE)) {
+            c_free(event);
+        } else if(event->kind == V_EVENT_HISTORY_REQUEST) {
+            c_free(event);
+        } else {
+            event->next = _this->eventCache;
+            _this->eventCache = event;
+        }
     }
-    v_waitsetUnlock(_this);
+//    v_waitsetUnlock(_this);
 }
 
 void
@@ -204,25 +217,36 @@ v_waitsetWait(
     wait_flags = 0;
     v_waitsetLock(_this);
     eventList = v_waitsetEvent(v_waitsetEventList(_this));
-    if (eventList == NULL) {
+
+    while ((eventList == NULL) &&
+           (!(wait_flags & V_EVENT_OBJECT_DESTROYED)))
+    {
         wait_flags = v__observerWait(v_observer(_this));
         eventList = v_waitsetEvent(v_waitsetEventList(_this));
-    } else {
-        v__observerClearEventFlags(_this);
     }
+
+    v__observerClearEventFlags(_this);
     v_waitsetEventList(_this) = NULL;
+    if (action) {
+        v_waitsetUnlock(_this);
+        event = eventList;
+        while (event) {
+            action(event, arg);
+            event = event->next;
+        }
+        v_waitsetLock(_this);
+    }
+    while (eventList) {
+        event = eventList;
+        eventList = eventList->next;
+        event->next = NULL; /* otherwise entire list is freed! */
+        v_waitsetEventFree(_this,event); /* free whole list. */
+    }
     v_waitsetUnlock(_this);
 
     if (wait_flags & V_EVENT_OBJECT_DESTROYED) {
         result = V_RESULT_DETACHING;
     } else {
-        while (eventList) {
-            event = eventList;
-            eventList = eventList->next;
-            event->next = NULL; /* otherwise entire list is freed! */
-            if (action != NULL) action(event, arg);
-            v_waitsetEventFree(_this,event);
-        }
         result = V_RESULT_OK;
     }
     return result;
@@ -246,13 +270,28 @@ v_waitsetTimedWait(
     v_waitsetLock(_this);
     eventList = v_waitsetEvent(v_waitsetEventList(_this));
 
-    if (eventList == NULL) {
+    while ((eventList == NULL) &&
+           (!(wait_flags & (V_EVENT_OBJECT_DESTROYED | V_EVENT_TIMEOUT)))) {
         wait_flags = v__observerTimedWait(v_observer(_this),time);
         eventList = v_waitsetEvent(v_waitsetEventList(_this));
-    } else {
-        v__observerClearEventFlags(_this);
     }
+    v__observerClearEventFlags(_this);
     v_waitsetEventList(_this) = NULL;
+    if (action) {
+        v_waitsetUnlock(_this);
+        event = eventList;
+        while (event) {
+            action(event, arg);
+            event = event->next;
+        }
+        v_waitsetLock(_this);
+    }
+    while (eventList) {
+        event = eventList;
+        eventList = eventList->next;
+        event->next = NULL; /* otherwise entire list is freed! */
+        v_waitsetEventFree(_this,event); /* free whole list. */
+    }
     v_waitsetUnlock(_this);
 
     if (wait_flags & V_EVENT_OBJECT_DESTROYED) {
@@ -260,13 +299,6 @@ v_waitsetTimedWait(
     } else if (wait_flags & V_EVENT_TIMEOUT) {
         result = V_RESULT_TIMEOUT;
     } else {
-        while (eventList) {
-            event = eventList;
-            eventList = eventList->next;
-            event->next = NULL; /* otherwise entire list is freed! */
-            if (action != NULL) action(event, arg);
-            v_waitsetEventFree(_this,event);
-        }
         result = V_RESULT_OK;
     }
     return result;

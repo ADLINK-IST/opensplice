@@ -1,3 +1,4 @@
+BUILD=yes
 SETUP_TYPE=x86.win32-dev
 BUILD_DIST=yes
 KEEP_DIST=yes

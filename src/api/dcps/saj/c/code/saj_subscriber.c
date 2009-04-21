@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "saj_subscriber.h"
 #include "saj_subscriberListener.h"
 #include "saj_dataReaderListener.h"
@@ -13,10 +24,10 @@
  */
 JNIEXPORT jobject JNICALL
 SAJ_FUNCTION(jniCreateDatareader)(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject jsubscriber,
-    jobject jdescription, 
-    jobject jqos, 
+    jobject jdescription,
+    jobject jqos,
     jobject jlistener,
     jint jmask)
 {
@@ -33,22 +44,22 @@ SAJ_FUNCTION(jniCreateDatareader)(
     gapi_char* dataReaderClassName;
     gapi_char* signature;
     saj_returnCode rc;
-    
+
     listener = NULL;
     jreader = NULL;
     reader = GAPI_OBJECT_NIL;
-    
+
     subscriber = (gapi_subscriber) saj_read_gapi_address(env, jsubscriber);
     participant = gapi_subscriber_get_participant(subscriber);
     description = (gapi_topicDescription) saj_read_gapi_address(env, jdescription);
-    
+
     typeName = gapi_topicDescription_get_type_name(description);
     typeSupport = gapi_domainParticipant_get_typesupport(participant, (const gapi_char*) typeName);
     gapi_free(typeName);
-    
+
     jtypeSupport = saj_read_java_address((gapi_object)typeSupport);
     rc = saj_LookupTypeSupportDataReader(env, jtypeSupport, &dataReaderClassName);
-    
+
     if(rc == SAJ_RETCODE_OK){
 	if ((*env)->IsSameObject (env, jqos, GET_CACHED(DATAREADER_QOS_DEFAULT)) == JNI_TRUE) {
 	    readerQos = (gapi_dataReaderQos *)GAPI_DATAREADER_QOS_DEFAULT;
@@ -60,22 +71,22 @@ SAJ_FUNCTION(jniCreateDatareader)(
             readerQos = gapi_dataReaderQos__alloc();
             rc = saj_DataReaderQosCopyIn(env, jqos, readerQos);
         }
-            
+
         if(rc == SAJ_RETCODE_OK){
             listener = saj_dataReaderListenerNew(env, jlistener);
-            reader = gapi_subscriber_create_datareader(subscriber, description, 
+            reader = gapi_subscriber_create_datareader(subscriber, description,
                                                         readerQos, listener, (gapi_statusMask)jmask);
-            
+
             if (reader != GAPI_OBJECT_NIL){
                 rc = saj_LookupTypeSupportConstructorSignature(env, jtypeSupport, &signature);
-                
+
                 if(rc == SAJ_RETCODE_OK){
                     rc = saj_construct_typed_java_object(env, dataReaderClassName,
-                                                        (PA_ADDRCAST)reader, 
-                                                        &jreader, signature, 
+                                                        (PA_ADDRCAST)reader,
+                                                        &jreader, signature,
                                                         jtypeSupport);
                     gapi_free(signature);
-                    
+
                     if(listener != NULL){
                         saj_write_java_listener_address(env, reader, listener->listener_data);
                     }
@@ -90,7 +101,7 @@ SAJ_FUNCTION(jniCreateDatareader)(
 	}
         gapi_free(dataReaderClassName);
     }
-    
+
     return jreader;
 }
 
@@ -101,8 +112,8 @@ SAJ_FUNCTION(jniCreateDatareader)(
  */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniDeleteDatareader)(
-    JNIEnv *env, 
-    jobject jsubscriber, 
+    JNIEnv *env,
+    jobject jsubscriber,
     jobject jdataReader)
 {
     gapi_subscriber subscriber;
@@ -112,10 +123,10 @@ SAJ_FUNCTION(jniDeleteDatareader)(
 
     subscriber = (gapi_subscriber) saj_read_gapi_address(env, jsubscriber);
     dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-    
+
     ud = saj_userData(gapi_object_get_user_data(dataReader));
     grc = gapi_subscriber_delete_datareader(subscriber, dataReader);
-    
+
     if(grc == GAPI_RETCODE_OK){
         saj_destroy_user_data(env, ud);
     }
@@ -129,14 +140,14 @@ SAJ_FUNCTION(jniDeleteDatareader)(
  */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniDeleteContainedEntities)(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject jsubscriber)
 {
     gapi_subscriber subscriber;
 
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-    
-    return (jint)gapi_subscriber_delete_contained_entities(subscriber, 
+
+    return (jint)gapi_subscriber_delete_contained_entities(subscriber,
                                         saj_destroy_user_data_callback, (void *)env);
 }
 
@@ -147,7 +158,7 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
  */
 JNIEXPORT jobject JNICALL
 SAJ_FUNCTION(jniLookupDatareader)(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject jsubscriber,
     jstring jtopicName)
 {
@@ -155,18 +166,18 @@ SAJ_FUNCTION(jniLookupDatareader)(
     gapi_subscriber subscriber;
     gapi_dataReader reader;
     const gapi_char* topicName;
-    
+
     jreader = NULL;
     reader = GAPI_OBJECT_NIL;
     topicName = NULL;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-    
+
     if(jtopicName != NULL){
         topicName = (*env)->GetStringUTFChars(env, jtopicName, 0);
     }
     reader = gapi_subscriber_lookup_datareader(subscriber, topicName);
-    
+
     if (reader != GAPI_OBJECT_NIL){
         jreader = saj_read_java_address(reader);
     }
@@ -196,24 +207,30 @@ SAJ_FUNCTION(jniGetDatareaders)(
     saj_returnCode rc;
     jobjectArray jreaderSeq;
     jint jresult;
-    
+
     if(jseqHolder != NULL){
-        subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-        grc = gapi_subscriber_get_datareaders(subscriber, &readerSeq,
-                                    (const gapi_sampleStateMask)jsampleStates,
-                                    (const gapi_viewStateMask)jviewStates,
-                                    (const gapi_instanceStateMask)jinstanceStates);
-        
-        if(grc == GAPI_RETCODE_OK){
-            rc = saj_LookupExistingDataReaderSeq(env, readerSeq, &jreaderSeq);
-            
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jseqHolder, 
-                            GET_CACHED(dataReaderSeqHolder_value_fid), jreaderSeq);
+        readerSeq = gapi_dataReaderSeq__alloc();
+        if (readerSeq)
+        {
+            subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
+            grc = gapi_subscriber_get_datareaders(subscriber, readerSeq,
+                                        (const gapi_sampleStateMask)jsampleStates,
+                                        (const gapi_viewStateMask)jviewStates,
+                                        (const gapi_instanceStateMask)jinstanceStates);
+
+            if(grc == GAPI_RETCODE_OK){
+                rc = saj_LookupExistingDataReaderSeq(env, readerSeq, &jreaderSeq);
+
+                if(rc == SAJ_RETCODE_OK){
+                    (*env)->SetObjectField(env, jseqHolder,
+                                GET_CACHED(dataReaderSeqHolder_value_fid), jreaderSeq);
+                }
+                gapi_free(readerSeq);
             }
-            gapi_free(readerSeq);
+            jresult = (jint)grc;
+        } else {
+            jresult = (jint)GAPI_RETCODE_OUT_OF_RESOURCES;
         }
-        jresult = (jint)grc;
     } else {
         jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -231,7 +248,7 @@ SAJ_FUNCTION(jniNotifyDatareaders)(
     jobject jsubscriber)
 {
     gapi_subscriber subscriber;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
     return (jint)gapi_subscriber_notify_datareaders(subscriber);
 }
@@ -251,17 +268,17 @@ SAJ_FUNCTION(jniSetQos)(
     gapi_subscriber subscriber;
     saj_returnCode rc;
     jint result;
-    
+
     qos = gapi_subscriberQos__alloc();
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
     rc = saj_SubscriberQosCopyIn(env, jqos, qos);
     result = (jint)GAPI_RETCODE_ERROR;
-    
+
     if(rc == SAJ_RETCODE_OK){
-        result = (jint)gapi_subscriber_set_qos(subscriber, qos); 
+        result = (jint)gapi_subscriber_set_qos(subscriber, qos);
     }
     gapi_free(qos);
-    
+
     return result;
 }
 
@@ -281,20 +298,20 @@ SAJ_FUNCTION(jniGetQos)(
     gapi_returnCode_t result;
     jobject jqos;
     gapi_subscriber subscriber;
-    
+
     if(jqosHolder != NULL){
         subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
         jqos = NULL;
-        
+
         qos = gapi_subscriberQos__alloc();
         result = gapi_subscriber_get_qos(subscriber, qos);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_SubscriberQosCopyOut(env, qos, &jqos);
             gapi_free(qos);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jqosHolder, 
+                (*env)->SetObjectField(env, jqosHolder,
                         GET_CACHED(subscriberQosHolder_value_fid), jqos);
                 (*env)->DeleteLocalRef(env, jqos);
             } else {
@@ -322,20 +339,20 @@ SAJ_FUNCTION(jniSetListener)(
     struct gapi_subscriberListener *listener;
     gapi_subscriber subscriber;
     gapi_returnCode_t grc;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
     listener = saj_subscriberListenerNew(env, jlistener);
-    grc = gapi_subscriber_set_listener(subscriber, listener, 
+    grc = gapi_subscriber_set_listener(subscriber, listener,
                                                     (unsigned long int)jmask);
-    
+
     if(grc == GAPI_RETCODE_OK){
         if(listener != NULL){
             saj_write_java_listener_address(env, subscriber, listener->listener_data);
         }
     } else if(listener != NULL){
         saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
-    }  
-    return (jint)grc; 
+    }
+    return (jint)grc;
 }
 
 /**
@@ -351,11 +368,11 @@ SAJ_FUNCTION(jniGetListener)(
     jobject jlistener;
     struct gapi_subscriberListener listener;
     gapi_subscriber subscriber;
-    
+
     jlistener = NULL;
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
     listener = gapi_subscriber_get_listener(subscriber);
-    
+
     jlistener = saj_read_java_listener_address(subscriber);
 
     return jlistener;
@@ -372,9 +389,9 @@ SAJ_FUNCTION(jniBeginAccess)(
     jobject jsubscriber)
 {
     gapi_subscriber subscriber;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-    
+
     return (jint)gapi_subscriber_begin_access(subscriber);
 }
 
@@ -389,9 +406,9 @@ SAJ_FUNCTION(jniEndAccess)(
     jobject jsubscriber)
 {
     gapi_subscriber subscriber;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-    
+
     return (jint)gapi_subscriber_end_access(subscriber);
 }
 
@@ -407,10 +424,10 @@ SAJ_FUNCTION(jniGetParticipant)(
 {
     gapi_subscriber subscriber;
     gapi_domainParticipant participant;
-    
+
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
     participant = gapi_subscriber_get_participant(subscriber);
-    
+
     return saj_read_java_address(participant);
 }
 
@@ -429,17 +446,17 @@ SAJ_FUNCTION(jniSetDefaultDatareaderQos)(
     gapi_subscriber subscriber;
     saj_returnCode rc;
     jint result;
-    
+
     result = (jint)GAPI_RETCODE_ERROR;
     qos = gapi_dataReaderQos__alloc();
     rc = saj_DataReaderQosCopyIn(env, jqos, qos);
-    
+
     if (rc == SAJ_RETCODE_OK){
         subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
         result = (jint)gapi_subscriber_set_default_datareader_qos(subscriber, qos);
     }
     gapi_free(qos);
-    
+
     return result;
 }
 
@@ -459,22 +476,22 @@ SAJ_FUNCTION(jniGetDefaultDatareaderQos)(
     gapi_subscriber subscriber;
     gapi_returnCode_t result;
     gapi_dataReaderQos *qos;
-    
+
     jqos = NULL;
     rc = SAJ_RETCODE_ERROR;
-    
+
     if(jqosHolder != NULL){
         qos = gapi_dataReaderQos__alloc();
-        
+
         subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
-        result = gapi_subscriber_get_default_datareader_qos(subscriber, qos); 
-        
+        result = gapi_subscriber_get_default_datareader_qos(subscriber, qos);
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_DataReaderQosCopyOut(env, qos, &jqos);
             gapi_free(qos);
-            
+
             if (rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jqosHolder, 
+                (*env)->SetObjectField(env, jqosHolder,
                                        GET_CACHED(dataReaderQosHolder_value_fid), jqos);
             } else {
                 result = GAPI_RETCODE_ERROR;
@@ -505,13 +522,13 @@ SAJ_FUNCTION(jniCopyFromTopicQos)(
     gapi_dataReaderQos *qos;
     gapi_topicQos *topicQos;
     jint result;
-    
+
     oldQos = NULL;
-    
-    if(jqosHolder != NULL){   
+
+    if(jqosHolder != NULL){
         result = (jint)GAPI_RETCODE_ERROR;
         rc = SAJ_RETCODE_ERROR;
-        
+
     	if ((*env)->IsSameObject (env, jtopicQos, GET_CACHED(TOPIC_QOS_DEFAULT)) == JNI_TRUE) {
     	    topicQos = (gapi_topicQos *)GAPI_TOPIC_QOS_DEFAULT;
     	    rc = SAJ_RETCODE_OK;
@@ -519,15 +536,15 @@ SAJ_FUNCTION(jniCopyFromTopicQos)(
             topicQos = gapi_topicQos__alloc ();
             rc = saj_TopicQosCopyIn(env, jtopicQos, topicQos);
     	}
- 
+
         if(rc == SAJ_RETCODE_OK){
-            oldQos = (*env)->GetObjectField(env, jqosHolder, 
+            oldQos = (*env)->GetObjectField(env, jqosHolder,
                                   GET_CACHED(dataReaderQosHolder_value_fid));
             qos = gapi_dataReaderQos__alloc();
-            
+
             if(oldQos){
                 rc = saj_DataReaderQosCopyIn(env, oldQos, qos);
-                
+
                 if(rc != SAJ_RETCODE_OK) {
                     gapi_free(qos);
                     qos = NULL;
@@ -539,7 +556,7 @@ SAJ_FUNCTION(jniCopyFromTopicQos)(
         subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
         grc = gapi_subscriber_copy_from_topic_qos(subscriber, qos, topicQos);
         result = (jint)grc;
-        
+
         if(grc == GAPI_RETCODE_OK){
             if(oldQos){
                 jqos = oldQos;
@@ -549,7 +566,7 @@ SAJ_FUNCTION(jniCopyFromTopicQos)(
             rc = saj_DataReaderQosCopyOut(env, qos, &jqos);
 
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jqosHolder, 
+                (*env)->SetObjectField(env, jqosHolder,
                                   GET_CACHED(dataReaderQosHolder_value_fid), jqos);
             }
         }

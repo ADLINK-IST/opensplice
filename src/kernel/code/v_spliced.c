@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /**
  * ----------------------- Heartbeats -----------------------
  * Heartbeats are implemented using the publish/subscriber mechanism.
@@ -1251,11 +1262,25 @@ v_splicedKernelManager(
 }
 
 void
+v_splicedBuiltinResendManager(
+    v_spliced spliced)
+{
+    v_kernel k;
+
+    k = v_objectKernel(spliced);
+    v_participantResendManagerMain(k->builtin->participant);
+}
+
+void
 v_splicedPrepareTermination(
     v_spliced spliced)
 {
     C_STRUCT(v_event) term;
     v_observer o;
+    v_kernel k;
+
+    k = v_objectKernel(spliced);
+    v_participantResendManagerQuit(k->builtin->participant);
 
     term.kind = V_EVENT_TRIGGER;
     term.source = v_publicHandle(v_public(spliced));

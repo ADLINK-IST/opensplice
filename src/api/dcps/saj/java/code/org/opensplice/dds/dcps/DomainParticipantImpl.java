@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 
 package org.opensplice.dds.dcps;
@@ -161,16 +172,16 @@ public class DomainParticipantImpl extends EntityImpl implements DDS.DomainParti
         return jniGetDiscoveredParticipants(participant_handles);
     }
 
-    public int get_discovered_participant_data (long handle, DDS.ParticipantBuiltinTopicDataHolder participant_data) {
-        return jniGetDiscoveredParticipantData(handle, participant_data);
+    public int get_discovered_participant_data (DDS.ParticipantBuiltinTopicDataHolder participant_data, long handle) {
+        return jniGetDiscoveredParticipantData(participant_data, handle);
     }
 
     public int get_discovered_topics (DDS.InstanceHandleSeqHolder topic_handles) {
         return jniGetDiscoveredTopics(topic_handles);
     }
 
-    public int get_discovered_topic_data (long handle, DDS.TopicBuiltinTopicDataHolder topic_data) {
-        return jniGetDiscoveredTopicData(handle, topic_data);
+    public int get_discovered_topic_data (DDS.TopicBuiltinTopicDataHolder topic_data, long handle) {
+        return jniGetDiscoveredTopicData(topic_data, handle);
     }
 
     public boolean contains_entity (long a_handle) {
@@ -213,9 +224,9 @@ public class DomainParticipantImpl extends EntityImpl implements DDS.DomainParti
     private native int jniSetDefaultTopicQos(DDS.TopicQos qos);
     private native int jniGetDefaultTopicQos(DDS.TopicQosHolder qos);
     private native int jniGetDiscoveredParticipants(DDS.InstanceHandleSeqHolder participant_handles);
-    private native int jniGetDiscoveredParticipantData(long handle, DDS.ParticipantBuiltinTopicDataHolder participant_data);
+    private native int jniGetDiscoveredParticipantData(DDS.ParticipantBuiltinTopicDataHolder participant_data, long handle);
     private native int jniGetDiscoveredTopics(DDS.InstanceHandleSeqHolder topic_handles);
-    private native int jniGetDiscoveredTopicData(long handle, DDS.TopicBuiltinTopicDataHolder topic_data);
+    private native int jniGetDiscoveredTopicData(DDS.TopicBuiltinTopicDataHolder topic_data, long handle);
     private native boolean jniContainsEntity(long a_handle);
     private native int jniGetCurrentTime(DDS.Time_tHolder current_time);
 

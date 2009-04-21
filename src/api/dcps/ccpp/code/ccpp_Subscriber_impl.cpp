@@ -1,6 +1,17 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <gapi.h>
 #include "ccpp_dds_dcps.h"
-#include "ccpp_Subscriber_impl.h" 
+#include "ccpp_Subscriber_impl.h"
 #include "ccpp_Topic_impl.h"
 #include "ccpp_DataReader_impl.h"
 #include "ccpp_ListenerUtils.h"
@@ -93,12 +104,12 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
     if (proceed)
     {
       reader_handle = gapi_subscriber_create_datareader(
-                _gapi_self, 
-                topic_handle, 
-                gapi_drqos, 
+                _gapi_self,
+                topic_handle,
+                gapi_drqos,
                 gapi_listener,
                 mask);
-  
+
       if (reader_handle)
       {
         DDS::ccpp_UserData_ptr myUD;
@@ -142,7 +153,7 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
           }
           gapi_free(typeName);
         }
-      } 
+      }
     }
   }
   if (gapi_listener)
@@ -208,7 +219,7 @@ const char * topic_name
   gapi_dataReader handle;
   DDS::ccpp_UserData_ptr myUD;
   DDS::DataReader_ptr dataReader = NULL;
-  
+
   handle = gapi_subscriber_lookup_datareader(_gapi_self, topic_name);
   if (handle)
   {
@@ -245,7 +256,7 @@ const char * topic_name
 }
 
 DDS::ReturnCode_t DDS::Subscriber_impl::get_datareaders (
-  DDS::DataReaderSeq_out readers,
+  DDS::DataReaderSeq & readers,
   DDS::SampleStateMask sample_states,
   DDS::ViewStateMask view_states,
   DDS::InstanceStateMask instance_states
@@ -257,38 +268,34 @@ DDS::ReturnCode_t DDS::Subscriber_impl::get_datareaders (
   gapi_readers = gapi_dataReaderSeq__alloc();
   if (gapi_readers)
   {
-    readers = new DDS::DataReaderSeq();
-    if (readers)
-    {
-      result = gapi_subscriber_get_datareaders( _gapi_self, &gapi_readers, sample_states, 
+    result = gapi_subscriber_get_datareaders( _gapi_self, gapi_readers, sample_states,
                                                 view_states, instance_states);
-      if (result == DDS::RETCODE_OK)
+    if (result == DDS::RETCODE_OK)
+    {
+      CORBA::ULong l = static_cast<CORBA::ULong>(gapi_readers->_length);
+      readers.length(l);
+      for (CORBA::ULong i=0; i<l; i++)
       {
-        CORBA::ULong l = static_cast<CORBA::ULong>(gapi_readers->_length);
-        readers->length(l);
-        for (CORBA::ULong i=0; i<l; i++)
+        DDS::ccpp_UserData_ptr myUD;
+        myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>
+                              (gapi_object_get_user_data(gapi_readers->_buffer[i]));
+        if (myUD)
         {
-          DDS::ccpp_UserData_ptr myUD;
-          myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>
-                                (gapi_object_get_user_data(gapi_readers->_buffer[i]));
-          if (myUD)
+          readers[i] = dynamic_cast<DDS::DataReader_ptr>(myUD->ccpp_object);
+          if (readers[i])
           {
-            readers[i] = dynamic_cast<DDS::DataReader_ptr>(myUD->ccpp_object);
-            if (!readers[i])
-            {
-              OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Data Reader");
-            }
+            DDS::DataReader::_duplicate(readers[i]);
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Data Reader");
           }
         }
+        else
+        {
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+        }
       }
-    }
-    else
-    {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
     }
     gapi_sequence_free(gapi_readers);
   }
@@ -311,7 +318,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::set_qos (
 {
   DDS::ReturnCode_t result;
   if (&qos == DDS::DefaultQos::SubscriberQosDefault)
-  { 
+  {
     result = gapi_subscriber_set_qos(_gapi_self, GAPI_SUBSCRIBER_QOS_DEFAULT );
   }
   else
@@ -397,7 +404,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::begin_access (
 {
   return gapi_subscriber_begin_access(_gapi_self);
 }
- 
+
 DDS::ReturnCode_t DDS::Subscriber_impl::end_access (
 ) THROW_ORB_EXCEPTIONS
 {
@@ -466,7 +473,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::get_default_datareader_qos (
   {
     result = gapi_subscriber_get_default_datareader_qos(_gapi_self, gapi_drqos);
     ccpp_DataReaderQos_copyOut(*gapi_drqos, qos);
-    gapi_free(gapi_drqos); 
+    gapi_free(gapi_drqos);
   }
   else
   {

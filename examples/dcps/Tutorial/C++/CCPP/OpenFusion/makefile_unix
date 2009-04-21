@@ -1,9 +1,11 @@
+include ${OSPL_HOME}/custom_lib/ccpp/orbdeps.mak
+
 #
 # Include paths
 INCLUDES=-I./
 INCLUDES+=-I./bld
 INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/CCPP
-INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/CCPP/DDS_OpenFusion_1_4_1
+INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
 INCLUDES+=-I$(TAO_ROOT)/include
 INCLUDES+=-I$(OSPL_HOME)/include
 INCLUDES+=-I$(OSPL_HOME)/include/sys
@@ -11,7 +13,7 @@ INCLUDES+=-I$(OSPL_HOME)/include/sys
 # C++ Compiler settings.
 CXX=g++
 CXXFLAGS=-g -c
-CPPFLAGS=-DDDS_OpenFusion_1_4_1 $(INCLUDES)
+CPPFLAGS=-D$(SPLICE_ORB) $(INCLUDES)
 
 # Linker settings.
 LD_SO=$(CXX)
@@ -22,11 +24,6 @@ LD_LIBS=-lstdc++
 OSPLICE_COMP=$(OSPL_HOME)/bin/idlpp -C -l cpp -d bld
 
 OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp
-TAO_LIBS=-L$(TAO_ROOT)/lib -lTAO -lACE -lTAO_PortableServer
-
-# IDL Compiler settings.
-IDLC=tao_idl -o bld
-IDLFLAGS="-Sc -Sp -Sd -Sv"
 
 DCPS_SRC_FILES = bld/ChatC.cpp  bld/ChatDcpsC.cpp  bld/ChatDcps_impl.cpp  bld/ChatSplDcps.cpp
 
@@ -48,24 +45,24 @@ $(DCPS_SRC_FILES) : Chat.idl
 	@mkdir -p bld
 	@$(OSPLICE_COMP) $(INCLUDES) $<
 	@echo "Compiling $< with TAO IDL compiler"
-	@$(IDLC) $(INCLUDES) $(IDLFLAGS) $<
+	@$(ORB_IDL_COMPILER) $(ORB_IDL_OUTPUT) bld $(INCLUDES) $(ORB_IDL_FLAGS) $<
 	@echo "Compiling DCPS IDL Typed Interfaces with TAO IDL compiler"
-	@$(IDLC) $(INCLUDES) $(IDLFLAGS) bld/ChatDcps.idl
+	@$(ORB_IDL_COMPILER) $(ORB_IDL_OUTPUT) bld $(INCLUDES) $(ORB_IDL_FLAGS) bld/ChatDcps.idl
 
 exec/Chatter : $(DCPS_OBJ_FILES) Chatter.o CheckStatus.o multitopic.o
 	@echo "Linking Chatter"
 	@mkdir -p exec
-	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS)  $(TAO_LIBS) $(LD_LIBS)
+	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(ORB_LDLIBS) $(LD_LIBS)
 
 exec/MessageBoard : $(DCPS_OBJ_FILES) MessageBoard.o CheckStatus.o multitopic.o
 	@echo "Linking MessageBoard"
 	@mkdir -p exec
-	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS)  $(TAO_LIBS) $(LD_LIBS)
+	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(ORB_LDLIBS) $(LD_LIBS)
 
 exec/UserLoad : $(DCPS_OBJ_FILES) UserLoad.o CheckStatus.o multitopic.o
 	@echo "Linking UserLoad"
 	@mkdir -p exec
-	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS)  $(TAO_LIBS) $(LD_LIBS)
+	@$(LD_SO) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(ORB_LDLIBS) $(LD_LIBS)
 
 clean :
 	@rm -f *.o

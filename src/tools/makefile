@@ -15,4 +15,8 @@ ifneq (,$(findstring devdat,$(SPLICE_TARGET)))
 SUBSYSTEMS	+= dat
 endif
 
+ifeq ($(INCLUDE_TOOLS_SHMDUMP),yes)
+SUBSYSTEMS  += shmdump
+endif
+
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

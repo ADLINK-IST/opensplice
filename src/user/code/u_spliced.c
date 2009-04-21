@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "u__user.h"
 
 #include "u_spliced.h"
@@ -327,6 +338,24 @@ u_splicedKernelManager(
         r = u_splicedRelease(spliced);
     } else {
         OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0, 
+                  "Could not claim spliced.");
+    }
+    return r;
+}
+
+u_result
+u_splicedBuiltinResendManager(
+    u_spliced spliced)
+{
+    u_result r;
+    v_spliced s;
+
+    r = u_splicedClaim(spliced, &s);
+    if ((r == U_RESULT_OK) && (s != NULL)) {
+        v_splicedBuiltinResendManager(s);
+        r = u_splicedRelease(spliced);
+    } else {
+        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
                   "Could not claim spliced.");
     }
     return r;

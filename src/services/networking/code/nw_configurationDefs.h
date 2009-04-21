@@ -1,6 +1,19 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #ifndef NW_CONFIGURATIONDEFS_H
 #define NW_CONFIGURATIONDEFS_H
+
+#include "os_socket.h"
 
 #define NWCF_SEP "/"
 #define NWCF_ROOT(par)           NWCF_ROOT_##par
@@ -60,7 +73,7 @@
 
 /* -------------------- Channels/Channel/QueueSize -------------------------- */
 #define NWCF_NAME_QueueSize           "QueueSize"                      /* ulong */
-#define NWCF_DEF_QueueSize            (4000U)
+#define NWCF_DEF_QueueSize            (400U)
 #define NWCF_MIN_QueueSize            (1U)
 
 /* --------------------- Channels/Channel/PortNr ---------------------------- */
@@ -121,7 +134,9 @@
 
 /* ---------------- Channels/Channel/Receiving/ReceiveBufferSize ------------------- */
 #define NWCF_NAME_ReceiveBufferSize   "ReceiveBufferSize"              /* ulong */
+#ifndef NWCF_DEF_ReceiveBufferSize
 #define NWCF_DEF_ReceiveBufferSize    (1000000U)
+#endif
 
 /* ------------------ Channels/Channel/Receiving/DefragBufferSize ---------------------- */
 #define NWCF_NAME_DefragBufferSize        "DefragBufferSize"                   /* ulong */

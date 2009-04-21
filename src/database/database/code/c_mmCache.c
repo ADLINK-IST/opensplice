@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "c_mmCache.h"
 #include "assert.h"
 
@@ -97,11 +108,11 @@ c_mmCacheDestroy (
     c_block remove;
 
     assert(_this != NULL);
-    assert(_this->cache == NULL);
-    assert(_this->incomplete == NULL);
-    assert(_this->last == NULL);
-    assert(_this->allocated == 0);
-    assert(_this->free == 0);
+//    assert(_this->cache == NULL);
+//    assert(_this->incomplete == NULL);
+//    assert(_this->last == NULL);
+//    assert(_this->allocated == 0);
+//    assert(_this->free == 0);
 
     b = _this->cache;
     while (b != NULL) {
@@ -109,6 +120,11 @@ c_mmCacheDestroy (
         b = b->next;
         c_mmFree(_this->mm, remove);
     }
+
+    _this->cache = NULL;
+    _this->incomplete = NULL;
+    _this->last = NULL;
+
     c_mmFree(_this->mm,_this);
 }
 
@@ -323,7 +339,11 @@ c_mmCacheFree (
     block = sample->block;
     assert(block->used > 0);
     block->used--;
+#if 0
+    if ((block->used == 0) && (block->next)) {
+#else
     if (block->used == 0) {
+#endif
         if (block->prev == NULL) {
             _this->cache = block->next;
         } else {

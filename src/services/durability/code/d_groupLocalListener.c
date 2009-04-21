@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "os.h"
 #include "d_groupLocalListener.h"
 #include "d_nameSpacesRequestListener.h"
@@ -1482,7 +1493,12 @@ d_groupLocalListenerHandleAlignment(
 
             if(requestRemote == TRUE){
                 stamp = v_timeGet();
-                networkAttachTime    = stamp;
+
+                if(config->timeAlignment){
+                    networkAttachTime    = stamp;
+                } else {
+                    networkAttachTime = C_TIME_INFINITE;
+                }
                 timeRangeActive      = FALSE;
                 zeroTime.seconds     = 0;
                 zeroTime.nanoseconds = 0;
@@ -1606,7 +1622,12 @@ d_groupLocalListenerHandleAlignment(
 
                 if(requestRemote == TRUE){
                     stamp = v_timeGet();
-                    networkAttachTime    = stamp;
+
+                    if(config->timeAlignment){
+                        networkAttachTime    = stamp;
+                    } else {
+                        networkAttachTime = C_TIME_INFINITE;
+                    }
                     timeRangeActive      = FALSE;
                     zeroTime.seconds     = 0;
                     zeroTime.nanoseconds = 0;

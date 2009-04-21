@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #ifndef D__CONFIGURATION_H
 #define D__CONFIGURATION_H
@@ -191,6 +202,9 @@ void            d_configurationSetTracingOutputFile         (d_configuration con
 
 void            d_configurationSetTracingTimestamps         (d_configuration  config,
                                                              c_bool useTimestamp);
+
+void            d_configurationSetTimeAlignment             (d_configuration  config,
+                                                             c_bool alignment);
 
 void            d_configurationSetTracingRelativeTimestamps (d_configuration config,
                                                              u_cfElement element,

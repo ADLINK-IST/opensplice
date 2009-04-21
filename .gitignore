@@ -142,4 +142,11 @@ etc/idlpp/CCPP/DDS_OpenFusion_1_5_1/corbaCxxMetaDescription
 etc/idlpp/CCPP/DDS_OpenFusion_1_5_1/corbaCxxClassBodyHeader
 etc/idlpp/CCPP/DDS_OpenFusion_1_5_1/corbaIdlInterfaceHeader
 etc/idlpp/CCPP/DDS_OpenFusion_1_5_1/corbaCxxClassBody
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassSpecHeader
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaIdlInterface
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassSpec
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxMetaDescription
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassBodyHeader
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaIdlInterfaceHeader
+etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassBody
 docs/html/dds
