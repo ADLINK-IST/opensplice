@@ -72,10 +72,14 @@ $(IDLPP_OBJ): $(IDLPP_ORB_HDR) $(ORB_TOP_HDR) $(ORB_API_HDR)
 $(EORB_SRC): copyeorbsrc
 
 copyeorbinc:
+ifdef $(EORBHOME)
 	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
+endif
 
 copyeorbsrc:
+ifdef $(EORBHOME)
 	cp $(EORBHOME)/src/*.cpp .
+endif
 
 #generic rules for IDL preprocessing
 
