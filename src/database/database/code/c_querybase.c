@@ -422,8 +422,8 @@ qExecute(
     assert(e->kind == CQ_CALLBACK);
 
     v = c_qValue(c_qFunc(e)->params[1],NULL);
-    assert(v.kind == V_LONG);
-    callback = (c_qCallback)v.is.Long;
+    assert(v.kind == V_ADDRESS);
+    callback = (c_qCallback)v.is.Address;
     argument = c_qValue(c_qFunc(e)->params[2],o);
     callback(o,argument,&result);
     return result;
@@ -1159,8 +1159,8 @@ makeExprQuery(
             c_qFunc(r)->params[0] = c;
                 c = c_qExpr(c_new(c_qConstType(base)));
                 c->kind = CQ_CONST;
-                c_qConst(c)->value.kind = V_LONG;
-                c_qConst(c)->value.is.Long = (c_long)q_getPar(e,1);
+                c_qConst(c)->value.kind = V_ADDRESS;
+                c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
             c_qFunc(r)->params[1] = c;
             c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
         break;
