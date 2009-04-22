@@ -1,0 +1,133 @@
+$sp($(spaces))struct $(typename);
+$sp($(spaces))
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)TypeSupportInterface;
+$sp($(spaces))
+$sp($(spaces))typedef $(typename)TypeSupportInterface * $(typename)TypeSupportInterface_ptr;
+$sp($(spaces))typedef EORBInterface_var <$(typename)TypeSupportInterface> $(typename)TypeSupportInterface_var;
+$sp($(spaces))typedef EORBInterface_out <$(typename)TypeSupportInterface> $(typename)TypeSupportInterface_out;
+$sp($(spaces))
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataWriter;
+$sp($(spaces))
+$sp($(spaces))typedef $(typename)DataWriter * $(typename)DataWriter_ptr;
+$sp($(spaces))typedef EORBInterface_var <$(typename)DataWriter> $(typename)DataWriter_var;
+$sp($(spaces))typedef EORBInterface_out <$(typename)DataWriter> $(typename)DataWriter_out;
+$sp($(spaces))
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataReader;
+$sp($(spaces))
+$sp($(spaces))typedef $(typename)DataReader * $(typename)DataReader_ptr;
+$sp($(spaces))typedef EORBInterface_var <$(typename)DataReader> $(typename)DataReader_var;
+$sp($(spaces))typedef EORBInterface_out <$(typename)DataReader> $(typename)DataReader_out;
+$sp($(spaces))
+$sp($(spaces))typedef EORBUFLSeq <$(typename)> $(typename)Seq;
+$sp($(spaces))typedef EORBSequence_var <$(typename)Seq> $(typename)Seq_var;
+$sp($(spaces))typedef EORBSequence_out <$(typename)Seq> $(typename)Seq_out;
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)TypeSupportInterface
+$sp($(spaces)):
+$sp($(spaces))  virtual public DDS::TypeSupport
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))   typedef $(typename)TypeSupportInterface_ptr _ptr_type;
+$sp($(spaces))   typedef $(typename)TypeSupportInterface_var _var_type;
+$sp($(spaces))
+$sp($(spaces))   static $(typename)TypeSupportInterface_ptr _duplicate ($(typename)TypeSupportInterface_ptr obj);
+$sp($(spaces))   CORBA::Boolean _local_is_a (const char * id);
+$sp($(spaces))
+$sp($(spaces))   static $(typename)TypeSupportInterface_ptr _narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)TypeSupportInterface_ptr _unchecked_narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)TypeSupportInterface_ptr _nil () { return nil; }
+$sp($(spaces))   static const char * _local_id;
+$sp($(spaces))   $(typename)TypeSupportInterface_ptr _this () { return this; }
+$sp($(spaces))
+$sp($(spaces))
+$sp($(spaces))protected:
+$sp($(spaces))   $(typename)TypeSupportInterface () {};
+$sp($(spaces))   ~$(typename)TypeSupportInterface () {};
+$sp($(spaces))private:
+$sp($(spaces))   $(typename)TypeSupportInterface (const $(typename)TypeSupportInterface &) {};
+$sp($(spaces))   $(typename)TypeSupportInterface & operator = (const $(typename)TypeSupportInterface &);
+$sp($(spaces))};
+$sp($(spaces))$(DLL_IMPORTEXPORT) extern CORBA::TypeCode_ptr _tc_$(typename)TypeSupportInterface;
+$sp($(spaces))
+$sp($(spaces))
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataWriter
+$sp($(spaces)):
+$sp($(spaces))   virtual public DDS::DataWriter
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))   typedef $(typename)DataWriter_ptr _ptr_type;
+$sp($(spaces))   typedef $(typename)DataWriter_var _var_type;
+$sp($(spaces))
+$sp($(spaces))   static $(typename)DataWriter_ptr _duplicate ($(typename)DataWriter_ptr obj);
+$sp($(spaces))   CORBA::Boolean _local_is_a (const char * id);
+$sp($(spaces))
+$sp($(spaces))   static $(typename)DataWriter_ptr _narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)DataWriter_ptr _unchecked_narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)DataWriter_ptr _nil () { return nil; }
+$sp($(spaces))   static const char * _local_id;
+$sp($(spaces))   $(typename)DataWriter_ptr _this () { return this; }
+$sp($(spaces))
+$sp($(spaces))   virtual DDS::InstanceHandle_t register_instance (const $(typename)& instance_data EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::InstanceHandle_t register_instance_w_timestamp (const $(typename)& instance_data, const DDS::Time_t& source_timestamp EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t unregister_instance (const $(typename)& instance_data, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t unregister_instance_w_timestamp (const $(typename)& instance_data, DDS::InstanceHandle_t handle, const DDS::Time_t& source_timestamp EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t write (const $(typename)& instance_data, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t write_w_timestamp (const $(typename)& instance_data, DDS::InstanceHandle_t handle, const DDS::Time_t& source_timestamp EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t dispose (const $(typename)& instance_data, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t dispose_w_timestamp (const $(typename)& instance_data, DDS::InstanceHandle_t handle, const DDS::Time_t& source_timestamp EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t writedispose (const $(typename)& instance_data, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t writedispose_w_timestamp (const $(typename)& instance_data, DDS::InstanceHandle_t handle, const DDS::Time_t& source_timestamp EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t get_key_value ($(typename)& key_holder, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::InstanceHandle_t lookup_instance (const $(typename)& instance_data EORB_ENV_ARGN) = 0;
+$sp($(spaces))
+$sp($(spaces))protected:
+$sp($(spaces))   $(typename)DataWriter () {};
+$sp($(spaces))   ~$(typename)DataWriter () {};
+$sp($(spaces))private:
+$sp($(spaces))   $(typename)DataWriter (const $(typename)DataWriter &) {};
+$sp($(spaces))   $(typename)DataWriter & operator = (const $(typename)DataWriter &);
+$sp($(spaces))};
+$sp($(spaces))$(DLL_IMPORTEXPORT) extern CORBA::TypeCode_ptr _tc_$(typename)DataWriter;
+$sp($(spaces))
+$sp($(spaces))
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)DataReader
+$sp($(spaces)):
+$sp($(spaces))   virtual public DDS::DataReader
+$sp($(spaces)){ 
+$sp($(spaces))public:
+$sp($(spaces))   typedef $(typename)DataReader_ptr _ptr_type;
+$sp($(spaces))   typedef $(typename)DataReader_var _var_type;
+$sp($(spaces))
+$sp($(spaces))   static $(typename)DataReader_ptr _duplicate ($(typename)DataReader_ptr obj);
+$sp($(spaces))   CORBA::Boolean _local_is_a (const char * id);
+$sp($(spaces))
+$sp($(spaces))   static $(typename)DataReader_ptr _narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)DataReader_ptr _unchecked_narrow (CORBA::Object_ptr obj EORB_ENV_ARGN);
+$sp($(spaces))   static $(typename)DataReader_ptr _nil () { return nil; }
+$sp($(spaces))   static const char * _local_id;
+$sp($(spaces))   $(typename)DataReader_ptr _this () { return this; }
+$sp($(spaces))
+$sp($(spaces))   virtual DDS::ReturnCode_t read ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t read_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::ReadCondition_ptr a_condition EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::ReadCondition_ptr a_condition EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t read_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take_next_sample ($(typename)& received_data, DDS::SampleInfo& sample_info EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t read_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t read_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take_next_instance ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::SampleStateMask sample_states, DDS::ViewStateMask view_states, DDS::InstanceStateMask instance_states EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t read_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::ReadCondition_ptr a_condition EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t take_next_instance_w_condition ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq, CORBA::Long max_samples, DDS::InstanceHandle_t a_handle, DDS::ReadCondition_ptr a_condition EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t return_loan ($(typename)Seq& received_data, DDS::SampleInfoSeq& info_seq EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::ReturnCode_t get_key_value ($(typename)& key_holder, DDS::InstanceHandle_t handle EORB_ENV_ARGN) = 0;
+$sp($(spaces))   virtual DDS::InstanceHandle_t lookup_instance (const $(typename)& instance EORB_ENV_ARGN) = 0;
+$sp($(spaces))
+$sp($(spaces))protected:
+$sp($(spaces))   $(typename)DataReader () {};
+$sp($(spaces))   ~$(typename)DataReader () {};
+$sp($(spaces))private:
+$sp($(spaces))   $(typename)DataReader (const $(typename)DataReader &) {};
+$sp($(spaces))   $(typename)DataReader & operator = (const $(typename)DataReader &);
+$sp($(spaces))};
+$sp($(spaces))$(DLL_IMPORTEXPORT) extern CORBA::TypeCode_ptr _tc_$(typename)DataReader;
+$sp($(spaces))
