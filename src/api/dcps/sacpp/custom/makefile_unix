@@ -45,13 +45,13 @@ INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/SACPP
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := g++
-CXXFLAGS := -g $(ORB_SA_CXX_FLAGS) -fPIC
+CXXFLAGS := -g $(ORB_SA_CXX_FLAGS) -m32 -fPIC
 CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(INCLUDE) $(ORB_SA_CPP_FLAGS)
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)
 SPLICE_LIBRARY_PATH := $(OSPL_HOME)/lib
-LD_FLAGS := -shared -fPIC -static-libgcc
+LD_FLAGS := -shared -m32 -fPIC -static-libgcc
 LD_LIBS  := -lc -lm -lpthread -lnsl -ldcpsgapi -lddsdatabase -lddsos -lstdc++ $(ORB_LDLIBS)
 
 # SPLICE IDL preprocessor and preprocessor flags
