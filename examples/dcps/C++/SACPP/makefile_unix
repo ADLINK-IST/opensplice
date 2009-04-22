@@ -34,7 +34,9 @@ all : dirs copyeorbinc exec/ping exec/pong
 	@echo ">>>> to clean, enter : make clean"
 
 copyeorbinc:
+ifdef EORBHOME
 	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
+endif
 
 dirs :
 	@mkdir -p bld
