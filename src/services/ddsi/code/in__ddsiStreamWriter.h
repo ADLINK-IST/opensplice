@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in__ddsiStreamWriter.h
  *
  *  Created on: Mar 2, 2009
@@ -23,7 +12,8 @@
 #include "in__streamWriter.h"
 #include "os_time.h"
 #include "in__ddsiSerializer.h"
-#include "in__messageSerializer.h"d
+#include "in__messageSerializer.h"
+#include "in__configChannel.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -34,12 +24,15 @@ OS_STRUCT(in_ddsiStreamWriterImpl)
 {
 	OS_EXTENDS(in_streamWriter);
 
+	/* un-managed objects */
+    os_time timeout;
+
+	/* managed objects */
 	in_transportSender transportSender;
 	in_abstractSendBuffer currentSendBuffer;
 	OS_STRUCT(in_ddsiSerializer) serializer;
-	os_time timeout;
-	in_connectivityAdmin connectivityAdmin;
 	in_messageSerializer messageSerializer;
+	in_plugKernel plugKernel;
 };
 
 

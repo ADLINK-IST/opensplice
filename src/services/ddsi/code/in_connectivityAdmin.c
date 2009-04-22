@@ -1,19 +1,13 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
+#include "kernelModule.h"
 #include "in_connectivityAdmin.h"
 #include "in_connectivityPeerWriter.h"
 #include "in_connectivityWriterFacade.h"
 #include "in_connectivityParticipantFacade.h"
+#include "in_report.h"
 #include "in__object.h"
+#include "in__ddsiParticipant.h"
+#include "in__ddsiSubscription.h"
+#include "in__ddsiPublication.h"
 #include "Coll_Compare.h"
 
 #include "v_public.h"
@@ -21,10 +15,25 @@
 #include "os_defs.h"
 #include "os_heap.h"
 
+static in_connectivityParticipantFacade
+in_connectivityAdminFindParticipantUnsafe(
+    in_connectivityAdmin _this,
+    v_gid entity_id);
+
+static in_connectivityPeerParticipant
+in_connectivityAdminFindPeerParticipantUnsafe(
+    in_connectivityAdmin _this,
+    in_ddsiGuidPrefix prefix);
+
+static in_result
+in_connectivityAdminCopyLocators(
+    Coll_List* source,
+    Coll_List* target);
 
 OS_STRUCT(in_connectivityAdmin)
 {
     OS_EXTENDS(in_object);
+    os_mutex mutex; /* protects the administration */
     Coll_Set Participants;
     Coll_Set Readers;
     Coll_Set Writers;
@@ -48,56 +57,43 @@ in_connectivityAdminDestroy(
 }
 
 
-static void
+static os_boolean
 in_connectivityAdminInit(
     in_connectivityAdmin _this)
 {
+    os_boolean success= OS_TRUE;
+    os_mutexAttr mutexAttr;
+    os_result resultmutex;
     assert(_this);
 
-    in_objectInit(
+    success = in_objectInit(
         OS_SUPER(_this),
         IN_OBJECT_KIND_CONNECTIVITY_ADMIN,
         in_connectivityAdminDestroy);
 
-    Coll_Set_init(&_this->Participants,     pointerIsLessThen, TRUE);
-    Coll_Set_init(&_this->Readers,          pointerIsLessThen, TRUE);
-    Coll_Set_init(&_this->Writers,          pointerIsLessThen, TRUE);
-    Coll_Set_init(&_this->PeerParticipants, pointerIsLessThen, TRUE);
-    Coll_Set_init(&_this->PeerReaders,      pointerIsLessThen, TRUE);
-    Coll_Set_init(&_this->PeerWriters,      pointerIsLessThen, TRUE);
+    if( success ) {
+        Coll_Set_init(&_this->Participants,     pointerIsLessThen, OS_TRUE);
+        Coll_Set_init(&_this->Readers,          pointerIsLessThen, OS_TRUE);
+        Coll_Set_init(&_this->Writers,          pointerIsLessThen, OS_TRUE);
+        Coll_Set_init(&_this->PeerParticipants, pointerIsLessThen, OS_TRUE);
+        Coll_Set_init(&_this->PeerReaders,      pointerIsLessThen, OS_TRUE);
+        Coll_Set_init(&_this->PeerWriters,      pointerIsLessThen, OS_TRUE);
+
+
+        mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
+        resultmutex = os_mutexInit(&(_this->mutex), &mutexAttr);
+        if(resultmutex != os_resultSuccess)
+        {
+            success = OS_FALSE;
+        }
+    }
+    return success;
 }
 
-Coll_Set*
-in_connectivityAdminGetParticipants(
-    in_connectivityAdmin _this)
-{
-    assert(_this);
-
-    return &(_this->Participants);
-}
-
-Coll_Set*
-in_connectivityAdminGetReaders(
-    in_connectivityAdmin _this)
-{
-    assert(_this);
-
-    return &(_this->Readers);
-}
-
-
-Coll_Set*
-in_connectivityAdminGetWriters(
-    in_connectivityAdmin _this)
-{
-    assert(_this);
-
-    return &(_this->Writers);
-}
 
 
 static in_connectivityAdmin
-in_connectivityAdminNew()
+in_connectivityAdminNew(void)
 {
     in_connectivityAdmin _this;
 
@@ -107,6 +103,8 @@ in_connectivityAdminNew()
     {
         in_connectivityAdminInit(_this);
     }
+
+    IN_TRACE_1(Construction,2,"in_connectivityAdmin created = %x",_this);
 
     return _this;
 }
@@ -121,7 +119,7 @@ matchParticipant(
     in_connectivityPeerParticipant peer)
 {
     /* Participants are always compatible */
-   return TRUE;
+   return OS_TRUE;
 }
 
 
@@ -187,12 +185,14 @@ matchPeerWriter(
     in_connectivityPeerWriter peer)
 {
    if ( c_compareString(in_connectivityReaderFacadeGetInfo(facade)->topic_name,
-                        in_connectivityPeerWriterGetInfo(peer)->topic_name) != C_EQ ){
-      return FALSE;
+                        in_connectivityPeerWriterGetInfo(peer)->topicData.info.topic_name) != C_EQ ){
+      return OS_FALSE;
    }
    /* TODO: QOS checks must be performed here */
 
-   return TRUE;
+   IN_TRACE_2(Connectivity,2,"matchPeerWriter (%x %x) MATCHED",facade,  peer);
+
+   return OS_TRUE;
 }
 
 /**
@@ -205,12 +205,14 @@ matchPeerReader(
     in_connectivityPeerReader peer)
 {
     if ( c_compareString(in_connectivityWriterFacadeGetInfo(facade)->topic_name,
-                         in_connectivityPeerReaderGetInfo(peer)->topic_name) != C_EQ ){
-       return FALSE;
+                         in_connectivityPeerReaderGetInfo(peer)->topicData.info.topic_name) != C_EQ ){
+       return OS_FALSE;
     }
     /* TODO: QOS checks must be performed here */
 
-    return TRUE;
+    IN_TRACE_2(Connectivity,2,"matchPeerReader (%x %x) MATCHED",facade,  peer);
+
+    return OS_TRUE;
 }
 
 
@@ -325,12 +327,33 @@ findMatchedWriterFacades(
 /* ------------- public ----------------------- */
 
 in_connectivityAdmin
-in_connectivityAdminGetInstance()
-{
+in_connectivityAdminGetInstance(void)
+{ /* TODO protect! if (undefined) { lock; if (still undefined) { newAdmin;  } unlock;*/
     if (theConnectivityAdmin == NULL ) {
+
        theConnectivityAdmin = in_connectivityAdminNew();
     }
     return theConnectivityAdmin;
+}
+
+void
+in_connectivityAdminLock(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+    os_mutexLock(&(_this->mutex));
+
+    IN_TRACE(Connectivity,2,"in_connectivityAdminLock()");
+}
+
+void
+in_connectivityAdminUnlock(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+    os_mutexUnlock(&(_this->mutex));
+
+    IN_TRACE(Connectivity,2,"in_connectivityAdminUnlock()");
 }
 
 in_result
@@ -340,8 +363,10 @@ in_connectivityAdminAddParticipant(
 {
     Coll_Iter* iterator;
     in_connectivityParticipantFacade facade;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
+
+    os_mutexLock(&(_this->mutex));
 
     /* go over all facade's to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->Participants);
@@ -349,13 +374,19 @@ in_connectivityAdminAddParticipant(
     {
         facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
         /* This should be replaced by an identity match */
+        /*
         if ( v_gidCompare(in_connectivityParticipantFacadeGetInfo(facade)->key,
                           participant->key) == C_EQ ) {
-            /* Copy updated info into the Facade */
             *(in_connectivityParticipantFacadeGetInfo(facade)) = *participant;
-            found = TRUE;
+            found = OS_TRUE;
             result = IN_RESULT_ALREADY_EXISTS;
         }
+        */
+
+        /* SHORTCUT: for now, all participants will map onto the same facade */
+        found = OS_TRUE;
+        result = IN_RESULT_ALREADY_EXISTS;
+
         iterator = Coll_Iter_getNext(iterator);
     }
 
@@ -368,6 +399,10 @@ in_connectivityAdminAddParticipant(
         findMatchedPeerParticipants(_this, facade);
     }
 
+    os_mutexUnlock(&(_this->mutex));
+
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddParticipant(%x) result = %d",participant,  result);
+
     return result;
 }
 
@@ -378,8 +413,10 @@ in_connectivityAdminAddReader(
 {
     Coll_Iter* iterator;
     in_connectivityReaderFacade facade;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
+
+    os_mutexLock(&(_this->mutex));
 
     /* go over all facade's to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->Readers);
@@ -391,19 +428,30 @@ in_connectivityAdminAddReader(
                           reader->key) == C_EQ ) {
             /* Copy updated info into the Facade */
             *(in_connectivityReaderFacadeGetInfo(facade)) = *reader;
-            found = TRUE;
+            found = OS_TRUE;
             result = IN_RESULT_ALREADY_EXISTS;
         }
         iterator = Coll_Iter_getNext(iterator);
     }
 
     if ( !found ) {
+        in_connectivityParticipantFacade  participant;
+        in_ddsiSequenceNumber             seq;
+
+        /* find participant and increment sequencenumber */
+        participant = in_connectivityAdminFindParticipantUnsafe(_this, reader->participant_key);
+        seq = in_connectivityParticipantFacadeIncReader(participant);
+
         /* create new facade and insert it */
-        facade = in_connectivityReaderFacadeNew(reader);
+        facade = in_connectivityReaderFacadeNew(reader, seq);
         Coll_Set_add(&_this->Readers, facade);
 
         findMatchedPeerWriters(_this, facade);
     }
+
+    os_mutexUnlock(&(_this->mutex));
+
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddReader(%x) result = %d",reader,  result);
 
     return result;
 }
@@ -415,9 +463,11 @@ in_connectivityAdminAddWriter(
 {
     Coll_Iter* iterator;
     in_connectivityWriterFacade facade;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
-
+IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 1",_this);
+    os_mutexLock(&(_this->mutex));
+IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 2",_this);
     /* go over all facade's to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->Writers);
     while(iterator)
@@ -428,19 +478,33 @@ in_connectivityAdminAddWriter(
                           writer->key) == C_EQ ) {
             /* Copy updated info into the Facade */
             *(in_connectivityWriterFacadeGetInfo(facade)) = *writer;
-            found = TRUE;
+            found = OS_TRUE;
             result = IN_RESULT_ALREADY_EXISTS;
         }
         iterator = Coll_Iter_getNext(iterator);
     }
-
+IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 3",_this);
     if ( !found ) {
+        in_connectivityParticipantFacade  participant;
+        in_ddsiSequenceNumber             seq;
+        /* find participant and increment sequencenumber */
+        IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 4",_this);
+        participant = in_connectivityAdminFindParticipantUnsafe(_this, writer->participant_key);
+IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 5",_this);
+        seq = in_connectivityParticipantFacadeIncWriter(participant);
+        IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 6",_this);
         /* create new facade and insert it */
-        facade = in_connectivityWriterFacadeNew(writer);
+        facade = in_connectivityWriterFacadeNew(writer,seq);
         Coll_Set_add(&_this->Writers, facade);
 
         findMatchedPeerReaders(_this, facade);
     }
+IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 7",_this);
+
+
+    os_mutexUnlock(&(_this->mutex));
+
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddWriter(%x) result = %d",writer,  result);
 
     return result;
 }
@@ -454,18 +518,29 @@ in_connectivityAdminGetParticipant(
     Coll_Iter* iterator;
     in_connectivityParticipantFacade facade;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Participants);
     while(iterator)
     {
         facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
-        /* This should be replaced by an identity match */
+        /*
         if ( v_gidCompare(in_connectivityParticipantFacadeGetInfo(facade)->key,
                           participant->key) == C_EQ ) {
             return in_connectivityParticipantFacade(in_objectKeep(in_object(facade)));
         }
+        */
+
+        /* SHORTCUT: for now all participant map to the same facade */
+        os_mutexUnlock(&(_this->mutex));
+        return in_connectivityParticipantFacade(in_objectKeep(in_object(facade)));
+
+
         iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return NULL;
 }
@@ -478,6 +553,8 @@ in_connectivityAdminGetReader(
     Coll_Iter* iterator;
     in_connectivityReaderFacade facade;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Readers);
     while(iterator)
@@ -486,10 +563,13 @@ in_connectivityAdminGetReader(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityReaderFacadeGetInfo(facade)->key,
                           reader->key) == C_EQ ) {
+            os_mutexUnlock(&(_this->mutex));
             return in_connectivityReaderFacade(in_objectKeep(in_object(facade)));
         }
         iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return NULL;
 }
@@ -502,6 +582,8 @@ in_connectivityAdminGetWriter(
     Coll_Iter* iterator;
     in_connectivityWriterFacade facade;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Writers);
     while(iterator)
@@ -510,13 +592,127 @@ in_connectivityAdminGetWriter(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
                           writer->key) == C_EQ ) {
+            os_mutexUnlock(&(_this->mutex));
             return in_connectivityWriterFacade(in_objectKeep(in_object(facade)));
         }
         iterator = Coll_Iter_getNext(iterator);
     }
 
+    os_mutexUnlock(&(_this->mutex));
+
     return NULL;
 }
+
+in_connectivityWriterFacade
+in_connectivityAdminFindWriter(
+    in_connectivityAdmin _this,
+    v_message message)
+{
+    Coll_Iter* iterator;
+    in_connectivityWriterFacade facade;
+
+    os_mutexLock(&(_this->mutex));
+
+    /* go over all facade's to find it */
+    iterator = Coll_Set_getFirstElement(&_this->Writers);
+    while(iterator)
+    {
+
+        facade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
+        /* This should be replaced by an identity match */
+        if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
+                          message->writerGID) == C_EQ ) {
+            IN_TRACE_1(Send, 2, ">>> in_connectivityAdminFindWriter - owh boy, we found one %p", facade);
+            os_mutexUnlock(&(_this->mutex));
+            return in_connectivityWriterFacade(in_objectKeep(in_object(facade)));
+        }
+        iterator = Coll_Iter_getNext(iterator);
+    }
+
+    os_mutexUnlock(&(_this->mutex));
+
+    return NULL;
+}
+
+in_connectivityParticipantFacade
+in_connectivityAdminFindParticipant(
+    in_connectivityAdmin _this,
+    v_gid entity_id
+    )
+{
+    in_connectivityParticipantFacade facade;
+
+    os_mutexLock(&(_this->mutex));
+
+    facade = in_connectivityAdminFindParticipantUnsafe(_this, entity_id);
+
+    os_mutexUnlock(&(_this->mutex));
+
+    return facade;
+}
+
+in_connectivityParticipantFacade
+in_connectivityAdminFindParticipantUnsafe(
+    in_connectivityAdmin _this,
+    v_gid entity_id)
+{
+    Coll_Iter* iterator;
+    in_connectivityParticipantFacade facade;
+
+    /* go over all facade's to find it */
+    iterator = Coll_Set_getFirstElement(&_this->Participants);
+    while(iterator)
+    {
+        facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
+
+        /* SHORTCUT: for now all participant map to the same facade */
+        return in_connectivityParticipantFacade(in_objectKeep(in_object(facade)));
+
+
+        iterator = Coll_Iter_getNext(iterator);
+    }
+
+    return NULL;
+}
+
+static in_connectivityPeerParticipant
+in_connectivityAdminFindPeerParticipantUnsafe(
+    in_connectivityAdmin _this,
+    in_ddsiGuidPrefix prefix)
+{
+    Coll_Iter* iterator;
+    in_connectivityPeerParticipant peer;
+
+    /* go over all facade's to find it */
+    iterator = Coll_Set_getFirstElement(&_this->PeerParticipants);
+    while(iterator)
+    {
+        peer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
+
+        if ( in_ddsiGuidPrefixEqual(prefix, in_connectivityPeerParticipantGetGuidPrefix(peer)))
+        {
+            return in_connectivityPeerParticipant(in_objectKeep(in_object(peer)));
+        }
+
+        iterator = Coll_Iter_getNext(iterator);
+    }
+    return NULL;
+}
+
+in_connectivityPeerParticipant
+in_connectivityAdminFindPeerParticipant(
+    in_connectivityAdmin _this,
+    in_ddsiGuidPrefix prefix)
+{
+    in_connectivityPeerParticipant peer;
+
+    os_mutexLock(&(_this->mutex));
+    peer = in_connectivityAdminFindPeerParticipantUnsafe(_this, prefix);
+    os_mutexUnlock(&(_this->mutex));
+
+    return peer;
+}
+
 
 
 in_result
@@ -528,6 +724,13 @@ in_connectivityAdminRemoveParticipant(
     in_connectivityParticipantFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+
+    /* SHORTCUT: for now, all participants will map onto the same facade */
+    /* So we will never remove it */
+    return IN_RESULT_OK;
+
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Participants);
     while(iterator)
@@ -536,6 +739,10 @@ in_connectivityAdminRemoveParticipant(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityParticipantFacadeGetInfo(facade)->key,
                           participant->key) == C_EQ ) {
+
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this facade from the collection*/
             Coll_Set_remove(&_this->Participants, facade);
 
@@ -543,9 +750,12 @@ in_connectivityAdminRemoveParticipant(
             in_connectivityParticipantFacadeFree(facade);
 
             result = IN_RESULT_OK;
+        } else {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -559,6 +769,8 @@ in_connectivityAdminRemoveReader(
     in_connectivityReaderFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Readers);
     while(iterator)
@@ -567,6 +779,9 @@ in_connectivityAdminRemoveReader(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityReaderFacadeGetInfo(facade)->key,
                           reader->key) == C_EQ ) {
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this facade from the collection*/
             Coll_Set_remove(&_this->Readers, facade);
 
@@ -574,9 +789,12 @@ in_connectivityAdminRemoveReader(
             in_connectivityReaderFacadeFree(facade);
 
             result = IN_RESULT_OK;
+        } else {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -590,6 +808,8 @@ in_connectivityAdminRemoveWriter(
     in_connectivityWriterFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all facade's to find it */
     iterator = Coll_Set_getFirstElement(&_this->Writers);
     while(iterator)
@@ -598,6 +818,9 @@ in_connectivityAdminRemoveWriter(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
                           writer->key) == C_EQ ) {
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this facade from the collection*/
             Coll_Set_remove(&_this->Writers, facade);
 
@@ -605,9 +828,12 @@ in_connectivityAdminRemoveWriter(
             in_connectivityWriterFacadeFree(facade);
 
             result = IN_RESULT_OK;
+        } else  {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -620,29 +846,37 @@ in_connectivityAdminAddPeerParticipant(
 {
     Coll_Iter* iterator;
     in_connectivityPeerParticipant knownpeer;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
+
+    os_mutexLock(&(_this->mutex));
 
     /* go over all known peers to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->PeerParticipants);
-    while(iterator)
+    while(iterator && !found)
     {
         knownpeer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(participant)),
-                              in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidPrefixEqual(in_connectivityPeerParticipantGetGuidPrefix(participant),
+                              in_connectivityPeerParticipantGetGuidPrefix(knownpeer))) {
                               /* or should we update? */
             result = IN_RESULT_ALREADY_EXISTS;
-            found = TRUE;
+            found = OS_TRUE;
         }
         iterator = Coll_Iter_getNext(iterator);
     }
 
-    if ( !found ) {
+    if ( !found ) { /* TODO: verify the sequence number, if newer than replace existing one*/
         /* create new facade and insert it */
-        Coll_Set_add(&_this->PeerParticipants, participant);
+        Coll_Set_add(&_this->PeerParticipants, in_connectivityPeerParticipantKeep(participant));
 
         findMatchedParticipantFacades(_this, participant);
     }
+
+
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerParticipant(%x) result = %d",
+               participant,  result);
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -651,34 +885,103 @@ in_connectivityAdminAddPeerParticipant(
 in_result
 in_connectivityAdminAddPeerReader(
     in_connectivityAdmin _this,
-    in_connectivityPeerReader reader)
+    in_connectivityPeerReader reader,
+    in_ddsiSequenceNumber seq)
 {
     Coll_Iter* iterator;
     in_connectivityPeerReader knownpeer;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
+    os_uint32 errorCode;
+    in_ddsiGuid guid;
+    in_connectivityPeerParticipant participant;
+    Coll_List* unicastLocators;
+    Coll_List* multicastLocators;
+    Coll_List* partiticpantLocators;
+
+    os_mutexLock(&(_this->mutex));
 
     /* go over all known peers to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->PeerReaders);
-    while(iterator)
+    while(iterator && !found)
     {
         knownpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(reader)),
-                              in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(in_connectivityPeerReaderGetGuid(reader),
+                              in_connectivityPeerReaderGetGuid(knownpeer))) {
                               /* or should we update? */
             result = IN_RESULT_ALREADY_EXISTS;
-            found = TRUE;
+            found = OS_TRUE;
         }
         iterator = Coll_Iter_getNext(iterator);
     }
 
-    if ( !found ) {
-        /* create new facade and insert it */
-        Coll_Set_add(&_this->PeerReaders, reader);
+    if ( !found )
+    {
+        /* find participant and add sequence number */
+        guid = in_connectivityPeerReaderGetGuid(reader);
+        participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
 
-        findMatchedWriterFacades(_this, reader);
+        unicastLocators = in_connectivityPeerReaderGetUnicastLocators(reader);
+        multicastLocators = in_connectivityPeerReaderGetMulticastLocators(reader);
+        if(Coll_List_getNrOfElements(unicastLocators) == 0 && Coll_List_getNrOfElements(multicastLocators) == 0)
+        {
+            partiticpantLocators = in_connectivityPeerParticipantGetDefaultUnicastLocators(participant);
+            result = in_connectivityAdminCopyLocators(partiticpantLocators, unicastLocators);
+
+            if(result == IN_RESULT_OK)
+            {
+                partiticpantLocators = in_connectivityPeerParticipantGetDefaultMulticastLocators(participant);
+                result = in_connectivityAdminCopyLocators(partiticpantLocators, multicastLocators);
+            }
+        }
+        if(result == IN_RESULT_OK)
+        {
+            /* create new facade and insert it */
+            errorCode = Coll_Set_add(&_this->PeerReaders, in_connectivityPeerReaderKeep(reader));
+            if(errorCode == COLL_OK)
+            {
+                findMatchedWriterFacades(_this, reader);
+
+                assert(participant);
+
+                in_connectivityPeerParticipantAddReaderSN(participant,seq);
+            } else
+            {
+                result = IN_RESULT_ERROR;
+            }
+        }
+        in_connectivityPeerParticipantFree(participant);
     }
 
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerReader(%x) result = %d",
+               reader,  result);
+
+    os_mutexUnlock(&(_this->mutex));
+
+    return result;
+}
+
+in_result
+in_connectivityAdminCopyLocators(
+    Coll_List* source,
+    Coll_List* target)
+{
+    Coll_Iter* iterator;
+    in_locator locator;
+    os_uint32 errorCode;
+    in_result result = IN_RESULT_OK;
+
+    iterator = Coll_List_getFirstElement(source);
+    while(iterator)
+    {
+        locator = in_locator(Coll_Iter_getObject(iterator));
+        errorCode = Coll_List_pushBack(target, in_locatorClone(locator));
+        if(errorCode != COLL_OK)
+        {
+            result = IN_RESULT_OUT_OF_MEMORY;
+        }
+        iterator = Coll_Iter_getNext(iterator);
+    }
     return result;
 }
 
@@ -686,33 +989,76 @@ in_connectivityAdminAddPeerReader(
 in_result
 in_connectivityAdminAddPeerWriter(
     in_connectivityAdmin _this,
-    in_connectivityPeerWriter writer)
+    in_connectivityPeerWriter writer,
+    in_ddsiSequenceNumber seq)
 {
     Coll_Iter* iterator;
     in_connectivityPeerWriter knownpeer;
-    os_boolean found = FALSE;
+    os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
+    Coll_List* unicastLocators;
+    Coll_List* multicastLocators;
+    Coll_List* partiticpantLocators;
+    os_uint32 errorCode;
+
+    os_mutexLock(&(_this->mutex));
 
     /* go over all known peers to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->PeerWriters);
-    while(iterator)
+    while(iterator && !found)
     {
         knownpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(writer)),
-                              in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(in_connectivityPeerWriterGetGuid(writer),
+                              in_connectivityPeerWriterGetGuid(knownpeer))) {
                               /* or should we update? */
             result = IN_RESULT_ALREADY_EXISTS;
-            found = TRUE;
+            found = OS_TRUE;
         }
         iterator = Coll_Iter_getNext(iterator);
     }
 
     if ( !found ) {
-        /* create new facade and insert it */
-        Coll_Set_add(&_this->PeerWriters, writer);
+        in_ddsiGuid guid;
+        in_connectivityPeerParticipant participant;
 
-        findMatchedReaderFacades(_this, writer);
+        /* find participant and add sequence number */
+        guid = in_connectivityPeerWriterGetGuid(writer);
+        participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
+        assert(participant);
+
+        unicastLocators = in_connectivityPeerWriterGetUnicastLocators(writer);
+        multicastLocators = in_connectivityPeerWriterGetMulticastLocators(writer);
+        if(Coll_List_getNrOfElements(unicastLocators) == 0 && Coll_List_getNrOfElements(multicastLocators) == 0)
+        {
+            partiticpantLocators = in_connectivityPeerParticipantGetDefaultUnicastLocators(participant);
+            result = in_connectivityAdminCopyLocators(partiticpantLocators, unicastLocators);
+
+            if(result == IN_RESULT_OK)
+            {
+                partiticpantLocators = in_connectivityPeerParticipantGetDefaultMulticastLocators(participant);
+                result = in_connectivityAdminCopyLocators(partiticpantLocators, multicastLocators);
+            }
+        }
+        if(result == IN_RESULT_OK)
+        {
+            errorCode = Coll_Set_add(&_this->PeerWriters, in_connectivityPeerWriterKeep(writer));
+            if(errorCode == COLL_OK)
+            {
+                /* create new facade and insert it */
+                findMatchedReaderFacades(_this, writer);
+                in_connectivityPeerParticipantAddWriterSN(participant,seq);
+            } else
+            {
+                result = IN_RESULT_ERROR;
+            }
+        }
+        in_connectivityPeerParticipantFree(participant);
     }
+
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerReader(%x) result = %d",
+               writer,  result);
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -720,7 +1066,23 @@ in_connectivityAdminAddPeerWriter(
 in_connectivityPeerParticipant
 in_connectivityAdminGetPeerParticipant(
     in_connectivityAdmin _this,
-    in_ddsiGuid guid)
+    in_ddsiGuidPrefix guidPrefix)
+{
+    in_connectivityPeerParticipant result;
+
+     os_mutexLock(&(_this->mutex));
+
+    result = in_connectivityAdminGetPeerParticipantUnsafe(_this,guidPrefix);
+
+    os_mutexUnlock(&(_this->mutex));
+
+    return result;
+}
+
+in_connectivityPeerParticipant
+in_connectivityAdminGetPeerParticipantUnsafe(
+    in_connectivityAdmin _this,
+    in_ddsiGuidPrefix guidPrefix)
 {
     Coll_Iter* iterator;
     in_connectivityPeerParticipant knownpeer;
@@ -730,7 +1092,7 @@ in_connectivityAdminGetPeerParticipant(
     while(iterator)
     {
         knownpeer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidPrefixEqual(guidPrefix,in_connectivityPeerParticipantGetGuidPrefix(knownpeer))) {
             return in_connectivityPeerParticipant(in_objectKeep(in_object(knownpeer)));
         }
         iterator = Coll_Iter_getNext(iterator);
@@ -738,6 +1100,7 @@ in_connectivityAdminGetPeerParticipant(
 
     return NULL;
 }
+
 
 in_connectivityPeerReader
 in_connectivityAdminGetPeerReader(
@@ -747,16 +1110,21 @@ in_connectivityAdminGetPeerReader(
     Coll_Iter* iterator;
     in_connectivityPeerReader knownpeer;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all known peers to see if it is present */
     iterator = Coll_Set_getFirstElement(&_this->PeerReaders);
     while(iterator)
     {
         knownpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(guid,in_connectivityPeerReaderGetGuid(knownpeer))) {
+            os_mutexUnlock(&(_this->mutex));
             return in_connectivityPeerReader(in_objectKeep(in_object(knownpeer)));
         }
         iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return NULL;
 }
@@ -769,16 +1137,21 @@ in_connectivityAdminGetPeerWriter(
     Coll_Iter* iterator;
     in_connectivityPeerWriter knownpeer;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all known peers to see if it is present */
     iterator = Coll_Set_getFirstElement(&_this->PeerWriters);
     while(iterator)
     {
         knownpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(guid,in_connectivityPeerWriterGetGuid(knownpeer))) {
+            os_mutexUnlock(&(_this->mutex));
             return in_connectivityPeerWriter(in_objectKeep(in_object(knownpeer)));
         }
         iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return NULL;
 }
@@ -787,19 +1160,25 @@ in_connectivityAdminGetPeerWriter(
 in_result
 in_connectivityAdminRemovePeerParticipant(
     in_connectivityAdmin _this,
-    in_ddsiGuid guid)
+    in_ddsiGuidPrefix guidPrefix)
 {
     Coll_Iter *iterator, *peeriterator;
     in_connectivityPeerParticipant knownpeer;
     in_connectivityParticipantFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all known peers to see if it is present */
     iterator = Coll_Set_getFirstElement(&_this->PeerParticipants);
     while(iterator)
     {
         knownpeer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidPrefixEqual(guidPrefix,in_connectivityPeerParticipantGetGuidPrefix(knownpeer))) {
+
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this peer from the collection*/
             Coll_Set_remove(&_this->PeerParticipants, knownpeer);
 
@@ -807,18 +1186,21 @@ in_connectivityAdminRemovePeerParticipant(
             peeriterator = Coll_Set_getFirstElement(&_this->Participants);
             while(peeriterator)
             {
-                facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
-                in_connectivityParticipantFacadeRemoveMatchedPeer(facade, knownpeer);
+                facade = in_connectivityParticipantFacade(Coll_Iter_getObject(peeriterator));
                 peeriterator = Coll_Iter_getNext(peeriterator);
+                in_connectivityParticipantFacadeRemoveMatchedPeer(facade, knownpeer);
             }
 
             /* free the peer */
             in_connectivityPeerParticipantFree(knownpeer);
 
             result = IN_RESULT_OK;
+        } else {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -833,12 +1215,18 @@ in_connectivityAdminRemovePeerReader(
     in_connectivityWriterFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all known peers to see if it is present */
     iterator = Coll_Set_getFirstElement(&_this->PeerReaders);
     while(iterator)
     {
         knownpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(guid,in_connectivityPeerReaderGetGuid(knownpeer))) {
+
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this peer from the collection*/
             Coll_Set_remove(&_this->PeerReaders, knownpeer);
 
@@ -846,18 +1234,21 @@ in_connectivityAdminRemovePeerReader(
             peeriterator = Coll_Set_getFirstElement(&_this->Writers);
             while(peeriterator)
             {
-                facade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
-                in_connectivityWriterFacadeRemoveMatchedPeer(facade, knownpeer);
+                facade = in_connectivityWriterFacade(Coll_Iter_getObject(peeriterator));
                 peeriterator = Coll_Iter_getNext(peeriterator);
+                in_connectivityWriterFacadeRemoveMatchedPeer(facade, knownpeer);
             }
 
             /* free the peer */
             in_connectivityPeerReaderFree(knownpeer);
 
             result = IN_RESULT_OK;
+        } else {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
@@ -872,12 +1263,18 @@ in_connectivityAdminRemovePeerWriter(
     in_connectivityReaderFacade facade;
     in_result result = IN_RESULT_NOT_FOUND;
 
+    os_mutexLock(&(_this->mutex));
+
     /* go over all known peers to see if it is present */
     iterator = Coll_Set_getFirstElement(&_this->PeerWriters);
     while(iterator)
     {
         knownpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
-        if ( in_ddsiGuidEqual(guid,in_connectivityPeerEntityGetGuid(in_connectivityPeerEntity(knownpeer)))) {
+        if ( in_ddsiGuidEqual(guid,in_connectivityPeerWriterGetGuid(knownpeer))) {
+
+            /*jump to next element, before removing object*/
+            iterator = Coll_Iter_getNext(iterator);
+
             /* remove this peer from the collection*/
             Coll_Set_remove(&_this->PeerWriters, knownpeer);
 
@@ -885,22 +1282,53 @@ in_connectivityAdminRemovePeerWriter(
             peeriterator = Coll_Set_getFirstElement(&_this->Readers);
             while(peeriterator)
             {
-                facade = in_connectivityReaderFacade(Coll_Iter_getObject(iterator));
-                in_connectivityReaderFacadeRemoveMatchedPeer(facade, knownpeer);
+                facade = in_connectivityReaderFacade(Coll_Iter_getObject(peeriterator));
                 peeriterator = Coll_Iter_getNext(peeriterator);
+                in_connectivityReaderFacadeRemoveMatchedPeer(facade, knownpeer);
+
             }
 
             /* free the peer */
             in_connectivityPeerWriterFree(knownpeer);
 
             result = IN_RESULT_OK;
+        } else {
+            iterator = Coll_Iter_getNext(iterator);
         }
-        iterator = Coll_Iter_getNext(iterator);
     }
+
+    os_mutexUnlock(&(_this->mutex));
 
     return result;
 }
 
+Coll_Set*
+in_connectivityAdminGetParticipants(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+
+    return &(_this->Participants);
+}
+
+Coll_Set*
+in_connectivityAdminGetReaders(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+
+    return &(_this->Readers);
+}
+
+
+Coll_Set*
+in_connectivityAdminGetWriters(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+
+    return &(_this->Writers);
+}
 
 in_result
 in_connectivityAdminAddListener(

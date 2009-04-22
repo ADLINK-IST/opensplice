@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* Abstraction layer includes */
 #include "os_heap.h"
 
@@ -25,6 +14,8 @@ OS_STRUCT(in_connectivityParticipantFacade)
     OS_EXTENDS(in_connectivityEntityFacade);
     struct v_participantInfo info;
     Coll_Set matchedPeerParticipants;
+    OS_STRUCT(in_ddsiSequenceNumber) lastWriterSN;
+    OS_STRUCT(in_ddsiSequenceNumber) lastReaderSN;
 };
 
 static void
@@ -66,17 +57,27 @@ in_connectivityParticipantFacadeInit(
     struct v_participantInfo *info)
 {
     os_boolean success;
+    OS_STRUCT(in_ddsiGuid) guid;
     assert(_this);
+
+   memcpy(guid.guidPrefix,&(info->key),in_ddsiGuidPrefixLength);
+   guid.entityId.entityKey[0] = 0;
+   guid.entityId.entityKey[1] = 0;
+   guid.entityId.entityKey[2] = 1;
+   guid.entityId.entityKind = IN_ENTITYKIND_BUILTIN_PARTICIPANT;
 
     success = in_connectivityEntityFacadeInit(
         OS_SUPER(_this),
         IN_OBJECT_KIND_PARTICIPANT_FACADE,
-        in_connectivityParticipantFacadeDeinit);
+        in_connectivityParticipantFacadeDeinit,
+        &guid);
 
     if(success)
     {
         _this->info = *info;
         Coll_Set_init(&_this->matchedPeerParticipants, pointerIsLessThen, TRUE);
+        in_ddsiSequenceNumberInitNative(&_this->lastWriterSN,0);
+        in_ddsiSequenceNumberInitNative(&_this->lastReaderSN,0);
     }
     return success;
 }
@@ -164,10 +165,52 @@ in_connectivityParticipantFacadeGetInfo(
 }
 
 Coll_Set*
-in_connectivityParticipantFacadeGetMatchedPeerParticipants(
+in_connectivityParticipantFacadeGetMatchedPeerParticipantsUnsafe(
     in_connectivityParticipantFacade _this)
 {
     assert(in_connectivityParticipantFacadeIsValid(_this));
 
     return &_this->matchedPeerParticipants;
 }
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeGetNrOfWriters(
+        in_connectivityParticipantFacade _this)
+{
+    assert(in_connectivityParticipantFacadeIsValid(_this));
+
+    return &_this->lastWriterSN;
+}
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeIncWriter(
+        in_connectivityParticipantFacade _this)
+{
+    assert(in_connectivityParticipantFacadeIsValid(_this));
+
+    _this->lastWriterSN.low++;
+
+    return &_this->lastWriterSN;
+}
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeGetNrOfReaders(
+        in_connectivityParticipantFacade _this)
+{
+    assert(in_connectivityParticipantFacadeIsValid(_this));
+
+    return &_this->lastReaderSN;
+}
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeIncReader(
+        in_connectivityParticipantFacade _this)
+{
+    assert(in_connectivityParticipantFacadeIsValid(_this));
+
+    _this->lastReaderSN.low++;
+
+    return &_this->lastReaderSN;
+}
+
+

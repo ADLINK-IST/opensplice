@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_ddsiSubmessage.h
  *
  *  Created on: Feb 10, 2009
@@ -23,9 +12,9 @@
 #include "in_ddsiSerializer.h"
 #include "in_ddsiElements.h"
 #include "in__ddsiParameterList.h"
-#include "in_connectivityWriterFacade.h"
-#include "in_connectivityParticipantFacade.h"
 #include "in_ddsiParticipant.h"
+#include "in_ddsiSerializedData.h"
+#include "in_locatorList.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -45,6 +34,9 @@ OS_STRUCT(in_ddsiSubmessage)
 {
 	OS_STRUCT(in_ddsiSubmessageHeader) header;
 };
+
+#define in_ddsiSubmessage(_o) \
+    ((in_ddsiSubmessage)_o)
 
 /** \return OS_TRUE if flag set, otherwise OS_FALSE
  *
@@ -78,6 +70,7 @@ os_boolean
 in_ddsiSubmessageIsBigEndian(in_ddsiSubmessage _this);
 
 
+
 /** \brief DDSi InfoTimestamp submessage
  * Extends  in_ddsiSubmessage*/
 OS_STRUCT(in_ddsiSubmessageInfoTimestamp)
@@ -89,21 +82,9 @@ OS_STRUCT(in_ddsiSubmessageInfoTimestamp)
 /** */
 in_long
 in_ddsiSubmessageInfoTimestampSerializeInstantly(
-		c_time *timestamp,
+		const c_time *timestamp,
 		in_ddsiSerializer serializer);
 
-OS_STRUCT(in_ddsiSerializedData)
-{
-	in_octet *begin;
-	os_size_t length;
-};
-
-/** */
-void
-in_ddsiSerializedDataInit(
-		in_ddsiSerializedData _this,
-		in_octet *begin,
-		os_size_t length);
 
 /** */
 in_long
@@ -156,11 +137,116 @@ in_long
 in_ddsiSubmessageDataHeaderSerializeInstantly(
         os_size_t  inlineQosSize,
         os_size_t  serializedPayloadSize,
-        c_ulong    sequenceNumber, /* OSPL native representation */
+        in_ddsiSequenceNumber  sequenceNumber, /* OSPL native representation */
         in_ddsiEntityId readerId,
         in_ddsiEntityId writerId,
         in_ddsiSerializer serializer);
 
+/** */
+in_long
+in_ddsiSubmessageInfoDestinationSerializeInstantly(
+        in_ddsiGuidPrefix destPrefix,
+        in_ddsiSerializer serializer);
+
+
+
+
+/** **************************************
+ * HEARTBEAT
+ ** ***************************************/
+OS_CLASS(in_ddsiSubmessageHeartbeat);
+OS_STRUCT(in_ddsiSubmessageHeartbeat)
+{
+  OS_EXTENDS(in_ddsiSubmessage); /* the header */
+  OS_STRUCT(in_ddsiEntityId) readerId;
+  OS_STRUCT(in_ddsiEntityId) writerId;
+  OS_STRUCT(in_ddsiSequenceNumber) firstSN;
+  OS_STRUCT(in_ddsiSequenceNumber) lastSN;
+  OS_STRUCT(in_ddsiCount) count;
+};
+#define in_ddsiSubmessageHeartbeat(_this) ((in_ddsiSubmessageHeartbeat)_this)
+
+/** */
+in_long
+in_ddsiSubmessageHeartbeatSerializeInstantly(
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumber firstSN,
+        in_ddsiSequenceNumber lastSN,
+        os_ushort count,
+        in_ddsiSerializer serializer);
+
+in_long
+in_ddsiSubmessageHeartbeatInitFromBuffer(
+        in_ddsiSubmessageHeartbeat _this,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer);
+
+/** **************************************
+ * ACKNACK
+ ** ***************************************/
+OS_CLASS(in_ddsiSubmessageAckNack);
+OS_STRUCT(in_ddsiSubmessageAckNack)
+{
+  OS_EXTENDS(in_ddsiSubmessage); /* the header */
+  OS_STRUCT(in_ddsiEntityId) readerId;
+  OS_STRUCT(in_ddsiEntityId) writerId;
+  OS_STRUCT(in_ddsiSequenceNumberSet) readerSNState;
+  OS_STRUCT(in_ddsiCount) count;
+};
+
+#define in_ddsiSubmessageAckNack(_this) ((in_ddsiSubmessageAckNack)_this)
+
+/**
+ */
+os_size_t
+in_ddsiSubmessageAckNackSerializedSize(
+        in_ddsiSequenceNumberSet set);
+
+/** */
+in_long
+in_ddsiSubmessageAckNackSerializeInstantly(
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumberSet sequenceNumberSet,
+        os_int32 count,
+        in_ddsiSerializer serializer);
+
+in_long
+in_ddsiSubmessageAckNackInitFromBuffer(
+        in_ddsiSubmessageAckNack _this,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer);
+
+/** **************************************
+ * INFO_REPLY
+ ** ***************************************/
+
+/**
+ */
+os_size_t
+in_ddsiSubmessageInfoReplySerializedSize(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList);
+
+/** */
+in_long
+in_ddsiSubmessageInfoReplySerializeInstantly(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList,
+        in_ddsiSerializer serializer);
+
+/** change state of receiver object
+ *
+ * Append the unicast and multicast locators
+ * to the given locator lists. if operation returns
+ * with error (-1) the lists may be modified. */
+in_long
+in_ddsiSubmessageInfoReplyInitFromBuffer(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer);
 
 
 #if defined (__cplusplus)

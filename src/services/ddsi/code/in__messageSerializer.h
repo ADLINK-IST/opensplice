@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #ifndef IN_MESSAGESERIALIZER__H
 #define IN_MESSAGESERIALIZER__H
 
@@ -44,6 +33,16 @@ OS_CLASS(in_messageSerializer);
  */
 #define in_messageSerializerFree(_this) in_objectFree(in_object(_this))
 
+/**
+ * Macro to tell default message serializer codec
+ *   */
+#ifdef PA_BIG_ENDIAN
+#define IN_MESSAGE_SERIALIZER_CODEC_ID  IN_CODEC_CDR_BE
+#else
+#define IN_MESSAGE_SERIALIZER_CODEC_ID   IN_CODEC_CDR_LE
+#endif
+
+
 in_messageSerializer
 in_messageSerializerNew(
     in_messageTransformerGetBufferFunc getBufferFunc,
@@ -73,6 +72,7 @@ in_result
 in_messageSerializerWrite(
     in_messageSerializer _this,
     v_message message,
+    c_long topicDataOffset,
     os_size_t* size);
 
 #if defined (__cplusplus)

@@ -13,7 +13,6 @@ LDLIBS		+= -l$(DDS_DATABASE)
 LDLIBS		+= -l$(DDS_KERNEL)
 LDLIBS		+= -l$(DDS_USER)
 LDLIBS		+= -l$(DDS_SERIALIZATION)
-LDLIBS		+= -l$(DDS_LOCCOLLECTIONS)
 LDLIBS		+= $(LDLIBS_NW)
 
 # Suppression of macro's (QAC)
@@ -22,7 +21,7 @@ CPFLAGS         += -macros ../../nw_macros.qac
 # Include dirs for this component
 
 INCLUDE		+= -I$(OSPL_HOME)/src/user/include
-INCLUDE		+= -I$(OSPL_HOME)/src/loc/collections/include
+INCLUDE		+= -I$(OSPL_HOME)/src/user/code
 INCLUDE		+= -I$(OSPL_HOME)/src/kernel/include
 INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
 INCLUDE		+= -I$(OSPL_HOME)/src/database/serialization/include

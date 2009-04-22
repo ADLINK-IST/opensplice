@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportSenderIBasic.h
  *
  *  Created on: Feb 10, 2009
@@ -22,6 +11,7 @@
 #include "in_abstractSendBuffer.h"
 #include "os_time.h"
 #include "in_locator.h"
+#include "in_socket.h"
 #include "in__configChannel.h"
 /**
  * Allow usage of this C code from C++ code. Always include this in a header
@@ -40,6 +30,11 @@ extern "C" {
 in_transportSenderIBasic
 in_transportSenderIBasicNew(in_configChannel config);
 
+/** \brief constructor */
+in_transportSenderIBasic
+in_transportSenderIBasicNewDuplex(
+        in_configChannel config,
+        in_socket duplexSocket);
 
 /** \brief destructor */
 void

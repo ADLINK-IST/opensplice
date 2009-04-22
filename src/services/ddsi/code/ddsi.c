@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "kernelModule.h"
 #include "u_types.h"
 #include "u_user.h"
@@ -38,7 +27,6 @@ main(
     char *argv[])
 {
     u_result retVal;
-
     /* First check command line arguments */
     if (argc == 3)
     {
@@ -52,6 +40,7 @@ main(
             u_userDetach();
         } else
         {
+
            IN_REPORT_ERROR(
                "DDSI networking main loop",
                "Error attaching to kernel, bailing out");

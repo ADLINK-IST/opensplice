@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_connectivityPeerParticipant.h
  *
  *  Created on: Oct 13, 2008
@@ -44,17 +33,7 @@
 
 in_connectivityPeerParticipant
 in_connectivityPeerParticipantNew(
-    struct v_participantInfo *info);
-
-in_result
-in_connectivityPeerParticipantAddUnicastLocator(
-    in_connectivityPeerParticipant _this,
-    in_locator locator);
-
-in_result
-in_connectivityPeerParticipantAddMulticastLocator(
-    in_connectivityPeerParticipant _this,
-    in_locator locator);
+    in_ddsiDiscoveredParticipantData info);
 
 Coll_List*
 in_connectivityPeerParticipantGetUnicastLocators(
@@ -64,9 +43,39 @@ Coll_List*
 in_connectivityPeerParticipantGetMulticastLocators(
     in_connectivityPeerParticipant _this);
 
-struct v_participantInfo *
+Coll_List*
+in_connectivityPeerParticipantGetDefaultUnicastLocators(
+    in_connectivityPeerParticipant _this);
+
+Coll_List*
+in_connectivityPeerParticipantGetDefaultMulticastLocators(
+    in_connectivityPeerParticipant _this);
+
+in_ddsiDiscoveredParticipantData
 in_connectivityPeerParticipantGetInfo(
     in_connectivityPeerParticipant _this);
+
+in_ddsiGuidPrefixRef
+in_connectivityPeerParticipantGetGuidPrefix(
+    in_connectivityPeerParticipant _this);
+
+in_ddsiSequenceNumber
+in_connectivityPeerParticipantGetLastWriterSNRef(
+    in_connectivityPeerParticipant _this);
+
+in_ddsiSequenceNumber
+in_connectivityPeerParticipantGetLastReaderSNRef(
+    in_connectivityPeerParticipant _this);
+
+void
+in_connectivityPeerParticipantAddWriterSN(
+    in_connectivityPeerParticipant _this,
+    in_ddsiSequenceNumber seq);
+
+void
+in_connectivityPeerParticipantAddReaderSN(
+    in_connectivityPeerParticipant _this,
+    in_ddsiSequenceNumber seq);
 
 
 #endif /* IN_CONNECTIVITYPEERPARTICIPANT_H_ */

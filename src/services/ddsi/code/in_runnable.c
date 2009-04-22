@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in_channel.h"
 #include "os_heap.h"
 #include "in_report.h"
@@ -36,6 +25,8 @@ in_runnableStart(
     }
     threadAttr.schedClass = _this->schedulingAttr.schedulingClass;
 
+    IN_TRACE_2(Receive,3,"in_runnableStart %x %d",_this,in_objectGetKind(in_object(_this)));
+    
     result = os_threadCreate(
         &_this->threadId,
         _this->name,
@@ -87,23 +78,25 @@ in_runnableInit(
     os_boolean success;
     os_mutexAttr mutexAttr;
     struct in_schedulingAttr_s schedulingAttr;
-    os_int32 schedPrio;
-    os_char* schedClassString;
+    os_int32 schedPrio = 0x8000000;
+    /* todo os_char* schedClassString;*/
 
     assert(_this);
     assert(kind < IN_OBJECT_KIND_COUNT);
     assert(kind > IN_OBJECT_KIND_INVALID);
     assert(deinit);
     assert(name);
-    assert(pathName);
+    /* todo read config
+    /assert(pathName);*/
     assert(runnableMainFunc);
     assert(triggerFunc);
 
     success = in_objectInit(in_object(_this), kind, deinit);
+    assert(in_objectIsValid(in_object(_this)));
     if(success)
     {
         _this->name = os_strdup(name);
-        if(_this->name)
+        if(!_this->name)
         {
             success = OS_FALSE;
         }
@@ -121,15 +114,16 @@ in_runnableInit(
         os_mutexInit(&_this->mutex, &mutexAttr);
 
         /* Get scheduling attributes */
-        schedPrio = INCF_SIMPLE_PARAM(Long, pathName, Priority);
+        /* todo read config
+        schedPrio = INCF_SIMPLE_PARAM(Long, pathName, Priority);*/
         schedulingAttr.schedulingPrioUseDefault = (schedPrio == INCF_DEF(Priority));
-        if (!schedulingAttr.schedulingPrioUseDefault)
-        {
+/*        if (!schedulingAttr.schedulingPrioUseDefault)
+        {*/
             schedulingAttr.schedulingPrioValue = schedPrio;
-        }
-
+       /* }
+*/
         schedulingAttr.schedulingClass = OS_SCHED_DEFAULT;
-        schedClassString = INCF_SIMPLE_PARAM(String, pathName, Class);
+/*        schedClassString = INCF_SIMPLE_PARAM(String, pathName, Class);
         if (0 == strcmp(schedClassString, IN_SCHEDCLASS_REALTIME))
         {
             schedulingAttr.schedulingClass = OS_SCHED_REALTIME;
@@ -138,8 +132,12 @@ in_runnableInit(
             schedulingAttr.schedulingClass = OS_SCHED_TIMESHARE;
         }
         os_free(schedClassString);
+*/
         _this->schedulingAttr = schedulingAttr;
     }
+
+    IN_TRACE_1(Construction,2,"in_runnableInit success:%d",success);
+    assert(in_objectIsValid(in_object(_this)));
     return success;
 }
 

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* OS abstraction layer includes */
 #include "os_heap.h"
 
@@ -43,6 +32,7 @@ in_messageTransformerInit(
         _this->cdrLength = 0;
         _this->getBufferFunc = getBufferFunc;
         _this->getBufferFuncArg = getBufferFuncArg;
+        _this->fragmented = OS_FALSE;
     }
     return success;
 }
