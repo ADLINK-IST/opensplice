@@ -979,18 +979,19 @@ main (
                 idl_walk(base, filename, traceWalk, idl_genCorbaCxxCcppProgram());
                 idl_fileOutFree(idl_fileCur());
 
-                /* Expand IDL based application TypeSupport, DataReader and DataWriter interfaces
-                */
-                snprintf(fname,
-                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
-                    "%sDcps.idl", basename);
-                idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                if (idl_fileCur() == NULL) {
-                    idl_reportOpenError(fname);
+                if (idl_getCorbaMode() == IDL_MODE_ORB_BOUND) {
+                    /* Expand IDL based application TypeSupport, DataReader and DataWriter interfaces
+                    */
+                    snprintf(fname,
+                        (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                        "%sDcps.idl", basename);
+                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                        idl_reportOpenError(fname);
+                    }
+                    idl_walk(base, filename, traceWalk, idl_genCxxIdlProgram());
+                    idl_fileOutFree(idl_fileCur());
                 }
-                idl_walk(base, filename, traceWalk, idl_genCxxIdlProgram());
-                idl_fileOutFree(idl_fileCur());
-                
                 if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
                     /* Call e*ORB pre-processor for both the user provided IDL file (filename)
                      * and the generated IDL file (fname).
