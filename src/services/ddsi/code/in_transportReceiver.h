@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportReceiver.h
  *
  *  Created on: Feb 10, 2009
@@ -37,6 +26,13 @@ extern "C" {
 /** \brief narrow */
 #define in_transportReceiver(_o) \
 	((in_transportReceiver)_o)
+
+#define in_transportReceiverIsValid(t) in_objectIsValid(in_object(t))
+
+#define in_transportReceiverKeep(t) \
+    in_transportReceiver(in_objectKeep(in_object(t)))
+
+#define in_transportReceiverFree(t) in_objectFree(in_object(t))
 
 /** \brief virtual function */
 in_abstractReceiveBuffer
@@ -73,6 +69,10 @@ in_locator
 in_transportReceiverGetCtrlUnicastLocator(
 		in_transportReceiver reader);
 
+/** \brief virtual function */
+in_locator
+in_transportReceiverGetCtrlMulticastLocator(
+        in_transportReceiver _this);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

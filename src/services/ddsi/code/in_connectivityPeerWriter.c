@@ -1,22 +1,14 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-#include "in_connectivityPeerWriter.h"
 #include "os_defs.h"
 #include "os_heap.h"
+
+#include "in__ddsiPublication.h"
+
+#include "in_connectivityPeerWriter.h"
 
 OS_STRUCT(in_connectivityPeerWriter)
 {
     OS_EXTENDS(in_connectivityPeerEntity);
-    struct v_publicationInfo info;
+    in_ddsiDiscoveredWriterData info;
 };
 
 /* ------------- private  ------------------- */
@@ -24,7 +16,7 @@ OS_STRUCT(in_connectivityPeerWriter)
 static void
 in_connectivityPeerWriterInit(
     in_connectivityPeerWriter _this,
-    struct v_publicationInfo *info);
+    in_ddsiDiscoveredWriterData info);
 
 static void
 in_connectivityPeerWriterDeinit(
@@ -33,7 +25,7 @@ in_connectivityPeerWriterDeinit(
 /* ------------- public ----------------------- */
 in_connectivityPeerWriter
 in_connectivityPeerWriterNew(
-    struct v_publicationInfo *info)
+    in_ddsiDiscoveredWriterData info)
 {
     in_connectivityPeerWriter _this;
 
@@ -50,7 +42,7 @@ in_connectivityPeerWriterNew(
 static void
 in_connectivityPeerWriterInit(
     in_connectivityPeerWriter _this,
-    struct v_publicationInfo *info)
+    in_ddsiDiscoveredWriterData info)
 {
     assert(_this);
 
@@ -59,7 +51,7 @@ in_connectivityPeerWriterInit(
         IN_OBJECT_KIND_PEER_WRITER,
         in_connectivityPeerWriterDeinit);
 
-    _this->info = *info;
+    _this->info = in_ddsiDiscoveredWriterDataKeep(info);
 }
 
 static void
@@ -70,26 +62,11 @@ in_connectivityPeerWriterDeinit(
 
     assert(in_connectivityPeerWriterIsValid(obj));
     _this = in_connectivityPeerWriter(obj);
+
+    in_ddsiDiscoveredWriterDataFree(_this->info);
     in_connectivityPeerEntityDeinit(in_connectivityPeerEntity(_this));
 }
 
-in_result
-in_connectivityPeerWriterAddUnicastLocator(
-    in_connectivityPeerWriter _this,
-    in_locator locator)
-{
-    assert(in_connectivityPeerWriterIsValid(_this));
-    return  in_connectivityPeerEntityAddUnicastLocator( in_connectivityPeerEntity(_this), locator);
-}
-
-in_result
-in_connectivityPeerWriterAddMulticastLocator(
-    in_connectivityPeerWriter _this,
-    in_locator locator)
-{
-    assert(in_connectivityPeerWriterIsValid(_this));
-    return in_connectivityPeerEntityAddMulticastLocator( in_connectivityPeerEntity(_this), locator);
-}
 
 Coll_List*
 in_connectivityPeerWriterGetUnicastLocators(
@@ -97,7 +74,7 @@ in_connectivityPeerWriterGetUnicastLocators(
 {
     assert(in_connectivityPeerWriterIsValid(_this));
 
-    return in_connectivityPeerEntityGetUnicastLocators( in_connectivityPeerEntity(_this));
+    return &(_this->info->proxy.unicastLocatorList);
 }
 
 Coll_List*
@@ -106,15 +83,45 @@ in_connectivityPeerWriterGetMulticastLocators(
 {
     assert(in_connectivityPeerWriterIsValid(_this));
 
-    return in_connectivityPeerEntityGetMulticastLocators( in_connectivityPeerEntity(_this));
+    return &(_this->info->proxy.multicastLocatorList);
 }
 
-struct v_publicationInfo *
+in_ddsiDiscoveredWriterData
 in_connectivityPeerWriterGetInfo(
     in_connectivityPeerWriter _this)
 {
     assert(in_connectivityPeerWriterIsValid(_this));
 
-    return &_this->info;
+    return _this->info;
+}
+
+c_char*
+in_connectivityPeerWriterGetTopicName(
+    in_connectivityPeerWriter _this)
+{
+    c_char *result = NULL;
+    in_ddsiDiscoveredWriterData info;
+
+    assert(in_connectivityPeerWriterIsValid(_this));
+
+    info = _this->info;
+
+    /* paranoid check, avoid any NULL-pointer-exception */
+    if (info &&
+            info->topicData.info.topic_name) {
+        result =
+            info->topicData.info.topic_name;
+    }
+
+    return result;
+}
+
+in_ddsiGuid
+in_connectivityPeerWriterGetGuid(
+    in_connectivityPeerWriter _this)
+{
+    assert(in_connectivityPeerWriterIsValid(_this));
+
+    return &(_this->info->proxy.remoteWriterGuid);
 }
 

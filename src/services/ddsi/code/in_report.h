@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 
 #ifndef IN_REPORT_H
 #define IN_REPORT_H
@@ -19,6 +8,7 @@
 /* Errors, warnins and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
+#define IN_SPOT __FILE__
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
@@ -95,6 +85,7 @@ typedef enum in_traceClass_e {
   TC(Receive),
   TC(Discovery),
   TC(Test),
+  TC(Connectivity),
   TC(Count)/* Last element, keep this at the end */
 } in_traceClass;
 

@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportSender.h
  *
  *  Created on: Feb 10, 2009
@@ -36,6 +25,13 @@ extern "C" {
 /** \brief narrow */
 #define in_transportSender(_o) \
 	((in_transportSender)_o)
+
+#define in_transportSenderIsValid(t) in_objectIsValid(in_object(t))
+
+#define in_transportSenderKeep(t) \
+    in_transportSender(in_objectKeep(in_object(t)))
+
+#define in_transportSenderFree(t) in_objectFree(in_object(t))
 
 /** \brief virtual function */
 os_result

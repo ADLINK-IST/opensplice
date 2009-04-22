@@ -1,19 +1,14 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in_controller.h"
 #include "in__config.h"
 #include "in__configChannel.h"
+#include "in_report.h"
 #include "in_factory.h"
-#include "in_streamPair.h"
+#include "in_stream.h"
+#include "in_transport.h"
+#include "u_participant.h"
+#include "u_subscriber.h"
+#include "u_subscriberQos.h"
+#include "in_endpointDiscoveryData.h"
 
 static os_boolean
 in_controllerInit(
@@ -37,7 +32,12 @@ OS_CLASS(in_controllerChannelData);
 OS_STRUCT(in_controller)
 {
     u_service service;
+    u_subscriber subscriber;
+    u_networkReader reader;
     Coll_List channels;
+    /* */
+    in_endpointDiscoveryData discoveryData;
+
     in_controllerChannelData discoveryChannel;
 };
 
@@ -45,8 +45,9 @@ OS_STRUCT(in_controller)
 OS_STRUCT(in_controllerChannelData)
 {
     in_transport transport;
-    in_streamPair stream;
+    in_stream stream;
     in_channel channel;
+    in_plugKernel plug;
 };
 
 in_controller
@@ -55,6 +56,7 @@ in_controllerNew(
 {
     in_controller _this;
     os_boolean success;
+
 
     assert(service);
 
@@ -70,6 +72,9 @@ in_controllerNew(
             _this = NULL;
         }
     }
+
+    IN_TRACE_1(Construction,2,"in_controller created = %x",_this);
+
     return _this;
 }
 
@@ -78,11 +83,25 @@ in_controllerInit(
     in_controller _this,
     u_service service)
 {
+    v_subscriberQos subscriberQos;
     assert(_this);
     assert(service);
 
     _this->service = service;
+    _this->discoveryChannel = NULL;
+
+    subscriberQos = u_subscriberQosNew(NULL);
+
+    /* Do not autoconnect, but react on newGroup notifications */
+    os_free(subscriberQos->partition);
+    subscriberQos->partition = NULL;
+
+    _this->subscriber = u_subscriberNew(u_participant(service), "DDSi Subscriber", subscriberQos, TRUE);
+    _this->reader = u_networkReaderNew(_this->subscriber, "DDSi Reader", NULL, TRUE);
     Coll_List_init(&(_this->channels));
+    _this->discoveryData = in_endpointDiscoveryDataNew();
+
+    os_free(subscriberQos);
 
     return OS_TRUE;
 }
@@ -107,16 +126,25 @@ in_controllerDeinit(
     while(Coll_List_getNrOfElements(&(_this->channels)) > 0)
     {
         data = (in_controllerChannelData)Coll_List_popBack(&(_this->channels));
-        os_free(data->transport);
-        os_free(data->stream);
-        os_free(data->channel);
+        in_objectFree(in_object(data->transport));
+        in_objectFree(in_object(data->stream));
+        in_objectFree(in_object(data->channel));
         os_free(data);
     }
+    if(_this->discoveryChannel)
+    {
+        in_objectFree(in_object(_this->discoveryChannel->transport));
+        in_objectFree(in_object(_this->discoveryChannel->stream));
+        in_objectFree(in_object(_this->discoveryChannel->channel));
+        os_free(_this->discoveryChannel);
+    }
+    if (_this->discoveryData) {
+        in_endpointDiscoveryDataFree(_this->discoveryData);
+    }
 
-    os_free(_this->discoveryChannel->transport);
-    os_free(_this->discoveryChannel->stream);
-    os_free(_this->discoveryChannel->channel);
-    os_free(_this->discoveryChannel);
+    u_networkReaderFree(_this->reader);
+    u_subscriberFree(_this->subscriber);
+
 }
 
 void
@@ -128,18 +156,25 @@ in_controllerStart(
 
     assert(_this);
 
-    in_controllerCreateDataChannels(_this);
     in_controllerCreateDiscoveryChannel(_this);
+    in_controllerCreateDataChannels(_this);
 
-    /* TODO add code to start up the discovery channel */
+
+    /* start up the discovery channel */
+    in_channelActivate(_this->discoveryChannel->channel);
 
     iterator = Coll_List_getFirstElement(&(_this->channels));
     while(iterator)
     {
         channelData = (in_controllerChannelData)Coll_Iter_getObject(iterator);
-        /* TODO add code to start up the data channel */
+        /* start up the data channel */
+        in_channelActivate(channelData->channel);
         iterator = Coll_Iter_getNext(iterator);
     }
+
+    u_networkReaderRemoteActivityDetected(_this->reader);
+
+    IN_TRACE(Construction,2,"in_controller started");
 }
 
 void
@@ -151,15 +186,71 @@ in_controllerStop(
 
     assert(_this);
 
-    /* TODO add code to stop the discovery channel */
+    u_networkReaderRemoteActivityLost(_this->reader);
+
+    /* stop the discovery channel */
+    in_channelDeactivate(_this->discoveryChannel->channel);
 
     iterator = Coll_List_getFirstElement(&(_this->channels));
     while(iterator)
     {
         channelData = (in_controllerChannelData)Coll_Iter_getObject(iterator);
-        /* TODO add code to stop the data channel */
+
+        /* stop the data channel */
+        in_channelDeactivate(channelData->channel);
+
         iterator = Coll_Iter_getNext(iterator);
     }
+}
+
+os_boolean
+addTransportToDiscoveryData(
+    in_endpointDiscoveryData discoveryData,
+    in_transport transport,
+    os_boolean addMetaLocator)
+{
+    os_boolean result = OS_TRUE;
+    in_transportReceiver rec;
+    in_locator mcastLoc;
+    in_locator ucastLoc;
+    in_locator metatrafficUcastLoc;
+    in_locator metatrafficMcastLoc;
+
+    rec = in_transportGetReceiver(transport);
+    mcastLoc = in_transportReceiverGetDataMulticastLocator(rec);
+    ucastLoc = in_transportReceiverGetDataUnicastLocator(rec);
+    metatrafficUcastLoc = in_transportReceiverGetCtrlUnicastLocator(rec);
+    metatrafficMcastLoc = in_transportReceiverGetCtrlMulticastLocator(rec);
+
+    if (!mcastLoc || !ucastLoc)
+    {
+        /* free the locator objects, check  with Patrick */
+        result = OS_FALSE;
+    } else
+    {
+        if(!addMetaLocator)
+        {
+        in_endpointDiscoveryDataAddDefaultMulticastLocator(
+            discoveryData,
+            mcastLoc);
+        in_endpointDiscoveryDataAddDefaultUnicastLocator(
+            discoveryData,
+            ucastLoc);
+        }
+        if(addMetaLocator)
+        {
+            /* explicit metatraffic resource only for unicast, the
+             * multicast metatraffic shall go via the default mcast locator */
+            in_endpointDiscoveryDataAddMetatrafficUnicastLocator(
+                discoveryData,
+                metatrafficUcastLoc);
+            in_endpointDiscoveryDataAddMetatrafficMulticastLocator(
+                 discoveryData,
+                 metatrafficMcastLoc);
+        }
+        result = OS_TRUE;
+    }
+    return result;
 }
 
 void
@@ -177,74 +268,128 @@ in_controllerCreateDataChannels(
 
     assert(_this);
 
+    IN_TRACE(Construction,2,"in_controllerCreateDataChannels called");
+
     config = in_configGetInstance();
     serviceName = u_serviceGetName(_this->service);
     ddsiService = in_configGetDdsiServiceByName(config, serviceName);
 
     dataChannelConfigs = in_configDdsiServiceGetChannels(ddsiService);
+
+    IN_TRACE_1(Construction,2,"in_controllerCreateDataChannels will create %d datachannels", Coll_List_getNrOfElements(dataChannelConfigs));
     iterator = Coll_List_getFirstElement(dataChannelConfigs);
     while(iterator)
     {
+        in_endpointDiscoveryData channelSpecificEndpoint = NULL;
         dataChannelConfig = in_configChannel(Coll_Iter_getObject(iterator));
-        channelData = os_malloc(sizeof(OS_STRUCT(in_controllerChannelData)));
-        if(!channelData)
-        {
-            /* TODO report error */
-            break;
-        }
-        channelData->transport = in_factoryCreateTransport(dataChannelConfig);
-        if(!channelData->transport)
-        {
-            os_free(channelData);
-            /* TODO report error */
-            break;
-        } else
-        {
-            channelData->stream = in_factoryCreateStream(dataChannelConfig);
-            if(!channelData->stream)
+
+        IN_TRACE_1(Construction,2,"CREATE DATA channel %s ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+        if (in_configChannelIsEnabled(in_configChannel(dataChannelConfig))) {
+
+            channelData = os_malloc(sizeof(OS_STRUCT(in_controllerChannelData)));
+
+            IN_TRACE_1(Construction,2,"CREATE DATA channel %s(create transport) ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+            if(!channelData)
             {
-                in_transportFree(channelData->transport);
+                IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel failed for %s",
+                        in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                break;
+            }
+            channelData->transport = in_factoryCreateTransport(dataChannelConfig);
+            if(!channelData->transport)
+            {
                 os_free(channelData);
-                /* TODO report error */
+                IN_REPORT_ERROR_1(IN_SPOT, "Initializing transport failed for %s",
+                        in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
                 break;
             } else
             {
-                channelData->channel = in_factoryCreateChannel(dataChannelConfig);
-                if(!channelData->channel)
+                IN_TRACE_1(Construction,2,"CREATE DATA channel %s(create plugkernel) ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                channelSpecificEndpoint =
+                    in_endpointDiscoveryDataNew();
+
+                channelData->plug = in_plugKernelNew(_this->service);
+
+                if (!channelData->plug ||
+                    !channelSpecificEndpoint ||
+                    !addTransportToDiscoveryData(_this->discoveryData, channelData->transport, OS_FALSE) ||
+                    !addTransportToDiscoveryData(channelSpecificEndpoint, channelData->transport, OS_FALSE))
                 {
+                    IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel endpoints failed for %s",
+                            in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+
                     in_transportFree(channelData->transport);
-                    in_streamPairFree(channelData->stream);
+                    in_streamFree(channelData->stream);
+                    if (channelSpecificEndpoint) {
+                        in_endpointDiscoveryDataFree(channelSpecificEndpoint);
+                    }
                     os_free(channelData);
-                    /* TODO report error */
                     break;
+                } else
+                {
+                    IN_TRACE_1(Construction,2,"CREATE DATA channel %s(create stream) ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                    channelData->stream = in_factoryCreateStream(
+                            dataChannelConfig,
+                            channelData->plug,
+                            channelData->transport);
+
+                    if(!channelData->stream)
+                    {
+                        in_transportFree(channelData->transport);
+                        os_free(channelData);
+
+                        IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel failed for %s",
+                                  in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                        break;
+                    } else
+                    {
+                        IN_TRACE_1(Construction,2,"CREATE DATA channel %s(create channel) ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                        channelData->channel = in_factoryCreateChannel(
+                            dataChannelConfig,
+                            channelData->plug,
+                            channelData->stream,
+                            channelSpecificEndpoint);
+
+                        if(!channelData->channel)
+                        {
+                            in_transportFree(channelData->transport);
+                            in_streamFree(channelData->stream);
+                            os_free(channelData);
+                            IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel failed for %s",
+                                    in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                            break;
+                        }
+                    }
                 }
+                in_endpointDiscoveryDataFree(channelSpecificEndpoint);
             }
-        }
-        retCode = Coll_List_pushBack(&_this->channels, channelData);
-        if(retCode != COLL_OK)
-        {
-            in_transportFree(channelData->transport);
-            in_streamPairFree(channelData->stream);
-            in_channelFree(channelData->channel);
-            os_free(channelData);
-           /* TODO report error */
-            break;
+            retCode = Coll_List_pushBack(&_this->channels, channelData);
+            if(retCode != COLL_OK)
+            {
+                in_channelFree(channelData->channel);
+                in_streamFree(channelData->stream);
+                in_transportFree(channelData->transport);
+                os_free(channelData);
+                IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel failed for %s",
+                           in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
+                break;
+            }
         }
         iterator = Coll_Iter_getNext(iterator);
     }
-
     os_free(serviceName);
 }
+
 
 void
 in_controllerCreateDiscoveryChannel(
     in_controller _this)
 {
-    in_config config;
-    in_configDdsiService ddsiService;
-    in_configChannel discoveryChannelConfig;
-    os_char* serviceName;
-    in_controllerChannelData channelData;
+    in_config config = NULL;
+    in_configDdsiService ddsiService = NULL;
+    in_configChannel discoveryChannelConfig = NULL;
+    os_char* serviceName = NULL;
+    in_controllerChannelData channelData = NULL;
 
     assert(_this);
 
@@ -254,35 +399,73 @@ in_controllerCreateDiscoveryChannel(
 
     discoveryChannelConfig = in_configChannel(in_configDdsiServiceGetDiscoveryChannel(ddsiService));
 
-    channelData = os_malloc(sizeof(OS_STRUCT(in_controllerChannelData)));
-    if(!channelData)
-    {
-        /* TODO report error */
-    }
-    channelData->transport = in_factoryCreateTransport(discoveryChannelConfig);
-    if(!channelData->transport)
-    {
-        os_free(channelData);
-        /* TODO report error */
-    } else
-    {
-        channelData->stream = in_factoryCreateStream(discoveryChannelConfig);
-        if(!channelData->stream)
+    if (in_configChannelIsEnabled(discoveryChannelConfig)) {
+        IN_TRACE(Construction,2,"CREATE DISCOVERY channel");
+
+        channelData = os_malloc(sizeof(OS_STRUCT(in_controllerChannelData)));
+        if(!channelData)
         {
-            in_transportFree(channelData->transport);
+            IN_REPORT_ERROR_1(IN_SPOT, "Initializing discovery channel failed for %s",
+                    in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
+        }
+        channelData->transport = in_factoryCreateTransport(discoveryChannelConfig);
+        if(!channelData->transport ||
+           !addTransportToDiscoveryData(
+                   _this->discoveryData,
+                   channelData->transport,
+                   OS_TRUE))
+        {
             os_free(channelData);
-            /* TODO report error */
+            channelData = NULL;
+            IN_REPORT_ERROR_1(IN_SPOT, "Initializing discovery channel failed for %s",
+                     in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
         } else
         {
-            channelData->channel = in_factoryCreateChannel(discoveryChannelConfig);
-            if(!channelData->channel)
+            channelData->plug = in_plugKernelNew(_this->service);
+
+            if(!channelData->plug)
             {
+                IN_REPORT_ERROR_1(IN_SPOT, "Initializing discovery channel failed for %s",
+                         in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
                 in_transportFree(channelData->transport);
-                in_streamPairFree(channelData->stream);
+                in_streamFree(channelData->stream);
                 os_free(channelData);
-                /* TODO report error */
+                channelData = NULL;
+            } else
+            {
+                channelData->stream = in_factoryCreateStream(
+                                        discoveryChannelConfig,
+                                        channelData->plug,
+                                        channelData->transport);
+                if(!channelData->stream)
+                {
+                    in_transportFree(channelData->transport);
+                    os_free(channelData);
+                    channelData = NULL;
+                    IN_REPORT_ERROR_1(IN_SPOT, "Initializing discovery channel failed for %s",
+                             in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
+                } else
+                {
+                    channelData->channel =
+                        in_factoryCreateDiscoveryChannel(
+                                in_configDiscoveryChannel(discoveryChannelConfig),
+                                channelData->plug,
+                                channelData->stream,
+                                _this->discoveryData);
+
+                    if(!channelData->channel)
+                    {
+                        in_transportFree(channelData->transport);
+                        in_streamFree(channelData->stream);
+                        os_free(channelData);
+                        channelData = NULL;
+                        IN_REPORT_ERROR_1(IN_SPOT, "Initializing discovery channel failed for %s",
+                                 in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
+                    }
+                }
             }
         }
     }
+
     _this->discoveryChannel = channelData;
 }

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in_channelSdp.h"
 #include "in_channelReader.h"
 #include "in_channelSdpReader.h"
@@ -17,203 +6,214 @@
 #include "in_connectivityAdmin.h"
 #include "os_heap.h"
 #include "os_time.h"
+#include "in_report.h"
 
-OS_STRUCT(in_channelSdpReader)
-{
-    OS_EXTENDS(in_channelReader);
-    in_streamReader reader;
-    in_streamReaderCallbackTable callbacks;
-};
-
+/** */
 static os_boolean
 in_channelSdpReaderInit(
     in_channelSdpReader sdp,
     in_channelSdp channel,
     in_configDiscoveryChannel config);
 
+/** */
 static void
 in_channelSdpReaderDeinit(
     in_object obj);
 
+/** */
 static void*
 in_channelSdpReaderStart(
     in_runnable _this);
 
+/** */
 static void
 in_channelSdpReaderTrigger(
     in_runnable _this);
 
+/** */
 static in_result
 in_channelSdpReaderProcessPeerEntity(
     in_streamReaderCallbackArg _this,
     in_discoveredPeer peer);
 
+/** */
 static in_result
-in_channelSdpReaderProcessData(
-    in_streamReaderCallbackArg _this,
-    v_message message,
-    in_connectivityPeerWriter peerWriter,
-    in_ddsiReceiver receiver);
+in_channelSdpReaderProcessAckNackFunc(
+        in_streamReaderCallbackArg _this,
+        in_ddsiAckNack event,
+        in_ddsiReceiver receiver);
 
-static in_result
-in_channelSdpReaderProcessDataFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiDataFrag event,
-    in_ddsiReceiver receiver);
-
-static in_result
-in_channelSdpReaderProcessHeartbeat(
+static in_result in_channelSdpReaderProcessHeartbeatFunc(
     in_streamReaderCallbackArg _this,
     in_ddsiHeartbeat event,
     in_ddsiReceiver receiver);
 
-static in_result
-in_channelSdpReaderProcessAckNack(
-    in_streamReaderCallbackArg _this,
-    in_ddsiAckNack event,
-    in_ddsiReceiver receiver);
 
-static in_result
-in_channelSdpReaderProcessNackFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiNackFrag event,
-    in_ddsiReceiver receiver);
+/** */
+OS_STRUCT(in_channelSdpReader)
+{
+    OS_EXTENDS(in_channelReader);
+    in_streamReader reader;
+};
 
-static in_result
-in_channelSdpReaderRequestNackFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiNackFragRequest request);
-
+/** */
 in_channelSdpReader
 in_channelSdpReaderNew(
     in_channelSdp channel,
     in_configDiscoveryChannel config)
 {
-    in_channelSdpReader sdp;
+    in_channelSdpReader _this;
     os_boolean success;
 
-    sdp = os_malloc(OS_SIZEOF(in_channelSdpReader));
-
-    if(sdp)
+    _this = os_malloc(OS_SIZEOF(in_channelSdpReader));
+    if(_this)
     {
-        success = in_channelSdpReaderInit(sdp, channel, config);
-
+        success = in_channelSdpReaderInit(_this, channel, config);
         if(!success)
         {
-            os_free(sdp);
-            sdp = NULL;
+            os_free(_this);
+            _this = NULL;
+            IN_TRACE_1(Construction,2,"in_channelSdpReader creation successful = %x",_this);
+        } else
+        {
+            IN_TRACE_1(Construction,2,"in_channelSdpReader creation failed = %x",_this);
         }
     }
-    return sdp;
+
+    return _this;
 }
 
-static os_boolean
+/** */
+static OS_STRUCT(in_streamReaderCallbackTable)
+in_channelSdpReaderCallbackTable =
+{
+        in_channelSdpReaderProcessPeerEntity,
+        NULL, /* processData */
+        NULL, /* processDataFrag */
+        in_channelSdpReaderProcessAckNackFunc,
+        NULL, /* processNackFrag */
+        in_channelSdpReaderProcessHeartbeatFunc, /* processHeartbeat */
+        NULL, /* requestNackFrag */
+};
+
+/** */
+os_boolean
 in_channelSdpReaderInit(
-    in_channelSdpReader sdp,
+    in_channelSdpReader _this,
     in_channelSdp channel,
     in_configDiscoveryChannel config)
 {
     os_boolean success;
     in_stream stream;
 
-    assert(sdp);
+    assert(_this);
     assert(in_channelSdpIsValid(channel));
     assert(config);
 
     success = in_channelReaderInit(
-            in_channelReader(sdp),
-            IN_OBJECT_KIND_SDP_READER,
-            in_channelSdpReaderDeinit, "sdpReader",
-            in_configChannelGetPathName(in_configChannel(config)),
-            in_channelSdpReaderStart, in_channelSdpReaderTrigger,
-            in_channel(channel));
-
+        in_channelReader(_this),
+        IN_OBJECT_KIND_SDP_READER,
+        in_channelSdpReaderDeinit,
+        "sdpReader",
+        in_configChannelGetPathName(in_configChannel(config)),
+        in_channelSdpReaderStart,
+        in_channelSdpReaderTrigger,
+        in_channel(channel));
     if(success)
     {
-        sdp->callbacks = (in_streamReaderCallbackTable)(
-                os_malloc(OS_SIZEOF(in_streamReaderCallbackTable)));
-
-        if(sdp->callbacks)
-        {
-            sdp->callbacks->processPeerEntity = in_channelSdpReaderProcessPeerEntity;
-            sdp->callbacks->processData = in_channelSdpReaderProcessData;
-            sdp->callbacks->processDataFrag = in_channelSdpReaderProcessDataFrag;
-            sdp->callbacks->processAckNack = in_channelSdpReaderProcessAckNack;
-            sdp->callbacks->processNackFrag = in_channelSdpReaderProcessNackFrag;
-            sdp->callbacks->processHeartbeat = in_channelSdpReaderProcessHeartbeat;
-            sdp->callbacks->requestNackFrag = in_channelSdpReaderRequestNackFrag;
-
-            stream = in_channelGetStream(in_channel(channel));
-            sdp->reader = in_streamGetReader(stream);
-            in_streamFree(stream);
-
-            in_runnableStart(in_runnable(sdp));
-        } else
-        {
-            in_channelReaderDeinit(in_object(sdp));
-            success = OS_FALSE;
-        }
+        stream = in_channelGetStream(in_channel(channel));
+        _this->reader = in_streamGetReader(stream);
+        in_streamFree(stream);
     }
     return success;
 }
 
-static void
+/** */
+void
 in_channelSdpReaderDeinit(
     in_object obj)
 {
     in_channelSdpReader _this;
 
+    assert(obj);
     assert(in_channelSdpReaderIsValid(obj));
     _this = in_channelSdpReader(obj);
 
     in_runnableStop(in_runnable(obj));
-    os_free(_this->callbacks);
-    _this->callbacks = NULL;
-    in_streamReaderFree(_this->reader);
-
+   if(_this->reader)
+    {
+        in_streamReaderFree(_this->reader);
+        _this->reader = NULL;
+    }
     in_channelReaderDeinit(obj);
 }
 
-static void*
+/** */
+void*
 in_channelSdpReaderStart(
     in_runnable runnable)
 {
+    const os_uint32 ERROR_INTERVAL = 500;
+    os_uint32 errorCounter = 0;
+
+    const os_time POLL_PERIOD = {0, 10*1000*1000}; /* 50 ms */
+
     in_channelSdpReader _this;
-    os_time sleepTime;
+    os_time pollTimeout;
     in_result result;
 
+    assert(runnable);
     assert(in_channelSdpReaderIsValid(runnable));
 
     _this = in_channelSdpReader(runnable);
-    sleepTime.tv_sec = 0;
-    sleepTime.tv_nsec = 10 * 1000 * 1000; /* 10 ms */
 
+    IN_TRACE(Receive, 3, "in_channelSDPReader started");
     while(!in_runnableTerminationRequested(runnable))
     {
-        result = in_streamReaderScan(
-                _this->reader,
-                _this->callbacks,
-                _this,
-                &sleepTime);
+        /* must be renewed */
+        pollTimeout = POLL_PERIOD;
 
-        if(!in_runnableTerminationRequested(runnable))
+        result = in_streamReaderScan(
+            _this->reader,
+            &in_channelSdpReaderCallbackTable, /* static vtable */
+            _this,
+            &pollTimeout);
+        /* may return before timeout exceeded, then pollTimeout contains
+         * the remaining time, which may be used for other activities until
+         * POLL_PERIOD interval has passed.  */
+        if (result != IN_RESULT_OK && result != IN_RESULT_TIMEDOUT) {
+            if (errorCounter == 0) {
+                /* first occurance */
+                IN_REPORT_WARNING(IN_SPOT,
+                        "unexpected data read error");
+            } else if (errorCounter >= ERROR_INTERVAL) {
+                IN_REPORT_WARNING_1(IN_SPOT,
+                        "unexpected data read error (repeated %d times)",
+                        errorCounter);
+                errorCounter = 0;
+            }
+            ++errorCounter;
+            /* POST: errorCounter >= 1 */
+        }
+       /* if(!in_runnableTerminationRequested(runnable))
         {
             os_nanoSleep(sleepTime);
-        }
+        }*/
     }
     return NULL;
 }
 
-static void
+/** */
+void
 in_channelSdpReaderTrigger(
     in_runnable runnable)
 {
+    assert(runnable);
     assert(in_channelSdpReaderIsValid(runnable));
-
-    return;
 }
 
-static in_result
+/** */
+in_result
 in_channelSdpReaderProcessPeerEntity(
     in_streamReaderCallbackArg _this,
     in_discoveredPeer peer)
@@ -224,27 +224,30 @@ in_channelSdpReaderProcessPeerEntity(
     in_channelSdpWriter sdpw;
     in_result result;
 
+    IN_TRACE(Receive,3,"in_channelSdpReaderProcessPeerEntity CALLBACK");
+
     sdpr = in_channelSdpReader(_this);
     channel = in_channelReaderGetChannel(in_channelReader(sdpr));
     sdpw = in_channelSdpWriter(in_channelGetWriter(channel));
     admin = in_connectivityAdminGetInstance();
-
     switch(in_objectGetKind(in_object(peer->discoveredPeerEntity)))
     {
         case IN_OBJECT_KIND_PEER_PARTICIPANT:
             result = in_connectivityAdminAddPeerParticipant(
-                    admin, in_connectivityPeerParticipant(
-                            peer->discoveredPeerEntity));
+                admin,
+                in_connectivityPeerParticipant(peer->discoveredPeerEntity));
         break;
         case IN_OBJECT_KIND_PEER_READER:
             result = in_connectivityAdminAddPeerReader(
-                    admin, in_connectivityPeerReader(
-                            peer->discoveredPeerEntity));
+                admin,
+                in_connectivityPeerReader(peer->discoveredPeerEntity),
+                peer->sequenceNumber);
         break;
         case IN_OBJECT_KIND_PEER_WRITER:
             result = in_connectivityAdminAddPeerWriter(
-                    admin, in_connectivityPeerWriter(
-                            peer->discoveredPeerEntity));
+                admin,
+                in_connectivityPeerWriter(peer->discoveredPeerEntity),
+                peer->sequenceNumber);
         break;
         default:
             assert(FALSE);
@@ -253,63 +256,66 @@ in_channelSdpReaderProcessPeerEntity(
     }
     if(result == IN_RESULT_OK)
     {
-        /*TODO: uncomment next line when function is available*/
-        /*in_channelSdpWriterAddPeerEntity(sdpw, peer);*/
+        result = in_channelSdpWriterAddPeerEntity(sdpw, peer->discoveredPeerEntity);
     }
+    /*if(result == U_RESULT_OK)
+    {
+        if(in_objectGetKind(in_object(peer->discoveredPeerEntity)) != IN_OBJECT_KIND_PEER_PARTICIPANT)
+        {
+           result = in_channelSdpWriterAddPeerEntityForAcking(sdpw, peer);
+        }
+    }*/
+    return result;
+}
+
+
+/** */
+in_result
+in_channelSdpReaderProcessAckNackFunc(
+        in_streamReaderCallbackArg _this,
+        in_ddsiAckNack event,
+        in_ddsiReceiver receiver)
+{
+    in_channelSdpReader sdpr;
+    in_channel channel;
+    in_channelSdpWriter sdpw;
+    in_result result;
+
+    assert(_this);
+    assert(event);
+    assert(receiver);
+
+    IN_TRACE(Receive,3,"in_channelSdpReaderProcessAckNackFunc CALLBACK");
+
+    sdpr = in_channelSdpReader(_this);
+    channel = in_channelReaderGetChannel(in_channelReader(sdpr));
+    sdpw = in_channelSdpWriter(in_channelGetWriter(channel));
+
+    result = in_channelSdpWriterAddAckNack(sdpw, event, receiver);
 
     return result;
 }
 
-static in_result
-in_channelSdpReaderProcessData(
-    in_streamReaderCallbackArg _this,
-    v_message message,
-    in_connectivityPeerWriter peerWriter,
-    in_ddsiReceiver receiver)
-{
-    return IN_RESULT_OK;
-}
-
-static in_result
-in_channelSdpReaderProcessDataFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiDataFrag event,
-    in_ddsiReceiver receiver)
-{
-    return IN_RESULT_OK;
-}
-
-static in_result
-in_channelSdpReaderProcessHeartbeat(
+in_result
+in_channelSdpReaderProcessHeartbeatFunc(
     in_streamReaderCallbackArg _this,
     in_ddsiHeartbeat event,
     in_ddsiReceiver receiver)
 {
-    return IN_RESULT_OK;
-}
+    in_result result = IN_RESULT_OK;
+    in_channelSdpReader sdpr;
+    in_channel channel;
+    in_channelSdpWriter sdpw;
 
-static in_result
-in_channelSdpReaderProcessAckNack(
-    in_streamReaderCallbackArg _this,
-    in_ddsiAckNack event,
-    in_ddsiReceiver receiver)
-{
-    return IN_RESULT_OK;
-}
+    assert(_this);
+    assert(event);
+    assert(receiver);
 
-static in_result
-in_channelSdpReaderProcessNackFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiNackFrag event,
-    in_ddsiReceiver receiver)
-{
-    return IN_RESULT_OK;
-}
+    sdpr = in_channelSdpReader(_this);
+    channel = in_channelReaderGetChannel(in_channelReader(sdpr));
+    sdpw = in_channelSdpWriter(in_channelGetWriter(channel));
 
-static in_result
-in_channelSdpReaderRequestNackFrag(
-    in_streamReaderCallbackArg _this,
-    in_ddsiNackFragRequest request)
-{
-    return IN_RESULT_OK;
+    result = in_channelSdpWriterAddHeartbeatEvent(sdpw, event, receiver);
+
+    return result;
 }

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #ifndef IN_MESSAGETRANSFORMER__H
 #define IN_MESSAGETRANSFORMER__H
 
@@ -98,6 +87,7 @@ OS_STRUCT(in_messageTransformer)
     os_ushort curCdrIndex;
     /* indicates the number of octets in the stream. */
     os_ushort cdrLength;
+    os_boolean fragmented;
 };
 
 os_boolean
@@ -185,6 +175,7 @@ in_messageTransformerBegin(
  * number of available bytes.
  */
 #define in_messageTransformerRenew(_this)                                      \
+    in_messageTransformer(_this)->fragmented = OS_FALSE;                       \
     in_messageTransformer(_this)->getBufferFunc(                               \
         &in_messageTransformer(_this)->bufferPtr,                              \
         &in_messageTransformer(_this)->length,                                 \

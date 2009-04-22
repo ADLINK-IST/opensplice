@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_ddsiReceiver.c
  *
  *  Created on: Mar 9, 2009
@@ -35,7 +24,7 @@ os_boolean
 in_ddsiReceiverInit(in_ddsiReceiver _this,
         in_abstractReceiveBuffer receiveBuffer)
 {
-    const os_time zeroTime = {0,0};
+    const c_time zeroTime = {0,0};
     const in_ddsiGuidPrefix zeroPrefix = IN_GUIDPREFIX_UNKNOWN;
     os_boolean result = OS_TRUE;
     OS_STRUCT(in_ddsiDeserializer) deserializer;
