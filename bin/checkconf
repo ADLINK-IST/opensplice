@@ -241,6 +241,9 @@ javac_check ()
         SunOS)
             JAVA_PATH_EXT=sparc
             ;;
+        CYGWIN_NT*)
+            JAVA_PATH_EXT=i386
+            ;;
         *)
             echo "Error - Not yet supported Java setup"
             return 1
