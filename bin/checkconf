@@ -12,8 +12,8 @@ pathcheck ()
 # test if CL.exe is at least vs8
 msvs_check ()
 {
-    _CYGPATH=/bin/cygpath
-    _WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
+    #_CYGPATH=/bin/cygpath
+    #_WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
 
     echo -n "Visual Studio: "
     pathcheck cl.exe
@@ -36,25 +36,26 @@ msvs_check ()
             echo "Error - cl.exe not found"
             return 1
         fi
-  	    VS_HOME=`dirname \`dirname $CL_EXE\``
+  	    VS_HOME=`dirname `dirname $CL_EXE``
   	    VS_HOME=`dirname $VS_HOME`
         export VS_HOME
     fi
 
-    VS_HOME=`$_CYGPATH -d $VS_HOME`
+    VS_HOME_DOS=`cygpath -d $VS_HOME`
+    VS_HOME_UNIX=`cygpath -u $VS_HOME`
 
-    LIBPATH="$VSINSTALLDIR\VC\ATLMFC\LIB"
-    PATH="$VSINSTALLDIR/VC/bin:$PATH"
+    LIBPATH="$VS_HOME_DOS\VC\ATLMFC\LIB"
+    PATH="$VS_HOME_UNIX/VC/bin:$VS_HOME_UNIX/Common7/IDE:$PATH"
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
-    CL_MAJOR=`echo $COMPILER_VERSION | cut -f 1 -d .`
+    CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
     if [ $CL_MAJOR -lt 14 ]
     then
         echo "Error - Only .NET 2005 and abovbe supported"
         return 1
     fi
     
-    if [ $CL_MAJOR -lt 14 ]
+    if [ $CL_MAJOR = 14 ]
     then
         COMPILER_VER="VS .NET 2005"
     fi
