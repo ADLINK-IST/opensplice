@@ -9,6 +9,60 @@ pathcheck ()
     return 1
 }
 
+# test if CL.exe is at least vs8
+msvs_check ()
+{
+    _CYGPATH=/bin/cygpath
+    _WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
+
+    echo -n "Visual Studio: "
+    pathcheck cl.exe
+    if [ $? != 0 ]
+    then
+        if [ -z "$VS_HOME" ]
+        then 
+            echo "Error - No VS_HOME not set" 
+            return 1
+        fi
+        if [ ! -d "$VS_HOME" ]
+        then
+            echo "Error - $VS_HOME is not set to a directory"
+            return 1
+        fi
+    else
+        CL_EXE=`which cl.exe`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - cl.exe not found"
+            return 1
+        fi
+  	    VS_HOME=`dirname \`dirname $CL_EXE\``
+  	    VS_HOME=`dirname $VS_HOME`
+        export VS_HOME
+    fi
+
+    VS_HOME=`$_CYGPATH -d $VS_HOME`
+
+    LIBPATH="$VSINSTALLDIR\VC\ATLMFC\LIB"
+    PATH="$VSINSTALLDIR/VC/bin:$PATH"
+
+    COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
+    CL_MAJOR=`echo $COMPILER_VERSION | cut -f 1 -d .`
+    if [ $CL_MAJOR -lt 14 ]
+    then
+        echo "Error - Only .NET 2005 and abovbe supported"
+        return 1
+    fi
+    
+    if [ $CL_MAJOR -lt 14 ]
+    then
+        COMPILER_VER="VS .NET 2005"
+    fi
+    echo "OK - using $COMPILER_VER"
+    return 0
+}
+
+
 # test if gcc is at least v3.2
 gcc_check ()
 {
@@ -369,6 +423,7 @@ gawk_check ()
 
 cleanup_checks ()
 {
+    unset msvs_check
     unset gcc_check
     unset make_check
     unset bison_check
@@ -381,6 +436,6 @@ cleanup_checks ()
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
-    unset GAWK_VERSION JAVA_PATH_EXT
+    unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
 }
 
