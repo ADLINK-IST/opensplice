@@ -15,7 +15,7 @@ msvs_check ()
     #_CYGPATH=/bin/cygpath
     #_WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
 
-    echo -n "Visual Studio: "
+    echo -n "VS: "
     pathcheck cl.exe
     if [ $? != 0 ]
     then
@@ -36,7 +36,8 @@ msvs_check ()
             echo "Error - cl.exe not found"
             return 1
         fi
-  	    VS_HOME=`dirname `dirname $CL_EXE``
+  	    VS_HOME=`dirname $CL_EXE`
+  	    VS_HOME=`dirname $VS_HOME`
   	    VS_HOME=`dirname $VS_HOME`
         export VS_HOME
     fi
@@ -438,5 +439,6 @@ cleanup_checks ()
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
+    unset VS_HOME_UNIX VS_HOME_DOS
 }
 
