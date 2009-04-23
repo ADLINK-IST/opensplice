@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__reader.h"
@@ -1077,9 +1077,8 @@ v_dataReaderRemoveInstance(
                                                   instance, NULL, NULL));
             v_deadLineInstanceListRemoveInstance(_this->deadLineList,
                                                  v_instance(instance));
-            v_statisticsULongValueDec(v_reader,
-                                      numberOfInstancesWithStatusNoWriters,
-                                      _this);
+            /* Remove the instance from the instance-statistics administration */
+            UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index, instance);
             instance->purgeInsertionTime = C_TIME_ZERO;
             v_publicFree(v_public(instance));
             c_free(found);
@@ -1268,7 +1267,7 @@ v_dataReaderNotify(
         V_EVENT_DEADLINE_MISSED | \
         V_EVENT_INCOMPATIBLE_QOS | \
         V_EVENT_LIVELINESS_CHANGED | \
-        V_EVENT_DATA_AVAILABLE 
+        V_EVENT_DATA_AVAILABLE
 
         v_entity(_this)->status->state |= (event->kind & (_NOTIFICATION_MASK_));
 #undef _NOTIFICATION_MASK_
