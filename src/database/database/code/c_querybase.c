@@ -1671,7 +1671,7 @@ c_qPredInitVars (
 #define PRINT_EXPR(msg,expr) \
     printf(msg); q_print(expr,0); printf("\n")
 #define PRINT_PRED(msg,pred) \
-    printf(msg); c_qPredPrint(pred,0); printf("\n")
+    printf(msg); c_qPredPrint(pred); printf("\n")
 #else
 #define PRINT_EXPR(msg,expr)
 #define PRINT_PRED(msg,pred)
