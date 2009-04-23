@@ -215,7 +215,7 @@ PP_min_handler (
     // cout << "PING: PING_min arrived" << endl;
     
     preTakeTime = timeGet ();
-    dds_result = PP_min_reader->take (PP_min_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    dds_result = PP_min_reader->take (PP_min_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_min_dataList->length ();
@@ -255,7 +255,7 @@ PP_seq_handler (
     // cout << "PING: PING_seq arrived" << endl;
 
     preTakeTime = timeGet ();
-    dds_result = PP_seq_reader->take (PP_seq_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    dds_result = PP_seq_reader->take (PP_seq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
 
     amount = PP_seq_dataList->length ();
@@ -296,7 +296,7 @@ PP_string_handler (
     // cout << "PING: PING_string arrived" << endl;
     
     preTakeTime = timeGet ();
-    dds_result = PP_string_reader->take (PP_string_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    dds_result = PP_string_reader->take (PP_string_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_string_dataList->length ();
@@ -336,7 +336,7 @@ PP_fixed_handler (
     // cout << "PING: PING_fixed arrived" << endl;
     
     preTakeTime = timeGet ();
-    dds_result = PP_fixed_reader->take (PP_fixed_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    dds_result = PP_fixed_reader->take (PP_fixed_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_fixed_dataList->length ();
@@ -376,7 +376,7 @@ Boolean PP_array_handler (
     // cout << "PING: PING_array arrived" << endl;
     
     preTakeTime = timeGet ();
-    dds_result = PP_array_reader->take (PP_array_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    dds_result = PP_array_reader->take (PP_array_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_array_dataList->length ();
