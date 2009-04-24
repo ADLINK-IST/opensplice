@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in_channel.h"
 #include "in_channelData.h"
 #include "os_heap.h"
@@ -26,7 +15,8 @@ in_channelDataInit(
     in_objectDeinitFunc deinit,
     in_configChannel config,
     in_stream stream,
-    in_plugKernel plug);
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryData);
 
 OS_STRUCT(in_channelData)
 {
@@ -37,12 +27,16 @@ in_channelData
 in_channelDataNew(
     in_configChannel config,
     in_stream stream,
-    in_plugKernel plug)
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryData)
 {
     in_channelData _this = NULL;
 
+    assert(config);
     assert(stream);
+    assert(plug);
     assert(in_plugKernelIsValid(plug));
+    assert(discoveryData);
 
     _this = os_malloc(sizeof(OS_STRUCT(in_channelData)));
     if(_this != NULL)
@@ -55,7 +49,8 @@ in_channelDataNew(
             in_channelDataDeinit,
             config,
             stream,
-            plug);
+            plug,
+            discoveryData);
 
         if(!success)
         {
@@ -73,7 +68,8 @@ in_channelDataInit(
     in_objectDeinitFunc deinit,
     in_configChannel config,
     in_stream stream,
-    in_plugKernel plug)
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryData)
 {
     os_boolean success;
 
@@ -83,20 +79,23 @@ in_channelDataInit(
     assert(deinit);
     assert(config);
     assert(stream);
+    assert(plug);
     assert(in_plugKernelIsValid(plug));
+    assert(discoveryData);
 
     success = in_channelInit(
         in_channel(_this),
         kind,
         deinit,
         stream,
-        plug);
+        plug,
+        config);
 
     if(success)
     {
         in_channelDataWriter writer;
 
-        writer = in_channelDataWriterNew(_this, config, in_plugKernelGetNetworkReader(plug));
+        writer = in_channelDataWriterNew(_this, config, in_plugKernelGetNetworkReader(plug), discoveryData);
 
         if(!writer)
         {

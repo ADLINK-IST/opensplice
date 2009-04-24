@@ -8,8 +8,12 @@ include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 ##
 ## FIXME introduce LDLIBS_IN variable
-LDLIBS += -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_KERNEL) -l$(DDS_USER)
-LDLIBS += -l$(DDS_SERIALIZATION) -l$(DDS_LOCCOLLECTIONS) $(LDLIBS_NW)
+LDLIBS += -l$(DDS_OS)
+LDLIBS += -l$(DDS_DATABASE)
+LDLIBS += -l$(DDS_KERNEL)
+LDLIBS += -l$(DDS_USER)
+LDLIBS += -l$(DDS_SERIALIZATION)
+LDLIBS += $(LDLIBS_NW)
 
 # Suppression of macro's (QAC)
 

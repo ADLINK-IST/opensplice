@@ -8,12 +8,12 @@ INCLUDES+=-I$(OSPL_HOME)/include/sys
 
 # C++ Compiler settings.
 CC=gcc
-CCFLAGS=-g -c
+CCFLAGS=-g -c -m32
 CPPFLAGS=$(INCLUDES)
 
 # Linker settings.
 LD=$(CC)
-LD_FLAGS=
+LD_FLAGS=-m32
 LD_LIBS=
 
 #OpenSplice idl preprocessor

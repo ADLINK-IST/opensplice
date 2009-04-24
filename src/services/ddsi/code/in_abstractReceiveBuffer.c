@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_abstractReceiveBuffer.c
  *
  *  Created on: Feb 8, 2009
@@ -25,7 +14,7 @@ in_abstractReceiveBufferInitParent(
 		in_objectKind kind,
 		in_objectDeinitFunc deinit,
 		in_octet *buffer,
-		in_ulong length)
+		os_size_t length)
 {
 	in_objectInit(OS_SUPER(_this), kind, deinit);
 	_this->buffer = buffer;
@@ -58,7 +47,7 @@ in_abstractReceiveBufferBegin(in_abstractReceiveBuffer dataBuffer)
 
 /** \brief return number of octets in buffer
  */
-in_ulong
+os_size_t
 in_abstractReceiveBufferLength(in_abstractReceiveBuffer dataBuffer)
 {
 	return dataBuffer->length;
@@ -68,7 +57,7 @@ in_abstractReceiveBufferLength(in_abstractReceiveBuffer dataBuffer)
  *
  * Number of valid octets in the buffer. */
 void
-in_abstractReceiveBufferSetLength(in_abstractReceiveBuffer _this, in_long length)
+in_abstractReceiveBufferSetLength(in_abstractReceiveBuffer _this, os_size_t length)
 {
 	_this->length = length;
 }

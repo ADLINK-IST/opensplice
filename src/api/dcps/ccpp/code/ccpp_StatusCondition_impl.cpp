@@ -57,7 +57,7 @@ DDS::Entity_ptr DDS::StatusCondition_impl::get_entity (
   handle = gapi_statusCondition_get_entity(_gapi_self);
   if (handle)
   {
-    ccpp_UserData_ptr drUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+    ccpp_UserData_ptr drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
     if (drUD)
     {
       entity = dynamic_cast<DDS::Entity_ptr>(drUD->ccpp_object);

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* OS abstraction layer includes */
 #include "os_heap.h"
 
@@ -18,6 +7,7 @@
 /* DDSi includes */
 #include "in__messageSerializer.h"
 #include "in__endianness.h"
+#include "in_report.h"
 
 /**
  * The following two function typedefs specify the function signature
@@ -64,6 +54,7 @@ OS_STRUCT(in_messageSerializer)
     OS_EXTENDS(in_messageTransformer);
     in_messageSerializerWriteTypeMethod writeType[M_COUNT];
     in_messageSerializerWriteCollectionMethod writeCollection[C_COUNT];
+    os_boolean fragmented;
 };
 
 static os_boolean
@@ -319,103 +310,32 @@ in_result
 in_messageSerializerWrite(
     in_messageSerializer _this,
     v_message message,
+    c_long topicDataOffset,
     os_uint32* size)
 {
-    c_octet* dstPtr;
-    c_octet* dstPtr2;
     c_type type;
-    c_property userDataProperty;
     os_uint32 length;
-    os_uint32 encapsulationLength = 0;
-    os_uint32 sizeAvail;
-    os_ushort endianness;
-    c_object object;
+    in_result result = IN_RESULT_OK;
 
     assert(_this);
     assert(in_messageSerializerIsValid(_this));
-    assert(object);
 
     type = c_getType(message);
     assert(type);
-    userDataProperty = c_property(c_metaResolve(
-                        c_metaObject(c_interface(type)->scope), "userData"));
-    type = userDataProperty->type;
-    object = C_DISPLACE(message, userDataProperty->offset);
 
-    assert(type);
-    /* First we need to write the endianness into the stream. This is stored
-     * in 2 octets as described in DDSi specification v1.2 section 10.1.1.1
-     */
-    assert(IN_ENDIAN_VAL == ((os_ushort)DDSI_BIG_ENDIAN_VAL) ||
-           IN_ENDIAN_VAL == ((os_ushort)DDSI_LITTLE_ENDIAN_VAL));
-    endianness = (os_ushort)IN_ENDIAN_VAL;
-    length = in_messageSerializerWritePrim(
-        _this,
-        sizeof(os_ushort),
-        &endianness);
-    /* Now write the length into the stream, no padding needed as it will now
-     * always be aligned after an os_ushort of the endianness, so on a correct
-     * boundary! The following code thus assumes that the writePrim operation
-     * did not perform any alignment.
-     * We have a chicken and the egg problem here, we need to write the length
-     * now to conform to the basic behavior of the stream and the DDSi spec, but
-     * we have no idea what the length of the encapsulated data will be.
-     * There are multiple ways of resolving this problem, and a choice has been
-     * made for a solution that is less maintence friendly, but more performance
-     * oriented.
-     * What we will do is cache the current head of the stream, then write
-     * a dummy length of 0 and then if we noticed that the stream was renewed
-     * we will also cache the new head. We will then write the actual object
-     * which will give us the length of the encapsulated data, and we will then
-     * write that length into the correct position in the stream.
-     * This choice is less maintenance friendly because it links the
-     * implementation of the writePrim operation to this piece of code, however
-     * it is the fastest performance wise and the fastest implementation wise
-     * choice...
-     */
-    dstPtr = in_messageTransformerGetHead(_this);
-    sizeAvail = in_messageTransformerGetAvailable(_this);
-    /* The length of the CDR encapsulation is stored in an ushort, which is
-     * 2 octets in length. See DDSi specification v1.2 section 10.1.1.2
-     */
-    assert(sizeof(os_ushort) == 2);
-    length += in_messageSerializerWritePrim(
-        _this,
-        sizeof(os_ushort),
-        &encapsulationLength);
-    if(sizeAvail < 2)
+    _this->fragmented = OS_FALSE;
+
+    length = in_messageSerializerWriteType(_this, type, (c_voidp)message);
+
+    if(_this->fragmented)
     {
-        dstPtr2 = in_messageTransformerGetHead(_this);
-        /* Remember, the head of the stream points to directly after the last
-         * written length octet! So when we are going to write the actual
-         * length into this pointer we need to displace it back accordingly
-         */
+        result = IN_RESULT_ERROR;
+        /* TODO report error */
     }
-    encapsulationLength = in_messageSerializerWriteType(_this, type, object);
-    length += encapsulationLength;
-    /* Now we know the length of the object written and we can write the correct
-     * length into the dstPtrs cached before
-     */
-    if(sizeAvail >= 2)
-    {
-        dstPtr[0] = (&encapsulationLength)[0];
-        dstPtr[1] = (&encapsulationLength)[1];
-    } else if(sizeAvail == 1)
-    {
-        dstPtr[0] = (&encapsulationLength)[0];
-        /* Must first displace the dstPtr2 back! */
-        dstPtr2 = dstPtr2 - 1;
-        dstPtr2[0] = (&encapsulationLength)[1];
-    } else
-    {
-        /* Must first displace the dstPtr2 back! */
-        dstPtr2 = dstPtr2 - 2;
-        dstPtr2[0] = (&encapsulationLength)[0];
-        dstPtr2[1] = (&encapsulationLength)[1];
-    }
+
     *size = length;
 
-    return IN_RESULT_OK;
+    return result;
 }
 
 os_uint32
@@ -644,8 +564,6 @@ in_messageSerializerWriteArray(
     os_uint32 i;
     os_uint32 result;
     c_voidp array = NULL;
-    c_type subType;
-    c_metaKind typeKind;
     c_metaKind subTypeKind;
 
     assert(_this);
@@ -653,16 +571,15 @@ in_messageSerializerWriteArray(
     assert(type);
     assert(data);
 
-    typeKind = c_baseObjectKind(c_baseObject(type));
-    if(typeKind == C_ARRAY)
-    {
+    if (ctype->maxSize > 0) {
         array = data;
         length = ctype->maxSize;
-    } else
-    {
-        assert(typeKind == C_SEQUENCE);
+    } else {
         array = *(c_voidp *)data;
         length = c_arraySize(array);
+    }
+    if (ctype->kind == C_SEQUENCE)
+    {
         /* For a sequence the length is encoded as an unsigned long, which in
          * CDR is 4 octets(bytes) in size.
          */
@@ -677,21 +594,21 @@ in_messageSerializerWriteArray(
         {
             result += in_messageSerializerWritePrimArray(
                 _this,
-                subType->size,
+                ctype->subType->size,
                 length,
                 array);
         } else
         {
-            if (c_typeIsRef(subType))
+            if (c_typeIsRef(ctype->subType))
             {
                 size = sizeof(c_voidp);
             } else
             {
-                size = subType->size;
+                size = ctype->subType->size;
             }
             for (i = 0; i < length; i++)
             {
-                result += in_messageSerializerWriteType(_this, subType, array);
+                result += in_messageSerializerWriteType(_this, ctype->subType, array);
                 array = C_DISPLACE(array, size);
             }
         }
@@ -771,12 +688,12 @@ in_messageSerializerWriteString(
     c_type type,
     c_voidp data)
 {
-    os_char *ptr = *(c_string *)data;
-    in_data dst;
-    os_uint32 size;
-    os_uint32 len;
-    os_uint32 avail;
-    os_uint32 result;
+    os_char *ptr = (os_char *)data;
+    in_data dst = NULL;
+    os_uint32 size = 0;
+    os_uint32 len = 0;
+    os_uint32 avail = 0;
+    os_uint32 result = 0;
 
     assert(_this);
     assert(in_messageSerializerIsValid(_this));

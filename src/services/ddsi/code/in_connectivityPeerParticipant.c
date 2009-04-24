@@ -1,29 +1,24 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-#include "in_connectivityPeerParticipant.h"
 #include "os_defs.h"
 #include "os_heap.h"
+
+#include "in__ddsiParticipant.h"
+
+#include "in_connectivityPeerParticipant.h"
+#include "in_report.h"
 
 OS_STRUCT(in_connectivityPeerParticipant)
 {
     OS_EXTENDS(in_connectivityPeerEntity);
-    struct v_participantInfo info;
+    in_ddsiDiscoveredParticipantData info;
+    OS_STRUCT(in_ddsiSequenceNumber) lastWriterSN;
+    OS_STRUCT(in_ddsiSequenceNumber) lastReaderSN;   
 };
 
 /* ------------- private  ------------------- */
 static os_boolean
 in_connectivityPeerParticipantInit(
     in_connectivityPeerParticipant _this,
-    struct v_participantInfo *info);
+    in_ddsiDiscoveredParticipantData info);
 
 static void
 in_connectivityPeerParticipantDeinit(
@@ -32,7 +27,7 @@ in_connectivityPeerParticipantDeinit(
 /* ------------- public ----------------------- */
 in_connectivityPeerParticipant
 in_connectivityPeerParticipantNew(
-    struct v_participantInfo *info)
+    in_ddsiDiscoveredParticipantData info)
 {
     in_connectivityPeerParticipant _this;
     os_boolean success;
@@ -55,7 +50,7 @@ in_connectivityPeerParticipantNew(
 os_boolean
 in_connectivityPeerParticipantInit(
     in_connectivityPeerParticipant _this,
-    struct v_participantInfo *info)
+    in_ddsiDiscoveredParticipantData info)
 {
     os_boolean success;
 
@@ -68,7 +63,9 @@ in_connectivityPeerParticipantInit(
 
     if(success)
     {
-        _this->info = *info;
+        _this->info = in_ddsiDiscoveredParticipantDataKeep(info);
+        in_ddsiSequenceNumberInitNative(&_this->lastWriterSN,0); 
+        in_ddsiSequenceNumberInitNative(&_this->lastReaderSN,0); 
     }
     return success;
 
@@ -78,28 +75,13 @@ static void
 in_connectivityPeerParticipantDeinit(
     in_object obj)
 {
+    in_connectivityPeerParticipant _this;
     assert(in_connectivityPeerParticipantIsValid(obj));
+    _this = in_connectivityPeerParticipant(obj);
+
+
+    in_ddsiDiscoveredParticipantDataFree(_this->info);
     in_connectivityPeerEntityDeinit(in_connectivityPeerEntity(obj));
-}
-
-in_result
-in_connectivityPeerParticipantAddUnicastLocator(
-    in_connectivityPeerParticipant _this,
-    in_locator locator)
-{
-    assert(in_connectivityPeerParticipantIsValid(_this));
-
-    return  in_connectivityPeerEntityAddUnicastLocator( in_connectivityPeerEntity(_this), locator);
-}
-
-in_result
-in_connectivityPeerParticipantAddMulticastLocator(
-    in_connectivityPeerParticipant _this,
-    in_locator locator)
-{
-    assert(in_connectivityPeerParticipantIsValid(_this));
-
-    return in_connectivityPeerEntityAddMulticastLocator( in_connectivityPeerEntity(_this), locator);
 }
 
 Coll_List*
@@ -107,8 +89,7 @@ in_connectivityPeerParticipantGetUnicastLocators(
     in_connectivityPeerParticipant _this)
 {
     assert(in_connectivityPeerParticipantIsValid(_this));
-
-    return in_connectivityPeerEntityGetUnicastLocators( in_connectivityPeerEntity(_this));
+    return &(_this->info->proxy.metatrafficUnicastLocatorList);
 }
 
 Coll_List*
@@ -117,15 +98,88 @@ in_connectivityPeerParticipantGetMulticastLocators(
 {
     assert(in_connectivityPeerParticipantIsValid(_this));
 
-    return in_connectivityPeerEntityGetMulticastLocators( in_connectivityPeerEntity(_this));
+    return &(_this->info->proxy.metatrafficMulticastLocatorList);
 }
 
-struct v_participantInfo *
+Coll_List*
+in_connectivityPeerParticipantGetDefaultUnicastLocators(
+    in_connectivityPeerParticipant _this)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+    return &(_this->info->proxy.defaultUnicastLocatorList);
+}
+
+Coll_List*
+in_connectivityPeerParticipantGetDefaultMulticastLocators(
+    in_connectivityPeerParticipant _this)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+
+    return &(_this->info->proxy.defaultMulticastLocatorList);
+}
+
+in_ddsiDiscoveredParticipantData
 in_connectivityPeerParticipantGetInfo(
     in_connectivityPeerParticipant _this)
 {
     assert(in_connectivityPeerParticipantIsValid(_this));
 
-    return &_this->info;
+    return _this->info;
 }
+
+in_ddsiGuidPrefixRef
+in_connectivityPeerParticipantGetGuidPrefix(
+    in_connectivityPeerParticipant _this)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+
+    return _this->info->proxy.guidPrefix;
+}
+
+
+in_ddsiSequenceNumber
+in_connectivityPeerParticipantGetLastWriterSNRef(    
+    in_connectivityPeerParticipant _this)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+
+    return &_this->lastWriterSN;
+}
+
+in_ddsiSequenceNumber
+in_connectivityPeerParticipantGetLastReaderSNRef(    
+    in_connectivityPeerParticipant _this)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+
+    return &_this->lastReaderSN;
+}
+
+void
+in_connectivityPeerParticipantAddWriterSN(    
+    in_connectivityPeerParticipant _this,
+    in_ddsiSequenceNumber seq)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+    assert(in_ddsiSequenceNumberIsValid(seq));
+    
+    if ( in_ddsiSequenceNumberCompare(seq, &_this->lastWriterSN) == C_GT ) {
+      _this->lastWriterSN = *seq;
+    }
+}
+
+void
+in_connectivityPeerParticipantAddReaderSN(    
+    in_connectivityPeerParticipant _this,
+    in_ddsiSequenceNumber seq)
+{
+    assert(in_connectivityPeerParticipantIsValid(_this));
+    assert(in_ddsiSequenceNumberIsValid(seq));
+    
+    if ( in_ddsiSequenceNumberCompare(seq, &_this->lastReaderSN) == C_GT ) {
+      _this->lastReaderSN = *seq;
+    }
+}
+
+
 
