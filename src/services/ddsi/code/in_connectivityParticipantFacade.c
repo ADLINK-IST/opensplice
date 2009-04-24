@@ -213,4 +213,14 @@ in_connectivityParticipantFacadeIncReader(
     return &_this->lastReaderSN;
 }
 
+in_ddsiGuidPrefixRef
+in_connectivityParticipantFacadeGetGuidPrefix(
+    in_connectivityParticipantFacade _this)
+{
+    assert(_this);
+
+    return &(in_connectivityEntityFacade(_this)->id.guidPrefix);
+
+}
+
 

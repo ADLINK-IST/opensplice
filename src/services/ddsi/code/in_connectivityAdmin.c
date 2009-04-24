@@ -443,7 +443,7 @@ in_connectivityAdminAddReader(
         seq = in_connectivityParticipantFacadeIncReader(participant);
 
         /* create new facade and insert it */
-        facade = in_connectivityReaderFacadeNew(reader, seq);
+        facade = in_connectivityReaderFacadeNew(reader, seq, participant);
         Coll_Set_add(&_this->Readers, facade);
 
         findMatchedPeerWriters(_this, facade);
@@ -494,7 +494,7 @@ IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 5",_this);
         seq = in_connectivityParticipantFacadeIncWriter(participant);
         IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 6",_this);
         /* create new facade and insert it */
-        facade = in_connectivityWriterFacadeNew(writer,seq);
+        facade = in_connectivityWriterFacadeNew(writer,seq, participant);
         Coll_Set_add(&_this->Writers, facade);
 
         findMatchedPeerReaders(_this, facade);
@@ -1154,6 +1154,16 @@ in_connectivityAdminGetPeerWriter(
     os_mutexUnlock(&(_this->mutex));
 
     return NULL;
+}
+
+//temp added
+Coll_Set*
+in_connectivityAdminGetPeerParticipantsUnsafe(
+    in_connectivityAdmin _this)
+{
+    assert(_this);
+
+    return &(_this->PeerParticipants);
 }
 
 

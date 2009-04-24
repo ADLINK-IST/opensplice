@@ -115,6 +115,29 @@ in_streamWriterAppendParticipantData(
 	return result;
 }
 
+in_result
+in_streamWriterAppendParticipantMessage(
+    in_streamWriter _this,
+    in_connectivityParticipantFacade facade,
+    in_ddsiGuidPrefixRef destGuidPrefix,
+    in_locator locator)
+{
+    in_result result;
+
+    assert(_this);
+    assert(facade);
+    assert(locator);
+
+	if (_this->publicVTable->appendParticipantMessage)
+    {
+		result = _this->publicVTable->appendParticipantMessage(_this, facade, destGuidPrefix, locator);
+	} else
+    {
+        result = IN_RESULT_ERROR;
+    }
+    return result;
+}
+
 
 /** */
 in_result

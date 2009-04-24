@@ -236,33 +236,40 @@ in_channelSdpReaderProcessPeerEntity(
             result = in_connectivityAdminAddPeerParticipant(
                 admin,
                 in_connectivityPeerParticipant(peer->discoveredPeerEntity));
+            IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - participant result = %x", result);
         break;
         case IN_OBJECT_KIND_PEER_READER:
             result = in_connectivityAdminAddPeerReader(
                 admin,
                 in_connectivityPeerReader(peer->discoveredPeerEntity),
                 peer->sequenceNumber);
+          IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - reader result = %x", result);
         break;
         case IN_OBJECT_KIND_PEER_WRITER:
             result = in_connectivityAdminAddPeerWriter(
                 admin,
                 in_connectivityPeerWriter(peer->discoveredPeerEntity),
                 peer->sequenceNumber);
+            IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - writer result = %x", result);
         break;
         default:
             assert(FALSE);
             result = IN_RESULT_ERROR;
         break;
     }
+    IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer result = %x", result);
     if(result == IN_RESULT_OK)
     {
         result = in_channelSdpWriterAddPeerEntity(sdpw, peer->discoveredPeerEntity);
+        IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer now = %x", result);
     }
-    /*if(result == U_RESULT_OK)
+    /*if(result == IN_RESULT_OK)
     {
-        if(in_objectGetKind(in_object(peer->discoveredPeerEntity)) != IN_OBJECT_KIND_PEER_PARTICIPANT)
+        IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer for acking = %x", result);
+        if(in_objectGetKind(in_object(peer->discoveredPeerEntity)) == IN_OBJECT_KIND_PEER_PARTICIPANT)
         {
            result = in_channelSdpWriterAddPeerEntityForAcking(sdpw, peer);
+           IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer part = %x", result);
         }
     }*/
     return result;

@@ -8,6 +8,7 @@
 /* DDSi includes */
 #include "in_connectivityWriterFacade.h"
 #include "in_connectivityEntityFacade.h"
+#include "in_connectivityParticipantFacade.h"
 #include "in_locator.h"
 #include "in_report.h"
 
@@ -54,7 +55,8 @@ static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
     struct v_publicationInfo *info,
-    in_ddsiSequenceNumber seq);
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant);
 
 static void
 in_connectivityWriterFacadeDeinit(
@@ -63,7 +65,8 @@ in_connectivityWriterFacadeDeinit(
 in_connectivityWriterFacade
 in_connectivityWriterFacadeNew(
     struct v_publicationInfo *info,
-    in_ddsiSequenceNumber seq)
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
     in_connectivityWriterFacade _this;
@@ -72,7 +75,7 @@ in_connectivityWriterFacadeNew(
 
     if(_this)
     {
-        success = in_connectivityWriterFacadeInit(_this,info,seq);
+        success = in_connectivityWriterFacadeInit(_this,info,seq, participant);
 
         if(!success)
         {
@@ -87,13 +90,18 @@ static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
     struct v_publicationInfo *info,
-    in_ddsiSequenceNumber seq)
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
     OS_STRUCT(in_ddsiGuid) guid;
+    in_ddsiGuidPrefixRef prefix;
+
     assert(_this);
 
-    memcpy(guid.guidPrefix,&(info->participant_key),in_ddsiGuidPrefixLength);
+    prefix =in_connectivityParticipantFacadeGetGuidPrefix(participant);
+
+    memcpy(guid.guidPrefix,prefix,in_ddsiGuidPrefixLength);
     guid.entityId.entityKey[0] = info->key.localId & 0xFF;
     guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
     guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;

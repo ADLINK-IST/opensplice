@@ -47,7 +47,7 @@ static in_long
 serializeVendor(in_ddsiSerializer serializer,
         in_ddsiVendor vendor);
 
-static in_long
+in_long
 serializeGuid(in_ddsiSerializer serializer,
         os_ushort pid,
         in_ddsiGuid guid);
@@ -109,7 +109,7 @@ static in_long
 serializeReliability(in_ddsiSerializer serializer,
         const struct v_reliabilityPolicy *policy);
 
-static in_long
+in_long
 serializeSentinel(in_ddsiSerializer serializer);
 
 /**/
@@ -1255,6 +1255,30 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                   V_OWNERSHIP_SHARED);
         if (nofOctets<0) break;
         total += nofOctets;
+//todo just added to see if it helps get things to work
+        nofOctets = serializeUint32(
+                  serializer,
+                  IN_PID_TYPE_MAX_SIZE_SERIALIZED,
+                  8);
+        if (nofOctets<0) break;
+        total += nofOctets;
+//todo just added to see if it helps get things to work
+        nofOctets = serializeTime(
+                 serializer,
+                 IN_PID_LIFESPAN,
+                 &C_TIME_INFINITE);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+// not done for ospl, but is done for RTI        IN_PID_GROUP_ENTITY_ID
+//todo just added to see if it helps get things to work
+        nofOctets = serializeUint32(
+                  serializer,
+                  IN_PID_OWNERSHIP_STRENGTH,
+                  0);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
 
         nofOctets = serializeUint32(
                    serializer,
@@ -1262,14 +1286,14 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                    V_ORDERBY_RECEPTIONTIME);
         if (nofOctets<0) break;
         total += nofOctets;
-
+/*
         nofOctets = serializeTime(
                     serializer,
                     IN_PID_TIME_BASED_FILTER,
                     &C_TIME_ZERO);
         if (nofOctets<0) break;
         total += nofOctets;
-
+*/
         nofOctets = serializePresentation(
                     serializer,
                     &dummyPresentation);
@@ -1280,31 +1304,6 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                     serializer,
                     IN_PID_EXPECTS_INLINE_QOS,
                     dummyExpectsInlineQos);
-        if (nofOctets<0) break;
-        total += nofOctets;
-
-        /* TODO: not sure if these are really necessary, should suffice to
-         * submit the locators together with participant data */
-        nofOctets = serializeLocatorList(
-                     serializer,
-                     IN_PID_UNICAST_LOCATOR,
-                     &(discoveryData->defaultUnicastLocatorList));
-        if (nofOctets<0) break;
-        total += nofOctets;
-
-        /* TODO: not sure if these are really necessary, should suffice to
-          * submit the locators together with participant data */
-        nofOctets = serializeLocatorList(
-                     serializer,
-                     IN_PID_MULTICAST_LOCATOR,
-                     &(discoveryData->defaultMulticastLocatorList));
-        if (nofOctets<0) break;
-        total += nofOctets;
-
-        /*
-        nofOctets = serializeLeaseDuration(
-                serializer,
-                &leaseDuration);
         if (nofOctets<0) break;
         total += nofOctets;
 
@@ -1325,6 +1324,33 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                 &productVersion);
         if (nofOctets<0) break;
         total += nofOctets;
+
+        /* TODO: not sure if these are really necessary, should suffice to
+         * submit the locators together with participant data
+        nofOctets = serializeLocatorList(
+                     serializer,
+                     IN_PID_UNICAST_LOCATOR,
+                     &(discoveryData->defaultUnicastLocatorList));
+        if (nofOctets<0) break;
+        total += nofOctets;
+*/
+        /* TODO: not sure if these are really necessary, should suffice to
+          * submit the locators together with participant data
+        nofOctets = serializeLocatorList(
+                     serializer,
+                     IN_PID_MULTICAST_LOCATOR,
+                     &(discoveryData->defaultMulticastLocatorList));
+        if (nofOctets<0) break;
+        total += nofOctets;
+*/
+        /*
+        nofOctets = serializeLeaseDuration(
+                serializer,
+                &leaseDuration);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+
 
         nofOctets = serializeString(
                 serializer,
@@ -1661,7 +1687,7 @@ serializeVendor(in_ddsiSerializer serializer,
     return result;
 }
 
-static in_long
+in_long
 serializeSentinel(in_ddsiSerializer serializer)
 {
     in_long nofOctets = 0;
@@ -1677,6 +1703,7 @@ serializeSentinel(in_ddsiSerializer serializer)
         if (nofOctets<0) break;
         total += nofOctets;
 
+
         nofOctets = in_ddsiSerializerAppendUshort(serializer,
                 octetsToNextParameter);
         if (nofOctets<0) break;
@@ -1691,7 +1718,7 @@ serializeSentinel(in_ddsiSerializer serializer)
     return result;
 }
 
-static in_long
+in_long
 serializeGuid(in_ddsiSerializer serializer,
         os_ushort pid,
         in_ddsiGuid guid)
@@ -1719,8 +1746,8 @@ serializeGuid(in_ddsiSerializer serializer,
          if (nofOctets<0) break;
          total += nofOctets;
 
-         assert(in_ddsiSerializerAlign(serializer,
-                 IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT) == 0);
+      //   assert(in_ddsiSerializerAlign(serializer,
+      //           IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT) == 0);
 
          result = total;
      } while (0);

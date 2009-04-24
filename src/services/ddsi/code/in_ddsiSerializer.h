@@ -36,6 +36,11 @@ in_ddsiSerializerAppendOctets_4(
         const in_octet val2,
         const in_octet val3);
 
+/* TODO ES should not be in header, move back to C file */
+in_long
+appendOctets(in_ddsiSerializer _this,
+					         const in_octet *valPtr,
+					         in_ulong valOctetLength);
 
 /** \brief Append a value to buffer
  * \return -1 on error otherwise the number of octets written

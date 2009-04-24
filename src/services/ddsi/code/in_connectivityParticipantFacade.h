@@ -76,6 +76,10 @@ in_ddsiSequenceNumber
 in_connectivityParticipantFacadeIncReader(
         in_connectivityParticipantFacade _this);
 
+in_ddsiGuidPrefixRef
+in_connectivityParticipantFacadeGetGuidPrefix(
+    in_connectivityParticipantFacade _this);
+
 
 
 #if defined (__cplusplus)

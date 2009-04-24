@@ -249,12 +249,29 @@ in_ddsiEntityIdAsUint32(in_ddsiEntityId self)
 /* ---- in_ddsiGuid --------------------------------- */
 /* -------------------------------------------------- */
 
-in_long in_ddsiGuidSerialize(in_ddsiGuid self, in_ddsiSerializer writer) {
+
+in_long
+in_ddsiGuidSerialize(
+    in_ddsiGuid self,
+    in_ddsiSerializer writer)
+{
+    in_long result;
+    OS_STRUCT(in_ddsiGuid) selfCopy;
+
     assert(self);
     assert(writer);
+    selfCopy = *self;
+    selfCopy.guidPrefix[8] = 0;
+    selfCopy.guidPrefix[9] = 0;
+    selfCopy.guidPrefix[10] = 0;
+    selfCopy.guidPrefix[11] = 1;
 
-    return in_ddsiSerializerAppendOctets(writer, (in_octet*) self,
+    result = in_ddsiSerializerAppendOctets(writer, (in_octet*) &selfCopy,
             sizeof(*self));
+
+
+
+    return result;
 }
 
 os_boolean
@@ -675,9 +692,7 @@ in_ddsiSequenceNumberSetSetNthFlag(
         in_ddsiSequenceNumberSet _this,
         os_uint32 nthBit)
 {
-    const os_uint32 NBITS_PER_SLOT =
-        8*sizeof(os_uint32);
-
+    const os_uint32 NBITS_PER_SLOT = 8 * sizeof(os_uint32);
     const os_uint slot = nthBit / NBITS_PER_SLOT; /* elem of [0,7] */
     os_uint32 nthBitInSlot;
 
@@ -702,26 +717,24 @@ in_ddsiSequenceNumberSetAdd(
         in_ddsiSequenceNumber seqNum)
 {
     os_boolean result;
+    in_int64 base64;
+    in_int64 seqNum64;
+    in_int64 deltaN64;
+    os_uint32 nthBit;
 
-    in_int64 base64 =
-        in_ddsiSequenceNumberToInt64(&(_this->bitmapBase));
-
-    in_int64 seqNum64 =
-        in_ddsiSequenceNumberToInt64(seqNum);
-
-    in_int64 deltaN64 = seqNum64 - base64;
-
+    base64 = in_ddsiSequenceNumberToInt64(&(_this->bitmapBase));
+    seqNum64 = in_ddsiSequenceNumberToInt64(seqNum);
+    deltaN64 = seqNum64 - base64;
     /* the new sequence number must not be negative, it
      * must not be less than base and must not exceed the
      * range of 256 bits */
-    if (seqNum->high < 0 || deltaN64 < 0 || deltaN64 > 255) {
+    if (seqNum->high < 0 || deltaN64 < 0 || deltaN64 > 255)
+    {
         result = OS_FALSE;
-    } else {
-        const os_uint32 nthBit =
-            (os_uint32) (deltaN64 & IN_UINT32_MAX);
-
-        result =
-            in_ddsiSequenceNumberSetSetNthFlag(_this, nthBit);
+    } else
+    {
+        nthBit = (os_uint32) (deltaN64 & IN_UINT32_MAX);
+        result = in_ddsiSequenceNumberSetSetNthFlag(_this, nthBit);
     }
     return result;
 }
@@ -745,9 +758,11 @@ in_ddsiSequenceNumberSetInit(
     /* A sequence number {0,0} is invalid by definition. But it seems
      * RTI is generating a sequence number {0,0}. So we just check for
      * negative sequence numbers  */
-    if (base->high < 0) {
+    if (base->high < 0)
+    {
         result = OS_FALSE;
-    } else {
+    } else
+    {
         _this->bitmapBase = *base;
         _this->numBits = 0; /* init with valid value */
 
@@ -756,11 +771,12 @@ in_ddsiSequenceNumberSetInit(
         memset(&(_this->bitmap), 0, sizeof(_this->bitmap));
 
         /* (FR) AFAICS, RTI defines numbits=0 if base==0 */
-        if (base->high != 0 || base->low!=0) {
+    //    if (base->high != 0 || base->low != 0)
+    //    {
             /* initialized with valid base, so
              * set lowest bit and define numBits=1 */
-            in_ddsiSequenceNumberSetSetNthFlag(_this, 0);
-        }
+   //         in_ddsiSequenceNumberSetSetNthFlag(_this, 0);
+    //    }
         result = OS_TRUE;
     }
 
@@ -1460,6 +1476,10 @@ static void in_ddsiMessageHeaderInit(in_ddsiMessageHeader self,
     self->vendor.vendorId[1] = vendor->vendorId[1];
     /* deep copy of type in_octet[12] */
     memcpy(self->guidPrefix, guidPrefix, sizeof(in_ddsiGuidPrefix));
+    self->guidPrefix[8] = 0;//todo: fix with actual counter
+    self->guidPrefix[9] = 0;
+    self->guidPrefix[10] = 0;
+    self->guidPrefix[11] = 1;
 }
 
 static in_long in_ddsiMessageHeaderSerialize(in_ddsiMessageHeader self,

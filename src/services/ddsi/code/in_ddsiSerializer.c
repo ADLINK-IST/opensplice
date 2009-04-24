@@ -147,7 +147,7 @@ in_ddsiSerializerIsBigEndian(in_ddsiSerializer _this)
 }
 
 /** */
-static in_long
+in_long
 appendOctets(in_ddsiSerializer _this,
 					         const in_octet *valPtr,
 					         in_ulong valOctetLength)
@@ -443,8 +443,7 @@ in_ddsiSerializerAlign(
 	in_octet *bufWriterBak = _this->bufWriter;
 	in_long result;
 
-	_this->bufWriter =
-		IN_ALIGN_ADDRESS(_this->bufWriter, boundary);
+	_this->bufWriter = IN_ALIGN_ADDRESS(_this->bufWriter, boundary);
 
 	/* After alignment the writer may point to the end,
 	 * but must not go further */

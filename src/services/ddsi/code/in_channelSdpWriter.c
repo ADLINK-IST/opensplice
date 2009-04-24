@@ -543,7 +543,7 @@ in_channelSdpWriterAcknackHeartbeats(
     in_ddsiSequenceNumber expectedSN;
     in_connectivityPeerParticipant peerParticipant;
     in_locator destLocator;
-    OS_STRUCT(in_ddsiSequenceNumber) tmpSN;
+
     os_uint32 tmpLow;
 
     assert(_this);
@@ -567,6 +567,11 @@ in_channelSdpWriterAcknackHeartbeats(
             destLocator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peerParticipant));
             if(destLocator)
             {
+                OS_STRUCT(in_ddsiSequenceNumber) tmpSN;
+                OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
+                os_boolean initOk;
+                os_boolean canAddSeq = OS_TRUE;
+
                 if((in_ddsiEntityIdEqual(&event->readerId, &tmp)))
                 {
                     expectedSN = in_connectivityPeerParticipantGetLastReaderSNRef(peerParticipant);
@@ -581,27 +586,31 @@ in_channelSdpWriterAcknackHeartbeats(
                 {
                     tmpSN.high++;
                 }
-
-                clientEntities = in_connectivityAdminGetParticipants(connAdmin);
-                iteratorPart = Coll_Set_getFirstElement(clientEntities);
-                while(iteratorPart)
+                initOk = in_ddsiSequenceNumberSetInit(&seqSet, &tmpSN);
+                if(!initOk)
                 {
-                    facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iteratorPart));
-                    /* Fill out the writer.guidPrefix*/
-                    partGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
-                    memcpy(reader.guidPrefix, partGuid->guidPrefix, in_ddsiGuidPrefixLength);
-
-                    OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
-                    os_boolean initOk;
-
-                    initOk = in_ddsiSequenceNumberSetInit(&seqSet, &tmpSN);
-                    if(!initOk)
+                    IN_REPORT_ERROR("in_channelSdpWriterAcknackHeartbeats", "Initialisation of the sequence number set failed!");
+                } else
+                {
+                    while(in_ddsiSequenceNumberCompare(&(event->lastSN), &tmpSN) != C_LT && canAddSeq)
                     {
-                        IN_REPORT_ERROR("in_channelSdpWriterAcknackHeartbeats", "Initialisation of the sequence number set failed!");
-                    } else
+                        canAddSeq = in_ddsiSequenceNumberSetAdd(&seqSet, &tmpSN);
+                        tmpLow = tmpSN.low;
+                        tmpSN.low++;
+                        if(tmpSN.low < tmpLow)
+                        {
+                            tmpSN.high++;
+                        }
+                    }
+                    clientEntities = in_connectivityAdminGetParticipants(connAdmin);
+                    iteratorPart = Coll_Set_getFirstElement(clientEntities);
+                    while(iteratorPart)
                     {
-                        IN_TRACE_2(Send, 2, "@@@@@@@@@@@@@ %d, %d", seqSet.bitmapBase.low,seqSet.bitmapBase.high);
-
+                        facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iteratorPart));
+                        /* Fill out the writer.guidPrefix*/
+                        partGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
+                        memcpy(reader.guidPrefix, partGuid->guidPrefix, in_ddsiGuidPrefixLength);
+                        IN_TRACE_2(Send, 2, "in_channelSdpWriterAcknackHeartbeats - @@@@@@@@@@@@@ %d, %d", seqSet.bitmapBase.low,seqSet.bitmapBase.high);
                         result = in_streamWriterAppendAckNack(
                             _this->streamWriter,
                             &reader,
@@ -610,18 +619,17 @@ in_channelSdpWriterAcknackHeartbeats(
                             destLocator);
                         if(result != IN_RESULT_OK)
                         {
-                            IN_TRACE(Send, 2, "Sending ACKNACK failed.");
+                            IN_TRACE(Send, 2, "in_channelSdpWriterAcknackHeartbeats - Sending ACKNACK failed.");
                             /* TODO report error */
                         }
                         in_streamWriterFlushSingle(_this->streamWriter, destLocator);
                         //in_locatorFree(destLocator);
+                        iteratorPart = Coll_Iter_getNext(iteratorPart);
                     }
-
-                    iteratorPart = Coll_Iter_getNext(iteratorPart);
                 }
             } else
             {
-                IN_TRACE(Send, 2, "Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
+                IN_TRACE(Send, 2, "in_channelSdpWriterAcknackHeartbeats - Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
             }
         }
         in_locatorFree(event->destination);
@@ -630,6 +638,7 @@ in_channelSdpWriterAcknackHeartbeats(
     os_mutexUnlock(&(_this->mutex));
     IN_TRACE_1(Send, 2, "<<< in_channelSdpWriterAcknackHeartbeats - processed acks for %d received heartbeats", size);
 }
+
 
 void
 in_channelSdpWriterSendAcks(
@@ -647,6 +656,7 @@ in_channelSdpWriterSendAcks(
     in_ddsiGuid partGuid;
     in_locator dest;
     in_result result;
+    OS_STRUCT(in_ddsiSequenceNumber) nilSeq = {0,1};
 
     assert(_this);
     os_mutexLock(&(_this->mutex));
@@ -654,14 +664,17 @@ in_channelSdpWriterSendAcks(
     IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %d entities", size);
     for(i = 0; i < size; i++)
     {
-        assert(0);/*TODO shouldnt come here for now */
+        OS_STRUCT(in_ddsiEntityId) partReaderId = UI2ENTITYID(IN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_READER);
+        OS_STRUCT(in_ddsiEntityId) partWriterId = UI2ENTITYID(IN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_WRITER);
+        assert(0);//should not come here
+
         peer = (in_discoveredPeer)Coll_List_popBack(&_this->ackPeers);
 
         /* Set readerId and writerId values, the readerId.guidPrefix will be
          * set per participantFacade.
          */
-        readerId.entityId = *(peer->readerId);
-        writerId.entityId = *(peer->writerId);
+        readerId.entityId = partReaderId; //*(peer->readerId);
+        writerId.entityId = partWriterId; //*(peer->writerId);
         memcpy(writerId.guidPrefix, peer->writerGuidPrefix, in_ddsiGuidPrefixLength);
         /* Now iterate over all known participant facades, for each found
          * facade send the acknack message
@@ -671,6 +684,7 @@ in_channelSdpWriterSendAcks(
         while(iteratorPart)
         {
             facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iteratorPart));
+            IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p facade", facade);
             /* Fill out the readerId.guidPrefix*/
             partGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
             memcpy(readerId.guidPrefix, partGuid->guidPrefix, in_ddsiGuidPrefixLength);
@@ -680,13 +694,16 @@ in_channelSdpWriterSendAcks(
             {
                 OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
                 os_boolean initOk;
+                IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p destxxx", dest);
 
-                initOk = in_ddsiSequenceNumberSetInit(&seqSet, peer->sequenceNumber);
+
+                initOk = in_ddsiSequenceNumberSetInit(&seqSet, &nilSeq);
                 if(!initOk)
                 {
                     IN_REPORT_ERROR("in_channelSdpWriterSendAcks", "Initialisation of the sequence number set failed!");
                 } else
                 {
+                    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p dest - actually sendingxxx", dest);
                     result = in_streamWriterAppendAckNack(
                         _this->streamWriter,
                         &readerId,
@@ -732,13 +749,11 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
     IN_TRACE_1(Send,2,">>> in_channelSdpWriterSendRequestedDiscoveryInformation: processing %x acknacks", size);
     for(i = 0; i < size; i++)
     {
-        IN_TRACE(Send,2,"########### 1");
         acknack = (in_channelSdpWriterAckNackInfo)Coll_List_popBack(&(_this->acknacks));
 
         peer = in_connectivityAdminGetPeerParticipantUnsafe(connAdmin, acknack->sourceGuidPrefix);
         if(peer)
         {
-            IN_TRACE(Send,2,"########### 2");
             /* step 1.1: Get a unicast UDPV4 locator, or if not available the
              * UDPV4 multicast locator, or if that is not available then fall back
              * to the default locators of the owning participant.
@@ -746,14 +761,12 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
             locator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peer));
             if(locator)
             {
-                IN_TRACE_1(Send,2,"########### 3 %x", acknack->readerId);
                 OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
                 OS_STRUCT(in_ddsiEntityId) tmp2 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
 
                 Coll_List_pushBack(&tempList, locator);
                 if(in_ddsiEntityIdEqual(&acknack->readerId,&tmp))
                 {
-                    IN_TRACE(Send,2,"########### 4");
                     /* step 1.2: Get all local reader entity information, so we can send
                      * this  to the locator found in the previous step
                      */
@@ -761,12 +774,10 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                     iterator = Coll_Set_getFirstElement(clientEntities);
                     while(iterator)
                     {
-                        IN_TRACE(Send,2,"########### 5");
                         in_connectivityReaderFacade facade;
                         facade = in_connectivityReaderFacade(Coll_Iter_getObject(iterator));
                         //if(in_ddsiSequenceNumberCompare(in_connectivityReaderFacadeGetSequenceNumber(facade), &acknack->lastSeqNr) != C_LT)
                        // {
-                            IN_TRACE(Send,2,"########### 6");
                             result = in_streamWriterAppendReaderData(
                                     in_streamWriter(_this->streamWriter),
                                     acknack->sourceGuidPrefix,
@@ -775,17 +786,14 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                                     &tempList);
                             if(result != IN_RESULT_OK)
                             {
-                                IN_TRACE(Send,2,"########### 7");
                                 IN_TRACE(Send,2,"in_channelSdpWriterSendRequestedDiscoveryInformation: sending reader data failed");
                                 /* TODO report error */
                             }
                        // }
                         iterator = Coll_Iter_getNext(iterator);
                     }
-                    IN_TRACE(Send,2,"########### 8");
                 } else if(in_ddsiEntityIdEqual(&acknack->readerId,&tmp2))
                 {
-                    IN_TRACE(Send,2,"########### 9");
                     /* step 1.3: Get all local writer entity information, so we can send
                      * this  to the locator found in the step 1.1
                      */
@@ -793,12 +801,10 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                     iterator = Coll_Set_getFirstElement(clientEntities);
                     while(iterator)
                     {
-                        IN_TRACE(Send,2,"########### 10");
                         in_connectivityWriterFacade facade;
                         facade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
                         if(in_ddsiSequenceNumberCompare(in_connectivityWriterFacadeGetSequenceNumber(facade), &acknack->lastSeqNr) != C_LT)
                         {
-                            IN_TRACE(Send,2,"########### 11");
                             result = in_streamWriterAppendWriterData(
                                     in_streamWriter(_this->streamWriter),
                                     _this->discoveryData,
@@ -806,17 +812,14 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                                     &tempList);
                             if(result != IN_RESULT_OK)
                             {
-                                IN_TRACE(Send,2,"########### 12");
                                 IN_TRACE(Send,2,"in_channelSdpWriterSendRequestedDiscoveryInformation: sending writer data failed");
                                 /* TODO report error */
                             }
                         }
                         iterator = Coll_Iter_getNext(iterator);
                     }
-                    IN_TRACE(Send,2,"########### 13");
                 } else
                 {
-                    IN_TRACE(Send,2,"########### 14");
                     IN_TRACE(Send, 2, "in_channelSdpWriterSendRequestedDiscoveryInformation: Unable to match entityId, unable transmit reader/writer data.");
                 }
                 /* step 1.4: Flush the stream writer */
@@ -826,7 +829,6 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                 /* clear the list */
                 Coll_List_popBack(&tempList);
             } else {
-                IN_TRACE(Send,2,"########### 15");
                 IN_TRACE(Send, 2, "in_channelSdpWriterSendRequestedDiscoveryInformation: Unable to find a suitable UDPV4 locator, unable to transmit reader/writer data.");
             }
         } else {
@@ -871,8 +873,48 @@ in_channelSdpWriterSendParticipantsData(
         if(result != IN_RESULT_OK)
         {
 
+        } else
+        {
+            Coll_Set* peers;
+            Coll_Iter* peerIterator;
+
+            peers = in_connectivityAdminGetPeerParticipantsUnsafe(connAdmin);
+            peerIterator = Coll_Set_getFirstElement(peers);
+            while(peerIterator)
+            {
+                in_connectivityPeerParticipant peer;
+                in_locator locator;
+
+                peer = in_connectivityPeerParticipant(Coll_Iter_getObject(peerIterator));
+                /* Get a unicast UDPV4 locator, or if not available the
+                 * UDPV4 multicast locator, or if that is not available then fall back
+                 * to the default locators of the owning participant.
+                 */
+                locator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peer));
+                if(locator)
+                {
+                    in_ddsiGuidPrefixRef destGuidPrefix;
+
+                    destGuidPrefix = in_connectivityPeerParticipantGetGuidPrefix(peer);
+                    result = in_streamWriterAppendParticipantMessage(
+                        in_streamWriter(_this->streamWriter),
+                        facade,
+                        destGuidPrefix,
+                        locator);
+                    if(result != IN_RESULT_OK)
+                    {
+                        /* todo report error */
+                    }
+                } else
+                {
+                    IN_TRACE(Send, 2, "Unable to find a suitable UDPV4 locator, unable to transmit participant message.");
+                }
+
+                peerIterator = Coll_Iter_getNext(peerIterator);
+            }
         }
         iterator = Coll_Iter_getNext(iterator);
+
     }
 
     Coll_List_popBack(&tempList);
@@ -964,7 +1006,7 @@ IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq num
 
 
                     readerCount++;
-                    /* Send out publication info */
+                    /* Send out subscription info */
                     result = in_streamWriterAppendHeartbeat(
                         _this->streamWriter,
                         sourceGuidPrefix,
@@ -1269,19 +1311,19 @@ in_channelSdpWriterSubscriptionAction (
             {
                 /* TODO report error */
             }
-            result = in_streamWriterAppendReaderData(
-                    in_streamWriter(sdpWriter->streamWriter),
-                    NULL, /* optional */
-                    sdpWriter->discoveryData,
-                    facade,
-                    &tempList);
-            if(result != IN_RESULT_OK)
-            {
+        //    result = in_streamWriterAppendReaderData(
+        //            in_streamWriter(sdpWriter->streamWriter),
+        //            NULL, /* optional */
+        //            sdpWriter->discoveryData,
+        ///            facade,
+        //            &tempList);
+        //    if(result != IN_RESULT_OK)
+       //     {
                 /* TODO report error */
-            }
-            in_streamWriterFlush(
-                in_streamWriter(sdpWriter->streamWriter),
-                &tempList);
+       //     }
+       //     in_streamWriterFlush(
+      //          in_streamWriter(sdpWriter->streamWriter),
+     //           &tempList);
             /* clear the list */
             Coll_List_popBack(&tempList);
         } /* else no one interested */
@@ -1356,19 +1398,19 @@ IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 4",_this);
                 /* TODO report error */
             }
             IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 5",_this);
-            result = in_streamWriterAppendWriterData(
-                    in_streamWriter(sdpWriter->streamWriter),
-                    sdpWriter->discoveryData,
-                    facade,
-                    &tempList);
-            if(result != IN_RESULT_OK)
-            {
+     //       result = in_streamWriterAppendWriterData(
+     //               in_streamWriter(sdpWriter->streamWriter),
+     //               sdpWriter->discoveryData,
+    //                facade,
+    //                &tempList);
+    //        if(result != IN_RESULT_OK)
+    //        {
                 /* TODO report error */
-            }
+    //        }
             IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 6",_this);
-            in_streamWriterFlush(
-                in_streamWriter(sdpWriter->streamWriter),
-                &tempList);
+ //           in_streamWriterFlush(
+  //              in_streamWriter(sdpWriter->streamWriter),
+  //              &tempList);
             /* clear the list */
             Coll_List_popBack(&tempList);
         } /* else no one interested */

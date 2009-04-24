@@ -61,6 +61,12 @@ typedef	in_result (*in_streamWriterAppendParticipantDataFunc)(
 			in_connectivityParticipantFacade facade,
 			Coll_List *locatorList);
 
+typedef in_result (*in_streamWriterAppendParticipantMessageFunc)(
+    in_streamWriter _this,
+    in_connectivityParticipantFacade facade,
+    in_ddsiGuidPrefixRef destGuidPrefix,
+    in_locator locator);
+
 /** */
 typedef	in_result (*in_streamWriterAppendReaderDataFunc)(
 			in_streamWriter _this,
@@ -109,6 +115,7 @@ OS_STRUCT(in_streamWriterPublicVTable)
     in_streamWriterFlushSingleFunc flushSingle;
     in_streamWriterAppendDataFunc appendData;
     in_streamWriterAppendParticipantDataFunc appendParticipantData;
+    in_streamWriterAppendParticipantMessageFunc appendParticipantMessage;
     in_streamWriterAppendReaderDataFunc appendReaderData;
     in_streamWriterAppendWriterDataFunc appendWriterData;
 

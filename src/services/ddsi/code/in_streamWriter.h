@@ -86,6 +86,13 @@ in_streamWriterAppendParticipantData(
 		in_connectivityParticipantFacade facade,
 		Coll_List *locatorList);
 
+in_result
+in_streamWriterAppendParticipantMessage(
+    in_streamWriter _this,
+    in_connectivityParticipantFacade facade,
+    in_ddsiGuidPrefixRef destGuidPrefix,
+    in_locator locator);
+
 /** */
 in_result
 in_streamWriterAppendReaderData(

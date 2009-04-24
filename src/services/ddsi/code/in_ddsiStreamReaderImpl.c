@@ -748,7 +748,7 @@ in_ddsiStreamReaderImplProcessAckNack(
         IN_TRACE(Receive,2,"callback 'processAckNack' not defined, AckNack will be ignored");
         result = OS_TRUE; /* continue buffer scan */
     } else {
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called");
+
         in_ddsiDeserializer deserializer =
             OS_SUPER(submessageDeserializer);
         in_ddsiSubmessageHeader preparsedHeader =
@@ -759,16 +759,18 @@ in_ddsiStreamReaderImplProcessAckNack(
                     OS_SUPER(&ackNack),
                     preparsedHeader,
                     deserializer);
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called");
         if (nofOctets < 0) {
             IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE");
             result = OS_FALSE;
         } else {
+            in_result retVal;
+
             IN_TRACE(Receive,2,"callback 'processAckNack' will be called === TRUE");
-            in_result retVal =
-                _this->callbackTable->processAckNack(
-                    _this->callbackArg,
-                    &ackNack,
-                    &(_this->receiver));
+            retVal = _this->callbackTable->processAckNack(
+                _this->callbackArg,
+                &ackNack,
+                &(_this->receiver));
             result = (retVal==IN_RESULT_OK);
         }
     }

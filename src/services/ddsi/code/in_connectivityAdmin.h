@@ -148,6 +148,10 @@ in_connectivityAdminGetPeerParticipantUnsafe(
     in_connectivityAdmin _this,
     in_ddsiGuidPrefix guidPrefix);
 
+Coll_Set*
+in_connectivityAdminGetPeerParticipantsUnsafe(
+    in_connectivityAdmin _this);
+
 in_connectivityPeerReader
 in_connectivityAdminGetPeerReader(
     in_connectivityAdmin _this,

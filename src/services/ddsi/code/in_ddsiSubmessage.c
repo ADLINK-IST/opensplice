@@ -413,6 +413,9 @@ in_ddsiSubmessageDataSerializedSize(
         inlineQosSize +
         IN_DDSI_ENCAPSULATION_HEADER_SIZE
         + serializedPayloadSize;
+
+    printf("in_ddsiSubmessageDataSerializedSize: %d\n", result);
+
     return result;
 }
 
@@ -477,7 +480,7 @@ in_ddsiSubmessageDataHeaderSerializeInstantly(
 		in_ddsiSubmessageDataCreateFlagD(withSerializedPayload);
 
     const os_ushort octetsToNextHeader =
-         ((os_ushort) submessageLength) - IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+         ((os_ushort) submessageLength) - (IN_DDSI_SUBMESSAGE_HEADER_SIZE*2);//ES: TODO: times 2 is work around for malformed msg
 
     in_long result = -1;
     in_long total = 0;
@@ -607,7 +610,7 @@ in_ddsiSubmessageHeartbeatSerializeInstantly(
 {
     const in_ddsiSubmessageKind  kind = IN_HEARTBEAT;
     const in_ddsiSubmessageFlags flags =
-        in_ddsiSubmessageCreateFlagE(serializer) | in_ddsiSubmessageDataCreateFlagHeartbeatF(OS_TRUE);
+        in_ddsiSubmessageCreateFlagE(serializer) | in_ddsiSubmessageDataCreateFlagHeartbeatF(OS_FALSE);
     const os_ushort octetsToNextHeader =
         (os_ushort) (OS_SIZEOF(in_ddsiSubmessageHeartbeat) -
         IN_DDSI_SUBMESSAGE_HEADER_SIZE);

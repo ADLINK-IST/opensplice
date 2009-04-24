@@ -41,7 +41,8 @@ extern "C" {
 in_connectivityReaderFacade
 in_connectivityReaderFacadeNew(
     struct v_subscriptionInfo *info,
-    in_ddsiSequenceNumber seq);
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant);
 
 in_result
 in_connectivityReaderFacadeAddMatchedPeer(

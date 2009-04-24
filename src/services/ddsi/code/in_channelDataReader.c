@@ -189,6 +189,7 @@ in_channelDataReaderProcessDataFunc(
     kernel = v_objectKernel(channelReader->kernelReader);
     if ( kernel )
     {
+        c_string partitionName;
         v_group group = NULL;
 
         data = in_connectivityPeerWriterGetInfo(peerWriter);
@@ -197,16 +198,22 @@ in_channelDataReaderProcessDataFunc(
          * ToDo: currently we only write to the first partition in the
          * partition-array
          */
+
+        partitionName =  (c_string)(data->topicData.info.partition.name);//TODO temp code
+        if(!partitionName)//
+        {
+            partitionName = c_stringNew(c_getBase(kernel), "");//
+        }
         group = v_groupSetGet(
             kernel->groupSet,
-            (c_string)(data->topicData.info.partition.name),
+            partitionName,
             data->topicData.info.topic_name);
 
         IN_TRACE_2(
             Receive,
             3,
             "in_channelDataReader Process Message (%s,%s)",
-            data->topicData.info.partition.name,
+            partitionName,//
             data->topicData.info.topic_name);
         if ( group )
         {
