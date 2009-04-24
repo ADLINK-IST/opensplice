@@ -288,6 +288,7 @@ c_baseInit (
     c_array members;
     c_iter labels;
     c_long size;
+    c_ulong caseNumber;
 
     c_baseObject(base)->kind = M_MODULE;
     c_metaObject(base)->definedIn = NULL;
@@ -984,111 +985,124 @@ c_baseInit (
 #undef _INITCLASS_
 
 #define _SWITCH_TYPE_ c_enumeration(c_union(o)->switchType)
-
+ 
     o = c_metaDeclare(c_metaObject(base),"c_value",M_UNION);
         c_union(o)->switchType = ResolveType(base,c_valueKind);
         type = ResolveType(base,c_literal);
-        c_union(o)->cases = c_arrayNew(type,16);
+        c_union(o)->cases = c_arrayNew(type,18);
         c_free(type);
         c_union(o)->scope = NULL;
 
+        caseNumber = 0;
         /* c_unionCaseNew transfers refCount of type and
          * c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN")
          */
+        type = c_address_t(base);
+        labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ADDRESS"));
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
+                                              "Address",type,labels);
+        c_iterFree(labels);
+
         type = c_bool_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN"));
-        c_union(o)->cases[0] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Boolean",type,labels);
         c_iterFree(labels);
 
         type = c_octet_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_OCTET"));
-        c_union(o)->cases[1] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Octet",type,labels);
         c_iterFree(labels);
 
         type = c_short_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_SHORT"));
-        c_union(o)->cases[2] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Short",type,labels);
         c_iterFree(labels);
 
         type = c_long_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_LONG"));
-        c_union(o)->cases[3] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Long",type,labels);
         c_iterFree(labels);
 
         type = c_longlong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_LONGLONG"));
-        c_union(o)->cases[4] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "LongLong",type,labels);
         c_iterFree(labels);
 
         type = c_ushort_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_USHORT"));
-        c_union(o)->cases[5] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "UShort",type,labels);
         c_iterFree(labels);
 
         type = c_ulong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ULONG"));
-        c_union(o)->cases[6] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "ULong",type,labels);
         c_iterFree(labels);
 
         type = c_ulonglong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ULONGLONG"));
-        c_union(o)->cases[7] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "ULongLong",type,labels);
         c_iterFree(labels);
 
         type = c_float_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_FLOAT"));
-        c_union(o)->cases[8] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Float",type,labels);
         c_iterFree(labels);
 
         type = c_double_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_DOUBLE"));
-        c_union(o)->cases[9] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                               "Double",type,labels);
         c_iterFree(labels);
 
         type = c_char_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_CHAR"));
-        c_union(o)->cases[10] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "Char",type,labels);
         c_iterFree(labels);
 
         type = c_string_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_STRING"));
-        c_union(o)->cases[11] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "String",type,labels);
         c_iterFree(labels);
 
         type = c_wchar_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_WCHAR"));
-        c_union(o)->cases[12] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "WChar",type,labels);
         c_iterFree(labels);
 
         type = c_wstring_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_WSTRING"));
-        c_union(o)->cases[13] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "WString",type,labels);
         c_iterFree(labels);
 
         type = c_string_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_FIXED"));
-        c_union(o)->cases[14] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "Fixed",type,labels);
         c_iterFree(labels);
 
         type = c_object_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_OBJECT"));
-        c_union(o)->cases[15] = c_unionCaseNew(c_metaObject(base),
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "Object",type,labels);
+        c_iterFree(labels);
+        
+        type = c_voidp_t(base);
+        labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_VOIDP"));
+        c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
+                                               "Voidp",type,labels);
         c_iterFree(labels);
         c_metaFinalize(o);
         c_free(o);

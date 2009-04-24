@@ -213,7 +213,7 @@ PP_min_handler (
     // cout << "PING: PING_min arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_min_reader->take (PP_min_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_min_reader->take (PP_min_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_min_dataList->length ();
@@ -252,7 +252,7 @@ PP_seq_handler (
     // cout << "PING: PING_seq arrived" << endl;
 
     preTakeTime = timeGet ();
-    PP_seq_reader->take (PP_seq_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_seq_reader->take (PP_seq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
 
     amount = PP_seq_dataList->length ();
@@ -292,7 +292,7 @@ PP_string_handler (
     // cout << "PING: PING_string arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_string_reader->take (PP_string_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_string_reader->take (PP_string_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_string_dataList->length ();
@@ -331,7 +331,7 @@ PP_fixed_handler (
     // cout << "PING: PING_fixed arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_fixed_reader->take (PP_fixed_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_fixed_reader->take (PP_fixed_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_fixed_dataList->length ();
@@ -370,7 +370,7 @@ DDS::Boolean PP_array_handler (
     // cout << "PING: PING_array arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_array_reader->take (PP_array_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_array_reader->take (PP_array_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_array_dataList->length ();
@@ -767,75 +767,6 @@ main (
             init_stats (read_access,  "read_access");
             init_stats (roundtrip,    "round_trip");
 	}
-        switch(topic_id) {
-            case 'm':
-                {
-                    // cout << "PING: sending initial ping_min" << endl;
-                    PP_min_msg PPdata;
-                    exp_condition = PP_min_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_min_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'q':
-                {
-                    // cout << "PING: sending initial ping_seq" << endl;
-                    PP_seq_msg PPdata;
-                    exp_condition = PP_seq_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PPdata.payload = pingpong::seq_char(SEQ_PAYLOAD_SIZE);
-                    PP_seq_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 's':
-                {
-                    // cout << "PING: sending initial ping_string" << endl;
-                    PP_string_msg PPdata;
-                    exp_condition = PP_string_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_string_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'f':
-                {
-                    // cout << "PING: sending initial ping_fixed" << endl;
-                    PP_fixed_msg PPdata;
-                    exp_condition = PP_fixed_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_fixed_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'a':
-                {
-                    // cout << "PING: sending initial ping_array" << endl;
-                    PP_array_msg PPdata;
-                    exp_condition = PP_array_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_array_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 't':
-                {
-                    // cout << "PING: sending initial ping_quit" << endl;
-                    PP_quit_msg PPdata;
-                    PPdata.quit = true;
-                    terminate = true;
-                    finish_flag = true;
-                    PP_quit_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            default:
-                printf("Invalid topic-id\n");
-                exit(1);
-        }
-        init_stats (write_access, "write_access");
-        init_stats (read_access,  "read_access");
-        init_stats (roundtrip,    "round_trip");
     }
     s->delete_datareader (PP_min_reader);
     p->delete_datawriter (PP_min_writer);
