@@ -9,6 +9,25 @@ pathcheck ()
     return 1
 }
 
+convert_windows_path ()
+{
+    #Make it a dos path to remove all spaces
+    DOS_CONV_PATH=`cygpath -d "$1"`
+    if [ $? != 0 ]
+    then
+        echo "Error: Could not convert to dos path $1"
+        return 1
+    fi
+    #Now turn into a unix path for useage
+    UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
+    if [ $? != 0 ]
+    then
+        echo "Error: Could not convert to unix path $1"
+        return 1
+    fi
+    return 0
+}
+
 # test if CL.exe is at least vs8
 msvs_check ()
 {
@@ -41,12 +60,10 @@ msvs_check ()
   	    VS_HOME=`dirname $VS_HOME`
         export VS_HOME
     fi
+    convert_windows_path '$VS_HOME'
 
-    VS_HOME_DOS=`cygpath -d $VS_HOME`
-    VS_HOME_UNIX=`cygpath -u $VS_HOME`
-
-    LIBPATH="$VS_HOME_DOS\VC\ATLMFC\LIB"
-    PATH="$VS_HOME_UNIX/VC/bin:$VS_HOME_UNIX/Common7/IDE:$PATH"
+    LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
+    PATH="$UNIX_CONV_PATH/VC/bin:$VS_HOME_UNIX/Common7/IDE:$PATH"
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
@@ -442,6 +459,6 @@ cleanup_checks ()
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
-    unset VS_HOME_UNIX VS_HOME_DOS
+    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH
 }
 
