@@ -12,12 +12,12 @@ INCLUDES+=-I$(OSPL_HOME)/include/sys
 
 # C++ Compiler settings.
 CXX=g++
-CXXFLAGS=-g -c
+CXXFLAGS=-g -c -m32
 CPPFLAGS=-D$(SPLICE_ORB) $(INCLUDES)
 
 # Linker settings.
 LD_SO=$(CXX)
-LD_FLAGS=
+LD_FLAGS=-m32
 LD_LIBS=-lstdc++
 
 #OpenSplice idl preprocessor

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #ifndef IN_CONNECTIVITYWRITERFACADE_H_
 #define IN_CONNECTIVITYWRITERFACADE_H_
 
@@ -50,7 +39,9 @@ extern "C" {
 
 in_connectivityWriterFacade
 in_connectivityWriterFacadeNew(
-    struct v_publicationInfo *info);
+    struct v_publicationInfo *info,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant);
 
 in_result
 in_connectivityWriterFacadeAddMatchedPeer(
@@ -72,6 +63,10 @@ in_connectivityWriterFacadeGetMatchedReaders(
 
 Coll_List*
 in_connectivityWriterFacadeGetLocators(
+    in_connectivityWriterFacade _this);
+
+in_ddsiSequenceNumber
+in_connectivityWriterFacadeGetSequenceNumber(
     in_connectivityWriterFacade _this);
 
 #if defined (__cplusplus)

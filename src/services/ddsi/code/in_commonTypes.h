@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #ifndef IN_COMMONTYPES_H
 #define IN_COMMONTYPES_H
 
@@ -31,6 +20,8 @@ typedef unsigned int in_partitionId;
 typedef os_uchar     in_octet;
 typedef long         in_long;
 typedef unsigned long in_ulong;
+typedef          long long in_int64;
+typedef unsigned long long in_uint64;
 
 /** os_size_t matching native pointers on that platform */
 #define P2UI(_p) ((os_size_t)(_p))
@@ -49,6 +40,9 @@ typedef unsigned long in_ulong;
 
 #define IN_INT32_MAX  (INT32_MAX)
 #define IN_INT32_MIN  (INT32_MIN)
+
+/** support RTI specific non-compliant things */
+#define IN_WITH_RTI_WORKARROUND
 
 typedef void (*in_onFatalCallBack)(c_voidp usrData);
 
@@ -137,6 +131,18 @@ OS_CLASS(in_ddsiDiscoveredReaderData);
 OS_CLASS(in_ddsiTopicBuiltinTopicData);
 OS_CLASS(in_ddsiDiscoveredTopicData);
 OS_CLASS(in_locator);
+
+OS_CLASS(in_config);
+OS_CLASS(in_configChannel);
+OS_CLASS(in_configDataChannel);
+OS_CLASS(in_configDdsiService);
+OS_CLASS(in_configDebug);
+OS_CLASS(in_configDiscoveryChannel);
+OS_CLASS(in_configNetworkPartition);
+OS_CLASS(in_configPartitioning);
+OS_CLASS(in_configPartitionMapping);
+OS_CLASS(in_configTimestamps);
+OS_CLASS(in_configTracing);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

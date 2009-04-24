@@ -53,7 +53,7 @@ DDS::StatusCondition_ptr DDS::Entity_impl::get_statuscondition (
   {
     if (os_mutexLock(&e_mutex) == os_resultSuccess)
     {
-      scUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      scUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (scUD)
       {
         statusCondition = dynamic_cast<DDS::StatusCondition_ptr>(scUD->ccpp_object);
@@ -76,8 +76,8 @@ DDS::StatusCondition_ptr DDS::Entity_impl::get_statuscondition (
           {
             ccpp_UserData_ptr ownUD;
             
-            gapi_object_set_user_data(handle, scUD);
-            ownUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+            gapi_object_set_user_data(handle, (CORBA::Object *)scUD);
+            ownUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
             ownUD->ccpp_statusconditiondata = scUD;
           }
           else

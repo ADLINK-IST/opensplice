@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -55,9 +55,69 @@ extern "C" {
 #define L_STATECHANGED     (0x0001U << 13) /* 8192 */
 #define L_VALIDDATA        (0x0001U << 14) /* 16384 */
 
+/*
+ * Sets all bits in state that are set in mask.
+ *
+ * Example:
+ *      state = 101101;
+ *      v_stateSet(state, 000011);
+ *      state == 101111;
+ *
+ */
 #define v_stateSet(state,mask)    ((state)|=(mask))
+
+/*
+ * Clears all bits in state that are set in mask.
+ *
+ * Example:
+ *      state = 101111;
+ *      v_stateClear(state, 000011);
+ *      state == 101100;
+ *
+ */
 #define v_stateClear(state,mask)  ((state)&=(~mask))
+
+/*
+ * Tests whether the supplied mask is set. If all bits in the mask are set in
+ * the state, then the result is TRUE.
+ *
+ * Example:
+ *      v_stateTest(101001, 000101) == FALSE
+ *      v_stateTest(101001, 001001) == TRUE
+ *      v_stateTest(101001, 101001) == TRUE
+ */
 #define v_stateTest(state,mask)   (((state)&(mask))==(mask))
+
+/*
+ * Tests whether the supplied mask is NOT set. If all bits in the mask are not
+ * set in the state, then the result is TRUE.
+ *
+ * Example:
+ *      v_stateTestNot(101001, 000110) == TRUE
+ *      v_stateTestNot(101001, 000010) == TRUE
+ *      v_stateTestNot(101001, 001110) == FALSE
+ *
+ * Note that this is different than calling v_stateTest with a negated mask:
+ *      v_stateTest(101001, ~000110) == FALSE
+ *      v_stateTestNot(101001, 000110) == TRUE
+ * Or negating the output of v_stateTest:
+ *      !v_stateTest(101001, 001110) == TRUE
+ *      v_stateTestNot(101001, 001110) == FALSE
+ * Or negating the output of v_stateTest with a negated mask:
+ *      !v_stateTest(101001, ~001110) == TRUE
+ *      v_stateTestNot(101001, 001110) == FALSE
+ */
+#define v_stateTestNot(state,mask)(((state)&(~mask))==(state))
+
+/*
+ * Returns a value != 0 when (at least) one of the bits set in mask is also set
+ * in state. The result is a bitmask of the bits that where set both in state
+ * and mask.
+ *
+ * Example:
+ *      v_stateTestOr(101001, 100001) != 0
+ *      v_stateTestOr(101001, 010010) == 0
+ */
 #define v_stateTestOr(state,mask) ((state)&(mask))
 
 #undef OS_API

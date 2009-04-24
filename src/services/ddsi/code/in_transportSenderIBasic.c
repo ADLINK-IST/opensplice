@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportSenderIBasic.c
  *
  *  Created on: Feb 10, 2009
@@ -27,6 +16,8 @@
 #include "in__configDdsiService.h"
 #include "in__configPartitioning.h"
 #include "in_sendBuffer.h"
+#include "in_report.h"
+
 
 /** \brief abstract class  */
 OS_STRUCT(in_transportSenderIBasic)
@@ -110,12 +101,19 @@ in_transportSenderSendTo_i(
 				receiver,
 				in_abstractSendBufferBegin(buffer),
 				length);
-	} else {
-		in_socketSendDataTo(
+	} else
+    {
+        in_long sentData;
+
+		sentData = in_socketSendDataTo(
 				narrowed->socket,
 				receiver,
 				in_abstractSendBufferBegin(buffer),
 				length);
+        if(sentData != (in_long)length)
+        {
+            result = os_resultFail;
+        }
 	}
 	return result;
 }
@@ -186,7 +184,7 @@ in_transportSenderGetControlUnicastLocator_i(in_transportSender _this)
     return result;
 }
 
-static const
+static
 OS_STRUCT(in_transportSenderPublicVTable) staticPublicVTable = {
         in_transportSenderGetBuffer_i,
         in_transportSenderSendTo_i,
@@ -199,28 +197,24 @@ OS_STRUCT(in_transportSenderPublicVTable) staticPublicVTable = {
 static os_boolean
 in_transportSenderIBasicInit(
 		in_transportSenderIBasic _this,
-		in_configChannel configChannel)
+		in_configChannel configChannel,
+		in_socket sock)
 {
 	os_boolean result = OS_TRUE;
-	os_boolean supportsControl = OS_FALSE;
 	os_uint32 fragmentLength = 0;
 
 	fragmentLength =
 		in_configChannelGetFragmentSize(configChannel);
-	supportsControl =
-		in_configChannelSupportsControl(configChannel);
 
-	assert(supportsControl==OS_FALSE || supportsControl == OS_TRUE);
 	assert(fragmentLength <= 0x00ffffff); /* anything else is not plausible */
+	assert(fragmentLength > 0); /* anything else is not plausible */
 
 	in_transportSenderInitParent(OS_SUPER(_this),
 			IN_OBJECT_KIND_TRANSPORT_SENDER_BASIC,
 			in_objectDeinit_i,
 			&staticPublicVTable);
 
-	_this->socket = in_socketSendNew(
-			configChannel,
-			supportsControl);
+	_this->socket = in_socketKeep(sock);
 
 	_this->fragmentLength = fragmentLength;
 
@@ -237,19 +231,59 @@ in_transportSenderIBasicInit(
 in_transportSenderIBasic
 in_transportSenderIBasicNew(in_configChannel config)
 {
+    os_boolean supportsControl =
+        in_configChannelSupportsControl(config);
+
 	in_transportSenderIBasic result =
 		(in_transportSenderIBasic) os_malloc(OS_SIZEOF(in_transportSenderIBasic));
+	in_socket sock =
+        in_socketSendNew(
+            config,
+            supportsControl);
 
-	if (result) {
-		if (!in_transportSenderIBasicInit(result, config)) {
+	if (!result || !sock) {
+	    if (result) {
+	        os_free(result);
+	    }
+	    if (!sock) {
+	        in_socketFree(sock);
+	    }
+	} else {
+		if (!in_transportSenderIBasicInit(result, config, sock)) {
 			os_free(result);
 			result = NULL;
 		}
+        /* decrement refcount */
+	    in_socketFree(sock);
 	}
+
+    IN_TRACE_1(Construction,2,"in_transportSenderIBasic created = %x",result);
 
 	return result;
 }
 
+/** \brief constructor */
+in_transportSenderIBasic
+in_transportSenderIBasicNewDuplex(
+        in_configChannel config,
+        in_socket duplexSocket)
+{
+    in_transportSenderIBasic result =
+        (in_transportSenderIBasic) os_malloc(OS_SIZEOF(in_transportSenderIBasic));
+
+    assert(duplexSocket);
+
+    if (result) {
+        if (!in_transportSenderIBasicInit(result, config, duplexSocket)) {
+            os_free(result);
+            result = NULL;
+        }
+    }
+
+    IN_TRACE_1(Construction,2,"in_transportSenderIBasic created = %x",result);
+
+    return result;
+}
 
 /** \brief destructor */
 void

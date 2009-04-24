@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_streamWriter.c
  *
  *  Created on: Mar 3, 2009
@@ -87,6 +76,7 @@ in_result
 in_streamWriterAppendData(
 		in_streamWriter _this,
 		v_message message,
+        in_endpointDiscoveryData discoveryData,
 		in_connectivityWriterFacade facade,
 		os_boolean recipientExpectsInlineQos,
 		Coll_List *locatorList)
@@ -97,6 +87,7 @@ in_streamWriterAppendData(
 		result =
 			_this->publicVTable->appendData(_this,
 				message,
+				discoveryData,
 				facade,
 				recipientExpectsInlineQos,
 				locatorList);
@@ -108,6 +99,7 @@ in_streamWriterAppendData(
 in_result
 in_streamWriterAppendParticipantData(
 		in_streamWriter _this,
+		in_endpointDiscoveryData discoveryData,
 		in_connectivityParticipantFacade facade,
 		Coll_List *locatorList)
 {
@@ -116,16 +108,75 @@ in_streamWriterAppendParticipantData(
 	if (_this->publicVTable->appendParticipantData) {
 		result =
 			_this->publicVTable->appendParticipantData(_this,
-				facade,
-				locatorList);
+			        discoveryData,
+			        facade,
+			        locatorList);
 	}
 	return result;
 }
+
+in_result
+in_streamWriterAppendParticipantMessage(
+    in_streamWriter _this,
+    in_connectivityParticipantFacade facade,
+    in_ddsiGuidPrefixRef destGuidPrefix,
+    in_locator locator)
+{
+    in_result result;
+
+    assert(_this);
+    assert(facade);
+    assert(locator);
+
+	if (_this->publicVTable->appendParticipantMessage)
+    {
+		result = _this->publicVTable->appendParticipantMessage(_this, facade, destGuidPrefix, locator);
+	} else
+    {
+        result = IN_RESULT_ERROR;
+    }
+    return result;
+}
+
+
+/** */
+in_result
+in_streamWriterAppendHeartbeat(
+        in_streamWriter _this,
+        in_ddsiGuidPrefixRef sourceGuidPrefix,
+        in_ddsiGuidPrefixRef destGuidPrefix,
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumber firstSN,
+        in_ddsiSequenceNumber lastSN,
+        os_ushort count,
+        in_locator singleDestination)
+{
+    in_result result = IN_RESULT_ERROR;
+
+    if (_this->publicVTable->appendHeartbeat) {
+        result =
+            _this->publicVTable->appendHeartbeat(_this,
+                    sourceGuidPrefix,
+                    destGuidPrefix,
+                    readerId,
+                    writerId,
+                    firstSN,
+                    lastSN,
+                    count,
+                    singleDestination);
+    }
+    return result;
+
+}
+
 
 /** */
 in_result
 in_streamWriterAppendReaderData(
 		in_streamWriter _this,
+        in_ddsiGuidPrefixRef writerGuidPrefix,
+		in_endpointDiscoveryData discoveryData,
 		in_connectivityReaderFacade facade,
 		Coll_List *locatorList)
 {
@@ -134,8 +185,10 @@ in_streamWriterAppendReaderData(
 	if (_this->publicVTable->appendReaderData) {
 		result =
 			_this->publicVTable->appendReaderData(_this,
-				facade,
-				locatorList);
+			        writerGuidPrefix,
+			        discoveryData,
+			        facade,
+			        locatorList);
 	}
 	return result;
 }
@@ -144,6 +197,7 @@ in_streamWriterAppendReaderData(
 in_result
 in_streamWriterAppendWriterData(
 		in_streamWriter _this,
+        in_endpointDiscoveryData discoveryData,
 		in_connectivityWriterFacade facade,
 		Coll_List *locatorList)
 {
@@ -152,8 +206,9 @@ in_streamWriterAppendWriterData(
 	if (_this->publicVTable->appendWriterData) {
 		result =
 			_this->publicVTable->appendWriterData(_this,
-				facade,
-				locatorList);
+			        discoveryData,
+			        facade,
+			        locatorList);
 	}
 	return result;
 }
@@ -169,9 +224,7 @@ in_streamWriterAppendAckNack(
         in_streamWriter _this,
         in_ddsiGuid readerGuid,
         in_ddsiGuid writerGuid,
-        /* single sequence number, but will be transformed
-         * to sequencenumber-set on the wire */
-        in_ddsiSequenceNumber writerSN,
+        in_ddsiSequenceNumberSet readerSNState,
         in_locator destination)
 {
     in_result result = IN_RESULT_ERROR;
@@ -181,7 +234,7 @@ in_streamWriterAppendAckNack(
               _this->publicVTable->appendAckNack(_this,
                       readerGuid,
                       writerGuid,
-                      writerSN,
+                      readerSNState,
                       destination);
       }
       return result;
@@ -194,6 +247,10 @@ in_streamWriterGetDataMulticastLocator(in_streamWriter _this)
     in_locator result = NULL;
     if (_this->publicVTable->getDataMulticastLocator) {
         result = _this->publicVTable->getDataMulticastLocator(_this);
+        if(result)
+        {
+            in_locatorSetPort(result, 7400);//TODO fix
+        }
     }
     return result;
 }
@@ -205,6 +262,10 @@ in_streamWriterGetDataUnicastLocator(in_streamWriter _this)
     in_locator result = NULL;
     if (_this->publicVTable->getDataUnicastLocator) {
         result = _this->publicVTable->getDataUnicastLocator(_this);
+        if(result)
+        {
+            in_locatorSetPort(result, 7410);//TODO fix
+        }
     }
     return result;
 

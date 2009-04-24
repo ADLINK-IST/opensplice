@@ -2252,6 +2252,7 @@ v_writerResend(
             found = c_remove(writer->instances,instance,NULL,NULL);
             assert(found == instance);
             c_free(found);
+            v_publicFree(v_public(instance));
             v_writerInstanceFree(instance);
         }
         /*NK: Always free because it has been kept in the emptyList iterator!*/

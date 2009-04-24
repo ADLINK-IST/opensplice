@@ -48,7 +48,7 @@ DDS::DomainParticipant_ptr DDS::TopicDescription_impl::get_participant (
 
   DDS::ccpp_UserData_ptr myUD;
  
-  myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     Participant = dynamic_cast<DDS::DomainParticipant_ptr>(myUD->ccpp_object);

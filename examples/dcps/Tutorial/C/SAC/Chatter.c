@@ -253,8 +253,8 @@ main (
     checkStatus(status, "Chat_NameServiceDataWriter_unregister_instance");
 
     /* Release the data-samples. */
-    DDS_free(ns.name); // ns allocated on stack: explicit de-allocation of indirections!!
-    DDS_free(msg);     // msg allocated on heap: implicit de-allocation of indirections!!
+    DDS_free(ns.name); /* ns allocated on stack: explicit de-allocation of indirections!! */
+    DDS_free(msg);     /* msg allocated on heap: implicit de-allocation of indirections!! */
 
     /* Remove the DataWriters */
     status = DDS_Publisher_delete_datawriter(chatPublisher, talker);
@@ -277,7 +277,7 @@ main (
     /* De-allocate the QoS policies. */
     DDS_free(reliable_topic_qos);
     DDS_free(setting_topic_qos);
-    DDS_free(pub_qos);  // Note that DDS_free recursively de-allocates all indirections as well!!
+    DDS_free(pub_qos);  /* Note that DDS_free recursively de-allocates all indirections as well!! */
 
     /* De-allocate the type-names and TypeSupport objects. */
     DDS_free(nameServiceTypeName);

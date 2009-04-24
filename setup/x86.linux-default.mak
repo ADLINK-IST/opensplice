@@ -55,8 +55,8 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic
 
 # Set compiler options for single threaded process
-CFLAGS		 = -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -m32 -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -m32 -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_GNU_SOURCE
@@ -70,7 +70,7 @@ endif
 MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
-LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
+LDFLAGS		 = -m32 -static-libgcc -L$(SPLICE_LIBRARY_PATH)
 
 # Identify linker options for building shared libraries
 SHLDFLAGS	 = -shared -fpic

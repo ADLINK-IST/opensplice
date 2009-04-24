@@ -45,7 +45,10 @@ c_mutexLock (
     result = os_mutexLock(mtx);
 #else
     result = os_mutexLock(&mtx->mtx);
-    mtx->owner = os_threadIdSelf();
+    if ( result == os_resultSuccess )
+    {
+       mtx->owner = os_threadIdSelf();
+    }
 #endif
     assert(result == os_resultSuccess);
     return result;
@@ -61,7 +64,10 @@ c_mutexTryLock (
     result = os_mutexTryLock(mtx);
 #else
     result = os_mutexTryLock(&mtx->mtx);
-    mtx->owner = os_threadIdSelf();
+    if ( result == os_resultSuccess )
+    {
+       mtx->owner = os_threadIdSelf();
+    }
 #endif
     assert(result == os_resultSuccess);
     return result;
@@ -75,8 +81,9 @@ c_mutexUnlock (
 #ifdef NDEBUG
     result = os_mutexUnlock(mtx);
 #else
-    result = os_mutexUnlock(&mtx->mtx);
+    assert( mtx->owner == os_threadIdSelf() );
     mtx->owner = 0;
+    result = os_mutexUnlock(&mtx->mtx);
 #endif
     assert(result == os_resultSuccess);
     return result;

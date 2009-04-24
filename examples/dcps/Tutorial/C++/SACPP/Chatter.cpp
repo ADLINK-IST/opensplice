@@ -79,14 +79,9 @@ main (
     ostringstream                   buf;
 
 #ifdef INTEGRITY
-    argc = 3;
-    argv[0] = "Chatter";
-    argv[1] = "1";
-    argv[2] = "dds_user";
-
-    ownID = atoi(argv[1]);
-    chatterName = argv[2];
-#endif       
+    ownID = 1;
+    chatterName = "dds_user";
+#else
     /* Options: Chatter [ownID [name]] */
     if (argc > 1) {
         istringstream args(argv[1]);
@@ -95,6 +90,7 @@ main (
             chatterName = argv[2];
         }
     }
+#endif
 
     /* Create a DomainParticipantFactory and a DomainParticipant (using Default QoS settings. */
     dpf = DomainParticipantFactory::get_instance ();

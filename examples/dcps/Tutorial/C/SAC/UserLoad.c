@@ -96,6 +96,7 @@ main (
     char                            *chatMessageTypeName = NULL;
     char                            *nameServiceTypeName = NULL;
     pthread_t                       tid;
+    pthread_attr_t                  tattr;
 
     /* Create a DomainParticipant (using the 'TheParticipantFactory' convenience macro). */
     participant = DDS_DomainParticipantFactory_create_participant (
@@ -278,8 +279,11 @@ main (
     checkStatus(status, "Chat_NameServiceDataReader_return_loan");
     
     /* Start the sleeper thread. */
-    pthread_create (&tid, NULL, delayedEscape, NULL);
-  
+    pthread_attr_init(&tattr);
+    pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+    pthread_create (&tid, &tattr, delayedEscape, NULL);
+    pthread_attr_destroy(&tattr);
+
     while (!closed) {
         /* Wait until at least one of the Conditions in the waitset triggers. */
         status = DDS_WaitSet_wait(userLoadWS, guardList, &timeout);

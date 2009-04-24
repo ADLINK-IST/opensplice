@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #ifndef IN_LOCATOR_H_
 #define IN_LOCATOR_H_
 
@@ -168,5 +157,16 @@ in_locatorClone(in_locator _this);
 /** \brief Verifying locator */
 os_boolean
 in_locatorIsValid(in_locator _this);
+
+/** \brief Private copy operation,  ref-counter is not modified.
+ *
+ * Parses the buffer and copies the values into object.
+ *
+ * \param _this the object
+ * \param reader the CDR reader on buffer
+ *
+ * \return the number of octets read */
+in_long
+in_locatorCopyFromBuffer(in_locator _this, in_ddsiDeserializer reader);
 
 #endif /* IN_LOCATOR_H_ */

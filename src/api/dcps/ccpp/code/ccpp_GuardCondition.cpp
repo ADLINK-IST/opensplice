@@ -26,14 +26,14 @@ DDS::GuardCondition::GuardCondition( ) : DDS::Condition_impl(NULL)
        such that it is deleted when the user releases it. 
      */
     CORBA::release(this);
-    gapi_object_set_user_data(_gapi_self, myUD);
+    gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD);
   }
 }
   
 DDS::GuardCondition::~GuardCondition( ) 
 { 
   DDS::ccpp_UserData_ptr myUD;
-  myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
   /* avoid another last release of the reference to this WaitSet */
   myUD->ccpp_object = NULL;
   delete myUD;

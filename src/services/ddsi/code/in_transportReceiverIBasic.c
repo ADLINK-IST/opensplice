@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportReceiverIBasic.c
  *
  *  Created on: Feb 10, 2009
@@ -48,7 +37,8 @@ static in_abstractReceiveBuffer
 in_transportReceiverReceive_i(
 		in_transportReceiver _this,
 		os_boolean *isControl,
-		os_time *timeout);
+		os_time *timeout,
+        in_result *errorState);
 
 static void
 in_transportReceiverPeriodicAction_i(
@@ -72,14 +62,18 @@ static OS_STRUCT(in_locator)*
 in_transportReceiverGetUnicastControlLocator_i(
 		in_transportReceiver _this);
 
-/* **** implement private operations **** */
+static OS_STRUCT(in_locator)*
+in_transportReceiverGetMulticastControlLocator_i(
+        in_transportReceiver _this);
 
+/* **** implement private operations **** */
 
 static in_abstractReceiveBuffer
 in_transportReceiverReceive_i(
 		in_transportReceiver _this,
 		os_boolean *isControl,
-		os_time  *timeout)
+		os_time  *timeout,
+		in_result *errorState)
 {
 	in_long nofOctets = 0;
 	in_transportReceiverIBasic obj =
@@ -113,6 +107,8 @@ in_transportReceiverReceive_i(
 		result = NULL;
 	} else {
 		in_receiveBufferSetLength(result, nofOctets);
+		/* ownership to callee */
+		obj->nextReceiveBuffer = NULL;
 	}
 
 	return (in_abstractReceiveBuffer) result;
@@ -198,35 +194,54 @@ in_transportReceiverGetUnicastControlLocator_i(
 }
 
 
+static OS_STRUCT(in_locator)*
+in_transportReceiverGetMulticastControlLocator_i(
+        in_transportReceiver _this)
+{
+    in_transportReceiverIBasic obj =
+        in_transportReceiverIBasic(_this);
+
+    in_locator result = NULL;
+
+    assert(_this);
+    result = in_socketGetMulticastControlLocator(obj->socket);
+    if (!result) {
+        /* control locator not supported */
+        result = in_socketGetMulticastDataLocator(obj->socket);
+        assert(result!=NULL);
+    }
+    return result;
+}
+
 /* **** implement init/deinit operations **** */
 
 static void
-in_objectDeinit_i(
-		in_transportReceiverIBasic _this)
+in_objectDeinit_i(in_object _this)
 {
     /* narrow */
 	in_transportReceiverDeinit(
 	        OS_SUPER(in_transportReceiverIBasic(_this)));
 }
 
-static const
+static
 OS_STRUCT(in_transportReceiverPublicVTable) staticPublicVTable = {
         in_transportReceiverReceive_i,
         in_transportReceiverPeriodicAction_i,
         in_transportReceiverReleaseBuffer_i,
         in_transportReceiverGetUnicastDataLocator_i,
         in_transportReceiverGetMulticastDataLocator_i,
-        in_transportReceiverGetUnicastControlLocator_i
+        in_transportReceiverGetUnicastControlLocator_i,
+        in_transportReceiverGetMulticastControlLocator_i
 };
 
 /* \return may return OS_FALSE on error */
 static os_boolean
 in_transportReceiverIBasicInit(
 		in_transportReceiverIBasic _this,
-		in_configChannel configChannel)
+		in_configChannel configChannel,
+		in_socket sock)
 {
 	os_boolean result = OS_TRUE;
-	os_boolean supportsControl = OS_FALSE;
 	os_uint32 fragmentLength = 0;
 
 	fragmentLength =
@@ -239,9 +254,7 @@ in_transportReceiverIBasicInit(
 			in_objectDeinit_i,
 			&staticPublicVTable);
 
-	_this->socket = in_socketReceiveNew(
-			configChannel,
-			supportsControl);
+	_this->socket = in_socketKeep(sock);
 
 	_this->fragmentLength = fragmentLength;
 	_this->nextReceiveBuffer = NULL;
@@ -259,17 +272,62 @@ in_transportReceiverIBasicInit(
 in_transportReceiverIBasic
 in_transportReceiverIBasicNew(in_configChannel config)
 {
+    os_boolean supportsControl =
+        in_configChannelSupportsControl(config);
+
 	in_transportReceiverIBasic result =
 		(in_transportReceiverIBasic) os_malloc(OS_SIZEOF(in_transportReceiverIBasic));
+    in_socket sock =
+            in_socketReceiveNew(
+                 config,
+                 supportsControl);
 
-	if (result) {
-		if (!in_transportReceiverIBasicInit(result, config)) {
+	if (!result || !sock) {
+	    if (result) {
+	        os_free(result);
+	    }
+	    if (sock) {
+	        in_socketFree(sock);
+	    }
+	} else {
+		if (!in_transportReceiverIBasicInit(result, config, sock)) {
 			os_free(result);
 			result = NULL;
 		}
+		/* decrement refcount */
+		in_socketFree(sock);
 	}
 
+    IN_TRACE_1(Construction,2,"in_transportReceiverIBasic created = %x",result);
+
 	return result;
+}
+
+/** \brief constructor */
+in_transportReceiverIBasic
+in_transportReceiverIBasicNewDuplex(
+        in_configChannel config,
+        in_socket duplexSocket)
+{
+    in_transportReceiverIBasic result =
+        (in_transportReceiverIBasic) os_malloc(OS_SIZEOF(in_transportReceiverIBasic));
+
+    assert(duplexSocket);
+
+    if (result) {
+
+        if (!in_transportReceiverIBasicInit(
+                result,
+                config,
+                duplexSocket)) {
+            os_free(result);
+            result = NULL;
+        }
+    }
+
+    IN_TRACE_1(Construction,2,"in_transportReceiverIBasic created = %x",result);
+
+    return result;
 }
 
 

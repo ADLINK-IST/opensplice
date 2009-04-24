@@ -227,23 +227,12 @@ void DDS::ccpp_CallBack_DeleteUserData( void * entityData, void * userData)
 {
   if (entityData)
   {
-    CORBA::Object_ptr anObject;
-    DDS::TypeSupportFactory_ptr tsFactory;
-    
-    // Check whether the entityData pointer refers to a TypeSupport.
-    anObject = static_cast<CORBA::Object_ptr>(entityData);
-    tsFactory = dynamic_cast<DDS::TypeSupportFactory_ptr>(anObject);
-    if ( tsFactory )
-    {
-      // If so, decrease the reference Counter by one.
-      CORBA::release(tsFactory);
-    }
-    else
-    {
-      // If not, then the entityData represents a ccpp_UserData struct and needs to be deleted.
-      DDS::ccpp_UserData_ptr myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(entityData);
-      delete myUD;
-    }
+    CORBA::Object_ptr cObject;
+    CORBA::LocalObject_ptr anObject;
+
+    cObject = static_cast<CORBA::Object_ptr>(entityData);
+    anObject = dynamic_cast<CORBA::LocalObject_ptr>(cObject);
+    CORBA::release(anObject);
   }
 }
 
