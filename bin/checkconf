@@ -60,7 +60,7 @@ msvs_check ()
   	    VS_HOME=`dirname $VS_HOME`
         export VS_HOME
     fi
-    convert_windows_path '$VS_HOME'
+    convert_windows_path $VS_HOME
 
     LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
     PATH="$UNIX_CONV_PATH/VC/bin:$VS_HOME_UNIX/Common7/IDE:$PATH"
