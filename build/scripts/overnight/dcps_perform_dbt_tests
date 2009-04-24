@@ -33,6 +33,18 @@ ArchiveLogs
 
 /bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect dev
 
+(
+    cd $OSPL_OUTER_HOME/Results
+    for i in `ls *`
+    do
+        echo $i | grep "\." 2>&1 > /dev/null
+        if [ $? != 0 ]
+        then
+            mv $i $i.txt
+        fi
+    done
+)
+
 cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results ||
 { 
     echo "ERROR: could not cpoy to DBT Results - dcps_build_rbt_tests"; 
