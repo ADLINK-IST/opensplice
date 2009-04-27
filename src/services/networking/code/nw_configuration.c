@@ -17,6 +17,11 @@
 #include "nw_misc.h"
 #include "nw__confidence.h"
 
+#ifdef VXWORKS_RTP
+#include <netdb.h>
+#include "os_socket.h"
+#endif
+
 /* --------------------------------- Private -------------------------------- */
 
 
@@ -131,6 +136,38 @@ nw_configurationWaitIfRequested(
     }
 }
 
+#ifdef VXWORKS_RTP
+
+#define SERV_IP "10.1.0.3"
+
+static FILE * open_socket (short port)
+{
+   FILE * file = NULL;
+   int sock;
+   struct sockaddr_in sa;
+
+   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+   {
+      perror("socket");
+      return -1;
+   }
+
+   memset((char *)&sa, 0, sizeof(sa));
+   sa.sin_family = AF_INET;
+   sa.sin_port = htons(port);
+   inet_aton(SERV_IP, &sa.sin_addr);
+
+   if (connect(sock, (struct sockaddr *)&sa, sizeof(sa)) < 0)
+   {
+      perror("connect");
+      sock = -1;
+   }
+
+   file = fdopen (sock, "w");
+
+   return file;
+}
+#endif
 
 static void
 nw_configurationInitializeTracing(
@@ -159,7 +196,11 @@ nw_configurationInitializeTracing(
                 traceConfig->outFile = stdout;
             } else {
                 char * filename = os_fileNormalize(outFileName); 
+#ifdef VXWORKS_RTP
+                traceConfig->outFile = open_socket (20008);
+#else
                 traceConfig->outFile = fopen(filename, "w");
+#endif
                 if (!traceConfig->outFile) {
                      NW_REPORT_WARNING_2("Configuration",
                          "Can not open trace outputfile %s, "
