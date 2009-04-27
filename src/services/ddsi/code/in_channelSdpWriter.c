@@ -930,10 +930,6 @@ in_channelSdpWriterGetEntityLocator(
         IN_TRACE(Send, 2, "in_channelSdpWriterGetEntityLocator - No multicast locator found, falling back to default locators");
         locator = in_channelSdpWriterFindDefaultUDPV4Locator(entity);
     }
-    if(locator)
-    {
-        locator = in_locatorKeep(locator);
-    }
 
     return locator;
 }
@@ -961,6 +957,10 @@ in_channelSdpWriterFindUDPV4Locator(
             }
         }
         iterator = Coll_Iter_getNext(iterator);
+    }
+    if(locator)
+    {
+        locator = in_locatorKeep(locator);
     }
     return locator;
 }

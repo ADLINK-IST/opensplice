@@ -10,7 +10,6 @@
 
 /* **** implementation headers **** */
 #include "in_abstractReceiveBuffer.h"
-#include "in_assert.h"
 #include "in_report.h"
 #include "in_ddsiSubmessageTokenizer.h"
 #include "in_ddsiSubmessageDeserializer.h"

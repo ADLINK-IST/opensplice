@@ -140,7 +140,11 @@ in_channelDataReaderInit(
 
     if(success)
     {
-        _this->streamReader = in_streamGetReader(in_channelGetStream(in_channel(channelData)));
+        in_stream stream;
+
+        stream = in_channelGetStream(in_channel(channelData));
+        _this->streamReader = in_streamGetReader(stream);
+        in_streamFree(stream);
         _this->userReader = reader;
         _this->timeout.tv_sec = 1;
         _this->timeout.tv_nsec = 0;
