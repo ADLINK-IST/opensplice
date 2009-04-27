@@ -66,8 +66,7 @@ in_messageDeserializerEnd(
 in_result
 in_messageDeserializerRead(
     in_messageDeserializer _this,
-    c_type type,
-    c_long offset,
+    v_topic topic,
     os_boolean bigEndian,
     v_message* object);
 
