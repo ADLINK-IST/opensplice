@@ -72,12 +72,12 @@ $(IDLPP_OBJ): $(IDLPP_ORB_HDR) $(ORB_TOP_HDR) $(ORB_API_HDR)
 $(EORB_SRC): copyeorbsrc
 
 copyeorbinc:
-ifdef $(EORBHOME)
+ifdef EORBHOME
 	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
 endif
 
 copyeorbsrc:
-ifdef $(EORBHOME)
+ifdef EORBHOME
 	cp $(EORBHOME)/src/*.cpp .
 endif
 

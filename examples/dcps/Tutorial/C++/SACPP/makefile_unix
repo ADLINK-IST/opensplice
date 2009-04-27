@@ -32,7 +32,7 @@ all : dirs copyeorbinc exec/Chatter exec/MessageBoard exec/UserLoad
 	@echo ">>>> all done"
 
 copyeorbinc:
-ifdef $(EORBHOME)
+ifdef EORBHOME
 	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
 endif
 
