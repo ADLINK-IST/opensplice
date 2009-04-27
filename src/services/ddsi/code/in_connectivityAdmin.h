@@ -62,13 +62,15 @@ in_connectivityAdminAddParticipant(
 in_result
 in_connectivityAdminAddReader(
     in_connectivityAdmin _this,
-    struct v_subscriptionInfo *reader
+    struct v_subscriptionInfo *reader,
+    os_boolean hasKey
     );
 
 in_result
 in_connectivityAdminAddWriter(
     in_connectivityAdmin _this,
-    struct v_publicationInfo *writer
+    struct v_publicationInfo *writer,
+    os_boolean hasKey
     );
 
 in_connectivityParticipantFacade

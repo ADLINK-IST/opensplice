@@ -14,6 +14,7 @@ static os_boolean
 in_connectivityReaderFacadeInit(
     in_connectivityReaderFacade _this,
     struct v_subscriptionInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant);
 
@@ -34,6 +35,7 @@ OS_STRUCT(in_connectivityReaderFacade)
 in_connectivityReaderFacade
 in_connectivityReaderFacadeNew(
     struct v_subscriptionInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant)
 {
@@ -44,7 +46,7 @@ in_connectivityReaderFacadeNew(
 
     if(_this)
     {
-        success = in_connectivityReaderFacadeInit(_this,info, seq, participant);
+        success = in_connectivityReaderFacadeInit(_this,info, hasKey, seq, participant);
 
         if(!success)
         {
@@ -60,12 +62,14 @@ os_boolean
 in_connectivityReaderFacadeInit(
     in_connectivityReaderFacade _this,
     struct v_subscriptionInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
     OS_STRUCT(in_ddsiGuid) guid;
     in_ddsiGuidPrefixRef prefix;
+    v_dataReader reader;
 
     assert(_this);
 
@@ -77,7 +81,14 @@ in_connectivityReaderFacadeInit(
     guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
     guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
     //should determine the following value based on topic and if it has a key or not
-    guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_READER_NO_KEY;
+
+    if(hasKey)
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_READER_WITH_KEY;
+    } else
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_READER_NO_KEY;
+    }
 
     success = in_connectivityEntityFacadeInit(
         OS_SUPER(_this),

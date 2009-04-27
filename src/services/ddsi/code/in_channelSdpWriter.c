@@ -20,6 +20,9 @@
 #include "v_domain.h"
 #include "v_topic.h"
 #include "v_networkReaderEntry.h"
+#include "v_writer.h"
+#include "v_public.h"
+#include "v_dataReader.h"
 #include "in_ddsiDefinitions.h"
 #include "in_endpointDiscoveryData.h"
 #include "in__ddsiReceiver.h"
@@ -28,12 +31,11 @@ static os_boolean
 in_channelSdpWriterInit(
     in_channelSdpWriter _this,
     in_channelSdp channel,
-    in_objectKind kind,
-    in_objectDeinitFunc deinit,
-    u_participant participant,
+    in_plugKernel plug,
     in_streamWriter writer,
-    u_networkReader reader,
-    in_endpointDiscoveryData discoveryData);
+    in_endpointDiscoveryData discoveryData,
+    in_objectKind kind,
+    in_objectDeinitFunc deinit);
 
 static void
 in_channelSdpWriterDeinit(
@@ -140,6 +142,18 @@ struct in_channelSdpWriterGroupActionArg
     v_group group;
 };
 
+struct in_channelSdpWriterEndpointHasKeyActionArg
+{
+    v_gid gid;
+    os_boolean hasKey; /*Out param*/
+};
+
+
+static void
+in_channelSdpWriterEndpointHasKey(
+    v_entity entity,
+    c_voidp args);
+
 typedef enum in_channelSdpWriterEntityAction_e
 {
     ACTION_NEW,
@@ -174,33 +188,30 @@ OS_STRUCT(in_channelSdpWriter)
     Coll_List discoveredPeers;
     Coll_List heartbeatEvents;
     Coll_List acknacks;
-    os_mutex mutex; /* protects discoveredPeers & heartbeatEvents & acknacks lists */
-    u_service service;
-    u_networkReader reader;
+    os_mutex mutex; /* protects discoveredPeers & ackPeers & heartbeatEvents & acknacks lists */
+    in_plugKernel plug;
 };
 
 in_channelSdpWriter
 in_channelSdpWriterNew(
     in_channelSdp sdp,
-    u_participant participant,
+    in_plugKernel plug,
     in_streamWriter writer,
-    u_networkReader reader,
     in_endpointDiscoveryData discoveryData)
 {
     in_channelSdpWriter _this = NULL;
     os_boolean success;
 
+    assert(plug);
+    assert(sdp);
+    assert(writer);
+
     _this = os_malloc(sizeof(OS_STRUCT(in_channelSdpWriter)));
     if(_this != NULL)
     {
-        success = in_channelSdpWriterInit(
-            _this, sdp,
-            IN_OBJECT_KIND_SDP_WRITER,
-            in_channelSdpWriterDeinit,
-            participant,
-            writer,
-            reader,
-            discoveryData);
+        success = in_channelSdpWriterInit(_this, sdp, plug, writer,
+            discoveryData, IN_OBJECT_KIND_SDP_WRITER,in_channelSdpWriterDeinit);
+
         if(!success)
         {
             os_free(_this);
@@ -218,24 +229,26 @@ os_boolean
 in_channelSdpWriterInit(
     in_channelSdpWriter _this,
     in_channelSdp channel,
-    in_objectKind kind,
-    in_objectDeinitFunc deinit,
-    u_participant participant,
+    in_plugKernel plug,
     in_streamWriter writer,
-    u_networkReader reader,
-    in_endpointDiscoveryData discoveryData)
+    in_endpointDiscoveryData discoveryData,
+    in_objectKind kind,
+    in_objectDeinitFunc deinit)
 {
     os_boolean success;
     c_time periodic = {1, 0};/* wake up every second */
     os_mutexAttr mutexAttr;
     os_result resultmutex;
+    u_participant participant;
 
     assert(_this);
     assert(kind < IN_OBJECT_KIND_COUNT);
     assert(kind > IN_OBJECT_KIND_INVALID);
     assert(deinit);
 
-    _this->reader = reader;
+    participant = u_participant(in_plugKernelGetService(plug));
+    _this->plug = in_plugKernelKeep(plug);
+
     success = in_channelWriterInit(
         in_channelWriter(_this),
         in_channel(channel),
@@ -262,6 +275,7 @@ in_channelSdpWriterInit(
     }
     if(success)
     {
+
         in_clientMonitorInit(
             &_this->monitor,
             in_runnable(_this),
@@ -272,10 +286,6 @@ in_channelSdpWriterInit(
             in_channelSdpWriterPublicationAction,
             in_channelSdpWriterPeriodicAction);
     }
-    if(success)
-    {
-        _this->service = u_service(participant);
-    }
     return success;
 }
 
@@ -283,11 +293,16 @@ void
 in_channelSdpWriterDeinit(
     in_object _this)
 {
+    u_dispatcher service;
+
     assert(_this);
     assert(in_channelSdpWriterIsValid(_this));
 
+    service = u_dispatcher(
+        in_plugKernelGetService(in_channelSdpWriter(_this)->plug));
+
     u_dispatcherRemoveListener(
-        u_dispatcher(in_channelSdpWriter(_this)->service),
+        service,
         in_channelSdpWriterOnNewGroup);
 
     if (in_channelSdpWriter(_this)->discoveryData)
@@ -406,21 +421,19 @@ in_channelSdpWriterRun(
 {
     in_channelSdpWriter _this;
     c_ulong mask = 0;
+    u_dispatcher service;
 
     assert(runnable);
 
     _this = in_channelSdpWriter(runnable);
 
-    u_dispatcherGetEventMask(u_dispatcher(_this->service), &mask);
-    u_dispatcherSetEventMask(u_dispatcher(_this->service), mask | V_EVENT_NEW_GROUP);
-    u_entityAction(u_entity(_this->service), in_channelSdpWriterFillNewGroups, NULL);
-
-    u_dispatcherInsertListener(
-        u_dispatcher(_this->service),
-        in_channelSdpWriterOnNewGroup,
-        _this);
-
+    service = u_dispatcher(in_plugKernelGetService(_this->plug));
+    u_dispatcherGetEventMask(service, &mask);
+    u_dispatcherSetEventMask(service, mask | V_EVENT_NEW_GROUP);
+    u_entityAction(u_entity(service), in_channelSdpWriterFillNewGroups, NULL);
+    u_dispatcherInsertListener(service, in_channelSdpWriterOnNewGroup, _this);
     in_clientMonitorRun(&_this->monitor);
+
     return NULL;
 }
 
@@ -1103,6 +1116,7 @@ in_channelSdpWriterSubscriptionAction (
     in_connectivityAdmin connAdmin;
     in_channelSdpWriterEntityAction action;
     in_channelSdpWriter sdpWriter;
+    struct in_channelSdpWriterEndpointHasKeyActionArg arg;
 
     assert(_this);
     assert(msg);
@@ -1117,7 +1131,13 @@ in_channelSdpWriterSubscriptionAction (
     {
         /* step 1: if participant is new or modified then add/update the participant
          */
-        result = in_connectivityAdminAddReader(connAdmin, data);
+        arg.gid = data->key;
+        arg.hasKey = OS_FALSE;
+
+        u_entityAction(u_entity(in_plugKernelGetService(sdpWriter->plug)),
+                in_channelSdpWriterEndpointHasKey, &arg);
+        result = in_connectivityAdminAddReader(connAdmin, data, arg.hasKey);
+
         if(result != IN_RESULT_OK)
         {
             IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to add a newly detected reader to the connectvity administration.");
@@ -1147,6 +1167,7 @@ in_channelSdpWriterPublicationAction (
     in_connectivityAdmin connAdmin;
     in_channelSdpWriterEntityAction action;
     in_channelSdpWriter sdpWriter;
+    struct in_channelSdpWriterEndpointHasKeyActionArg arg;
 
     assert(_this);
     assert(msg);
@@ -1158,11 +1179,18 @@ in_channelSdpWriterPublicationAction (
     sdpWriter = in_channelSdpWriter(_this);
     action = in_channelSdpWriterDetermineEntityAction(sampleState, instanceState);
     connAdmin = in_connectivityAdminGetInstance();
+
     if(action == ACTION_NEW)
     {
         /* step 1: if participant is new or modified then add/update the participant
          */
-        result = in_connectivityAdminAddWriter(connAdmin, data);
+        arg.gid = data->key;
+        arg.hasKey = OS_FALSE;
+
+        u_entityAction(u_entity(in_plugKernelGetService(sdpWriter->plug)),
+                in_channelSdpWriterEndpointHasKey, &arg);
+        result = in_connectivityAdminAddWriter(connAdmin, data, arg.hasKey);
+
         if(result != IN_RESULT_OK)
         {
             IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to add a newly detected writer to the connectvity administration.");
@@ -1235,7 +1263,7 @@ in_channelSdpWriterOnNewGroupAction(
     {
         actionArg.group = group;
         u_entityAction(
-            u_entity(_this->reader),
+            u_entity(in_plugKernelGetNetworkReader(_this->plug)),
             in_channelSdpWriterProcessGroupEvent,
             &actionArg);
         c_free(group);
@@ -1284,7 +1312,7 @@ in_channelSdpWriterProcessGroupEvent(
          * entry to finalize itself upon creation. This code is a tad.. weird
          * now...
          */
-        serviceName = u_serviceGetName(_this->service);
+        serviceName = u_serviceGetName(in_plugKernelGetService(_this->plug));
         v_networkReaderEntryNotifyConnected(entry, serviceName);
         os_free(serviceName);
     }
@@ -1315,4 +1343,47 @@ in_channelSdpWriterFillNewGroups(
     /* arg parameter unused */
 
     v_serviceFillNewGroups(service);
+}
+
+static void
+in_channelSdpWriterEndpointHasKey(
+    v_entity entity,
+    c_voidp arg)
+{
+    v_public public;
+    v_topic topic;
+    c_long size;
+    struct in_channelSdpWriterEndpointHasKeyActionArg* result;
+
+    result = (struct in_channelSdpWriterEndpointHasKeyActionArg*)arg;
+    public = v_gidClaim(result->gid, v_object(entity)->kernel);
+
+    if(public)
+    {
+        switch(v_object(public)->kind)
+        {
+        case K_DATAREADER:
+            topic = v_dataReaderGetTopic(v_dataReader(public));
+            break;
+        case K_WRITER:
+            topic = v_writer(public)->topic;
+            break;
+        default:
+            assert(FALSE);
+            topic = NULL;
+            break;
+        }
+
+        if(topic)
+        {
+           size = c_arraySize(v_topicMessageKeyList(topic));
+
+           if(size)
+           {
+               result->hasKey = OS_TRUE;
+           }
+        }
+        v_gidRelease(result->gid, v_object(entity)->kernel);
+    }
+    return;
 }
