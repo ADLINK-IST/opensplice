@@ -49,11 +49,6 @@ in_channelSdpWriterAddPeerEntity(
     in_connectivityPeerEntity entity);
 
 in_result
-in_channelSdpWriterAddPeerEntityForAcking(
-    in_channelSdpWriter _this,
-    in_discoveredPeer entity);
-
-in_result
 in_channelSdpWriterAddHeartbeatEvent(
     in_channelSdpWriter _this,
     in_ddsiHeartbeat event,

@@ -8,35 +8,29 @@
 #include "os_time.h"
 #include "in_report.h"
 
-/** */
 static os_boolean
 in_channelSdpReaderInit(
     in_channelSdpReader sdp,
     in_channelSdp channel,
     in_configDiscoveryChannel config);
 
-/** */
 static void
 in_channelSdpReaderDeinit(
     in_object obj);
 
-/** */
 static void*
 in_channelSdpReaderStart(
     in_runnable _this);
 
-/** */
 static void
 in_channelSdpReaderTrigger(
     in_runnable _this);
 
-/** */
 static in_result
 in_channelSdpReaderProcessPeerEntity(
     in_streamReaderCallbackArg _this,
     in_discoveredPeer peer);
 
-/** */
 static in_result
 in_channelSdpReaderProcessAckNackFunc(
         in_streamReaderCallbackArg _this,
@@ -48,15 +42,12 @@ static in_result in_channelSdpReaderProcessHeartbeatFunc(
     in_ddsiHeartbeat event,
     in_ddsiReceiver receiver);
 
-
-/** */
 OS_STRUCT(in_channelSdpReader)
 {
     OS_EXTENDS(in_channelReader);
     in_streamReader reader;
 };
 
-/** */
 in_channelSdpReader
 in_channelSdpReaderNew(
     in_channelSdp channel,
@@ -79,11 +70,9 @@ in_channelSdpReaderNew(
             IN_TRACE_1(Construction,2,"in_channelSdpReader creation failed = %x",_this);
         }
     }
-
     return _this;
 }
 
-/** */
 static OS_STRUCT(in_streamReaderCallbackTable)
 in_channelSdpReaderCallbackTable =
 {
@@ -96,7 +85,6 @@ in_channelSdpReaderCallbackTable =
         NULL, /* requestNackFrag */
 };
 
-/** */
 os_boolean
 in_channelSdpReaderInit(
     in_channelSdpReader _this,
@@ -128,7 +116,6 @@ in_channelSdpReaderInit(
     return success;
 }
 
-/** */
 void
 in_channelSdpReaderDeinit(
     in_object obj)
@@ -137,10 +124,10 @@ in_channelSdpReaderDeinit(
 
     assert(obj);
     assert(in_channelSdpReaderIsValid(obj));
-    _this = in_channelSdpReader(obj);
 
+    _this = in_channelSdpReader(obj);
     in_runnableStop(in_runnable(obj));
-   if(_this->reader)
+    if(_this->reader)
     {
         in_streamReaderFree(_this->reader);
         _this->reader = NULL;
@@ -148,7 +135,6 @@ in_channelSdpReaderDeinit(
     in_channelReaderDeinit(obj);
 }
 
-/** */
 void*
 in_channelSdpReaderStart(
     in_runnable runnable)
@@ -181,29 +167,24 @@ in_channelSdpReaderStart(
         /* may return before timeout exceeded, then pollTimeout contains
          * the remaining time, which may be used for other activities until
          * POLL_PERIOD interval has passed.  */
-        if (result != IN_RESULT_OK && result != IN_RESULT_TIMEDOUT) {
-            if (errorCounter == 0) {
+        if (result != IN_RESULT_OK && result != IN_RESULT_TIMEDOUT)
+        {
+            if (errorCounter == 0)
+            {
                 /* first occurance */
-                IN_REPORT_WARNING(IN_SPOT,
-                        "unexpected data read error");
-            } else if (errorCounter >= ERROR_INTERVAL) {
-                IN_REPORT_WARNING_1(IN_SPOT,
-                        "unexpected data read error (repeated %d times)",
-                        errorCounter);
+                IN_REPORT_WARNING(IN_SPOT, "unexpected data read error");
+            } else if (errorCounter >= ERROR_INTERVAL)
+            {
+                IN_REPORT_WARNING_1(IN_SPOT, "unexpected data read error (repeated %d times)", errorCounter);
                 errorCounter = 0;
             }
             ++errorCounter;
             /* POST: errorCounter >= 1 */
         }
-       /* if(!in_runnableTerminationRequested(runnable))
-        {
-            os_nanoSleep(sleepTime);
-        }*/
     }
     return NULL;
 }
 
-/** */
 void
 in_channelSdpReaderTrigger(
     in_runnable runnable)
@@ -212,7 +193,6 @@ in_channelSdpReaderTrigger(
     assert(in_channelSdpReaderIsValid(runnable));
 }
 
-/** */
 in_result
 in_channelSdpReaderProcessPeerEntity(
     in_streamReaderCallbackArg _this,
@@ -224,7 +204,10 @@ in_channelSdpReaderProcessPeerEntity(
     in_channelSdpWriter sdpw;
     in_result result;
 
-    IN_TRACE(Receive,3,"in_channelSdpReaderProcessPeerEntity CALLBACK");
+    assert(_this);
+    assert(peer);
+
+    IN_TRACE(Receive, 3, "in_channelSdpReaderProcessPeerEntity CALLBACK");
 
     sdpr = in_channelSdpReader(_this);
     channel = in_channelReaderGetChannel(in_channelReader(sdpr));
@@ -236,52 +219,41 @@ in_channelSdpReaderProcessPeerEntity(
             result = in_connectivityAdminAddPeerParticipant(
                 admin,
                 in_connectivityPeerParticipant(peer->discoveredPeerEntity));
-            IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - participant result = %x", result);
+            IN_TRACE_1(Send, 2, "in_channelSdpReaderProcessPeerEntity - participant result = %x", result);
         break;
         case IN_OBJECT_KIND_PEER_READER:
             result = in_connectivityAdminAddPeerReader(
                 admin,
                 in_connectivityPeerReader(peer->discoveredPeerEntity),
                 peer->sequenceNumber);
-          IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - reader result = %x", result);
+          IN_TRACE_1(Send, 2, "in_channelSdpReaderProcessPeerEntity - reader result = %x", result);
         break;
         case IN_OBJECT_KIND_PEER_WRITER:
             result = in_connectivityAdminAddPeerWriter(
                 admin,
                 in_connectivityPeerWriter(peer->discoveredPeerEntity),
                 peer->sequenceNumber);
-            IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - writer result = %x", result);
+            IN_TRACE_1(Send, 2, "in_channelSdpReaderProcessPeerEntity - writer result = %x", result);
         break;
         default:
             assert(FALSE);
             result = IN_RESULT_ERROR;
         break;
     }
-    IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer result = %x", result);
     if(result == IN_RESULT_OK)
     {
         result = in_channelSdpWriterAddPeerEntity(sdpw, peer->discoveredPeerEntity);
-        IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer now = %x", result);
     }
-    /*if(result == IN_RESULT_OK)
-    {
-        IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer for acking = %x", result);
-        if(in_objectGetKind(in_object(peer->discoveredPeerEntity)) == IN_OBJECT_KIND_PEER_PARTICIPANT)
-        {
-           result = in_channelSdpWriterAddPeerEntityForAcking(sdpw, peer);
-           IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer part = %x", result);
-        }
-    }*/
+    in_channelSdpWriterFree(sdpw);
+    in_channelFree(channel);
     return result;
 }
 
-
-/** */
 in_result
 in_channelSdpReaderProcessAckNackFunc(
-        in_streamReaderCallbackArg _this,
-        in_ddsiAckNack event,
-        in_ddsiReceiver receiver)
+    in_streamReaderCallbackArg _this,
+    in_ddsiAckNack event,
+    in_ddsiReceiver receiver)
 {
     in_channelSdpReader sdpr;
     in_channel channel;
@@ -299,7 +271,8 @@ in_channelSdpReaderProcessAckNackFunc(
     sdpw = in_channelSdpWriter(in_channelGetWriter(channel));
 
     result = in_channelSdpWriterAddAckNack(sdpw, event, receiver);
-
+    in_channelSdpWriterFree(sdpw);
+    in_channelFree(channel);
     return result;
 }
 
@@ -323,6 +296,7 @@ in_channelSdpReaderProcessHeartbeatFunc(
     sdpw = in_channelSdpWriter(in_channelGetWriter(channel));
 
     result = in_channelSdpWriterAddHeartbeatEvent(sdpw, event, receiver);
-
+    in_channelSdpWriterFree(sdpw);
+    in_channelFree(channel);
     return result;
 }

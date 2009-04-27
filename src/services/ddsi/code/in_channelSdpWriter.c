@@ -45,7 +45,7 @@ in_channelSdpWriterRun(
 
 static void
 in_channelSdpWriterTrigger(
-    in_runnable runnable);
+    in_runnable _this);
 
 static void
 in_channelSdpWriterParticipantAction (
@@ -95,11 +95,6 @@ in_channelSdpWriterAcknackHeartbeats(
     in_channelSdpWriter _this,
     in_connectivityAdmin connAdmin);
 
-static void
-in_channelSdpWriterSendAcks(
-    in_channelSdpWriter _this,
-    in_connectivityAdmin connAdmin);
-
 static in_locator
 in_channelSdpWriterGetEntityLocator(
     in_connectivityPeerEntity entity);
@@ -128,7 +123,7 @@ in_channelSdpWriterProcessGroupEvent(
     v_entity entity,
     void* arg);
 
-v_networkPartitionId
+static v_networkPartitionId
 in_channelSdpWriterGetBestFitPartition(
     in_channelSdpWriter _this,
     const os_char* dcpsPartitionName,
@@ -154,7 +149,6 @@ typedef enum in_channelSdpWriterEntityAction_e
 OS_CLASS(in_channelSdpWriterHeartbeatInfo);
 OS_STRUCT(in_channelSdpWriterHeartbeatInfo)
 {
-    in_locator destination;
     OS_STRUCT(in_ddsiEntityId) readerId;
     OS_STRUCT(in_ddsiEntityId) writerId;
     OS_STRUCT(in_ddsiSequenceNumber) firstSN;
@@ -177,10 +171,9 @@ OS_STRUCT(in_channelSdpWriter)
     in_streamWriter streamWriter;
     in_endpointDiscoveryData discoveryData;
     Coll_List discoveredPeers;
-    Coll_List ackPeers;
     Coll_List heartbeatEvents;
     Coll_List acknacks;
-    os_mutex mutex; /* protects discoveredPeers & ackPeers & heartbeatEvents & acknacks lists */
+    os_mutex mutex; /* protects discoveredPeers & heartbeatEvents & acknacks lists */
     u_service service;
     u_networkReader reader;
 };
@@ -194,12 +187,11 @@ in_channelSdpWriterNew(
     in_endpointDiscoveryData discoveryData)
 {
     in_channelSdpWriter _this = NULL;
+    os_boolean success;
 
     _this = os_malloc(sizeof(OS_STRUCT(in_channelSdpWriter)));
     if(_this != NULL)
     {
-        os_boolean success;
-
         success = in_channelSdpWriterInit(
             _this, sdp,
             IN_OBJECT_KIND_SDP_WRITER,
@@ -235,7 +227,7 @@ in_channelSdpWriterInit(
     in_endpointDiscoveryData discoveryData)
 {
     os_boolean success;
-    c_time periodic = {1, 0};
+    c_time periodic = {1, 0};/* wake up every second */
     os_mutexAttr mutexAttr;
     os_result resultmutex;
 
@@ -259,7 +251,6 @@ in_channelSdpWriterInit(
         _this->streamWriter = in_streamWriterKeep(writer);
         _this->discoveryData = in_endpointDiscoveryDataKeep(discoveryData);
         Coll_List_init(&_this->discoveredPeers);
-        Coll_List_init(&_this->ackPeers);
         Coll_List_init(&_this->heartbeatEvents);
         Coll_List_init(&_this->acknacks);
 
@@ -323,7 +314,7 @@ in_channelSdpWriterAddPeerEntity(
     assert(_this);
     assert(entity);
 
-    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddPeerEntity called %x", entity);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddPeerEntity called for entity %x", entity);
 
     os_mutexLock(&(_this->mutex));
     errorCode = Coll_List_pushBack(&(_this->discoveredPeers), in_connectivityPeerEntityKeep(entity));
@@ -346,60 +337,30 @@ in_channelSdpWriterAddAckNack(
     in_result result = IN_RESULT_OK;
     os_uint32 errorCode;
 
-    acknack = os_malloc(OS_SIZEOF(in_channelSdpWriterAckNackInfo));
-
-    memcpy(acknack->sourceGuidPrefix,
-             receiver->sourceGuidPrefix,
-             sizeof(in_ddsiGuidPrefix));
-    acknack->readerId = in_ddsiSubmessageAckNack(event)->readerId;
-    acknack->lastSeqNr = in_ddsiSubmessageAckNack(event)->readerSNState.bitmapBase;
-
-    os_mutexLock(&(_this->mutex));
-    errorCode = Coll_List_pushBack(&_this->acknacks, acknack);
-    os_mutexUnlock(&(_this->mutex));
-    if(errorCode != COLL_OK)
-    {
-        result = IN_RESULT_OUT_OF_MEMORY;
-    }
-    return result;
-}
-
-
-
-in_result
-in_channelSdpWriterAddPeerEntityForAcking(
-    in_channelSdpWriter _this,
-    in_discoveredPeer entity)
-{
-    in_result result = IN_RESULT_OK;
-    os_uint32 errorCode;
-    in_discoveredPeer tmp;
-
     assert(_this);
-    assert(entity);
+    assert(event);
+    assert(receiver);
 
-    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddPeerEntityForAcking called %x", entity);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddAckNack called for event %x", event);
 
-    /* We need to create a copy of the in_discoveredPeer object, because it is
-     * not a reference counted object.
-     */
-    tmp = os_malloc(OS_SIZEOF(in_discoveredPeer));
-    memcpy(tmp->writerGuidPrefix,
-             entity->writerGuidPrefix,
-             sizeof(in_ddsiGuidPrefix));
-    tmp->writerId = entity->writerId;
-    tmp->readerId = entity->readerId;
-    tmp->sequenceNumber = entity->sequenceNumber;
-    tmp->discoveredPeerEntity = entity->discoveredPeerEntity;
+    acknack = os_malloc(OS_SIZEOF(in_channelSdpWriterAckNackInfo));
+    if(acknack)
+    {
+        memcpy(acknack->sourceGuidPrefix, receiver->sourceGuidPrefix, sizeof(in_ddsiGuidPrefix));
+        acknack->readerId = in_ddsiSubmessageAckNack(event)->readerId;
+        acknack->lastSeqNr = in_ddsiSubmessageAckNack(event)->readerSNState.bitmapBase;
 
-    os_mutexLock(&(_this->mutex));
-    errorCode = Coll_List_pushBack(&_this->ackPeers, tmp);
-    os_mutexUnlock(&(_this->mutex));
-    if(errorCode != COLL_OK)
+        os_mutexLock(&(_this->mutex));
+        errorCode = Coll_List_pushBack(&_this->acknacks, acknack);
+        os_mutexUnlock(&(_this->mutex));
+        if(errorCode != COLL_OK)
+        {
+            result = IN_RESULT_OUT_OF_MEMORY;
+        }
+    } else
     {
         result = IN_RESULT_OUT_OF_MEMORY;
     }
-
     return result;
 }
 
@@ -415,8 +376,9 @@ in_channelSdpWriterAddHeartbeatEvent(
 
     assert(_this);
     assert(event);
+    assert(receiver);
 
-    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddHeartbeatEvent called %x", event);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterAddHeartbeatEvent called for event %x", event);
     info = os_malloc(OS_SIZEOF(in_channelSdpWriterHeartbeatInfo));
     if(info)
     {
@@ -425,17 +387,6 @@ in_channelSdpWriterAddHeartbeatEvent(
         info->firstSN = in_ddsiSubmessageHeartbeat(event)->firstSN;
         info->lastSN = in_ddsiSubmessageHeartbeat(event)->lastSN;
         memcpy(info->sourceGuidPrefix, receiver->sourceGuidPrefix, in_ddsiGuidPrefixLength);
-        if(Coll_List_getNrOfElements(&receiver->unicastReplyLocatorList) > 0)
-        {
-            info->destination = in_locatorKeep(in_locator(Coll_List_getObject(&receiver->unicastReplyLocatorList, 0)));
-        } else if(Coll_List_getNrOfElements(&receiver->multicastReplyLocatorList) > 0)
-        {
-            info->destination = in_locatorKeep(in_locator(Coll_List_getObject(&receiver->multicastReplyLocatorList, 0)));
-        } else
-        {
-            assert(FALSE);
-            /* TODO report error */
-        }
         os_mutexLock(&(_this->mutex));
         errorCode = Coll_List_pushBack(&(_this->heartbeatEvents), info);
         os_mutexUnlock(&(_this->mutex));
@@ -447,14 +398,8 @@ in_channelSdpWriterAddHeartbeatEvent(
     {
         result = IN_RESULT_OUT_OF_MEMORY;
     }
-
     return result;
 }
-
-
-
-
-
 
 void*
 in_channelSdpWriterRun(
@@ -484,14 +429,9 @@ void
 in_channelSdpWriterTrigger(
     in_runnable runnable)
 {
-    in_channelSdpWriter _this;
-
     assert(runnable);
 
     IN_TRACE_1(Send, 2, "in_channelSdpWriterTrigger called %x", runnable);
-
-    _this = in_channelSdpWriter(runnable);
-    /* TODO tbd, currently not needed */
 }
 
 void
@@ -503,26 +443,24 @@ in_channelSdpWriterPeriodicAction (
 
     assert(runnable);
 
-    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterPeriodicAction called %x", runnable);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterPeriodicAction called %x", runnable);
 
     _this = in_channelSdpWriter(runnable);
     connAdmin = in_connectivityAdminGetInstance();
 
     in_connectivityAdminLock(connAdmin);
 
-    /* step 1: ack received discovery information */
-    in_channelSdpWriterSendAcks(_this, connAdmin);
-    /* step 2: Send requested discovery information to newly detected peers */
+    /* step 1: Send requested discovery information to newly detected peers */
     in_channelSdpWriterSendRequestedDiscoveryInformation(_this, connAdmin);
-    /* step 3: send participant heartbeats */
+    /* step 2: send participant heartbeats */
     in_channelSdpWriterSendParticipantsHeartbeat(_this, connAdmin);
-    /* step 4: Send acknack for heartbeats */
+    /* step 3: Send acknack for heartbeats */
     in_channelSdpWriterAcknackHeartbeats(_this, connAdmin);
     /* step 4: Send participant data periodically */
     in_channelSdpWriterSendParticipantsData(_this, connAdmin);
 
     in_connectivityAdminUnlock(connAdmin);
-    IN_TRACE_1(Send, 2, "<<< in_channelSdpWriterPeriodicAction call finished for %x", runnable);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterPeriodicAction call finished for %x", runnable);
 }
 
 void
@@ -543,22 +481,23 @@ in_channelSdpWriterAcknackHeartbeats(
     in_ddsiSequenceNumber expectedSN;
     in_connectivityPeerParticipant peerParticipant;
     in_locator destLocator;
-
     os_uint32 tmpLow;
+    OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
+    OS_STRUCT(in_ddsiSequenceNumber) tmpSN;
+    OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
+    os_boolean initOk;
+    os_boolean canAddSeq = OS_TRUE;
 
     assert(_this);
+    assert(connAdmin);
 
     os_mutexLock(&(_this->mutex));
     size = Coll_List_getNrOfElements(&(_this->heartbeatEvents));
-    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterAcknackHeartbeats - processing acks for %d received heartbeats", size);
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterAcknackHeartbeats - processing acks for %d received heartbeats", size);
     for(i = 0; i < size; i++)
     {
-        OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
-        OS_STRUCT(in_ddsiSequenceNumber) nilSeq = {0,0};
-
         event = (in_channelSdpWriterHeartbeatInfo)Coll_List_popBack(&(_this->heartbeatEvents));
         reader.entityId = event->readerId;
-
         writer.entityId = event->writerId;
         memcpy(writer.guidPrefix, event->sourceGuidPrefix, in_ddsiGuidPrefixLength);
         peerParticipant = in_connectivityAdminGetPeerParticipantUnsafe(connAdmin, event->sourceGuidPrefix);
@@ -567,11 +506,6 @@ in_channelSdpWriterAcknackHeartbeats(
             destLocator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peerParticipant));
             if(destLocator)
             {
-                OS_STRUCT(in_ddsiSequenceNumber) tmpSN;
-                OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
-                os_boolean initOk;
-                os_boolean canAddSeq = OS_TRUE;
-
                 if((in_ddsiEntityIdEqual(&event->readerId, &tmp)))
                 {
                     expectedSN = in_connectivityPeerParticipantGetLastReaderSNRef(peerParticipant);
@@ -610,7 +544,6 @@ in_channelSdpWriterAcknackHeartbeats(
                         /* Fill out the writer.guidPrefix*/
                         partGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
                         memcpy(reader.guidPrefix, partGuid->guidPrefix, in_ddsiGuidPrefixLength);
-                        IN_TRACE_2(Send, 2, "in_channelSdpWriterAcknackHeartbeats - @@@@@@@@@@@@@ %d, %d", seqSet.bitmapBase.low,seqSet.bitmapBase.high);
                         result = in_streamWriterAppendAckNack(
                             _this->streamWriter,
                             &reader,
@@ -619,113 +552,21 @@ in_channelSdpWriterAcknackHeartbeats(
                             destLocator);
                         if(result != IN_RESULT_OK)
                         {
-                            IN_TRACE(Send, 2, "in_channelSdpWriterAcknackHeartbeats - Sending ACKNACK failed.");
-                            /* TODO report error */
+                            IN_REPORT_ERROR("in_channelSdpWriterAcknackHeartbeats", "Failed to transmit acknack for a heartbeat due to a stream error!");
                         }
                         in_streamWriterFlushSingle(_this->streamWriter, destLocator);
-                        //in_locatorFree(destLocator);
                         iteratorPart = Coll_Iter_getNext(iteratorPart);
                     }
                 }
+                in_locatorFree(destLocator);
             } else
             {
-                IN_TRACE(Send, 2, "in_channelSdpWriterAcknackHeartbeats - Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
+                IN_REPORT_ERROR("in_channelSdpWriterAcknackHeartbeats", "Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
             }
         }
-        in_locatorFree(event->destination);
         os_free(event);
     }
     os_mutexUnlock(&(_this->mutex));
-    IN_TRACE_1(Send, 2, "<<< in_channelSdpWriterAcknackHeartbeats - processed acks for %d received heartbeats", size);
-}
-
-
-void
-in_channelSdpWriterSendAcks(
-    in_channelSdpWriter _this,
-    in_connectivityAdmin connAdmin)
-{
-    os_uint32 size;
-    os_uint32 i;
-    in_discoveredPeer peer;
-    Coll_Iter* iteratorPart;
-    Coll_Set* clientEntities;
-    OS_STRUCT(in_ddsiGuid) readerId;
-    OS_STRUCT(in_ddsiGuid) writerId;
-    in_connectivityParticipantFacade facade;
-    in_ddsiGuid partGuid;
-    in_locator dest;
-    in_result result;
-    OS_STRUCT(in_ddsiSequenceNumber) nilSeq = {0,1};
-
-    assert(_this);
-    os_mutexLock(&(_this->mutex));
-    size = Coll_List_getNrOfElements(&_this->ackPeers);
-    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %d entities", size);
-    for(i = 0; i < size; i++)
-    {
-        OS_STRUCT(in_ddsiEntityId) partReaderId = UI2ENTITYID(IN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_READER);
-        OS_STRUCT(in_ddsiEntityId) partWriterId = UI2ENTITYID(IN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_WRITER);
-        assert(0);//should not come here
-
-        peer = (in_discoveredPeer)Coll_List_popBack(&_this->ackPeers);
-
-        /* Set readerId and writerId values, the readerId.guidPrefix will be
-         * set per participantFacade.
-         */
-        readerId.entityId = partReaderId; //*(peer->readerId);
-        writerId.entityId = partWriterId; //*(peer->writerId);
-        memcpy(writerId.guidPrefix, peer->writerGuidPrefix, in_ddsiGuidPrefixLength);
-        /* Now iterate over all known participant facades, for each found
-         * facade send the acknack message
-         */
-        clientEntities = in_connectivityAdminGetParticipants(connAdmin);
-        iteratorPart = Coll_Set_getFirstElement(clientEntities);
-        while(iteratorPart)
-        {
-            facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iteratorPart));
-            IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p facade", facade);
-            /* Fill out the readerId.guidPrefix*/
-            partGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
-            memcpy(readerId.guidPrefix, partGuid->guidPrefix, in_ddsiGuidPrefixLength);
-            /* Fetch the destination locator */
-            dest = in_channelSdpWriterGetEntityLocator(peer->discoveredPeerEntity);
-            if(dest)
-            {
-                OS_STRUCT(in_ddsiSequenceNumberSet) seqSet;
-                os_boolean initOk;
-                IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p destxxx", dest);
-
-
-                initOk = in_ddsiSequenceNumberSetInit(&seqSet, &nilSeq);
-                if(!initOk)
-                {
-                    IN_REPORT_ERROR("in_channelSdpWriterSendAcks", "Initialisation of the sequence number set failed!");
-                } else
-                {
-                    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendAcks - processing acks for %p dest - actually sendingxxx", dest);
-                    result = in_streamWriterAppendAckNack(
-                        _this->streamWriter,
-                        &readerId,
-                        &writerId,
-                        &seqSet,
-                        dest);
-                    if(result != IN_RESULT_OK)
-                    {
-                        IN_TRACE(Send, 2, "Sending ACKNACK failed.");
-                        /* TODO report error */
-                    }
-                }
-            } else {
-                IN_TRACE(Send, 2, "Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
-            }
-            iteratorPart = Coll_Iter_getNext(iteratorPart);
-        }
-        /* We need to free the peer object, as we popped it from the list */
-        os_free(peer);
-    }
-    os_mutexUnlock(&(_this->mutex));
-    IN_TRACE_1(Send, 2, "<<< in_channelSdpWriterSendAcks - processed acks for %d entities", size);
 }
 
 void
@@ -742,15 +583,19 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
     Coll_Set* clientEntities;
     Coll_Iter* iterator;
     in_result result;
+    OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
+    OS_STRUCT(in_ddsiEntityId) tmp2 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
+
+    assert(_this);
+    assert(connAdmin);
 
     os_mutexLock(&(_this->mutex));
     Coll_List_init(&tempList);
     size = Coll_List_getNrOfElements(&_this->acknacks);
-    IN_TRACE_1(Send,2,">>> in_channelSdpWriterSendRequestedDiscoveryInformation: processing %x acknacks", size);
+    IN_TRACE_1(Send,2,"in_channelSdpWriterSendRequestedDiscoveryInformation: processing %x acknacks", size);
     for(i = 0; i < size; i++)
     {
         acknack = (in_channelSdpWriterAckNackInfo)Coll_List_popBack(&(_this->acknacks));
-
         peer = in_connectivityAdminGetPeerParticipantUnsafe(connAdmin, acknack->sourceGuidPrefix);
         if(peer)
         {
@@ -761,9 +606,6 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
             locator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peer));
             if(locator)
             {
-                OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
-                OS_STRUCT(in_ddsiEntityId) tmp2 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
-
                 Coll_List_pushBack(&tempList, locator);
                 if(in_ddsiEntityIdEqual(&acknack->readerId,&tmp))
                 {
@@ -786,8 +628,7 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                                     &tempList);
                             if(result != IN_RESULT_OK)
                             {
-                                IN_TRACE(Send,2,"in_channelSdpWriterSendRequestedDiscoveryInformation: sending reader data failed");
-                                /* TODO report error */
+                                IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to transmit reader data due to a stream error.");
                             }
                        // }
                         iterator = Coll_Iter_getNext(iterator);
@@ -812,15 +653,14 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                                     &tempList);
                             if(result != IN_RESULT_OK)
                             {
-                                IN_TRACE(Send,2,"in_channelSdpWriterSendRequestedDiscoveryInformation: sending writer data failed");
-                                /* TODO report error */
+                                IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to transmit writer data due to a stream error.");
                             }
                         }
                         iterator = Coll_Iter_getNext(iterator);
                     }
                 } else
                 {
-                    IN_TRACE(Send, 2, "in_channelSdpWriterSendRequestedDiscoveryInformation: Unable to match entityId, unable transmit reader/writer data.");
+                    IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to match entityId to a known reader or writer, unable to transmit reader/writer data.");
                 }
                 /* step 1.4: Flush the stream writer */
                 in_streamWriterFlush(
@@ -828,16 +668,18 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                     &tempList);
                 /* clear the list */
                 Coll_List_popBack(&tempList);
-            } else {
-                IN_TRACE(Send, 2, "in_channelSdpWriterSendRequestedDiscoveryInformation: Unable to find a suitable UDPV4 locator, unable to transmit reader/writer data.");
+                in_locatorFree(locator);
+            } else
+            {
+                IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to find a suitable UDPV4 locator, unable to transmit reader/writer data.");
             }
-        } else {
-            IN_TRACE(Send, 2, "in_channelSdpWriterSendRequestedDiscoveryInformation: Unable to find a matching peer participant for the received guid. unable to transmit reader/writer data.");
+        } else
+        {
+            IN_REPORT_WARNING("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to find a matching peer participant for the received guid. unable to transmit reader/writer data, ignoring request.");
         }
         os_free(acknack);
     }
     os_mutexUnlock(&(_this->mutex));
-    IN_TRACE_1(Send,2,"<<< in_channelSdpWriterSendRequestedDiscoveryInformation: processed %x acknacks", size);
 }
 
 void
@@ -851,11 +693,15 @@ in_channelSdpWriterSendParticipantsData(
     Coll_Iter* iterator;
     in_connectivityParticipantFacade facade;
     in_result result;
+    Coll_Set* peers;
+    Coll_Iter* peerIterator;
+    in_connectivityPeerParticipant peer;
+    in_ddsiGuidPrefixRef destGuidPrefix;
 
     assert(_this);
+    assert(connAdmin);
 
     Coll_List_init(&tempList);
-
     locator = in_streamWriterGetDataMulticastLocator(_this->streamWriter);
     assert(locator);
     Coll_List_pushBack(&tempList, locator);
@@ -872,20 +718,13 @@ in_channelSdpWriterSendParticipantsData(
                 &tempList);
         if(result != IN_RESULT_OK)
         {
-
+            IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsData", "Unable to transmit participant data due to a stream error.");
         } else
         {
-            Coll_Set* peers;
-            Coll_Iter* peerIterator;
-
             peers = in_connectivityAdminGetPeerParticipantsUnsafe(connAdmin);
             peerIterator = Coll_Set_getFirstElement(peers);
             while(peerIterator)
-            {
-                in_connectivityPeerParticipant peer;
-                in_locator locator;
-
-                peer = in_connectivityPeerParticipant(Coll_Iter_getObject(peerIterator));
+            {                peer = in_connectivityPeerParticipant(Coll_Iter_getObject(peerIterator));
                 /* Get a unicast UDPV4 locator, or if not available the
                  * UDPV4 multicast locator, or if that is not available then fall back
                  * to the default locators of the owning participant.
@@ -893,8 +732,6 @@ in_channelSdpWriterSendParticipantsData(
                 locator = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peer));
                 if(locator)
                 {
-                    in_ddsiGuidPrefixRef destGuidPrefix;
-
                     destGuidPrefix = in_connectivityPeerParticipantGetGuidPrefix(peer);
                     result = in_streamWriterAppendParticipantMessage(
                         in_streamWriter(_this->streamWriter),
@@ -903,20 +740,19 @@ in_channelSdpWriterSendParticipantsData(
                         locator);
                     if(result != IN_RESULT_OK)
                     {
-                        /* todo report error */
+                        IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsData", "Unable to transmit participant message data due to a stream error.");
                     }
+                    in_locatorFree(locator);
                 } else
                 {
-                    IN_TRACE(Send, 2, "Unable to find a suitable UDPV4 locator, unable to transmit participant message.");
+                    IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsData", "Unable to find a suitable UDPV4 locator, unable to transmit participant message data.");
                 }
-
                 peerIterator = Coll_Iter_getNext(peerIterator);
             }
         }
         iterator = Coll_Iter_getNext(iterator);
 
     }
-
     Coll_List_popBack(&tempList);
 }
 
@@ -942,22 +778,21 @@ in_channelSdpWriterSendParticipantsHeartbeat(
     Coll_Iter* iterator;
     in_connectivityParticipantFacade facade;
     in_ddsiGuid tmpGuid;
+    static os_uint32 partCount = 0;
+    static os_uint32 writerCount = 0;
+    static os_uint32 readerCount = 0;
+    Coll_Set* participantPeers;
+    Coll_Iter* peerIter;
+    in_connectivityPeerParticipant peer;
 
     assert(_this);
     assert(connAdmin);
 
-    //singleDestination = in_streamWriterGetDataMulticastLocator(_this->streamWriter);
     clientEntities = in_connectivityAdminGetParticipants(connAdmin);
-    IN_TRACE_1(Send, 2, ">>> in_channelSdpWriterSendParticipantsHeartbeat - sending heartbeat messages for %d participant(s)", Coll_Set_getNrOfElements(clientEntities));
+    IN_TRACE_1(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - sending heartbeat messages for %d participant(s)", Coll_Set_getNrOfElements(clientEntities));
     iterator = Coll_Set_getFirstElement(clientEntities);
     while(iterator)
     {
-        static os_uint32 partCount = 0;
-        static os_uint32 writerCount = 0;
-        static os_uint32 readerCount = 0;
-        Coll_Set* participantPeers;
-        Coll_Iter* peerIter;
-
         facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
         tmpGuid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
         sourceGuidPrefix = tmpGuid->guidPrefix;
@@ -965,23 +800,17 @@ in_channelSdpWriterSendParticipantsHeartbeat(
         peerIter = Coll_Set_getFirstElement(participantPeers);
         while(peerIter)
         {
-            in_connectivityPeerParticipant peer;
-
             peer = in_connectivityPeerParticipant(Coll_Iter_getObject(peerIter));
             destGuidPrefix = in_connectivityPeerParticipantGetGuidPrefix(peer);
             singleDestination = in_channelSdpWriterGetEntityLocator(in_connectivityPeerEntity(peer));
             if(!singleDestination)
             {
-                IN_TRACE(Send, 2, "Unable to find a suitable UDPV4 locator, unable to transmit heartbeat.");
+                IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to find a suitable UDPV4 locator, unable to transmit heartbeat data.");
             } else
             {
-
                 lastSN = in_connectivityParticipantFacadeGetNrOfWriters(facade);
-IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq number writers = %d, %d", lastSN->high, lastSN->low);
               //  if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
               //  {
-
-
                     writerCount++;
                     /* Send out publication info */
                     result = in_streamWriterAppendHeartbeat(
@@ -996,15 +825,12 @@ IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq num
                         singleDestination);
                     if(result != IN_RESULT_OK)
                     {
-                         /*TODO report error*/
+                         IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for publications reader/writer due to a stream error.");
                     }
               //  }
                 lastSN = in_connectivityParticipantFacadeGetNrOfReaders(facade);
-IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq number readers = %d, %d", lastSN->high, lastSN->low);
               //  if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
              //   {
-
-
                     readerCount++;
                     /* Send out subscription info */
                     result = in_streamWriterAppendHeartbeat(
@@ -1019,10 +845,9 @@ IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq num
                         singleDestination);
                     if(result != IN_RESULT_OK)
                     {
-                         /*TODO report error*/
+                         IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for subscriptions reader/writer due to a stream error.");
                     }
                // }
-
                 partCount++;
                 /* Send out publication info */
                 result = in_streamWriterAppendHeartbeat(
@@ -1037,15 +862,15 @@ IN_TRACE_2(Send, 2, "in_channelSdpWriterSendParticipantsHeartbeat - last seq num
                     singleDestination);
                 if(result != IN_RESULT_OK)
                 {
-                     /*TODO report error*/
+                     IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for P2P participant message reader/writer due to a stream error.");
                 }
+                in_locatorFree(singleDestination);
             }
             peerIter = Coll_Iter_getNext(peerIter);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
     in_streamWriterFlushSingle(_this->streamWriter, singleDestination);
-    IN_TRACE_1(Send, 2, "<<< in_channelSdpWriterSendParticipantsHeartbeat - sent heartbeat messages for %d participant(s)", Coll_Set_getNrOfElements(clientEntities));
 }
 
 /*******************************************************************************
@@ -1133,6 +958,10 @@ in_channelSdpWriterFindUDPV4Locator(
         }
         iterator = Coll_Iter_getNext(iterator);
     }
+    if(locator)
+    {
+        locator = in_locatorKeep(locator);
+    }
     return locator;
 }
 
@@ -1145,6 +974,7 @@ in_channelSdpWriterFindDefaultUDPV4Locator(
     in_connectivityAdmin connAdmin;
     in_connectivityPeerParticipant peerParticipant = NULL;
     in_objectKind kind;
+    Coll_List* locators;
 
     assert(entity);
 
@@ -1166,15 +996,12 @@ in_channelSdpWriterFindDefaultUDPV4Locator(
             break;
         default:
             assert(FALSE);
-
     }
     /* step 2: If we located the peer participant, then fetch the default unicast
      * locator, or if thats not available try to find the default multicast locator
      */
     if(peerParticipant)
     {
-        Coll_List* locators;
-
         locators = in_connectivityPeerParticipantGetDefaultUnicastLocators(peerParticipant);
         locator = in_channelSdpWriterFindUDPV4Locator(locators);
         if(!locator)
@@ -1199,6 +1026,10 @@ in_channelSdpWriterParticipantAction (
     in_connectivityParticipantFacade facade;
     in_channelSdpWriterEntityAction action;
     in_channelSdpWriter sdpWriter;
+
+    assert(_this);
+    assert(msg);
+    assert(data);
 
     IN_TRACE_3(Send,2,"in_channelSdpWriterParticipantAction %x (%x,%x)",_this, data->key.systemId,data->key.localId);
 
@@ -1231,23 +1062,25 @@ in_channelSdpWriterParticipantAction (
             errorCode = Coll_List_pushBack(&tempList, locator);
             if(errorCode != COLL_OK)
             {
-                /* TODO report error */
-            }
-            IN_TRACE_3(Send,2,"in_channelSdpWriterParticipantAction - sending participant data %x (%x,%x)",_this, data->key.systemId,data->key.localId);
-            result = in_streamWriterAppendParticipantData(
-                    in_streamWriter(sdpWriter->streamWriter),
-                    sdpWriter->discoveryData,
-                    facade,
-                    &tempList);
-            if(result != IN_RESULT_OK)
+                IN_REPORT_ERROR("in_channelSdpWriterParticipantAction", "Unable to transmit participant data, out of memory error when adding locator to locator list.");
+            } else
             {
-                /* TODO report error */
+                IN_TRACE_3(Send,2,"in_channelSdpWriterParticipantAction - sending participant data %x (%x,%x)",_this, data->key.systemId,data->key.localId);
+                result = in_streamWriterAppendParticipantData(
+                        in_streamWriter(sdpWriter->streamWriter),
+                        sdpWriter->discoveryData,
+                        facade,
+                        &tempList);
+                if(result != IN_RESULT_OK)
+                {
+                    IN_REPORT_ERROR("in_channelSdpWriterParticipantAction", "Unable to transmit participant data due to a stream error.");
+                }
+                in_streamWriterFlush(
+                    in_streamWriter(sdpWriter->streamWriter),
+                    &tempList);
+                /* clear the list */
+                Coll_List_popBack(&tempList);
             }
-            in_streamWriterFlush(
-                in_streamWriter(sdpWriter->streamWriter),
-                &tempList);
-            /* clear the list */
-            Coll_List_popBack(&tempList);
         } /* else no one interested */
     }
     /* step 3: if the participant was deleted, we can remove it from the
@@ -1269,74 +1102,36 @@ in_channelSdpWriterSubscriptionAction (
 {
     in_result result;
     in_connectivityAdmin connAdmin;
-    in_connectivityReaderFacade facade;
     in_channelSdpWriterEntityAction action;
     in_channelSdpWriter sdpWriter;
 
+    assert(_this);
+    assert(msg);
+    assert(data);
 
     IN_TRACE_3(Send,2,"in_channelSdpWriterSubscriptionAction %x (%x,%x)",_this, data->key.systemId,data->key.localId);
 
     sdpWriter = in_channelSdpWriter(_this);
     action = in_channelSdpWriterDetermineEntityAction(sampleState, instanceState);
     connAdmin = in_connectivityAdminGetInstance();
-    /* step 1: if participant is new or modified then add/update the participant
-     */
     if(action == ACTION_NEW)
     {
+        /* step 1: if participant is new or modified then add/update the participant
+         */
         result = in_connectivityAdminAddReader(connAdmin, data);
         if(result != IN_RESULT_OK)
         {
-            /* TODO error report */
+            IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to add a newly detected reader to the connectvity administration.");
         }
-    }
-    /* step 2: notified all interest parties of the participant status, however
-     * if the participant was already deleted, then we wont inform this at all
-     * and just ignore it
-     */
-    if(action != ACTION_NEW_DELETED)
+    } else if(action == ACTION_DELETED)
     {
-
-        facade = in_connectivityAdminGetReader(connAdmin, data);
-        if(facade)
-        {
-            in_result result;
-            Coll_List tempList;
-            os_uint32 errorCode;
-            in_locator locator;
-
-            Coll_List_init(&tempList);
-            locator = in_streamWriterGetDataMulticastLocator(sdpWriter->streamWriter);
-            errorCode = Coll_List_pushBack(&tempList, locator);
-            if(errorCode != COLL_OK)
-            {
-                /* TODO report error */
-            }
-        //    result = in_streamWriterAppendReaderData(
-        //            in_streamWriter(sdpWriter->streamWriter),
-        //            NULL, /* optional */
-        //            sdpWriter->discoveryData,
-        ///            facade,
-        //            &tempList);
-        //    if(result != IN_RESULT_OK)
-       //     {
-                /* TODO report error */
-       //     }
-       //     in_streamWriterFlush(
-      //          in_streamWriter(sdpWriter->streamWriter),
-     //           &tempList);
-            /* clear the list */
-            Coll_List_popBack(&tempList);
-        } /* else no one interested */
-    }
-    /* step 3: if the participant was deleted, we can remove it from the
-     * connectivity admin after we notified all interested parties
-     */
-    if(action == ACTION_DELETED)
-    {
+        /* step 2: if the participant was deleted, we can remove it from the
+         * connectivity admin after we notified all interested parties
+         */
         result = in_connectivityAdminRemoveReader(connAdmin, data);
         if(result != IN_RESULT_OK)
         {
-            /* TODO error report */
+            IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to remove a reader to the connectvity administration.");
         }
     }
 }
@@ -1351,10 +1146,12 @@ in_channelSdpWriterPublicationAction (
 {
     in_result result;
     in_connectivityAdmin connAdmin;
-    in_connectivityWriterFacade facade;
     in_channelSdpWriterEntityAction action;
     in_channelSdpWriter sdpWriter;
 
+    assert(_this);
+    assert(msg);
+    assert(data);
 
     IN_TRACE_3(Send,2,"in_channelSdpWriterPublicationAction %x (%x,%x)",_this, data->key.systemId,data->key.localId);
     IN_TRACE_3(Send,2,"in_channelSdpWriterPublicationAction %x part(%x,%x)",_this,data->participant_key.systemId,data->participant_key.localId);
@@ -1362,72 +1159,26 @@ in_channelSdpWriterPublicationAction (
     sdpWriter = in_channelSdpWriter(_this);
     action = in_channelSdpWriterDetermineEntityAction(sampleState, instanceState);
     connAdmin = in_connectivityAdminGetInstance();
-    /* step 1: if participant is new or modified then add/update the participant
-     */
-    IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 1",_this);
     if(action == ACTION_NEW)
     {
-        IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 2",_this);
+        /* step 1: if participant is new or modified then add/update the participant
+         */
         result = in_connectivityAdminAddWriter(connAdmin, data);
-        IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 3",_this);
         if(result != IN_RESULT_OK)
         {
-            /* TODO error report */
+            IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to add a newly detected writer to the connectvity administration.");
         }
-    }
-    /* step 2: notified all interest parties of the participant status, however
-     * if the participant was already deleted, then we wont inform this at all
-     * and just ignore it
-     */
-    if(action != ACTION_NEW_DELETED)
+    } else if(action == ACTION_DELETED)
     {
-IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 4",_this);
-        facade = in_connectivityAdminGetWriter(connAdmin, data);
-        if(facade)
-        {
-            in_result result;
-            Coll_List tempList;
-            os_uint32 errorCode;
-            in_locator locator;
-
-            Coll_List_init(&tempList);
-            locator = in_streamWriterGetDataMulticastLocator(sdpWriter->streamWriter);
-            errorCode = Coll_List_pushBack(&tempList, locator);
-            if(errorCode != COLL_OK)
-            {
-                /* TODO report error */
-            }
-            IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 5",_this);
-     //       result = in_streamWriterAppendWriterData(
-     //               in_streamWriter(sdpWriter->streamWriter),
-     //               sdpWriter->discoveryData,
-    //                facade,
-    //                &tempList);
-    //        if(result != IN_RESULT_OK)
-    //        {
-                /* TODO report error */
-    //        }
-            IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 6",_this);
- //           in_streamWriterFlush(
-  //              in_streamWriter(sdpWriter->streamWriter),
-  //              &tempList);
-            /* clear the list */
-            Coll_List_popBack(&tempList);
-        } /* else no one interested */
-    }
-    /* step 3: if the participant was deleted, we can remove it from the
-     * connectivity admin after we notified all interested parties
-     */
-    if(action == ACTION_DELETED)
-    {IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 7",_this);
+        /* step 2: if the participant was deleted, we can remove it from the
+         * connectivity admin after we notified all interested parties
+         */
         result = in_connectivityAdminRemoveWriter(connAdmin, data);
         if(result != IN_RESULT_OK)
         {
-            /* TODO error report */
+            IN_REPORT_ERROR("in_channelSdpWriterSubscriptionAction", "Unable to remove a writer to the connectvity administration.");
         }
-        IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 8",_this);
     }
-    IN_TRACE_1(Send,2,"in_channelSdpWriterPublicationAction here 9",_this);
 }
 
 /*******************************************************************************
@@ -1448,8 +1199,7 @@ in_channelSdpWriterOnNewGroup(
 
     IN_TRACE_2(Send, 3, "in_channelSdpWriterOnNewGroup %x (event %d)", _this, event);
 
-    if (userData &&
-        ((event == V_EVENT_NEW_GROUP) || (event == V_EVENT_UNDEFINED)))
+    if (userData && ((event == V_EVENT_NEW_GROUP) || (event == V_EVENT_UNDEFINED)))
     {
         result = u_entityAction(
             u_entity(service),
@@ -1524,18 +1274,14 @@ in_channelSdpWriterProcessGroupEvent(
             _this,
             v_partitionName(v_groupPartition(group)),
             v_topicName(v_groupTopic(group)));
-        /* Step 3: determine number of channels which will use the created entry
-         * --- skipped
-         */
-
-        /* Step 4: Create a new entry within the network reader */
+        /* Step 3: Create a new entry within the network reader */
         entry = v_networkReaderEntryNew(
             reader,
             group,
             V_NETWORKID_DDSI,
             1,/* must be 1 to allow finalizing the entry, see next step */
             networkPartitionId);
-        /* Step 5: Notify the entry to finalize itself, should rewrite the
+        /* Step 4: Notify the entry to finalize itself, should rewrite the
          * entry to finalize itself upon creation. This code is a tad.. weird
          * now...
          */
@@ -1545,7 +1291,7 @@ in_channelSdpWriterProcessGroupEvent(
     }
     else
     {
-        IN_TRACE(Send, 1, "in_channelSdpWriterProcessGroupEvent: this else shall never happen!!!!");
+        IN_REPORT_ERROR("in_channelSdpWriterProcessGroupEvent", "Unable to lookup the network entry in the networkReader.");
     }
 }
 
@@ -1555,17 +1301,19 @@ in_channelSdpWriterGetBestFitPartition(
     const os_char* dcpsPartitionName,
     const os_char* dcpsTopicName)
 {
+    /* TODO select best partition */
     return 1;
 }
-
 
 static void
 fillNewGroups(
     v_entity e,
     c_voidp arg)
 {
-    v_service service = v_service(e);
-    if (arg) { /* arg parameter unused */
-    }
+    v_service service;
+
+    service = v_service(e);
+    /* arg parameter unused */
+
     v_serviceFillNewGroups(service);
 }

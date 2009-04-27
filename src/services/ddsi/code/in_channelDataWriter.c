@@ -117,7 +117,11 @@ in_channelDataWriterInit(
 
     if(success)
     {
-        _this->streamWriter = in_streamGetWriter(in_channelGetStream(in_channel(channelData)));
+        in_stream stream;
+
+        stream = in_channelGetStream(in_channel(channelData));
+        _this->streamWriter = in_streamGetWriter(stream);
+        in_streamFree(stream);
         _this->userReader = reader;
         _this->discoveryData = in_endpointDiscoveryDataKeep(discoveryData);
         /* connect to darareader and init queueId */
