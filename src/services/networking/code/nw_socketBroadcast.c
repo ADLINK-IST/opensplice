@@ -66,7 +66,6 @@ nw_socketRetrieveBCInterface(
         *sockAddrPrimaryFound =
             *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
                                              interfaceList[usedInterface]);
-        fprintf (stderr, "sockAddrPrimaryFound = %s\n", inet_ntoa(sockAddrPrimaryFound->sin_addr));
         *sockAddrBroadcastFound =
             *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
                                              interfaceList[usedInterface]);
