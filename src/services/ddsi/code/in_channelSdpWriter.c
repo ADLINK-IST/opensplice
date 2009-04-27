@@ -130,8 +130,9 @@ in_channelSdpWriterGetBestFitPartition(
     const os_char* dcpsTopicName);
 
 static void
-fillNewGroups(v_entity e,
-              c_voidp arg);
+in_channelSdpWriterFillNewGroups(
+    v_entity e,
+    c_voidp arg);
 
 struct in_channelSdpWriterGroupActionArg
 {
@@ -210,8 +211,6 @@ in_channelSdpWriterNew(
             IN_TRACE_1(Construction, 2, "in_channelSdpWriter created = %x", _this);
         }
     }
-
-
     return _this;
 }
 
@@ -414,7 +413,7 @@ in_channelSdpWriterRun(
 
     u_dispatcherGetEventMask(u_dispatcher(_this->service), &mask);
     u_dispatcherSetEventMask(u_dispatcher(_this->service), mask | V_EVENT_NEW_GROUP);
-    u_entityAction(u_entity(_this->service), fillNewGroups, NULL);
+    u_entityAction(u_entity(_this->service), in_channelSdpWriterFillNewGroups, NULL);
 
     u_dispatcherInsertListener(
         u_dispatcher(_this->service),
@@ -618,8 +617,8 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                     {
                         in_connectivityReaderFacade facade;
                         facade = in_connectivityReaderFacade(Coll_Iter_getObject(iterator));
-                        //if(in_ddsiSequenceNumberCompare(in_connectivityReaderFacadeGetSequenceNumber(facade), &acknack->lastSeqNr) != C_LT)
-                       // {
+                        if(in_ddsiSequenceNumberCompare(in_connectivityReaderFacadeGetSequenceNumber(facade), &acknack->lastSeqNr) != C_LT)
+                        {
                             result = in_streamWriterAppendReaderData(
                                     in_streamWriter(_this->streamWriter),
                                     acknack->sourceGuidPrefix,
@@ -630,7 +629,7 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
                             {
                                 IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to transmit reader data due to a stream error.");
                             }
-                       // }
+                        }
                         iterator = Coll_Iter_getNext(iterator);
                     }
                 } else if(in_ddsiEntityIdEqual(&acknack->readerId,&tmp2))
@@ -809,8 +808,8 @@ in_channelSdpWriterSendParticipantsHeartbeat(
             } else
             {
                 lastSN = in_connectivityParticipantFacadeGetNrOfWriters(facade);
-              //  if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
-              //  {
+                if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
+                {
                     writerCount++;
                     /* Send out publication info */
                     result = in_streamWriterAppendHeartbeat(
@@ -827,10 +826,10 @@ in_channelSdpWriterSendParticipantsHeartbeat(
                     {
                          IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for publications reader/writer due to a stream error.");
                     }
-              //  }
+                }
                 lastSN = in_connectivityParticipantFacadeGetNrOfReaders(facade);
-              //  if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
-             //   {
+                if(in_ddsiSequenceNumberCompare(lastSN, &nilSN) == C_GT)
+                {
                     readerCount++;
                     /* Send out subscription info */
                     result = in_streamWriterAppendHeartbeat(
@@ -847,7 +846,7 @@ in_channelSdpWriterSendParticipantsHeartbeat(
                     {
                          IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for subscriptions reader/writer due to a stream error.");
                     }
-               // }
+                }
                 partCount++;
                 /* Send out publication info */
                 result = in_streamWriterAppendHeartbeat(
@@ -1306,7 +1305,7 @@ in_channelSdpWriterGetBestFitPartition(
 }
 
 static void
-fillNewGroups(
+in_channelSdpWriterFillNewGroups(
     v_entity e,
     c_voidp arg)
 {
