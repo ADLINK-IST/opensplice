@@ -27,21 +27,20 @@ fi
 SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
+if [ "$CONFIGURATION" != "OK" ]
+then
+   echo  "ERROR: configuration - dcps_build_dist"
+   exit 1
+fi
 
 echo "BUILD_DIST=RUNNING" >> $RESFILE
 ArchiveLogs
 
-if [ ! -n "$OSPL_HOME" ]
-then
-   Fail  "ERROR: configuration - dcps_build_dist"
-   SetState Failed
-   exit 1
-fi
-
 cd install || 
 { 
     echo "ERROR: could not cd to install dir - dcps_build_dist"; 
-    echo "BUILD_DIST=FAIL" >> $RESFILE; 
-    exit 1; 
+    exit 2; 
 }
+
 make
+exit 0

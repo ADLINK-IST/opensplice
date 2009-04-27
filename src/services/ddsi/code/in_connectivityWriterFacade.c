@@ -8,7 +8,9 @@
 /* DDSi includes */
 #include "in_connectivityWriterFacade.h"
 #include "in_connectivityEntityFacade.h"
+#include "in_connectivityParticipantFacade.h"
 #include "in_locator.h"
+#include "in_report.h"
 
 OS_STRUCT(in_connectivityWriterFacade)
 {
@@ -22,7 +24,7 @@ OS_STRUCT(in_connectivityWriterFacade)
 
     struct v_publicationInfo info;
     Coll_List locators;
-/*    in_connectivityWriterIdentifier id;*/
+    OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber;
 };
 
 OS_CLASS(in_LocatorStoreElement);
@@ -52,7 +54,10 @@ in_connectivityWriterFacade_locatorIsLessThen(
 static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
-    struct v_publicationInfo *info);
+    struct v_publicationInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant);
 
 static void
 in_connectivityWriterFacadeDeinit(
@@ -60,7 +65,10 @@ in_connectivityWriterFacadeDeinit(
 
 in_connectivityWriterFacade
 in_connectivityWriterFacadeNew(
-    struct v_publicationInfo *info)
+    struct v_publicationInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
     in_connectivityWriterFacade _this;
@@ -69,7 +77,7 @@ in_connectivityWriterFacadeNew(
 
     if(_this)
     {
-        success = in_connectivityWriterFacadeInit(_this,info);
+        success = in_connectivityWriterFacadeInit(_this,info,hasKey, seq, participant);
 
         if(!success)
         {
@@ -83,15 +91,38 @@ in_connectivityWriterFacadeNew(
 static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
-    struct v_publicationInfo *info)
+    struct v_publicationInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
+    OS_STRUCT(in_ddsiGuid) guid;
+    in_ddsiGuidPrefixRef prefix;
+
     assert(_this);
+
+    prefix =in_connectivityParticipantFacadeGetGuidPrefix(participant);
+
+    memcpy(guid.guidPrefix,prefix,in_ddsiGuidPrefixLength);
+    guid.entityId.entityKey[0] = info->key.localId & 0xFF;
+    guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
+    guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
+    //should determine the following value based on topic and if it has a key or not
+
+    if(hasKey)
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_WRITER_WITH_KEY;
+    } else
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_WRITER_NO_KEY;
+    }
 
     success = in_connectivityEntityFacadeInit(
         OS_SUPER(_this),
         IN_OBJECT_KIND_WRITER_FACADE,
-        in_connectivityWriterFacadeDeinit);
+        in_connectivityWriterFacadeDeinit,
+        &guid);
 
     if(success)
     {
@@ -100,6 +131,7 @@ in_connectivityWriterFacadeInit(
         _this->info.topic_name = os_strdup(info->topic_name);
         Coll_List_init(&_this->locators);
         Coll_Set_init(&_this->matchedReaders, pointerIsLessThen, TRUE);
+        _this->sequenceNumber = *seq;
     }
     return success;
 }
@@ -169,6 +201,7 @@ in_connectivityWriterFacadeAddMatchedPeer(
 
     if(result == IN_RESULT_OK)
     {
+        IN_TRACE(Send, 2, ">>> in_connectivityWriterFacadeAddMatchedPeer - entering build alg ");
         in_connectivityWriterFacadeBuildLocatorList(_this);
     } else
     {
@@ -239,7 +272,7 @@ in_connectivityWriterFacadeBuildLocatorList(
 
     /* Step 2: Init the temporary locator store */
     Coll_Set_init(&locatorStore, in_connectivityWriterFacade_locatorIsLessThen, 1);
-
+    IN_TRACE_1(Send, 2, ">>> in_connectivityWriterFacadeBuildLocatorList - step 1 %d", Coll_Set_getNrOfElements(&_this->matchedReaders));
     /* Step 3: Fill the locator table with locator/readers pairs */
     iterator = Coll_Set_getFirstElement(&_this->matchedReaders);
     while(iterator && result == IN_RESULT_OK)
@@ -249,11 +282,13 @@ in_connectivityWriterFacadeBuildLocatorList(
         reader = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
 
         locators = in_connectivityPeerReaderGetUnicastLocators(reader);
+        IN_TRACE_1(Send, 2, ">>> in_connectivityWriterFacadeBuildLocatorList - step 2 %d", Coll_List_getNrOfElements(locators));
         in_connectivityWriterFacade_addUniqueLocatorsToStore(
             &locatorStore,
             locators,
             reader);
         locators = in_connectivityPeerReaderGetMulticastLocators(reader);
+        IN_TRACE_1(Send, 2, ">>> in_connectivityWriterFacadeBuildLocatorList - step 3 %d", Coll_List_getNrOfElements(locators));
         in_connectivityWriterFacade_addUniqueLocatorsToStore(
             &locatorStore,
             locators,
@@ -450,3 +485,13 @@ in_connectivityWriterFacade_locatorIsLessThen(
 
     return lt;
 }
+
+in_ddsiSequenceNumber
+in_connectivityWriterFacadeGetSequenceNumber(
+    in_connectivityWriterFacade _this)
+{
+    assert(in_connectivityWriterFacadeIsValid(_this));
+
+    return &_this->sequenceNumber;
+}
+

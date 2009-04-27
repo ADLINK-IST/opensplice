@@ -246,8 +246,8 @@ void
 in_socketMulticastInitialize(
     in_socket sock)
 {
-    struct sockaddr_in sockAddrPrimary;
-    struct sockaddr_in sockAddrMulticast;
+    struct sockaddr_in sockAddrPrimary; /* just IPv4  */
+    struct sockaddr_in sockAddrMulticast; /* just IPv4  */
     c_ulong timeToLive;
 
     /*
@@ -265,9 +265,9 @@ in_socketMulticastInitialize(
     /* TODO, just IPv4 */
     /* Join multicast group and set options */
     sockAddrPrimary.sin_addr.s_addr = /* IPv4 workarround */
-    	(os_uint32) in_addressIPv4Ptr(in_socketPrimaryAddress(sock));
+    	*((os_uint32*) in_addressIPv4Ptr(in_socketPrimaryAddress(sock)));
     sockAddrMulticast.sin_addr.s_addr = /* IPv4 workarround */
-    	(os_uint32) in_addressIPv4Ptr(in_socketMulticastAddress(sock));
+    	*((os_uint32*) in_addressIPv4Ptr(in_socketMulticastAddress(sock)));
     in_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
     in_socketMulticastSetInterface(sock, sockAddrPrimary);
     in_socketMulticastSetOptions(sock, in_socketLoopsback(sock), timeToLive);

@@ -8,6 +8,7 @@
 #include "in__configChannel.h"
 #include "in__configNetworkPartition.h"
 #include "in__configPartitionMapping.h"
+#include "in_report.h"
 
 static void
 in_configTraverseConfiguration(
@@ -45,7 +46,7 @@ in_configTraverseGroupQueueElement(
 static void
 in_configTraverseFragmentSizeElement(
     u_cfElement element,
-    in_configDataChannel dataChannel);
+    in_configChannel channel);
 
 static void
 in_configTraversePortNrElement(
@@ -870,7 +871,12 @@ in_configTraverseDiscoveryChannelElement(
         if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PortNr))
         {
             in_configTraversePortNrElement(u_cfElement(childNode), in_configChannel(discoveryChannel));
-        } else
+        }
+        else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_FragmentSize))
+        {
+            in_configTraverseFragmentSizeElement(u_cfElement(childNode), in_configChannel(discoveryChannel));
+        }
+        else
         {
             /* TODO ignore and report a warning */
         }
@@ -982,7 +988,7 @@ in_configTraverseChannelElement(
             in_configTraverseGroupQueueElement(u_cfElement(childNode), dataChannel);
         } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_FragmentSize))
         {
-            in_configTraverseFragmentSizeElement(u_cfElement(childNode), dataChannel);
+            in_configTraverseFragmentSizeElement(u_cfElement(childNode), in_configChannel(dataChannel));
         } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PortNr))
         {
             in_configTraversePortNrElement(u_cfElement(childNode), in_configChannel(dataChannel));
@@ -1063,7 +1069,7 @@ in_configTraverseGroupQueueElement(
 void
 in_configTraverseFragmentSizeElement(
     u_cfElement element,
-    in_configDataChannel dataChannel)
+    in_configChannel channel)
 {
     c_iter attributes;
     u_cfAttribute attribute;
@@ -1119,7 +1125,7 @@ in_configTraverseFragmentSizeElement(
     {
         fragmentSize = INCF_ATTRIB_FragmentSize_value_MAX;
     }
-    in_configChannelSetFragmentSize(in_configChannel(dataChannel), fragmentSize);
+    in_configChannelSetFragmentSize(channel, fragmentSize);
 }
 
 void
@@ -1196,7 +1202,7 @@ in_configTraverseInterfaceElement(
     u_cfNode childNode;
     v_cfKind nodeKind;
     os_boolean success;
-    os_char* networkId = INCF_ATTRIB_Interface_value_DEF;
+    os_char* networkId = NULL;
 
     /* Step 1: read attributes if there are any, report warning that they are
      * ignored.
@@ -1217,6 +1223,7 @@ in_configTraverseInterfaceElement(
      */
     children = u_cfElementGetChildren(element);
     childNode = u_cfNode(c_iterTakeFirst(children));
+    IN_TRACE(Configuration, 3, "Networking address read");
     while(childNode)
     {
         name = u_cfNodeName(childNode);
@@ -1228,12 +1235,16 @@ in_configTraverseInterfaceElement(
             {
                 /* TODO ignore and report a warning */
             }
+            IN_TRACE_1(Configuration, 3, "Networking address read %s", networkId);
         } else
         {
             /* TODO ignore and report a warning */
         }
         os_free(name);
         childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    if(!networkId){
+        networkId = INCF_ATTRIB_Interface_value_DEF;
     }
     c_iterFree(children);
     in_configDdsiServiceSetNetworkId(ddsiService, networkId);

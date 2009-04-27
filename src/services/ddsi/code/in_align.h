@@ -1,10 +1,14 @@
 /*
- * in_align.h
+ *                         OpenSplice DDS
  *
- *  Created on: Feb 9, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN_ALIGN_H_
 #define IN_ALIGN_H_
 
@@ -22,7 +26,6 @@ extern "C" {
 /** \brief round up/ceil ptr  to multiple of boundary */
 #define IN_ALIGN_PTR_CEIL(_address,_boundary) \
     UI2P( (P2UI(_address) + (UI(_boundary)-1)) & (~(UI(_boundary)-1)) )
-    /** \brief ceil ptr to boundary */
 
 /** \brief floor ptr to next smaller multiple of boundary */
 #define IN_ALIGN_PTR_FLOOR(_address,_boundary) \

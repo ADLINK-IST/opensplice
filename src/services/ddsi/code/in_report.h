@@ -8,6 +8,7 @@
 /* Errors, warnins and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
+#define IN_SPOT __FILE__
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
@@ -84,6 +85,7 @@ typedef enum in_traceClass_e {
   TC(Receive),
   TC(Discovery),
   TC(Test),
+  TC(Connectivity),
   TC(Count)/* Last element, keep this at the end */
 } in_traceClass;
 

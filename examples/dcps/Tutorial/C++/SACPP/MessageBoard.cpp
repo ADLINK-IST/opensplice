@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    MessageBoard.cpp
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the C++ programming language.
@@ -71,12 +78,6 @@ main (
     char  *                         chatMessageTypeName = NULL;
     char  *                         nameServiceTypeName = NULL;
     char  *                         namedMessageTypeName = NULL;
-    
-#ifdef INTEGRITY
-    argc = 2;
-    argv[0] = "MessageBoard";
-    argv[1] = "1";
-#endif
 
     /* Options: MessageBoard [ownID] */
     /* Messages having owner ownID will be ignored */

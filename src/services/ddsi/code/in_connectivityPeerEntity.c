@@ -1,7 +1,11 @@
-#include "in_connectivityPeerEntity.h"
 #include "os_defs.h"
 #include "os_heap.h"
 
+#include "in_connectivityPeerEntity.h"
+#include "in_connectivityPeerReader.h"
+#include "in_connectivityPeerWriter.h"
+#include "in_connectivityPeerParticipant.h"
+#include "in_report.h"
 
 os_boolean
 in_connectivityPeerEntityInit(
@@ -18,10 +22,6 @@ in_connectivityPeerEntityInit(
         kind,
         deinit);
 
-    if(success){
-        Coll_List_init(&_this->uniLocators);
-        Coll_List_init(&_this->multiLocators);
-    }
     return success;
 }
 
@@ -29,75 +29,9 @@ void
 in_connectivityPeerEntityDeinit(
     in_connectivityPeerEntity _this)
 {
-    os_uint32 i;
-
     assert(_this);
-
-    for(i = Coll_List_getNrOfElements(&_this->uniLocators); i > 0; i--)
-    {
-        in_locatorFree(in_locator(Coll_List_popBack(&_this->uniLocators)));
-    }
-    for(i = Coll_List_getNrOfElements(&_this->multiLocators); i > 0; i--)
-    {
-        in_locatorFree(in_locator(Coll_List_popBack(&_this->multiLocators)));
-    }
 
     in_objectDeinit(_this);
-}
-
-in_result
-in_connectivityPeerEntitSetGuid(
-    in_connectivityPeerEntity _this,
-    in_ddsiGuid guid)
-{
-    assert(_this);
-
-    _this->guid = *guid;
-
-    return IN_RESULT_OK;
-}
-
-in_result
-in_connectivityPeerEntityAddUnicastLocator(
-    in_connectivityPeerEntity _this,
-    in_locator locator)
-{
-    os_uint32 collResult;
-    in_result result;
-
-    assert(_this);
-    assert(locator);
-
-    collResult = Coll_List_pushBack(&(_this->uniLocators), in_locatorKeep(locator));
-    IN_COLLRESULT_TO_RESULT(collResult, result);
-
-    return result;
-}
-
-in_result
-in_connectivityPeerEntityAddMulticastLocator(
-    in_connectivityPeerEntity _this,
-    in_locator locator)
-{
-    os_uint32 collResult;
-    in_result result;
-
-    assert(_this);
-    assert(locator);
-
-    collResult = Coll_List_pushBack(&(_this->multiLocators), in_locatorKeep(locator));
-    IN_COLLRESULT_TO_RESULT(collResult, result);
-
-    return result;
-}
-
-in_ddsiGuid
-in_connectivityPeerEntityGetGuid(
-    in_connectivityPeerEntity _this)
-{
-    assert(_this);
-
-    return &(_this->guid);
 }
 
 
@@ -106,8 +40,17 @@ in_connectivityPeerEntityGetUnicastLocators(
     in_connectivityPeerEntity _this)
 {
     assert(_this);
-
-    return &(_this->uniLocators);
+    switch (in_objectGetKind(in_object(_this))) {
+        case IN_OBJECT_KIND_PEER_READER:
+            return in_connectivityPeerReaderGetUnicastLocators(in_connectivityPeerReader(_this));
+        case IN_OBJECT_KIND_PEER_WRITER:
+            return in_connectivityPeerWriterGetUnicastLocators(in_connectivityPeerWriter(_this));
+        case IN_OBJECT_KIND_PEER_PARTICIPANT:
+            return in_connectivityPeerParticipantGetUnicastLocators(in_connectivityPeerParticipant(_this));
+        default:
+            assert(FALSE); /* one of the above should be valid */
+    }
+    return NULL;
 }
 
 Coll_List*
@@ -116,5 +59,16 @@ in_connectivityPeerEntityGetMulticastLocators(
 {
     assert(_this);
 
-    return &(_this->multiLocators);
+    switch (in_objectGetKind(in_object(_this))) {
+        case IN_OBJECT_KIND_PEER_READER:
+            return in_connectivityPeerReaderGetMulticastLocators(in_connectivityPeerReader(_this));
+        case IN_OBJECT_KIND_PEER_WRITER:
+            return in_connectivityPeerWriterGetMulticastLocators(in_connectivityPeerWriter(_this));
+        case IN_OBJECT_KIND_PEER_PARTICIPANT:
+            return in_connectivityPeerParticipantGetMulticastLocators(in_connectivityPeerParticipant(_this));
+        default:
+            assert(TRUE); /* one of the above should be valid */
+    }
+
+    return NULL;
 }

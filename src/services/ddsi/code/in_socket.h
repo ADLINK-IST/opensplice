@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_SOCKET_H
 #define IN_SOCKET_H
 
@@ -5,6 +16,10 @@
 #include "in_locator.h"
 #include "in__configChannel.h"
 
+in_socket
+in_socketDuplexNew(
+    in_configChannel configChannel,
+    os_boolean supportsControl);
 
 /**  \brief constructor */
 in_socket   in_socketSendNew(
@@ -15,7 +30,15 @@ in_socket   in_socketSendNew(
 in_socket   in_socketReceiveNew(
 				in_configChannel configChannel,
                 os_boolean supportsControl);
+/** narrower */
+#define in_socket(_o) \
+    ((in_socket)_o)
 
+/** increment refcount */
+#define in_socketKeep(_s) \
+    in_socket(in_objectKeep(in_object(_s)))
+
+/** */
 void        in_socketFree(
                 in_socket sock);
 
@@ -68,6 +91,12 @@ in_socketGetMulticastDataLocator(
 in_locator
 in_socketGetUnicastControlLocator(
     in_socket sock);
+
+/** \brief Support for control stream as optional feature
+ *
+ * NULL in case no support for control stream */
+in_locator
+in_socketGetMulticastControlLocator(in_socket sock);
 
 
 in_long   in_socketSendDataTo(

@@ -24,7 +24,7 @@ os_boolean
 in_ddsiReceiverInit(in_ddsiReceiver _this,
         in_abstractReceiveBuffer receiveBuffer)
 {
-    const os_time zeroTime = {0,0};
+    const c_time zeroTime = {0,0};
     const in_ddsiGuidPrefix zeroPrefix = IN_GUIDPREFIX_UNKNOWN;
     os_boolean result = OS_TRUE;
     OS_STRUCT(in_ddsiDeserializer) deserializer;

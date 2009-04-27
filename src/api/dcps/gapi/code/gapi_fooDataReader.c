@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "gapi_fooDataReader.h"
 #include "gapi_dataReader.h"
 #include "gapi_qos.h"
@@ -19,8 +30,8 @@
 #include "v_dataReader.h"
 #include "v_event.h"
 
-#define INITIALBUFFER_SIZE 256
-#define READBUFFERSIZE (1024)
+#define INITIALBUFFER_SIZE 32
+#define READBUFFERSIZE (32)
 
 C_STRUCT(_FooDataReader) {
     C_EXTENDS(_DataReader);

@@ -27,7 +27,7 @@ in_ddsiSubmessageDeserializerInit(
 
 	os_boolean result = OS_TRUE;
 
-	assert(headerSize == 4);
+	assert(headerSize == IN_DDSI_SUBMESSAGE_HEADER_SIZE);
 
 	if (maxNofOctets < headerSize) {
 		/* error: header would exceed the buffer */

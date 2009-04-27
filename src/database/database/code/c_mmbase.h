@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #ifndef C_MM_H
 #define C_MM_H
@@ -29,6 +40,8 @@ struct c_mmStatus_s {
 
 OS_API c_mm c_mmCreate (void *address, c_long size);
 OS_API c_mmStatus c_mmState (c_mm mm);
+OS_API c_mmStatus c_mmMapState (c_mm mm);
+OS_API c_mmStatus c_mmListState (c_mm mm);
    
 void  c_mmDestroy (c_mm mm);
 void *c_mmAddress (c_mm mm);

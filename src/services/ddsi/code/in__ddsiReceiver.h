@@ -1,10 +1,14 @@
 /*
- * in__ddsiReceiver.h
+ *                         OpenSplice DDS
  *
- *  Created on: Mar 9, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN__DDSIRECEIVER_H_
 #define IN__DDSIRECEIVER_H_
 
@@ -13,7 +17,7 @@
 #include "in_commonTypes.h"
 #include "in_ddsiElements.h"
 #include "in_locatorList.h"
-
+#include "c_time.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -28,7 +32,7 @@ OS_STRUCT(in_ddsiReceiver)
 	in_locatorList unicastReplyLocatorList;
 	in_locatorList multicastReplyLocatorList;
 	os_boolean haveTimestamp;
-	os_time timestamp;
+	c_time timestamp;
 };
 
 #if defined (__cplusplus)

@@ -1,15 +1,19 @@
-/* Prevent failure due to multiple inclusion of this file. */
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_CONFIG_H
 #define IN_CONFIG_H
 
-/* OS abstraction includes. */
-#include "os_defs.h"
-#include "os_classbase.h"
-#include "os_stdlib.h"
-
-/* DDSi configuration includes */
+#include "in__object.h"
 #include "in__configDdsiService.h"
-#include "in__configTypes.h"
 
 /* DDSI common includes */
 #include "in_result.h"
@@ -28,6 +32,8 @@ extern "C" {
 #define INCF_DEF_GLOBAL_PARTITON   "239.255.0.1"
 #define INCF_DEF_INTERFACE "first available"
 #define INCF_DEF_DATA_CHANNEL_PORT  (7412)
+#define INCF_DEF_FRAGMENT_SIZE  (1300U)
+#define INCF_MIN_FRAGMENT_SIZE  (200U)
 #define INCF_DEF_DISCOVERY_CHANNEL_PORT (7400)
 #define INCF_DEF_RECEIVE_BUFFER_SIZE (1000000U)
 #define INCF_DEF_DIFFERENTIATED_SERVICES_FIELD (0)
@@ -52,6 +58,10 @@ in_configDdsiService
 in_configGetDdsiServiceByName(
     in_config _this,
     const os_char* name);
+
+Coll_List*
+in_configGetDdsiServices(
+    in_config _this);
 
 os_char*
 in_configGetPathName(

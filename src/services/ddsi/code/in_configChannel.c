@@ -1,5 +1,8 @@
 #include "in__configChannel.h"
 #include "in__config.h"
+#include "in_report.h"
+#include "in_align.h"
+#include "in_ddsiDefinitions.h"
 
 os_boolean
 in_configChannelInit(
@@ -14,7 +17,7 @@ in_configChannelInit(
     _this->owningService = owningService;
     _this->portNr = defaultPortNr;
     _this->pathName = NULL;
-    _this->fragmentSize = 0;
+    _this->fragmentSize = INCF_DEF_FRAGMENT_SIZE;
 
     /* receiving parameters */
     _this->receiveBufferSize =
@@ -96,7 +99,22 @@ in_configChannelSetFragmentSize(
     in_configChannel _this,
     os_uint32 fragmentSize)
 {
+    os_uint32 fragmentSizeAligned =
+        (os_uint32) IN_ALIGN_UINT_FLOOR(fragmentSize, 8U);
     assert(_this);
+
+    if (fragmentSize < fragmentSizeAligned) {
+        IN_REPORT_WARNING_1(IN_SPOT,
+                        "defined fragment size %d not multiple of 8U",
+                        fragmentSize);
+    }
+
+    if (fragmentSize < INCF_MIN_FRAGMENT_SIZE) {
+        IN_REPORT_WARNING_2(IN_SPOT,
+                        "defined fragment size %d too small, using %d",
+                        fragmentSize, INCF_MIN_FRAGMENT_SIZE);
+        fragmentSize = INCF_MIN_FRAGMENT_SIZE;
+    }
 
     _this->fragmentSize = fragmentSize;
 }
@@ -154,7 +172,10 @@ in_configChannelGetInterfaceId(
 	} else {
 		result =
 			in_configDdsiServiceGetInterfaceId(configDdsi);
-
+		/* if not declared in config */
+		if (!result) {
+		    result = INCF_DEF_INTERFACE; /* const */
+		}
 	}
 
 	return result;

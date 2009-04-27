@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #include "v__reader.h"
 #include "v__dataReader.h"
 #include "v_statistics.h"
@@ -35,16 +46,22 @@
 #include "v__statisticsInterface.h"
 #include "v__statCat.h"
 #include "v__topic.h"
-#define _EXTENT_
-#ifdef _EXTENT_
 #include "c_extent.h"
-#endif
 #include "v__kernel.h"
 
 #include "c_stringSupport.h"
 
 #include "os.h"
 #include "os_report.h"
+
+#define v_dataReaderQos(_this) \
+        (v_reader(v_dataReader(_this))->qos)
+
+#define v_dataReaderAllInstanceSet(_this) \
+        (v_dataReader(_this)->index->objects)
+
+#define v_dataReaderNotEmptyInstanceSet(_this) \
+        (v_dataReader(_this)->index->notEmptyList)
 
 static v_dataReaderInstance
 dataReaderLookupInstanceUnlocked(
@@ -60,11 +77,18 @@ dataReaderLookupInstanceUnlocked(
 
     instance = v_dataReaderInstanceNew(_this, keyTemplate);
 
-    if (!v_reader(_this->index->reader)->qos->userKey.enable) {
-        found = c_find(_this->index->objects, instance);
+    if (v_dataReaderQos(_this)->userKey.enable) {
+        /* In case of user defined keys the NotEmpty instance set contains all
+         * instances by definition and therefor the objects set that normally
+         * contains all instances is not used.
+         * So in that case the lookup instance must act on the Not Empty
+         * instance set.
+         */
+        found = c_find(v_dataReaderNotEmptyInstanceSet(_this),instance);
     } else {
-        found = c_find(_this->index->notEmptyList, instance);
+        found = c_find(v_dataReaderAllInstanceSet(_this), instance);
     }
+
     if (found != NULL) {
         if (v_dataReaderInstanceEmpty(found)) {
             if (v_stateTest(found->instanceState, L_NOWRITERS)) {
@@ -206,7 +230,7 @@ v_dataReaderInstanceCount(
 {
     assert(C_TYPECHECK(_this,v_dataReader));
 
-    return c_tableCount(_this->index->objects);
+    return c_tableCount(v_dataReaderAllInstanceSet(_this));
 }
 
 void
@@ -488,7 +512,7 @@ v_dataReaderNew (
     q = v_readerQosNew(kernel,qos);
     if (q == NULL) {
         OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
-            "DataReader not created: inconsistent qos");
+                  "DataReader not created: inconsistent qos");
         return NULL;
     }
     _this = v_dataReader(v_objectNew(kernel,K_DATAREADER));
@@ -498,6 +522,8 @@ v_dataReaderNew (
     _this->maxInstances = FALSE;
     _this->depth = 0x7fffffff; /* MAX_INT */
     _this->cachedSample = NULL;
+    _this->triggerValue = NULL;
+    _this->updateCnt = 0;
 #define _SL_
 #ifdef _SL_
     _this->cachedSampleCount = 0;
@@ -540,16 +566,14 @@ v_dataReaderNew (
         sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
                                               "sample"));
         c_free(instanceType);
-#ifdef _EXTENT_
-#define _COUNT_ (128)
         /* the sampleExtent is created with the synchronized parameter
          * set to TRUE.
          * So the extent will use a mutex to guarantee reentrancy.
          * This is needed because samples are kept, copied and freed
          * outside the reader lock.
          */
-        _this->sampleExtent = c_extentSyncNew(sampleProperty->type,_COUNT_,TRUE);
-#endif
+        _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
+
         _this->projection = v_projectionNew(_this,_projection);
 
 
@@ -702,8 +726,8 @@ v_dataReaderDeinit (
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
     v_readerDeinit(v_reader(_this));
-    c_tableWalk(_this->index->objects,instanceFree,NULL);
-    c_tableWalk(_this->index->notEmptyList, instanceFree, NULL);
+    c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
+    c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
     v_deadLineInstanceListFree(_this->deadLineList);
 }
 
@@ -750,7 +774,9 @@ v_dataReaderInsertView(
     /* Insert the view in the set */
     c_insert(_this->views, view);
     /* Fill the view with initial data */
-    c_tableWalk(_this->index->notEmptyList, walkInstanceSamples, view);
+    c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this),
+                walkInstanceSamples,
+                view);
 
     v_dataReaderUnLock(_this);
 }
@@ -868,7 +894,7 @@ v_dataReaderRead(
     argument.query = NULL;
     argument.emptyList = NULL;
 
-    proceed = c_readAction(_this->index->notEmptyList,
+    proceed = c_readAction(v_dataReaderNotEmptyInstanceSet(_this),
                            (c_action)instanceReadSamples,
                            &argument);
 
@@ -1039,7 +1065,7 @@ v_dataReaderRemoveInstance(
     assert(v_dataReaderInstanceEmpty(instance));
 
     if (v_dataReaderInstanceInNotEmptyList(instance)) {
-        found = v_dataReaderInstance(c_remove(_this->index->notEmptyList,
+        found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
                                               instance, NULL, NULL));
         v_dataReaderInstanceInNotEmptyList(instance) = FALSE;
         c_free(found);
@@ -1047,19 +1073,18 @@ v_dataReaderRemoveInstance(
 
     if (!v_reader(_this)->qos->userKey.enable) {
         if (v_dataReaderInstanceNoWriters(instance)) {
-            found = v_dataReaderInstance(c_remove(_this->index->objects,
+            found = v_dataReaderInstance(c_remove(v_dataReaderAllInstanceSet(_this),
                                                   instance, NULL, NULL));
             v_deadLineInstanceListRemoveInstance(_this->deadLineList,
                                                  v_instance(instance));
-            v_statisticsULongValueDec(v_reader,
-                                      numberOfInstancesWithStatusNoWriters,
-                                      _this);
+            /* Remove the instance from the instance-statistics administration */
+            UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index, instance);
             instance->purgeInsertionTime = C_TIME_ZERO;
             v_publicFree(v_public(instance));
             c_free(found);
         }
     } else {
-        found = v_dataReaderInstance(c_remove(_this->index->objects,
+        found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
                                               instance, NULL, NULL));
         v_publicFree(v_public(instance));
         c_free(found);
@@ -1091,7 +1116,7 @@ v_dataReaderTake(
     argument.reader = _this;
     argument.emptyList = NULL;
 
-    proceed = c_readAction(_this->index->notEmptyList,
+    proceed = c_readAction(v_dataReaderNotEmptyInstanceSet(_this),
                            (c_action)instanceTakeSamples,
                            &argument);
     if (argument.emptyList != NULL) {
@@ -1234,23 +1259,18 @@ v_dataReaderNotify(
     assert(C_TYPECHECK(_this, v_dataReader));
 
     if (event != NULL) {
-        switch(event->kind) {
-        case V_EVENT_INCONSISTENT_TOPIC:
-        case V_EVENT_SAMPLE_REJECTED:
-        case V_EVENT_SAMPLE_LOST:
-        case V_EVENT_DEADLINE_MISSED:
-        case V_EVENT_INCOMPATIBLE_QOS:
-        case V_EVENT_LIVELINESS_CHANGED:
-        case V_EVENT_DATA_AVAILABLE:
-            v_entity(_this)->status->state |= event->kind;
-        break;
-        default:
-            OS_REPORT_1(OS_WARNING,
-                        "DataReader",0,
-                        "Notify encountered unknown event kind (%d)",
-                        event->kind);
-        break;
-        }
+
+#define _NOTIFICATION_MASK_ \
+        V_EVENT_INCONSISTENT_TOPIC | \
+        V_EVENT_SAMPLE_REJECTED | \
+        V_EVENT_SAMPLE_LOST | \
+        V_EVENT_DEADLINE_MISSED | \
+        V_EVENT_INCOMPATIBLE_QOS | \
+        V_EVENT_LIVELINESS_CHANGED | \
+        V_EVENT_DATA_AVAILABLE
+
+        v_entity(_this)->status->state |= (event->kind & (_NOTIFICATION_MASK_));
+#undef _NOTIFICATION_MASK_
     }
 }
 
@@ -1353,7 +1373,9 @@ v_dataReaderNotifyIncompatibleQos(
         event.kind = V_EVENT_INCOMPATIBLE_QOS;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
+        v_observerLock(v_observer(_this));
         v_observerNotify(v_observer(_this), &event, NULL);
+        v_observerUnlock(v_observer(_this));
         v_observableNotify(v_observable(_this), &event);
     }
 }
@@ -1564,7 +1586,7 @@ v_dataReaderInstanceType(
     v_dataReader _this)
 {
     assert(C_TYPECHECK(_this,v_dataReader));
-    return c_subType(_this->index->objects); /* pass refCount */
+    return c_subType(v_dataReaderAllInstanceSet(_this)); /* pass refCount */
 }
 
 c_type
@@ -1824,14 +1846,16 @@ v_dataReaderCheckDeadlineMissed(
         instance = v_dataReaderInstance(c_iterTakeFirst(missed));
     }
     c_iterFree(missed);
-    v_dataReaderUnLock(_this);
 
     if (changed) {
         event.kind = V_EVENT_DEADLINE_MISSED;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
         v_observerNotify(v_observer(_this), &event, NULL);
+        v_dataReaderUnLock(_this);
         v_observableNotify(v_observable(_this), &event);
+    } else {
+        v_dataReaderUnLock(_this);
     }
 }
 
@@ -1841,11 +1865,7 @@ v_dataReaderAllocInstance(
 {
     v_dataReaderInstance instance;
 
-#ifdef _EXTENT_
     instance = v_dataReaderInstance(c_extentCreate(_this->index->objectExtent));
-#else
-    instance = v_dataReaderInstance(c_new(_this->index->description->type));
-#endif
 
     v_object(instance)->kernel = v_objectKernel(_this);
     v_objectKind(instance) = K_DATAREADERINSTANCE;

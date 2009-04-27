@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "gapi_object.h"
 #include "gapi_set.h"
 
@@ -245,16 +256,15 @@ gapi_handleFree (
                 os_free(handle->object);
                 handle->object = NULL;
             }
+            if ( action ) {
+               action(userData, actionData);
+            }
             assert(handle->registry == NULL);
             handle->magic  = 0;
             gapi_handleRelease(handle);
             os_condDestroy(&handle->cv);
             os_mutexDestroy(&handle->mutex);
         }
-    }
-
-    if ( action ) {
-        action(userData, actionData);
     }
 }
 

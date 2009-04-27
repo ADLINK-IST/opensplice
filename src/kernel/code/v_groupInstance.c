@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v_groupInstance.h"
 #include "v_state.h"
 #include "v_writer.h"
@@ -378,7 +389,6 @@ v_groupInstanceRegister (
                                  found->message->writeTime) == C_GT) {
                     c_free(found->message);
                     found->message = createRegistration(instance,message);
-                    found->message = c_keep(message);
                 }
             }
             result = V_WRITE_SUCCESS;

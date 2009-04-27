@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 /**
  * The in_channelSdpReader provides an implementation of read side of the
  * Simple Discovery Protocol. This component is responsible to keep the
@@ -14,7 +25,6 @@
 #define IN_CHANNEL_SDP_READER_H
 
 #include "in__object.h"
-#include "in_channelTypes.h"
 #include "in__configDiscoveryChannel.h"
 
 /**

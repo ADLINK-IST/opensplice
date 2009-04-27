@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_RUNNABLE_H
 #define IN_RUNNABLE_H
 
@@ -39,6 +50,7 @@ OS_STRUCT(in_schedulingAttr)
 
 OS_STRUCT(in_runnable)
 {
+    OS_EXTENDS(in_object);
     os_char* name;
     os_threadId threadId;
     os_boolean terminate;

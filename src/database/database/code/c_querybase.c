@@ -1,6 +1,18 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "os_heap.h"
 #include "c__base.h"
 #include "c__metabase.h"
 #include "q_expr.h"
@@ -410,8 +422,8 @@ qExecute(
     assert(e->kind == CQ_CALLBACK);
 
     v = c_qValue(c_qFunc(e)->params[1],NULL);
-    assert(v.kind == V_LONG);
-    callback = (c_qCallback)v.is.Long;
+    assert(v.kind == V_ADDRESS);
+    callback = (c_qCallback)v.is.Address;
     argument = c_qValue(c_qFunc(e)->params[2],o);
     callback(o,argument,&result);
     return result;
@@ -1147,8 +1159,8 @@ makeExprQuery(
             c_qFunc(r)->params[0] = c;
                 c = c_qExpr(c_new(c_qConstType(base)));
                 c->kind = CQ_CONST;
-                c_qConst(c)->value.kind = V_LONG;
-                c_qConst(c)->value.is.Long = (c_long)q_getPar(e,1);
+                c_qConst(c)->value.kind = V_ADDRESS;
+                c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
             c_qFunc(r)->params[1] = c;
             c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
         break;
@@ -1659,7 +1671,7 @@ c_qPredInitVars (
 #define PRINT_EXPR(msg,expr) \
     printf(msg); q_print(expr,0); printf("\n")
 #define PRINT_PRED(msg,pred) \
-    printf(msg); c_qPredPrint(pred,0); printf("\n")
+    printf(msg); c_qPredPrint(pred); printf("\n")
 #else
 #define PRINT_EXPR(msg,expr)
 #define PRINT_PRED(msg,pred)
@@ -2076,9 +2088,11 @@ c_qKeyEval(
                 }
             }
             if (rangeResult) {
+                c_valueFreeRef(v);
                 return TRUE;
             }
         }
+        c_valueFreeRef(v);
         return FALSE;
     }
     return TRUE;
@@ -2120,6 +2134,8 @@ void
 c_qExprPrint(
     c_qExpr q)
 {
+    c_char* vi;
+        
     if (q == NULL) {
         return;
     }
@@ -2134,7 +2150,6 @@ c_qExprPrint(
         c_property property;
         c_member member;
         c_string metaName;
-
 
         path = c_fieldPath(c_qField(q)->field);
         if (path != NULL) {
@@ -2165,7 +2180,7 @@ c_qExprPrint(
         printf("%s",c_fieldName(c_qField(q)->field));
     }
     break;
-    case CQ_CONST: printf("%s",c_valueImage(c_qConst(q)->value)); break;
+    case CQ_CONST: vi = c_valueImage(c_qConst(q)->value); printf("%s", vi); os_free(vi); break;
     case CQ_AND:   _FUNC_(" AND "); break;
     case CQ_OR:    _FUNC_(" OR "); break;
     case CQ_NOT:   _FUNC_(" NOT "); break;
@@ -2189,18 +2204,19 @@ void
 c_qRangePrint(
     c_qRange q)
 {
+    c_char* vi;
     if (q == NULL) {
         return;
     }
     switch (q->startKind) {
     case B_UNDEFINED: printf("[*.."); break;
-    case B_INCLUDE:   printf("[%s..",c_valueImage(q->start)); break;
-    case B_EXCLUDE:   printf("<%s..",c_valueImage(q->start)); break;
+    case B_INCLUDE:   vi = c_valueImage(q->start); printf("[%s..",vi); os_free(vi); break;
+    case B_EXCLUDE:   vi = c_valueImage(q->start); printf("<%s..",vi); os_free(vi); break;
     }
     switch (q->endKind) {
     case B_UNDEFINED: printf("*]"); break;
-    case B_INCLUDE:   printf("%s]",c_valueImage(q->end)); break;
-    case B_EXCLUDE:   printf("%s>",c_valueImage(q->end)); break;
+    case B_INCLUDE:   vi = c_valueImage(q->end); printf("%s]",vi); os_free(vi); break;
+    case B_EXCLUDE:   vi = c_valueImage(q->end); printf("%s>",vi); os_free(vi); break;
     }
 }
 

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #if !defined NDEBUG
 #include "c_metabase.h"
@@ -39,7 +50,7 @@ v_serviceStateNew(
             c_bool correctType;
             correctType = FALSE;
 
-            while ((correctType == FALSE) && 
+            while ((correctType == FALSE) &&
                    (t != NULL) &&
                    (c_baseObject(t)->kind == M_CLASS)) {
                 if (strcmp(c_metaObject(t)->name, "v_serviceState") == 0) {
@@ -55,7 +66,7 @@ v_serviceStateNew(
             } else {
 
                 if (correctType == FALSE) {
-                    OS_REPORT(OS_FATAL, "v_serviceState", 
+                    OS_REPORT(OS_FATAL, "v_serviceState",
                               0, "Given type does not extend v_serviceState");
                     assert(0);
                 }
@@ -112,7 +123,10 @@ v_serviceStateChangeState(
     case STATE_NONE:
       break;
     case STATE_DIED:
-      if (serviceState->stateKind != STATE_NONE) {
+      if ((serviceState->stateKind != STATE_NONE) &&
+          (serviceState->stateKind != STATE_TERMINATING) &&
+          (serviceState->stateKind != STATE_TERMINATED))
+      {
           serviceState->stateKind = stateKind;
       }
       break;
@@ -128,7 +142,7 @@ v_serviceStateChangeState(
       }
       break;
     case STATE_TERMINATING:
-      if ((serviceState->stateKind == STATE_INITIALISING) || 
+      if ((serviceState->stateKind == STATE_INITIALISING) ||
           (serviceState->stateKind == STATE_OPERATIONAL)) {
           serviceState->stateKind = stateKind;
       }
@@ -181,7 +195,7 @@ v_serviceStateGetName(
     c_char *name;
 
     assert(C_TYPECHECK(serviceState, v_serviceState));
-    
+
     c_lockRead(&serviceState->lock);
     name = v_entityName(serviceState);
     c_lockUnlock(&serviceState->lock);

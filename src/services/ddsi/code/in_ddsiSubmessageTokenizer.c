@@ -63,14 +63,17 @@ in_ddsiSubmessageTokenizerGetNext(
 		in_ddsiSubmessageTokenizer _this,
 		in_ddsiSubmessageDeserializer deserializer)
 {
-	in_ddsiSubmessageToken result; /* NULL indicates end of buffer */
+	in_ddsiSubmessageToken result = NULL; /* NULL indicates end of buffer */
 	assert(_this!=NULL);
 
 	if (_this->nextToken==NULL) {
 		result = NULL;
 	} else {
 		/* implements CDR deserialization */
-		if (!in_ddsiSubmessageDeserializerInit(
+		if (_this->remainingLength == 0) {
+		    /* end of list */
+		    result = NULL;
+		} else if (!in_ddsiSubmessageDeserializerInit(
 				deserializer,
 				in_ddsiSubmessageTokenGetPtr(_this->nextToken),
 				_this->remainingLength  /* may be 0 */)) {

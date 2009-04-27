@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #include "v_kernel.h"
 #include "v__entry.h"
 #include "v_dataReaderEntry.h"
@@ -28,28 +39,6 @@
 #include "os_report.h"
 
 static c_type v_publicationHandle_t = NULL;
-
-/**************************************************************
- * Local Macro definitions
- **************************************************************/
-#define __UPDATE_FOR_FLAG__(flag, statSuffix, reader, oldState, xoredState) \
-    if (v_stateTest(xoredState, flag)) {                         \
-        if (v_stateTest(oldState, flag)) {                       \
-            v_statisticsULongValueDec(v_reader,                  \
-              numberOfInstancesWithStatus##statSuffix, reader); \
-        } else {                                                 \
-            v_statisticsULongValueInc(v_reader,                 \
-              numberOfInstancesWithStatus##statSuffix, reader); \
-        }                                                        \
-    }
-#define UPDATE_READER_STATISTICS(index, instance, oldState) \
-    if (v_statisticsValid(index->reader)) {                         \
-        v_state xoredState = oldState^instance->instanceState;      \
-                                                                    \
-        __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
-        __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
-        __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
-    }
 
 /**************************************************************
  * Private functions
@@ -429,7 +418,7 @@ v_dataReaderEntryWrite(
      * messages only the key part of the filter needs to be evaluated.
      * Functionally it is not a problem by always allowing instances
      * regardless of the filter, it will only consume resources (memory),
-     * which was not needed. 
+     * which was not needed.
      */
     if (_this->filter != NULL) {
         if (((v_stateTest(state, L_WRITE)) ||
@@ -507,6 +496,14 @@ v_dataReaderEntryWrite(
                     c_keep(found);
                     assert(c_refCount(found) == 4);
                     assert(c_refCount(instance) == 4);
+                    /* The reader statistics are updated for the newly inserted
+                     * instance (with its initial values). The previous state
+                     * was nothing, so 0 is passed as the oldState. Officially,
+                     * state 0 is ALIVE, but instances are created with flag
+                     * L_NOWRITERS set, this change triggers an unwanted de-
+                     * crement of the Alive-counter. This special case has to be
+                     * handled in the statistics updating. */
+                    UPDATE_READER_STATISTICS(_this->index,found,0);
                 }
             } else {
                 /* c_tableInsert returned an existing instance.

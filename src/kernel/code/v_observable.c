@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v__observable.h"
 #include "v__entity.h"
 #include "v_observer.h"
@@ -102,10 +113,14 @@ v_observableInit(
     v_statistics s,
     c_bool enable)
 {
+    c_type proxyType;
+
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    o->observers = c_setNew(v_proxy_t(o));
+    proxyType = v_proxy_t(o);
+    o->observers = c_setNew(proxyType);
+    c_free(proxyType);
     assert(o->observers);
     c_mutexInit(&o->mutex,SHARED_MUTEX);
     v_entityInit(v_entity(o), name, s, enable);

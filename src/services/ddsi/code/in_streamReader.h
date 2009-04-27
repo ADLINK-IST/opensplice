@@ -1,21 +1,25 @@
 /*
- * in_streamReader.h
+ *                         OpenSplice DDS
  *
- *  Created on: Mar 3, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN_STREAMREADER_H_
 #define IN_STREAMREADER_H_
 
 #include "in__object.h"
+#include "in_ddsiSubmessage.h"
 #include "in_ddsiParticipant.h"
 #include "in_ddsiSubscription.h"
 #include "in_ddsiPublication.h"
 #include "in_result.h"
 #include "kernelModule.h"
 #include "in_ddsiReceiver.h"
-#include "in_ddsiSubmessage.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -29,13 +33,28 @@ OS_CLASS(in_discoveredPeer);
 
 OS_STRUCT(in_discoveredPeer)
 {
-    in_ddsiEntityId readerId;
+    in_ddsiGuidPrefix writerGuidPrefix; /* source Guid */
+    in_ddsiGuidPrefix readerGuidPrefix; /* destination Guid, may be UNKNOWN */
     in_ddsiEntityId writerId;
+
+    in_ddsiEntityId readerId;
     in_ddsiSequenceNumber sequenceNumber;
+
     /* callback becomes owner of this object */
     in_connectivityPeerEntity discoveredPeerEntity;
 };
 
+/** declaring heartbeat event structure  */
+OS_STRUCT(in_ddsiHeartbeat)
+{
+    OS_EXTENDS(in_ddsiSubmessageHeartbeat);
+};
+
+/** declaring heartbeat event structure  */
+OS_STRUCT(in_ddsiAckNack)
+{
+    OS_EXTENDS(in_ddsiSubmessageAckNack);
+};
 
 /** */
 typedef in_result (*in_streamReaderProcessPeerEntityFunc)(

@@ -1,12 +1,3 @@
-/*
- * ni_discovery.c
- *
- *  Created on  : Aug 13, 2008
- *  Author      : Niels Kortstee
- *  Modified    : Oct 17, 2008
- *  Author      : Frank Rehberger
- */
-
 /* TODO replace printf-error messaging by REPORT logging */
 #include "in_clientMonitor.h"
 
@@ -27,6 +18,7 @@
 #include "v_dataReaderInstance.h"
 
 #include "in_runnable.h"
+#include "in_report.h"
 
 
 static u_result
@@ -121,12 +113,12 @@ in_clientMonitorRun(in_clientMonitor self)
     u_result uresult;
     u_dataReader participantReader, subscriptionReader, publicationReader;
 
+
 	participant = self->participant;
 
 	if(participant){
 		/* Gain access to the built-in subscriber.*/
 		subscriber = u_participantGetBuiltinSubscriber(participant);
-
 		if(subscriber){
 			/*Gain access to the built-in participant reader.*/
 			readers = u_subscriberLookupReaders(subscriber, V_PARTICIPANTINFO_NAME);
@@ -318,6 +310,7 @@ in_clientMonitorStartMonitoring(
     const u_dataReader publicationReader,
     const u_dataReader subscriptionReader)
 {
+    os_boolean terminate = OS_FALSE;
     c_iter events, topics;
     u_waitsetEvent event;
     c_time timeout;
@@ -412,13 +405,12 @@ in_clientMonitorStartMonitoring(
 
 	timeout = self->periodic;
 
-    while(result == U_RESULT_OK
+    while(!terminate
     	  && !(int)in_runnableTerminationRequested(self->runnable)) {
         events = NULL;
         /*Wait for events to occur*/
         result = u_waitsetTimedWaitEvents(waitset, timeout, &events);
-
-        if (result == U_RESULT_DETACHING) {
+        if (result == U_RESULT_TIMEOUT) {
         	/* Timeout or triggered */
         	in_clientMonintorHandleInterrupt(self);
         }
@@ -466,8 +458,10 @@ in_clientMonitorStartMonitoring(
             }
         } else if(result == U_RESULT_DETACHING){
             printf("Starting termination now...\n");
+            terminate = OS_TRUE;
         } else {
             printf("Waitset wait failed.\n");
+            terminate = OS_TRUE;
         }
         if(events){/* events may be null if waitset was deleted */
             c_iterFree(events);
@@ -508,7 +502,7 @@ in_clientMonitorHandleParticipant(
     u_dataReader dataReader,
     c_long dataOffset)
 {
-    v_dataReaderSample sample;
+    v_dataReaderSample sample = NULL;
     u_result result;
     v_state sampleState;
     v_state instanceState;
@@ -524,7 +518,6 @@ in_clientMonitorHandleParticipant(
         instanceState = instance->instanceState;
         msg   = v_dataReaderSampleMessage(sample);
         data  = (struct v_participantInfo *)(C_DISPLACE(msg, dataOffset));
-
         self->participantAction(self->runnable,
         		sampleState,
                 instanceState,
@@ -544,7 +537,7 @@ in_clientMonitorHandleSubscription(
     u_dataReader dataReader,
     c_long dataOffset)
 {
-    v_dataReaderSample sample;
+    v_dataReaderSample sample = NULL;
     u_result result;
     v_state sampleState;
     v_state instanceState;
@@ -555,18 +548,33 @@ in_clientMonitorHandleSubscription(
     result = u_dataReaderTake(dataReader, takeOne, &sample);
 
     while(sample && (result == U_RESULT_OK)){
+        os_boolean ignore = OS_FALSE;
         sampleState = v_readerSample(sample)->sampleState;
         instance = v_dataReaderInstance(v_readerSample(sample)->instance);
         instanceState = instance->instanceState;
         msg   = v_dataReaderSampleMessage(sample);
         data  = (struct v_subscriptionInfo *)(C_DISPLACE(msg, dataOffset));
-
-        self->subscriptionAction(self->runnable,
-            sampleState,
-            instanceState,
-            msg,
-            data);
-
+        if(c_arraySize(data->partition.name) == 1 && (0 == strcmp((os_char*)data->partition.name[0], "__BUILT-IN PARTITION__")))
+        {
+            if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
+               (0 == strcmp(data->topic_name, "DCPSPublication")) ||
+               (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
+               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
+               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+            {
+                ignore = OS_TRUE;
+                IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for subscription.", data->topic_name, data->partition.name[0]);
+            }
+        }
+        if(!ignore)
+        {
+            IN_TRACE_1(Send, 2, "Calling subscription action for topic '%s'.", data->topic_name);
+            self->subscriptionAction(self->runnable,
+                sampleState,
+                instanceState,
+                msg,
+                data);
+        }
         c_free(sample);
         sample = NULL;
         result = u_dataReaderTake(dataReader, takeOne, &sample);
@@ -580,7 +588,7 @@ in_clientMonitorHandlePublication(
     u_dataReader dataReader,
     c_long dataOffset)
 {
-    v_dataReaderSample sample;
+    v_dataReaderSample sample = NULL;
     u_result result;
     v_state sampleState;
     v_dataReaderInstance instance = NULL;
@@ -591,17 +599,33 @@ in_clientMonitorHandlePublication(
     result = u_dataReaderTake(dataReader, takeOne, &sample);
 
     while(sample && (result == U_RESULT_OK)){
+        os_boolean ignore = OS_FALSE;
         sampleState = v_readerSample(sample)->sampleState;
         instance = v_dataReaderInstance(v_readerSample(sample)->instance);
         instanceState = instance->instanceState;
         msg   = v_dataReaderSampleMessage(sample);
         data  = (struct v_publicationInfo *)(C_DISPLACE(msg, dataOffset));
-
-        self->publicationAction(self->runnable,
-            sampleState,
-            instanceState,
-            msg,
-            data);
+        if(c_arraySize(data->partition.name) == 1 && (0 == strcmp((os_char*)data->partition.name[0], "__BUILT-IN PARTITION__")))
+        {
+            if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
+               (0 == strcmp(data->topic_name, "DCPSPublication")) ||
+               (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
+               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
+               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+            {
+                IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for publication.", data->topic_name, data->partition.name[0]);
+                ignore = OS_TRUE;
+            }
+        }
+        if(!ignore)
+        {
+            IN_TRACE_1(Send, 2, "Calling publication action for topic '%s'.", data->topic_name);
+            self->publicationAction(self->runnable,
+                sampleState,
+                instanceState,
+                msg,
+                data);
+        }
 
         c_free(sample);
         sample = NULL;

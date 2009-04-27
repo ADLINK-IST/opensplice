@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <gapi.h>
 #include "ccpp_ReadCondition_impl.h"
 #include "ccpp_Utils.h"
@@ -50,7 +61,7 @@ DDS::DataReader_ptr DDS::ReadCondition_impl::get_datareader (
   if (handle)
   {
     ccpp_UserData_ptr drUD = NULL;
-    drUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+    drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
     if (drUD)
     {
       dataReader = dynamic_cast<DDS::DataReader_ptr>(drUD->ccpp_object);

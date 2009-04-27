@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <os_report.h>
 #include <os_time.h>
 #include <os_stdlib.h>
@@ -155,6 +166,7 @@ os_open_error_file (
             char * filename;
             filename = os_fileNormalize(file_path);
             logfile = fopen(filename, "a");
+            os_free(filename);
          }
       }
    }

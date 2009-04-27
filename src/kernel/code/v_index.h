@@ -1,10 +1,14 @@
-/**
- * @fn c_bool v_indexWrite(v_index index, v_message message);
- * @brief Writes the given messages into the specified index.
- * 
- * @return True if the message is succesful inserted and otherwise False.
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
  */
-
 #ifndef V_INDEX_H
 #define V_INDEX_H
 
@@ -35,149 +39,5 @@ v_indexNew(
     q_expr _from,
     v_indexNewAction action,
     c_voidp arg);
-
-void
-v_indexFree(
-    v_index _this);
-
-/* These two functions address the lifespanAdmin. This will have to be moved
- * to the dataReader */
-
-void
-v_indexRemoveExpiredSamples(
-    v_index _this,
-    v_readerSampleAction action,
-    c_voidp arg);
-                         
-void
-v_indexInsertExpiringSample(
-    v_index _this,
-    v_dataReaderSample sample);
-
-c_type
-v_indexType(
-    v_index _this);
-
-c_long
-v_indexCount(
-    v_index _this);
-
-c_long
-v_indexInstanceCount(
-    v_index _this);
-
-v_dataReaderInstance
-v_indexLookupInstance(
-    v_index _this,
-    v_message keyTemplate);
-
-void
-v_indexRemoveInstance(
-    v_index _this,
-    v_dataReaderInstance instance);
-
-
-c_bool
-v_indexRead(
-    v_index _this,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexReadInstance(
-    v_index _this,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexReadNextInstance(
-    v_index _this,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexTake(
-    v_index _this,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexTakeInstance(
-    v_index _this,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexTakeNextInstance(
-    v_index _this,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexTakeSample(
-    v_index _this,
-    v_dataReaderInstance instance,
-    v_dataReaderSample sample);
-
-c_bool
-v_indexQueryRead(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexQueryReadInstance(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-    
-c_bool
-v_indexQueryReadNextInstance(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexQueryTake(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexQueryTakeInstance(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-c_bool
-v_indexQueryTakeNextInstance(
-    v_index _this,
-    v_dataReaderQuery drq,
-    v_dataReaderInstance instance,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-void
-v_indexWalkSamples(
-    v_index _this,
-    v_readerSampleAction action,
-    c_voidp arg);
-
-void
-v_indexUnregisterWriter(
-    v_index _this,
-    v_gid wGID);
 
 #endif

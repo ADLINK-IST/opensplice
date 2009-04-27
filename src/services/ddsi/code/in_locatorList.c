@@ -61,3 +61,13 @@ in_locatorListPopBack(in_locatorList *_this)
         Coll_List_popBack(_this);
     return result;
 }
+
+
+/** */
+os_size_t
+in_locatorListLength(in_locatorList *_this)
+{
+    os_size_t result =
+        Coll_List_getNrOfElements(_this);
+    return result;
+}

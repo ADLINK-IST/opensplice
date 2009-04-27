@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /** \file os/common/code/os_heap.c
  *  \brief Heap memory management service
  *
@@ -25,14 +36,14 @@ static void *(* ptr_malloc)(size_t) = malloc;
 static void (* ptr_free)(void *) = free;
 static void *(* ptr_realloc)(void *,size_t) = realloc;
 
-static unsigned long long alloc_cum = 0ULL;
-static unsigned long long alloc_delta = 0ULL;
-static unsigned long long alloc_count = 0ULL;
-static unsigned long long dealloc_count = 0ULL;
+static os_uint64 alloc_cum = 0ULL;
+static os_uint64 alloc_delta = 0ULL;
+static os_uint64 alloc_count = 0ULL;
+static os_uint64 dealloc_count = 0ULL;
 
 /** \brief Return amount of cummulative allocated memory
  */
-unsigned long long
+os_uint64
 os_heapAllocCum (void)
 {
     return alloc_cum;
@@ -40,7 +51,7 @@ os_heapAllocCum (void)
 
 /** \brief Return amount of allocated memory since previous query
  */
-unsigned long long
+os_uint64
 os_heapAlloc (void)
 {
     unsigned long long v;
@@ -52,7 +63,7 @@ os_heapAlloc (void)
 
 /** \brief Return count of allocated memory segments
  */
-unsigned long long
+os_uint64
 os_heapAllocCount (void)
 {
     return alloc_count;
@@ -60,7 +71,7 @@ os_heapAllocCount (void)
 
 /** \brief Return count of deallocated memory segments
  */
-unsigned long long
+os_uint64
 os_heapDeallocCount (void)
 {
     return dealloc_count;

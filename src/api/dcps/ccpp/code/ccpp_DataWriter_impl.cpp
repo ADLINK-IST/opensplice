@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <gapi.h>
 #include "ccpp_DataWriter_impl.h" 
 #include "ccpp_Utils.h"
@@ -75,7 +86,7 @@ DDS::ReturnCode_t DDS::DataWriter_impl::set_listener(
     result = gapi_dataWriter_set_listener(_gapi_self, &gapi_listener, mask);
     if (result == DDS::RETCODE_OK) {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
       if (myUD) {
         myUD->setListener(a_listener);
       } else {
@@ -120,7 +131,7 @@ DDS::Topic_ptr DDS::DataWriter_impl::get_topic() THROW_ORB_EXCEPTIONS
   if (handle){
     ccpp_UserData_ptr drUD = NULL;
     if (os_mutexLock(&dw_mutex) == os_resultSuccess) {
-      drUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (drUD) {
         topic = dynamic_cast<DDS::Topic_ptr>(drUD->ccpp_object);
         if (topic) {
@@ -150,7 +161,7 @@ DDS::Publisher_ptr DDS::DataWriter_impl::get_publisher() THROW_ORB_EXCEPTIONS
   if (handle) {
     ccpp_UserData_ptr drUD = NULL;
     if (os_mutexLock(&dw_mutex) == os_resultSuccess) {
-      drUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (drUD) {
         publisher = dynamic_cast<DDS::Publisher_ptr>(drUD->ccpp_object);
         if (publisher) {

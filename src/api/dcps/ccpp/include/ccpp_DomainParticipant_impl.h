@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #ifndef CCPP_DOMAINPARTICIPANT_H
 #define CCPP_DOMAINPARTICIPANT_H
 
@@ -168,8 +179,8 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t get_discovered_participant_data (
-        ::DDS::InstanceHandle_t participant_handle,
-        ::DDS::ParticipantBuiltinTopicData & participant_data
+        ::DDS::ParticipantBuiltinTopicData & participant_data,
+        ::DDS::InstanceHandle_t participant_handle
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t get_discovered_topics (
@@ -177,8 +188,8 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t get_discovered_topic_data (
-        ::DDS::InstanceHandle_t topic_handle,
-        ::DDS::TopicBuiltinTopicData & topic_data
+        ::DDS::TopicBuiltinTopicData & topic_data,
+        ::DDS::InstanceHandle_t topic_handle
       ) THROW_ORB_EXCEPTIONS;
 
       virtual CORBA::Boolean contains_entity (

@@ -1,8 +1,18 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_CHANNEL_H
 #define IN_CHANNEL_H
 
 #include "in__object.h"
-#include "in_channelTypes.h"
 #include "in_stream.h"
 #include "in_channelReader.h"
 #include "in_channelWriter.h"
@@ -21,6 +31,7 @@ OS_STRUCT(in_channel)
     in_channelWriter writer;
     in_channelReader reader;
     in_plugKernel plug;
+    in_configChannel config;
 };
 
 /**
@@ -51,7 +62,12 @@ in_channelInit(
     in_objectKind kind,
     in_objectDeinitFunc deinit,
     in_stream stream,
-    in_plugKernel plug);
+    in_plugKernel plug,
+    in_configChannel config);
+
+in_configChannel
+in_channelGetConfig(
+    in_channel _this);
 
 void
 in_channelDeinit(

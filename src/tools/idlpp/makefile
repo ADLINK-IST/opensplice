@@ -16,6 +16,7 @@ clean:
 	rm -f $(EORB_3_0_TMPLS)
 	rm -f $(OPENFUSION_1_4_1_TMPLS)
 	rm -f $(OPENFUSION_1_5_1_TMPLS)
+	rm -f $(OPENFUSION_1_6_1_TMPLS)
 	rm -f $(SACPP_TMPLS)
 
 else
@@ -35,6 +36,7 @@ clean:
 	rm -f $(EORB_3_0_TMPLS)
 	rm -f $(OPENFUSION_1_4_1_TMPLS)
 	rm -f $(OPENFUSION_1_5_1_TMPLS)
+	rm -f $(OPENFUSION_1_6_1_TMPLS)
 	rm -f $(SACPP_TMPLS)
 
 endif

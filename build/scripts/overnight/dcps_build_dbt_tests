@@ -7,12 +7,6 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-if [ "$RUN_DBT" != "yes" ]
-then
-   echo "BUILD/DBT=SKIPPED" >> $RESFILE
-   exit 0
-fi
-
 cd ../../..
 
 SetState Testing
@@ -28,17 +22,16 @@ SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
 . ./configure
 
+if [ "$CONFIGURATION" != "OK" ]
+then
+    echo  "ERROR: configuration - dcps_build_dbt_tests"
+    exit 1
+fi
+
 echo "BUILD/DBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
-if [ ! -n "$OSPL_HOME" ]
-then
-   Fail  "ERROR: configuration - dcps_build_dbt_tests"
-   SetState Failed
-   exit 1
-fi
+BUILD_TYPE=`echo $SETUP_TYPE | awk -F'-' '{ print$NF }'`
 
-/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build dev
-echo "BUILD/DBT=Complete" >> $RESFILE
-
+/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build $BUILD_TYPE
 exit 0

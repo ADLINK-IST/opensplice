@@ -58,3 +58,7 @@ then
 fi
 
 unset _WIN_SPL_HOME _CYGPATH
+
+# setting CONFIGURATION to OK will mean that this script can still use ospldev
+CONFIGURATION=OK
+export CONFIGURATION

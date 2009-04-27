@@ -7,6 +7,7 @@
 
 /* **** interface headers **** */
 #include "in__streamReader.h"
+#include "in_report.h"
 /* **** implementation headers **** */
 
 /* **** private functions **** */
@@ -60,3 +61,4 @@ in_streamReaderScan(in_streamReader _this,
 
     return result;
 }
+

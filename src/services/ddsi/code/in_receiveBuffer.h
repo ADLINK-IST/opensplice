@@ -1,10 +1,14 @@
 /*
- * in_abstractReceiveBufferBasic.h
+ *                         OpenSplice DDS
  *
- *  Created on: Feb 8, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN_RECEIVEBUFFER_H_
 #define IN_RECEIVEBUFFER_H_
 
@@ -25,7 +29,7 @@ extern "C" {
 /** \brief constructor
  * \param poritive integer between 0..2^16-1 */
 in_receiveBuffer
-in_receiveBufferNew(in_long capacity);
+in_receiveBufferNew(os_size_t capacity);
 
 /** \brief destructor */
 void

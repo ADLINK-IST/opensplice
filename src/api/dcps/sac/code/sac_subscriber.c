@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #include <gapi.h>
 
@@ -87,7 +98,7 @@ DDS_Subscriber_lookup_datareader (
 
 /*     ReturnCode_t
  *     get_datareaders(
- *         out DataReaderSeq readers,
+ *         inout DataReaderSeq readers,
  *         in SampleStateMask sample_states,
  *         in ViewStateMask view_states,
  *         in InstanceStateMask instance_states);
@@ -95,7 +106,7 @@ DDS_Subscriber_lookup_datareader (
 DDS_ReturnCode_t
 DDS_Subscriber_get_datareaders (
     DDS_Subscriber this,
-    DDS_DataReaderSeq **readers,
+    DDS_DataReaderSeq *readers,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
     const DDS_InstanceStateMask instance_states
@@ -104,7 +115,7 @@ DDS_Subscriber_get_datareaders (
     return (DDS_ReturnCode_t)
 	gapi_subscriber_get_datareaders (
 	    (gapi_subscriber)this,
-	    (gapi_dataReaderSeq **)readers,
+	    (gapi_dataReaderSeq *)readers,
 	    (gapi_sampleStateMask)sample_states,
 	    (gapi_viewStateMask)view_states,
 	    (gapi_instanceStateMask)instance_states
@@ -179,7 +190,7 @@ DDS_Subscriber_set_listener (
         sac_copySacSubscriberListener(a_listener, &gListener);
         pListener = &gListener;
     }
-    
+
     return (DDS_ReturnCode_t)
 	gapi_subscriber_set_listener (
 	    (gapi_subscriber)this,

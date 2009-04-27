@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #include "d__publisher.h"
 #include "d_publisher.h"
@@ -66,7 +77,7 @@ d_publisherNew(
             publisher->deleteDataWriter        = NULL;
             writerQos                          = d_writerQosNew(
                                                     V_DURABILITY_VOLATILE,
-                                                    V_RELIABILITY_BESTEFFORT,
+                                                    V_RELIABILITY_RELIABLE,
                                                     config->heartbeatLatencyBudget,
                                                     config->heartbeatTransportPriority);
 

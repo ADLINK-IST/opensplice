@@ -37,6 +37,7 @@
         <Network>
             <InitialDiscoveryPeriod>2.0</InitialDiscoveryPeriod>
             <Alignment>
+                <TimeAlignment>FALSE</TimeAlignment>
                 <RequestCombinePeriod>
                     <Initial>2.5</Initial>
                     <Operational>0.1</Operational>

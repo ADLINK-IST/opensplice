@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #include "gapi_dataReader.h"
 #include "gapi_builtin.h"
 #include "gapi_qos.h"
@@ -83,7 +94,8 @@ const gapi_dataReaderQos  _builtinDataReaderQos = {
     /* gapi_readerDataLifecycleQosPolicy reader_data_lifecycle */
     {
         GAPI_DURATION_INFINITE,          /* gapi_duration_t autopurge_nowriter_samples_delay */
-        GAPI_DURATION_INFINITE           /* gapi_duration_t autopurge_disposed_samples_delay */
+        GAPI_DURATION_INFINITE,          /* gapi_duration_t autopurge_disposed_samples_delay */
+        TRUE                             /* enable_invalid_samples */
     },
     /* gapi_subscriptionKeyQosPolicy subscription_keys; */
     {
@@ -106,7 +118,7 @@ const gapi_dataReaderQos  _builtinDataReaderQos = {
     {
         NULL,
         FALSE
-    }   
+    }
 };
 
 const gapi_subscriberQos  _builtinSubscriberQos = {
@@ -144,7 +156,7 @@ const gapi_subscriberQos  _builtinSubscriberQos = {
     {
         NULL,
         FALSE
-    }   
+    }
 };
 
 static void
@@ -157,7 +169,7 @@ _BuiltinDataReaderFree (
 #define _BUILTIN_SUBSCRIPTION_INFO 3
 
 const BuiltinTopicTypeInfo builtinTopicTypeInfo[] = {
-    { 
+    {
         "DCPSParticipant",
         "DDS::ParticipantBuiltinTopicData",
         sizeof(gapi_participantBuiltinTopicData),
@@ -165,7 +177,7 @@ const BuiltinTopicTypeInfo builtinTopicTypeInfo[] = {
         NULL,
         NULL
     },
-    { 
+    {
         "DCPSTopic",
         "DDS::TopicBuiltinTopicData",
         sizeof(gapi_topicBuiltinTopicData),
@@ -173,7 +185,7 @@ const BuiltinTopicTypeInfo builtinTopicTypeInfo[] = {
         NULL,
         NULL
     },
-    { 
+    {
         "DCPSPublication",
         "DDS::PublicationBuiltinTopicData",
         sizeof(gapi_publicationBuiltinTopicData),
@@ -181,7 +193,7 @@ const BuiltinTopicTypeInfo builtinTopicTypeInfo[] = {
         NULL,
         NULL
     },
-    { 
+    {
         "DCPSSubscription",
         "DDS::SubscriptionBuiltinTopicData",
         sizeof(gapi_subscriptionBuiltinTopicData),
@@ -205,7 +217,7 @@ _SubscriberBuiltinNew (
                            participant,
                            _Entity(participant),
                            TRUE);
-        
+
         newSubscriber->dataReaderSet = gapi_setNew(gapi_objectRefCompare);
         if (newSubscriber->dataReaderSet == NULL) {
             _DomainEntityDispose(_DomainEntity(newSubscriber));
@@ -258,7 +270,7 @@ _BuiltinSubscriberFree (
     gapi_setIter iterSet;
 
     assert(subscriber != NULL);
-   
+
     iterSet = gapi_setFirst(subscriber->dataReaderSet);
     while ( gapi_setIterObject(iterSet) ) {
         _DataReader datareader = _DataReader(gapi_setIterObject(iterSet));
@@ -267,15 +279,15 @@ _BuiltinSubscriberFree (
         gapi_setIterRemove (iterSet);
     }
     gapi_setIterFree (iterSet);
-    
+
     _SubscriberStatusSetListener(_SubscriberStatus(_Entity(subscriber)->status), NULL, 0);
     _SubscriberStatusFree(_SubscriberStatus(_Entity(subscriber)->status));
 
     u_subscriberFree(U_SUBSCRIBER_GET(subscriber));
-    
+
     gapi_setFree (subscriber->dataReaderSet);
     subscriber->dataReaderSet = NULL;
-    
+
     _DomainEntityDispose(_DomainEntity(subscriber));
 }
 
@@ -352,7 +364,7 @@ _BuiltinTopicName  (
     long index)
 {
     const char *name = NULL;
-    
+
     if ( index >= 0 && index < MAX_BUILTIN_TOPIC ) {
         name = builtinTopicTypeInfo[index].topicName;
     }
@@ -365,7 +377,7 @@ _BuiltinFindTopicName (
     _Entity entity)
 {
     const char *name = NULL;
-    
+
     switch (_ObjectGetKind(_Object(entity))) {
         case OBJECT_KIND_DOMAINPARTICIPANT:
             name = builtinTopicTypeInfo[_BUILTIN_PARTICIPANT_INFO].topicName;
@@ -447,7 +459,7 @@ builtinUserDataQosPolicyCopyout (
     gapi_userDataQosPolicy               *dst)
 {
     unsigned long len = c_arraySize(src->value);
-    
+
     if ( dst->value._maximum > 0 ) {
         if ( len != dst->value._maximum ) {
             if ( dst->value._release ) {
@@ -514,7 +526,7 @@ builtinTopicDataQosPolicyCopyout (
     gapi_topicDataQosPolicy               *dst)
 {
     unsigned long len = c_arraySize(src->value);
-    
+
     if ( dst->value._maximum > 0 ) {
         if ( len != dst->value._maximum ) {
             if ( dst->value._release ) {
@@ -582,7 +594,7 @@ builtinPartitionQosPolicyCopyout (
     gapi_partitionQosPolicy               *dst)
 {
     unsigned long len = c_arraySize(src->name);
-    
+
     if ( dst->name._maximum > 0 ) {
         if ( len != dst->name._maximum ) {
             if ( dst->name._release ) {
@@ -627,7 +639,7 @@ builtinPartitionQosPolicyCopyin (
         if (gapi_partitionQos_type == NULL) {
             c_type type = c_string_t(base);
             if (type) {
-                gapi_partitionQos_type = 
+                gapi_partitionQos_type =
                         c_metaArrayTypeNew(c_metaObject(base),
                                            "C_SEQUENCE<c_string>",
                                            type,0);
@@ -660,7 +672,7 @@ builtinGroupDataQosPolicyCopyout (
     gapi_groupDataQosPolicy               *dst)
 {
     unsigned long len = c_arraySize(src->value);
-    
+
     if ( dst->value._maximum > 0 ) {
         if ( len != dst->value._maximum ) {
             if ( dst->value._release ) {
@@ -728,7 +740,7 @@ userDataQosPolicyCopyout (
     gapi_userDataQosPolicy        *dst)
 {
     unsigned long len = c_arraySize(src->value);
-    
+
     if ( dst->value._maximum > 0 ) {
         if ( len != dst->value._maximum ) {
             if ( dst->value._release ) {
@@ -1035,16 +1047,16 @@ gapi_topicBuiltinTopicData__copyOut (
 {
     struct v_topicInfo         *from = (struct v_topicInfo *)_from;
     gapi_topicBuiltinTopicData *to   = (gapi_topicBuiltinTopicData *)_to;
-    
+
     builtinTopicKeyCopyout(&from->key, &to->key);
-    
+
     to->name       = gapi_string_dup(from->name);
     to->type_name  = gapi_string_dup(from->type_name);
 
     durabilityQosPolicyCopyout(&from->durability, &to->durability);
     durabilityServiceQosPolicyCopyout(&from->durabilityService, &to->durability_service);
     deadlineQosPolicyCopyout(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyout(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyout(&from->reliability, &to->reliability);
     transportPriorityQosPolicyCopyout(&from->transport_priority, &to->transport_priority);
@@ -1065,9 +1077,9 @@ gapi_topicBuiltinTopicData__copyIn (
 #ifdef BUILTIN_TOPIC_COPY_IN
     const gapi_topicBuiltinTopicData *from = (gapi_topicBuiltinTopicData *)_from;
     struct v_topicInfo               *to   = (struct v_topicInfo *)_to;
-    
+
     builtinTopicKeyCopyin(&from->key, &to->key);
-    
+
     if ( from->name ) {
         to->name = c_stringNew(base, from->name);
     } else {
@@ -1083,7 +1095,7 @@ gapi_topicBuiltinTopicData__copyIn (
     durabilityQosPolicyCopyin(&from->durability, &to->durability);
     durabilityServiceQosPolicyCopyin(&from->durability_service, &to->durabilityService);
     deadlineQosPolicyCopyin(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyin(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyin(&from->reliability, &to->reliability);
     transportPriorityQosPolicyCopyin(&from->transport_priority, &to->transport_priority);
@@ -1104,16 +1116,16 @@ gapi_publicationBuiltinTopicData__copyOut (
 {
     struct v_publicationInfo         *from = (struct v_publicationInfo *)_from;
     gapi_publicationBuiltinTopicData *to   = (gapi_publicationBuiltinTopicData *)_to;
-    
+
     builtinTopicKeyCopyout(&from->key, &to->key);
     builtinTopicKeyCopyout(&from->participant_key, &to->participant_key);
-    
+
     to->topic_name = gapi_string_dup(from->topic_name);
     to->type_name  = gapi_string_dup(from->type_name);
 
     durabilityQosPolicyCopyout(&from->durability, &to->durability);
     deadlineQosPolicyCopyout(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyout(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyout(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyout(&from->lifespan, &to->lifespan);
@@ -1121,7 +1133,7 @@ gapi_publicationBuiltinTopicData__copyOut (
     ownershipQosPolicyCopyout(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyout(&from->ownership_strength, &to->ownership_strength);
     presentationQosPolicyCopyout(&from->presentation, &to->presentation);
-    builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);    
+    builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyout(&from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyout(&from->group_data, &to->group_data);
 
@@ -1136,10 +1148,10 @@ gapi_publicationBuiltinTopicData__copyIn (
 #ifdef BUILTIN_TOPIC_COPY_IN
     const gapi_publicationBuiltinTopicData *from = (gapi_publicationBuiltinTopicData *)_from;
     struct v_publicationInfo               *to   = (struct v_publicationInfo *)_to;
-    
+
     builtinTopicKeyCopyin(&from->key, &to->key);
     builtinTopicKeyCopyin(&from->participant_key, &to->participant_key);
-    
+
     if ( from->topic_name ) {
         to->topic_name = c_stringNew(base, from->topic_name);
     } else {
@@ -1154,7 +1166,7 @@ gapi_publicationBuiltinTopicData__copyIn (
 
     durabilityQosPolicyCopyin(&from->durability, &to->durability);
     deadlineQosPolicyCopyin(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyin(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyin(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyin(&from->lifespan, &to->lifespan);
@@ -1162,7 +1174,7 @@ gapi_publicationBuiltinTopicData__copyIn (
     ownershipQosPolicyCopyin(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyin(&from->ownership_strength, &to->ownership_strength);
     presentationQosPolicyCopyin(&from->presentation, &to->presentation);
-    builtinPartitionQosPolicyCopyin(base, &from->partition, &to->partition);    
+    builtinPartitionQosPolicyCopyin(base, &from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyin(base, &from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyin(base, &from->group_data, &to->group_data);
 #endif
@@ -1176,7 +1188,7 @@ gapi_subscriptionBuiltinTopicData__copyOut (
 {
     struct v_subscriptionInfo         *from = (struct v_subscriptionInfo *)_from;
     gapi_subscriptionBuiltinTopicData *to   = (gapi_subscriptionBuiltinTopicData *)_to;
-        
+
     builtinTopicKeyCopyout(&from->key, &to->key);
     builtinTopicKeyCopyout(&from->participant_key, &to->participant_key);
 
@@ -1185,7 +1197,7 @@ gapi_subscriptionBuiltinTopicData__copyOut (
 
     durabilityQosPolicyCopyout(&from->durability, &to->durability);
     deadlineQosPolicyCopyout(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyout(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyout(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyout(&from->reliability, &to->reliability);
     destinationOrderQosPolicyCopyout(&from->destination_order, &to->destination_order);
@@ -1193,7 +1205,7 @@ gapi_subscriptionBuiltinTopicData__copyOut (
     ownershipQosPolicyCopyout(&from->ownership, &to->ownership);
     timeBasedFilterQosPolicyCopyout(&from->time_based_filter, &to->time_based_filter);
     presentationQosPolicyCopyout(&from->presentation, &to->presentation);
-    builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);    
+    builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyout(&from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyout(&from->group_data, &to->group_data);
 }
@@ -1207,7 +1219,7 @@ gapi_subscriptionBuiltinTopicData__copyIn (
 #ifdef BUILTIN_TOPIC_COPY_IN
     const gapi_subscriptionBuiltinTopicData *from = (gapi_subscriptionBuiltinTopicData *)_from;
     struct v_subscriptionInfo               *to   = (struct v_subscriptionInfo *)_to;
-        
+
     builtinTopicKeyCopyin(&from->key, &to->key);
     builtinTopicKeyCopyin(&from->participant_key, &to->participant_key);
 
@@ -1225,7 +1237,7 @@ gapi_subscriptionBuiltinTopicData__copyIn (
 
     durabilityQosPolicyCopyin(&from->durability, &to->durability);
     deadlineQosPolicyCopyin(&from->deadline, &to->deadline);
-    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);   
+    latencyBudgetQosPolicyCopyin(&from->latency_budget, &to->latency_budget);
     livelinessQosPolicyCopyin(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyin(&from->reliability, &to->reliability);
     destinationOrderQosPolicyCopyin(&from->destination_order, &to->destination_order);
@@ -1233,7 +1245,7 @@ gapi_subscriptionBuiltinTopicData__copyIn (
     ownershipQosPolicyCopyin(&from->ownership, &to->ownership);
     timeBasedFilterQosPolicyCopyin(&from->time_based_filter, &to->time_based_filter);
     presentationQosPolicyCopyin(&from->presentation, &to->presentation);
-    builtinPartitionQosPolicyCopyin(base, &from->partition, &to->partition);    
+    builtinPartitionQosPolicyCopyin(base, &from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyin(base, &from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyin(base, &from->group_data, &to->group_data);
 #endif

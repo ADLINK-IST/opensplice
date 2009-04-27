@@ -1,10 +1,14 @@
 /*
- * in__ddsiDeserializer.h
+ *                         OpenSplice DDS
  *
- *  Created on: Feb 18, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN__DDSIDESERIALIZER_H_
 #define IN__DDSIDESERIALIZER_H_
 
@@ -48,6 +52,14 @@ in_ddsiDeserializerInitWithDefaultEndianess(
 		in_ddsiDeserializer _this,
 		in_octet*  buffer,
 		os_size_t  bufferLength);
+
+/* Initialize from existing serializer.
+ * This initialization method is used if data has to be deserialized
+ * which was written into a serializer before */
+void
+in_ddsiDeserializerInitFromSerializer(
+        in_ddsiDeserializer _this,
+        in_ddsiSerializer serializer);
 
 
 /** \brief deinit

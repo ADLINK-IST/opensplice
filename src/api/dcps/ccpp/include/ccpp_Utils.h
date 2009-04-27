@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #ifndef CCPP_UTILS_H
 #define CCPP_UTILS_H
 
@@ -61,7 +72,8 @@ namespace DDS
 
     typedef struct ccpp_UserData *ccpp_UserData_ptr;
 
-    struct ccpp_UserData {
+    struct ccpp_UserData : virtual public CORBA::LocalObject
+    {
 
         CORBA::Object_ptr ccpp_object;
         ::DDS::Listener_ptr ccpp_listener;

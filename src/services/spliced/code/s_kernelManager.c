@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "s_kernelManager.h"
 #include "s_misc.h"
 #include "s_configuration.h"
@@ -12,6 +23,7 @@ C_STRUCT(s_kernelManager) {
     os_cond cv;
     int active;
     u_spliced spliced;
+    os_threadId resendManager;
 };
 
 /**************************************************************
@@ -28,6 +40,21 @@ kernelManager(
     os_mutexUnlock(&km->mtx);
     u_splicedKernelManager(km->spliced);
     return NULL;
+}
+
+/* Resend manager thread for built-in participant */
+static void *
+resendManager(
+    void *arg)
+{
+    s_kernelManager km = (s_kernelManager)arg;
+    os_mutexLock(&km->mtx);
+    km->active++;
+    os_condBroadcast(&km->cv);
+    os_mutexUnlock(&km->mtx);
+    u_splicedBuiltinResendManager(km->spliced);
+    return NULL;
+ 
 }
 
 /**************************************************************
@@ -81,6 +108,18 @@ s_kernelManagerNew(
                     status++;
                 }
             }
+            if (osr == os_resultSuccess) {
+                config = splicedGetConfiguration(daemon);
+                osr = os_threadCreate(&km->resendManager,
+                            S_THREAD_RESENDMANAGER, &config->kernelManagerScheduling,
+                            resendManager, km);
+                if (osr != os_resultSuccess) {
+                    /* don't care if the following statements succeeds, already in error situation */
+                    os_mutexDestroy(&km->mtx);
+                    os_condDestroy(&km->cv);
+                    status++;
+                }
+            }
         } else {
             status++;
         }
@@ -100,6 +139,7 @@ s_kernelManagerFree(
 {
     if (km) { /* km might be NULL, when spliced has detected other spliced */
         os_threadWaitExit(km->id, NULL);
+        os_threadWaitExit(km->resendManager, NULL);
         os_condDestroy(&km->cv);
         os_mutexDestroy(&km->mtx);
         os_free(km);
@@ -111,13 +151,18 @@ s_kernelManagerWaitForActive(
     s_kernelManager km)
 {
     int result;
-    os_time delay = {60, 0};
+    os_time delay = {1, 0};
+    os_time cur;
+    os_time start;
     os_result osr;
     
     os_mutexLock(&km->mtx);
     osr = os_resultSuccess;
-    if (km->active == 0) {
+    cur = os_timeGet();
+    start = cur;
+    while ((km->active < 2) && (cur.tv_sec - start.tv_sec < 20)) {
         osr = os_condTimedWait(&km->cv, &km->mtx, &delay);
+        cur = os_timeGet();
     }
     result = km->active;
     os_mutexUnlock(&km->mtx);

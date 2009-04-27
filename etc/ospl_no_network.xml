@@ -21,9 +21,6 @@
                     <Operational>0.1</Operational>
                 </RequestCombinePeriod>
             </Alignment>
-            <WaitForAttachment maxWaitCount="10">
-                <ServiceName>networking</ServiceName>
-            </WaitForAttachment>
         </Network>
         <NameSpaces>
             <NameSpace durabilityKind="Durable" alignmentKind="Initial_and_Aligner">

@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    UserLoad.cpp
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the C++ programming language.
@@ -91,6 +98,7 @@ main (
     bool                            closed = false;
     Long                            prevCount = 0;
     pthread_t                       tid;
+    pthread_attr_t                  tattr;
 
     /* Create a DomainParticipant (using the 'TheParticipantFactory' convenience macro). */
     participant = TheParticipantFactory->create_participant (
@@ -241,8 +249,11 @@ main (
     checkStatus(status, "Chat::NameServiceDataReader::return_loan");
     
     /* Start the sleeper thread. */
-    pthread_create (&tid, NULL, delayedEscape, NULL);
-  
+    pthread_attr_init(&tattr);
+    pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+    pthread_create (&tid, &tattr, delayedEscape, NULL);
+    pthread_attr_destroy(&tattr);
+
     while (!closed) {
         /* Wait until at least one of the Conditions in the waitset triggers. */
         status = userLoadWS->wait(guardList, DURATION_INFINITE);

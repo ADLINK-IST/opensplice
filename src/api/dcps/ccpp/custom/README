@@ -23,6 +23,7 @@ custom_lib/ccpp code directory and should be modified to select the ORB of
 choice. It should be executed before gmake is invoked. To generate the CCPP 
 use one of the following values for the environment variable SPLICE_ORB:
 
+- for TAO OpenFusion 1.6.1 use DDS_OpenFusion_1_6_1
 - for TAO OpenFusion 1.5.1 use DDS_OpenFusion_1_5_1
 - for TAO OpenFusion 1.4.1 use DDS_OpenFusion_1_4_1
 - for MICO 2.3.11 use DDS_Mico_2_3_11 

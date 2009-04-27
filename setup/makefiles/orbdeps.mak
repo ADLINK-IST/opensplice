@@ -33,6 +33,38 @@ endif
     ORB_DLRL_API_SRC = $(DLRL_API_IDL:%.idl=%C.cpp) $(DLRL_API_IDL:%.idl=%S.cpp)
     ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%.inl)
 endif
+ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_6_1)
+    ORB_MK_INCLUDE_NAME = tao15-OF
+    ORB_INCLUDE	     = -I$(TAO_ROOT)/include
+    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
+    ORB_IDL_COMPILER = tao_idl
+    ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
+    ORB_IDL_FLAGS    = -Sp -Sd -si S.i -ci C.i
+    ORB_IDL_OUTPUT   = -o
+    ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
+    ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
+ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+    ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
+endif
+
+# various rules to define ORB specific source and object files
+    ORB_TOP_OBJ      = $(TOPIC_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_TOP_SRC      = $(TOPIC_IDL:%.idl=%C.cpp) $(TOPIC_IDL:%.idl=%S.cpp)
+    ORB_TOP_HDR      = $(ORB_TOP_SRC:%.cpp=%.h) $(ORB_TOP_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+
+    ORB_API_OBJ      = $(DCPS_API_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_API_SRC      = $(DCPS_API_IDL:%.idl=%C.cpp) $(DCPS_API_IDL:%.idl=%S.cpp)
+    ORB_API_HDR      = $(ORB_API_SRC:%.cpp=%.h) $(ORB_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+
+    IDLPP_ORB_OBJ    = $(TOPIC_IDL:%.idl=%DcpsC$(OBJ_POSTFIX))
+    IDLPP_ORB_SRC    = $(TOPIC_IDL:%.idl=%DcpsC.cpp) $(TOPIC_IDL:%.idl=%DcpsS.cpp)
+    IDLPP_ORB_HDR    = $(IDLPP_ORB_SRC:%.cpp=%.h) $(IDLPP_ORB_SRC:%.cpp=%$(INLINESRC_POSTFIX))
+
+    #TODO determine if correct
+    ORB_DLRL_API_OBJ = $(DLRL_API_IDL:%.idl=%C$(OBJ_POSTFIX))
+    ORB_DLRL_API_SRC = $(DLRL_API_IDL:%.idl=%C.cpp) $(DLRL_API_IDL:%.idl=%S.cpp)
+    ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%.inl)
+endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_MK_INCLUDE_NAME = tao15-OF  
     ORB_INCLUDE	     = -I$(TAO_ROOT)/include
@@ -40,6 +72,7 @@ ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -si S.i -ci C.i
+    ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 ifneq (,$(findstring win32,$(SPLICE_TARGET)))
@@ -71,6 +104,7 @@ ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -Sv
+    ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
 ifneq (,$(findstring win32,$(SPLICE_TARGET)))

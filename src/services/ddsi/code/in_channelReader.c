@@ -19,7 +19,6 @@ in_channelReaderInit(
     assert(kind > IN_OBJECT_KIND_INVALID);
     assert(deinit);
     assert(name);
-    assert(pathName);
     assert(runnableMainFunc);
 
     success = in_runnableInit(

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #ifndef DDS_DCPS_H
 #define DDS_DCPS_H
 
@@ -2510,8 +2521,8 @@ DDS_DomainParticipant_get_discovered_participants (
 OS_API DDS_ReturnCode_t
 DDS_DomainParticipant_get_discovered_participant_data (
     DDS_DomainParticipant _this,
-    DDS_InstanceHandle_t  handle,
-    DDS_ParticipantBuiltinTopicData *participant_data);
+    DDS_ParticipantBuiltinTopicData *participant_data,
+    DDS_InstanceHandle_t  handle);
 
 /*     ReturnCode_t
  *     get_discovered_topics (
@@ -2530,8 +2541,8 @@ DDS_DomainParticipant_get_discovered_topics (
 OS_API DDS_ReturnCode_t
 DDS_DomainParticipant_get_discovered_topic_data (
     DDS_DomainParticipant _this,
-    DDS_InstanceHandle_t  handle,
-    DDS_TopicBuiltinTopicData *topic_data);
+    DDS_TopicBuiltinTopicData *topic_data,
+    DDS_InstanceHandle_t  handle);
 
 /*     Boolean
  *     contains_entity (
@@ -3351,7 +3362,7 @@ DDS_Subscriber_lookup_datareader (
 
 /*     ReturnCode_t
  *     get_datareaders(
- *         out DataReaderSeq readers,
+ *         inout DataReaderSeq readers,
  *         in SampleStateMask sample_states,
  *         in ViewStateMask view_states,
  *         in InstanceStateMask instance_states);
@@ -3359,7 +3370,7 @@ DDS_Subscriber_lookup_datareader (
 OS_API DDS_ReturnCode_t
 DDS_Subscriber_get_datareaders (
     DDS_Subscriber _this,
-    DDS_DataReaderSeq **readers,
+    DDS_DataReaderSeq *readers,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
     const DDS_InstanceStateMask instance_states);

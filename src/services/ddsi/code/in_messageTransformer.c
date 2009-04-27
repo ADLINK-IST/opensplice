@@ -32,6 +32,7 @@ in_messageTransformerInit(
         _this->cdrLength = 0;
         _this->getBufferFunc = getBufferFunc;
         _this->getBufferFuncArg = getBufferFuncArg;
+        _this->fragmented = OS_FALSE;
     }
     return success;
 }
