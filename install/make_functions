@@ -593,6 +593,10 @@ install_hde_target ()
             then
                 install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
             fi
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+            then
+                install_bin_file ${host_release} ${HDE_dir} bin mmstat${suffix_exe}
+            fi
             if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
             then
                 install_bin_file ${host_release} ${HDE_dir} bin shmdump${suffix_exe}
@@ -1247,6 +1251,11 @@ install_rts_target ()
         then
             install_bin_file ${release} ${RTS_dir} bin shmdump${suffix_exe}
         fi
+        if [ "$INCLUDE_TOOLS_MMSTAT" = "yes" ]
+        then
+            install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
+        fi
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
