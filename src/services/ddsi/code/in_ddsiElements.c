@@ -255,17 +255,11 @@ in_ddsiGuidSerialize(
     in_ddsiSerializer writer)
 {
     in_long result;
-    OS_STRUCT(in_ddsiGuid) selfCopy;
 
     assert(self);
     assert(writer);
-    selfCopy = *self;
-    selfCopy.guidPrefix[8] = 0;
-    selfCopy.guidPrefix[9] = 0;
-    selfCopy.guidPrefix[10] = 0;
-    selfCopy.guidPrefix[11] = 1;
 
-    result = in_ddsiSerializerAppendOctets(writer, (in_octet*) &selfCopy,
+    result = in_ddsiSerializerAppendOctets(writer, (in_octet*) self,
             sizeof(*self));
 
 
@@ -1475,10 +1469,6 @@ static void in_ddsiMessageHeaderInit(in_ddsiMessageHeader self,
     self->vendor.vendorId[1] = vendor->vendorId[1];
     /* deep copy of type in_octet[12] */
     memcpy(self->guidPrefix, guidPrefix, sizeof(in_ddsiGuidPrefix));
-    self->guidPrefix[8] = 0;//todo: fix with actual counter
-    self->guidPrefix[9] = 0;
-    self->guidPrefix[10] = 0;
-    self->guidPrefix[11] = 1;
 }
 
 static in_long in_ddsiMessageHeaderSerialize(in_ddsiMessageHeader self,
