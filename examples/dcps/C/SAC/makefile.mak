@@ -11,7 +11,8 @@ INCLUDE += -I$(OSPL_HOME)/src/kernel/include
 INCLUDE += -I$(OSPL_HOME)/src/user/include
 
 ifeq (,$(findstring vxworks,$(SPLICE_TARGET)))
-LIBS	+= -l$(DDS_DATABASE) -ldcpssac
+LIBS	+= -l$(DDS_DATABASE) -l$(DDS_OS) -ldcpssac -l$(DDS_DCPSGAPI) -l$(DDS_USER) -l$(DDS_KERNEL) -l$(DDS_SERIALIZATION) -l$(DDS_UTIL) -l$(DDS_CONF) -l$(DDS_OS) -l$(DDS_CONFPARSER) -l$(DDS_DATABASE)
+LIBS    += -lpthread -lm -lrt -ldl
 endif
 
 all link: ../../exec/$(SPLICE_TARGET)/ping ../../exec/$(SPLICE_TARGET)/pong
