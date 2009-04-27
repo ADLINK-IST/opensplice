@@ -1153,12 +1153,13 @@ in_socketReceive(
                 in_locatorInitFromSockaddr(senderLocator,
                 		(struct sockaddr *)&sockAddr);
 
-
+#ifdef IN_DEBUGGING
                 if (control) {
                     IN_HEXDUMP("in_socketReceiveControl", 0, buffer, result);
                 } else {
                     IN_HEXDUMP("in_socketReceiveData", 0, buffer, result);
                 }
+#endif
 
                 /* Resume profiling because we have actually received something
                  * relevant */
