@@ -27,6 +27,12 @@ static void
 in_controllerCreateDiscoveryChannel(
     in_controller _this);
 
+static os_boolean
+in_controllerAddTransportToDiscoveryData(
+    in_endpointDiscoveryData discoveryData,
+    in_transport transport,
+    os_boolean addMetaLocator);
+
 OS_CLASS(in_controllerChannelData);
 
 OS_STRUCT(in_controller)
@@ -35,9 +41,7 @@ OS_STRUCT(in_controller)
     u_subscriber subscriber;
     u_networkReader reader;
     Coll_List channels;
-    /* */
     in_endpointDiscoveryData discoveryData;
-
     in_controllerChannelData discoveryChannel;
 };
 
@@ -57,7 +61,6 @@ in_controllerNew(
     in_controller _this;
     os_boolean success;
 
-
     assert(service);
 
     _this = os_malloc(sizeof(OS_STRUCT(in_controller)));
@@ -70,11 +73,12 @@ in_controllerNew(
         {
             os_free(_this);
             _this = NULL;
+            IN_TRACE(Construction, 2, "in_controller creation failed");
+        } else
+        {
+            IN_TRACE_1(Construction, 2 , "in_controller created = %x",_this);
         }
     }
-
-    IN_TRACE_1(Construction,2,"in_controller created = %x",_this);
-
     return _this;
 }
 
@@ -84,6 +88,7 @@ in_controllerInit(
     u_service service)
 {
     v_subscriberQos subscriberQos;
+
     assert(_this);
     assert(service);
 
@@ -144,7 +149,6 @@ in_controllerDeinit(
 
     u_networkReaderFree(_this->reader);
     u_subscriberFree(_this->subscriber);
-
 }
 
 void
@@ -159,7 +163,6 @@ in_controllerStart(
     in_controllerCreateDiscoveryChannel(_this);
     in_controllerCreateDataChannels(_this);
 
-
     /* start up the discovery channel */
     in_channelActivate(_this->discoveryChannel->channel);
 
@@ -173,7 +176,6 @@ in_controllerStart(
     }
 
     u_networkReaderRemoteActivityDetected(_this->reader);
-
     IN_TRACE(Construction,2,"in_controller started");
 }
 
@@ -201,10 +203,11 @@ in_controllerStop(
 
         iterator = Coll_Iter_getNext(iterator);
     }
+    IN_TRACE(Construction,2,"in_controller stopped");
 }
 
 os_boolean
-addTransportToDiscoveryData(
+in_controllerAddTransportToDiscoveryData(
     in_endpointDiscoveryData discoveryData,
     in_transport transport,
     os_boolean addMetaLocator)
@@ -268,12 +271,9 @@ in_controllerCreateDataChannels(
 
     assert(_this);
 
-    IN_TRACE(Construction,2,"in_controllerCreateDataChannels called");
-
     config = in_configGetInstance();
     serviceName = u_serviceGetName(_this->service);
     ddsiService = in_configGetDdsiServiceByName(config, serviceName);
-
     dataChannelConfigs = in_configDdsiServiceGetChannels(ddsiService);
 
     IN_TRACE_1(Construction,2,"in_controllerCreateDataChannels will create %d datachannels", Coll_List_getNrOfElements(dataChannelConfigs));
@@ -312,8 +312,8 @@ in_controllerCreateDataChannels(
 
                 if (!channelData->plug ||
                     !channelSpecificEndpoint ||
-                    !addTransportToDiscoveryData(_this->discoveryData, channelData->transport, OS_FALSE) ||
-                    !addTransportToDiscoveryData(channelSpecificEndpoint, channelData->transport, OS_FALSE))
+                    !in_controllerAddTransportToDiscoveryData(_this->discoveryData, channelData->transport, OS_FALSE) ||
+                    !in_controllerAddTransportToDiscoveryData(channelSpecificEndpoint, channelData->transport, OS_FALSE))
                 {
                     IN_REPORT_ERROR_1(IN_SPOT, "Initializing data channel endpoints failed for %s",
                             in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
@@ -329,9 +329,9 @@ in_controllerCreateDataChannels(
                 {
                     IN_TRACE_1(Construction,2,"CREATE DATA channel %s(create stream) ",in_configDataChannelGetName(in_configDataChannel(dataChannelConfig)));
                     channelData->stream = in_factoryCreateStream(
-                            dataChannelConfig,
-                            channelData->plug,
-                            channelData->transport);
+                        dataChannelConfig,
+                        channelData->plug,
+                        channelData->transport);
 
                     if(!channelData->stream)
                     {
@@ -410,10 +410,10 @@ in_controllerCreateDiscoveryChannel(
         }
         channelData->transport = in_factoryCreateTransport(discoveryChannelConfig);
         if(!channelData->transport ||
-           !addTransportToDiscoveryData(
-                   _this->discoveryData,
-                   channelData->transport,
-                   OS_TRUE))
+           !in_controllerAddTransportToDiscoveryData(
+               _this->discoveryData,
+               channelData->transport,
+               OS_TRUE))
         {
             os_free(channelData);
             channelData = NULL;
@@ -434,9 +434,9 @@ in_controllerCreateDiscoveryChannel(
             } else
             {
                 channelData->stream = in_factoryCreateStream(
-                                        discoveryChannelConfig,
-                                        channelData->plug,
-                                        channelData->transport);
+                    discoveryChannelConfig,
+                    channelData->plug,
+                    channelData->transport);
                 if(!channelData->stream)
                 {
                     in_transportFree(channelData->transport);
@@ -446,12 +446,11 @@ in_controllerCreateDiscoveryChannel(
                              in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
                 } else
                 {
-                    channelData->channel =
-                        in_factoryCreateDiscoveryChannel(
-                                in_configDiscoveryChannel(discoveryChannelConfig),
-                                channelData->plug,
-                                channelData->stream,
-                                _this->discoveryData);
+                    channelData->channel = in_factoryCreateDiscoveryChannel(
+                        in_configDiscoveryChannel(discoveryChannelConfig),
+                        channelData->plug,
+                        channelData->stream,
+                        _this->discoveryData);
 
                     if(!channelData->channel)
                     {
@@ -466,6 +465,5 @@ in_controllerCreateDiscoveryChannel(
             }
         }
     }
-
     _this->discoveryChannel = channelData;
 }

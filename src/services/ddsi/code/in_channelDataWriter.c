@@ -38,7 +38,8 @@ in_channelDataWriterInit(
     u_networkReader reader,
     in_endpointDiscoveryData discoveryData);
 
-OS_STRUCT(in_channelDataWriter){
+OS_STRUCT(in_channelDataWriter)
+{
     OS_EXTENDS(in_channelWriter);
     in_streamWriter streamWriter;
     u_networkReader userReader;
@@ -61,12 +62,11 @@ in_channelDataWriterNew(
     assert(config);
     assert(reader);
     assert(discoveryData);
+    assert(reader);
 
     _this = in_channelDataWriter(os_malloc(OS_SIZEOF(in_channelDataWriter)));
     if(_this)
     {
-        assert(reader);
-
         success = in_channelDataWriterInit(
             _this,
             channelData,
@@ -83,7 +83,6 @@ in_channelDataWriterNew(
             IN_TRACE_1(Construction,2,"in_channelDataWriter creation successful = %x",_this);
         }
     }
-
     return _this;
 }
 
@@ -98,6 +97,7 @@ in_channelDataWriterInit(
     os_boolean success;
     u_result ures;
     c_time resolution = {0,20000000}; /* TODO hardcoded for now */
+    in_stream stream;
 
     assert(_this);
     assert(channelData);
@@ -117,7 +117,9 @@ in_channelDataWriterInit(
 
     if(success)
     {
-        _this->streamWriter = in_streamGetWriter(in_channelGetStream(in_channel(channelData)));
+        stream = in_channelGetStream(in_channel(channelData));
+        _this->streamWriter = in_streamGetWriter(stream);
+        in_streamFree(stream);
         _this->userReader = reader;
         _this->discoveryData = in_endpointDiscoveryDataKeep(discoveryData);
         /* connect to darareader and init queueId */
@@ -135,8 +137,6 @@ in_channelDataWriterInit(
             success = OS_FALSE;
         }
     }
-
-    IN_TRACE_1(Construction,2,"in_channelDataWriterInit success: %d",success);
     return success;
 }
 
@@ -184,7 +184,7 @@ in_channelDataWriterMain(
             &queue);
         if (waitResult & V_WAITRESULT_MSGWAITING)
         {
-            more= TRUE;
+            more = TRUE;
             while (more && !(int)in_runnableTerminationRequested((in_runnable)channelWriter))
             {
                 v_networkReaderEntry dummy_entry;

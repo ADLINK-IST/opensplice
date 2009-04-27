@@ -3,7 +3,7 @@
 
 /* Database includes */
 #include "c_base.h"
-
+#include "v_topic.h"
 /* DDSi includes */
 #include "in_locator.h"
 #include "in__messageDeserializer.h"
@@ -382,40 +382,43 @@ in_messageDeserializerEnd(
 in_result
 in_messageDeserializerRead(
     in_messageDeserializer _this,
-    c_type type,
-    c_long offset,
+    v_topic topic,
     os_boolean isBigEndian,
     v_message* object)
 {
     in_result result = IN_RESULT_OK;
     in_messageTransformer transformer = in_messageTransformer(_this);
-    v_message* displacedMessage = NULL;
+    c_object displacedMessage;
+    c_type messageType;
 
     assert(_this);
     assert(in_messageDeserializerIsValid(_this));
     assert(object);
+    assert(topic);
 
-    if (type)
+    if (topic)
     {
-        /* work arround, replace cdrLength in transformer by ->length */
+        /* work around, replace cdrLength in transformer by ->length */
         in_messageTransformerSetCdrLength(transformer, (os_ushort) (transformer->length));
         if (_requiresSwap(isBigEndian)) {
             in_messageTransformerSetCopyKind(transformer, IN_MESSAGE_TRANSFORMER_CM_KIND_SWAP);
         } else {
             in_messageTransformerSetCopyKind(transformer, IN_MESSAGE_TRANSFORMER_CM_KIND_COPY);
         }
+        messageType = v_topicMessageType(topic);
 
-        if (c_typeIsRef(type))
+        if (c_typeIsRef(messageType))
         {
-            *object = c_new(type);
+            *object = v_topicMessageNew(topic);
+
             if(*object == NULL)
             {
                 result = IN_RESULT_OUT_OF_MEMORY;
             } else
             {
-                displacedMessage = object;
-                *displacedMessage = C_DISPLACE(*displacedMessage, offset);
-                in_messageDeserializerReadType(_this, type, *displacedMessage);
+                displacedMessage = v_topicData(topic, *object);
+                in_messageDeserializerReadType(_this, v_topicDataType(topic),
+                    displacedMessage);
             }
         } else
         {

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_CONNECTIVITYENTITY_FACADE_H_
 #define IN_CONNECTIVITYENTITY_FACADE_H_
 
@@ -42,7 +53,7 @@ in_ddsiGuid
 in_connectivityEntityFacadeGetGuid(
     in_connectivityEntityFacade _this);
 
-os_time 
+os_time
 in_connectivityEntityFacadeGetTimestamp(
     in_connectivityEntityFacade _this);
 
