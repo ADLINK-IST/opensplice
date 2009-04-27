@@ -1566,20 +1566,18 @@ in_reportTrace(
 
     }
 #else
-    //if(traceClass == TC(Receive))
-    //{
-      if(!outputFile)
-      {
-          outputFile = fopen("ddsi.log", "w");
-      }
-        useTime = os_timeGet();
-        fprintf(outputFile, "%5d.%3.3d ",useTime.tv_sec, useTime.tv_nsec/1000000);
-        fprintf(outputFile, "%-14s (%d) ", context, level);
-        va_start(ap, description);
-        vfprintf(outputFile, description, ap);
-        va_end(ap);
-        fflush(outputFile);
-    //}
+    //todo remove temp way of tracing
+    if(!outputFile)
+    {
+      outputFile = fopen("ddsi.log", "w");
+    }
+    useTime = os_timeGet();
+    fprintf(outputFile, "%5d.%3.3d ",useTime.tv_sec, useTime.tv_nsec/1000000);
+    fprintf(outputFile, "%-14s (%d) ", context, level);
+    va_start(ap, description);
+    vfprintf(outputFile, description, ap);
+    va_end(ap);
+    fflush(outputFile);
 #endif
 }
 

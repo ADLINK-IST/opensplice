@@ -193,10 +193,11 @@ in_channelDataReaderProcessDataFunc(
          * partition-array
          */
 
-        partitionName =  (c_string)(data->topicData.info.partition.name);//TODO temp code
-        if(!partitionName)//
+        partitionName =  (c_string)(data->topicData.info.partition.name);
+        if(!partitionName)
         {
-            partitionName = c_stringNew(c_getBase(kernel), "");//
+            /* If there was no partition listed, create the default empty string partition */
+            partitionName = c_stringNew(c_getBase(kernel), "");
         }
         group = v_groupSetGet(
             kernel->groupSet,
