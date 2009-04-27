@@ -400,7 +400,9 @@ os_threadCreate (
     assert (start_routine != NULL);
     tattr = *threadAttr;
     if (tattr.schedClass == OS_SCHED_DEFAULT) {
+#ifndef VXWORKS_RTP
 	tattr.schedClass = os_procAttrGetClass ();
+#endif
 	tattr.schedPriority = os_procAttrGetPriority ();
     }
     if (pthread_attr_init (&attr) != 0 ||
