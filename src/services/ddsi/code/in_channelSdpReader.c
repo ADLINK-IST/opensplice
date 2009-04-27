@@ -263,15 +263,6 @@ in_channelSdpReaderProcessPeerEntity(
         result = in_channelSdpWriterAddPeerEntity(sdpw, peer->discoveredPeerEntity);
         IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer now = %x", result);
     }
-    /*if(result == IN_RESULT_OK)
-    {
-        IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer for acking = %x", result);
-        if(in_objectGetKind(in_object(peer->discoveredPeerEntity)) == IN_OBJECT_KIND_PEER_PARTICIPANT)
-        {
-           result = in_channelSdpWriterAddPeerEntityForAcking(sdpw, peer);
-           IN_TRACE_1(Send, 2, ">>> in_channelSdpReaderProcessPeerEntity - going to add peer entity to sdp writer part = %x", result);
-        }
-    }*/
     return result;
 }
 
