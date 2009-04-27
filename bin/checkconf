@@ -177,10 +177,18 @@ javac_check ()
         echo "Error - Only JAVA 1.5 and above is supported"
         return 1
     fi
+    
+    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
 
     case `uname` in
         Linux)
-            JAVA_PATH_EXT=i386
+            if [ `uname -m` == "x86_64" ]
+            then  
+		JAVA_PATH_EXT=amd64
+		LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server
+	    else
+		JAVA_PATH_EXT=i386
+	    fi
             ;;
         SunOS)
             JAVA_PATH_EXT=sparc
@@ -191,7 +199,6 @@ javac_check ()
             ;;
     esac
 
-    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
