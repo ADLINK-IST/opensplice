@@ -4,7 +4,7 @@ TARGET_EXEC	:= ospl
 
 include		$(OSPL_HOME)/setup/makefiles/target.mak
 
-LDLIBS		+= -l$(DDS_OS) -l$(DDS_CONF) -l$(DDS_CONFPARSER)
+LDLIBS		+= -l$(DDS_OS) -l$(DDS_CONF) -l$(DDS_CONFPARSER) -l$(DDS_DATABASE) -l$(DDS_UTIL)
 
 INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
 INCLUDE		+= -I$(OSPL_HOME)/src/configuration/config/include

@@ -41,7 +41,7 @@ JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/i386/client
 JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/i386/native_threads
 JAVA_INCLUDE	 = -I$(JAVA_HOME)/include
 JAVA_INCLUDE	 += -I$(JAVA_HOME)/include/linux
-	
+
 	#soapcpp
 SOAPCPP		= soapcpp2
 
@@ -77,8 +77,7 @@ SHLDFLAGS	 = -shared -fpic
 
 # Set library context
 #RP: -lrt cannot be found
-#LDLIBS		 = -lc -lm -lrt -lpthread
-LDLIBS		 = -lc -lm -lpthread# -lposix4
+LDLIBS		 = -lc -lm -lrt -lpthread -ldl
 
 # Set library context for building shared libraries
 SHLDLIBS	 = 
