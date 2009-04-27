@@ -127,8 +127,6 @@ os_queryInterfaceAttributes(
     struct ifreq ifAttr;
     os_result result = os_resultSuccess;
 
-    fprintf (stderr, "name = %s addr=%s\n", ifr->ifr_name, inet_ntoa(((struct sockaddr_in*)&(ifr->ifr_addr))->sin_addr));
-
     strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
     ifElement->address = ifr->ifr_addr;
     ifAttr = *ifr;
