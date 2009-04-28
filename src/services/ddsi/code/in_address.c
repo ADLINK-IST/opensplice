@@ -42,8 +42,23 @@ in_addressInitFromString(in_address _this, const os_char *addressString)
 			/* init prefix with IPv4 mapping */
 			in_addressInitIPv4Padding(_this);
 		}
+#if 0
+		/* This code has been disabled due to win32 portability issues. IPv4/v6
+		 * conversion shall be provided by abstraction layer in future. Until then
+		 * IPv6 address conversion is not supported. */
+
 		/* returns 1 on success, 0 if bad string format, -1 if bad family */
 		retval = inet_pton(addressFamily, addressString, addressDest);
+#else
+		/* portable code, but does not cover IPv6 */
+		if (addressFamily == AF_INET6) {
+			retval = 0; /* error, IPv6 not supported */
+		} else {
+			/* Note, different return value semantic:
+			 * returns non-zero if the address is valid, zero if not. */
+			retval = (inet_aton(addressString, (struct in_addr *) addressDest) > 0);
+		}
+#endif
 		if (retval <= 0) {
 			/* conversion failed, bad format string */
 			result = FALSE;
@@ -296,6 +311,11 @@ in_addressEqual(const in_address _this, const in_address other)
 os_char*
 in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 {
+#if 0
+	/* This code has been disabled due to win32 portability issues. IPv4/v6
+	 * conversion shall be provided by abstraction layer in future. Until then
+	 * IPv6 address conversion is not supported. */
+
 	if (in_addressIsIPv4Compatible(_this)) {
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET, in_addressIPv4Ptr(_this), buffer, buflen);
@@ -303,6 +323,34 @@ in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET6, in_addressIPv6Ptr(_this), buffer, buflen);
 	}
+#else
+	if (in_addressIsIPv4Compatible(_this)) {
+		/* Note Thread-Unsafety: The string is returned in a statically allocated
+		 * buffer, which subsequent calls will overwrite. And (AFAIK) on win32 platforms
+		 * inet_ntoa will allocate dynamic buffer which should be free-ed afterwards.
+		 *
+		 * Instead use inet_ntop for posix and
+		 * WSAAddressToString for win32 platforms */
+
+		/* inet_ntoa parameter of type "call by value" instead of "call by reference".
+		 * The pointer returned by in_addressIPv4Ptr is aligned by 4, and the octets
+		 * are in network byte order, so no conflicts here. */
+		struct in_addr ipv4Addr = *((struct in_addr*) in_addressIPv4Ptr(_this));
+		char *unsafeString = inet_ntoa(ipv4Addr);
+		/* for safety invoke with upper range */
+		strncpy(buffer, unsafeString, buflen);
+		/* As mentioned I think on win32 the memory should be free-ed, but
+		 * original networking service did not free memory in case of win32, so
+		 * we dont bother here neither. Dont want to create a new SEGV in case I am
+		 * wrong. */
+	} else {
+		/* As in_addressToString() is used only for logging any string may be
+		 * returned here as workarround, for example the host-local address */
+		const char fixIPv6Address[] = "::1/128";
+		strncpy(buffer, fixIPv6Address, buflen);
+	}
+#endif
+
 	return buffer;
 }
 
