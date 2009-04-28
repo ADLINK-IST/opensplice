@@ -313,8 +313,8 @@ in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 {
 #if 0
 	/* This code has been disabled due to win32 portability issues. IPv4/v6
-	 * conversion shall be provided by abstraction layer in future. Until then
-	 * IPv6 address conversion is not supported. */
+	 * conversion shall be provided by abstraction layer in future. Until then the
+	 * protable workarround below shall be used. */
 
 	if (in_addressIsIPv4Compatible(_this)) {
 		/* \TODO check return value for error */
@@ -324,30 +324,41 @@ in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 		inet_ntop(AF_INET6, in_addressIPv6Ptr(_this), buffer, buflen);
 	}
 #else
-	if (in_addressIsIPv4Compatible(_this)) {
-		/* Note Thread-Unsafety: The string is returned in a statically allocated
-		 * buffer, which subsequent calls will overwrite. And (AFAIK) on win32 platforms
-		 * inet_ntoa will allocate dynamic buffer which should be free-ed afterwards.
-		 *
-		 * Instead use inet_ntop for posix and
-		 * WSAAddressToString for win32 platforms */
+	os_char *result = NULL; /* return value on error */
 
-		/* inet_ntoa parameter of type "call by value" instead of "call by reference".
-		 * The pointer returned by in_addressIPv4Ptr is aligned by 4, and the octets
-		 * are in network byte order, so no conflicts here. */
-		struct in_addr ipv4Addr = *((struct in_addr*) in_addressIPv4Ptr(_this));
-		char *unsafeString = inet_ntoa(ipv4Addr);
-		/* for safety invoke with upper range */
-		strncpy(buffer, unsafeString, buflen);
-		/* As mentioned I think on win32 the memory should be free-ed, but
-		 * original networking service did not free memory in case of win32, so
-		 * we dont bother here neither. Dont want to create a new SEGV in case I am
-		 * wrong. */
+	if (in_addressIsIPv4Compatible(_this)) {
+		if (buflen >= ((3*4) + 3 + 1)) {
+			sprintf(buffer,
+					"%d.%d.%d.%d",
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
 	} else {
-		/* As in_addressToString() is used only for logging any string may be
-		 * returned here as workarround, for example the host-local address */
-		const char fixIPv6Address[] = "::1/128";
-		strncpy(buffer, fixIPv6Address, buflen);
+		/* simple but valid IPv6 address to string conversion */
+		if (buflen >= ((16*2) + 7 + 1)) {
+			sprintf(buffer,
+					"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+					_this->octets[0],
+					_this->octets[1],
+					_this->octets[2],
+					_this->octets[3],
+					_this->octets[4],
+					_this->octets[5],
+					_this->octets[6],
+					_this->octets[7],
+					_this->octets[8],
+					_this->octets[9],
+					_this->octets[10],
+					_this->octets[11],
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
 	}
 #endif
 
