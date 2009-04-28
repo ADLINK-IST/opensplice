@@ -42,8 +42,23 @@ in_addressInitFromString(in_address _this, const os_char *addressString)
 			/* init prefix with IPv4 mapping */
 			in_addressInitIPv4Padding(_this);
 		}
+#if 0
+		/* This code has been disabled due to win32 portability issues. IPv4/v6
+		 * conversion shall be provided by abstraction layer in future. Until then
+		 * IPv6 address conversion is not supported. */
+
 		/* returns 1 on success, 0 if bad string format, -1 if bad family */
 		retval = inet_pton(addressFamily, addressString, addressDest);
+#else
+		/* portable code, but does not cover IPv6 */
+		if (addressFamily == AF_INET6) {
+			retval = 0; /* error, IPv6 not supported */
+		} else {
+			/* Note, different return value semantic:
+			 * returns non-zero if the address is valid, zero if not. */
+			retval = (inet_aton(addressString, (struct in_addr *) addressDest) > 0);
+		}
+#endif
 		if (retval <= 0) {
 			/* conversion failed, bad format string */
 			result = FALSE;
@@ -296,6 +311,11 @@ in_addressEqual(const in_address _this, const in_address other)
 os_char*
 in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 {
+#if 0
+	/* This code has been disabled due to win32 portability issues. IPv4/v6
+	 * conversion shall be provided by abstraction layer in future. Until then the
+	 * protable workarround below shall be used. */
+
 	if (in_addressIsIPv4Compatible(_this)) {
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET, in_addressIPv4Ptr(_this), buffer, buflen);
@@ -303,6 +323,45 @@ in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET6, in_addressIPv6Ptr(_this), buffer, buflen);
 	}
+#else
+	os_char *result = NULL; /* return value on error */
+
+	if (in_addressIsIPv4Compatible(_this)) {
+		if (buflen >= ((3*4) + 3 + 1)) {
+			sprintf(buffer,
+					"%d.%d.%d.%d",
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
+	} else {
+		/* simple but valid IPv6 address to string conversion */
+		if (buflen >= ((16*2) + 7 + 1)) {
+			sprintf(buffer,
+					"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+					_this->octets[0],
+					_this->octets[1],
+					_this->octets[2],
+					_this->octets[3],
+					_this->octets[4],
+					_this->octets[5],
+					_this->octets[6],
+					_this->octets[7],
+					_this->octets[8],
+					_this->octets[9],
+					_this->octets[10],
+					_this->octets[11],
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
+	}
+#endif
+
 	return buffer;
 }
 

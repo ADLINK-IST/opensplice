@@ -127,10 +127,10 @@ test_perform_rbt_tests ()
         return 1
     fi
 
-    PASS=`grep 'RBT PASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
-    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
-    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`    
-    MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT} | awk -F': ' '{ print $2 }'`
+    PASS=`grep 'RBT PASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
+    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`    
+    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`    
+    MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
     then
         test_configure $2

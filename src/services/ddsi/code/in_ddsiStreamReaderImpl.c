@@ -226,18 +226,15 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
                 v_message m = *messageObject;
 
                 OS_SUPER(m)->nodeState = L_WRITE;
-                m->allocTime = v_timeGet();
-                /*
-                _this->receiver.haveTimestamp ?
-                        _this->receiver.timestamp : C_TIME_ZERO;
-                        */
                 m->sequenceNumber = (submessage->writerSN.low);
-                m->writeTime = v_timeGet();
-                /*_this->receiver.haveTimestamp ?
-                        _this->receiver.timestamp : C_TIME_ZERO;
-                */
-                m->writerGID = debugGuid; /* tbd */
-                m->writerInstanceGID = debugGuid; /* tbd */
+
+                m->allocTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
+                m->writeTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
+                m->writerGID = in_connectivityPeerWriterGetGid(peerWriter);
+                /* WriterInstanceGID unused in kernel, so not necessary to fill it*/
+                m->writerInstanceGID.systemId =  m->writerGID.systemId;
+                m->writerInstanceGID.localId = 0;
+                m->writerInstanceGID.serial = 0;
                 m->qos = in_messageQos_new(peerWriter, c_getBase(topic));
             }
         }

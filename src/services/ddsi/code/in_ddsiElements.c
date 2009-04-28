@@ -416,14 +416,14 @@ void in_ddsiTimeAsCTime(in_ddsiTime self, c_time *ctime, os_boolean duration) {
         if (duration) {
             result.seconds = ((os_uint32) (self->seconds));
         } else {
-            result.seconds = ((os_uint32) (self->seconds)) - IN_EPOCH_JAN_1970;
+            result.seconds = ((os_uint32) (self->seconds));//TODO: Check how to represent time - IN_EPOCH_JAN_1970;
         }
 
         result.nanoseconds = dtemp * (double) 1e9;
 
         *ctime = c_timeNormalize(result);
     }
-
+    assert(ctime->seconds >= 0);
     assert(ctime->nanoseconds> 0 || self->fraction == 0);
     assert((ctime->nanoseconds < 1000000000)
             || (ctime->nanoseconds == C_TIME_INFINITE.nanoseconds)

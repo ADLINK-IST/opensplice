@@ -247,10 +247,6 @@ in_streamWriterGetDataMulticastLocator(in_streamWriter _this)
     in_locator result = NULL;
     if (_this->publicVTable->getDataMulticastLocator) {
         result = _this->publicVTable->getDataMulticastLocator(_this);
-        if(result)
-        {
-            in_locatorSetPort(result, 7400);//TODO fix
-        }
     }
     return result;
 }
@@ -262,10 +258,6 @@ in_streamWriterGetDataUnicastLocator(in_streamWriter _this)
     in_locator result = NULL;
     if (_this->publicVTable->getDataUnicastLocator) {
         result = _this->publicVTable->getDataUnicastLocator(_this);
-        if(result)
-        {
-            in_locatorSetPort(result, 7410);//TODO fix
-        }
     }
     return result;
 

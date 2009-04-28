@@ -55,6 +55,7 @@ static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
     struct v_publicationInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant);
 
@@ -65,6 +66,7 @@ in_connectivityWriterFacadeDeinit(
 in_connectivityWriterFacade
 in_connectivityWriterFacadeNew(
     struct v_publicationInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant)
 {
@@ -75,7 +77,7 @@ in_connectivityWriterFacadeNew(
 
     if(_this)
     {
-        success = in_connectivityWriterFacadeInit(_this,info,seq, participant);
+        success = in_connectivityWriterFacadeInit(_this,info,hasKey, seq, participant);
 
         if(!success)
         {
@@ -90,6 +92,7 @@ static os_boolean
 in_connectivityWriterFacadeInit(
     in_connectivityWriterFacade _this,
     struct v_publicationInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant)
 {
@@ -106,7 +109,14 @@ in_connectivityWriterFacadeInit(
     guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
     guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
     //should determine the following value based on topic and if it has a key or not
-    guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_WRITER_NO_KEY;
+
+    if(hasKey)
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_WRITER_WITH_KEY;
+    } else
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_WRITER_NO_KEY;
+    }
 
     success = in_connectivityEntityFacadeInit(
         OS_SUPER(_this),

@@ -21,7 +21,6 @@
 #include "in_ddsiDefinitions.h"
 #include "assert.h"
 #include "in_address.h"
-#include "netinet/in.h"
 #include "c_typebase.h" /* for c_ulong as sequenceNumber */
 
 typedef in_octet in_ddsiSubmessageKind;

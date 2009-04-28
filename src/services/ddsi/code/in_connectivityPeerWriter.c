@@ -125,3 +125,21 @@ in_connectivityPeerWriterGetGuid(
     return &(_this->info->proxy.remoteWriterGuid);
 }
 
+v_gid
+in_connectivityPeerWriterGetGid(
+    in_connectivityPeerWriter _this)
+{
+    v_gid gid;
+    in_octet* entityKey;
+
+    assert(in_connectivityPeerWriterIsValid(_this));
+
+    entityKey = _this->info->proxy.remoteWriterGuid.entityId.entityKey;
+
+    gid.systemId  = *((os_uint32*) &(_this->info->proxy.remoteWriterGuid.guidPrefix));
+    gid.localId =  (entityKey[0] << 16) & (entityKey[1] << 8) & (entityKey[2]);
+    gid.serial = 0;
+
+    return gid;
+}
+

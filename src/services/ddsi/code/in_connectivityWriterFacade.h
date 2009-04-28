@@ -51,6 +51,7 @@ extern "C" {
 in_connectivityWriterFacade
 in_connectivityWriterFacadeNew(
     struct v_publicationInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant);
 

@@ -61,7 +61,9 @@ in_ddsiGuid
 in_connectivityPeerWriterGetGuid(
     in_connectivityPeerWriter _this);
 
-
+v_gid
+in_connectivityPeerWriterGetGid(
+    in_connectivityPeerWriter _this);
 
 
 #endif /* IN_CONNECTIVITYPEERWRITER_H_ */

@@ -252,11 +252,16 @@ set_rts_envs ()
     target=$1
     suffix_exe=""
     suffix_script=""
-    if [ "$target" = "x86.win32" ]
-    then
-        suffix_exe=".exe"
-        suffix_script=".bat"
-    fi
+
+    case ${target} in
+        x86.win32)
+            suffix_exe=".exe"
+            suffix_script=".bat"
+            ;;
+        PPC604.vxworks6.6)
+            suffix_exe=".vxe"
+            ;;
+    esac
     
     target_version=$2
     target_date=$3
@@ -300,7 +305,7 @@ set_hde_envs ()
         suffix_exe=".exe"
         suffix_script=".bat"
     fi
-    
+
     host=$2
     target_version=$3
     target_date=$4
@@ -593,6 +598,10 @@ install_hde_target ()
             if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
             then
                 install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+            then
+                install_bin_file ${host_release} ${HDE_dir} bin mmstat${suffix_exe}
             fi
             if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
             then
@@ -1206,17 +1215,20 @@ install_rts_target ()
     #
     # Copy java archive files
     #
-    echo "*     Copy JAVA archive files"
-    release=${OSPL_HOME}/jar/${target}${source_env}
-    if [ -d "${release}" ]
+    if [ "${target_os}" != "vxworks" ]
     then
-        mkdir -p ${RTS_dir}/jar
-        install_dir ${release} ${RTS_dir} jar
-        rm -f ${RTS_dir}/jar/openorb*
-    else
-        echo "* ##    No JAVA archive files detected"
+        echo "*     Copy JAVA archive files"
+        release=${OSPL_HOME}/jar/${target}${source_env}
+        if [ -d "${release}" ]
+        then
+            mkdir -p ${RTS_dir}/jar
+            install_dir ${release} ${RTS_dir} jar
+            rm -f ${RTS_dir}/jar/openorb*
+        else
+            echo "* ##    No JAVA archive files detected"
+        fi
+        echo "*     JAVA archive Ready"
     fi
-    echo "*     JAVA archive Ready"
     
     #
     # Copy Windows service installer and resources into place
@@ -1248,6 +1260,11 @@ install_rts_target ()
         then
             install_bin_file ${release} ${RTS_dir} bin shmdump${suffix_exe}
         fi
+        if [ "$INCLUDE_TOOLS_MMSTAT" = "yes" ]
+        then
+            install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
+        fi
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then

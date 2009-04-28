@@ -47,6 +47,7 @@ extern "C" {
 in_connectivityReaderFacade
 in_connectivityReaderFacadeNew(
     struct v_subscriptionInfo *info,
+    os_boolean hasKey,
     in_ddsiSequenceNumber seq,
     in_connectivityParticipantFacade  participant);
 

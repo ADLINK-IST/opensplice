@@ -49,9 +49,8 @@ extern "C" {
 in_channelSdpWriter
 in_channelSdpWriterNew(
     in_channelSdp sdp,
-    u_participant participant,
+    in_plugKernel plug,
     in_streamWriter writer,
-    u_networkReader reader,
     in_endpointDiscoveryData discoveryData);
 
 in_result
