@@ -220,6 +220,7 @@ installSignalEmulator(void)
     char pname[256];
 
 /* First create the pipe */
+if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
     _snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
     _ospl_signalEmulatorHandle = CreateNamedPipe(pname,
            PIPE_ACCESS_INBOUND,
@@ -240,6 +241,7 @@ installSignalEmulator(void)
                     (LPTHREAD_START_ROUTINE)signalEmulatorThread,
                     (LPVOID)0,
                     (DWORD)0, &threadIdent);
+}
 }
 
 /* Protected functions */

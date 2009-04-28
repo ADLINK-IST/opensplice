@@ -148,15 +148,21 @@ os_result
 os_nanoSleep (
     os_time delay)
 {
+    os_result result = os_resultSuccess;
     DWORD dt;
 
     assert (delay.tv_nsec >= 0);
     assert (delay.tv_nsec < 1000000000);
 
-    dt = delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
-    Sleep(dt);
+    if (delay.tv_sec >= 0 ) {
+        dt = delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
+        Sleep(dt);
+    } else {
+        /* Negative time-interval should return illegal param error */
+        result = os_resultFail;
+    }
 
-    return os_resultSuccess;
+    return result;
 }
 
 /** \brief Get the current time
