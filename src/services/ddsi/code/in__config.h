@@ -37,6 +37,7 @@ extern "C" {
 #define INCF_DEF_DISCOVERY_CHANNEL_PORT (7400)
 #define INCF_DEF_RECEIVE_BUFFER_SIZE (1000000U)
 #define INCF_DEF_DIFFERENTIATED_SERVICES_FIELD (0)
+#define INCF_DEF_BROADCAST_EXPR       "broadcast"
 
 /**
  * Macro that allows the implementation of type checking when casting an

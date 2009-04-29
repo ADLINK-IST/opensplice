@@ -8,7 +8,8 @@
 /* Errors, warnins and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
-#define IN_SPOT __FILE__
+#define IN_STRINGIFY(X) #X
+#define IN_SPOT __FILE__":"IN_STRINGIFY(__LINE__)
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
@@ -29,6 +30,8 @@
     OS_REPORT_3(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2, a3)
 #define IN_REPORT_WARNING_4(funcName, description, a1, a2, a3, a4)                 \
     OS_REPORT_4(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4)
+#define IN_REPORT_WARNING_7(funcName, description, a1, a2, a3, a4, a5, a6, a7)                 \
+    OS_REPORT_7(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4, a5, a6, a7)
 
 #define IN_REPORT_PERIOD (10U)
 #define IN_REPORT_ERROR_PERIODICLY(funcName, description) \

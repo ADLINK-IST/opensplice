@@ -16,7 +16,7 @@
 #include "in_report.h"
 #include "in_ddsiDeserializer.h"
 #include "in_ddsiSerializer.h"
-
+#include "in__config.h"
 
 /** \brief init */
 os_boolean
@@ -54,9 +54,21 @@ in_addressInitFromString(in_address _this, const os_char *addressString)
 		if (addressFamily == AF_INET6) {
 			retval = 0; /* error, IPv6 not supported */
 		} else {
+			in_addr_t networkByteOrderAddress = 0;
 			/* Note, different return value semantic:
-			 * returns non-zero if the address is valid, zero if not. */
-			retval = (inet_aton(addressString, (struct in_addr *) addressDest) > 0);
+			 * returns INADDR_NONE on error */
+		    networkByteOrderAddress = inet_addr(addressString);
+		    if (networkByteOrderAddress == INADDR_NONE &&
+		    	strncmp(addressString, "255.255.255.255", strlen("255.255.255.255"))!=0) {
+		    	/* inet_addr returns INADDR_NONE, but as INADDR_NONE(0xffffffff) is
+		    	 * a valid address we made sure that the string does not contain the well
+		    	 * known IPv4 broadcast address */
+		    	retval = 0; /* error */
+		    } else {
+		    	retval = 1; /* success */
+		    	/* store IPv4 octets in same order in last 4 slots of array */
+		    	*((in_addr_t*) addressDest) =  networkByteOrderAddress;
+		    }
 		}
 #endif
 		if (retval <= 0) {
@@ -299,12 +311,11 @@ in_addressGetFamilyFromString(const os_char *addressString)
 os_boolean
 in_addressEqual(const in_address _this, const in_address other)
 {
+	/** TODO common operation, declare as macro for speedup, maybe
+	 * use platform specific IPv6 comparison macros */
 	os_boolean result;
-	struct in6_addr *a = (struct in6_addr*)_this;
-	struct in6_addr *b = (struct in6_addr*)other;
-
 	result =
-		IN6_ARE_ADDR_EQUAL(a, b);
+		memcmp(_this, other, sizeof(*_this)) == 0;
 	return result;
 }
 
