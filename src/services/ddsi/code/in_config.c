@@ -476,6 +476,11 @@ in_configTraversePartitioningElement(
                         "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
                         name,
                         INCF_ELEM_Partitioning);
+                    IN_REPORT_WARNING_2(
+                        "in_configTraversePartitioningElement",
+                        "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                        name,
+                        INCF_ELEM_Partitioning);
                 }
                 os_free(name);
                 childNode = u_cfNode(c_iterTakeFirst(children));
