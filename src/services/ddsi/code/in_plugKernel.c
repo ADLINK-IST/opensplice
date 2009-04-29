@@ -32,6 +32,11 @@ in_plugKernelDeinit(
     in_object object);
 
 static void
+in_plugKernelGetBaseEntityAction(
+   v_entity e,
+   c_voidp arg);
+
+static void
 in_plugKernelResolveNetworkReader(
     v_entity entity,
     c_voidp args);
@@ -73,6 +78,21 @@ in_plugKernelNew(
     return plug;
 }
 
+static void
+in_plugKernelGetBaseEntityAction(
+   v_entity e,
+   c_voidp arg)
+{
+   c_base* base;
+
+   assert(e);
+   assert(arg);
+
+   base = (c_base*)arg;
+
+   *base = c_getBase(e);
+}
+
 static os_boolean
 in_plugKernelInit(
     in_plugKernel _this,
@@ -95,7 +115,10 @@ in_plugKernelInit(
     if(success)
     {
         _this->service = service;
-        result = u_entityAction(u_entity(_this->service), in_plugKernelResolveNetworkReader, &reader);
+        result =
+        	u_entityAction(
+        			u_entity(_this->service),
+        			in_plugKernelResolveNetworkReader, &reader);
 
         if(result == U_RESULT_OK && reader)
         {
@@ -108,22 +131,13 @@ in_plugKernelInit(
         }
         if(success)
         {
-            ukernel = u_participantKernel(u_participant(service));
-            result = u_kernelClaim (ukernel, &vkernel);
-            if(result == U_RESULT_OK)
-            {
-                _this->base = c_getBase(vkernel);
-                result = u_kernelRelease (ukernel);
-                if(result != U_RESULT_OK)
-                {
-                    /* TODO report error */
-                }
-            } else
-            {
-                /* TODO report error */
-            }
+        	ukernel = u_participantKernel(u_participant(service));
+        	result = u_entityAction (ukernel, in_plugKernelGetBaseEntityAction, &(_this->base));
+        	if(result != U_RESULT_OK)
+        	{
+        		/* TODO report error */
+        	}
         }
-
     }
     return success;
 }
