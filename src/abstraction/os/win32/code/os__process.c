@@ -28,8 +28,6 @@
 #include <assert.h>
 #include <process.h>
 
-#define getpid _getpid
-
 /* List of exithandlers */
 typedef void *(*_ospl_exitHandler)(void);
 
@@ -205,7 +203,9 @@ signalEmulatorThread(
         exit(0);
     }
     if (sig > 0) {
-        _ospl_termHandler(OS_TERMINATION_NORMAL);
+        if (_ospl_termHandler) {
+            _ospl_termHandler(OS_TERMINATION_NORMAL);
+        }
     }
     CloseHandle(_ospl_signalEmulatorHandle);
     _ospl_signalEmulatorHandle = INVALID_HANDLE_VALUE;
@@ -220,6 +220,7 @@ installSignalEmulator(void)
     char pname[256];
 
 /* First create the pipe */
+if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
     _snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
     _ospl_signalEmulatorHandle = CreateNamedPipe(pname,
            PIPE_ACCESS_INBOUND,
@@ -231,6 +232,7 @@ installSignalEmulator(void)
            NULL);
     if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
         OS_DEBUG_1("failure named pipe: %d", GetLastError());
+        assert(_ospl_signalEmulatorHandle != INVALID_HANDLE_VALUE);
         return;
     }
 
@@ -239,6 +241,7 @@ installSignalEmulator(void)
                     (LPTHREAD_START_ROUTINE)signalEmulatorThread,
                     (LPVOID)0,
                     (DWORD)0, &threadIdent);
+}
 }
 
 /* Protected functions */
@@ -440,7 +443,7 @@ os_procCreate(
     PROCESS_INFORMATION *pi;
     STARTUPINFO si;
     char *inargs;
-    char *image;
+    char environment[512];
 
     SECURITY_ATTRIBUTES saAttr;
     struct readPipeHelper* helper;
@@ -482,23 +485,15 @@ os_procCreate(
         si.dwFlags |= STARTF_USESTDHANDLES;
     }
 
-    if (strstr(executable_file, ".exe") == NULL) {
-        image = os_malloc(strlen (executable_file) + 5);
-        strcpy(image, executable_file);
-        strcat(image, ".exe");
-    } else {
-        image = (char *)executable_file;
-    }
+    /* Set the process name via environment variable SPLICE_PROCNAME */
+    snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
+    putenv(environment);
 
-    if (CreateProcess(image, inargs, NULL, NULL, procAttr->activeRedirect,
+    if (CreateProcess(executable_file, inargs, NULL, NULL, procAttr->activeRedirect,
                 CREATE_NO_WINDOW,
                 NULL, NULL, &si, &process_info) == 0) {
         OS_DEBUG_1("CreateProcess failed with %d", (int)GetLastError());
         os_free(inargs);
-
-        if (image != executable_file) {
-            os_free(image);
-        }
         return os_resultFail;
     } else {
         if (procAttr->activeRedirect) {
@@ -510,9 +505,6 @@ os_procCreate(
     }
 
     os_free(inargs);
-    if (image != executable_file) {
-        os_free(image);
-    }
 
 /* Check to see if the client has requested "realtime" behaviour
    via the OS_SCHED_REALTIME abstraction 
@@ -634,7 +626,7 @@ os_procDestroy(
     DWORD written;
 
     result = os_resultSuccess;
-    _snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", procId);
+    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", procId);
     ph = CreateFile(pname,
                 GENERIC_WRITE, 0,
                 NULL, OPEN_EXISTING,

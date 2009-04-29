@@ -3,10 +3,10 @@
 
 TARGET_SLIB	:= $(DDS_CPP)
 
-include		$(OSPL_HOME)/setup/makefiles/target.mak
+include $(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_CPP
 
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
+CINCS	+= -I$(OSPL_HOME)/src/abstraction/os/include
 
 -include $(DEPENDENCIES)

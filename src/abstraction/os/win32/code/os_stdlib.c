@@ -20,6 +20,7 @@
 #include <ctype.h>
 
 #include "code/os_stdlib_getopt.c"
+#include "../common/code/os_stdlib_locate.c"
 
 /** 
  *  \brief create a directory with default

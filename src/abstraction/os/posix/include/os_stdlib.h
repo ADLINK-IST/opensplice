@@ -31,6 +31,7 @@ extern "C" {
 
 #define OS_OS_FILESEPCHAR '/'
 #define OS_OS_PATHSEPCHAR ':'
+#define OS_OS_EXESUFFIX   ""
 
 #define OS_ROK	R_OK
 #define OS_WOK	W_OK

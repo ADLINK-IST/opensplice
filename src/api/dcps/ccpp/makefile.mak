@@ -50,20 +50,21 @@ include     $(OSPL_HOME)/setup/makefiles/target.mak
 # Fine tune the compiler flags.
 CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP
 
-INCLUDE     += $(ORB_INCLUDE)
-INCLUDE     += -I$(OSPL_HOME)/src/kernel/include
-INCLUDE     += -I$(OSPL_HOME)/src/database/database/include
-INCLUDE     += -I$(OSPL_HOME)/src/api/dcps/ccpp/include
-INCLUDE     += -I$(OSPL_HOME)/src/api/dcps/ccpp/orb/$(SPLICE_ORB)
-INCLUDE     += -I$(OSPL_HOME)/src/api/dcps/gapi/include
+CXXINCS  += $(ORB_INCLUDE)
+CXXINCS  += -I$(OSPL_HOME)/src/kernel/include
+CXXINCS  += -I$(OSPL_HOME)/src/database/database/include
+CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/ccpp/include
+CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/ccpp/orb/$(SPLICE_ORB)
+CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/gapi/include
 
-CXXFLAGS    += $(SHCFLAGS) $(MTCFLAGS) 
+CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS)
 
 # Fine tune the Linker flags.
-LDFLAGS     += $(SHLDFLAGS)
+LDFLAGS  += $(SHLDFLAGS)
 
-LDLIBS      += $(SHLDLIBS)
-LDLIBS      += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) $(LDLIBS_CXX) $(ORB_LDLIBS)
+LDLIBS   += $(SHLDLIBS)
+LDLIBS   += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) 
+LDLIBS   += $(LDLIBS_CXX) $(ORB_LDLIBS)
 
 .PHONY: make_idl_preprocessor
 
@@ -79,12 +80,12 @@ $(IDLPP_HDR) $(IDLPP_CPP) $(IDLPP_IDL): $(IDL_DIR)/$(TOPIC_IDL)
 	$(IDLPP) $(IDLPPFLAGS) $<
 
 $(ORB_TOP_SRC) $(ORB_TOP_HDR): $(TOPIC_IDL)
-	$(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
+	unset CXXINCS; unset CINCS; $(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
 
 $(IDLPP_ORB_SRC) $(IDLPP_ORB_HDR): $(TOPIC_IDL:%.idl=%Dcps.idl)
-	$(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
+	unset CXXINCS; unset CINCS; $(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
 
 $(ORB_API_SRC) $(ORB_API_HDR): $(DCPS_API_IDL)
-	$(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
+	unset CXXINCS; unset CINCS; $(ORB_IDL_COMPILER) $(ORB_IDL_FLAGS) $(ORB_CXX_FLAGS) $(IDL_INC_FLAGS)  $^
 
 $(DEPENDENCIES): $(IDLPP_HDR) $(IDLCC_H)

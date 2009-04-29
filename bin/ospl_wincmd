@@ -1,6 +1,5 @@
-CYGPATH=/cygdrive/c/cygwin/bin/cygpath
+CYGPATH=cygpath
 CMD=
-INCLUDE=
 while [ $# -gt 0 ]; do
 #echo param $1
 #echo $CMD
@@ -16,17 +15,19 @@ while [ $# -gt 0 ]; do
       # this is an option
       opt=${arg:1:1};
       arg=${arg:2};
-      a=`$CYGPATH -d "$arg"`;
-      if [ "$a" = "" ]; then
-        a=`$CYGPATH -w "$arg"`;
-        CMD="$CMD -$opt$a";
-      fi
-      if [ "$opt" = "L" ]; then
-        opt="LIBPATH:";
-        CMD="$CMD -$opt$a";
-      fi
-      if [ "$opt" = "I" ]; then
-        INCLUDE="\"$a\";$INCLUDE";
+      if [ -d "$arg" ]; then
+         a=`$CYGPATH -d "$arg"`;
+         if [ "$a" = "" ]; then
+           a=`$CYGPATH -w "$arg"`;
+           CMD="$CMD -$opt$a";
+         fi
+         if [ "$opt" = "L" ]; then
+           opt="LIBPATH:";
+           CMD="$CMD -$opt$a";
+         fi
+         if [ "$opt" = "I" ]; then
+           CMD="$CMD -$opt$a";
+         fi
       fi
     else
       arg=`$CYGPATH -w "$arg"`;
