@@ -311,12 +311,11 @@ in_addressGetFamilyFromString(const os_char *addressString)
 os_boolean
 in_addressEqual(const in_address _this, const in_address other)
 {
+	/** TODO common operation, declare as macro for speedup, maybe
+	 * use platform specific IPv6 comparison macros */
 	os_boolean result;
-	struct in6_addr *a = (struct in6_addr*)_this;
-	struct in6_addr *b = (struct in6_addr*)other;
-
 	result =
-		IN6_ARE_ADDR_EQUAL(a, b);
+		memcmp(_this, other, sizeof(*_this)) == 0;
 	return result;
 }
 
