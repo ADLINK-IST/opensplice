@@ -32,8 +32,6 @@
 extern "C" {
 #endif
 
-
-
 /**
  * Macro that allows the implementation of type checking when casting an
  * object. The signature of the 'casting macro' must look like this:
@@ -59,6 +57,15 @@ void
 in_configDdsiServiceSetNetworkId(
     in_configDdsiService _this,
     os_char* networkId);
+
+os_boolean
+in_configDdsiServiceHasDefaultChannel(
+    in_configDdsiService _this);
+
+void
+in_configDdsiServiceSetHasDefaultChannel(
+    in_configDdsiService _this,
+    os_boolean hasDefaultChannel);
 
 os_char*
 in_configDdsiServiceGetName(
