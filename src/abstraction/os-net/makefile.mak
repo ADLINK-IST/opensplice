@@ -1,29 +1,28 @@
 ifndef OSPL_OUTER_HOME
 # included by bld/$(SPLICE_TARGET)/makefile
 
-TARGET_DLIB		:= $(DDS_OS_NET)
+TARGET_DLIB	:= $(DDS_OS_NET)
 
-include         $(OSPL_HOME)/setup/makefiles/target.mak
+include $(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_OSNET
-CFLAGS          += $(SHCFLAGS) $(MTCFLAGS)
-LDFLAGS         += $(SHLDFLAGS)
-LDLIBS		+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
+CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
+CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 
-LC_FILES        := $(notdir $(wildcard ../../$(OS)$(OS_REV)/code/os__*.c))
-LOBJECTS        := $(LC_FILES:%.c=%$(OBJ_POSTFIX))
+LDFLAGS  += $(SHLDFLAGS)
+LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
+
+LC_FILES := $(notdir $(wildcard ../../$(OS)$(OS_REV)/code/os__*.c))
+LOBJECTS := $(LC_FILES:%.c=%$(OBJ_POSTFIX))
 
 $(LC_FILES:%.c=%$(OBJ_POSTFIX)): ../../$(OS)$(OS_REV)/code/$(LC_FILES) 
-	@echo $(CC) $(CFLAGS) $(INCLUDE) -c $<
-	@filter_gcc $(CC) $(CFLAGS) $(INCLUDE) -c $<
+	@echo $(CC) $(CFLAGS) $(CINCS) -c $<
+	@filter_gcc $(CC) $(CFLAGS) $(CINCS) -c $<
 
 $(LC_FILES:%.c=%.d): $(LC_FILES)
-	$(CPP) $(MAKEDEPFLAGS) $(INCLUDE) $< >$@
+	$(CPP) $(MAKEDEPFLAGS) $(CINCS) $< >$@
 
 $(TARGET): $(LOBJECTS)
-
-INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
-
 
 -include $(DEPENDENCIES)
 else

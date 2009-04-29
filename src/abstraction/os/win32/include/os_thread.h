@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-typedef void *os_os_threadId;
+typedef unsigned int os_os_threadId;
 
 #if defined (__cplusplus)
 }

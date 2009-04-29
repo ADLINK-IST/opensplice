@@ -56,32 +56,32 @@ include	     $(OSPL_HOME)/setup/makefiles/target.mak
 # Fine tune the compiler flags.
 CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP $(ORB_SA_CPP_FLAGS)
 
-INCLUDE		+= $(ORB_SA_INCLUDE)
-INCLUDE		+= -I$(OSPL_HOME)/src/kernel/include
-INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
+CXXINCS	+= $(ORB_SA_INCLUDE)
+CXXINCS	+= -I$(OSPL_HOME)/src/kernel/include
+CXXINCS	+= -I$(OSPL_HOME)/src/database/database/include
+CXXINCS	+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
 
 ifneq (,$(wildcard $(OSPL_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB)))
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB)
+CXXINCS	+= -I$(OSPL_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB)
 else
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB)
+CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB)
 endif
 
 ifneq (,$(wildcard $(OSPL_HOME)/src/api/dcps/sacpp/orb_pa/$(PROC).$(OS)$(OS_REV)))
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/sacpp/orb_pa/$(PROC).$(OS)$(OS_REV)
+CXXINCS	+= -I$(OSPL_HOME)/src/api/dcps/sacpp/orb_pa/$(PROC).$(OS)$(OS_REV)
 else
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/api/dcps/sacpp/orb_pa/$(PROC).$(OS)$(OS_REV)
+CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/api/dcps/sacpp/orb_pa/$(PROC).$(OS)$(OS_REV)
 endif
 
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
+CXXINCS	+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
 
-CXXFLAGS    += $(SHCFLAGS) $(MTCFLAGS) 
+CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS) 
 
 # Fine tune the Linker flags.
-LDFLAGS     += $(SHLDFLAGS)
-
-LDLIBS      += $(SHLDLIBS)
-LDLIBS      += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) $(LDLIBS_CXX) $(ORB_SA_LDLIBS)
+LDFLAGS += $(SHLDFLAGS)
+LDLIBS  += $(SHLDLIBS)
+LDLIBS  += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) 
+LDLIBS  += $(LDLIBS_CXX) $(ORB_SA_LDLIBS)
 
 .PHONY: make_idl_preprocessor
 

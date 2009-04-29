@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include "os_stdlib_locate.c"
+
 char *
 os_getenv(
     char *variable)

@@ -2,15 +2,15 @@
 
 TARGET_DLIB	:= $(DDS_COMMONSERV)
 
-include		$(OSPL_HOME)/setup/makefiles/target.mak
+include $(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_REPORTSERVICE
-CFLAGS          += $(SHCFLAGS) $(MTCFLAGS)
-LDFLAGS         += $(SHLDFLAGS)
-LDLIBS          += $(SHLDLIBS)
+CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
+LDFLAGS  += $(SHLDFLAGS)
+LDLIBS   += $(SHLDLIBS)
 
-INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
+CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
-LDLIBS		+= -l$(DDS_OS)
+LDLIBS	+= -l$(DDS_OS)
 
 -include $(DEPENDENCIES)
