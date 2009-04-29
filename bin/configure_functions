@@ -169,6 +169,11 @@ set_target_alternate ()
 setup_pathed_vars ()
 {
     SPLICE_BIN_PATH=${OSPL_HOME}/bin
+    case $host in
+        CYGWIN_NT*)
+            SPLICE_BIN_PATH=${OSPL_HOME}/lib/${SPLICE_TARGET}:$SPLICE_BIN_PATH
+            ;;
+    esac
     if [ -n "${OLD_SPLICE_BIN_PATH}" ]
     then
         PATH=`echo ${PATH} | \

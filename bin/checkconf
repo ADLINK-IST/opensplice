@@ -60,12 +60,22 @@ msvs_check ()
   	    VS_HOME=`dirname $VS_HOME`
         export VS_HOME
     fi
-    convert_windows_path $VS_HOME
+    convert_windows_path "$VS_HOME"
 
     LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
-    PATH="$UNIX_CONV_PATH/VC/bin:$VS_HOME_UNIX/Common7/IDE:$PATH"
+    LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
+    export LIBPATH 
+    export LIB
+
+    PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
+    if [ -z $COMPILER_VER ]
+    then
+        echo "Error - Compiler version cannit be determined"
+        return 1
+    fi
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
     if [ $CL_MAJOR -lt 14 ]
     then
@@ -206,14 +216,15 @@ javac_check ()
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
     then
-	    T_JAVAC_EXE=$JAVA_HOME/bin/javac
+        convert_windows_path "$JAVA_HOME"
+        T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $T_JAVAC_EXE ]
         then
             echo "Error - Not found"
             return 1
         fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
-        PATH=$JAVA_HOME/bin:$PATH
+        PATH=$UNIX_CONV_PATH/bin:$PATH
         export PATH
     else
         # If not check the path for java
@@ -251,6 +262,7 @@ javac_check ()
         return 1
     fi
 
+    LD_PATH=yes
     case `uname` in
         Linux)
             JAVA_PATH_EXT=i386
@@ -260,6 +272,12 @@ javac_check ()
             ;;
         CYGWIN_NT*)
             JAVA_PATH_EXT=i386
+            PATH=$UNIX_CONV_PATH/lib:$PATH
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
+            export PATH
+            LD_PATH=no
             ;;
         *)
             echo "Error - Not yet supported Java setup"
@@ -267,12 +285,14 @@ javac_check ()
             ;;
     esac
 
-    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
-
-    export LD_LIBRARY_PATH
+    if [ "$LD_PATH" != "no" ]
+    then
+        LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
+        export LD_LIBRARY_PATH
+    fi
 
     echo "OK - using JAVAC version $REAL_VERSION"
     echo "  setting JAVA_HOME to $JAVA_HOME"
@@ -383,8 +403,8 @@ eorb_check ()
             echo "Error - Not eOrb found"
             return 1
         fi
-  		EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
-  		EORBHOME=`dirname $EORB_BIN`
+  	EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
+  	EORBHOME=`dirname $EORB_BIN`
         export EORBHOME
     fi
     
@@ -408,6 +428,13 @@ eorb_check ()
         echo "Error - unable to find $EORBHOME/bin/$EORBENV/idlcpp"
         return 1
     fi
+
+    case `uname` in
+        CYGWIN_NT*)
+            PATH=$PATH:$EORBHOME/lib/$EORBENV
+            export PATH
+            ;;
+    esac
 
     EORB_VERSION=`$EORBHOME/bin/$EORBENV/idlcpp -version | awk '{ print $6 }'`
     if [ $? != 0 ]
@@ -459,6 +486,6 @@ cleanup_checks ()
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
-    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH
+    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH LD_PATH
 }
 
