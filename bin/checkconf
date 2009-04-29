@@ -11,29 +11,34 @@ pathcheck ()
 
 convert_windows_path ()
 {
-    #Make it a dos path to remove all spaces
-    DOS_CONV_PATH=`cygpath -d "$1"`
-    if [ $? != 0 ]
-    then
-        echo "Error: Could not convert to dos path $1"
-        return 1
-    fi
-    #Now turn into a unix path for useage
-    UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
-    if [ $? != 0 ]
-    then
-        echo "Error: Could not convert to unix path $1"
-        return 1
-    fi
+    case `uname` in
+        CYGWIN_NT*)
+            #Make it a dos path to remove all spaces
+            DOS_CONV_PATH=`cygpath -d "$1"`
+            if [ $? != 0 ]
+            then
+                echo "Error: Could not convert to dos path $1"
+                return 1
+            fi
+            #Now turn into a unix path for useage
+            UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
+            if [ $? != 0 ]
+            then
+                echo "Error: Could not convert to unix path $1"
+                return 1
+            fi
+            ;;
+        *)
+            UNIX_CONV_PATH=$1
+            DOS_CONV_PATH=$1
+            ;;
+    esac
     return 0
 }
 
 # test if CL.exe is at least vs8
 msvs_check ()
 {
-    #_CYGPATH=/bin/cygpath
-    #_WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
-
     echo -n "VS: "
     pathcheck cl.exe
     if [ $? != 0 ]
@@ -61,6 +66,10 @@ msvs_check ()
         export VS_HOME
     fi
     convert_windows_path "$VS_HOME"
+    if [ $? != 0 ]
+    then
+        return 1
+    fi
 
     LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
     LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
@@ -217,6 +226,10 @@ javac_check ()
     if [ -n "$JAVA_HOME" ]
     then
         convert_windows_path "$JAVA_HOME"
+        if [ $? != 0 ]
+        then
+            return 1
+        fi
         T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $T_JAVAC_EXE ]
         then
