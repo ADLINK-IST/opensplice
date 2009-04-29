@@ -1,4 +1,3 @@
-export SPLICE_HOST SPLICE_TARGET
 . $OSPL_HOME/bin/checkconf
 
 SPLICE_HOST=x86.win32-dev
