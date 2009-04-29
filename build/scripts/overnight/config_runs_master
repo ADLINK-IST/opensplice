@@ -6,7 +6,6 @@ M   ospli/fedora3/x86.linux2.6-dev 20 heads/scdds1384-01-branch none
 
 M   ospli/rhel4/PPC604.vxworks6.6-dev-inner 1 heads/master none
 
-M   ospli/ultra8/solaris-dev 50 heads/master none
 M   ospli/ultra8/solaris-dev-inner 1 heads/master none
 
 M   ospli/fedora3/x86.linux2.6-dev 20 heads/master none
