@@ -559,7 +559,7 @@ in_socketNew(
     	in_configChannelGetPathName(configChannel);
     os_int addressFamily;
 
-    assert(portNr < UINT16_MAX);
+    assert(portNr < IN_USHORT_MAX);
 	assert(defaultAddress != NULL);
 	assert(addressLookingFor != NULL);
 
@@ -693,8 +693,8 @@ in_socketNew(
 
 #ifdef OS_SOCKET_BIND_FOR_MULTICAST
         	/* Fix for windows: Bind to socket before setting Multicast options */
-        	if (success && addressType==IN_TYPE_MULTICAST) {
-        		success = nw_socketBind(sock);
+        	if (success && addressType==IN_ADDRESS_TYPE_MULTICAST) {
+        		success = in_socketBind(result);
         	}
 #endif
             if (success) {
@@ -752,7 +752,7 @@ in_socketDuplexNew(
     	in_configChannelGetPathName(configChannel);
     os_int addressFamily;
 
-    assert(portNr < UINT16_MAX);
+    assert(portNr < IN_USHORT_MAX);
 	assert(defaultAddress != NULL);
 	assert(addressLookingFor != NULL);
 
