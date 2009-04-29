@@ -90,7 +90,7 @@ in_plugKernelGetBaseEntityAction(
 
    base = (c_base*)arg;
 
-   *base = c_getBase(e);
+   *base = c_getBase(v_objectKernel(v_object(e)));
 }
 
 static os_boolean
@@ -101,8 +101,6 @@ in_plugKernelInit(
     os_boolean success;
     u_result result;
     v_networkReader reader;
-    u_kernel ukernel;
-    v_kernel vkernel;
 
     assert(_this);
     assert(service);
@@ -131,8 +129,7 @@ in_plugKernelInit(
         }
         if(success)
         {
-        	ukernel = u_participantKernel(u_participant(service));
-        	result = u_entityAction (ukernel, in_plugKernelGetBaseEntityAction, &(_this->base));
+        	result = u_entityAction (u_entity(service), in_plugKernelGetBaseEntityAction, &(_this->base));
         	if(result != U_RESULT_OK)
         	{
         		/* TODO report error */
