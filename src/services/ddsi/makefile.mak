@@ -28,6 +28,7 @@ CINCS += -I$(OSPL_HOME)/src/database/serialization/include
 CINCS += -I$(OSPL_HOME)/src/utilities/include
 ## workarround until v__networkQueue.h has moved from code/ to include/
 CINCS += -I$(OSPL_HOME)/src/kernel/code
+CINCS += -I$(OSPL_HOME)/src/user/code
 
 -include $(DEPENDENCIES)
 
