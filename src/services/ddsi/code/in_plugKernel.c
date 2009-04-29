@@ -129,10 +129,16 @@ in_plugKernelInit(
         }
         if(success)
         {
+        	/* init with defined value attribute */
+        	_this->base = NULL;
+        	/* assign base reference */
         	result = u_entityAction (u_entity(service), in_plugKernelGetBaseEntityAction, &(_this->base));
-        	if(result != U_RESULT_OK)
+        	if(result != U_RESULT_OK || _this->base == NULL)
         	{
-        		/* TODO report error */
+        		IN_REPORT_ERROR(IN_SPOT, "Getting base entity from kernel failed");
+
+        		in_plugKernelDeinit(in_object(_this));
+        		success = OS_FALSE;
         	}
         }
     }
@@ -157,6 +163,8 @@ in_plugKernelDeinit(
     assert(in_plugKernelIsValid(object));
 
     _this = in_plugKernel(object);
+    /* Note: we do not need to release the ->base here, as it is
+     * a singleton and it is not ref-counted. */
 
     if(_this->reader)
     {
