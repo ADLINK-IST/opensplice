@@ -296,10 +296,6 @@ serializeParticipantMessage(
             nofOctets = in_ddsiSubmessageAppendEncapsulationHeaderInstantly(encapsKind, serializer);
             IN_BREAK_IF(nofOctets<0);
 
-//serializer->requiresSwap = !serializer->requiresSwap;
-
-
-
             tmpGuid = *guid;
             tmpGuid.entityId.entityKey[0] = 0;
             tmpGuid.entityId.entityKey[1] = 0;
@@ -324,7 +320,6 @@ serializeParticipantMessage(
             nofOctets = in_ddsiSerializerAlign(serializer, IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
             if (nofOctets<0) break;
             total += nofOctets;
-//serializer->requiresSwap = !serializer->requiresSwap;
             /* Assumption was, that no fragmentation is required  so
              * all data fits into the current buffer. Futheron the number
              * of octets of serialized parameter list must be a multiple

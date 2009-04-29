@@ -7,7 +7,6 @@
 
 #include "in_ddsiElements.h"
 #include "assert.h"
-#include "in_assert.h"
 #include "in_address.h"
 #include "in_ddsiDefinitions.h"
 #include <string.h> /* memcmp */
@@ -256,17 +255,11 @@ in_ddsiGuidSerialize(
     in_ddsiSerializer writer)
 {
     in_long result;
-    OS_STRUCT(in_ddsiGuid) selfCopy;
 
     assert(self);
     assert(writer);
-    selfCopy = *self;
-    selfCopy.guidPrefix[8] = 0;
-    selfCopy.guidPrefix[9] = 0;
-    selfCopy.guidPrefix[10] = 0;
-    selfCopy.guidPrefix[11] = 1;
 
-    result = in_ddsiSerializerAppendOctets(writer, (in_octet*) &selfCopy,
+    result = in_ddsiSerializerAppendOctets(writer, (in_octet*) self,
             sizeof(*self));
 
 
@@ -423,14 +416,14 @@ void in_ddsiTimeAsCTime(in_ddsiTime self, c_time *ctime, os_boolean duration) {
         if (duration) {
             result.seconds = ((os_uint32) (self->seconds));
         } else {
-            result.seconds = ((os_uint32) (self->seconds)) - IN_EPOCH_JAN_1970;
+            result.seconds = ((os_uint32) (self->seconds));//TODO: Check how to represent time - IN_EPOCH_JAN_1970;
         }
 
         result.nanoseconds = dtemp * (double) 1e9;
 
         *ctime = c_timeNormalize(result);
     }
-
+    assert(ctime->seconds >= 0);
     assert(ctime->nanoseconds> 0 || self->fraction == 0);
     assert((ctime->nanoseconds < 1000000000)
             || (ctime->nanoseconds == C_TIME_INFINITE.nanoseconds)
@@ -1476,10 +1469,6 @@ static void in_ddsiMessageHeaderInit(in_ddsiMessageHeader self,
     self->vendor.vendorId[1] = vendor->vendorId[1];
     /* deep copy of type in_octet[12] */
     memcpy(self->guidPrefix, guidPrefix, sizeof(in_ddsiGuidPrefix));
-    self->guidPrefix[8] = 0;//todo: fix with actual counter
-    self->guidPrefix[9] = 0;
-    self->guidPrefix[10] = 0;
-    self->guidPrefix[11] = 1;
 }
 
 static in_long in_ddsiMessageHeaderSerialize(in_ddsiMessageHeader self,

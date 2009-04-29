@@ -95,13 +95,9 @@ in_channelSdpInit(
         in_streamWriter streamWriter;
 
         streamWriter = in_streamGetWriter(stream);
-
-        writer = in_channelSdpWriterNew(
-            _this,
-            u_participant(in_plugKernelGetService(plug)),
-            streamWriter,
-            in_plugKernelGetNetworkReader(plug),
+        writer = in_channelSdpWriterNew(_this, plug, streamWriter,
             discoveryData);
+
         if(!writer)
         {
             success = OS_FALSE;

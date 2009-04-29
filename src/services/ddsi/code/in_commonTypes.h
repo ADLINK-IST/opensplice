@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_COMMONTYPES_H
 #define IN_COMMONTYPES_H
 
@@ -31,15 +42,21 @@ typedef unsigned long long in_uint64;
 #define OCT(_u) ((_u)&0xff)
 #define UI2ENTITYID(_u) { { OCT((_u)>>24), OCT((_u)>>16), OCT((_u)>>8)}, OCT((_u)&0xff) }
 
-#define IN_USHORT_MAX (UINT16_MAX)
-
-#define IN_SHORT_MAX  (INT16_MAX)
-#define IN_SHORT_MIN  (INT16_MIN)
-
-#define IN_UINT32_MAX (UINT32_MAX)
-
-#define IN_INT32_MAX  (INT32_MAX)
-#define IN_INT32_MIN  (INT32_MIN)
+#ifndef WIN32
+   #define IN_USHORT_MAX (UINT16_MAX)
+   #define IN_SHORT_MAX  (INT16_MAX)
+   #define IN_SHORT_MIN  (INT16_MIN)
+   #define IN_UINT32_MAX (UINT32_MAX)
+   #define IN_INT32_MAX  (INT32_MAX)
+   #define IN_INT32_MIN  (INT32_MIN)
+#else
+   #define IN_USHORT_MAX (USHRT_MAX)
+   #define IN_SHORT_MAX  (SHRT_MAX)
+   #define IN_SHORT_MIN  (SHRT_MIN)
+   #define IN_UINT32_MAX (ULONG_MAX)
+   #define IN_INT32_MAX  (LONG_MAX)
+   #define IN_INT32_MIN  (LONG_MIN)
+#endif
 
 /** support RTI specific non-compliant things */
 #define IN_WITH_RTI_WORKARROUND

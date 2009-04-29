@@ -77,17 +77,23 @@ nw_socketRetrieveBCInterface(
         *sockAddrPrimaryFound =
             *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
                                              interfaceList[usedInterface]);
+        fprintf (stderr, "sockAddrPrimaryFound = %s\n", inet_ntoa(sockAddrPrimaryFound->sin_addr));
         *sockAddrBroadcastFound =
             *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
                                              interfaceList[usedInterface]);
         result = SK_TRUE;
 
         /* Diagnostics */
-        NW_TRACE_3(Configuration, 2, "Identified broadcast enabled interface %s "
-            "having primary address %s and broadcast address %s",
-            sk_interfaceInfoGetName(interfaceList[usedInterface]),
-            inet_ntoa(sockAddrPrimaryFound->sin_addr),
-            inet_ntoa(sockAddrBroadcastFound->sin_addr));
+        NW_TRACE_1(Configuration, 2, "Identified broadcast enabled interface %s ",
+                   sk_interfaceInfoGetName(interfaceList[usedInterface]));
+
+        /* Individual calls to inet_ntoa are required as a static buffer
+           is used to hold to result */
+        NW_TRACE_1(Configuration, 2, "primary address %s",
+                   inet_ntoa(sockAddrPrimaryFound->sin_addr));
+
+        NW_TRACE_1(Configuration, 2, "broadcast address %s",
+                   inet_ntoa(sockAddrBroadcastFound->sin_addr));
 
         /* Free mem used */
         sk_interfaceInfoFreeAll(interfaceList, nofInterfaces);

@@ -280,7 +280,7 @@ main (
         for (i = 0; i < imax; i++) {
             if (conditionList[i].in() == PP_min_sc) {
                 // cout << "PONG: PING_min arrived" << endl;
-                result = PP_min_reader->take (PP_min_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_min_reader->take (PP_min_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_min_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
@@ -294,7 +294,7 @@ main (
                 }
             } else if (conditionList[i].in() == PP_seq_sc) {
                 // cout << "PONG: PING_seq arrived" << endl;
-                result = PP_seq_reader->take (PP_seq_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_seq_reader->take (PP_seq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_seq_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
@@ -308,7 +308,7 @@ main (
                 }
             } else if (conditionList[i].in() == PP_string_sc) {
                 // cout << "PONG: PING_string arrived" << endl;
-                result = PP_string_reader->take (PP_string_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_string_reader->take (PP_string_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_string_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
@@ -323,7 +323,7 @@ main (
                 }
             } else if (conditionList[i].in() == PP_fixed_sc) {
                 // cout << "PONG: PING_fixed arrived" << endl;
-                result = PP_fixed_reader->take (PP_fixed_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_fixed_reader->take (PP_fixed_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_fixed_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
@@ -337,7 +337,7 @@ main (
                 }
             } else if (conditionList[i].in() == PP_array_sc) {
                 // cout << "PONG: PING_array arrived" << endl;
-                result = PP_array_reader->take (PP_array_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_array_reader->take (PP_array_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_array_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
@@ -351,7 +351,7 @@ main (
                 }
             } else if (conditionList[i].in() == PP_quit_sc) {
                 // cout << "PONG: PING_quit arrived" << endl;
-                result = PP_quit_reader->take (PP_quit_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                result = PP_quit_reader->take (PP_quit_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_quit_dataList->length ();
                 if (jmax != 0) {
                     if (PP_quit_dataList[0].quit) {

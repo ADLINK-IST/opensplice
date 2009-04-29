@@ -409,7 +409,8 @@ in_connectivityAdminAddParticipant(
 in_result
 in_connectivityAdminAddReader(
     in_connectivityAdmin _this,
-    struct v_subscriptionInfo *reader)
+    struct v_subscriptionInfo *reader,
+    os_boolean hasKey)
 {
     Coll_Iter* iterator;
     in_connectivityReaderFacade facade;
@@ -443,7 +444,7 @@ in_connectivityAdminAddReader(
         seq = in_connectivityParticipantFacadeIncReader(participant);
 
         /* create new facade and insert it */
-        facade = in_connectivityReaderFacadeNew(reader, seq, participant);
+        facade = in_connectivityReaderFacadeNew(reader, hasKey, seq, participant);
         Coll_Set_add(&_this->Readers, facade);
 
         findMatchedPeerWriters(_this, facade);
@@ -459,23 +460,27 @@ in_connectivityAdminAddReader(
 in_result
 in_connectivityAdminAddWriter(
     in_connectivityAdmin _this,
-    struct v_publicationInfo *writer)
+    struct v_publicationInfo *writer,
+    os_boolean hasKey)
 {
     Coll_Iter* iterator;
     in_connectivityWriterFacade facade;
+    in_connectivityParticipantFacade  participant;
+    in_ddsiSequenceNumber seq;
     os_boolean found = OS_FALSE;
     in_result result = IN_RESULT_OK;
-IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 1",_this);
+
     os_mutexLock(&(_this->mutex));
-IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 2",_this);
     /* go over all facade's to see if it is already present */
     iterator = Coll_Set_getFirstElement(&_this->Writers);
+
     while(iterator)
     {
         facade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
-                          writer->key) == C_EQ ) {
+                          writer->key) == C_EQ )
+        {
             /* Copy updated info into the Facade */
             *(in_connectivityWriterFacadeGetInfo(facade)) = *writer;
             found = OS_TRUE;
@@ -483,28 +488,19 @@ IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 2",_this);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
-IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 3",_this);
-    if ( !found ) {
-        in_connectivityParticipantFacade  participant;
-        in_ddsiSequenceNumber             seq;
+    if ( !found )
+    {
         /* find participant and increment sequencenumber */
-        IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 4",_this);
         participant = in_connectivityAdminFindParticipantUnsafe(_this, writer->participant_key);
-IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 5",_this);
         seq = in_connectivityParticipantFacadeIncWriter(participant);
-        IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 6",_this);
+
         /* create new facade and insert it */
-        facade = in_connectivityWriterFacadeNew(writer,seq, participant);
+        facade = in_connectivityWriterFacadeNew(writer,hasKey, seq, participant);
         Coll_Set_add(&_this->Writers, facade);
 
         findMatchedPeerReaders(_this, facade);
     }
-IN_TRACE_1(Send,2,"in_connectivityAdminAddWriter here 7",_this);
-
-
     os_mutexUnlock(&(_this->mutex));
-
-    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddWriter(%x) result = %d",writer,  result);
 
     return result;
 }

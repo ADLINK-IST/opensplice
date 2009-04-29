@@ -414,8 +414,6 @@ in_ddsiSubmessageDataSerializedSize(
         IN_DDSI_ENCAPSULATION_HEADER_SIZE
         + serializedPayloadSize;
 
-    printf("in_ddsiSubmessageDataSerializedSize: %d\n", result);
-
     return result;
 }
 

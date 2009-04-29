@@ -10,7 +10,7 @@ endif
 
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
-JCODE_DIR  ?=code
+JCODE_DIR ?=code
 JFLAGS    ?= -source 1.4
 JFLAGS    +=-sourcepath '$(JCODE_DIR)'
 MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
@@ -18,6 +18,7 @@ MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
 # If JAR_MODULE is not defined, assign something to prevent warnings in make
 # output.
 JAR_MODULE ?= foo
+
 JAR_TARGET =$(JAR_LOCATION)/jar/$(SPLICE_TARGET)
 JAR_FILE   =$(JAR_TARGET)/$(JAR_MODULE)
 
@@ -29,7 +30,7 @@ ifdef JAVA_INC
 ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst :, ,$(JAVA_INC)))
 #MANIFEST_CLASSPATH=Class-Path: $(subst $(JAR_INC_DIR)/,,$(subst :, ,$(JAVA_INC)))
-else
+else # it is windows
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst ;, ,$(JAVA_INC)))
 endif
 endif
@@ -173,8 +174,13 @@ $(ODL_C): $(ODL_FILES)
 
 jar: $(JAR_FILE)
 
+ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
 $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
 	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
+else
+$(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
+	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
+endif
 
 ifdef MANIFEST_CLASSPATH
 $(MANIFEST):

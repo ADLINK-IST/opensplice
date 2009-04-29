@@ -294,7 +294,7 @@ main (
             for (i = 0; i < imax; i++) {
                 if (conditionList->_buffer[i] == PP_min_sc) {
     		    /* printf ("PONG: PING_min arrived\n"); */
-                    result = pingpong_PP_min_msgDataReader_take (PP_min_reader, &PP_min_dataList, &infoList, 1,
+                    result = pingpong_PP_min_msgDataReader_take (PP_min_reader, &PP_min_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_min_dataList._length;
                     if (jmax != 0) {
@@ -307,7 +307,7 @@ main (
                     }
                 } else if (conditionList->_buffer[i] == PP_seq_sc) {
     		    /* printf ("PONG: PING_seq arrived\n"); */
-                    result = pingpong_PP_seq_msgDataReader_take (PP_seq_reader, &PP_seq_dataList, &infoList, 1,
+                    result = pingpong_PP_seq_msgDataReader_take (PP_seq_reader, &PP_seq_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_seq_dataList._length;
                     if (jmax != 0) {
@@ -320,7 +320,7 @@ main (
                     }
                 } else if (conditionList->_buffer[i] == PP_string_sc) {
     		    /* printf ("PONG: PING_string arrived\n"); */
-                    result = pingpong_PP_string_msgDataReader_take (PP_string_reader, &PP_string_dataList, &infoList, 1,
+                    result = pingpong_PP_string_msgDataReader_take (PP_string_reader, &PP_string_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_string_dataList._length;
                     if (jmax != 0) {
@@ -334,7 +334,7 @@ main (
                     }
                 } else if (conditionList->_buffer[i] == PP_fixed_sc) {
     		    /* printf ("PONG: PING_fixed arrived\n"); */
-                    result = pingpong_PP_fixed_msgDataReader_take (PP_fixed_reader, &PP_fixed_dataList, &infoList, 1,
+                    result = pingpong_PP_fixed_msgDataReader_take (PP_fixed_reader, &PP_fixed_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_fixed_dataList._length;
                     if (jmax != 0) {
@@ -347,7 +347,7 @@ main (
                     }
                 } else if (conditionList->_buffer[i] == PP_array_sc) {
     		    /* printf ("PONG: PING_array arrived\n"); */
-                    result = pingpong_PP_array_msgDataReader_take (PP_array_reader, &PP_array_dataList, &infoList, 1,
+                    result = pingpong_PP_array_msgDataReader_take (PP_array_reader, &PP_array_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_array_dataList._length;
                     if (jmax != 0) {
@@ -360,7 +360,7 @@ main (
                     }
                 } else if (conditionList->_buffer[i] == PP_quit_sc) {
     		    /* printf ("PONG: PING_quit arrived\n"); */
-                    result = pingpong_PP_quit_msgDataReader_take (PP_quit_reader, &PP_quit_dataList, &infoList, 1,
+                    result = pingpong_PP_quit_msgDataReader_take (PP_quit_reader, &PP_quit_dataList, &infoList, DDS_LENGTH_UNLIMITED,
                                  DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
                     jmax = PP_quit_dataList._length;
                     if (jmax != 0) {
@@ -372,7 +372,7 @@ main (
                         printf ("PONG: PING_quit triggered, but no data available\n");
                     }
                 } else {
-                    printf ("PONG: unknown condition triggered: %x\n", (unsigned int)conditionList->_buffer[i]);
+                    printf ("PONG: unknown condition triggered: %lx\n", (unsigned long)conditionList->_buffer[i]);
                 }
             }
         } else {

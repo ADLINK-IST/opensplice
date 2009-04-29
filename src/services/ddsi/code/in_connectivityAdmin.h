@@ -1,8 +1,14 @@
 /*
- * in_connectivityAdmin.h
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
  *
  */
-
 #ifndef IN_CONNECTIVITYADMIN_H_
 #define IN_CONNECTIVITYADMIN_H_
 
@@ -56,13 +62,15 @@ in_connectivityAdminAddParticipant(
 in_result
 in_connectivityAdminAddReader(
     in_connectivityAdmin _this,
-    struct v_subscriptionInfo *reader
+    struct v_subscriptionInfo *reader,
+    os_boolean hasKey
     );
 
 in_result
 in_connectivityAdminAddWriter(
     in_connectivityAdmin _this,
-    struct v_publicationInfo *writer
+    struct v_publicationInfo *writer,
+    os_boolean hasKey
     );
 
 in_connectivityParticipantFacade

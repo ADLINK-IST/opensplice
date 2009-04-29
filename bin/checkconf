@@ -261,11 +261,19 @@ javac_check ()
         echo "Error - Only JAVA 1.5 and above is supported"
         return 1
     fi
+    
+    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
 
-    LD_PATH=yes
+    T_LD_PATH=yes
     case `uname` in
         Linux)
-            JAVA_PATH_EXT=i386
+            if [ `uname -m` == "x86_64" ]
+            then  
+		JAVA_PATH_EXT=amd64
+		LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server
+	    else
+		JAVA_PATH_EXT=i386
+	    fi
             ;;
         SunOS)
             JAVA_PATH_EXT=sparc
@@ -277,7 +285,7 @@ javac_check ()
             PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
             PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
             export PATH
-            LD_PATH=no
+            T_LD_PATH=no
             ;;
         *)
             echo "Error - Not yet supported Java setup"
@@ -285,9 +293,8 @@ javac_check ()
             ;;
     esac
 
-    if [ "$LD_PATH" != "no" ]
+    if [ "$T_LD_PATH" != "no" ]
     then
-        LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
@@ -486,6 +493,6 @@ cleanup_checks ()
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
-    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH LD_PATH
+    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
 }
 

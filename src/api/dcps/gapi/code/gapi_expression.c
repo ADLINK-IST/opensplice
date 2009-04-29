@@ -481,14 +481,14 @@ actionReadCondition(
 {
     struct conditionArg *ca = (struct conditionArg *)arg;
     c_type type;
-    size_t mask;
+    c_address mask;
     c_bool noCondition;
     
     noCondition = TRUE;
     ca->expr = gapi_expressionNew(NULL);
 
     if ( ca->expr ) {
-        mask = (size_t)ca->mask;
+        mask = (c_address)ca->mask;
         type = c_resolve(c_getBase(c_object(e)), "c_bool");
         ca->expr->expr = F1(Q_EXPR_PROGRAM,
                             F3(Q_EXPR_CALLBACK,
@@ -523,13 +523,13 @@ actionQueryCondition(
 {
     struct conditionArg *ca = (struct conditionArg *)arg;
     c_type type;
-    size_t mask;
+    c_address mask;
     q_expr expr, expr2;
 
     ca->expr = gapi_expressionNew(NULL);
 
     if ( ca->expr ) {
-        mask = (size_t)ca->mask;
+        mask = (c_address)ca->mask;
         type = c_resolve(c_getBase(c_object(e)), "c_bool");
 
         expr = gapi_parseExpression(ca->query);

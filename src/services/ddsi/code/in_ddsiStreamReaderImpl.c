@@ -10,7 +10,6 @@
 
 /* **** implementation headers **** */
 #include "in_abstractReceiveBuffer.h"
-#include "in_assert.h"
 #include "in_report.h"
 #include "in_ddsiSubmessageTokenizer.h"
 #include "in_ddsiSubmessageDeserializer.h"
@@ -28,6 +27,8 @@
 #include "in_messageQos.h"
 #include "in_ddsiEncapsulationHeader.h"
 #include "v_topic.h"
+#include "v_state.h"
+#include "v_time.h"
 
 /* **** private functions **** */
 
@@ -200,8 +201,6 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
             /* TODO report error, invalid payload */
             result = IN_RESULT_ERROR;
         } else {
-            const c_type type = v_topicMessageType(topic);
-            const c_long offset = v_topicDataOffset(topic);
             const os_boolean isBigEndian =
                 in_ddsiEncapsulationHeaderIsBigEndian(&encapsHeader);
 
@@ -213,8 +212,7 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
             result =
                 in_messageDeserializerRead(
                         _this->messageDeserializer,
-                        type,
-                        offset,
+                        topic,
                         isBigEndian,
                         messageObject);
 
@@ -227,14 +225,16 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
 
                 v_message m = *messageObject;
 
-                OS_SUPER(m)->nodeState = 0;
-                m->allocTime = _this->receiver.haveTimestamp ?
-                        _this->receiver.timestamp : C_TIME_ZERO;
+                OS_SUPER(m)->nodeState = L_WRITE;
                 m->sequenceNumber = (submessage->writerSN.low);
-                m->writeTime = _this->receiver.haveTimestamp ?
-                        _this->receiver.timestamp : C_TIME_ZERO;
-                m->writerGID = debugGuid; /* tbd */
-                m->writerInstanceGID = debugGuid; /* tbd */
+
+                m->allocTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
+                m->writeTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
+                m->writerGID = in_connectivityPeerWriterGetGid(peerWriter);
+                /* WriterInstanceGID unused in kernel, so not necessary to fill it*/
+                m->writerInstanceGID.systemId =  m->writerGID.systemId;
+                m->writerInstanceGID.localId = 0;
+                m->writerInstanceGID.serial = 0;
                 m->qos = in_messageQos_new(peerWriter, c_getBase(topic));
             }
         }

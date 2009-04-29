@@ -1566,6 +1566,7 @@ in_reportTrace(
 
     }
 #else
+
     //if(traceClass == TC(Receive))
     //{
       if(!outputFile)
@@ -1579,7 +1580,7 @@ in_reportTrace(
         vfprintf(outputFile, description, ap);
         va_end(ap);
         fflush(outputFile);
-    //}
+   // }
 #endif
 }
 
