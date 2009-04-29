@@ -16,6 +16,7 @@ OS_STRUCT(in_configDdsiService)
     in_configTracing tracing;
     in_configDiscoveryChannel discoveryChannel;
     Coll_List channels;
+    os_boolean hasDefaultChannel;
 };
 
 in_configDdsiService
@@ -79,7 +80,8 @@ in_configDdsiServiceSetNetworkId(
     assert(networkId);
 
 	/* free previous definition  */
-    if (_this->interfaceId!=NULL) {
+    if (_this->interfaceId)
+    {
     	os_free(_this->interfaceId);
     	_this->interfaceId = NULL;
     }
@@ -89,7 +91,6 @@ in_configDdsiServiceSetNetworkId(
         /* TODO report out of memory error */
     }
 }
-
 
 os_boolean
 in_configDdsiServiceInit(
@@ -116,8 +117,28 @@ in_configDdsiServiceInit(
     _this->debugging = NULL;
     _this->tracing = NULL;
     _this->discoveryChannel = NULL;
+    _this->hasDefaultChannel = OS_FALSE;
 
     return success;
+}
+
+os_boolean
+in_configDdsiServiceHasDefaultChannel(
+    in_configDdsiService _this)
+{
+    assert(_this);
+
+    return _this->hasDefaultChannel;
+}
+
+void
+in_configDdsiServiceSetHasDefaultChannel(
+    in_configDdsiService _this,
+    os_boolean hasDefaultChannel)
+{
+    assert(_this);
+
+    _this->hasDefaultChannel = hasDefaultChannel;
 }
 
 os_char*
