@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_ddsiParameter.c
  *
  *  Created on: Mar 9, 2009
@@ -35,6 +24,7 @@ in_ddsiParameterHeaderInitFromBuffer(in_ddsiParameterHeader _this,
 	in_long nofOctets = 0;
 	in_long total = 0;
 	in_long result = -1; /* error */
+	os_ushort lowerTwoBits;
 
 	do {
 		nofOctets =
@@ -55,9 +45,12 @@ in_ddsiParameterHeaderInitFromBuffer(in_ddsiParameterHeader _this,
 		if (nofOctets < 0) break;
 		total += nofOctets;
 
+		lowerTwoBits =
+		    (_this->octetsToNextParameter & ((IN_DDSI_PARAMETER_HEADER_ALIGNMENT)-1));
+
 		/* length must be multiple of IN_DDSI_PARAMETER_HEADER_ALIGNMENT */
-		if (_this->octetsToNextParameter & ((IN_DDSI_PARAMETER_HEADER_ALIGNMENT)-1) > 0) {
-			/* Errior, lower 2 bits are not 0, length encoding does not
+		if (lowerTwoBits > 0) {
+			/* Error, lower 2 bits are not 0, length encoding does not
 			 * meet preconditions */
 			break; /* result = -1;*/
 		}

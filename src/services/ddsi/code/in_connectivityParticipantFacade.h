@@ -1,19 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
- *
- */
-/*
- * in_connectivityParticipantFacade.h
+ *   for full copyright notice and license terms.
  *
  */
-
 #ifndef IN_CONNECTIVITYPARTICIPANTFACADE_H_
 #define IN_CONNECTIVITYPARTICIPANTFACADE_H_
 
@@ -46,7 +41,7 @@ extern "C" {
 #define in_connectivityParticipantFacadeKeep(c) in_objectKeep(in_object(c))
 
 #define in_connectivityParticipantFacadeIsValid(c) \
-    in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_WRITER_FACADE)
+    in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_PARTICIPANT_FACADE)
 
 in_connectivityParticipantFacade
 in_connectivityParticipantFacadeNew(
@@ -67,8 +62,31 @@ in_connectivityParticipantFacadeGetInfo(
     in_connectivityParticipantFacade _this);
 
 Coll_Set*
-in_connectivityParticipantFacadeGetMatchedPeerParticipants(
+in_connectivityParticipantFacadeGetMatchedPeerParticipantsUnsafe(
     in_connectivityParticipantFacade _this);
+
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeGetNrOfWriters(
+        in_connectivityParticipantFacade _this);
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeIncWriter(
+        in_connectivityParticipantFacade _this);
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeGetNrOfReaders(
+        in_connectivityParticipantFacade _this);
+
+in_ddsiSequenceNumber
+in_connectivityParticipantFacadeIncReader(
+        in_connectivityParticipantFacade _this);
+
+in_ddsiGuidPrefixRef
+in_connectivityParticipantFacadeGetGuidPrefix(
+    in_connectivityParticipantFacade _this);
+
+
 
 #if defined (__cplusplus)
 }

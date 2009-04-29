@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in__ddsiParameterList.h
- *
- *  Created on: Feb 24, 2009
- *      Author: frehberg
- */
-
 #ifndef IN__DDSIPARAMETERLIST_H_
 #define IN__DDSIPARAMETERLIST_H_
 

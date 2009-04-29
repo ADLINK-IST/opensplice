@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_ddsiPeerWriter.h
- *
- *  Created on: Oct 13, 2008
- *      Author: frehberg
- */
-
 #ifndef IN_CONNECTIVITYPEERWRITER_H_
 #define IN_CONNECTIVITYPEERWRITER_H_
 
@@ -43,17 +36,8 @@
 
 in_connectivityPeerWriter
 in_connectivityPeerWriterNew(
-    struct v_publicationInfo *info);
+    in_ddsiDiscoveredWriterData info);
 
-in_result
-in_connectivityPeerWriterAddUnicastLocator(
-    in_connectivityPeerWriter _this,
-    in_locator locator);
-
-in_result
-in_connectivityPeerWriterAddMulticastLocator(
-    in_connectivityPeerWriter _this,
-    in_locator locator);
 
 Coll_List*
 in_connectivityPeerWriterGetUnicastLocators(
@@ -63,8 +47,22 @@ Coll_List*
 in_connectivityPeerWriterGetMulticastLocators(
     in_connectivityPeerWriter _this);
 
-struct v_publicationInfo *
+in_ddsiDiscoveredWriterData
 in_connectivityPeerWriterGetInfo(
+    in_connectivityPeerWriter _this);
+
+/** return const string */
+c_char*
+in_connectivityPeerWriterGetTopicName(
+    in_connectivityPeerWriter _this);
+
+
+in_ddsiGuid
+in_connectivityPeerWriterGetGuid(
+    in_connectivityPeerWriter _this);
+
+v_gid
+in_connectivityPeerWriterGetGid(
     in_connectivityPeerWriter _this);
 
 

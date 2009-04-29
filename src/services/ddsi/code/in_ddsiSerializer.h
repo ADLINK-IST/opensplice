@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_ddsiSerializer.h
- *
- *  Created on: Feb 6, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_DDSI_SERIALIZER_H
 #define IN_DDSI_SERIALIZER_H
 
@@ -24,7 +17,7 @@
 
 /** */
 os_boolean
-in_ddsiSerializeIsBigEndian(in_ddsiSerializer serializer);
+in_ddsiSerializerIsBigEndian(in_ddsiSerializer serializer);
 
 /** \brief Write a sequence of octets to buffer
  * \return -1 on error otherwise the number of octets written
@@ -33,8 +26,25 @@ in_long
 in_ddsiSerializerAppendOctets(
 		in_ddsiSerializer _this,
 		const in_octet* valPtr,
-		in_long valLength);
+		in_ulong valLength);
 
+/** append 4 octets to buffer without alignment
+ *
+ * This is a convenience function which allows to implement a number of type-serializations
+ * via macros. */
+in_long
+in_ddsiSerializerAppendOctets_4(
+        in_ddsiSerializer _this,
+        const in_octet val0,
+        const in_octet val1,
+        const in_octet val2,
+        const in_octet val3);
+
+/* TODO ES should not be in header, move back to C file */
+in_long
+appendOctets(in_ddsiSerializer _this,
+					         const in_octet *valPtr,
+					         in_ulong valOctetLength);
 
 /** \brief Append a value to buffer
  * \return -1 on error otherwise the number of octets written
@@ -143,6 +153,6 @@ in_ddsiSerializerAlignmentPaddingSize(
 in_long
 in_ddsiSerializerAppendString(
 		in_ddsiSerializer _this,
-		os_char *str);
+		const os_char *str);
 
 #endif /* IN_DDSI_SERIALIZER_H */

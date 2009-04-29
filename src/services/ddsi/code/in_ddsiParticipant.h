@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_ddsiParticipant.h
- *
- *  Created on: Feb 26, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_DDSIPARTICIPANT_H_
 #define IN_DDSIPARTICIPANT_H_
 
@@ -23,11 +16,27 @@
 #include "in_ddsiElements.h"
 #include "kernelModule.h"
 
+#include "in_ddsiDeserializer.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
+#define in_ddsiDiscoveredParticipantData(Data) \
+    ((in_ddsiDiscoveredParticipantData)Data)
 
+#define in_ddsiDiscoveredParticipantDataFree(c) \
+    in_objectFree(in_object(c))
+
+#define in_ddsiDiscoveredParticipantDataKeep(c) \
+    in_ddsiDiscoveredParticipantData(in_objectKeep(in_object(c)))
+
+#define in_ddsiDiscoveredParticipantDataIsValid(c) \
+    in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_DISCOVERED_PARTICIPANT_DATA)
+
+/** */
+in_ddsiDiscoveredParticipantData
+in_ddsiDiscoveredParticipantDataNew(void);
 
 #if defined (__cplusplus)
 }

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 
 /* Interface */
 #include "in_configuration.h"
@@ -29,7 +18,7 @@
 #include "in_profiling.h"
 #include "in_misc.h"
 
-
+static FILE* outputFile = NULL;
 /* --------------------------------- Private -------------------------------- */
 
 
@@ -1548,9 +1537,10 @@ in_reportTrace(
     const c_char *context,
     const char *description, ...)
 {
-    in_configuration configuration;
     va_list ap;
     os_time useTime;
+#if 0
+    in_configuration configuration;
 
     configuration = in_configurationGetConfiguration();
 
@@ -1575,6 +1565,23 @@ in_reportTrace(
         }
 
     }
+#else
+
+    //if(traceClass == TC(Receive))
+    //{
+      if(!outputFile)
+      {
+          outputFile = fopen("ddsi.log", "w");
+      }
+        useTime = os_timeGet();
+        fprintf(outputFile, "%5d.%3.3d ",useTime.tv_sec, useTime.tv_nsec/1000000);
+        fprintf(outputFile, "%-14s (%d) ", context, level);
+        va_start(ap, description);
+        vfprintf(outputFile, description, ap);
+        va_end(ap);
+        fflush(outputFile);
+   // }
+#endif
 }
 
 #endif /* IN_TRACING */

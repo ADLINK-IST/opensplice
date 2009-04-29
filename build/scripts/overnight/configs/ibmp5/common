@@ -1,0 +1,3 @@
+export JAVA_HOME=/usr/local/jdk1.5.0
+#export TAO_ROOT=
+export EORBHOME=/home/dds/INSTALLED_FOR_DDS/eorb-V1-5-4_9th_April_2009

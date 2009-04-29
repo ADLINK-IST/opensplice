@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* Interface */
 #include "in_socket.h"
 #include "in__socket.h"
@@ -18,7 +7,7 @@
 #include <assert.h>
 #include "os_heap.h"
 #include "os_socket.h"
-
+#include <errno.h>
 /* Descendants */
 #include "in_socketBroadcast.h"
 #include "in_socketMulticast.h"
@@ -37,7 +26,7 @@
 #define IN_CONTROLPORT(portNr) ((portNr)+1)
 
 /* ------------------------------ Debug function ---------------------------- */
-#if 0
+#if 1
 #define IN_HEXDUMP(message, partitionId, data, length)    \
     {                                        \
         char *str;                           \
@@ -63,6 +52,8 @@
 /* The structure of the data, to be extended by descendants */
 
 OS_STRUCT(in_socket) {
+    OS_EXTENDS(in_object);
+
     char *name;
     /* Data socket, for sending and receiving data */
     os_socket socketData;
@@ -436,9 +427,9 @@ in_socketBind(
 {
     os_boolean result = OS_TRUE;
     os_result retVal = os_resultSuccess;
-    os_int optVal;
+    os_int optVal = 1;
     socklen_t optLen;
-    struct sockaddr_in6 bindAddress; /* also covers sockaddr_in */
+    struct sockaddr_storage bindAddress; /* IPv4 & IPv6 */
 
     if (sock != NULL) {
         /* Avoid already in use error messages */
@@ -537,6 +528,9 @@ in_socketPrimaryAddressCompare(
 
 
 /* private */
+static void
+in_socketDeinit(
+        in_object _this);
 
 static in_socket
 in_socketNew(
@@ -575,6 +569,10 @@ in_socketNew(
 
     result = (in_socket)os_malloc((os_uint)sizeof(*result));
     if (result != NULL) {
+        in_objectInit(OS_SUPER(result),
+                IN_OBJECT_KIND_SOCKET,
+                in_socketDeinit);
+
         result->name = name ? os_strdup(name) : os_strdup("<channel>");
         result->supportsControl = supportsControl;
         result->socketData = os_sockNew(addressFamily, SOCK_DGRAM);
@@ -728,6 +726,171 @@ in_socketNew(
     return result;
 }
 
+in_socket
+in_socketDuplexNew(
+	in_configChannel configChannel,
+	os_boolean supportsControl)
+{
+    os_char addressStringBuffer[IN_ADDRESS_STRING_LEN];
+    in_socket result = NULL;
+    os_boolean success = OS_TRUE;
+    in_addressType addressType;
+    c_ulong bufSizeRequested;
+    c_ulong TOSRequested;
+    /* Primary address, for destination checking */
+    struct sockaddr_in sockAddrPrimary;
+     /* Broadcast address corresponding to this interface */
+    struct sockaddr_in sockAddrBroadcast;
+    const char *defaultAddress =
+    	in_configChannelGetGlobalPartitionAddress(configChannel);
+    const char *addressLookingFor =
+    	in_configChannelGetInterfaceId(configChannel);
+    os_ushort portNr =
+    	in_configChannelGetPortNr(configChannel);
+    os_ushort portNrControl = IN_CONTROLPORT(portNr);
+    const os_char *name =
+    	in_configChannelGetPathName(configChannel);
+    os_int addressFamily;
+
+    assert(portNr < UINT16_MAX);
+	assert(defaultAddress != NULL);
+	assert(addressLookingFor != NULL);
+
+     /* Control address corresponding to this interface */
+    addressFamily =
+    	in_addressGetFamilyFromString(defaultAddress);
+
+    result = (in_socket)os_malloc((os_uint)sizeof(*result));
+    if (result != NULL) {
+        in_objectInit(OS_SUPER(result),
+                 IN_OBJECT_KIND_SOCKET,
+                 in_socketDeinit);
+
+        result->name = name ? os_strdup(name) : os_strdup("<channel>");
+        result->supportsControl = supportsControl;
+        result->socketData = os_sockNew(addressFamily, SOCK_DGRAM);
+        IN_REPORT_SOCKFUNC(2, os_resultSuccess,
+                           "socket creation", "socket");
+        if (supportsControl) {
+            result->socketControl = os_sockNew(addressFamily, SOCK_DGRAM);
+            IN_REPORT_SOCKFUNC(2, os_resultSuccess,
+                               "socket creation", "socket");
+            /* TODO: Define os-abstraction for fd-sets */
+            if (result->socketData > result->socketControl) {
+                result->maxSockfd = result->socketData;
+            } else {
+                result->maxSockfd = result->socketControl;
+            }
+        } else {
+            result->maxSockfd = result->socketData;
+        }
+        FD_ZERO(&result->sockSet);
+
+        /* addressLookingFor = INCF_SIMPLE_PARAM(String, INCF_ROOT(General), Interface); */
+		addressType = in_getAddressType(defaultAddress);
+        switch (addressType) {
+            case IN_ADDRESS_TYPE_BROADCAST:
+                in_socketGetDefaultBroadcastInterface(addressLookingFor,
+                    result->socketData, &sockAddrPrimary,
+                    &sockAddrBroadcast);
+                in_addressInitFromSockAddr(&result->sockAddrPrimary, &sockAddrPrimary);
+                in_addressInitFromSockAddr(&result->sockAddrBroadcast, &sockAddrBroadcast);
+                in_addressInitFromSockAddr(&result->sockAddrMulti, &sockAddrBroadcast);
+                /* Broadcast sockets usually loop back and can not be stopped
+                 * from that */
+                result->loopsback = OS_TRUE;
+
+                IN_TRACE_1(Test, 4, "Using broadcast address %s for default partition",
+                    in_addressToString(&result->sockAddrMulti, addressStringBuffer, sizeof(addressStringBuffer)));
+            break;
+            case IN_ADDRESS_TYPE_MULTICAST:
+                in_socketGetDefaultMulticastInterface(addressLookingFor,
+                    result->socketData, &sockAddrPrimary,
+                    &sockAddrBroadcast);
+                in_addressInitFromSockAddr(&result->sockAddrPrimary, &sockAddrPrimary);
+				in_addressInitFromSockAddr(&result->sockAddrBroadcast, &sockAddrBroadcast);
+				in_addressInitFromStringWithDefault(&result->sockAddrMulti, defaultAddress, INCF_DEF(Address));
+
+                /* We can stop multicasting from looping back though */
+                result->loopsback = OS_FALSE;
+                IN_TRACE_1(Test, 4, "Using multicast address %s for default partition",
+                                    in_addressToString(&result->sockAddrMulti, addressStringBuffer, sizeof(addressStringBuffer)));
+            break;
+            case IN_ADDRESS_TYPE_LOOPBACK:
+                in_socketGetDefaultLoopbackAddress(result->socketData,
+                    &sockAddrPrimary);
+                in_addressInitFromSockAddr(&result->sockAddrPrimary, &sockAddrPrimary);
+ 				in_addressInitFromSockAddr(&result->sockAddrBroadcast, &sockAddrPrimary);
+ 				in_addressInitFromSockAddr(&result->sockAddrMulti, &sockAddrPrimary);
+
+ 				result->loopsback = OS_TRUE;
+                IN_TRACE_1(Test, 4, "Using loopback address %s for default partition",
+                                                    in_addressToString(&result->sockAddrMulti, addressStringBuffer, sizeof(addressStringBuffer)));
+            break;
+            default:
+            break;
+        }
+
+        in_locatorInit(&(result->dataUnicastLocator),
+        		portNr, &(result->sockAddrPrimary));
+        in_locatorInit(&(result->dataMulticastLocator),
+        		portNr, &(result->sockAddrMulti));
+
+        if (supportsControl) {
+        	in_locatorInit(&(result->controlUnicastLocator),
+        			portNrControl, &(result->sockAddrPrimary));
+        	/* \todo checkme, do we need multicast control transport */
+        	in_locatorInit(&(result->controlMulticastLocator),
+        			portNrControl, &(result->sockAddrMulti));
+        }
+
+        /* Set option for custom receive buffer size */
+        bufSizeRequested = in_configChannelGetReceiveBufferSize(configChannel);
+        success = success && in_socketSetSendBufferSize(result, (os_int)bufSizeRequested);
+        success = success && in_socketSetReceiveBufferSize(result, (os_int)bufSizeRequested);
+
+        /* Bind to socket */
+        success = success && in_socketBind(result);
+
+#ifndef OS_VXWORKS_DEFS_H
+        success = success && in_socketSetDontRouteOption(result, OS_TRUE);
+#endif
+        /* Set option for custom TOS */
+        TOSRequested = in_configChannelGetDifferentiatedServicesField(configChannel);
+        success = success && in_socketSetTOS(result, (os_int)TOSRequested);
+
+
+        if (success) {
+          if (!supportsControl) {
+            IN_REPORT_INFO_3(2, "Created and bound duplex socket \"%s\" "
+                     "for interface %s, port %u",
+                     name,
+                     in_addressToString(&result->sockAddrPrimary, addressStringBuffer, sizeof(addressStringBuffer)),
+                     portNr);
+          } else {
+            IN_REPORT_INFO_4(2, "Created and bound duplex socket \"%s\" "
+                     "for interface %s, ports %u and %u",
+                     name,
+                     in_addressToString(&result->sockAddrPrimary, addressStringBuffer, sizeof(addressStringBuffer)),
+                     portNr, portNr+1);
+          }
+          IN_TRACE_1(Test, 1, "Creation and binding of duplex "
+                 "multicast socket \"%s\" succeeded.",
+                 name);
+        }
+
+        /* TODO, check if this is valid/neccessary for send-sockets */
+        switch (addressType) {
+            case IN_ADDRESS_TYPE_BROADCAST: in_socketBroadcastInitialize(result); break;
+            case IN_ADDRESS_TYPE_MULTICAST: in_socketMulticastInitialize(result); break;
+            default: break;
+        }
+
+    }
+
+    return result;
+}
+
 
 /* public */
 
@@ -757,24 +920,27 @@ in_socketReceiveNew(
 
 /* -------------------------------- destructor ------------------------------ */
 
-void
-in_socketFree(
-    in_socket sock)
+static void
+in_socketDeinit(
+        in_object _this)
 {
+    in_socket sock =
+        (in_socket) _this;
+
     os_result retVal;
 
     if (sock) {
-    	in_locatorDeinit(&(sock->dataUnicastLocator));
-    	in_locatorDeinit(&(sock->dataMulticastLocator));
+        in_locatorDeinit(&(sock->dataUnicastLocator));
+        in_locatorDeinit(&(sock->dataMulticastLocator));
 
         retVal = os_sockFree(sock->socketData);
         IN_REPORT_SOCKFUNC(2, retVal,
             "release socket resources", "close");
         if ((retVal == os_resultSuccess) && (sock->supportsControl)) {
-        	in_locatorDeinit(&(sock->controlUnicastLocator));
-        	in_locatorDeinit(&(sock->controlMulticastLocator));
+            in_locatorDeinit(&(sock->controlUnicastLocator));
+            in_locatorDeinit(&(sock->controlMulticastLocator));
 
-        	retVal = os_sockFree(sock->socketControl);
+            retVal = os_sockFree(sock->socketControl);
             IN_REPORT_SOCKFUNC(2, retVal,
                 "release socket resources", "close");
         }
@@ -783,6 +949,14 @@ in_socketFree(
     }
     /* Not interested in any result */
     /* return result */
+}
+
+
+void
+in_socketFree(
+    in_socket sock)
+{
+    in_objectFree(OS_SUPER(sock));
 }
 
 
@@ -806,12 +980,18 @@ in_socketSendDataTo(
     os_int32 sendRes;
     os_boolean sendToSucceeded;
     struct sockaddr destAddr;
+    os_char* buf = (os_char*)os_malloc(50);
 
     assert(sock != NULL);
     assert(receiver != NULL);
 
+
+
     /* First check if we have to slow down because of too quick sending */
     /* in_brakeSlowDown(sock->brake); */
+    IN_TRACE_2(Send,6,"in_socketSendDataTo ---  ip: %s port: %d",
+                      in_addressToString(in_locatorGetIp(receiver), buf, 50)
+                      ,in_locatorGetPort(receiver));
     IN_HEXDUMP("in_socketSendDataTo", 0, buffer, length);
     /* Then do the writing */
     IN_PROF_LAPSTART(SendTo);
@@ -821,6 +1001,15 @@ in_socketSendDataTo(
                      (socklen_t)sizeof(destAddr)
                      );
     IN_PROF_LAPSTOP(SendTo);
+
+    if(sendRes == -1)
+    {
+        /* TODO REMOVE THIS!!! not os independant!! needed now for debugging*/
+        IN_TRACE_3(Send,6,"in_socketSendDataTo ---  result: %d --- errno: %d , %s",sendRes, errno, strerror( errno));
+    } else
+    {
+        IN_TRACE_1(Send,6,"in_socketSendDataTo ---  result: %d ",sendRes);
+    }
 
     if (sendRes > 0) {
         IN_REPORT_SOCKFUNC(6, os_resultSuccess,
@@ -971,6 +1160,7 @@ in_socketReceive(
                     IN_HEXDUMP("in_socketReceiveData", 0, buffer, result);
                 }
 #endif
+
                 /* Resume profiling because we have actually received something
                  * relevant */
                 /* IN_PROF_LAPSTART(BridgeRead_2); */

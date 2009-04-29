@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_receiveBuffer.c
  *
  *  Created on: Feb 9, 2009
@@ -26,7 +15,7 @@
 #include "string.h" /* memset */
 #include "in__abstractReceiveBuffer.h"
 #include "os_heap.h"
-
+#include "in_report.h"
 
 OS_STRUCT(in_receiveBuffer)
 {
@@ -35,7 +24,7 @@ OS_STRUCT(in_receiveBuffer)
 	in_long  bufferLength;
 	in_octet buffer[4]; /* variable array buffer[bufferLength],
 	                       should be zero-sized array, but not accepted by
-	                       integrity C-compiler  */
+	                       "Integrity C-compiler"  */
 	/* Note: no further struct members must follow */
 };
 
@@ -48,39 +37,42 @@ in_receiveBufferDeinit(in_receiveBuffer _this)
 
 /** \brief init */
 static void
-in_receiveBufferInit(in_receiveBuffer _this, in_ulong bufferLength)
+in_receiveBufferInit(
+        in_receiveBuffer _this,
+        os_size_t bufferLength)
 {
-	in_octet *bufferPtrAligned =
-		IN_RECEIVE_BUFFER_ALIGN_PTR_CEIL(_this->buffer);
-	const in_ulong bufferLengthFloor =
-		IN_RECEIVE_BUFFER_ALIGN_LENGTH_FLOOR(bufferLength);
+    /* the followin calculation ensures that first and last octet of buffer is
+     * aligned by IN_RECEIVE_BUFFER_ALIGN_BOUNDARY (8U). This will allow us to handle
+     * CDR fragmentation constraints more performant, where the first octet in each fragment
+     * and last octet of fragment must be aligned to this boundary.  */
+	in_octet *bufferPtrAlignedCeil =
+		IN_RECEIVE_BUFFER_ALIGN_PTR_CEIL(_this->buffer); /* first octet of zero sized array */
 
-	assert(bufferPtrAligned >= _this->buffer);
-	assert(bufferPtrAligned < _this->buffer + IN_RECEIVE_BUFFER_ALIGN_BOUNDARY);
-	assert(bufferLengthFloor <= bufferLength);
+	assert(bufferPtrAlignedCeil >= _this->buffer);
+	assert(bufferPtrAlignedCeil < _this->buffer + IN_RECEIVE_BUFFER_ALIGN_BOUNDARY);
 
 	in_abstractReceiveBufferInitParent(OS_SUPER(_this),
 			IN_OBJECT_KIND_RECEIVE_BUFFER_BASIC,
 			(in_objectDeinitFunc) in_receiveBufferDeinit,
-			bufferPtrAligned,
-			bufferLengthFloor);
+			bufferPtrAlignedCeil,
+			bufferLength); /* use the length declared by user */
+
+	/* store the real buffer size, required to reset the buffer */
 	_this->bufferLength = bufferLength;
-	/* zero buffer */
-	memset(_this->buffer, 0, bufferLength);
 }
 
 
 /** \brief constructor */
 in_receiveBuffer
-in_receiveBufferNew(in_long capacity)
+in_receiveBufferNew(os_size_t capacity)
 {
-	const os_size_t capacityWithAlignmentOffset =
+	const os_size_t capacityWithAlignOffset = /* take into account alignment offsets */
 		(sizeof(in_octet)*capacity) +
-		IN_RECEIVE_BUFFER_ALIGN_BOUNDARY-1;
+		IN_RECEIVE_BUFFER_ALIGN_BOUNDARY-1; /* alignment at begin */
 
 	const os_size_t objectSize =
 		OS_SIZEOF(in_receiveBuffer) +
-		capacityWithAlignmentOffset;
+		capacityWithAlignOffset;
 
 	in_receiveBuffer result =
 		in_receiveBuffer(os_malloc(objectSize));

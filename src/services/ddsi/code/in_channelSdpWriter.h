@@ -1,24 +1,22 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IN_CHANNEL_SDP_WRITER_H
 #define IN_CHANNEL_SDP_WRITER_H
 
 /* OS abstraction includes. */
-#include "os_defs.h"
-#include "os_classbase.h"
-#include "os_stdlib.h"
+#include "in__object.h"
 #include "u_participant.h"
+#include "u_networkReader.h"
 
-#include "in_channelTypes.h"
 /**
  * Allow usage of this C code from C++ code.
  */
@@ -51,13 +49,26 @@ extern "C" {
 in_channelSdpWriter
 in_channelSdpWriterNew(
     in_channelSdp sdp,
-    u_participant participant,
-    in_streamWriter writer);
+    in_plugKernel plug,
+    in_streamWriter writer,
+    in_endpointDiscoveryData discoveryData);
 
 in_result
 in_channelSdpWriterAddPeerEntity(
     in_channelSdpWriter _this,
     in_connectivityPeerEntity entity);
+
+in_result
+in_channelSdpWriterAddHeartbeatEvent(
+    in_channelSdpWriter _this,
+    in_ddsiHeartbeat event,
+    in_ddsiReceiver receiver);
+
+in_result
+in_channelSdpWriterAddAckNack(
+    in_channelSdpWriter _this,
+    in_ddsiAckNack event,
+    in_ddsiReceiver receiver);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

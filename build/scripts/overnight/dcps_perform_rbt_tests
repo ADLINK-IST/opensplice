@@ -47,7 +47,14 @@ sh run_rbt
 sh RBT_management_data
 for i in `find ../rbt/Results/ -type f`
 do
-    cp $i $LOGDIR/RBT-Results/. ||
+    FILE=$i
+    basename $i | grep "\." 2>&1 > /dev/null
+    if [ $? != 0 ]
+    then
+        FILE=$i.txt
+        mv $i $FILE
+    fi
+    cp $FILE $LOGDIR/RBT-Results/. ||
     { 
         echo "ERROR: could not copy $i - dcps_perform_rbt_tests"; 
         exit 4; 

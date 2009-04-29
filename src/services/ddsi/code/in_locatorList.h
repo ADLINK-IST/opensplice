@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_locatorList.h
- *
- *  Created on: Mar 9, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_LOCATORLIST_H_
 #define IN_LOCATORLIST_H_
 
@@ -47,6 +40,11 @@ in_locatorListPushBack(in_locatorList *_this,
 /** */
 in_locator
 in_locatorListPopBack(in_locatorList *_this);
+
+
+/** */
+os_size_t
+in_locatorListLength(in_locatorList *_this);
 
 
 #if defined (__cplusplus)

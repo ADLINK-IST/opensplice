@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in__ddsiStreamReaderImpl.h
- *
- *  Created on: Mar 5, 2009
- *      Author: frehberg
- */
-
 #include "in_ddsiStreamReaderImpl.h"
 
 #include "in__streamReader.h"
@@ -24,6 +17,7 @@
 #include "in_abstractReceiveBuffer.h"
 #include "in_ddsiSubmessageTokenizer.h"
 #include "in__ddsiReceiver.h"
+#include "in__messageDeserializer.h"
 
 #ifndef IN__DDSISTREAMREADERIMPL_H_
 #define IN__DDSISTREAMREADERIMPL_H_
@@ -37,8 +31,12 @@ extern "C" {
 OS_STRUCT(in_ddsiStreamReaderImpl)
 {
 	OS_EXTENDS(in_streamReader);
-	in_connectivityAdmin connectivityAdmin;
+
+	/* managed objects */
 	in_transportReceiver transport;
+	in_messageDeserializer messageDeserializer;
+	in_plugKernel plugKernel;
+
 	/* current receive buffer being scanned */
 	in_abstractReceiveBuffer currentReceiveBuffer;
 	OS_STRUCT(in_ddsiSubmessageTokenizer) currentReceiveBufferTokenizer;
@@ -58,7 +56,7 @@ in_ddsiStreamReaderImplInit(
         in_objectDeinitFunc deinit,
         in_configChannel config,
         in_transportReceiver receiver,
-        in_connectivityAdmin connectivityAdmin);
+        in_plugKernel plug);
 
 
 /** called by deriving classes */

@@ -1,19 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
- *
- */
-/*
- * in_connectivityPeerEntity.h
+ *   for full copyright notice and license terms.
  *
  */
-
 #ifndef IN_connectivityPeerEntity_H_
 #define IN_connectivityPeerEntity_H_
 
@@ -28,9 +23,6 @@
 OS_STRUCT(in_connectivityPeerEntity)
 {
     OS_EXTENDS(in_object);
-    OS_STRUCT(in_ddsiGuid) guid;
-    Coll_List uniLocators;
-    Coll_List multiLocators;
 };
 
 /* The usual cast-method for class in_connectivityPeerEntity. Note that because
@@ -54,25 +46,9 @@ in_connectivityPeerEntityDeinit(
 /** \brief Increment refcounter of in_locator object
  */
 #define in_connectivityPeerEntityKeep(p) in_objectKeep(in_object(p))
-
-in_result
-in_connectivityPeerEntitSetGuid(
-    in_connectivityPeerEntity _this,
-    in_ddsiGuid guid);
-
-in_result
-in_connectivityPeerEntityAddUnicastLocator(
-    in_connectivityPeerEntity _this,
-    in_locator locator);
-
-in_result
-in_connectivityPeerEntityAddMulticastLocator(
-    in_connectivityPeerEntity _this,
-    in_locator locator);
-
-in_ddsiGuid
-in_connectivityPeerEntityGetGuid(
-    in_connectivityPeerEntity _this);
+/** \brief Decrement refcounter of in_locator object
+ */
+#define in_connectivityPeerEntityFree(p) in_objectFree(in_object(p))
 
 Coll_List*
 in_connectivityPeerEntityGetUnicastLocators(
@@ -81,7 +57,5 @@ in_connectivityPeerEntityGetUnicastLocators(
 Coll_List*
 in_connectivityPeerEntityGetMulticastLocators(
     in_connectivityPeerEntity _this);
-
-
 
 #endif /* IN_connectivityPeerEntity_H_ */

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* OS abstraction includes */
 #include "os_heap.h"
 
@@ -16,6 +5,7 @@
 #include "assert.h"
 #include "in_ddsiElements.h"
 #include "in__locator.h"
+#include "in_address.h"
 
 /* -------------------------------------------------- */
 /* ---- in_locator ---------------------------------- */
@@ -23,16 +13,7 @@
 
 
 
-/** \brief Private copy operation,  ref-counter is not modified.
- *
- * Parses the buffer and copies the values into object.
- *
- * \param _this the object
- * \param reader the CDR reader on buffer
- *
- * \return the number of octets read */
-static in_long
-in_locatorCopyFromBuffer(in_locator _this, in_ddsiDeserializer reader);
+
 
 /** \brief private constructor invoked by subclass-constructors */
 static void
@@ -45,7 +26,7 @@ in_locatorInitParent(in_locator _this,
 /* ------- private definitions ------- */
 
 
-static in_long
+in_long
 in_locatorCopyFromBuffer(in_locator _this, in_ddsiDeserializer reader)
 {
 	/* Note: you must not modify the ref-counter!! This operation is invoked
@@ -80,9 +61,14 @@ in_locatorNewFromString(const os_char* addressString, os_uint32 port)
 {
 	in_locator result = NULL;
 	/* transform to sockaddr_in or sockaddr_in6 */
-	assert(!"tbd");
+	OS_STRUCT(in_address) tmpAddress;
 
-	return result;
+	if (in_addressInitFromString(&tmpAddress, addressString)) {
+	    result =
+	        in_locatorNew(port, &tmpAddress);
+	}
+
+    return result;
 }
 
 in_locator

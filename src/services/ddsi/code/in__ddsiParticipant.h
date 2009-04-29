@@ -1,25 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in__ddsiParticipantBuiltinTopicData.h
- *
- *  Created on: Feb 26, 2009
- *      Author: frehberg
- */
-
 #ifndef IN__DDSIPARTICIPANT_H_
 #define IN__DDSIPARTICIPANT_H_
 
-#include "in__ddsiParticipant.h"
+#include "kernelModule.h"
+#include "in_locatorList.h"
+
+#include "in_ddsiElements.h"
+
+#include "in__object.h"
+#include "in_ddsiParticipant.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -40,25 +39,21 @@ OS_STRUCT(in_ddsiParticipantProxy)
 	in_ddsiVendorId vendorId;
 	os_boolean expectsInlineQos;
 	OS_STRUCT(in_ddsiBuiltinEndpointSet) availableBuiltinEndpoints;
-	Coll_List metatrafficUnicastLocatorList;
-	Coll_List metatrafficMulticastLocatorList;
-	Coll_List defaultMulticastLocatorList;
-	Coll_List defaultUnicastLocatorList;
+	in_locatorList metatrafficUnicastLocatorList;
+	in_locatorList metatrafficMulticastLocatorList;
+	in_locatorList defaultMulticastLocatorList;
+	in_locatorList defaultUnicastLocatorList;
 	OS_STRUCT(in_ddsiCount) manualLivelinessCount;
 };
 
-/** derices in_object  */
+/** derives in_object  */
 OS_STRUCT(in_ddsiDiscoveredParticipantData)
 {
 	OS_EXTENDS(in_object);
 	OS_STRUCT(in_ddsiParticipantBuiltinTopicData) builtinTopicData;
 	OS_STRUCT(in_ddsiParticipantProxy) proxy;
-};
 
-/** */
-OS_STRUCT(in_ddsiSPDPdiscoveredParticipantData)
-{
-	OS_EXTENDS(in_ddsiDiscoveredParticipantData);
+	/* moved here from in_ddsiSPDPdiscoveredParticipantData */
 	v_duration leaseDuration;
 };
 

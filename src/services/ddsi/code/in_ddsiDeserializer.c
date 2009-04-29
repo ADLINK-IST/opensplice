@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_ddsiSerializer.c
  *
  *  Created on: Feb 8, 2009
@@ -25,6 +14,9 @@
 #include "in_align.h"
 #include "in__endianness.h"
 #include "in_abstractReceiveBuffer.h"
+#include "in__ddsiSerializer.h"
+#include "in_ddsiSerializedData.h"
+#include "in_report.h"
 
 /*  --------- inline macros --------- */
 #define IN_ALIGN_ADDRESS(_address,_boundary) \
@@ -107,6 +99,20 @@ in_ddsiDeserializerInitWithDefaultEndianess(
 	_this->bufEnd    = buffer + bufferLength;
 	_this->requiresSwap = OS_FALSE;
 }
+
+
+void
+in_ddsiDeserializerInitFromSerializer(
+        in_ddsiDeserializer _this,
+        in_ddsiSerializer serializer)
+{
+    assert(((os_size_t)serializer->bufBeginAligned) % 4 == 0);
+
+    _this->bufReader = serializer->bufBeginAligned;
+    _this->bufEnd = serializer->bufEnd;
+    _this->requiresSwap = serializer->requiresSwap;
+}
+
 
 /**
  * */

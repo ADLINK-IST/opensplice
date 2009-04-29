@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IN__PLUGKERNEL_H_
@@ -38,8 +38,17 @@ u_service
 in_plugKernelGetService(
     in_plugKernel _this);
 
+v_topic
+in_plugKernelLookupTopic(
+    in_plugKernel _this,
+    const c_char* topic_name);
+
 u_networkReader
 in_plugKernelGetNetworkReader(
+    in_plugKernel _this);
+
+c_base
+in_plugKernelGetBase(
     in_plugKernel _this);
 
 #if defined (__cplusplus)

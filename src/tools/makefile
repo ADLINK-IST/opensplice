@@ -11,6 +11,11 @@ ifeq ($(INCLUDE_TOOLS_OSPL),yes)
 SUBSYSTEMS	+= ospl
 endif
 
+ifeq ($(INCLUDE_TOOLS_MMSTAT),yes)
+SUBSYSTEMS	+= mmstat
+endif
+
+
 ifneq (,$(findstring devdat,$(SPLICE_TARGET)))
 SUBSYSTEMS	+= dat
 endif

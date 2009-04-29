@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_address.c
  *
  *  Created on: Jan 8, 2009
@@ -27,7 +16,7 @@
 #include "in_report.h"
 #include "in_ddsiDeserializer.h"
 #include "in_ddsiSerializer.h"
-
+#include "in__config.h"
 
 /** \brief init */
 os_boolean
@@ -53,8 +42,35 @@ in_addressInitFromString(in_address _this, const os_char *addressString)
 			/* init prefix with IPv4 mapping */
 			in_addressInitIPv4Padding(_this);
 		}
+#if 0
+		/* This code has been disabled due to win32 portability issues. IPv4/v6
+		 * conversion shall be provided by abstraction layer in future. Until then
+		 * IPv6 address conversion is not supported. */
+
 		/* returns 1 on success, 0 if bad string format, -1 if bad family */
 		retval = inet_pton(addressFamily, addressString, addressDest);
+#else
+		/* portable code, but does not cover IPv6 */
+		if (addressFamily == AF_INET6) {
+			retval = 0; /* error, IPv6 not supported */
+		} else {
+			in_addr_t networkByteOrderAddress = 0;
+			/* Note, different return value semantic:
+			 * returns INADDR_NONE on error */
+		    networkByteOrderAddress = inet_addr(addressString);
+		    if (networkByteOrderAddress == INADDR_NONE &&
+		    	strncmp(addressString, "255.255.255.255", strlen("255.255.255.255"))!=0) {
+		    	/* inet_addr returns INADDR_NONE, but as INADDR_NONE(0xffffffff) is
+		    	 * a valid address we made sure that the string does not contain the well
+		    	 * known IPv4 broadcast address */
+		    	retval = 0; /* error */
+		    } else {
+		    	retval = 1; /* success */
+		    	/* store IPv4 octets in same order in last 4 slots of array */
+		    	*((in_addr_t*) addressDest) =  networkByteOrderAddress;
+		    }
+		}
+#endif
 		if (retval <= 0) {
 			/* conversion failed, bad format string */
 			result = FALSE;
@@ -295,18 +311,22 @@ in_addressGetFamilyFromString(const os_char *addressString)
 os_boolean
 in_addressEqual(const in_address _this, const in_address other)
 {
+	/** TODO common operation, declare as macro for speedup, maybe
+	 * use platform specific IPv6 comparison macros */
 	os_boolean result;
-	struct in6_addr *a = (struct in6_addr*)_this;
-	struct in6_addr *b = (struct in6_addr*)other;
-
 	result =
-		IN6_ARE_ADDR_EQUAL(a, b);
+		memcmp(_this, other, sizeof(*_this)) == 0;
 	return result;
 }
 
 os_char*
 in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 {
+#if 0
+	/* This code has been disabled due to win32 portability issues. IPv4/v6
+	 * conversion shall be provided by abstraction layer in future. Until then the
+	 * protable workarround below shall be used. */
+
 	if (in_addressIsIPv4Compatible(_this)) {
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET, in_addressIPv4Ptr(_this), buffer, buflen);
@@ -314,6 +334,45 @@ in_addressToString(const in_address _this, os_char *buffer, os_uint buflen)
 		/* \TODO check return value for error */
 		inet_ntop(AF_INET6, in_addressIPv6Ptr(_this), buffer, buflen);
 	}
+#else
+	os_char *result = NULL; /* return value on error */
+
+	if (in_addressIsIPv4Compatible(_this)) {
+		if (buflen >= ((3*4) + 3 + 1)) {
+			sprintf(buffer,
+					"%d.%d.%d.%d",
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
+	} else {
+		/* simple but valid IPv6 address to string conversion */
+		if (buflen >= ((16*2) + 7 + 1)) {
+			sprintf(buffer,
+					"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+					_this->octets[0],
+					_this->octets[1],
+					_this->octets[2],
+					_this->octets[3],
+					_this->octets[4],
+					_this->octets[5],
+					_this->octets[6],
+					_this->octets[7],
+					_this->octets[8],
+					_this->octets[9],
+					_this->octets[10],
+					_this->octets[11],
+					_this->octets[12],
+					_this->octets[13],
+					_this->octets[14],
+					_this->octets[15]);
+			result = buffer;
+		}
+	}
+#endif
+
 	return buffer;
 }
 

@@ -1,20 +1,10 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in_channelSdp.h"
 #include "in__object.h"
 #include "os_heap.h"
 #include "in_channel.h"
 #include "in_channelSdpWriter.h"
 #include "in_channelSdpReader.h"
+#include "in__configChannel.h"
 #include "u_participant.h"
 #include "in_streamWriter.h"
 #include "u_participant.h"
@@ -33,14 +23,18 @@ in_channelSdpInit(
     in_channelSdp _this,
     in_objectKind kind,
     in_objectDeinitFunc deinit,
+    in_configDiscoveryChannel config,
     in_stream stream,
-    in_plugKernel plug);
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryDat);
 
 
 in_channelSdp
 in_channelSdpNew(
+    in_configDiscoveryChannel config,
     in_stream stream,
-    in_plugKernel plug)
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryData)
 {
     in_channelSdp _this = NULL;
 
@@ -55,8 +49,10 @@ in_channelSdpNew(
             _this,
             IN_OBJECT_KIND_SDP_CHANNEL,
             in_channelSdpDeinit,
+            config,
             stream,
-            plug);
+            plug,
+            discoveryData);
 
         if(!success)
         {
@@ -72,8 +68,10 @@ in_channelSdpInit(
     in_channelSdp _this,
     in_objectKind kind,
     in_objectDeinitFunc deinit,
+    in_configDiscoveryChannel config,
     in_stream stream,
-    in_plugKernel plug)
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryData)
 {
     os_boolean success;
 
@@ -88,7 +86,8 @@ in_channelSdpInit(
         kind,
         deinit,
         stream,
-        plug);
+        plug,
+        in_configChannel(config));
 
     if(success)
     {
@@ -96,10 +95,9 @@ in_channelSdpInit(
         in_streamWriter streamWriter;
 
         streamWriter = in_streamGetWriter(stream);
+        writer = in_channelSdpWriterNew(_this, plug, streamWriter,
+            discoveryData);
 
-        writer = in_channelSdpWriterNew(_this,
-                    u_participant(in_plugKernelGetService(plug)),
-                    streamWriter);
         if(!writer)
         {
             success = OS_FALSE;
@@ -112,7 +110,7 @@ in_channelSdpInit(
     {
         in_channelSdpReader reader;
 
-        reader = in_channelSdpReaderNew(_this, NULL);
+        reader = in_channelSdpReaderNew(_this, config);
         if(!reader)
         {
             success = OS_FALSE;

@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 /* Abstraction layer includes */
 #include "os_heap.h"
 
@@ -19,12 +8,15 @@
 /* DDSi includes */
 #include "in_connectivityReaderFacade.h"
 #include "in_connectivityEntityFacade.h"
-
+#include "in_connectivityParticipantFacade.h"
 
 static os_boolean
 in_connectivityReaderFacadeInit(
     in_connectivityReaderFacade _this,
-    struct v_subscriptionInfo *info);
+    struct v_subscriptionInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant);
 
 static void
 in_connectivityReaderFacadeDeinit(
@@ -36,13 +28,16 @@ OS_STRUCT(in_connectivityReaderFacade)
     /* A set containing all matched peers, in_connectivityPeerWriter objects */
     struct v_subscriptionInfo info;
     Coll_Set matchedWriters;
-/*    in_connectivityReaderIdentifier id;*/
+    OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber;
 };
 
 
 in_connectivityReaderFacade
 in_connectivityReaderFacadeNew(
-    struct v_subscriptionInfo *info)
+    struct v_subscriptionInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
     in_connectivityReaderFacade _this;
@@ -51,7 +46,7 @@ in_connectivityReaderFacadeNew(
 
     if(_this)
     {
-        success = in_connectivityReaderFacadeInit(_this,info);
+        success = in_connectivityReaderFacadeInit(_this,info, hasKey, seq, participant);
 
         if(!success)
         {
@@ -66,15 +61,40 @@ in_connectivityReaderFacadeNew(
 os_boolean
 in_connectivityReaderFacadeInit(
     in_connectivityReaderFacade _this,
-    struct v_subscriptionInfo *info)
+    struct v_subscriptionInfo *info,
+    os_boolean hasKey,
+    in_ddsiSequenceNumber seq,
+    in_connectivityParticipantFacade  participant)
 {
     os_boolean success;
+    OS_STRUCT(in_ddsiGuid) guid;
+    in_ddsiGuidPrefixRef prefix;
+    v_dataReader reader;
+
     assert(_this);
+
+
+    prefix =in_connectivityParticipantFacadeGetGuidPrefix(participant);
+
+    memcpy(guid.guidPrefix,prefix,in_ddsiGuidPrefixLength);
+    guid.entityId.entityKey[0] = info->key.localId & 0xFF;
+    guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
+    guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
+    //should determine the following value based on topic and if it has a key or not
+
+    if(hasKey)
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_READER_WITH_KEY;
+    } else
+    {
+        guid.entityId.entityKind = IN_ENTITYKIND_APPDEF_READER_NO_KEY;
+    }
 
     success = in_connectivityEntityFacadeInit(
         OS_SUPER(_this),
         IN_OBJECT_KIND_READER_FACADE,
-        in_connectivityReaderFacadeDeinit);
+        in_connectivityReaderFacadeDeinit,
+        &guid);
 
     if(success)
     {
@@ -82,6 +102,7 @@ in_connectivityReaderFacadeInit(
         _this->info.type_name = os_strdup(info->type_name);
         _this->info.topic_name = os_strdup(info->topic_name);
         Coll_Set_init(&_this->matchedWriters, pointerIsLessThen, TRUE);
+        _this->sequenceNumber = *seq;
     }
     return success;
 }
@@ -176,4 +197,14 @@ in_connectivityReaderFacadeGetMatchedWriters(
 
     return &_this->matchedWriters;
 }
+
+in_ddsiSequenceNumber
+in_connectivityReaderFacadeGetSequenceNumber(
+    in_connectivityReaderFacade _this)
+{
+    assert(in_connectivityReaderFacadeIsValid(_this));
+
+    return &_this->sequenceNumber;
+}
+
 

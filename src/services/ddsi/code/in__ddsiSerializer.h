@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in__ddsiSerializer.h
- *
- *  Created on: Feb 18, 2009
- *      Author: frehberg
- */
-
 #ifndef IN__DDSISERIALIZER_H_
 #define IN__DDSISERIALIZER_H_
 
@@ -40,7 +33,7 @@ in_ddsiSerializerInit(
 
 /** \brief init
  */
-void
+os_boolean
 in_ddsiSerializerInitNil(
 		in_ddsiSerializer _this);
 
@@ -52,6 +45,11 @@ in_ddsiSerializerInitFrom(
 		in_ddsiSerializer from,
 		os_boolean bigEndian);
 
+/** \brief init
+ */
+os_boolean
+in_ddsiSerializerInitNoOp(
+        in_ddsiSerializer _this);
 
 /** \brief init with default endianess
  */

@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_transportReceiver.c
  *
  *  Created on: Feb 10, 2009
@@ -114,10 +103,22 @@ in_transportReceiverGetCtrlUnicastLocator(
 {
 
 	in_locator result = NULL;
-	if (_this->publicVTable->getDataMulticastLocator) {
+	if (_this->publicVTable->getCtrlUnicastLocator) {
 		result = _this->publicVTable->getCtrlUnicastLocator(_this);
 	}
 	return  result;
 }
 
+/** \brief virtual function */
+in_locator
+in_transportReceiverGetCtrlMulticastLocator(
+        in_transportReceiver _this)
+{
+
+    in_locator result = NULL;
+    if (_this->publicVTable->getCtrlMulticastLocator) {
+        result = _this->publicVTable->getCtrlMulticastLocator(_this);
+    }
+    return  result;
+}
 

@@ -165,7 +165,7 @@ c_fieldNew (
 
     if (refsList) {
         length = c_iterLength(refsList);
-        field->refs = c_arrayNew(c_long_t(base),length);
+        field->refs = c_arrayNew(c_address_t(base),length);
         for (n=(length-1);n>=0;n--) {
             field->refs[n] = c_iterTakeFirst(refsList);
         }

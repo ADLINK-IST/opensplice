@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_connectivityPeerReader.h
- *
- *  Created on: Oct 13, 2008
- *      Author: frehberg
- */
-
 #ifndef IN_CONNECTIVITYPEERREADER_H_
 #define IN_CONNECTIVITYPEERREADER_H_
 
@@ -48,18 +41,7 @@
 
 in_connectivityPeerReader
 in_connectivityPeerReaderNew(
-    struct v_subscriptionInfo *info,
-    os_boolean requiresInlineQos);
-
-in_result
-in_connectivityPeerReaderAddUnicastLocator(
-    in_connectivityPeerReader _this,
-    in_locator locator);
-
-in_result
-in_connectivityPeerReaderAddMulticastLocator(
-    in_connectivityPeerReader _this,
-    in_locator locator);
+    in_ddsiDiscoveredReaderData info);
 
 Coll_List*
 in_connectivityPeerReaderGetUnicastLocators(
@@ -69,8 +51,12 @@ Coll_List*
 in_connectivityPeerReaderGetMulticastLocators(
     in_connectivityPeerReader _this);
 
-struct v_subscriptionInfo *
+in_ddsiDiscoveredReaderData
 in_connectivityPeerReaderGetInfo(
+    in_connectivityPeerReader _this);
+
+in_ddsiGuid
+in_connectivityPeerReaderGetGuid(
     in_connectivityPeerReader _this);
 
 

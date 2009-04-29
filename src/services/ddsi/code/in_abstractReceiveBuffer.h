@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_abstractReceiveBuffer.h
- *
- *  Created on: Feb 6, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_ABSTRACTRECEIVEBUFFER_H_
 #define IN_ABSTRACTRECEIVEBUFFER_H_
 
@@ -48,7 +41,7 @@ in_abstractReceiveBufferBegin(in_abstractReceiveBuffer dataBuffer);
 
 /** \brief return number of octets in buffer
  */
-in_ulong
+os_size_t
 in_abstractReceiveBufferLength(in_abstractReceiveBuffer dataBuffer);
 
 /**  \return constant locator */

@@ -1,15 +1,4 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
-/*
  * in_serializer.c
  *
  *  Created on: Feb 8, 2009
@@ -25,6 +14,7 @@
 #include "in_align.h"
 #include "in_abstractSendBuffer.h"
 #include "in_ddsiDefinitions.h"
+#include "in_report.h"
 
 /*  --------- inline macros --------- */
 #define IN_ALIGN_ADDRESS(_address,_boundary) \
@@ -37,19 +27,25 @@
 	((((_d)->bufWriter) +  (os_size_t)(_n)) <= ((_d)->bufEnd))
 
 
+#define isNilMode(_this) (_this->bufBeginAligned==NULL)
+
 /*  --------- private operations --------- */
 
 static os_boolean
 _requiresSwap(os_boolean bigEndianess)
 {
+
 #ifdef PA_BIG_ENDIAN
-    return !bigEndianess;
+    os_boolean requiresSwap = !bigEndianess;
+    return requiresSwap;
 #else
-    return bigEndianess;
+    os_boolean requiresSwap = bigEndianess;
+    return requiresSwap;
 #endif
-}
+   }
 
 /*  --------- public operations --------- */
+
 
 /** \brief init
  */
@@ -95,6 +91,20 @@ in_ddsiSerializerInit(
 	assert(UI2P(0x10) == IN_ALIGN_ADDRESS(0x9,8));
 }
 
+/** \brief init Nil mode, also
+ */
+os_boolean
+in_ddsiSerializerInitNil(
+        in_ddsiSerializer _this)
+{
+    /* align beginning and ensure capacity is multiple of alignTo */
+    _this->bufBeginAligned = NULL;
+    _this->bufEnd = (in_octet*) 0xffffffff; /* should suffice, \TODO use constant */
+    _this->bufWriter = _this->bufBeginAligned;
+    _this->requiresSwap = OS_FALSE; /* endianess does not matter */
+    return OS_TRUE;
+}
+
 /** */
 void
 in_ddsiSerializerInitWithDefaultEndianess(
@@ -104,25 +114,14 @@ in_ddsiSerializerInitWithDefaultEndianess(
 	os_boolean bigEndian;
 #ifdef PA_BIG_ENDIAN
 	/* Big endian is native encoding */
-	bigEndian = TRUE;
+	bigEndian = OS_TRUE;
 #else
 	/* Little endian is native encoding */
-	bigEndian = FALSE;;
+	bigEndian = OS_FALSE;
 #endif
 	in_ddsiSerializerInit(_this, buffer, bigEndian);
 }
 
-/** \brief init
- */
-void
-in_ddsiSerializerInitNil(
-		in_ddsiSerializer _this)
-{
-	_this->bufBeginAligned = NULL;
-	_this->bufEnd = NULL;
-	_this->bufWriter = NULL;
-	_this->requiresSwap = OS_FALSE;
-}
 
 void
 in_ddsiSerializerDeinit(in_ddsiSerializer _this)
@@ -132,24 +131,26 @@ in_ddsiSerializerDeinit(in_ddsiSerializer _this)
 
 /** */
 os_boolean
-in_ddsiSerializeIsBigEndian(in_ddsiSerializer _this)
+in_ddsiSerializerIsBigEndian(in_ddsiSerializer _this)
 {
 	os_boolean result;
 
 #ifdef PA_BIG_ENDIAN
     result = !(_this->requiresSwap);
 #else
+    /* On this architecture little-endian is the native format:
+     * if swap is requried the data is encoded as little bigE. */
     result = _this->requiresSwap;
 #endif
 
     return result;
 }
 
-
+/** */
 in_long
-in_ddsiSerializerAppendOctets(in_ddsiSerializer _this,
+appendOctets(in_ddsiSerializer _this,
 					         const in_octet *valPtr,
-					         in_long valOctetLength)
+					         in_ulong valOctetLength)
 {
 	in_long result;
 
@@ -158,12 +159,46 @@ in_ddsiSerializerAppendOctets(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, valOctetLength)) {
 		result = -1;
 	} else {
-		memcpy(_this->bufWriter, valPtr, valOctetLength);
-		result = valOctetLength;
+	    if (!isNilMode(_this)) {
+	        memcpy(_this->bufWriter, valPtr, valOctetLength);
+	    }
+	    _this->bufWriter += valOctetLength;
+	    result = valOctetLength;
 	}
 
-	return valOctetLength;
+	return result;
 }
+
+
+/** */
+in_long
+in_ddsiSerializerAppendOctets(in_ddsiSerializer _this,
+                             const in_octet *valPtr,
+                             in_ulong valOctetLength)
+{
+    return appendOctets(_this, valPtr, valOctetLength);
+}
+
+
+
+/** */
+in_long
+in_ddsiSerializerAppendOctets_4(
+        in_ddsiSerializer _this,
+        const in_octet val0,
+        const in_octet val1,
+        const in_octet val2,
+        const in_octet val3)
+{
+   in_octet tuple[4];
+   tuple[0] = val0;
+   tuple[1] = val1;
+   tuple[2] = val2;
+   tuple[3] = val3;
+
+   return appendOctets(_this, tuple, 4);
+}
+
 
 
 in_long
@@ -180,16 +215,18 @@ in_ddsiSerializerAppendLong(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, sizeof(value))) {
 		result = -1;
 	} else {
-		if (_this->requiresSwap) {
-			/* this operation requires address alignment by 4 */
-			*((os_int32*) (_this->bufWriter)) = IN_UINT32_SWAP_LE_BE(value);
-		}
-		else {
-			/* this operation requires address alignment by 4 */
-			*((os_int32*) (_this->bufWriter)) = value;
-		}
-
+	    if (!isNilMode(_this)) {
+            if (_this->requiresSwap) {
+                /* this operation requires address alignment by 4 */
+                *((os_int32*) (_this->bufWriter)) = IN_UINT32_SWAP_LE_BE(value);
+            }
+            else {
+                /* this operation requires address alignment by 4 */
+                *((os_int32*) (_this->bufWriter)) = value;
+            }
+	    }
 		_this->bufWriter += sizeof(value);
+
 		result = _this->bufWriter - writerBakup;
 		assert(result > 0);
 	}
@@ -213,15 +250,16 @@ in_ddsiSerializerAppendUlong(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, sizeof(value))) {
 		result = -1;
 	} else {
-		if (_this->requiresSwap) {
-			/* this operation requires address alignment by 4 */
-			*((os_uint32*) (_this->bufWriter)) = IN_UINT32_SWAP_LE_BE(value);
-		}
-		else {
-			/* this operation requires address alignment by 4 */
-			*((os_uint32*) (_this->bufWriter)) = value;
-		}
-
+	    if (!isNilMode(_this)) {
+            if (_this->requiresSwap) {
+                /* this operation requires address alignment by 4 */
+                *((os_uint32*) (_this->bufWriter)) = IN_UINT32_SWAP_LE_BE(value);
+            }
+            else {
+                /* this operation requires address alignment by 4 */
+                *((os_uint32*) (_this->bufWriter)) = value;
+            }
+	    }
 		_this->bufWriter += sizeof(value);
 		result = _this->bufWriter - writerBakup;
 		assert(result > 0);
@@ -246,15 +284,16 @@ in_ddsiSerializerAppendShort(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, sizeof(value))) {
 		result = -1;
 	} else {
-		if (_this->requiresSwap) {
-			/* this operation requires address alignment by 2 */
-			*((os_short*) (_this->bufWriter)) = IN_UINT16_SWAP_LE_BE(value);
-		}
-		else {
-			/* this operation requires address alignment by 2 */
-			*((os_short*) (_this->bufWriter)) = value;
-		}
-
+	    if (!isNilMode(_this)) {
+            if (_this->requiresSwap) {
+                /* this operation requires address alignment by 2 */
+                *((os_short*) (_this->bufWriter)) = IN_UINT16_SWAP_LE_BE(value);
+            }
+            else {
+                /* this operation requires address alignment by 2 */
+                *((os_short*) (_this->bufWriter)) = value;
+            }
+	    }
 		_this->bufWriter += sizeof(value);
 		result = _this->bufWriter - writerBakup;
 		assert(result > 0);
@@ -279,15 +318,16 @@ in_ddsiSerializerAppendUshort(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, sizeof(value))) {
 		result = -1;
 	} else {
-		if (_this->requiresSwap) {
-			/* this operation requires address alignment by 4 */
-			*((os_ushort*) (_this->bufWriter)) = IN_UINT16_SWAP_LE_BE(value);
-		}
-		else {
-			/* this operation requires address alignment by 4 */
-			*((os_ushort*) (_this->bufWriter)) = value;
-		}
-
+	    if (!isNilMode(_this)) {
+            if (_this->requiresSwap) {
+                /* this operation requires address alignment by 4 */
+                *((os_ushort*) (_this->bufWriter)) = IN_UINT16_SWAP_LE_BE(value);
+            }
+            else {
+                /* this operation requires address alignment by 4 */
+                *((os_ushort*) (_this->bufWriter)) = value;
+            }
+	    }
 		_this->bufWriter += sizeof(value);
 		result = _this->bufWriter - writerBakup;
 		assert(result > 0);
@@ -306,8 +346,10 @@ in_ddsiSerializerAppendOctet(in_ddsiSerializer _this,
 	if (!IN_SERIALIZER_FITS_N(_this, sizeof(value))) {
 		result = -1;
 	} else {
-		* (_this->bufWriter) = value;
-		_this->bufWriter += sizeof(value);
+	    if (!isNilMode(_this)) {
+            * (_this->bufWriter) = value;
+	    }
+	    _this->bufWriter += sizeof(value);
 		result = sizeof(value);
 
 		assert(result > 0);
@@ -398,17 +440,25 @@ in_ddsiSerializerAlign(
 		in_ddsiSerializer _this,
 		in_long boundary)
 {
-	const in_octet *bufWriterBak = _this->bufWriter;
+	in_octet *bufWriterBak = _this->bufWriter;
 	in_long result;
 
-	_this->bufWriter =
-		IN_ALIGN_ADDRESS(_this->bufWriter, boundary);
+	_this->bufWriter = IN_ALIGN_ADDRESS(_this->bufWriter, boundary);
 
-	if (!IN_SERIALIZER_FITS_N(_this, boundary)) {
+	/* After alignment the writer may point to the end,
+	 * but must not go further */
+	if (_this->bufWriter > _this->bufEnd) {
 		result = -1;
 	} else {
 		result = UI(_this->bufWriter - bufWriterBak);
-		assert(result > 0);
+
+#ifndef NDEBUG
+        /* this is for debugging purpose to see where alignment has accured */
+		if (!isNilMode(_this)) {
+		    memset(bufWriterBak, 'A', result);
+		}
+#endif
+		assert(result >= 0);
 	}
 	return result;
 }
@@ -436,11 +486,10 @@ in_ddsiSerializerAlignmentPaddingSize(
 in_long
 in_ddsiSerializerAppendString(
 		in_ddsiSerializer _this,
-		os_char *str)
+		const os_char *str)
 {
 	/* Inclusive the terminating '\0' character */
 	const in_long cdrStrLen = strlen(str) + 1;
-
 	in_long result;
 	in_long nOctets;
 
@@ -460,5 +509,3 @@ in_ddsiSerializerAppendString(
 	}
 	return result;
 }
-
-

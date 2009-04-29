@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_ddsiStreamWriterImpl.h
- *
- *  Created on: Mar 2, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_DDSISTREAMWRITERIMPL_H_
 #define IN_DDSISTREAMWRITERIMPL_H_
 
@@ -48,7 +41,7 @@ in_ddsiStreamWriterImpl
 in_ddsiStreamWriterImplNew(
 		in_configChannel config,
 		in_transportSender sender,
-		in_connectivityAdmin connectivityAdmin);
+		in_plugKernel plugKernel);
 
 void
 in_ddsiStreamWriterImplFree(

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IN_DDSIELEMENTS_H_
@@ -21,7 +21,6 @@
 #include "in_ddsiDefinitions.h"
 #include "assert.h"
 #include "in_address.h"
-#include "netinet/in.h"
 #include "c_typebase.h" /* for c_ulong as sequenceNumber */
 
 typedef in_octet in_ddsiSubmessageKind;
@@ -33,8 +32,8 @@ typedef in_octet in_ddsiSubmessageFlags;
 /* -------------------------------------------------- */
 /* ---- in_ddsiGuidprefix --------------------------- */
 /* -------------------------------------------------- */
-
-typedef in_octet in_ddsiGuidPrefix[12] /*in_list<in_octet,12>*/;
+#define in_ddsiGuidPrefixLength 12
+typedef in_octet in_ddsiGuidPrefix[in_ddsiGuidPrefixLength] /*in_list<in_octet,12>*/;
 typedef in_octet *in_ddsiGuidPrefixRef;
 
 
@@ -46,6 +45,12 @@ in_ddsiGuidPrefixInit(
 void
 in_ddsiGuidPrefixDeinit(
 		in_ddsiGuidPrefixRef self);
+
+/** \return -1 on error, otherwise number of octets written */
+in_long
+in_ddsiGuidPrefixSerialize(
+        in_ddsiGuidPrefixRef self,
+        in_ddsiSerializer serializer);
 
 /** \return -1 on error, otherwise number of octets read */
 in_long
@@ -144,6 +149,8 @@ in_ddsiEntityIdEqual(
 		in_ddsiEntityId self,
 		in_ddsiEntityId other);
 
+os_uint32
+in_ddsiEntityIdAsUint32(in_ddsiEntityId self);
 
 /* -------------------------------------------------- */
 /* ---- in_ddsiGuid --------------------------------- */
@@ -167,6 +174,12 @@ in_ddsiGuidEqual(
 		in_ddsiGuid self,
 		in_ddsiGuid other);
 
+/** */
+os_boolean
+in_ddsiGuidInit(
+        in_ddsiGuid _this,
+        in_ddsiGuidPrefixRef guidPrefix,
+        in_ddsiEntityId entityId);
 
 /** \return -1 on error, otherwise number of octets read */
 in_long
@@ -183,11 +196,15 @@ OS_STRUCT(in_ddsiTime) {
     os_int32 seconds;
     os_uint32 fraction;
 };
+extern const OS_STRUCT (in_ddsiTime) IN_DDSI_TIME_ZERO;
+extern const OS_STRUCT (in_ddsiTime) IN_DDSI_TIME_INVALID;
+extern const OS_STRUCT (in_ddsiTime) IN_DDSI_TIME_INFINITE;
+extern const OS_STRUCT (in_ddsiTime) IN_DDSI_TIME_MIN_INFINITE;
 
 void
 in_ddsiTimeInit(
 		in_ddsiTime self,
-		c_time *time,
+		const c_time *time,
 		os_boolean duration);
 
 in_long
@@ -225,7 +242,7 @@ in_ddsiTimeSerialize(
 /** \return -1 on error, otherwise number of octets */
 in_long
 in_ddsiTimeInstantCTimeSerialize(
-		c_time *minTime,
+		const c_time *minTime,
 		in_ddsiSerializer serializer,
 		os_boolean isDuration);
 
@@ -280,9 +297,16 @@ OS_STRUCT(in_ddsiSequenceNumber) {
 
 /** */
 void
-in_ddsiSequenceNumberInit(
+in_ddsiSequenceNumberInitNative(
 		in_ddsiSequenceNumber self,
-		c_ulong seuqenceNumber);
+		c_ulong sequenceNumber);
+
+/** */
+void
+in_ddsiSequenceNumberInit(
+        in_ddsiSequenceNumber self,
+        os_int32  high,
+        os_uint32 low);
 
 /** \return -1 on error, otherwise number of octets */
 in_long
@@ -300,6 +324,82 @@ os_boolean
 in_ddsiSequenceNumberEqual(
 		in_ddsiSequenceNumber self,
 		in_ddsiSequenceNumber other);
+
+/** */
+os_boolean
+in_ddsiSequenceNumberIsValid(
+        in_ddsiSequenceNumber _this);
+
+/**  \brief define an ordering on sequence numbers */
+c_equality
+in_ddsiSequenceNumberCompare(
+        in_ddsiSequenceNumber _this,
+        in_ddsiSequenceNumber other);
+/* -------------------------------------------------- */
+/* ---- in_ddsiSequenceNumberSet -------------------- */
+/* -------------------------------------------------- */
+
+OS_CLASS(in_ddsiSequenceNumberSet);
+OS_STRUCT(in_ddsiSequenceNumberSet) {
+    OS_STRUCT(in_ddsiSequenceNumber) bitmapBase;
+    os_uint32 numBits;
+    os_uint32 bitmap[8]; /* sequence<long, 8> */
+    /* Note: AFAICS, the bitmap should be declared as
+     * sequence<unsigned long, 8>
+     * Otherwise each element provides only 31 bits + sign-bit and
+     * signed-shift would have a different semenatic. */
+};
+
+/** */
+void
+in_ddsiSequenceNumberSetDeinit(
+        in_ddsiSequenceNumberSet _this);
+
+/** */
+os_boolean
+in_ddsiSequenceNumberSetInit(
+        in_ddsiSequenceNumberSet _this,
+        in_ddsiSequenceNumber base);
+
+
+/** call this operation to add a sequence number to the set,
+ *  with sequenceNumber<base+256 */
+os_boolean
+in_ddsiSequenceNumberSetAdd(
+        in_ddsiSequenceNumberSet _this,
+        in_ddsiSequenceNumber sequenceNumber);
+
+/**  return the set size, may be 0 in case base==0 */
+#define in_ddsiSequenceNumberSetSize(_s) ((_s)->numBits)
+
+/** calculate the bitmap-slot the bit resides in */
+#define in_ddsiSequenceNumberSetSlotOfNthBit(_nth) \
+    (((_nth)+31)/32)
+
+/** calculate the index of bit within the slot */
+#define in_ddsiSequenceNumberSetMaskOfNthBit(_nth) \
+    ( ((os_uint32)1UL) << (_nth-(32*in_ddsiSequenceNumberSetSlotOfNthBit(_nth))))
+
+/** verify the set contains the specific offset value (_nth<=numBits) */
+#define in_ddsiSequenceNumberSetContainsNth(_s,_nth) \
+    (_nth<=(_s)->numBits && \
+     0!=(((_s)->bitmap[in_ddsiSequenceNumberSetSlotOfNthBit(_nth)]) & (in_ddsiSequenceNumberSetMaskOfNthBit(_nth))))
+
+/** */
+os_size_t
+in_ddsiSequenceNumberSetSerializedSize(
+        in_ddsiSequenceNumberSet _this);
+
+/** */
+in_long
+in_ddsiSequenceNumberSetSerialize(
+        in_ddsiSequenceNumberSet self,
+        in_ddsiSerializer serializer);
+
+in_long
+in_ddsiSequenceNumberSetInitFromBuffer(
+        in_ddsiSequenceNumberSet _this,
+        in_ddsiDeserializer deserializer);
 
 /* -------------------------------------------------- */
 /* ---- in_ddsiFragmentNumber ----------------------- */
@@ -715,7 +815,7 @@ OS_STRUCT(in_ddsiEntityName)
 void
 in_ddsiEntityNameInit(
 		in_ddsiEntityName _this,
-		const char* name);
+		char* name);
 
 in_long
 in_ddsiEntityNameSerialize(
@@ -750,7 +850,7 @@ OS_STRUCT(in_ddsiMessageHeader) {
 in_long
 in_ddsiMessageHeaderSerializeInstantly(
 		const in_ddsiProtocolVersion protocolVersion,
-		const in_ddsiVendorId vendorId,
+		const in_ddsiVendor vendor,
 		const in_ddsiGuidPrefixRef guidPrefix,
 		in_ddsiSerializer serializer);
 
@@ -758,6 +858,10 @@ in_long
 in_ddsiMessageHeaderInitFromBuffer(
 		in_ddsiMessageHeader self,
 		in_ddsiDeserializer deserializer);
+
+
+os_boolean
+in_ddsiMessageHeaderIsValid(in_ddsiMessageHeader self);
 
 /* -------------------------------------------------- */
 /* ---- in_ddsiSubmessageHeader ------------------------ */

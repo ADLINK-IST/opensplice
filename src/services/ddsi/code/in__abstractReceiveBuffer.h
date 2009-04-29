@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in__dataBuffer.h
- *
- *  Created on: Feb 8, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_ABSTRACTRECEIVEBUFFER_h_
 #define IN_ABSTRACTRECEIVEBUFFER_h_
 
@@ -41,16 +34,15 @@ extern "C" {
 
 #define IN_RECEIVE_BUFFER_ALIGN_PTR_CEIL(_ptr) \
 	IN_ALIGN_PTR_CEIL((_ptr),IN_RECEIVE_BUFFER_ALIGN_BOUNDARY)
-
-#define IN_RECEIVE_BUFFER_ALIGN_LENGTH_FLOOR(_len) \
-	IN_ALIGN_UINT_FLOOR((_len),IN_RECEIVE_BUFFER_ALIGN_BOUNDARY)
+#define IN_RECEIVE_BUFFER_ALIGN_PTR_FLOOR(_ptr) \
+    IN_ALIGN_PTR_FLOOR((_ptr),IN_RECEIVE_BUFFER_ALIGN_BOUNDARY)
 
 /** \brief abstract class */
 OS_STRUCT(in_abstractReceiveBuffer)
 {
 	OS_EXTENDS(in_object);
 	in_octet *buffer;
-	in_ulong  length; /* Note: ideal for pointer arithmetic */
+	os_size_t  length; /* Note: ideal for pointer arithmetic */
 	OS_STRUCT(in_locator) sender; /* could be extended in
 									 future to hold senders credentials */
 };
@@ -62,7 +54,7 @@ in_abstractReceiveBufferInitParent(
 		in_objectKind kind,
 		in_objectDeinitFunc deinit,
 		in_octet *buffer,
-		in_ulong length);
+		os_size_t length);
 
 /** \brief deinit */
 void
@@ -72,7 +64,7 @@ in_abstractReceiveBufferDeinit(in_abstractReceiveBuffer _this);
  *
  * Number of valid octets in the buffer. */
 void
-in_abstractReceiveBufferSetLength(in_abstractReceiveBuffer _this, in_long length);
+in_abstractReceiveBufferSetLength(in_abstractReceiveBuffer _this, os_size_t length);
 
 
 /* Close the brace that allows the usage of this code in C++. */

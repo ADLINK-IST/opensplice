@@ -1845,6 +1845,7 @@ class v_groupQueue extends v_groupStream {
 typedef c_ulong v_networkId;
 const v_networkId V_NETWORKID_LOCAL = 0x0;
 const v_networkId V_NETWORKID_ANY = 0xffffffff;
+const v_networkId V_NETWORKID_DDSI = 0xABADBABE;
 
 typedef c_ulong v_networkPartitionId;
 const v_networkPartitionId V_NETWORKPARTITIONID_LOCALHOST = 0xffffffff;

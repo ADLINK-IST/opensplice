@@ -1,21 +1,14 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-/*
- * in_transportReceiverIBasic.h
- *
- *  Created on: Feb 10, 2009
- *      Author: frehberg
- */
-
 #ifndef IN_TRANSPORTREADERIBASIC_H_
 #define IN_TRANSPORTREADERIBASIC_H_
 #include "in__object.h"
@@ -37,8 +30,15 @@ extern "C" {
 
 /** \brief constructor */
 in_transportReceiverIBasic
-in_transportReceiverIBasicNew(in_configChannel config);
+in_transportReceiverIBasicNew(
+        in_configChannel config);
 
+
+/** \brief constructor */
+in_transportReceiverIBasic
+in_transportReceiverIBasicNewDuplex(
+        in_configChannel config,
+        in_socket duplexSocket);
 
 /** \brief destructor */
 void

@@ -129,7 +129,7 @@ class pinger {
         dds_result = PP_min_reader.take (
             PP_min_dataList,
             infoList,
-            1,
+            DDS.LENGTH_UNLIMITED.value,
             DDS.ANY_SAMPLE_STATE.value,
             DDS.ANY_VIEW_STATE.value,
             DDS.ANY_INSTANCE_STATE.value);
@@ -180,7 +180,7 @@ class pinger {
         dds_result = PP_seq_reader.take (
             PP_seq_dataList,
             infoList,
-            1,
+            DDS.LENGTH_UNLIMITED.value,
             DDS.ANY_SAMPLE_STATE.value,
             DDS.ANY_VIEW_STATE.value,
             DDS.ANY_INSTANCE_STATE.value);
@@ -230,7 +230,7 @@ class pinger {
         dds_result = PP_string_reader.take (
             PP_string_dataList,
             infoList,
-            1,
+            DDS.LENGTH_UNLIMITED.value,
             DDS.ANY_SAMPLE_STATE.value,
             DDS.ANY_VIEW_STATE.value,
             DDS.ANY_INSTANCE_STATE.value);
@@ -279,7 +279,7 @@ class pinger {
         dds_result = PP_fixed_reader.take (
             PP_fixed_dataList,
             infoList,
-            1,
+            DDS.LENGTH_UNLIMITED.value,
             DDS.ANY_SAMPLE_STATE.value,
             DDS.ANY_VIEW_STATE.value,
             DDS.ANY_INSTANCE_STATE.value);
@@ -328,7 +328,7 @@ class pinger {
         dds_result = PP_array_reader.take (
             PP_array_dataList,
             infoList,
-            1,
+            DDS.LENGTH_UNLIMITED.value,
             DDS.ANY_SAMPLE_STATE.value,
             DDS.ANY_VIEW_STATE.value,
             DDS.ANY_INSTANCE_STATE.value);

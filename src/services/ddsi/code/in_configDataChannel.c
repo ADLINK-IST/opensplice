@@ -1,14 +1,3 @@
-/*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE 
- *
- *   for full copyright notice and license terms. 
- *
- */
 #include "in__configDataChannel.h"
 #include "in__configChannel.h"
 #include "os_heap.h"
@@ -133,6 +122,16 @@ in_configDataChannelGetPriority(
 
     return _this->priority;
 }
+
+os_boolean
+in_configDataChannelGetIsDefault(
+    in_configDataChannel _this)
+{
+    assert(_this);
+
+    return _this->isDefault;
+}
+
 
 os_uint32
 in_configDataChannelGetGroupQueueSize(

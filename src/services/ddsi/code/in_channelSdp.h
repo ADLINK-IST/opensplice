@@ -1,24 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IN_CHANNEL_SDP_H
 #define IN_CHANNEL_SDP_H
 
 /* OS abstraction includes. */
-#include "os_defs.h"
-#include "os_classbase.h"
-#include "os_stdlib.h"
-
-#include "in_channelTypes.h"
-#include "in_streamPair.h"
+#include "in__object.h"
+#include "in_stream.h"
 #include "u_participant.h"
 /**
  * Allow usage of this C code from C++ code.
@@ -51,8 +47,10 @@ extern "C" {
 
 in_channelSdp
 in_channelSdpNew(
+    in_configDiscoveryChannel config,
     in_stream stream,
-    in_plugKernel plug);
+    in_plugKernel plug,
+    in_endpointDiscoveryData discoveryDat);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)
