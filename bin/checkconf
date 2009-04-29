@@ -9,6 +9,89 @@ pathcheck ()
     return 1
 }
 
+convert_windows_path ()
+{
+    #Make it a dos path to remove all spaces
+    DOS_CONV_PATH=`cygpath -d "$1"`
+    if [ $? != 0 ]
+    then
+        echo "Error: Could not convert to dos path $1"
+        return 1
+    fi
+    #Now turn into a unix path for useage
+    UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
+    if [ $? != 0 ]
+    then
+        echo "Error: Could not convert to unix path $1"
+        return 1
+    fi
+    return 0
+}
+
+# test if CL.exe is at least vs8
+msvs_check ()
+{
+    #_CYGPATH=/bin/cygpath
+    #_WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
+
+    echo -n "VS: "
+    pathcheck cl.exe
+    if [ $? != 0 ]
+    then
+        if [ -z "$VS_HOME" ]
+        then 
+            echo "Error - No VS_HOME not set" 
+            return 1
+        fi
+        if [ ! -d "$VS_HOME" ]
+        then
+            echo "Error - $VS_HOME is not set to a directory"
+            return 1
+        fi
+    else
+        CL_EXE=`which cl.exe`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - cl.exe not found"
+            return 1
+        fi
+  	    VS_HOME=`dirname $CL_EXE`
+  	    VS_HOME=`dirname $VS_HOME`
+  	    VS_HOME=`dirname $VS_HOME`
+        export VS_HOME
+    fi
+    convert_windows_path "$VS_HOME"
+
+    LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
+    LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
+    export LIBPATH 
+    export LIB
+
+    PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
+
+    COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
+    if [ -z $COMPILER_VER ]
+    then
+        echo "Error - Compiler version cannit be determined"
+        return 1
+    fi
+    CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
+    if [ $CL_MAJOR -lt 14 ]
+    then
+        echo "Error - Only .NET 2005 and abovbe supported"
+        return 1
+    fi
+    
+    if [ $CL_MAJOR = 14 ]
+    then
+        COMPILER_VER="VS .NET 2005"
+    fi
+    echo "OK - using $COMPILER_VER"
+    return 0
+}
+
+
 # test if gcc is at least v3.2
 gcc_check ()
 {
@@ -133,14 +216,15 @@ javac_check ()
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
     then
-	    T_JAVAC_EXE=$JAVA_HOME/bin/javac
+        convert_windows_path "$JAVA_HOME"
+        T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $T_JAVAC_EXE ]
         then
             echo "Error - Not found"
             return 1
         fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
-        PATH=$JAVA_HOME/bin:$PATH
+        PATH=$UNIX_CONV_PATH/bin:$PATH
         export PATH
     else
         # If not check the path for java
@@ -180,6 +264,7 @@ javac_check ()
     
     LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
 
+    T_LD_PATH=yes
     case `uname` in
         Linux)
             if [ `uname -m` == "x86_64" ]
@@ -193,17 +278,28 @@ javac_check ()
         SunOS)
             JAVA_PATH_EXT=sparc
             ;;
+        CYGWIN_NT*)
+            JAVA_PATH_EXT=i386
+            PATH=$UNIX_CONV_PATH/lib:$PATH
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
+            export PATH
+            T_LD_PATH=no
+            ;;
         *)
             echo "Error - Not yet supported Java setup"
             return 1
             ;;
     esac
 
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
-
-    export LD_LIBRARY_PATH
+    if [ "$T_LD_PATH" != "no" ]
+    then
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
+        export LD_LIBRARY_PATH
+    fi
 
     echo "OK - using JAVAC version $REAL_VERSION"
     echo "  setting JAVA_HOME to $JAVA_HOME"
@@ -314,8 +410,8 @@ eorb_check ()
             echo "Error - Not eOrb found"
             return 1
         fi
-  		EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
-  		EORBHOME=`dirname $EORB_BIN`
+  	EORB_BIN=`dirname \`dirname $IDLCPP_EXE\``
+  	EORBHOME=`dirname $EORB_BIN`
         export EORBHOME
     fi
     
@@ -339,6 +435,13 @@ eorb_check ()
         echo "Error - unable to find $EORBHOME/bin/$EORBENV/idlcpp"
         return 1
     fi
+
+    case `uname` in
+        CYGWIN_NT*)
+            PATH=$PATH:$EORBHOME/lib/$EORBENV
+            export PATH
+            ;;
+    esac
 
     EORB_VERSION=`$EORBHOME/bin/$EORBENV/idlcpp -version | awk '{ print $6 }'`
     if [ $? != 0 ]
@@ -376,6 +479,7 @@ gawk_check ()
 
 cleanup_checks ()
 {
+    unset msvs_check
     unset gcc_check
     unset make_check
     unset bison_check
@@ -388,6 +492,7 @@ cleanup_checks ()
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
-    unset GAWK_VERSION JAVA_PATH_EXT
+    unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
+    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
 }
 
