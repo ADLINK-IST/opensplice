@@ -8,7 +8,8 @@
 /* Errors, warnins and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
-#define IN_SPOT __FILE__
+#define IN_STRINGIFY(X) #X
+#define IN_SPOT __FILE__":"IN_STRINGIFY(__LINE__)
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
