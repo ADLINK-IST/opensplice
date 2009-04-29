@@ -33,14 +33,13 @@
 /* **** private functions **** */
 
 #define WARN_SUBMESSAGE_IGNORED(_kind)             \
-	IN_REPORT_INFO_1(0, "submessage-kind %0x ignored", (os_uint32)(_kind))
+	IN_REPORT_WARNING_1("in_ddsiStreamReaderImpl", "submessage-kind %0x ignored", (os_uint32)(_kind))
 #define WARN_SUBMESSAGE_NOT_YET_IMPLEMENTED(_kind) \
-	IN_REPORT_INFO_1(0, "submessage-kind %0x not yet implemented", (os_uint32)(_kind))
+	IN_REPORT_WARNING_1("in_ddsiStreamReaderImpl", "submessage-kind %0x not yet implemented", (os_uint32)(_kind))
 #define WARN_SUBMESSAGE_UNKNOWN(_kind)            \
-	IN_REPORT_INFO_1(0, "submessage-kind %0x not yet implemented", (os_uint32)(_kind))
-
+	IN_REPORT_WARNING_1("in_ddsiStreamReaderImpl", "submessage-kind %0x not yet implemented", (os_uint32)(_kind))
 #define IN_WARN_ENTITYKIND_UNKNOWN(_kind) \
-	IN_REPORT_INFO_1(0, "entity-kind %0x unknown", (os_uint32)(_kind))
+	IN_REPORT_WARNING_1("in_ddsiStreamReaderImpl", "entity-kind %0x unknown", (os_uint32)(_kind))
 
 
 /** */
@@ -809,12 +808,13 @@ in_ddsiStreamReaderImplProcessData(
         &submessage,
         submessageHeader,
         deserializer);
+
  	if (length < 0) {
 		result = OS_FALSE;
 	} else {
 		in_ddsiEntityId writerId = &(submessage.writerId);
 
-	switch (writerId->entityKind) {
+		switch (writerId->entityKind) {
         case IN_ENTITYKIND_APPDEF_WRITER_WITH_KEY:    /* (0x02) */
 		case IN_ENTITYKIND_APPDEF_WRITER_NO_KEY:      /* (0x03) */
 		    /* only process submessage if the specific callback

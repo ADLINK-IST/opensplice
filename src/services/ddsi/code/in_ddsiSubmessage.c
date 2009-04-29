@@ -339,33 +339,44 @@ in_ddsiSubmessageDataInitFromBuffer(
         os_ushort dummy;
 		nofOctets =
 			in_ddsiDeserializerParseUshort(deserializer, &(_this->extraFlags));
+
 		if (nofOctets<0) break;
 		total += nofOctets;
 
 		nofOctets =
 			in_ddsiDeserializerParseUshort(deserializer, &dummy);
+
 		if (nofOctets<0) break;
 		total += nofOctets;
 
 		nofOctets =
 			in_ddsiEntityIdInitFromBuffer(&(_this->readerId), deserializer);
+
 		if (nofOctets<0) break;
 		total += nofOctets;
 
 		nofOctets =
 			in_ddsiEntityIdInitFromBuffer(&(_this->writerId), deserializer);
+
 		if (nofOctets<0) break;
 		total += nofOctets;
 
 		nofOctets =
 			in_ddsiSequenceNumberInitFromBuffer(&(_this->writerSN), deserializer);
+
 		if (nofOctets<0) break;
 		total += nofOctets;
 
+/*
+		printf("ddsiSubMessage.header.kind = %x\n", OS_SUPER(_this)->header.kind);
+		printf("ddsiSubMessage.header.flags = %x\n", OS_SUPER(_this)->header.flags);
+		printf("ddsiSubMessage.header.octetsToNextHeader = %x\n", OS_SUPER(_this)->header.octetsToNextHeader);
+*/
 		if (in_ddsiSubmessageHasFlagQ(OS_SUPER(_this))) {
 			/* take inlineQos */
 			nofOctets =
 				in_ddsiParameterListInitFromBuffer(&(_this->inlineQos), deserializer);
+
 			if (nofOctets<0) break;
 			total += nofOctets;
 		} else {
@@ -385,13 +396,11 @@ in_ddsiSubmessageDataInitFromBuffer(
 						remainingBodyLength);
 
 			if (nofOctets<0) break;
-			total += nofOctets;
 
-            result = total;
+			total += nofOctets;
 		} else {
 			in_ddsiSerializedDataInitEmpty(&(_this->serializedPayload));
 		}
-
 		result = total;
 	} while (0);
 
@@ -478,7 +487,7 @@ in_ddsiSubmessageDataHeaderSerializeInstantly(
 		in_ddsiSubmessageDataCreateFlagD(withSerializedPayload);
 
     const os_ushort octetsToNextHeader =
-         ((os_ushort) submessageLength) - (IN_DDSI_SUBMESSAGE_HEADER_SIZE*2);//ES: TODO: times 2 is work around for malformed msg
+         ((os_ushort) submessageLength) - (IN_DDSI_SUBMESSAGE_HEADER_SIZE);
 
     in_long result = -1;
     in_long total = 0;

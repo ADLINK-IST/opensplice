@@ -149,6 +149,7 @@ in_ddsiParameterListSeekToEnd(in_ddsiDeserializer deserializer)
 		nofOctets =
 			in_ddsiParameterHeaderInitFromBuffer(&header, deserializer);
 		if (nofOctets < 0) {
+		    assert(FALSE);
 			continueScan = OS_FALSE;
 			result = -1;
 		} else {
@@ -164,6 +165,7 @@ in_ddsiParameterListSeekToEnd(in_ddsiDeserializer deserializer)
 				nofOctets = in_ddsiDeserializerSeek(deserializer,
 						(os_size_t) header.octetsToNextParameter);
 				if (nofOctets < 0) {
+				    assert(FALSE);
 					continueScan = OS_FALSE; /* error */
 					result = -1;
 				} else {

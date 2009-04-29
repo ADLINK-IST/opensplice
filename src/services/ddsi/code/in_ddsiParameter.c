@@ -18,8 +18,9 @@
 /* **** public functions **** */
 
 in_long
-in_ddsiParameterHeaderInitFromBuffer(in_ddsiParameterHeader _this,
-		in_ddsiDeserializer deserializer)
+in_ddsiParameterHeaderInitFromBuffer(
+    in_ddsiParameterHeader _this,
+	in_ddsiDeserializer deserializer)
 {
 	in_long nofOctets = 0;
 	in_long total = 0;
@@ -29,6 +30,7 @@ in_ddsiParameterHeaderInitFromBuffer(in_ddsiParameterHeader _this,
 	do {
 		nofOctets =
 			in_ddsiDeserializerAlign(deserializer, IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
+
 		if (nofOctets < 0) break;
 		total += nofOctets;
 		if (nofOctets > 0) {
@@ -37,26 +39,39 @@ in_ddsiParameterHeaderInitFromBuffer(in_ddsiParameterHeader _this,
 
 		nofOctets =
 			in_ddsiParameterIdInitFromBuffer(&(_this->id), deserializer);
+
 		if (nofOctets < 0) break;
 		total += nofOctets;
 
-		nofOctets =
-			in_ddsiDeserializerParseUshort(deserializer, &(_this->octetsToNextParameter));
-		if (nofOctets < 0) break;
-		total += nofOctets;
+		if(_this->id.value != IN_PID_SENTINEL)
+		{
 
-		lowerTwoBits =
-		    (_this->octetsToNextParameter & ((IN_DDSI_PARAMETER_HEADER_ALIGNMENT)-1));
+            nofOctets =
+                in_ddsiDeserializerParseUshort(deserializer, &(_this->octetsToNextParameter));
 
-		/* length must be multiple of IN_DDSI_PARAMETER_HEADER_ALIGNMENT */
-		if (lowerTwoBits > 0) {
-			/* Error, lower 2 bits are not 0, length encoding does not
-			 * meet preconditions */
-			break; /* result = -1;*/
-		}
-		/* all succeeeded, assign result */
+            if (nofOctets < 0) break;
+            total += nofOctets;
+
+            lowerTwoBits =
+                (_this->octetsToNextParameter & ((IN_DDSI_PARAMETER_HEADER_ALIGNMENT)-1));
+
+            /* length must be multiple of IN_DDSI_PARAMETER_HEADER_ALIGNMENT */
+            if (lowerTwoBits > 0) {
+                /* Error, lower 2 bits are not 0, length encoding does not
+                 * meet preconditions */
+                break; /* result = -1;*/
+            }
+            /* all succeeeded, assign result */
+        } else
+        {
+            nofOctets = in_ddsiDeserializerAlign(deserializer, IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
+            if (nofOctets < 0) break;
+            total += nofOctets;
+        }
 		result = total;
 	} while (0);
+
+	assert(result != -1);
 
 	return result;
 }

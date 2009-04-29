@@ -387,16 +387,16 @@ in_ddsiSerializerSeek(
 {
 	in_long result;
 
-	assert(nOctets > 0);
-
 	if (!IN_SERIALIZER_FITS_N(_this, nOctets)) {
 			result = -1;
 	} else {
 		_this->bufWriter += (os_size_t) nOctets;
 		result = nOctets;
 
-		assert(result > 0);
+		assert(result >= 0);
 	}
+	assert(_this->bufWriter >= _this->bufBeginAligned);
+    assert(_this->bufWriter <= _this->bufEnd);
 
 	return result;
 }
@@ -408,7 +408,7 @@ in_ddsiSerializerSeekTo(
 {
     in_long result;
 
-    if (position < _this->bufWriter ||
+    if (position < _this->bufBeginAligned ||
         /* new position not within array range */
         position > _this->bufEnd) {
         result = -1;
@@ -416,6 +416,8 @@ in_ddsiSerializerSeekTo(
         result = (in_long) (position - _this->bufWriter);
         _this->bufWriter = position;
     }
+    assert(_this->bufWriter >= _this->bufBeginAligned);
+    assert(_this->bufWriter <= _this->bufEnd);
 
     return result;
 }
@@ -460,6 +462,9 @@ in_ddsiSerializerAlign(
 #endif
 		assert(result >= 0);
 	}
+	assert(_this->bufWriter >= _this->bufBeginAligned);
+    assert(_this->bufWriter <= _this->bufEnd);
+
 	return result;
 }
 

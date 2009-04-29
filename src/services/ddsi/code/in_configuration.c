@@ -1567,8 +1567,8 @@ in_reportTrace(
     }
 #else
 
-    //if(traceClass == TC(Receive))
-    //{
+    if(traceClass == TC(Receive))
+    {
       if(!outputFile)
       {
           outputFile = fopen("ddsi.log", "w");
@@ -1580,7 +1580,7 @@ in_reportTrace(
         vfprintf(outputFile, description, ap);
         va_end(ap);
         fflush(outputFile);
-   // }
+   }
 #endif
 }
 

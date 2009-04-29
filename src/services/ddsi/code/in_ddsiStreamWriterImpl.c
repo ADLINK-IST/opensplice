@@ -574,11 +574,13 @@ serializeData(
     v_message message)
 {
     const os_ushort encapsFlags = 0x0;
+    c_octet* dataHeaderPosition, *endDataPosition;
 
 	in_result result = IN_RESULT_ERROR;
 	in_result retState = IN_RESULT_OK;
 
 	in_long nofOctets = 0;
+	os_ushort octetsToNextHeader = 0;
 	os_size_t total = 0;
     os_size_t serializedDataSize = 0;
 
@@ -600,7 +602,10 @@ serializeData(
 		total += nofOctets;
 
 		/* Must be written a second time when we know the real octet-size of
-		 * payload */
+		 * payload, so keep track of current position.
+		 */
+		dataHeaderPosition = in_ddsiSerializerGetPosition(&(_this->serializer));
+
 		nofOctets = in_ddsiSubmessageDataHeaderSerializeInstantly(
 			        inlineQosSize,
 			        serializedPayloadSize,
@@ -666,6 +671,8 @@ serializeData(
                     /* TODO report error and handle it!! */
                 }
                 IN_BREAK_IF(retState!=IN_RESULT_OK);
+
+
                 /* For DATA it must not exceed the the buffer size */
                 /* serializeData assumes that no fragmentation is done, so
                  * all data fits into the current buffer, so
@@ -700,15 +707,44 @@ serializeData(
                 /* Note: bytesLeft may not be used the same way in case of
                  * fragmentation, as the serializer might have been re-initialized
                  * setting up a fresh buffer */
+
+                /*
                 alignmentDistance =
                     bytesLeft -
                     (firstOctetBehindSerializedData - firstOctetBehindDataHeader);
+
+
                 nofOctets =
                     in_ddsiSerializerSeek(
                             &(_this->serializer),
                             alignmentDistance);
                 IN_BREAK_IF(nofOctets < 0);
                 total += nofOctets;
+                */
+                nofOctets = in_ddsiSerializerAlign(&(_this->serializer),
+                    IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
+
+                if (nofOctets<0) break;
+                total += nofOctets;
+
+                endDataPosition = in_ddsiSerializerGetPosition(&(_this->serializer));
+                octetsToNextHeader = (os_ushort)(endDataPosition -
+                    (dataHeaderPosition + IN_DDSI_SUBMESSAGE_HEADER_SIZE));
+
+                /* Set position of serializer to the location of
+                 * octetsToNextHeader field. These are the last 2 bytes of
+                 * the subMessage header. So add header size to start of the
+                 * subMessage and subtract 2 bytes.
+                 */
+                in_ddsiSerializerSeekTo(&(_this->serializer),
+                    dataHeaderPosition + IN_DDSI_SUBMESSAGE_HEADER_SIZE - 2);
+
+                /* Set correct octetsToNextHeader*/
+                in_ddsiSerializerAppendUshort(&(_this->serializer),
+                    octetsToNextHeader);
+
+                /* Reset serializer to endPosition */
+                in_ddsiSerializerSeekTo(&(_this->serializer), endDataPosition);
             }
 		}
 		/* finally assign result */
@@ -752,8 +788,7 @@ static os_size_t
 calculatePayloadSize(v_message message)
 {
     /* TODO ask the serializer to calculate the size */
-    os_size_t realSize =
-        400;
+    os_size_t realSize = 1300;
     os_size_t result;
 
     /* finally round up the value to match alignment constraints */
@@ -959,7 +994,6 @@ in_ddsiStreamWriterImplAppendParticipantData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForParticipantCalculateSize(
                  facade,
                  discoveryData);
@@ -1146,7 +1180,6 @@ in_ddsiStreamWriterImplAppendPublicationData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForPublicationCalculateSize(
                  facade,
                  discoveryData);
@@ -1231,7 +1264,6 @@ in_ddsiStreamWriterImplAppendSubscriptionData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForSubscriptionCalculateSize(facade, discoveryData);
 
      /* no inlineQos */
