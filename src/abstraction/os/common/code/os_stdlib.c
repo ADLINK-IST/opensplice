@@ -56,7 +56,7 @@ os_pathSep(void)
 
 os_result
 os_access(
-    char *file_path,
+    const char *file_path,
     os_int32 permission)
 {
     os_result result;
