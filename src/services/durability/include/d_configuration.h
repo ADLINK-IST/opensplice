@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #ifndef D_CONFIGURATION_H
 #define D_CONFIGURATION_H
@@ -56,6 +67,7 @@ C_STRUCT(d_configuration){
     os_threadAttr aligneeScheduling;
     os_time       initialRequestCombinePeriod;
     os_time       operationalRequestCombinePeriod;
+    c_bool        timeAlignment;
 };
 
 #define d_configuration(d) ((d_configuration)(d))

@@ -39,10 +39,12 @@ reset_old_vars ()
 print_setup ()
 {
     echo
+    echo "Variable Setup"
     echo "SPLICE_TARGET =" $SPLICE_TARGET
     echo "SPLICE_HOST =" $SPLICE_HOST
     echo "OSPL_HOME =" $OSPL_HOME
     echo "SPLICE_ORB =" $SPLICE_ORB
+    echo "SPLICE_SA_ORB =" $SPLICE_SA_ORB
 }
 
 display_and_get_target ()
@@ -109,8 +111,6 @@ get_avail_targets ()
             fi
         ;;
         CYGWIN*)
-            CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
-            export CYGWIN_INSTALL_DRIVE
             required_host=`grep "SPLICE_HOST=.*win32" $ENV_DIR/$target`
             if [ -n "$required_host" ]
             then
@@ -167,6 +167,11 @@ set_target_alternate ()
 setup_pathed_vars ()
 {
     SPLICE_BIN_PATH=${OSPL_HOME}/bin
+    case $host in
+        CYGWIN_NT*)
+            SPLICE_BIN_PATH=${OSPL_HOME}/lib/${SPLICE_TARGET}:$SPLICE_BIN_PATH
+            ;;
+    esac
     if [ -n "${OLD_SPLICE_BIN_PATH}" ]
     then
         PATH=`echo ${PATH} | \
@@ -225,15 +230,17 @@ setup_pathed_vars ()
 
 export_vars ()
 {
-    export OSPL_HOME 
-    export SPLICE_TARGET
-
+    host=`uname -s`
     OSPL_TMPL_PATH=${OSPL_HOME}/etc/idlpp
     case $host in
         CYGWIN_NT*)
+            CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
             OSPL_TMPL_PATH=`cygpath -d $OSPL_HOME/etc/idlpp`
             ;;
     esac
+    export CYGWIN_INSTALL_DRIVE
+    export OSPL_HOME 
+    export SPLICE_TARGET
     export OSPL_TMPL_PATH
 }
 

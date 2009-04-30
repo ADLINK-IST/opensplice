@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /** \file os/win32/code/os_mutex.c
  *  \brief WIN32 mutual exclusion semaphore
  *
@@ -92,7 +103,7 @@ os_mutexDestroy (
     os_result osr;
     
     assert(mutex != NULL);
-    assert(mutex->lockCount == 0);
+    /* assert(mutex->lockCount == 0); */
     
     pipename = os_servicePipeName();
     if (mutex->scope == OS_SCOPE_SHARED) {
@@ -150,7 +161,7 @@ os_mutexLock(
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
                 OS_DEBUG_2("os_mutexLock: failed to open mutex %s %d", name, GetLastError());
-                assert(FALSE);
+                assert(mutexHandle != NULL);
                 return os_resultFail;
             }
         } else {
@@ -186,7 +197,7 @@ os_mutexTryLock (
     
     r = os_resultSuccess;
     lc = InterlockedCompareExchange(&mutex->lockCount, 1, 0);
-    if (lc > 1) {
+    if (lc > 0) {
         r = os_resultBusy;
     }
     return r; 
@@ -219,7 +230,7 @@ os_mutexUnlock (
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
                 OS_DEBUG_2("os_mutexLock: failed to open mutex %s %d", name, GetLastError());
-                assert(FALSE);
+                assert(mutexHandle != NULL);
                 return os_resultFail;
             }
         } else {

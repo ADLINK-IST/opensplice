@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    ExtDomainParticipant.java
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the Java programming language.
@@ -440,10 +447,10 @@ public class ExtDomainParticipant implements DomainParticipant {
     }
 
     public int get_discovered_participant_data(
-            long participant_handle,
-            ParticipantBuiltinTopicDataHolder participant_data) {
+            ParticipantBuiltinTopicDataHolder participant_data,
+            long participant_handle) {
         return realParticipant.get_discovered_participant_data(
-                participant_handle, participant_data);
+                participant_data, participant_handle);
     }
 
     public int get_discovered_topics(InstanceHandleSeqHolder handles) {
@@ -451,10 +458,10 @@ public class ExtDomainParticipant implements DomainParticipant {
     }
 
     public int get_discovered_topic_data(
-            long topic_handle,
-            TopicBuiltinTopicDataHolder topic_data) {
+            TopicBuiltinTopicDataHolder topic_data,
+            long topic_handle) {
         return realParticipant.get_discovered_topic_data(
-                topic_handle, topic_data);
+                topic_data, topic_handle);
     }
 
     public boolean contains_entity(long a_handle) {

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v__reader.h"
 #include "v__readerQos.h"
 #include "v__observer.h"
@@ -435,7 +446,7 @@ v_readerGetSampleRejectedStatus(
 
     result = V_RESULT_PRECONDITION_NOT_MET;
     if (_this != NULL) {
-        V_READER_UNLOCK(_this);
+        V_READER_LOCK(_this);
         status = v_entity(_this)->status;
         result = action(&v_readerStatus(status)->sampleRejected, arg);
         if (reset) {

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 import DDS.*;
 
 public class ponger {
@@ -284,7 +295,7 @@ public class ponger {
                 for (i = 0; i < imax; i++) {
                     if (conditionList.value[i] == PP_min_sc) {
         		/* System.out.println ("PONG: PING_min arrived"); */
-                        result = PP_min_reader.take (PP_min_dataList, infoList, 1,
+                        result = PP_min_reader.take (PP_min_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_min_dataList.value.length;
                         if (jmax != 0) {
@@ -297,7 +308,7 @@ public class ponger {
                         }
                     } else if (conditionList.value[i] == PP_seq_sc) {
         		/* System.out.println ("PONG: PING_seq arrived"); */
-                        result = PP_seq_reader.take (PP_seq_dataList, infoList, 1,
+                        result = PP_seq_reader.take (PP_seq_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_seq_dataList.value.length;
                         if (jmax != 0) {
@@ -310,7 +321,7 @@ public class ponger {
                         }
                     } else if (conditionList.value[i] == PP_string_sc) {
         		/* System.out.println ("PONG: PING_string arrived"); */
-                        result = PP_string_reader.take (PP_string_dataList, infoList, 1,
+                        result = PP_string_reader.take (PP_string_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_string_dataList.value.length;
                         if (jmax != 0) {
@@ -323,7 +334,7 @@ public class ponger {
                         }
                     } else if (conditionList.value[i] == PP_fixed_sc) {
         		/* System.out.println ("PONG: PING_fixed arrived"); */
-                        result = PP_fixed_reader.take (PP_fixed_dataList, infoList, 1,
+                        result = PP_fixed_reader.take (PP_fixed_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_fixed_dataList.value.length;
                         if (jmax != 0) {
@@ -336,7 +347,7 @@ public class ponger {
                         }
                     } else if (conditionList.value[i] == PP_array_sc) {
         		/* System.out.println ("PONG: PING_array arrived"); */
-                        result = PP_array_reader.take (PP_array_dataList, infoList, 1,
+                        result = PP_array_reader.take (PP_array_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_array_dataList.value.length;
                         if (jmax != 0) {
@@ -349,7 +360,7 @@ public class ponger {
                         }
                     } else if (conditionList.value[i] == PP_quit_sc) {
         		/* System.out.println ("PONG: PING_quit arrived"); */
-                        result = PP_quit_reader.take (PP_quit_dataList, infoList, 1,
+                        result = PP_quit_reader.take (PP_quit_dataList, infoList, DDS.LENGTH_UNLIMITED.value,
                                      DDS.ANY_SAMPLE_STATE.value, DDS.ANY_VIEW_STATE.value, DDS.ANY_INSTANCE_STATE.value);
                         jmax = PP_quit_dataList.value.length;
                         if (jmax != 0) {

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "gapi_subscriber.h"
 #include "gapi_domainParticipant.h"
 #include "gapi_domainParticipantFactory.h"
@@ -68,11 +79,11 @@ copySubscriberQosIn (
 
     if (copied) {
         dstQos->partition = gapi_stringSeq_to_String(&srcQos->partition.name,",");
-        if ( srcQos->partition.name._length > 0 &&  !dstQos->partition) { 
+        if ( srcQos->partition.name._length > 0 &&  !dstQos->partition) {
             copied = FALSE;
         }
     }
-    
+
     if (copied) {
         dstQos->presentation.access_scope    =
                 srcQos->presentation.access_scope;
@@ -102,7 +113,7 @@ copySubscriberQosOut (
 {
     assert(srcQos);
     assert(dstQos);
-    
+
     if ( dstQos->group_data.value._maximum > 0 ) {
         if ( dstQos->group_data.value._release ) {
             gapi_free(dstQos->group_data.value._buffer);
@@ -124,8 +135,8 @@ copySubscriberQosOut (
             dstQos->group_data.value._length  = 0;
             dstQos->group_data.value._release = FALSE;
             dstQos->group_data.value._buffer = NULL;
-    }  
-  
+    }
+
 
     gapi_string_to_StringSeq(srcQos->partition,",",&dstQos->partition.name);
 
@@ -168,7 +179,7 @@ _SubscriberNew (
     assert(participant);
 
     newSubscriber = _SubscriberAlloc();
-    
+
     if ( newSubscriber != NULL ) {
         if ( u_entityQoS(u_entity(uParticipant), (v_qos*)&participantQos) == U_RESULT_OK ) {
             enable = participantQos->entityFactory.autoenable_created_entities;
@@ -199,8 +210,8 @@ _SubscriberNew (
             newSubscriber = NULL;
         }
     }
-    
-    if ( newSubscriber != NULL) {        
+
+    if ( newSubscriber != NULL) {
         u_subscriber uSubscriber;
 
         uSubscriber = u_subscriberNew(uParticipant, "subscriber", subscriberQos, enable);
@@ -214,12 +225,12 @@ _SubscriberNew (
         }
     }
 
-    if ( newSubscriber != NULL) {        
+    if ( newSubscriber != NULL) {
         _EntityStatus(newSubscriber) = _Status(_SubscriberStatusNew(newSubscriber, a_listener,mask));
         if ( _EntityStatus(newSubscriber) != NULL ) {
             len = (gapi_long)qos->partition.name._length;
             if ( qos->partition.name._length == 0UL ) {
-                /* 
+                /*
                  * behaviour of the kernel in case of an empty sequence is that it is related no
                  * none of the partitions, while DCPS expects it to be conected to all partitions.
                  * Therefore this has to be done seperately.
@@ -233,7 +244,7 @@ _SubscriberNew (
             newSubscriber = NULL;
         }
     }
-    
+
     return newSubscriber;
 }
 
@@ -258,7 +269,7 @@ _SubscriberFree (
     subscriber->dataReaderSet = NULL;
 
     gapi_dataReaderQos_free(&subscriber->_defDataReaderQos);
-    
+
     _DomainEntityDispose(_DomainEntity(subscriber));
 
     return result;
@@ -304,7 +315,7 @@ _SubscriberSetDeleteAction (
 {
     gapi_setIter iter;
     _DataReader reader;
-     
+
     _ObjectSetDeleteAction(_Object(subscriber), action, argument);
     iter = gapi_setFirst(subscriber->dataReaderSet);
     if ( iter ) {
@@ -319,7 +330,7 @@ _SubscriberSetDeleteAction (
         gapi_setIterFree(iter);
     }
 }
-    
+
 gapi_subscriberQos *
 _SubscriberGetQos (
     _Subscriber subscriber,
@@ -327,11 +338,11 @@ _SubscriberGetQos (
 {
     v_subscriberQos subscriberQos;
     u_subscriber uSubscriber;
-    
+
     assert(subscriber);
 
     uSubscriber = U_SUBSCRIBER_GET(subscriber);
-        
+
     if ( u_entityQoS(u_entity(uSubscriber), (v_qos*)&subscriberQos) == U_RESULT_OK ) {
         copySubscriberQosOut(subscriberQos,  qos);
         u_subscriberQosFree(subscriberQos);
@@ -355,7 +366,7 @@ gapi_subscriber_create_datareader (
     gapi_dataReaderQos *readerQos;
     gapi_context        context;
     gapi_topicQos* topicQos;
-    
+
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_CREATE_DATAREADER);
 
     subscriber = gapi_subscriberClaim(_this, NULL);
@@ -400,17 +411,17 @@ gapi_subscriber_create_datareader (
             gapi_char *typeName;
             gapi_char *topicName;
             _DomainParticipant participant;
-            
+
             /* find topic with the participant for consistency */
             typeName  = _TopicDescriptionGetTypeName(topicDescription);
             topicName = _TopicDescriptionGetName(topicDescription);
             participant = _DomainEntityParticipant(_DomainEntity(subscriber));
-            
+
             if ( _DomainParticipantTopicDescriptionExists(participant,
                                                           topicDescription))
             {
                 _TypeSupport typeSupport;
-                
+
                 /* find type support for the data type to find
                  * data reader create function.
                  */
@@ -455,7 +466,7 @@ gapi_subscriber_create_datareader (
         statusHandle = _EntityHandle(_Entity(datareader)->status);
         result = (gapi_dataReader)_EntityRelease(datareader);
     }
-    
+
     return result;
 }
 
@@ -504,7 +515,7 @@ gapi_subscriber_delete_datareader (
         }
         _EntityRelease(datareader);
     }
-    
+
     _EntityRelease(subscriber);
 
      return result;
@@ -525,17 +536,17 @@ gapi_subscriber_delete_contained_entities (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_DELETE_CONTAINED_ENTITIES);
 
     subscriber = gapi_subscriberClaim(_this, &result);
-    
+
     if ( subscriber ) {
         iterSet = gapi_setFirst (subscriber->dataReaderSet);
-            
+
         while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
             _DataReader datareader = _DataReader(gapi_setIterObject(iterSet));
             result = gapi_dataReader_delete_contained_entities(
                           _EntityHandle(datareader),
                            action,
                            action_arg);
-            
+
             if(result == GAPI_RETCODE_OK){
                 _EntityClaimNotBusy(datareader);
                 userData = _ObjectGetUserData(_Object(datareader));
@@ -599,7 +610,7 @@ gapi_subscriber_lookup_datareader (
 
     if ( subscriber && topic_name ) {
         gapi_setIter       iter;
-        
+
         iter = gapi_setFirst(subscriber->dataReaderSet);
         while ( (dataReader == NULL) && (gapi_setIterObject(iter) != NULL) ) {
             _DataReader dr = _DataReader(gapi_setIterObject(iter));
@@ -647,7 +658,7 @@ allocDataReaderSeq (
 gapi_returnCode_t
 gapi_subscriber_get_datareaders (
     gapi_subscriber _this,
-    gapi_dataReaderSeq **readers,
+    gapi_dataReaderSeq *readers,
     const gapi_sampleStateMask sample_states,
     const gapi_viewStateMask view_states,
     const gapi_instanceStateMask instance_states)
@@ -661,7 +672,7 @@ gapi_subscriber_notify_datareaders (
 {
     gapi_returnCode_t result;
     _Subscriber subscriber;
-    
+
     subscriber = gapi_subscriberClaim(_this, &result);
     if ( subscriber ) {
         gapi_setIter iter;
@@ -696,7 +707,7 @@ gapi_subscriber_set_qos (
     gapi_context        context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     subscriber = gapi_subscriberClaim(_this, &result);
 
     if ( subscriber && qos ) {
@@ -704,7 +715,7 @@ gapi_subscriber_set_qos (
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    
+
     if ((result == GAPI_RETCODE_OK ) && (_Entity(subscriber)->enabled)) {
         gapi_subscriberQos * existing_qos = gapi_subscriberQos__alloc();
 
@@ -713,9 +724,9 @@ gapi_subscriber_set_qos (
                                                    &context);
         gapi_free(existing_qos);
     }
-    
-    
-    
+
+
+
     if ( result == GAPI_RETCODE_OK ) {
         subscriberQos = newSubscriberQos();
         if (subscriberQos) {
@@ -763,7 +774,7 @@ gapi_subscriber_set_listener (
     _Subscriber subscriber = (_Subscriber)_this;
 
     subscriber = gapi_subscriberClaim(_this, &result);
-    
+
     if ( (subscriber != NULL) ) {
         _SubscriberStatus status;
 
@@ -800,7 +811,7 @@ gapi_subscriber_get_listener (
         memset(&listener, 0, sizeof(listener));
     }
     _EntityRelease(subscriber);
-    
+
     return listener;
 }
 
@@ -824,15 +835,15 @@ gapi_subscriber_get_participant (
 {
     _Subscriber subscriber;
     _DomainParticipant participant = NULL;
-    
+
     subscriber = gapi_subscriberClaim(_this, NULL);
 
     if ( subscriber != NULL) {
         participant = _DomainEntityParticipant(_DomainEntity(subscriber));
     }
-    
+
     _EntityRelease(subscriber);
-    
+
     return (gapi_domainParticipant)_EntityHandle(participant);
 }
 
@@ -848,7 +859,7 @@ gapi_subscriber_set_default_datareader_qos (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_DATAREADER_QOS);
 
     subscriber = gapi_subscriberClaim(_this, &result);
-    
+
     if ( subscriber ) {
         if ( qos ) {
             result = gapi_dataReaderQosIsConsistent(qos, &context);
@@ -872,7 +883,7 @@ gapi_subscriber_get_default_datareader_qos (
 {
     _Subscriber subscriber;
     gapi_returnCode_t result;
-    
+
     subscriber = gapi_subscriberClaim(_this, &result);
 
     if ( subscriber && qos ) {
@@ -892,7 +903,7 @@ gapi_subscriber_copy_from_topic_qos (
     _Subscriber subscriber = (_Subscriber)_this;
 
     subscriber = gapi_subscriberClaim(_this, &result);
-    
+
     if ( (subscriber != NULL) ) {
         if ((a_topic_qos      != GAPI_TOPIC_QOS_DEFAULT) &&
             (a_datareader_qos != GAPI_DATAREADER_QOS_DEFAULT)) {
@@ -924,7 +935,7 @@ _SubscriberSetListenerInterestOnChildren (
         gapi_setIterNext(iterSet);
     }
     gapi_setIterFree (iterSet);
-    
+
     return result;
 }
 
@@ -944,10 +955,10 @@ _SubscriberContainsEntity (
     while ( !result && gapi_setIterObject(iterSet) ) {
         _DataReader reader = _DataReader(gapi_setIterObject(iterSet));
         result = _EntityHandleEqual(_Entity(reader), handle);
-        gapi_setIterNext(iterSet);                
+        gapi_setIterNext(iterSet);
     }
     gapi_setIterFree (iterSet);
-    
+
     _EntityRelease(subscriber);
 
     return result;
@@ -976,7 +987,7 @@ _SubscriberOnDataOnReaders (
                 entity = NULL;
             }
 
-            callback = status->callbackInfo.on_data_on_readers; 
+            callback = status->callbackInfo.on_data_on_readers;
             listenerData = status->callbackInfo.listenerData;
 
             _EntitySetBusy(_this);

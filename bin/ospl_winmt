@@ -1,4 +1,4 @@
-_CYGPATH=/cygdrive/c/cygwin/bin/cygpath;
+_CYGPATH=cygpath;
 CMD="mt";
 while [ $# -gt 0 ]; do
   arg=$1;

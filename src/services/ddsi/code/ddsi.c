@@ -27,7 +27,6 @@ main(
     char *argv[])
 {
     u_result retVal;
-
     /* First check command line arguments */
     if (argc == 3)
     {
@@ -41,6 +40,7 @@ main(
             u_userDetach();
         } else
         {
+
            IN_REPORT_ERROR(
                "DDSI networking main loop",
                "Error attaching to kernel, bailing out");

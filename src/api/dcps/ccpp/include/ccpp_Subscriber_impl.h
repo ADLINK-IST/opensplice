@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #ifndef CCPP_SUBSCRIBER_H
 #define CCPP_SUBSCRIBER_H
 
@@ -43,7 +54,7 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t get_datareaders (
-        ::DDS::DataReaderSeq_out readers,
+        ::DDS::DataReaderSeq & readers,
         ::DDS::SampleStateMask sample_states,
         ::DDS::ViewStateMask view_states,
         ::DDS::InstanceStateMask instance_states

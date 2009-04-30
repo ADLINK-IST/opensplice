@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "cpp_malloc.h"
 #include "is.h"
 #include "if.h"
@@ -143,9 +154,10 @@ static void read_include_file (char * name, int dohere, int sharp)
    f = NULL;
    if (dohere)
    {
-      if ((strcmp(curdir(), ".") != 0) && (name[0] != '/'))
+      if ((strcmp(curdir(), ".") != 0) && 
+         ((name[0] != CPP_FILESEPCHAR_1) && (name[0] != CPP_FILESEPCHAR_2)))
       {
-         sprintf(temp, "%s/%s", curdir(), name);
+         sprintf(temp, "%s%c%s", curdir(), CPP_FILESEPCHAR_DEF, name);
          n = temp;
       }
       else
@@ -156,7 +168,8 @@ static void read_include_file (char * name, int dohere, int sharp)
    }
    if (f == NULL)
    {
-      if (name[0] == '/')
+      if ((name[0] == CPP_FILESEPCHAR_1) ||
+          (name[0] == CPP_FILESEPCHAR_2))
       {
          f = fopen(name, "r");
          n = name;
@@ -167,7 +180,7 @@ static void read_include_file (char * name, int dohere, int sharp)
          n = temp;
          for (i = 0;i < nIfiles;i++)
          {
-            sprintf(temp, "%s/%s", Ifiles[i], name);
+            sprintf(temp, "%s%c%s", Ifiles[i], CPP_FILESEPCHAR_DEF, name);
             f = fopen(temp, "r");
             if (f != NULL)
             {
@@ -193,7 +206,10 @@ static void read_include_file (char * name, int dohere, int sharp)
    Push('\n');
    Get();
    push_new_file(n, f);
-   cp = strrchr(n, '/');
+   cp = strrchr(n, CPP_FILESEPCHAR_1);
+   if (!cp) {
+       cp = strrchr(n, CPP_FILESEPCHAR_2);
+   }
    if (cp)
    {
       *cp = '\0';

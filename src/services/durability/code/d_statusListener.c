@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #include "d__statusListener.h"
 #include "d_statusListener.h"
@@ -98,7 +109,7 @@ d_statusListenerInit(
     d_readerListenerInit(   d_readerListener(listener),
                             d_statusListenerAction, subscriber,
                             D_STATUS_TOPIC_NAME, D_STATUS_TOP_NAME,
-                            V_RELIABILITY_BESTEFFORT,
+                            V_RELIABILITY_RELIABLE,
                             V_HISTORY_KEEPLAST,
                             1, config->heartbeatScheduling,
                             d_statusListenerDeinit);

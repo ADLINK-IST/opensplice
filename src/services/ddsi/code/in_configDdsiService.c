@@ -1,4 +1,5 @@
 #include "in__configDdsiService.h"
+#include "os_heap.h"
 
 static os_boolean
 in_configDdsiServiceInit(

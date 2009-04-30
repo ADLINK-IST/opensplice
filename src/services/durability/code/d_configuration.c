@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /**
  * TODO:/todo
  * 1. Check consistency between namespaces. Overlap between them is not a
@@ -210,7 +221,9 @@ d_configurationInit(
         config->nameSpaces                  = NULL;
         config->tracingTimestamps           = TRUE;
         config->tracingRelativeTimestamps   = FALSE;
+        config->timeAlignment               = TRUE;
         config->startTime                   = os_timeGet();
+        config->networkMaxWaitCount         = D_DEFAULT_NETWORK_MAX_WAITCOUNT;
 
         d_configurationSetTime(&(config->heartbeatExpiryTime), D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
         config->heartbeatExpiry = D_DEFAULT_HEARTBEAT_EXPIRY_TIME;
@@ -290,6 +303,7 @@ d_configurationInit(
             d_configurationValueLong   (config, element, "Network/Heartbeat/Scheduling/Priority/#text", d_configurationSetHeartbeatSchedulingPriority);
 
             d_configurationValueFloat  (config, element, "Network/InitialDiscoveryPeriod/#text", d_configurationSetTimingInitialWaitPeriod);
+            d_configurationValueBoolean(config, element, "Network/Alignment/TimeAlignment/#text", d_configurationSetTimeAlignment);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Initial/#text", d_configurationSetInitialRequestCombinePeriod);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Operational/#text", d_configurationSetOperationalRequestCombinePeriod);
             d_configurationValueString (config, element, "Network/Alignment/AlignerScheduling/Class/#text", d_configurationSetAlignerSchedulingClass);
@@ -439,6 +453,7 @@ d_configurationReport(
     const c_char* pstoreMode;
     const c_char* verbosity;
     const c_char* timestamps;
+    const c_char* timeAlignment;
     const c_char* relativeTimestamps;
     c_char serviceNames [512];
     c_char ns [4096];
@@ -664,7 +679,14 @@ d_configurationReport(
                 break;
         }
 
+    if(config->timeAlignment == TRUE){
+        timeAlignment = "TRUE";
+    } else {
+        timeAlignment = "FALSE";
+    }
+
     d_printEvent(durability, D_LEVEL_CONFIG,
+            "- Network.TimeAlignment                       : %s\n" \
             "- Network.Alignment.RequestCombine.Initial    : %d.%9.9d\n" \
             "- Network.Alignment.RequestCombine.Operational: %d.%9.9d\n" \
             "- Network.Alignment.LatencyBudget             : %d.%9.9d\n" \
@@ -673,6 +695,7 @@ d_configurationReport(
             "- Network.Alignment.AlignerScheduling.Priority: %d\n"  \
             "- Network.Alignment.AligneeScheduling.Class   : %s\n"  \
             "- Network.Alignment.AligneeScheduling.Priority: %d\n"  \
+            , timeAlignment
             , config->initialRequestCombinePeriod.tv_sec
             , config->initialRequestCombinePeriod.tv_nsec
             , config->operationalRequestCombinePeriod.tv_sec
@@ -1281,7 +1304,7 @@ d_configurationSetTracingOutputFile(
             config->tracingOutputFileName = os_strdup("stderr");
             config->tracingOutputFile = stderr;
         } else {
-            char * filename = os_fileNormalize(value); 
+            char * filename = os_fileNormalize(value);
             config->tracingOutputFile = fopen(filename, "a");
             config->tracingOutputFileName = os_strdup(filename);
         }
@@ -1295,6 +1318,16 @@ d_configurationSetTracingTimestamps(
 {
     if (config) {
         config->tracingTimestamps = useTimestamp;
+    }
+}
+
+void
+d_configurationSetTimeAlignment(
+    d_configuration  config,
+    c_bool alignment)
+{
+    if (config) {
+        config->timeAlignment = alignment;
     }
 }
 

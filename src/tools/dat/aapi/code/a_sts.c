@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 #define A_STS_INFINITE_SIZE           -1
 #define A_STS_BLOCKSIZES {0, 4, 8, 16, 32, 64, 128, 256, 512, 1024, A_STS_INFINITE_SIZE}

@@ -25,7 +25,8 @@ API_SRC          = $(wildcard ccpp_*.cpp)
 API_OBJ          = $(API_SRC:%.cpp=%.o)
 
 # EORB implementation classes.
-EORB_OBJ         = common_cobject.o localobject.o
+EORB_SRC         = common_cobject.cpp CORBA_LocalObject.cpp
+EORB_OBJ         = common_cobject.o CORBA_LocalObject.o
 
 # All objects
 OBJS = $(IDLPP_OBJ) $(ORB_TOP_OBJ) $(ORB_API_OBJ) $(API_OBJ) $(IDLPP_ORB_OBJ) $(EORB_OBJ)
@@ -37,15 +38,15 @@ DLIB_POSTFIX := .so
 
 TARGET = $(DLIB_PREFIX)$(TARGET_DLIB)$(DLIB_POSTFIX)
 
-INCLUDE += -I./
-INCLUDE += -I$(OSPL_HOME)/include
-INCLUDE += -I$(OSPL_HOME)/include/sys
-INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/SACPP
+CXXINCS += -I./
+CXXINCS += -I$(OSPL_HOME)/include
+CXXINCS += -I$(OSPL_HOME)/include/sys
+CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/SACPP
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := CC
 CXXFLAGS := -g -KPIC -mt -xO4
-CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(INCLUDE) $(ORB_SA_CPP_FLAGS)
+CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(ORB_SA_CPP_FLAGS)
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)
@@ -59,9 +60,17 @@ IDLPPFLAGS := -P SACPP_API -S -l cpp
 
 #Dependencies
 
-all : $(TARGET)
+all : copyeorbinc $(TARGET)
 
 $(IDLPP_OBJ): $(IDLPP_ORB_HDR) $(ORB_TOP_HDR) $(ORB_API_HDR)
+
+$(EORB_SRC): copyeorbsrc
+
+copyeorbinc:
+	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
+
+copyeorbsrc:
+	cp $(EORBHOME)/src/*.cpp .
 
 #generic rules for IDL preprocessing
 

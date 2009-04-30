@@ -1,10 +1,14 @@
 /*
- * in__streamWriter.h
+ *                         OpenSplice DDS
  *
- *  Created on: Mar 3, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN__STREAMWRITER_H_
 #define IN__STREAMWRITER_H_
 
@@ -42,13 +46,14 @@ typedef in_result (*in_streamWriterAppendAckNackFunc)(
         in_streamWriter _this,
         in_ddsiGuid readerGuid,
         in_ddsiGuid writerGuid,
-        in_ddsiSequenceNumber writerSN,
+        in_ddsiSequenceNumberSet readerSNState,
         in_locator singleDestination);
 
 /** */
 typedef	in_result (*in_streamWriterAppendDataFunc)(
 			in_streamWriter _this,
 			v_message message,
+			in_endpointDiscoveryData discoveryData, /* constant information */
 			in_connectivityWriterFacade facade,
 			os_boolean recipientExpectsInlineQos,
 			Coll_List *locatorList);
@@ -56,20 +61,43 @@ typedef	in_result (*in_streamWriterAppendDataFunc)(
 /** */
 typedef	in_result (*in_streamWriterAppendParticipantDataFunc)(
 			in_streamWriter _this,
+	        in_endpointDiscoveryData discoveryData, /* constant information */
 			in_connectivityParticipantFacade facade,
 			Coll_List *locatorList);
+
+typedef in_result (*in_streamWriterAppendParticipantMessageFunc)(
+    in_streamWriter _this,
+    in_connectivityParticipantFacade facade,
+    in_ddsiGuidPrefixRef destGuidPrefix,
+    in_locator locator);
 
 /** */
 typedef	in_result (*in_streamWriterAppendReaderDataFunc)(
 			in_streamWriter _this,
+			in_ddsiGuidPrefix writerGuidPrefix, /* optional, may be NULL */
+	        in_endpointDiscoveryData discoveryData,
 			in_connectivityReaderFacade facade,
 			Coll_List *locatorList);
 
 /** */
 typedef in_result (*in_streamWriterAppendWriterDataFunc)(
 			in_streamWriter _this,
+	        in_endpointDiscoveryData discoveryData,
 			in_connectivityWriterFacade facade,
 			Coll_List *locatorList);
+
+/** */
+/** */
+typedef in_result (*in_streamWriterAppendHeartbeatFunc)(
+        in_streamWriter _this,
+        in_ddsiGuidPrefixRef sourceGuidPrefix,
+        in_ddsiGuidPrefixRef destGuidPrefix,
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumber firstSN,
+        in_ddsiSequenceNumber lastSN,
+        os_ushort count,
+        in_locator singleDestination);
 
 /** */
 typedef OS_STRUCT(in_locator)* (*in_streamWriterGetDataUnicastLocatorFunc)(
@@ -91,11 +119,13 @@ OS_STRUCT(in_streamWriterPublicVTable)
     in_streamWriterFlushSingleFunc flushSingle;
     in_streamWriterAppendDataFunc appendData;
     in_streamWriterAppendParticipantDataFunc appendParticipantData;
+    in_streamWriterAppendParticipantMessageFunc appendParticipantMessage;
     in_streamWriterAppendReaderDataFunc appendReaderData;
     in_streamWriterAppendWriterDataFunc appendWriterData;
 
     /* meta data */
     in_streamWriterAppendAckNackFunc    appendAckNack;
+    in_streamWriterAppendHeartbeatFunc  appendHeartbeat;
 
     /*
     in_streamWriterAppendHeartbeatFunc  appendHeartbeat;
@@ -123,7 +153,7 @@ in_streamWriterInit(
 		in_streamWriter _this,
 		in_objectKind kind,
 		in_objectDeinitFunc deinit,
-		in_streamWriterPublicVTable staticPublicVTable);
+		in_streamWriterPublicVTable staticPublicVTable); /* const */
 
 /** */
 void

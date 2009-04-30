@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 /**
  * The 'in_object' class is the base class within the DDSi component. It
  * provides facilities for reference counting and type checking. The comments
@@ -162,6 +173,17 @@ typedef enum in_objectKind
     IN_OBJECT_KIND_SDP_READER,
     /*Represents the interface to the kernel for channels*/
     IN_OBJECT_KIND_PLUG_KERNEL,
+
+    /*Represents the data discovered about peer participants*/
+    IN_OBJECT_KIND_DISCOVERED_PARTICIPANT_DATA,
+    /*Represents the data discovered about peer writers*/
+    IN_OBJECT_KIND_DISCOVERED_WRITER_DATA,
+    /*Represents the data discovered about peer readers*/
+    IN_OBJECT_KIND_DISCOVERED_READER_DATA,
+    /*Represents the own proxy info being populated to other peers */
+    IN_OBJECT_KIND_ENDPOINT_DISCOVERY_DATA,
+    /*Represents the socket object */
+    IN_OBJECT_KIND_SOCKET,
     /* Always the last label, to allow determination of the number of labels*/
     IN_OBJECT_KIND_COUNT
 } in_objectKind;

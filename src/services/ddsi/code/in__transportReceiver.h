@@ -1,10 +1,14 @@
 /*
- * in__transportReader.h
+ *                         OpenSplice DDS
  *
- *  Created on: Feb 10, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN__TRANSPORTRECEIVER_H_
 #define IN__TRANSPORTRECEIVER_H_
 
@@ -40,6 +44,7 @@ OS_STRUCT(in_transportReceiverPublicVTable)
     in_transportReceiverGetLocatorFunc getDataUnicastLocator;
     in_transportReceiverGetLocatorFunc getDataMulticastLocator;
     in_transportReceiverGetLocatorFunc getCtrlUnicastLocator;
+    in_transportReceiverGetLocatorFunc getCtrlMulticastLocator;
 };
 
 /** \brief abstract class  */

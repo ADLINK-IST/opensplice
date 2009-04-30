@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v_groupSet.h"
 #include "v__observable.h"
 #include "v_entity.h"
@@ -30,12 +41,12 @@ alwaysFalse(
     c_voidp arg)
 {
     v_group *groupFound = (v_group *)arg;
-    
+
     assert(groupFound != NULL);
     assert(*groupFound == NULL); /* out param */
-    
+
     *groupFound = c_keep(found);
-    
+
     return FALSE;
 }
 
@@ -68,13 +79,18 @@ v_groupSetCreate(
     /* Note: the following call does not execute the actual remove because
      *       the alwaysFalse function returns FALSE */
     found = NULL;
+    /* Note: The alwaysFalse function increases the refCount of
+     * found, which is the out-parameter of the tableRemove. */
     c_tableRemove(set->groups, &dummyGroup, alwaysFalse, &found);
 
     if (!found) {
         group = v_groupNew(partition, topic, set->sequenceNumber);
         found = c_tableInsert(set->groups,group);
+        /* Because understanding assertion holds true, we practically
+         * transferred the refCount from group to found. Because found
+         * is our return parameter, we do not free group here.
+         */
         assert(found == group);
-        c_free(found);
         set->sequenceNumber++;
         kernel = v_objectKernel(set);
 /* Keep groupset locked while triggering observers, otherwise

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 
 #ifndef V__DATAREADER_H
 #define V__DATAREADER_H
@@ -14,6 +25,61 @@
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+/**************************************************************
+ * Local Macro definitions
+ **************************************************************/
+#define __UPDATE_FOR_FLAG__(flag, statSuffix, reader, oldState, xoredState) \
+    if (v_stateTest(xoredState, flag)) {                         \
+        if (v_stateTest(oldState, flag)) {                       \
+            v_statisticsULongValueDec(v_reader,                  \
+              numberOfInstancesWithStatus##statSuffix, reader); \
+        } else {                                                 \
+            v_statisticsULongValueInc(v_reader,                 \
+              numberOfInstancesWithStatus##statSuffix, reader); \
+        }                                                        \
+    }
+/* Returns TRUE if both the L_DISPOSED and L_NOWRITERS flags are not set. */
+#define __ALIVE__(state) v_stateTestNot(state, (L_DISPOSED | L_NOWRITERS))
+/* Returns TRUE if either the L_DISPOSED or L_NOWRITERS flags is set. */
+#define __LIVELINESS_CHANGED__(xoredState) v_stateTestOr(xoredState, (L_DISPOSED | L_NOWRITERS))
+
+/* Updates the liveliness statistic for an instance. If oldState == 0, then
+ * nothing is done. This is useful for initialization. It uses the newState
+ * (oldState ^ xoredState) to determine whether counters have to be updated. */
+#define __UPDATE_ALIVE__(reader, oldState, xoredState) \
+    if (oldState && __LIVELINESS_CHANGED__(xoredState)) { \
+        if (__ALIVE__(oldState)){\
+            v_statisticsULongValueDec(v_reader,                         \
+                    numberOfInstancesWithStatusAlive, reader);          \
+        } else if (__ALIVE__(oldState ^ xoredState)){                   \
+            v_statisticsULongValueInc(v_reader,                         \
+                    numberOfInstancesWithStatusAlive, reader);          \
+        }\
+    }
+
+#define UPDATE_READER_STATISTICS(index, instance, oldState) \
+    if (v_statisticsValid(index->reader)) {                         \
+        v_state xoredState = oldState^instance->instanceState;      \
+                                                                    \
+        __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
+        __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
+        __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
+        __UPDATE_ALIVE__(index->reader,oldState,xoredState) \
+    }
+
+/* Subtracts the currently still enabled instance-state flags from the
+ * statistics. */
+#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance)   \
+    if (v_statisticsValid(index->reader)) {                         \
+                                                                    \
+        __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,instance->instanceState,instance->instanceState) \
+        __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,instance->instanceState,instance->instanceState) \
+        __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,instance->instanceState,instance->instanceState) \
+        if(__ALIVE__(instance->instanceState)){ \
+            v_statisticsULongValueDec(v_reader,                         \
+                numberOfInstancesWithStatusAlive, index->reader);       \
+        } \
+    }
 
 #define v_dataReaderLock(_this) \
         v_observerLock(v_dataReader(_this))

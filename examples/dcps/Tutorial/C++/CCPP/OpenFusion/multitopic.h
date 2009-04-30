@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    multitopic.h
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the C++ programming language.
@@ -293,8 +300,8 @@ public:
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_participant_data (
-        DDS::InstanceHandle_t participant_handle,
-        DDS::ParticipantBuiltinTopicData & participant_data
+        DDS::ParticipantBuiltinTopicData & participant_data,
+        DDS::InstanceHandle_t participant_handle
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_topics (
@@ -302,8 +309,8 @@ public:
     ) THROW_ORB_EXCEPTIONS;
 
     virtual DDS::ReturnCode_t get_discovered_topic_data (
-        DDS::InstanceHandle_t topic_handle,
-        DDS::TopicBuiltinTopicData & topic_data
+        DDS::TopicBuiltinTopicData & topic_data,
+        DDS::InstanceHandle_t topic_handle
     ) THROW_ORB_EXCEPTIONS;
 
     virtual CORBA::Boolean contains_entity (

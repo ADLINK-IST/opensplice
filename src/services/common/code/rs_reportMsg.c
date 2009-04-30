@@ -1,6 +1,18 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <rs_reportMsg.h>
 
 #include <os_heap.h>
+#include <os_stdlib.h>
 
 static const char *reportTypeText [] = {
     "INFO",
@@ -85,13 +97,18 @@ rs_reportMsgFree (
     os_free (reportMsg);
 }
 
+
+#define MAX_REPORT_SIZE (2000)
+
 void
 rs_reportMsgReport (
     rs_reportMsg reportMsg)
 {
+    char buf[MAX_REPORT_SIZE];
+    int written;
     assert (reportMsg);
 
-    printf (
+    written = snprintf (buf, MAX_REPORT_SIZE,
 	"### Report Message ###\n"
 	"Type        : %s\n"
 	"Context     : %s\n"
@@ -116,6 +133,8 @@ rs_reportMsgReport (
 	reportMsg->thread,
 	reportMsg->dateTime.seconds,
 	reportMsg->dateTime.nanoseconds);
+
+    write(fileno(stdout), buf, written);
 }
 
 rs_reportType

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <gapi.h>
 #include "ccpp_dds_dcps.h"
 #include "ccpp_Publisher_impl.h"
@@ -127,7 +138,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
                   myUD = new DDS::ccpp_UserData(DataWriter,  a_listener);
                   if (myUD)
                   {
-                    gapi_object_set_user_data(writer_handle, myUD);
+                    gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD);
                   }
                   else
                   {
@@ -171,7 +182,7 @@ DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
   {
     if (os_mutexLock(&(dataWriter->dw_mutex)) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(dataWriter->_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(dataWriter->_gapi_self));
       result = gapi_publisher_delete_datawriter(_gapi_self, dataWriter->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
@@ -210,7 +221,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
   {
     if (os_mutexLock(&p_mutex) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         dataWriter = dynamic_cast<DDS::DataWriter_ptr>(myUD->ccpp_object);
@@ -311,7 +322,7 @@ DDS::ReturnCode_t DDS::Publisher_impl::set_listener (
         if (result == DDS::RETCODE_OK)
         {
           DDS::ccpp_UserData_ptr myUD;
-          myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
           if (myUD)
           {
             myUD->setListener(a_listener);
@@ -409,7 +420,7 @@ DDS::DomainParticipant_ptr DDS::Publisher_impl::get_participant (
   if (handle)
   {
     DDS::ccpp_UserData_ptr myUD;
-    myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
 
     if (myUD)
     {

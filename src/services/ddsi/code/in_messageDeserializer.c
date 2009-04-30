@@ -3,7 +3,7 @@
 
 /* Database includes */
 #include "c_base.h"
-
+#include "v_topic.h"
 /* DDSi includes */
 #include "in_locator.h"
 #include "in__messageDeserializer.h"
@@ -162,6 +162,20 @@ in_messageDeserializerReadClass(
     in_messageDeserializer _this,
     c_type type,
     c_voidp data);
+
+
+/** */
+static os_boolean
+_requiresSwap(os_boolean bigEndianess)
+{
+#ifdef PA_BIG_ENDIAN
+    os_boolean requiresSwap = !bigEndianess;
+    return requiresSwap;
+#else
+    os_boolean requiresSwap = bigEndianess;
+    return requiresSwap;
+#endif
+}
 
 /* The following macro remove any CDR inflicated padding from the transformer
  * and ensures the transformer is set to the right position to read the next data
@@ -335,8 +349,8 @@ in_messageDeserializerBegin(
     in_data buffer,
     os_uint32 length)
 {
-    os_boolean result;
-    in_messageTransformer transformer;
+    os_boolean result = OS_TRUE;
+    in_messageTransformer transformer = NULL;
 
     assert(_this);
     assert(in_messageDeserializerIsValid(_this));
@@ -353,12 +367,13 @@ in_data
 in_messageDeserializerEnd(
     in_messageDeserializer _this)
 {
-    in_messageTransformer transformer;
-    in_data* buffer;
+    in_messageTransformer transformer = NULL;
+    in_data* buffer = NULL;
 
     assert(_this);
     assert(in_messageDeserializerIsValid(_this));
 
+    transformer = in_messageTransformer(_this);
     buffer = in_messageTransformerGetBuffer(transformer);
     return *buffer;
 }
@@ -367,71 +382,52 @@ in_messageDeserializerEnd(
 in_result
 in_messageDeserializerRead(
     in_messageDeserializer _this,
-    c_type type,
+    v_topic topic,
+    os_boolean isBigEndian,
     v_message* object)
 {
     in_result result = IN_RESULT_OK;
-    os_ushort endiannessStream;
-    in_messageTransformer transformer;
-    c_property userDataProperty;
+    in_messageTransformer transformer = in_messageTransformer(_this);
+    c_object displacedMessage;
+    c_type messageType;
 
     assert(_this);
     assert(in_messageDeserializerIsValid(_this));
     assert(object);
+    assert(topic);
 
-    if (type)
+    if (topic)
     {
-        os_ushort cdrLength;
-
-        transformer = in_messageTransformer(_this);
-
-        /* First we need to determine the endianness of the transformer, this can
-         * change each time the transformer is renewed. This is stored in 2 octets as
-         * described in DDSi specification v1.2 section 10.1.1.1
-         */
-        in_messageDeserializerReadPrim(_this, 2, &endiannessStream);
-        assert(endiannessStream == ((os_ushort)DDSI_BIG_ENDIAN_VAL) ||
-               endiannessStream == ((os_ushort)DDSI_LITTLE_ENDIAN_VAL));
-        /* Now we will compare the endian value of the transformer to the endian
-         * value of the machine we are running on. If they are equal we will
-         * select the COPY option and if they are not equal we will select the
-         * SWAP option. This option will be used to determine which
-         * (de)serialization routine will be invoked
-         */
-        if(endiannessStream == IN_ENDIAN_VAL)
-        {
-            in_messageTransformerSetCopyKind(transformer, IN_MESSAGE_TRANSFORMER_CM_KIND_COPY);
-        } else
-        {
+        /* work around, replace cdrLength in transformer by ->length */
+        in_messageTransformerSetCdrLength(transformer, (os_ushort) (transformer->length));
+        if (_requiresSwap(isBigEndian)) {
             in_messageTransformerSetCopyKind(transformer, IN_MESSAGE_TRANSFORMER_CM_KIND_SWAP);
+        } else {
+            in_messageTransformerSetCopyKind(transformer, IN_MESSAGE_TRANSFORMER_CM_KIND_COPY);
         }
-        /* The length of the CDR encapsulation is stored in an ushort, which is
-         * 2 octets in length. See DDSi specification v1.2 section 10.1.1.2
-         */
-        in_messageDeserializerReadPrim(_this, 2, &cdrLength);
-        in_messageTransformerSetCdrLength(transformer, cdrLength);
-        if (c_typeIsRef(type))
+        messageType = v_topicMessageType(topic);
+
+        if (c_typeIsRef(messageType))
         {
-            *object = c_new(type);
+            *object = v_topicMessageNew(topic);
+
             if(*object == NULL)
             {
                 result = IN_RESULT_OUT_OF_MEMORY;
             } else
             {
-                userDataProperty = c_property(c_metaResolve(
-                        c_metaObject(c_interface(type)->scope), "userData"));
-                assert(userDataProperty);
-                *object = C_DISPLACE(*object, userDataProperty->offset);
-                in_messageDeserializerReadType(_this, userDataProperty->type, *object);
+                displacedMessage = v_topicData(topic, *object);
+                in_messageDeserializerReadType(_this, v_topicDataType(topic),
+                    displacedMessage);
             }
         } else
         {
+            assert(FALSE);
             result = IN_RESULT_ERROR;
             *object = NULL;
         }
     } else
     {
-        transformer = in_messageTransformer(_this);
         *object = NULL;
     }
     return result;

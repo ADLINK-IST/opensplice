@@ -1,12 +1,18 @@
-/* Prevent failure due to multiple inclusion of this file. */
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_CONFIG_CHANNEL_H
 #define IN_CONFIG_CHANNEL_H
 
-/* OS abstraction includes. */
-#include "os_defs.h"
-#include "os_classbase.h"
-#include "os_stdlib.h"
-#include "in__configTypes.h"
+#include "in__object.h"
 
 /**
  * Allow usage of this C code from C++ code.

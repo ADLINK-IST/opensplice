@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /** \file os/mingw3.2.0/code/os_time.c
  *  \brief WIN32 time management
  *
@@ -137,15 +148,21 @@ os_result
 os_nanoSleep (
     os_time delay)
 {
+    os_result result = os_resultSuccess;
     DWORD dt;
 
     assert (delay.tv_nsec >= 0);
     assert (delay.tv_nsec < 1000000000);
 
-    dt = delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
-    Sleep(dt);
+    if (delay.tv_sec >= 0 ) {
+        dt = delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
+        Sleep(dt);
+    } else {
+        /* Negative time-interval should return illegal param error */
+        result = os_resultFail;
+    }
 
-    return os_resultSuccess;
+    return result;
 }
 
 /** \brief Get the current time
@@ -159,7 +176,15 @@ os_time
 os_timeGet(
     void)
 {
-    return _ospl_clockGet();
+    os_time result;
+
+    if (_ospl_clockGet) {
+        result = _ospl_clockGet();
+    } else {
+        /* This is not supposed to happen! */
+        assert(_ospl_clockGet != NULL);
+        result = _msTimeGet();
+    }
 }
 
 /** \brief Set the user clock
@@ -171,7 +196,20 @@ void
 os_timeSetUserClock(
     os_time (*userClock)(void))
 {
-    _ospl_clockGet = userClock;
+    if (userClock) {
+        _ospl_clockGet = userClock;
+    } else {
+        LARGE_INTEGER frequency;
+        /* Never set the null pointer, but choose a default
+         * in stead */
+        if (QueryPerformanceFrequency(&frequency) != 0) {
+            _ospl_clockGet = _hrTimeGet;
+        } else { /* no high performance timer available!
+                    so we fall back to a millisecond clock.
+                  */
+            _ospl_clockGet = _msTimeGet;
+        }
+    }
 }
 
 /** \brief Get high resolution time

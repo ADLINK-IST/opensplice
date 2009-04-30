@@ -7,7 +7,8 @@ in_channelInit(
     in_objectKind kind,
     in_objectDeinitFunc deinit,
     in_stream stream,
-    in_plugKernel plug)
+    in_plugKernel plug,
+    in_configChannel config)
 {
     os_boolean success;
 
@@ -16,6 +17,8 @@ in_channelInit(
     assert(kind > IN_OBJECT_KIND_INVALID);
     assert(deinit);
     assert(stream);
+    assert(plug);
+    assert(config);
 
     success = in_objectInit(in_object(_this), kind, deinit);
 
@@ -23,6 +26,9 @@ in_channelInit(
     {
         _this->stream = in_streamKeep(stream);
         _this->plug = in_plugKernelKeep(plug);
+        _this->config = config;
+        _this->reader = NULL;
+        _this->writer = NULL;
     }
 
     return success;
@@ -33,6 +39,7 @@ in_channelDeinit(
     in_object obj)
 {
     in_channel _this = in_channel(obj);
+
     assert(_this);
     assert(in_channelIsValid(_this));
 
@@ -56,6 +63,15 @@ in_channelDeinit(
         in_plugKernelFree(_this->plug);
         _this->plug = NULL;
     }
+}
+
+in_configChannel
+in_channelGetConfig(
+    in_channel _this)
+{
+    assert(_this);
+
+    return _this->config;
 }
 
 in_channelReader
@@ -91,6 +107,7 @@ in_channelSetReader(
     in_channelReader reader)
 {
     assert(_this);
+    assert(reader);
 
     _this->reader = in_channelReaderKeep(reader);
 }
@@ -101,6 +118,7 @@ in_channelSetWriter(
     in_channelWriter writer)
 {
     assert(_this);
+    assert(writer);
 
     _this->writer = in_channelWriterKeep(writer);
 }

@@ -1,17 +1,21 @@
 /*
- * in__ddsiPublicationBuiltinTopicData.h
+ *                         OpenSplice DDS
  *
- *  Created on: Feb 27, 2009
- *      Author: frehberg
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
  */
-
 #ifndef IN__DDSIPUBLICATION_H_
 #define IN__DDSIPUBLICATION_H_
 
 #include "in_ddsiPublication.h"
 #include "kernelModule.h"
 #include "in_ddsiElements.h"
-#include "Coll_List.h"
+#include "in_locatorList.h"
 #include "in__object.h"
 
 #if defined (__cplusplus)
@@ -29,8 +33,8 @@ OS_STRUCT(in_ddsiPublicationBuiltinTopicData)
 OS_STRUCT(in_ddsiWriterProxy)
 {
 	OS_STRUCT(in_ddsiGuid) remoteWriterGuid;
-	Coll_List unicastLocatorList;
-	Coll_List multicastLocatorList;
+	in_locatorList unicastLocatorList;
+	in_locatorList multicastLocatorList;
 };
 
 /** derives fromin_object */
@@ -40,7 +44,6 @@ OS_STRUCT(in_ddsiDiscoveredWriterData)
 	OS_STRUCT(in_ddsiPublicationBuiltinTopicData) topicData;
 	OS_STRUCT(in_ddsiWriterProxy) proxy;
 };
-
 
 #if defined (__cplusplus)
 }

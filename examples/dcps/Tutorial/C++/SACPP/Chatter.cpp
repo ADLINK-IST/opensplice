@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    Chatter.cpp
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the C++ programming language.
@@ -72,14 +79,9 @@ main (
     ostringstream                   buf;
 
 #ifdef INTEGRITY
-    argc = 3;
-    argv[0] = "Chatter";
-    argv[1] = "1";
-    argv[2] = "dds_user";
-
-    ownID = atoi(argv[1]);
-    chatterName = argv[2];
-#endif       
+    ownID = 1;
+    chatterName = "dds_user";
+#else
     /* Options: Chatter [ownID [name]] */
     if (argc > 1) {
         istringstream args(argv[1]);
@@ -88,6 +90,7 @@ main (
             chatterName = argv[2];
         }
     }
+#endif
 
     /* Create a DomainParticipantFactory and a DomainParticipant (using Default QoS settings. */
     dpf = DomainParticipantFactory::get_instance ();

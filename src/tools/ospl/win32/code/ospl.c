@@ -1,8 +1,21 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <os.h>
 #include <os_iterator.h>
 
 #include <cfg_parser.h>
 #include <cf_config.h>
+
+#define SPLICED_NAME "spliced" OS_EXESUFFIX
 
 static void
 print_usage(
@@ -34,22 +47,29 @@ print_usage(
 static char *key_file_path = NULL;
 static const char * const key_file_prefix = "osp";
 
+#define MAX_STATUSCHECKS (30)
+
 static void
 removeProcesses(
     int pid)
 {
     os_result r;
     os_int32 procResult;
+    int i = MAX_STATUSCHECKS;
 
     r = os_procDestroy(pid, OS_SIGTERM);
     r= os_procCheckStatus((os_procId)pid, &procResult);
-    while (r == os_resultBusy) {
+    while ((r == os_resultBusy) && (i > 0)) {
+        i--;
         printf (".");
         fflush(stdout);
         Sleep(1000);
         r = os_procCheckStatus((os_procId)pid, &procResult);
     }
 }
+
+#undef MAX_STATUSCHECKS
+
 
 static void
 removeKeyfile(
@@ -412,6 +432,8 @@ safeUri(
     }
 }
 
+#if 0
+/* No longer needed, we now have os_locate */
 static int
 findSpliced(
     char **command)
@@ -470,6 +492,7 @@ findSpliced(
 
     return valid;
 }
+#endif
 
 int
 main(
@@ -569,8 +592,9 @@ main(
                 if (uri == NULL) {
                     uri = os_strdup("");
                 }
-                command = os_strdup("spliced.exe");
-                findSpliced(&command);
+                // command = os_strdup("spliced.exe");
+                // findSpliced(&command); */
+                command = os_locate(SPLICED_NAME, OS_ROK|OS_XOK);
                 os_procAttrInit(&pa);
                 os_procCreate(command, "OpenSplice Control Service", uri, &pa, &pi);
                 Sleep(2000); /* take time to first show the license message from spliced */

@@ -1,6 +1,39 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 
 #include "v_cache.h"
+
+#ifdef NDEBUG
+#define v_cacheNodeCheck(c)
+#else
+void
+v_cacheNodeCheck(
+    v_cacheNode node)
+{
+    if (node->owner.next) {
+        assert(v_cacheNode(node->owner.next)->owner.prev == node);
+    }
+    if (node->owner.prev) {
+        assert(v_cacheNode(node->owner.prev)->owner.next == node);
+    }
+    if (node->instance.next) {
+        assert(v_cacheNode(node->instance.next)->instance.prev == node);
+    }
+    if (node->instance.prev) {
+        assert(v_cacheNode(node->instance.prev)->instance.next == node);
+    }
+}
+#endif /* NDEBUG */
 
 void
 v_cacheNodeInit (
@@ -72,8 +105,6 @@ instanceCheck (
         prev = prev->instance.prev;
     }
 }
-
-#define v_cacheNodeCheck(c)
 
 void
 v_cacheDeinit (
@@ -219,6 +250,7 @@ v_cacheNodeRemove (
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
+        v_cacheNodeCheck(node);
         c_free(node);
     break;
     case V_CACHE_INSTANCE:
@@ -231,6 +263,7 @@ v_cacheNodeRemove (
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
+        v_cacheNodeCheck(node);
         c_free(node);
     break;
     case V_CACHE_ANY:
@@ -240,6 +273,5 @@ v_cacheNodeRemove (
     default:
     break;
     }
-    v_cacheNodeCheck(node);
 }
 

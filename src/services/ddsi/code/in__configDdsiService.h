@@ -1,12 +1,19 @@
-/* Prevent failure due to multiple inclusion of this file. */
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #ifndef IN_CONFIG_DDSI_SERVICE_H
 #define IN_CONFIG_DDSI_SERVICE_H
 
 /* OS abstraction includes. */
-#include "os_defs.h"
-#include "os_classbase.h"
-#include "os_stdlib.h"
-#include "os_heap.h"
+#include "in__object.h"
 
 /* DDSi configuration includes */
 #include "in__configDiscoveryChannel.h"
@@ -14,7 +21,6 @@
 #include "in__configTracing.h"
 #include "in__configPartitioning.h"
 #include "in__configDebug.h"
-#include "in__configTypes.h"
 
 /* Collection includes */
 #include "Coll_List.h"

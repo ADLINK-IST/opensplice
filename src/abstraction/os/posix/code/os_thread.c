@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /** \file os/posix/code/os_thread.c
  *  \brief Posix thread management
  *
@@ -18,7 +29,9 @@
 #include <strings.h>
 #include <string.h>
 #include <stdio.h>
+#ifndef INTEGRITY
 #include <signal.h>
+#endif
 
 typedef struct {
     char *threadName;
@@ -27,7 +40,9 @@ typedef struct {
 } os_threadContext;
 
 typedef struct {
+#ifndef INTEGRITY
     sigset_t oldMask;
+#endif
     os_uint  protectCount;
 } os_threadProtectInfo;
 
@@ -36,7 +51,9 @@ static pthread_key_t os_threadMemKey;
 
 static os_threadHook os_threadCBs;
 
+#ifndef INTEGRITY
 static sigset_t os_threadBlockAllMask;
+#endif
 
 /** \brief Initialize the thread private memory array
  *
@@ -149,7 +166,9 @@ os_threadModuleInit (
 
     pthread_setspecific (os_threadNameKey, "main thread");
 
+#ifndef INTEGRITY
     sigfillset(&os_threadBlockAllMask);
+#endif
     
     os_threadMemInit();
     
@@ -660,6 +679,7 @@ os_threadProtect(void)
         pi->protectCount++;
         result = os_resultSuccess;
     }
+#ifndef INTEGRITY
     if ((result == os_resultSuccess) && (pi->protectCount == 1)) {
         if (pthread_sigmask(SIG_SETMASK,
                          &os_threadBlockAllMask,
@@ -667,6 +687,7 @@ os_threadProtect(void)
             result = os_resultFail;
         }
     }
+#endif
     return result;
 }
 
@@ -679,6 +700,7 @@ os_threadUnprotect(void)
     pi = os_threadMemGet(OS_THREAD_PROTECT);
     if (pi) {
         pi->protectCount--;
+#ifndef INTEGRITY
         if (pi->protectCount == 0) {
             if (pthread_sigmask(SIG_SETMASK,&pi->oldMask,NULL) != 0) {
                 result = os_resultFail;
@@ -686,8 +708,11 @@ os_threadUnprotect(void)
                 result = os_resultSuccess;
             }
         } else {
+#endif
             result = os_resultSuccess;
+#ifndef INTEGRITY
         }
+#endif
     } else {
         result = os_resultFail;
     }

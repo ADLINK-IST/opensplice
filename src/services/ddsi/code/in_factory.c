@@ -1,82 +1,91 @@
 #include "in_factory.h"
-
-#include "in_ddsiStreamWriterImpl.h"
-#include "in_ddsiStreamReaderImpl.h"
+#include "in_transport.h"
+#include "in_stream.h"
+#include "in_channel.h"
+#include "in_streamPairIBasic.h"
+#include "in_transportPairIBasic.h"
+#include "in_channelSdp.h"
+#include "in_channelData.h"
 
 in_transport
 in_factoryCreateTransport(
     in_configChannel channelConfig)
 {
+    in_transport transport;
+
     assert(channelConfig);
 
-    return NULL;
+    transport = in_transport(in_transportPairIBasicNew(channelConfig));
+
+    return transport;
 }
 
-/**  deprecated */
-in_streamPair
+in_stream
 in_factoryCreateStream(
-		in_configChannel config)
+    in_configChannel config,
+    in_plugKernel plug,
+    in_transport transport)
 {
-
-	return NULL;
-}
-
-
-
-/** */
-in_streamWriter
-in_factoryCreateStreamWriter(
-	in_configChannel config,
-	in_transportSender sender,
-	in_connectivityAdmin connectivityAdmin)
-{
-	in_streamWriter result = NULL;
+    in_stream stream;
 
     assert(config);
-    assert(sender);
-    assert(connectivityAdmin);
+    assert(plug);
+    assert(transport);
 
-    result =
-    	in_streamWriter(
-    		in_ddsiStreamWriterImplNew(
-    			config,
-    			sender,
-    			connectivityAdmin));
-
-    return result;
-}
-
-
-/** */
-in_streamReader
-in_factoryCreateStreamReader(
-	in_configChannel config,
-	in_transportReceiver receiver,
-	in_connectivityAdmin connectivityAdmin)
-{
-	in_streamReader result = NULL;
-
-    assert(config);
-    assert(receiver);
-    assert(connectivityAdmin);
-
-    result =
-    	in_streamReader(
-    		in_ddsiStreamReaderImplNew(
-    			config,
-    			receiver,
-    			connectivityAdmin));
-
-    return result;
+    if(transport)
+    {
+        stream = in_stream(in_streamPairIBasicNew(config, transport,plug));
+    } else
+    {
+        stream = NULL;
+    }
+	return stream;
 }
 
 in_channel
 in_factoryCreateChannel(
-    in_configChannel config)
+    in_configChannel config,
+    in_plugKernel plug,
+    in_stream stream,
+    in_endpointDiscoveryData discoveryData)
 {
-    assert(config);
+    in_channel channel;
 
-    return NULL;
+    assert(config);
+    assert(plug);
+    assert(stream);
+
+    if(stream && config)
+    {
+        channel = in_channel(in_channelDataNew(
+                config, stream, plug, discoveryData));
+    } else
+    {
+        channel = NULL;
+    }
+    return channel;
+}
+
+in_channel
+in_factoryCreateDiscoveryChannel(
+    in_configDiscoveryChannel config,
+    in_plugKernel plug,
+    in_stream stream,
+    in_endpointDiscoveryData discoveryData)
+{
+    in_channel channel;
+
+    assert(config);
+    assert(stream);
+
+    if(stream && config)
+    {
+        channel = in_channel(in_channelSdpNew(config, stream, plug, discoveryData));
+    } else
+    {
+        channel = NULL;
+    }
+    return channel;
 }
 
 

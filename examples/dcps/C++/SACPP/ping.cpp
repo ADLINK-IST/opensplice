@@ -1,3 +1,15 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 #include "ccpp_dds_dcps.h"
 #include "ccpp_pingpong.h"
 
@@ -201,7 +213,7 @@ PP_min_handler (
     // cout << "PING: PING_min arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_min_reader->take (PP_min_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_min_reader->take (PP_min_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_min_dataList->length ();
@@ -240,7 +252,7 @@ PP_seq_handler (
     // cout << "PING: PING_seq arrived" << endl;
 
     preTakeTime = timeGet ();
-    PP_seq_reader->take (PP_seq_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_seq_reader->take (PP_seq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
 
     amount = PP_seq_dataList->length ();
@@ -280,7 +292,7 @@ PP_string_handler (
     // cout << "PING: PING_string arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_string_reader->take (PP_string_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_string_reader->take (PP_string_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_string_dataList->length ();
@@ -319,7 +331,7 @@ PP_fixed_handler (
     // cout << "PING: PING_fixed arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_fixed_reader->take (PP_fixed_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_fixed_reader->take (PP_fixed_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_fixed_dataList->length ();
@@ -358,7 +370,7 @@ DDS::Boolean PP_array_handler (
     // cout << "PING: PING_array arrived" << endl;
     
     preTakeTime = timeGet ();
-    PP_array_reader->take (PP_array_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    PP_array_reader->take (PP_array_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
     
     amount = PP_array_dataList->length ();
@@ -395,28 +407,6 @@ main (
     char *argv[]
     )
 {
-#ifdef INTEGRITY
-    argc = 6;
-    argv[0] = "ping";
-    argv[1] = "10";
-    argv[2] = "100";
-
-#if defined (PING1)
-    argv[3] = "m";
-#elif defined (PING2)
-    argv[3] = "q";
-#elif defined (PING3)
-    argv[3] = "s";
-#elif defined (PING4)
-    argv[3] = "f";
-#elif defined (PING5)
-    argv[3] = "t";
-#endif 
-
-    argv[4] = "PongRead";
-    argv[5] = "PongWrite";
-#endif
-
     ConditionSeq_var                     conditionList = new ConditionSeq();
     WaitSet                              w;
     Condition_ptr                        exp_condition;
@@ -450,6 +440,23 @@ main (
     //
     // Evaluate cmdline arguments
     //
+#ifdef INTEGRITY
+    nof_blocks = 10;
+    nof_cycles = 100;
+    write_partition = "PongRead";
+    read_partition = "PongWrite";
+#if defined (PING1)
+    topic_id = 'm';
+#elif defined (PING2)
+    topic_id = 'q';
+#elif defined (PING3)
+    topic_id = 's';
+#elif defined (PING4)
+    topic_id = 'f';
+#elif defined (PING5)
+    topic_id = 't';
+#endif 
+#else
     if (argc != 1) {
 	if (argc != 6) {
             printf ("Invalid.....\n Usage: %s [blocks blocksize topic_id WRITE_PARTITION READ_PARTITION]\n", argv[0]);
@@ -461,6 +468,7 @@ main (
         write_partition = argv[4];
         read_partition  = argv[5];
     }
+#endif
 
     //
     // Create participant
@@ -759,75 +767,6 @@ main (
             init_stats (read_access,  "read_access");
             init_stats (roundtrip,    "round_trip");
 	}
-        switch(topic_id) {
-            case 'm':
-                {
-                    // cout << "PING: sending initial ping_min" << endl;
-                    PP_min_msg PPdata;
-                    exp_condition = PP_min_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_min_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'q':
-                {
-                    // cout << "PING: sending initial ping_seq" << endl;
-                    PP_seq_msg PPdata;
-                    exp_condition = PP_seq_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PPdata.payload = pingpong::seq_char(SEQ_PAYLOAD_SIZE);
-                    PP_seq_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 's':
-                {
-                    // cout << "PING: sending initial ping_string" << endl;
-                    PP_string_msg PPdata;
-                    exp_condition = PP_string_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_string_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'f':
-                {
-                    // cout << "PING: sending initial ping_fixed" << endl;
-                    PP_fixed_msg PPdata;
-                    exp_condition = PP_fixed_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_fixed_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 'a':
-                {
-                    // cout << "PING: sending initial ping_array" << endl;
-                    PP_array_msg PPdata;
-                    exp_condition = PP_array_sc;
-                    PPdata.count = 0;
-                    PPdata.block = block;
-                    PP_array_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            case 't':
-                {
-                    // cout << "PING: sending initial ping_quit" << endl;
-                    PP_quit_msg PPdata;
-                    PPdata.quit = true;
-                    terminate = true;
-                    finish_flag = true;
-                    PP_quit_writer->unregister_instance (PPdata, HANDLE_NIL);
-                }
-                break;
-            default:
-                printf("Invalid topic-id\n");
-                exit(1);
-        }
-        init_stats (write_access, "write_access");
-        init_stats (read_access,  "read_access");
-        init_stats (roundtrip,    "round_trip");
     }
     s->delete_datareader (PP_min_reader);
     p->delete_datawriter (PP_min_writer);

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "gapi_dataReader.h"
 #include "gapi_dataReaderView.h"
 #include "gapi_qos.h"
@@ -557,11 +568,11 @@ gapi_dataReader_delete_contained_entities (
             _EntityClaim(readCondition);
             userData = _ObjectGetUserData(_Object(readCondition));
             _ReadConditionPrepareDelete(readCondition);
-            _ReadConditionFree(readCondition);
-            gapi_setIterRemove(iterSet);
             if ( action ) {
                 action(userData, action_arg);
             }
+            _ReadConditionFree(readCondition);
+            gapi_setIterRemove(iterSet);
         }
         gapi_setIterFree (iterSet);
         iterSet = gapi_setFirst(datareader->viewSet);

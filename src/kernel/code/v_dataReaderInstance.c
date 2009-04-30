@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
 #include "v_dataView.h"
 #include "v_dataReaderEntry.h"
 #include "v_dataReaderSample.h"
@@ -15,14 +26,11 @@
 #include "v__statisticsInterface.h"
 #include "v_message.h"
 #include "v__messageQos.h"
-#define _EXTENT_
-#ifdef _EXTENT_
 #include "c_extent.h"
-#endif
-
 #include "os_report.h"
 
-#define v_instanceSource(o) C_CAST(o,v_instanceSource)
+#define v_dataReaderInstanceReader(_this) \
+        v_dataReader(v_index(v_dataReaderInstance(_this)->index)->reader)
 
 /* For debugging purposes... */
 #ifndef NDEBUG
@@ -42,17 +50,20 @@
 #ifndef NDEBUG
 #define CHECK_INVALIDITY(_this) \
         { \
-            if (!v_reader(v_index(_this->index)->reader)->qos->lifecycle.enable_invalid_samples) { \
+            if (!v_reader(v_dataReaderInstanceReader(_this))->qos->lifecycle.enable_invalid_samples) { \
                 if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED)) { \
                     if (v_dataReaderInstanceHead(_this) != NULL) { \
-			printf("Error at line %d enable_invalid_samples = FALSE but invalid sample exists\n", __LINE__); \
+                        printf("Error at line %d enable_invalid_samples = " \
+                               "FALSE but invalid sample exists\n", __LINE__); \
                     } else { \
-                        printf("Warning at line %d enable_invalid_samples = FALSE but L_STATECHANGED is set\n", __LINE__); \
+                        printf("Warning at line %d enable_invalid_samples = " \
+                               "FALSE but L_STATECHANGED is set\n", __LINE__); \
                     } \
                 } \
                 if (_this->sampleCount == 0) { \
                     if (v_dataReaderInstanceHead(_this) != NULL) { \
-                        printf("Error at line %d enable_invalid_samples = FALSE but invalid sample exists\n", __LINE__); \
+                        printf("Error at line %d enable_invalid_samples = " \
+                               "FALSE but invalid sample exists\n", __LINE__); \
                     } \
                 } \
             } \
@@ -74,9 +85,9 @@ v_dataReaderInstanceCheckCount(
     c_long writeFound = 0;
     c_long totalFound = 0;
     v_dataReaderSample currentSample;
-    
+
     assert(C_TYPECHECK(_this, v_dataReaderInstance));
-    
+
     currentSample = v_dataReaderInstanceHead(_this);
 
     while (currentSample != NULL) {
@@ -262,13 +273,13 @@ v_dataReaderInstanceInsert(
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
     CHECK_INVALIDITY(_this);
-    
+
     index = v_index(_this->index);
     reader = v_dataReader(index->reader);
     entry = v_dataReaderEntry(index->entry);
     qos = v_reader(reader)->qos;
     sample = NULL;
-    
+
     if (qos->orderby.kind == V_ORDERBY_SOURCETIME) {
         equality = c_timeCompare(message->writeTime,_this->epoch);
         if (equality != C_GT) {
@@ -286,7 +297,7 @@ v_dataReaderInstanceInsert(
     if (v_stateTest(messageState, L_REGISTER)) {
         if (_this->liveliness == 0) {
             /* if not user defined keys then L_NOWRITERS must be set. */
-            assert((!v_reader(reader)->qos->userKey.enable) == 
+            assert((!v_reader(reader)->qos->userKey.enable) ==
                      v_dataReaderInstanceStateTest(_this, L_NOWRITERS));
             /* Reuse this instance.
              * So it must be removed from the purgeListEmpty, which
@@ -593,11 +604,11 @@ v_dataReaderInstanceInsert(
                                 sample->prev = s->prev;
                                 s->prev = sample;
 
-                                /* Push out the oldest sample in the history 
-                                 * until we've at least removed one L_WRITE 
-                                 * message, because only those ones are taken 
-                                 * into account for depth (called 
-                                 * sampleCount here). 
+                                /* Push out the oldest sample in the history
+                                 * until we've at least removed one L_WRITE
+                                 * message, because only those ones are taken
+                                 * into account for depth (called
+                                 * sampleCount here).
                                  */
                                 do {
                                     oldest = v_dataReaderInstanceHead(_this);
@@ -614,19 +625,19 @@ v_dataReaderInstanceInsert(
                                     oldest->prev = NULL;
                                     oldest->next = NULL;
                                     v_dataReaderSampleWipeViews(oldest);
-                                    
+
                                     if (sample == oldest) {
                                         sample = NULL;
                                         proceed = FALSE;
                                     } else if (
                                         v_dataReaderSampleMessageStateTest(oldest,
-                                            L_WRITE)) 
+                                            L_WRITE))
                                     {
                                         proceed = FALSE;
                                     }
                                     v_dataReaderSampleFree(oldest);
                                 } while(proceed);
-                                
+
                                 v_statisticsULongValueInc(v_reader,
                                                           numberOfSamplesDiscarded,
                                                           reader);
@@ -679,7 +690,7 @@ v_dataReaderInstanceInsert(
                 _this->disposeCount++;
                 v_dataReaderInstanceStateSet(_this, L_NEW);
             }
-    
+
             sample->disposeCount = _this->disposeCount;
             sample->noWritersCount = _this->noWritersCount;
         }
@@ -698,7 +709,7 @@ v_dataReaderInstanceInsert(
     CHECK_INVALIDITY(_this);
 
     if ((v_dataReaderInstanceStateTest(_this, L_STATECHANGED) ||
-         v_stateTest(messageState,L_WRITE))) { 
+         v_stateTest(messageState,L_WRITE))) {
 
         if ((qos->lifecycle.enable_invalid_samples) ||
             (sample != NULL)) {
@@ -711,6 +722,12 @@ v_dataReaderInstanceInsert(
     v_deadLineInstanceListUpdate(v_dataReader(reader)->deadLineList,
                                  v_instance(_this));
 
+    /* reader internal state of the data has been modified.
+     * so increase readers update count.
+     * This value is used by queries to determine if a query
+     * needs to be reëvaluated.
+     */
+    v_dataReader(reader)->updateCnt++;
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
@@ -739,13 +756,6 @@ v_dataReaderInstanceTest(
     CHECK_INVALIDITY(_this);
 
     if (v_dataReaderInstanceEmpty(_this)) {
-        v_dataReaderInstance found;
-        if (v_dataReaderInstanceInNotEmptyList(_this)) {
-            found = v_dataReaderInstance(c_remove(v_index(_this->index)->notEmptyList,
-                                                  _this, NULL, NULL));
-            v_dataReaderInstanceInNotEmptyList(_this) = FALSE;
-            c_free(found);
-        }
         return FALSE;
     }
     if (query == NULL) {
@@ -833,9 +843,17 @@ v_dataReaderSampleRead(
         v_readerSampleSetState(_this,L_LAZYREAD);
     }
 
+    /* reader internal state of the data has been modified.
+     * so increase readers update count.
+     * This value is used by queries to determine if a query
+     * needs to be reëvaluated.
+     */
+    v_dataReaderInstanceReader(instance)->updateCnt++;
+
     CHECK_EMPTINESS(instance);
     CHECK_COUNT(instance);
     CHECK_INVALIDITY(instance);
+
     return proceed;
 }
 
@@ -955,7 +973,6 @@ v_dataReaderSampleTake(
     c_voidp arg)
 {
     v_dataReaderInstance instance;
-    v_index index;
     v_state state;
     v_state mask;
     c_bool proceed;
@@ -989,11 +1006,12 @@ v_dataReaderSampleTake(
     } else {
         proceed = TRUE;
     }
+
     V_MESSAGE_STAMP(v_dataReaderSampleMessage(_this),readerCopyTime);
     V_MESSAGE_REPORT(v_dataReaderSampleMessage(_this),
                      v_dataReaderInstanceDataReader(instance));
-    index = v_index(instance->index);
-    r = v_dataReader(index->reader);
+
+    r = v_dataReaderInstanceReader(instance);
     if (r->views != NULL) {
         v_dataReaderSampleWipeViews(v_dataReaderSample(_this));
     }
@@ -1040,9 +1058,12 @@ v_dataReaderSampleTake(
         }
     }
 
-    CHECK_COUNT(instance);
-    CHECK_EMPTINESS(instance);
-    CHECK_INVALIDITY(instance);
+    /* reader internal state of the data has been modified.
+     * so increase readers update count.
+     * This value is used by queries to determine if a query
+     * needs to be reëvaluated.
+     */
+    v_dataReader(r)->updateCnt++;
 
     if (r->triggerValue) {
         c_free(v_readerSample(r->triggerValue)->instance);
@@ -1050,6 +1071,12 @@ v_dataReaderSampleTake(
         r->triggerValue = NULL;
     }
 
+    CHECK_COUNT(instance);
+    CHECK_EMPTINESS(instance);
+    CHECK_INVALIDITY(instance);
+
+    /* The instance state can have changed, so update the statistics */
+    UPDATE_READER_STATISTICS(v_index(instance->index), instance, state);
     return proceed;
 }
 
@@ -1120,7 +1147,6 @@ void
 v_dataReaderInstancePurge(
     v_dataReaderInstance _this)
 {
-    v_index index;
     v_dataReaderSample sample, previous;
     v_dataReader r;
 
@@ -1132,8 +1158,7 @@ v_dataReaderInstancePurge(
 
     if ((_this != NULL) && !v_dataReaderInstanceEmpty(_this)) {
 
-        index = v_index(_this->index);
-        r = v_dataReader(index->reader);
+        r = v_dataReaderInstanceReader(_this);
         sample = v_dataReaderInstanceHead(_this);
         while (sample != NULL) {
             previous = sample->prev;
@@ -1157,6 +1182,14 @@ v_dataReaderInstancePurge(
         v_dataReaderInstanceStateClear(_this, L_NEW);
         v_dataReaderInstanceStateSet(_this, L_EMPTY);
         v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+
+        /* reader internal state of the data has been modified.
+         * so increase readers update count.
+         * This value is used by queries to determine if a query
+         * needs to be reëvaluated.
+         */
+        v_dataReader(r)->updateCnt++;
+
         if (r->triggerValue) {
             c_free(v_readerSample(r->triggerValue)->instance);
             c_free(r->triggerValue);
@@ -1209,13 +1242,23 @@ v_dataReaderInstanceUnregister (
     CHECK_EMPTINESS(_this);
     CHECK_INVALIDITY(_this);
 
-    _this->liveliness -= count;
-    if (_this->liveliness < 0) {
-        _this->liveliness = 0;
+    if (_this->liveliness < count) {
         OS_REPORT(OS_ERROR,
                   "v_dataReaderInstance", 0,
                   "Incorrect instance liveliness state detected ");
+        assert(FALSE);
+        /* Corrective measure */
+        _this->liveliness = 0;
+    } else {
+        _this->liveliness -= count;
     }
+    /* reader internal state of the data has been modified.
+     * so increase readers update count.
+     * This value is used by queries to determine if a query
+     * needs to be reëvaluated.
+     */
+    v_dataReaderInstanceReader(_this)->updateCnt++;
+
     if (_this->liveliness == 0) {
         if (v_dataReaderInstanceEmpty(_this)) {
             found = c_remove(v_index(_this->index)->objects,_this,NULL,NULL);

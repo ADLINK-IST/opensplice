@@ -1,9 +1,16 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
 /************************************************************************
- *  
- * Copyright (c) 2007
- * PrismTech Ltd.
- * All rights Reserved.
- * 
  * LOGICAL_NAME:    multitopic.cpp
  * FUNCTION:        OpenSplice Tutorial example code.
  * MODULE:          Tutorial for the C++ programming language.
@@ -559,10 +566,10 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_participants (
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_participant_data (
-    DDS::InstanceHandle_t participant_handle,
-    DDS::ParticipantBuiltinTopicData & participant_data
+    DDS::ParticipantBuiltinTopicData & participant_data,
+    DDS::InstanceHandle_t participant_handle
 ) THROW_ORB_EXCEPTIONS {
-    return realParticipant->get_discovered_participant_data(participant_handle, participant_data);
+    return realParticipant->get_discovered_participant_data(participant_data, participant_handle);
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topics (
@@ -572,10 +579,10 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topics (
 };
 
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_discovered_topic_data (
-    DDS::InstanceHandle_t topic_handle,
-    DDS::TopicBuiltinTopicData & topic_data
+    DDS::TopicBuiltinTopicData & topic_data,
+    DDS::InstanceHandle_t topic_handle
 ) THROW_ORB_EXCEPTIONS {
-    return realParticipant->get_discovered_topic_data(topic_handle, topic_data);
+    return realParticipant->get_discovered_topic_data(topic_data, topic_handle);
 };
 
 CORBA::Boolean DDS::ExtDomainParticipantImpl::contains_entity (

@@ -1,4 +1,5 @@
 #include "in_channel.h"
+#include "in_report.h"
 #include "os_heap.h"
 
 os_boolean
@@ -19,7 +20,6 @@ in_channelWriterInit(
     assert(kind > IN_OBJECT_KIND_INVALID);
     assert(deinit);
     assert(name);
-    assert(pathName);
     assert(runnableMainFunc);
 
     success = in_runnableInit(
@@ -35,6 +35,8 @@ in_channelWriterInit(
     {
         _this->channel = in_objectRefFromObject(in_object(channel));
     }
+
+    IN_TRACE_1(Construction,2,"in_channelWriterInit success:%d",success);
     return success;
 }
 

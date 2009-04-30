@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 /* interface */
 #include "nw__plugReceiveChannel.h"
 
@@ -1247,7 +1258,6 @@ nw_plugReceiveChannelIgnoreLastReturnedMessage(
     nw_messageHolder lastReturnedHolder;
     nw_msgHolderPtr lastReturnedMsgHolderPtr;
     nw_bool wasLastAdmin = FALSE;
-    nw_bool wasLastHolder = FALSE;
 
     NW_CONFIDENCE(receiveChannel != NULL);
     NW_CONFIDENCE(receiveChannel->lastReturnedBuffer != NULL);
@@ -1275,16 +1285,18 @@ nw_plugReceiveChannelIgnoreLastReturnedMessage(
                 DF_DATA(lastReturnedMsgHolderPtr->firstAdmin), NULL, FALSE);
         }
 
-        /* Free the last returned buffer because of the firstAdmin ptr */
-        nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
 
-        /* Was this the last fragment of this buffer? */
-        wasLastHolder = (nw_plugDataBufferIsLastMessageHolder(DF_DATA(lastReturnedBuffer),
-                          lastReturnedHolder));
-        if (wasLastHolder) {
-            /* Yes it was, so free the buffer. This ought to be the last free
-             * so check if the assumption is true */
-            NW_CONFIDENCE(lastReturnedBuffer->usedCount == 1);
+        /* need to determine if the admin is no longer used by any message
+         * holder pointer, which can be detected by checking the usedCount of
+         * the admin. If this usedCount is 1, then only the list holds the
+         * reference.
+         * If this is the case, then we must remove it from the
+         * list. We accomplish this by calling the defrag admin release
+         * function which removes it from the list and places it in the
+         * freebufferslist by lowering the usercount to 0.
+         */
+        if (lastReturnedBuffer->usedCount == 1) {
+            /*this admin buffer is no longer used, remove it from the list*/
             nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
         }
     } while (!wasLastAdmin);

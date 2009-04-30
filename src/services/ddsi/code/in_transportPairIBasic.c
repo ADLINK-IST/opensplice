@@ -7,65 +7,26 @@
 
 /* interfaces */
 #include "in_transportPairIBasic.h"
-#include "in__transportPair.h"
+#include "in_transport.h"
+#include "in_report.h"
 
 /* implemenation */
 #include "in_transportReceiverIBasic.h"
 #include "in_transportSenderIBasic.h"
 #include "os_heap.h"
+#include "in_socket.h"
 
 OS_STRUCT(in_transportPairIBasic)
 {
-	OS_EXTENDS(in_transportPair);
-	in_transportReceiverIBasic receiver;
-	in_transportSenderIBasic   sender;
+	OS_EXTENDS(in_transport);
 };
-
-static in_transportReceiver
-in_transportPairGetReceiverImpl(
-		in_transportPair _this)
-{
-	in_transportReceiver result;
-
-	/* narrow interface */
-	in_transportPairIBasic obj =
-		in_transportPairIBasic(_this);
-
-	/* generalize */
-	result = in_transportReceiver(obj->receiver);
-
-	return result;
-}
-
-static in_transportSender
-in_transportPairGetSenderImpl(
-		in_transportPair _this)
-{
-	in_transportSender result;
-
-	/* narrow interface */
-	in_transportPairIBasic obj =
-		in_transportPairIBasic(_this);
-
-	/* generalize */
-	result = in_transportSender(obj->sender);
-
-	return result;
-}
 
 static void
 in_transportPairIBasicDeinit(in_object _this)
 {
 	/* narrow interface */
-	in_transportPairIBasic obj =
-		in_transportPairIBasic(_this);
 
-	in_transportReceiverIBasicFree(obj->receiver);
-	in_transportSenderIBasicFree(obj->sender);
-	obj->receiver = NULL;
-	obj->sender = NULL;
-
-	in_transportPairDeinit(OS_SUPER(obj));
+	in_transportDeinit(_this);
 }
 
 static os_boolean
@@ -76,36 +37,48 @@ in_transportPairIBasicInit(
 	os_boolean result = OS_TRUE;
 	in_transportReceiverIBasic receiver = NULL;
 	in_transportSenderIBasic sender = NULL;
+	in_socket duplexSock =
+	    in_socketDuplexNew(
+	            configChannel,
+	            OS_FALSE);
 
 	assert(_this);
 	assert(configChannel);
-
-	receiver = in_transportReceiverIBasicNew(configChannel);
-	sender = in_transportSenderIBasicNew(configChannel);
-	if (!sender || !receiver) {
-		if (sender) {
-			in_transportSenderIBasicFree(sender);
-		}
-		if (receiver) {
-			in_transportReceiverIBasicFree(receiver);
-		}
+	if (!duplexSock) {
+	    result = OS_FALSE;
 	} else {
-		/* now as sender/receiver have been
-		 * instanciated successfully, initialize the parent */
-		in_transportPairInitParent(
-				OS_SUPER(_this),
-				IN_OBJECT_KIND_TRANSPORT_PAIR_BASIC,
-				in_transportPairIBasicDeinit,
-				in_transportPairGetReceiverImpl,
-				in_transportPairGetSenderImpl);
-		_this->receiver = receiver;
-		_this->sender   = sender;
+        receiver =
+            in_transportReceiverIBasicNewDuplex(
+                    configChannel,
+                    duplexSock);
+        sender =
+            in_transportSenderIBasicNewDuplex(
+                    configChannel,
+                    duplexSock);
+        if (!sender || !receiver) {
+            if (sender) {
+                in_transportSenderIBasicFree(sender);
+            }
+            if (receiver) {
+                in_transportReceiverIBasicFree(receiver);
+            }
+        } else {
+            /* now as sender/receiver have been
+             * instanciated successfully, initialize the parent */
+            in_transportInit(
+                    OS_SUPER(_this),
+                    IN_OBJECT_KIND_TRANSPORT_PAIR_BASIC,
+                    in_transportPairIBasicDeinit,
+                    in_transportReceiver(receiver),
+                    in_transportSender(sender));
+        }
+        /*  decrement refcounter */
+        in_socketFree(duplexSock);
 	}
-
 	return result;
 }
 
-OS_STRUCT(in_transportPairIBasic)*
+in_transportPairIBasic
 in_transportPairIBasicNew(
 		const in_configChannel configChannel)
 {
@@ -118,6 +91,7 @@ in_transportPairIBasicNew(
 			result = NULL;
 		}
 	}
+    IN_TRACE_1(Construction,2,"in_transportPairIBasic created = %x",result);
 
 	return result;
 }

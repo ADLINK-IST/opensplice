@@ -24,9 +24,6 @@ ifeq ($(INCLUDE_JAVA),yes)
 ifeq ($(INCLUDE_API_DCPS_JNI),yes)
 SUBSYSTEMS	+= jni
 endif
-ifeq ($(INCLUDE_API_DCPS_JAVA),yes)
-SUBSYSTEMS	+= java
-endif
 endif
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

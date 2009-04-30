@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <assert.h>
 #include <string.h>
 
@@ -193,60 +204,37 @@ static c_bool
 serviceCommandIsValid(
     char **command)
 {
-    c_bool valid;
-    char *path;
-    char *d;
-    char *c;
-    const char *fsep;
-    c_iter dirs;
+    c_bool result = FALSE;
+    char *suffixedCommand;
+    char *fullCommand;
 
     assert(command != NULL);
     assert(*command != NULL);
 
-    valid = TRUE;
-    /* If the command contains an absolute or relative path,
-       only check the permissions, otherwise search the file
-       in the PATH environment
-    */
-    fsep = os_fileSep();
-    if ((**command == '.') || (strncmp(*command, fsep, strlen(fsep)) == 0)) {
-        if (os_access(*command, OS_ROK | OS_XOK) == os_resultSuccess) {
-            valid = TRUE;
-        } else {
-            valid = FALSE;
-        }
-    } else {
-        valid = FALSE;
-        path = os_getenv("PATH");
-        dirs = c_splitString(path, os_pathSep()); /* ':' for unix and ';' for windows */
-        d = (char *)c_iterTakeFirst(dirs);
-        while (d != NULL) {
-            if (valid == FALSE) {
-                c = (char *)os_malloc(strlen(d) + strlen(fsep) + strlen(*command) + 1);
-                if (c != NULL) {
-                    strcpy(c, d);
-                    strcat(c, fsep);
-                    strcat(c, *command);
-                    /* Check file permissions. Do not have to check if file exists, since
-                       permission check fails when the file does not exist.
-                    */
-                    if (os_access(c, OS_ROK | OS_XOK) == os_resultSuccess) {
-                        valid = TRUE;
-                        os_free(*command);
-                        *command = c;
-                        c = NULL;
-                    }
-                }
-                os_free(c);
+    fullCommand = os_locate(*command, OS_ROK|OS_XOK);
+    if (fullCommand) {
+        os_free(*command);
+        *command = fullCommand;
+        result = TRUE;
+    }
+    if (!result && (sizeof(OS_EXESUFFIX) > 1)) {
+        /* Try the same thing with the exe suffix attached */
+        if (strstr(*command, OS_EXESUFFIX) == NULL) {
+            suffixedCommand = os_malloc(strlen(*command) + sizeof(OS_EXESUFFIX));
+            strcpy(suffixedCommand, *command);
+            strcat(suffixedCommand, OS_EXESUFFIX);
+            fullCommand = os_locate(suffixedCommand, OS_ROK|OS_XOK);
+            if (fullCommand) {
+                os_free(*command);
+                *command = fullCommand;
+                result = TRUE;
             }
-            os_free(d);
-            d = (char *)c_iterTakeFirst(dirs);
         }
-        c_iterFree(dirs);
     }
 
-    return valid;
+    return result;
 }
+
 
 static void
 startServices(

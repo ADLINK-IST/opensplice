@@ -21,7 +21,10 @@ else
    VCPATH=$DEPWORKDIR/install/VC
 fi
 
-cd $VCPATH || { echo "KEEP_DIST=FAIL" >> $RESFILE ; exit 1; }
+cd $VCPATH || 
+{ 
+    exit 1; 
+}
 
 SetState ArchivingDistribution
 
@@ -44,9 +47,7 @@ fi
 
 if [ $RES = 0 ]
 then
-   echo "KEEP_DIST=PASS" >> $RESFILE
    exit 0
 else
-   echo "KEEP_DIST=FAIL" >> $RESFILE
-   exit 1
+   exit 2
 fi

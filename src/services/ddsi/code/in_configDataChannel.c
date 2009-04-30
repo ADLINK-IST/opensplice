@@ -123,6 +123,16 @@ in_configDataChannelGetPriority(
     return _this->priority;
 }
 
+os_boolean
+in_configDataChannelGetIsDefault(
+    in_configDataChannel _this)
+{
+    assert(_this);
+
+    return _this->isDefault;
+}
+
+
 os_uint32
 in_configDataChannelGetGroupQueueSize(
     in_configDataChannel _this)

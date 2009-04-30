@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v__participant.h"
 #include "v__participantQos.h"
 #include "v__kernel.h"
@@ -574,15 +585,13 @@ v_participantResendManagerRemoveWriter(
     v_participant p,
     v_writer w)
 {
-    v_proxy wp, found;
-    assert(C_TYPECHECK(p,v_participant));
+    C_STRUCT(v_proxy) wp;
+    v_proxy found;
 
-    wp = v_proxyNew(v_objectKernel(w), v_publicHandle(v_public(w)), NULL);
-
+    wp.source = v_publicHandle(v_public(w));
+    wp.userData = NULL;
     c_mutexLock(&p->resendMutex);
-    found = c_remove(p->resendWriters, wp, NULL, NULL);
+    found = c_remove(p->resendWriters, &wp, NULL, NULL);
     c_free(found); /* remove local reference transferred from collection */
     c_mutexUnlock(&p->resendMutex);
-
-    c_free(wp);
 }

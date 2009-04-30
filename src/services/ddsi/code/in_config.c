@@ -8,6 +8,7 @@
 #include "in__configChannel.h"
 #include "in__configNetworkPartition.h"
 #include "in__configPartitionMapping.h"
+#include "in_report.h"
 
 static void
 in_configTraverseConfiguration(
@@ -45,7 +46,7 @@ in_configTraverseGroupQueueElement(
 static void
 in_configTraverseFragmentSizeElement(
     u_cfElement element,
-    in_configDataChannel dataChannel);
+    in_configChannel channel);
 
 static void
 in_configTraversePortNrElement(
@@ -89,6 +90,7 @@ in_configTraversePartitioningElement(
 
 #define INCF_ELEM_DdsiService           "DDSIService"
 #define INCF_ATTRIB_DdsiService_name    "name"
+#define INCF_ATTRIB_DdsiService_name_DEF    "ddsi"
 #define INCF_ELEM_General               "General"
 #define INCF_ELEM_Interface             "NetworkInterfaceAddress"
 #define INCF_ATTRIB_Interface_value_DEF INCF_DEF_INTERFACE
@@ -218,7 +220,6 @@ in_configGetDdsiServiceByName(
         }
         iterator = Coll_Iter_getNext(iterator);
     }
-
     return foundService;
 }
 
@@ -274,7 +275,7 @@ in_configTraverseConfiguration(
         if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DdsiService))
         {
             in_configTraverseDdsiServiceElement(u_cfElement(childNode));
-        } /* else ignore the element */
+        } /* else ignore the element, do not report that we ignore it though */
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
 }
@@ -292,6 +293,7 @@ in_configTraverseDdsiServiceElement(
     os_char* serviceName = NULL;
     u_cfNode childNode;
     v_cfKind nodeKind;
+    os_uint32 errorCode;
 
     assert(element);
 
@@ -306,11 +308,17 @@ in_configTraverseDdsiServiceElement(
             success = u_cfAttributeStringValue(attribute, &serviceName);
             if(!success)
             {
-                /* TODO report warning/error */
+                IN_REPORT_WARNING(
+                    "in_configTraverseDdsiServiceElement",
+                    "Failed to retrieve the value for attribute '%s'.");
             }
         } else
         {
-            /* TODO ignore and report this */
+            IN_REPORT_WARNING_2(
+                "in_configTraverseDdsiServiceElement",
+                "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+                name,
+                INCF_ELEM_DdsiService);
         }
         os_free(name);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
@@ -318,44 +326,82 @@ in_configTraverseDdsiServiceElement(
     /*step 2: verify required attributes are found, then instantiate the class*/
     if(!serviceName)
     {
-        /* TODO report warning, revert to default */
-    }
-    ddsiService = in_configDdsiServiceNew(serviceName);
-    os_free(serviceName);
-    if(!ddsiService)
-    {
-        /* TODO report out of memory error */
-    }
-    /* Step 3: traverse child elements */
-    children = u_cfElementGetChildren(element);
-    childNode = u_cfNode(c_iterTakeFirst(children));
-    while(childNode)
-    {
-
-        name = u_cfNodeName(childNode);
-        nodeKind = u_cfNodeKind(childNode);
-        if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_General))
+        IN_REPORT_WARNING_3(
+            "in_configTraverseDdsiServiceElement",
+            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+            INCF_ATTRIB_DdsiService_name,
+            INCF_ELEM_DdsiService,
+            INCF_ATTRIB_DdsiService_name_DEF);
+        serviceName = os_malloc(strlen(INCF_ATTRIB_DdsiService_name_DEF));
+        if(!serviceName)
         {
-            in_configTraverseGeneralElement(u_cfElement(childNode), ddsiService);
-        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Channels))
-        {
-            in_configTraverseChannelsElement(u_cfElement(childNode), ddsiService);
-        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DiscoveryChannel))
-        {
-            in_configTraverseDiscoveryChannelElement(u_cfElement(childNode), ddsiService);
-        } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Partitioning))
-        {
-            in_configTraversePartitioningElement(u_cfElement(childNode), ddsiService);
+             IN_REPORT_ERROR("in_configTraverseDdsiServiceElement", "Out of memory.");
         } else
         {
-            /* TODO ignore and report this */
+            strcpy(serviceName, INCF_ATTRIB_DdsiService_name_DEF);
         }
-        os_free(name);
-        childNode = u_cfNode(c_iterTakeFirst(children));
     }
-    c_iterFree(children);
+    if(serviceName)
+    {
+        /* check if a service with this name was not already known! */
+        ddsiService = in_configGetDdsiServiceByName(_this, serviceName);
+        if(ddsiService)
+        {
+            IN_REPORT_WARNING_3(
+                "in_configTraverseDdsiServiceElement",
+                "Detected duplicate definition for element '%s' with attribute '%s' set to value '%s'. Ignoring duplicate and all child elements.",
+                INCF_ELEM_DdsiService,
+                INCF_ATTRIB_DdsiService_name,
+                serviceName);
+        } else
+        {
+            ddsiService = in_configDdsiServiceNew(serviceName);
+            if(!ddsiService)
+            {
+                IN_REPORT_ERROR("in_configTraverseDdsiServiceElement", "Out of memory.");
+            } else
+            {
+                /* Step 3: traverse child elements */
+                children = u_cfElementGetChildren(element);
+                childNode = u_cfNode(c_iterTakeFirst(children));
+                while(childNode)
+                {
+                    name = u_cfNodeName(childNode);
+                    nodeKind = u_cfNodeKind(childNode);
+                    if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_General))
+                    {
+                        in_configTraverseGeneralElement(u_cfElement(childNode), ddsiService);
+                    } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Channels))
+                    {
+                        in_configTraverseChannelsElement(u_cfElement(childNode), ddsiService);
+                    } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DiscoveryChannel))
+                    {
+                        in_configTraverseDiscoveryChannelElement(u_cfElement(childNode), ddsiService);
+                    } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Partitioning))
+                    {
+                        in_configTraversePartitioningElement(u_cfElement(childNode), ddsiService);
+                    } else
+                    {
+                        IN_REPORT_WARNING_2(
+                            "in_configTraverseDdsiServiceElement",
+                            "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                            name,
+                            INCF_ELEM_DdsiService);
+                    }
+                    os_free(name);
+                    childNode = u_cfNode(c_iterTakeFirst(children));
+                }
+                c_iterFree(children);
 
-    Coll_List_pushBack(&(in_configGetInstance()->ddsiServices),  ddsiService);
+                errorCode = Coll_List_pushBack(&(in_configGetInstance()->ddsiServices),  ddsiService);
+                if(errorCode != COLL_OK)
+                {
+                    IN_REPORT_ERROR("in_configTraverseDdsiServiceElement", "Out of memory.");
+                }
+            }
+        }
+        os_free(serviceName);
+    }
 }
 
 void
@@ -371,48 +417,79 @@ in_configTraversePartitioningElement(
     u_cfNode childNode;
     v_cfKind nodeKind;
 
-    /* Step 1: read attributes if there are any, report warning that they are
-     * ignored.
-     */
-    attributes = u_cfElementGetAttributes(element);
-    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
-    while(attribute)
+    partitioning = in_configDdsiServiceGetPartitioning(ddsiService);
+    if(partitioning)
     {
-        name = u_cfNodeName(u_cfNode(attribute));
-        /* TODO report warning and ignore this attribute */
-        os_free(name);
+        IN_REPORT_WARNING_4(
+            "in_configTraversePartitioningElement",
+            "Detected duplicate definition for element '%s'. This element was defined within parent element '%s' which had attribute '%s' set to value '%s'. Ignoring duplicate and all child elements.",
+            INCF_ELEM_Partitioning,
+            INCF_ELEM_DdsiService,
+            INCF_ATTRIB_DdsiService_name,
+            in_configDdsiServiceGetName(ddsiService));
+    } else
+    {
+        /* Step 1: read attributes if there are any, report warning that they are
+         * ignored.
+         */
+        attributes = u_cfElementGetAttributes(element);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
-    }
-    c_iterFree(attributes);
+        while(attribute)
+        {
+            name = u_cfNodeName(u_cfNode(attribute));
+            IN_REPORT_WARNING_2(
+                "in_configTraversePartitioningElement",
+                "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+                name,
+                INCF_ELEM_Partitioning);
+            os_free(name);
+            attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+        }
+        c_iterFree(attributes);
 
-    partitioning = in_configPartitioningNew();
-
-    /* Step 2: traverse child elements */
-    children = u_cfElementGetChildren(element);
-    childNode = u_cfNode(c_iterTakeFirst(children));
-    while(childNode)
-    {
-        name = u_cfNodeName(childNode);
-        nodeKind = u_cfNodeKind(childNode);
-        if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_GlobalPartition))
+        partitioning = in_configPartitioningNew();
+        if(!partitioning)
         {
-            in_configTraverseGlobalPartitionElement(u_cfElement(childNode), partitioning);
-        } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_NetworkPartitions))
-        {
-            in_configTraverseNetworkPartitionsElement(u_cfElement(childNode), partitioning);
-        } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PartitionMappings))
-        {
-            in_configTraversePartitionMappingsElement(u_cfElement(childNode), partitioning);
+            IN_REPORT_ERROR("in_configTraversePartitioningElement", "Out of memory.");
         } else
         {
-            /* TODO ignore and report this */
-        }
-        os_free(name);
-        childNode = u_cfNode(c_iterTakeFirst(children));
-    }
-    c_iterFree(children);
+            /* Step 2: traverse child elements */
+            children = u_cfElementGetChildren(element);
+            childNode = u_cfNode(c_iterTakeFirst(children));
+            while(childNode)
+            {
+                name = u_cfNodeName(childNode);
+                nodeKind = u_cfNodeKind(childNode);
+                if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_GlobalPartition))
+                {
+                    in_configTraverseGlobalPartitionElement(u_cfElement(childNode), partitioning);
+                } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_NetworkPartitions))
+                {
+                    in_configTraverseNetworkPartitionsElement(u_cfElement(childNode), partitioning);
+                } if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PartitionMappings))
+                {
+                    in_configTraversePartitionMappingsElement(u_cfElement(childNode), partitioning);
+                } else
+                {
+                    IN_REPORT_WARNING_2(
+                        "in_configTraversePartitioningElement",
+                        "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                        name,
+                        INCF_ELEM_Partitioning);
+                    IN_REPORT_WARNING_2(
+                        "in_configTraversePartitioningElement",
+                        "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                        name,
+                        INCF_ELEM_Partitioning);
+                }
+                os_free(name);
+                childNode = u_cfNode(c_iterTakeFirst(children));
+            }
+            c_iterFree(children);
 
-    in_configDdsiServiceSetPartitioning(ddsiService, partitioning);
+            in_configDdsiServiceSetPartitioning(ddsiService, partitioning);
+        }
+    }
 }
 
 void
@@ -435,7 +512,11 @@ in_configTraverseNetworkPartitionsElement(
     while(attribute)
     {
         name = u_cfNodeName(u_cfNode(attribute));
-        /* TODO report warning and ignore this attribute */
+        IN_REPORT_WARNING_2(
+            "in_configTraverseNetworkPartitionsElement",
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_NetworkPartitions);
         os_free(name);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
@@ -453,7 +534,11 @@ in_configTraverseNetworkPartitionsElement(
             in_configTraverseNetworkPartitionElement(u_cfElement(childNode), partitioning);
         } else
         {
-            /* TODO ignore and report this */
+            IN_REPORT_WARNING_2(
+                "in_configTraverseNetworkPartitionsElement",
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_NetworkPartitions);
         }
         os_free(name);
         childNode = u_cfNode(c_iterTakeFirst(children));
@@ -870,7 +955,12 @@ in_configTraverseDiscoveryChannelElement(
         if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PortNr))
         {
             in_configTraversePortNrElement(u_cfElement(childNode), in_configChannel(discoveryChannel));
-        } else
+        }
+        else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_FragmentSize))
+        {
+            in_configTraverseFragmentSizeElement(u_cfElement(childNode), in_configChannel(discoveryChannel));
+        }
+        else
         {
             /* TODO ignore and report a warning */
         }
@@ -982,7 +1072,7 @@ in_configTraverseChannelElement(
             in_configTraverseGroupQueueElement(u_cfElement(childNode), dataChannel);
         } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_FragmentSize))
         {
-            in_configTraverseFragmentSizeElement(u_cfElement(childNode), dataChannel);
+            in_configTraverseFragmentSizeElement(u_cfElement(childNode), in_configChannel(dataChannel));
         } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_PortNr))
         {
             in_configTraversePortNrElement(u_cfElement(childNode), in_configChannel(dataChannel));
@@ -1063,7 +1153,7 @@ in_configTraverseGroupQueueElement(
 void
 in_configTraverseFragmentSizeElement(
     u_cfElement element,
-    in_configDataChannel dataChannel)
+    in_configChannel channel)
 {
     c_iter attributes;
     u_cfAttribute attribute;
@@ -1119,7 +1209,7 @@ in_configTraverseFragmentSizeElement(
     {
         fragmentSize = INCF_ATTRIB_FragmentSize_value_MAX;
     }
-    in_configChannelSetFragmentSize(in_configChannel(dataChannel), fragmentSize);
+    in_configChannelSetFragmentSize(channel, fragmentSize);
 }
 
 void
@@ -1196,7 +1286,7 @@ in_configTraverseInterfaceElement(
     u_cfNode childNode;
     v_cfKind nodeKind;
     os_boolean success;
-    os_char* networkId = INCF_ATTRIB_Interface_value_DEF;
+    os_char* networkId = NULL;
 
     /* Step 1: read attributes if there are any, report warning that they are
      * ignored.
@@ -1217,6 +1307,7 @@ in_configTraverseInterfaceElement(
      */
     children = u_cfElementGetChildren(element);
     childNode = u_cfNode(c_iterTakeFirst(children));
+    IN_TRACE(Configuration, 3, "Networking address read");
     while(childNode)
     {
         name = u_cfNodeName(childNode);
@@ -1228,12 +1319,16 @@ in_configTraverseInterfaceElement(
             {
                 /* TODO ignore and report a warning */
             }
+            IN_TRACE_1(Configuration, 3, "Networking address read %s", networkId);
         } else
         {
             /* TODO ignore and report a warning */
         }
         os_free(name);
         childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    if(!networkId){
+        networkId = INCF_ATTRIB_Interface_value_DEF;
     }
     c_iterFree(children);
     in_configDdsiServiceSetNetworkId(ddsiService, networkId);

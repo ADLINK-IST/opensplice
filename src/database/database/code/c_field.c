@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "c__base.h"
 #include "c__metabase.h"
 #include "c__field.h"
@@ -154,7 +165,7 @@ c_fieldNew (
 
     if (refsList) {
         length = c_iterLength(refsList);
-        field->refs = c_arrayNew(c_long_t(base),length);
+        field->refs = c_arrayNew(c_address_t(base),length);
         for (n=(length-1);n>=0;n--) {
             field->refs[n] = c_iterTakeFirst(refsList);
         }

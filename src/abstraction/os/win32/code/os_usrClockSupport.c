@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -49,7 +60,8 @@ close_userClockModule (
     )
 {
     if (moduleHandle) {
-    	if (FreeLibrary ((HINSTANCE)moduleHandle) != 0) {
+        if (!FreeLibrary ((HINSTANCE)moduleHandle)) {
+            /* Zero is failure */
     	    OS_REPORT_1 (OS_ERROR, "close_userClockModule", 0,
                 "FreeLibrary error: %d", GetLastError());
         }

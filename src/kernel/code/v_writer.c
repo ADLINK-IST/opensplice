@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "v__writer.h"
 #include "v__writerQos.h"
 #include "v__publisher.h"
@@ -206,10 +217,14 @@ doWait (
     } else {
         flags = v__observerWait(v_observer(w));
     }
-    if (flags & V_EVENT_TIMEOUT) {
-        result = V_WRITE_TIMEOUT;
+    if (flags & V_EVENT_OBJECT_DESTROYED) {
+        result = V_WRITE_PRE_NOT_MET;
     } else {
-        result = V_WRITE_SUCCESS;
+        if (flags & V_EVENT_TIMEOUT) {
+            result = V_WRITE_TIMEOUT;
+        } else {
+            result = V_WRITE_SUCCESS;
+        }
     }
     return result;
 }
@@ -1571,10 +1586,12 @@ v_writerNotifyIncompatibleQos(
         e.source = v_publicHandle(v_public(w));
         e.userData = NULL;
         v_observerNotify(v_observer(w), &e, NULL);
+        v_observerUnlock(v_observer(w));
         v_observableNotify(v_observable(w), &e);
+    } else {
+        v_observerUnlock(v_observer(w));
     }
 
-    v_observerUnlock(v_observer(w));
 }
 
 void
@@ -2235,13 +2252,13 @@ v_writerResend(
             found = c_remove(writer->instances,instance,NULL,NULL);
             assert(found == instance);
             c_free(found);
+            v_publicFree(v_public(instance));
             v_writerInstanceFree(instance);
         }
         /*NK: Always free because it has been kept in the emptyList iterator!*/
         v_writerInstanceFree(instance);
     }
     /* Free the iterator here. If it is NULL, this statement is also valid */
-    c_iterFree(emptyList);
     if (c_tableCount(writer->resendInstances) == 0) {
         v_participantResendManagerRemoveWriter(v_writerParticipant(writer),
                                                writer);
@@ -2250,6 +2267,7 @@ v_writerResend(
         v_observerNotify(v_observer(writer), NULL, NULL);
     }
     v_observerUnlock(v_observer(writer));
+    c_iterFree(emptyList);
 }
 
 void
@@ -2455,13 +2473,15 @@ v_writerCheckDeadlineMissed(
         v_deadLineInstanceListSetDuration(w->deadlineList, period);
     }
 
-    v_observerUnlock(v_observer(w));
     if (changed) {
         e.kind = V_EVENT_DEADLINE_MISSED;
         e.source = v_publicHandle(v_public(w));
         e.userData = NULL;
         v_observerNotify(v_observer(w), &e, NULL);
+        v_observerUnlock(v_observer(w));
         v_observableNotify(v_observable(w), &e);
+    } else {
+        v_observerUnlock(v_observer(w));
     }
 
 }

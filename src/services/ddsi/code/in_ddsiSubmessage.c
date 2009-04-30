@@ -15,30 +15,17 @@
 #include "in__ddsiParameterList.h"
 #include "in_ddsiParameterList.h"
 #include "in_report.h"
+#include "in_align.h"
+#include "in_ddsiEncapsulationHeader.h"
 
 /* **** private functions **** */
-static in_long
-in_ddsiSubmessageDataSerializeMessage(
-		v_message message,
-		in_ddsiSerializer serializer)
-{
-	in_long result = 0;
-	in_octet *buffer =
-		in_ddsiSerializerGetPosition(serializer);
 
-	os_size_t bufferLength =
-		in_ddsiSerializerRemainingCapacity(serializer);
-
-	/* do the v_message serialization here */
-
-	return result;
-}
 
 static in_long
 dataHeaderSerializeInstantly(
         in_ddsiEntityId readerId,
         in_ddsiEntityId writerId,
-        c_ulong osplSequenceNumber,
+        in_ddsiSequenceNumber sequenceNumber,
         in_ddsiSerializer serializer)
 {
 	/*
@@ -56,20 +43,13 @@ dataHeaderSerializeInstantly(
      * |                                                               |
      * +---------------+---------------+---------------+---------------+
      */
-	OS_STRUCT(in_ddsiEntityId) entityIdUnknown =
-		UINT32_TO_ENTITYID(IN_ENTITYID_UNKNOWN);
+
 
 	os_ushort extraFlags = 0U;
 	os_ushort octetsToInlineQos =16U; /*may become variable in future */
-	/* Note: 16 octets, ospl is using just 8 octets */
-	OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber;
 	in_long result = -1;
 	in_long nofOctets = 0;
 	in_long total = 0;
-
-	in_ddsiSequenceNumberInit(
-			&sequenceNumber,
-			osplSequenceNumber);
 
 	/** break out in case of serialization error */
 	do {
@@ -93,11 +73,11 @@ dataHeaderSerializeInstantly(
 		if (nofOctets<0) break; /* leave while loop */
 		total += nofOctets;
 
-		nofOctets = in_ddsiSequenceNumberSerialize(&sequenceNumber, serializer);
+		nofOctets = in_ddsiSequenceNumberSerialize(sequenceNumber, serializer);
 		if (nofOctets<0) break; /* leave while loop */
 		total += nofOctets;
 
-		assert(total == 16);
+		assert(total == 20);
 
 		/* final assignment */
 		result = total;
@@ -110,16 +90,6 @@ dataHeaderSerializeInstantly(
 
 /* **** public functions **** */
 
-/** */
-void
-in_ddsiSerializedDataInit(
-		in_ddsiSerializedData _this,
-		in_octet *begin,
-		os_size_t length)
-{
-	_this->begin = begin;
-	_this->length = length;
-}
 
 /** */
 in_long
@@ -131,12 +101,13 @@ in_ddsiSerializedDataInitFromBuffer(
 	in_long nofOctets = 0;
 	in_long total = 0;
 	in_long result = -1;
+	OS_STRUCT(in_ddsiEncapsulationHeader) encapsHeader;
 
 	in_octet *begin =
 		in_ddsiDeserializerGetIndex(deserializer);
 
-	_this->begin = NULL;
-	_this->length = 0;
+	/* init */
+	memset (_this, 0, sizeof(*_this));
 
 	 if ((((os_size_t)begin) & (4-1)) > 0) {
 		IN_REPORT_WARNING("in_ddsiSerializedDataInitFromBuffer",
@@ -144,8 +115,18 @@ in_ddsiSerializedDataInitFromBuffer(
 	 }
 
 	do {
-		nofOctets =
-			in_ddsiDeserializerSeek(deserializer, length);
+        /* parse the encapsulation header and store the codecId, also check if
+         * codec is valid */
+        nofOctets = in_ddsiEncapsulationHeaderInitFromBuffer(
+                &encapsHeader, deserializer);
+        if (nofOctets < 0) break;
+        total += nofOctets;
+
+        assert(total == 4);
+
+        /* skip the successing octets */
+	    nofOctets =
+			in_ddsiDeserializerSeek(deserializer, length-total);
 		if (nofOctets < 0) break;
 		total += nofOctets;
 
@@ -153,6 +134,13 @@ in_ddsiSerializedDataInitFromBuffer(
 		result = total;
 		_this->begin = begin;
 		_this->length = length;
+		_this->codecId =
+		    in_ddsiEncapsulationHeaderGetCodecId(&encapsHeader);
+		_this->flags =  /* reserved for future use */
+		    in_ddsiEncapsulationHeaderGetFlags(&encapsHeader);
+		/* done */
+
+		result = total;
 	} while (0);
 
 	return result;
@@ -213,18 +201,44 @@ static in_ddsiSubmessageFlags
 in_ddsiSubmessageCreateFlagE(in_ddsiSerializer serializer)
 {
 	os_boolean isBigE =
-		in_ddsiSerializeIsBigEndian(serializer);
+		in_ddsiSerializerIsBigEndian(serializer);
 	in_ddsiSubmessageFlags result =
 		isBigE ? 0 : IN_FLAG_E;
 	return result;
 }
 
+static in_ddsiSubmessageFlags
+in_ddsiSubmessageCreateFlagM(os_size_t nofMulticastLocators)
+{
+    in_ddsiSubmessageFlags result =
+        (nofMulticastLocators == 0) ? 0 : IN_FLAG_INFO_REPLY_M;
+    return result;
+}
 
 static in_ddsiSubmessageFlags
-in_ddsiSubmessageDataCreateFlagI(os_boolean expectsInlineQos)
+in_ddsiSubmessageDataCreateFlagQ(os_boolean expectsInlineQos)
 {
 	in_ddsiSubmessageFlags result =
-		expectsInlineQos ? IN_FLAG_DATA_I : 0;
+		expectsInlineQos ? IN_FLAG_DATA_Q : 0;
+	return result;
+}
+
+static in_ddsiSubmessageFlags
+in_ddsiSubmessageDataCreateFlagAckNackF(os_boolean final)
+{
+	in_ddsiSubmessageFlags result;
+
+    result = final ? IN_FLAG_ACKNACK_F : 0;
+	return result;
+}
+
+static in_ddsiSubmessageFlags
+in_ddsiSubmessageDataCreateFlagHeartbeatF(
+    os_boolean final)
+{
+	in_ddsiSubmessageFlags result;
+
+    result = final ? IN_FLAG_HEARTBEAT_F : 0;
 	return result;
 }
 
@@ -238,50 +252,26 @@ in_ddsiSubmessageDataCreateFlagD(os_boolean withFlagD)
 }
 
 
-static os_size_t
-readerFacadeSerializedSize(
-        in_connectivityReaderFacade facade)
-{
-    os_size_t result = 0;
-
-    return 0;
-}
-
-static os_size_t
-writerFacadeSerializedSize(
-        in_connectivityWriterFacade facade)
-{
-    os_size_t result = 0;
-
-    return 0;
-}
-
-static os_size_t
-participantFacadeSerializedSize(
-        in_connectivityParticipantFacade facade)
-{
-    os_size_t result = 0;
-
-    return 0;
-}
-
 
 in_long
 in_ddsiSubmessageAppendEncapsulationHeaderInstantly(
         os_ushort kind,
         in_ddsiSerializer serializer)
 {
-    os_ushort flags = 0;
+    in_octet header[4];
+
+
     in_long total = 0;
     in_long result = -1;
     in_long nofOctets = 0;
 
-    do {
-        nofOctets = in_ddsiSerializerAppendUshort(serializer, kind);
-        if (nofOctets<0) break;
-        total += nofOctets;
+    header[0] = ((in_octet)((kind >> 8) & 0xff));
+    header[1] = ((in_octet)((kind) & 0xff));
+    header[2] = 0; /* flags */
+    header[3] = 0; /* flags */
 
-        nofOctets = in_ddsiSerializerAppendUshort(serializer, flags);
+    do {
+        nofOctets = in_ddsiSerializerAppendOctets(serializer, header, 4);
         if (nofOctets<0) break;
         total += nofOctets;
 
@@ -346,8 +336,14 @@ in_ddsiSubmessageDataInitFromBuffer(
 
 	/* break out in case of error */
 	do {
+        os_ushort dummy;
 		nofOctets =
 			in_ddsiDeserializerParseUshort(deserializer, &(_this->extraFlags));
+		if (nofOctets<0) break;
+		total += nofOctets;
+
+		nofOctets =
+			in_ddsiDeserializerParseUshort(deserializer, &dummy);
 		if (nofOctets<0) break;
 		total += nofOctets;
 
@@ -366,7 +362,7 @@ in_ddsiSubmessageDataInitFromBuffer(
 		if (nofOctets<0) break;
 		total += nofOctets;
 
-		if (in_ddsiSubmessageHasFlagI(OS_SUPER(_this))) {
+		if (in_ddsiSubmessageHasFlagQ(OS_SUPER(_this))) {
 			/* take inlineQos */
 			nofOctets =
 				in_ddsiParameterListInitFromBuffer(&(_this->inlineQos), deserializer);
@@ -390,10 +386,13 @@ in_ddsiSubmessageDataInitFromBuffer(
 
 			if (nofOctets<0) break;
 			total += nofOctets;
+
+            result = total;
 		} else {
 			in_ddsiSerializedDataInitEmpty(&(_this->serializedPayload));
 		}
 
+		result = total;
 	} while (0);
 
 	return result;
@@ -414,6 +413,7 @@ in_ddsiSubmessageDataSerializedSize(
         inlineQosSize +
         IN_DDSI_ENCAPSULATION_HEADER_SIZE
         + serializedPayloadSize;
+
     return result;
 }
 
@@ -423,7 +423,7 @@ in_long
 in_ddsiSubmessageDataHeaderSerializeInstantly(
 		os_size_t  inlineQosSize,
 		os_size_t  serializedPayloadSize,
-		c_ulong    sequenceNumber, /* OSPL native representation */
+		in_ddsiSequenceNumber  sequenceNumber, /* OSPL native representation */
 		in_ddsiEntityId readerId,
         in_ddsiEntityId writerId,
 		in_ddsiSerializer serializer)
@@ -467,18 +467,18 @@ in_ddsiSubmessageDataHeaderSerializeInstantly(
      */
     const os_boolean withInlineQos = (inlineQosSize > 0);
     const os_boolean withSerializedPayload = (serializedPayloadSize > 0);
-	const in_ddsiSubmessageKind  kind = IN_DATA;
+	const in_ddsiSubmessageKind  kind = IN_RTPS_DATA;
 	const os_size_t submessageLength =
 	    in_ddsiSubmessageDataSerializedSize(
 	            inlineQosSize,
 	            serializedPayloadSize);
 	const in_ddsiSubmessageFlags flags =
 		in_ddsiSubmessageCreateFlagE(serializer) |
-		in_ddsiSubmessageDataCreateFlagI(withInlineQos) |
+		in_ddsiSubmessageDataCreateFlagQ(withInlineQos) |
 		in_ddsiSubmessageDataCreateFlagD(withSerializedPayload);
 
     const os_ushort octetsToNextHeader =
-         ((os_ushort) submessageLength) - IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+         ((os_ushort) submessageLength) - (IN_DDSI_SUBMESSAGE_HEADER_SIZE*2);//ES: TODO: times 2 is work around for malformed msg
 
     in_long result = -1;
     in_long total = 0;
@@ -514,119 +514,12 @@ in_ddsiSubmessageDataHeaderSerializeInstantly(
     return result;
 }
 
-#if 0
-/** */
-in_long
-in_ddsiSubmessageParticipantDataSerializeInstantly(
-		in_connectivityParticipantFacade facade,
-		os_size_t dataSubmessageLength,
-		in_ddsiSerializer serializer)
-{
-    /*
-     * Submessage-Header
-     * 0...2...........7...............15.............23...............31
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * |   DATA        |X|X|X|X|K|D|Q|E|      octetsToNextHeader       |
-     * +---------------+---------------+---------------+---------------+
 
-     * Data-Body
-     * 0...2...........7...............15.............23...............31
-     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * +---------------+---------------+---------------+---------------+
-     * |   Flags         extraFlags    |      octetsToInlineQos        |
-     * +---------------+---------------+---------------+---------------+
-     * | EntityId readerEntityId                                       |
-     * +---------------+---------------+---------------+---------------+
-     * | EntityId writerEntityId                                       |
-     * +---------------+---------------+---------------+---------------+
-     * |                                                               |
-     * + SequenceNumber writerSeqNum                                   +
-     * |                                                               |
-     * +---------------+---------------+---------------+---------------+
-
-     * +---------------+---------------+---------------+---------------+
-     * |                                                               |
-     * ~ ParameterList inlineQos [only if Q==1]                        ~
-     * |                                                               |
-     * +---------------+---------------+---------------+---------------+
-
-     * +---------------+---------------+---------------+---------------+
-     * |                                                               |
-     * ~ SerializedData serializedData [only if D==1 || K==1]          ~
-     * |                                                               |
-     * +---------------+---------------+---------------+---------------+
-     */
-
-	const in_ddsiSubmessageKind  kind = IN_DATA;
-	const in_ddsiSubmessageFlags flags =
-		in_ddsiSubmessageCreateFlagE(serializer) |
-		in_ddsiSubmessageDataCreateFlagD(OS_TRUE);
-
-	const os_ushort submessageHeaderSize = 4; /* nof octets */
-	const os_ushort octetsToNextHeader =
-		dataSubmessageLength - submessageHeaderSize;
-	in_long result = -1;
-	in_long total = 0;
-	in_long nofOctets = 0;
-    /*TODO: correct sequence number */
-    c_ulong seqnum = 0;
-
-	do {
-		nofOctets =
-			in_ddsiSubmessageHeaderSerializeInstantly(
-					IN_DATA,
-					flags,
-					octetsToNextHeader,
-					serializer);
-		if (nofOctets<0) break;
-		total += nofOctets;
-
-		nofOctets =
-			in_ddsiSubmessageDataHeaderSerializeInstantly(
-					in_connectivityEntityFacade(facade),
-					seqnum,
-					serializer);
-		if (nofOctets<0) break;
-		total += nofOctets;
-
-		/* parameter list as serialized data */
-		{
-			os_boolean isBigEndian =
-				in_ddsiSerializeIsBigEndian(serializer);
-
-			/* add encapsulation header */
-			os_ushort encapsKind =
-				isBigEndian
-				? IN_ENCAPSULATION_PL_CDR_BE
-				: IN_ENCAPSULATION_PL_CDR_LE;
-
-			nofOctets =
-				in_ddsiSubmessageAppendEncapsulationHeaderInstantly(
-						encapsKind,
-						serializer);
-			if (nofOctets<0) break; /* leave while loop */
-			total += nofOctets;
-
-			nofOctets =
-				in_ddsiParameterListForParticipantSerializeInstantly(
-					facade,
-					serializer);
-			if (nofOctets<0) break; /* leave while loop */
-			total += nofOctets;
-		}
-
-		/* final assignment */
-		result = total;
-	} while(0);
-
-	return result;
-}
-#endif
 
 /** */
 in_long
 in_ddsiSubmessageInfoTimestampSerializeInstantly(
-		c_time *timestamp,
+		const c_time *timestamp,
 		in_ddsiSerializer serializer)
 {
 	const in_ddsiSubmessageKind  kind = IN_INFO_TS;
@@ -636,7 +529,6 @@ in_ddsiSubmessageInfoTimestampSerializeInstantly(
 		OS_SIZEOF(in_ddsiTime);
 
 	in_long result = 0;
-
 	in_long nofOctets;
 
 	assert(nofOctetsToNextHeader == 8);
@@ -665,3 +557,605 @@ in_ddsiSubmessageInfoTimestampSerializeInstantly(
 
 	return result;
 }
+
+/** */
+in_long
+in_ddsiSubmessageInfoDestinationSerializeInstantly(
+        in_ddsiGuidPrefix destPrefix,
+        in_ddsiSerializer serializer)
+{
+    const in_ddsiSubmessageKind  kind = IN_INFO_DST;
+    const in_ddsiSubmessageFlags flags =
+        in_ddsiSubmessageCreateFlagE(serializer);
+    const os_ushort octetsToNextHeader =
+        IN_DDSI_SUBMESSAGE_INFODESTINATION_BODY_SIZE;
+
+    in_long result = -1; /* error condition */
+    in_long nofOctets;
+    in_long total = 0;
+
+    assert(octetsToNextHeader == 12);
+    assert(octetsToNextHeader % 4 == 0);
+
+    do {
+        nofOctets =
+             in_ddsiSubmessageHeaderSerializeInstantly(
+                     kind, flags, octetsToNextHeader,
+                     serializer);
+         if (nofOctets<0) break;
+         total += nofOctets;
+
+         nofOctets =
+             in_ddsiGuidPrefixSerialize(destPrefix, serializer);
+         if (nofOctets<0) break;
+         total += nofOctets;
+
+        /* done */
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+in_long
+in_ddsiSubmessageHeartbeatSerializeInstantly(
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumber firstSN,
+        in_ddsiSequenceNumber lastSN,
+        os_ushort count,
+        in_ddsiSerializer serializer)
+{
+    const in_ddsiSubmessageKind  kind = IN_HEARTBEAT;
+    const in_ddsiSubmessageFlags flags =
+        in_ddsiSubmessageCreateFlagE(serializer) | in_ddsiSubmessageDataCreateFlagHeartbeatF(OS_FALSE);
+    const os_ushort octetsToNextHeader =
+        (os_ushort) (OS_SIZEOF(in_ddsiSubmessageHeartbeat) -
+        IN_DDSI_SUBMESSAGE_HEADER_SIZE);
+    OS_STRUCT(in_ddsiCount) countObj;
+
+    in_long result = -1; /* error condition */
+    in_long nofOctets;
+    in_long total = 0;
+
+    assert(octetsToNextHeader == 28);
+    assert(octetsToNextHeader % 4 == 0);
+
+    countObj.value = count;
+
+    do {
+        nofOctets =
+            in_ddsiSubmessageHeaderSerializeInstantly(
+                    kind, flags, octetsToNextHeader,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            in_ddsiEntityIdSerialize(
+                    readerId,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            in_ddsiEntityIdSerialize(
+                    writerId,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            in_ddsiSequenceNumberSerialize(
+                    firstSN,
+                    serializer);
+        if (nofOctets<0) break;
+
+        nofOctets =
+            in_ddsiSequenceNumberSerialize(
+                    lastSN,
+                    serializer);
+        if (nofOctets<0) break;
+
+        total += nofOctets;
+        nofOctets =
+            in_ddsiCountSerialize(
+                    &countObj,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        /* done */
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+
+/** */
+in_long
+in_ddsiSubmessageHeartbeatInitFromBuffer(
+        in_ddsiSubmessageHeartbeat _this,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer)
+{
+    in_long result = -1;
+    in_long nofOctets = 0;
+    in_long total = 0;
+
+    /* copy the preparsed header */
+    OS_SUPER(_this)->header = *preparsedHeader;
+
+    /** The deserializer points onto first octet behind the submessage
+     * header */
+
+    /*
+     * Submessage-Header
+     *   0...2...........7...............15.............23...............31
+     *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *  | HEARTBEAT     |X|X|X|X|X|L|F|E|       octetsToNextHeader      |
+     *  +---------------+---------------+---------------+---------------+
+     *  |           EntityId              readerId                      |
+     *  +---------------+---------------+---------------+---------------+
+     *  |           EntityId              writerId                      |
+     *  +---------------+---------------+---------------+---------------+
+     *  |                                                               |
+     *  +           SequenceNumber        firstSN                       +
+     *  |                                                               |
+     *  +---------------+---------------+---------------+---------------+
+     *  |                                                               |
+     *  +           SequenceNumber        lastSN                        +
+     *  |                                                               |
+     *  +---------------+---------------+---------------+---------------+
+     *  |           Count                 count                         |
+     *  +---------------+---------------+---------------+---------------+
+
+     */
+
+    /* break out in case of error */
+    do {
+        OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
+        OS_STRUCT(in_ddsiEntityId) tmp2 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_WRITER);
+        OS_STRUCT(in_ddsiEntityId) tmp3 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
+        OS_STRUCT(in_ddsiEntityId) tmp4 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_WRITER);
+
+        nofOctets = in_ddsiEntityIdInitFromBuffer(&(_this->readerId), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp)))
+        {
+            IN_TRACE(Receive, 2, "################################ tmp");
+        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp2)))
+        {
+            IN_TRACE(Receive, 2, "################################ tmp2");
+        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp3)))
+        {
+            IN_TRACE(Receive, 2, "################################ tmp3");
+        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp4)))
+        {
+            IN_TRACE(Receive, 2, "################################ tmp4");
+        }
+
+        nofOctets = in_ddsiEntityIdInitFromBuffer(&(_this->writerId), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets = in_ddsiSequenceNumberInitFromBuffer(&(_this->firstSN), deserializer);
+        if (nofOctets<0) break;
+        if (!in_ddsiSequenceNumberIsValid(&(_this->firstSN))) break; /* must not be zero or negative */
+        total += nofOctets;
+
+        nofOctets = in_ddsiSequenceNumberInitFromBuffer(&(_this->lastSN), deserializer);
+        if (nofOctets<0) break;
+        if (!in_ddsiSequenceNumberIsValid(&(_this->lastSN))) break; /* must not be zero or negative */
+        if (in_ddsiSequenceNumberCompare(&(_this->lastSN), &(_this->firstSN)) == C_LT) break;
+        total += nofOctets;
+
+        nofOctets = in_ddsiCountInitFromBuffer(&(_this->count), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+
+/** **************************************
+ * ACKNACK
+ ** ***************************************/
+
+/**
+ */
+os_size_t
+in_ddsiSubmessageAckNackSerializedSize(
+        in_ddsiSequenceNumberSet sequenceNumberSet)
+{
+    const os_size_t snSetSize =
+        /* variable length between 8+4+(M*4) octets, where M=0 in case of base==0 */
+        in_ddsiSequenceNumberSetSerializedSize(sequenceNumberSet);
+    const os_size_t result =
+        IN_DDSI_SUBMESSAGE_HEADER_SIZE +
+        OS_SIZEOF(in_ddsiEntityId) + /* 4 octets for reader Id */
+        OS_SIZEOF(in_ddsiEntityId) + /* 4 octets for writer Id */
+        snSetSize + /* 12-20 octets */
+        OS_SIZEOF(in_ddsiCount); /* 4 octets for count */
+
+    assert(OS_SIZEOF(in_ddsiEntityId) == 4);
+    assert(OS_SIZEOF(in_ddsiCount) == 4);
+    assert(IN_DDSI_SUBMESSAGE_HEADER_SIZE == 4);
+    assert(snSetSize >= 12);
+    assert(sequenceNumberSet->numBits!=0 || snSetSize == 12);
+
+    assert(result % 4 == 0);
+
+    return result;
+}
+
+
+/** */
+in_long
+in_ddsiSubmessageAckNackSerializeInstantly(
+        in_ddsiEntityId readerId,
+        in_ddsiEntityId writerId,
+        in_ddsiSequenceNumberSet sequenceNumberSet,
+        os_int32 count,
+        in_ddsiSerializer serializer)
+{
+    /*
+     *  0...2...........7...............15.............23...............31
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * |   ACKNACK     |X|X|X|X|X|X|F|E|      octetsToNextHeader       |
+     * +---------------+---------------+---------------+---------------+
+     * |           EntityId              readerId                      |
+     * +---------------+---------------+---------------+---------------+
+     * |           EntityId             writerId                       |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~           SequenceNumberSet    readerSNState                  ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     * |              Count             count                          |
+     * +---------------+---------------+---------------+---------------+
+     */
+    const in_ddsiSubmessageKind  kind = IN_ACKNACK;
+    const in_ddsiSubmessageFlags flags =
+        in_ddsiSubmessageCreateFlagE(serializer)/* | in_ddsiSubmessageDataCreateFlagAckNackF(OS_TRUE)*/;
+    const os_ushort octetsToNextHeader =
+        (os_ushort) (in_ddsiSubmessageAckNackSerializedSize(
+                sequenceNumberSet) - IN_DDSI_SUBMESSAGE_HEADER_SIZE);
+    OS_STRUCT(in_ddsiCount) countObj;
+
+    in_long result = -1; /* error condition */
+    in_long nofOctets;
+    in_long total = 0;
+
+    assert(octetsToNextHeader >= 24);
+    assert(octetsToNextHeader % 4 == 0);
+
+    countObj.value = count;
+
+    do {
+        nofOctets =
+            in_ddsiSubmessageHeaderSerializeInstantly(
+                    kind, flags, octetsToNextHeader,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            in_ddsiEntityIdSerialize(
+                    readerId,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+
+        nofOctets =
+            in_ddsiEntityIdSerialize(
+                    writerId,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        nofOctets =
+            in_ddsiSequenceNumberSetSerialize(
+                    sequenceNumberSet,
+                    serializer);
+        if (nofOctets<0) break;
+
+        total += nofOctets;
+        nofOctets =
+            in_ddsiCountSerialize(
+                    &countObj,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        /* done */
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+
+in_long
+in_ddsiSubmessageAckNackInitFromBuffer(
+        in_ddsiSubmessageAckNack _this,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer)
+{
+    /*
+        *  0...2...........7...............15.............23...............31
+        * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        * |   ACKNACK     |X|X|X|X|X|X|F|E|      octetsToNextHeader       |
+        * +---------------+---------------+---------------+---------------+
+        * |           EntityId              readerId                      |
+        * +---------------+---------------+---------------+---------------+
+        * |           EntityId             writerId                       |
+        * +---------------+---------------+---------------+---------------+
+        * |                                                               |
+        * ~           SequenceNumberSet    readerSNState                  ~
+        * |                                                               |
+        * +---------------+---------------+---------------+---------------+
+        * |              Count             count                          |
+        * +---------------+---------------+---------------+---------------+
+        */
+    in_long result = -1;
+    in_long nofOctets = 0;
+    in_long total = 0;
+
+    /* copy the preparsed header */
+    OS_SUPER(_this)->header = *preparsedHeader;
+
+    /** The deserializer points onto first octet behind the submessage
+     * header */
+
+
+    /* break out in case of error */
+    do {
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE1");
+        nofOctets =
+            in_ddsiEntityIdInitFromBuffer(&(_this->readerId), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE2");
+        nofOctets =
+            in_ddsiEntityIdInitFromBuffer(&(_this->writerId), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3");
+        nofOctets =
+            in_ddsiSequenceNumberSetInitFromBuffer(&(_this->readerSNState), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE4");
+        nofOctets =
+            in_ddsiCountInitFromBuffer(&(_this->count), deserializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE5");
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+
+/** **************************************
+ * INFO_REPLY
+ ** ***************************************/
+
+static os_size_t
+infoReplySerializedSize(
+        os_size_t nofUnicastLocators,
+         os_size_t nofMulticastLocators)
+
+{
+    const os_size_t top =
+        IN_DDSI_SUBMESSAGE_HEADER_SIZE +
+        sizeof(os_uint32) + /* length value of first list */
+        (OS_SIZEOF(in_ddsiLocator) * nofUnicastLocators); /* N elems*/
+    const os_size_t bottom =
+        sizeof(os_uint32) +  /* length value of second list */
+        (OS_SIZEOF(in_ddsiLocator) * nofMulticastLocators); /* M elems */
+
+    /* conditional size */
+    const os_size_t result =
+        (nofMulticastLocators > 0)
+        ? (top + bottom)
+        : top;
+
+    return result;
+}
+
+static in_long
+locatorListSerialize(
+        in_locatorList *locatorList,
+        in_ddsiSerializer serializer)
+{
+    in_long result = -1;
+    in_long nofOctets = 0;
+    in_long total = 0;
+
+    Coll_Iter* iter = Coll_List_getFirstElement(locatorList);
+    /* iter may be 0 */
+    while(iter) {
+        in_locator locator =
+            (in_locator) Coll_Iter_getObject(iter);
+        if (!locator) break; /* result == -1 */
+
+        /* first element of locator object is "Long" enforcing 4-octet
+         * alignment. So no explicit alignment necessary here. */
+        nofOctets =
+            in_locatorSerialize(locator, serializer);
+        if (nofOctets<0) break; /* result == -1 */
+        total += nofOctets;
+
+        /* see above, no explicit alignment necessary here */
+    }
+    result = total;
+
+    return result;
+}
+
+
+/**
+ */
+os_size_t
+in_ddsiSubmessageInfoReplySerializedSize(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList)
+{
+    /**
+     *  0...2...........8...............16.............24...............32
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | INFO_REPLY    |X|X|X|X|X|X|M|E|     octetsToNextHeader        |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   unicastLocatorList                         ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   multicastLocatorList [ only if M==1 ]      ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     */
+
+    const os_size_t nofUnicastLocators =
+            in_locatorListLength(unicastLocatorList);
+    const os_size_t nofMulticastLocators =
+            in_locatorListLength(multicastLocatorList);
+    /* TODO current assumption that all locators are of equal size */
+    const os_size_t result =
+        infoReplySerializedSize(
+                nofUnicastLocators,
+                nofMulticastLocators);
+    return result;
+}
+
+/** */
+in_long
+in_ddsiSubmessageInfoReplySerializeInstantly(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList,
+        in_ddsiSerializer serializer)
+{
+    /**
+     *  0...2...........8...............16.............24...............32
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | INFO_REPLY    |X|X|X|X|X|X|M|E|     octetsToNextHeader        |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   unicastLocatorList                         ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   multicastLocatorList [ only if M==1 ]      ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     */
+
+    const in_ddsiSubmessageKind  kind = IN_INFO_REPLY;
+    const os_size_t nofUnicastLocators =
+            in_locatorListLength(unicastLocatorList);
+    const os_size_t nofMulticastLocators =
+            in_locatorListLength(multicastLocatorList);
+    const in_ddsiSubmessageFlags flags =
+        in_ddsiSubmessageCreateFlagE(serializer) |
+        in_ddsiSubmessageCreateFlagM(nofMulticastLocators);
+
+    const os_ushort octetsToNextHeader =
+        (os_ushort) (infoReplySerializedSize(
+                nofUnicastLocators,
+                nofMulticastLocators) -
+        IN_DDSI_SUBMESSAGE_HEADER_SIZE);
+
+    in_long result = -1; /* error condition */
+    in_long nofOctets;
+    in_long total = 0;
+
+    assert(octetsToNextHeader % 4 == 0);
+
+
+    do {
+        nofOctets =
+            in_ddsiSubmessageHeaderSerializeInstantly(
+                    kind, flags, octetsToNextHeader,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            in_ddsiSerializerAppendUlong(
+                    serializer,
+                    (os_uint32) nofUnicastLocators);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        nofOctets =
+            locatorListSerialize(
+                    unicastLocatorList,
+                    serializer);
+        if (nofOctets<0) break;
+        total += nofOctets;
+
+        if (nofMulticastLocators > 0) {
+            assert(flags != 0x0);
+
+            nofOctets =
+                 in_ddsiSerializerAppendUlong(
+                         serializer,
+                         (os_uint32) nofMulticastLocators);
+             if (nofOctets<0) break;
+             total += nofOctets;
+
+             nofOctets =
+                 locatorListSerialize(
+                         multicastLocatorList,
+                         serializer);
+             if (nofOctets<0) break;
+             total += nofOctets;
+        }
+        /* done */
+        result = total;
+    } while (0);
+
+    return result;
+}
+
+
+/** change state of receiver object
+ *
+ * Append the unicast and multicast locators
+ * to the given locator lists. if operation returns
+ * with error (-1) the lists may be modified. */
+in_long
+in_ddsiSubmessageInfoReplyInitFromBuffer(
+        in_locatorList *unicastLocatorList,
+        in_locatorList *multicastLocatorList,
+        in_ddsiSubmessageHeader preparsedHeader,
+        in_ddsiDeserializer deserializer)
+{
+    /**
+     *  0...2...........8...............16.............24...............32
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | INFO_REPLY    |X|X|X|X|X|X|M|E|     octetsToNextHeader        |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   unicastLocatorList                         ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     * |                                                               |
+     * ~      LocatorList   multicastLocatorList [ only if M==1 ]      ~
+     * |                                                               |
+     * +---------------+---------------+---------------+---------------+
+     */
+
+    in_long result = -1;
+
+    return result;
+}
+

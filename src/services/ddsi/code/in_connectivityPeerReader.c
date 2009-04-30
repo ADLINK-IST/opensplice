@@ -1,22 +1,21 @@
-#include "in_connectivityPeerReader.h"
 #include "os_defs.h"
 #include "os_heap.h"
+
+#include "in__ddsiSubscription.h"
+#include "in_connectivityPeerReader.h"
+#include "in_connectivityPeerParticipant.h"
 
 OS_STRUCT(in_connectivityPeerReader)
 {
     OS_EXTENDS(in_connectivityPeerEntity);
-    struct v_subscriptionInfo info;
-    os_boolean requiresInlineQos;
-    Coll_List uniLocators;
-    Coll_List multiLocators;
+    in_ddsiDiscoveredReaderData info;
 };
 /* ------------- private  ------------------- */
 
 static void
 in_connectivityPeerReaderInit(
     in_connectivityPeerReader _this,
-    struct v_subscriptionInfo *info,
-    os_boolean requiresInlineQos);
+    in_ddsiDiscoveredReaderData info);
 
 static void
 in_connectivityPeerReaderDeinit(
@@ -25,8 +24,7 @@ in_connectivityPeerReaderDeinit(
 /* ------------- public ----------------------- */
 in_connectivityPeerReader
 in_connectivityPeerReaderNew(
-    struct v_subscriptionInfo *info,
-    os_boolean requiresInlineQos)
+    in_ddsiDiscoveredReaderData info)
 {
     in_connectivityPeerReader _this;
 
@@ -34,7 +32,7 @@ in_connectivityPeerReaderNew(
 
     if(_this)
     {
-        in_connectivityPeerReaderInit(_this, info, requiresInlineQos);
+        in_connectivityPeerReaderInit(_this, info );
     }
 
     return _this;
@@ -43,8 +41,7 @@ in_connectivityPeerReaderNew(
 static void
 in_connectivityPeerReaderInit(
     in_connectivityPeerReader _this,
-    struct v_subscriptionInfo *info,
-    os_boolean requiresInlineQos)
+    in_ddsiDiscoveredReaderData info)
 {
     assert(_this);
 
@@ -53,51 +50,19 @@ in_connectivityPeerReaderInit(
         IN_OBJECT_KIND_PEER_READER,
         in_connectivityPeerReaderDeinit);
 
-    _this->requiresInlineQos = requiresInlineQos;
-    _this->info = *info;
+    _this->info = in_ddsiDiscoveredReaderDataKeep(info);
 }
 
 static void
 in_connectivityPeerReaderDeinit(
     in_object _this)
 {
+    in_connectivityPeerReader peer;
     assert(in_connectivityPeerReaderIsValid(_this));
+    peer = in_connectivityPeerReader(_this);
 
+    in_ddsiDiscoveredReaderDataFree(peer->info);
     in_connectivityPeerEntityDeinit(in_connectivityPeerEntity(_this));
-}
-
-in_result
-in_connectivityPeerReaderAddUnicastLocator(
-    in_connectivityPeerReader _this,
-    in_locator locator)
-{
-    os_uint32 collResult;
-    in_result result;
-
-    assert(in_connectivityPeerReaderIsValid(_this));
-    assert(locator);
-
-    collResult = Coll_List_pushBack(&(_this->uniLocators), in_locatorKeep(locator));
-    IN_COLLRESULT_TO_RESULT(collResult, result);
-
-    return result;
-}
-
-in_result
-in_connectivityPeerReaderAddMulticastLocator(
-    in_connectivityPeerReader _this,
-    in_locator locator)
-{
-    os_uint32 collResult;
-    in_result result;
-
-    assert(in_connectivityPeerReaderIsValid(_this));
-    assert(locator);
-
-    collResult = Coll_List_pushBack(&(_this->multiLocators), in_locatorKeep(locator));
-    IN_COLLRESULT_TO_RESULT(collResult, result);
-
-    return result;
 }
 
 Coll_List*
@@ -106,7 +71,7 @@ in_connectivityPeerReaderGetUnicastLocators(
 {
     assert(in_connectivityPeerReaderIsValid(_this));
 
-    return &(_this->uniLocators);
+    return &(_this->info->proxy.unicastLocatorList);
 }
 
 Coll_List*
@@ -115,15 +80,25 @@ in_connectivityPeerReaderGetMulticastLocators(
 {
     assert(in_connectivityPeerReaderIsValid(_this));
 
-    return &(_this->multiLocators);
+    return &(_this->info->proxy.multicastLocatorList);
 }
 
-struct v_subscriptionInfo *
+in_ddsiDiscoveredReaderData
 in_connectivityPeerReaderGetInfo(
     in_connectivityPeerReader _this)
 {
     assert(in_connectivityPeerReaderIsValid(_this));
 
-    return &_this->info;
+    return _this->info;
 }
+
+in_ddsiGuid
+in_connectivityPeerReaderGetGuid(
+    in_connectivityPeerReader _this)
+{
+    assert(in_connectivityPeerReaderIsValid(_this));
+
+    return &(_this->info->proxy.remoteReaderGuid);
+}
+
 

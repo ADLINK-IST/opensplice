@@ -8,6 +8,8 @@
 /* Errors, warnins and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
+#define IN_STRINGIFY(X) #X
+#define IN_SPOT __FILE__":"IN_STRINGIFY(__LINE__)
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
@@ -26,6 +28,8 @@
     OS_REPORT_2(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2)
 #define IN_REPORT_WARNING_3(funcName, description, a1, a2, a3)                 \
     OS_REPORT_3(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2, a3)
+#define IN_REPORT_WARNING_4(funcName, description, a1, a2, a3, a4)                 \
+    OS_REPORT_4(OS_WARNING, IN_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4)
 
 #define IN_REPORT_PERIOD (10U)
 #define IN_REPORT_ERROR_PERIODICLY(funcName, description) \
@@ -84,6 +88,7 @@ typedef enum in_traceClass_e {
   TC(Receive),
   TC(Discovery),
   TC(Test),
+  TC(Connectivity),
   TC(Count)/* Last element, keep this at the end */
 } in_traceClass;
 

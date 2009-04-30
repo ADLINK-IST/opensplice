@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "is.h"
 #include "cpp_malloc.h"
 #include "accum.h"
@@ -46,12 +57,16 @@ void preprocess(FILE *infile, char *infilename)
 
    init_io(infile, infilename);
 
-   cp = strrchr(infilename, '/');
+   cp = strrchr(infilename, CPP_FILESEPCHAR_1);
+   if (!cp) {
+      cp = strrchr(infilename, CPP_FILESEPCHAR_2);
+   }
    if (cp)
    {
+      char save = *cp;
       *cp = '\0';
       init_incldir(infilename);
-      *cp = '/';
+      *cp = save;
    }
    else
    {

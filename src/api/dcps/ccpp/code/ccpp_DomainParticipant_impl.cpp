@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include <gapi.h>
 #include "ccpp_dds_dcps.h"
 #include "ccpp_DomainParticipant_impl.h"
@@ -18,7 +29,7 @@ DDS::DomainParticipant_impl::DomainParticipant_impl(gapi_domainParticipant handl
   if (os_mutexInit(&dp_mutex, &mutexAttr) != os_resultSuccess)
   {
     OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
-  } 
+  }
 }
 
 DDS::DomainParticipant_impl::~DomainParticipant_impl()
@@ -33,7 +44,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
   const DDS::PublisherQos & qos,
   DDS::PublisherListener_ptr a_listener,
   DDS::StatusMask mask
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     gapi_publisherQos * gapi_pqos;
     gapi_publisher handle;
@@ -82,7 +93,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
     if (proceed)
     {
       handle = gapi_domainParticipant_create_publisher(
-                    _gapi_self, 
+                    _gapi_self,
                     gapi_pqos,
                     gapi_listener,
                     mask);
@@ -94,7 +105,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
           myUD = new ccpp_UserData(publisher, a_listener);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
@@ -107,7 +118,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
         }
       }
     }
-    
+
     if (allocatedQos)
     {
       gapi_free(gapi_pqos);
@@ -124,7 +135,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_publisher (
   DDS::Publisher_ptr p
- ) THROW_ORB_EXCEPTIONS 
+ ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
     DDS::Publisher_impl_ptr pub;
@@ -135,7 +146,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_publisher (
     {
       if (os_mutexLock(&(pub->p_mutex)) == os_resultSuccess)
       {
-        myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(pub->_gapi_self));
+        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(pub->_gapi_self));
         result = gapi_domainParticipant_delete_publisher(_gapi_self, pub->_gapi_self);
         if (result == DDS::RETCODE_OK)
         {
@@ -165,7 +176,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
   const DDS::SubscriberQos & qos,
   DDS::SubscriberListener_ptr a_listener,
   DDS::StatusMask mask
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     gapi_subscriberQos * gapi_sqos;
     gapi_subscriber handle;
@@ -174,7 +185,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
     gapi_subscriberListener * gapi_listener = NULL;
     CORBA::Boolean allocatedQos = false;
     CORBA::Boolean proceed = true;
-  
+
     if (a_listener)
     {
       gapi_listener = gapi_subscriberListener__alloc();
@@ -214,7 +225,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
     if (proceed)
     {
       handle = gapi_domainParticipant_create_subscriber(
-                _gapi_self, 
+                _gapi_self,
                 gapi_sqos,
                 gapi_listener,
                 mask);
@@ -226,7 +237,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
           myUD = new ccpp_UserData(subscriber, a_listener);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
@@ -254,7 +265,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_subscriber (
   DDS::Subscriber_ptr s
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
     DDS::Subscriber_impl_ptr sub;
@@ -265,14 +276,14 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_subscriber (
     {
       if (os_mutexLock(&(sub->s_mutex)) == os_resultSuccess)
       {
-        myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(sub->_gapi_self));
+        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(sub->_gapi_self));
         result = gapi_domainParticipant_delete_subscriber(_gapi_self, sub->_gapi_self);
         if (result == DDS::RETCODE_OK)
         {
           if (myUD)
           {
             delete myUD;
-          }    
+          }
           else
           {
             OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
@@ -292,7 +303,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_subscriber (
 }
 
 DDS::Subscriber_ptr DDS::DomainParticipant_impl::get_builtin_subscriber (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     gapi_subscriber handle;
     DDS::ccpp_UserData_ptr myUD;
@@ -301,7 +312,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::get_builtin_subscriber (
     handle = gapi_domainParticipant_get_builtin_subscriber(_gapi_self);
     if (os_mutexLock(&dp_mutex) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         subscriber = dynamic_cast<DDS::Subscriber_impl_ptr>(myUD->ccpp_object);
@@ -322,7 +333,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::get_builtin_subscriber (
           myUD = new ccpp_UserData(subscriber,NULL);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
             if ( !initializeBuiltinTopicEntities(handle) )
             {
               OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create BuiltinTopic entities");
@@ -360,7 +371,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
   const DDS::TopicQos & qos,
   DDS::TopicListener_ptr a_listener,
   DDS::StatusMask mask
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     gapi_topicQos * gapi_tqos;
     gapi_topic handle;
@@ -379,11 +390,11 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
       else
       {
         proceed = false;
-        OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES , 
+        OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES ,
             "DomainParticipant::create_topic : Unable to allocate memory for listener");
       }
     }
-  
+
     if (proceed)
     {
       if (&qos == DDS::DefaultQos::TopicQosDefault)
@@ -401,7 +412,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
         else
         {
           proceed = false;
-          OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES , 
+          OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES ,
               "DomainParticipant::create_topic : Unable to allocate memory for QoS");
         }
       }
@@ -420,22 +431,22 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
       {
         topic = new DDS::Topic_impl(handle);
         if (topic)
-        {	
+        {
           DDS::ccpp_UserData_ptr myUD;
           myUD = new DDS::ccpp_UserData(topic, a_listener);
           if (myUD)
           {
-           gapi_object_set_user_data(handle, myUD);
+           gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
-            OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES , 
+            OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES ,
               "DomainParticipant::create_topic : Unable to allocate memory");
           }
         }
         else
         {
-            OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES, 
+            OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES,
                 "DomainParticipant::create_topic : Unable to allocate memory for topic");
         }
       }
@@ -455,7 +466,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_topic (
   DDS::Topic_ptr a_topic
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ccpp_UserData_ptr myUD;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
@@ -466,7 +477,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_topic (
   {
     if (os_mutexLock(&(topic->t_mutex)) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(topic->_gapi_self));
+      myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(topic->_gapi_self));
       result = gapi_domainParticipant_delete_topic(_gapi_self, topic->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
@@ -495,7 +506,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_topic (
 DDS::Topic_ptr DDS::DomainParticipant_impl::find_topic (
   const char * topic_name,
   const DDS::Duration_t & timeout
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   gapi_duration_t gapi_timeout;
   gapi_topic handle;
@@ -509,7 +520,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::find_topic (
   {
     if (os_mutexLock(&dp_mutex) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         result = dynamic_cast<DDS::Topic_impl_ptr>(myUD->ccpp_object);
@@ -526,12 +537,12 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::find_topic (
       {
         result = new DDS::Topic_impl(handle);
         if (result)
-        {   
+        {
           DDS::ccpp_UserData_ptr myUD;
           myUD = new DDS::ccpp_UserData(result, NULL);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
@@ -559,7 +570,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::find_topic (
 
 DDS::TopicDescription_ptr DDS::DomainParticipant_impl::lookup_topicdescription (
   const char * name
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::TopicDescription_ptr result = NULL;
 
@@ -580,7 +591,7 @@ DDS::TopicDescription_ptr DDS::DomainParticipant_impl::lookup_topicdescription (
 }
 
 
-DDS::TopicDescription_ptr 
+DDS::TopicDescription_ptr
 DDS::DomainParticipant_impl::unprotected_lookup_topicdescription (
   const char * name
 )
@@ -590,10 +601,10 @@ DDS::DomainParticipant_impl::unprotected_lookup_topicdescription (
   DDS::TopicDescription_ptr result = NULL;
 
   handle = gapi_domainParticipant_lookup_topicdescription(_gapi_self, name);
- 
+
   if (handle)
   {
-    myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
     if (myUD)
     {
       result = dynamic_cast<DDS::TopicDescription_impl_ptr>(myUD->ccpp_object);
@@ -612,12 +623,12 @@ DDS::DomainParticipant_impl::unprotected_lookup_topicdescription (
       // That's how we know that a Topic_impl wrapper needs to be instantiated in this case.
       result = new DDS::Topic_impl(handle);
       if (result)
-      {   
+      {
         DDS::ccpp_UserData_ptr myUD;
         myUD = new DDS::ccpp_UserData(result, NULL);
         if (myUD)
         {
-          gapi_object_set_user_data(handle, myUD);
+          gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
         }
         else
         {
@@ -635,7 +646,7 @@ DDS::ContentFilteredTopic_ptr DDS::DomainParticipant_impl::create_contentfiltere
   DDS::Topic_ptr related_topic,
   const char * filter_expression,
   const DDS::StringSeq & filter_parameters
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   gapi_stringSeq *gapi_filter_parameters;
   DDS::ccpp_UserData_ptr myUD;
@@ -650,7 +661,7 @@ DDS::ContentFilteredTopic_ptr DDS::DomainParticipant_impl::create_contentfiltere
     {
       ccpp_sequenceCopyIn(filter_parameters, *gapi_filter_parameters);
       handle = gapi_domainParticipant_create_contentfilteredtopic(
-          _gapi_self, 
+          _gapi_self,
           name,
           topicImpl->__gapi_self,
           filter_expression,
@@ -665,7 +676,7 @@ DDS::ContentFilteredTopic_ptr DDS::DomainParticipant_impl::create_contentfiltere
           myUD = new DDS::ccpp_UserData(result);
           if (myUD)
           {
-            gapi_object_set_user_data(handle, myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
           }
           else
           {
@@ -688,7 +699,7 @@ DDS::ContentFilteredTopic_ptr DDS::DomainParticipant_impl::create_contentfiltere
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_contentfilteredtopic (
   DDS::ContentFilteredTopic_ptr a_contentfilteredtopic
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
   gapi_contentFilteredTopic handle;
@@ -701,7 +712,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_contentfilteredtopic (
     if (os_mutexLock(&(contentFilteredTopic->cft_mutex)) == os_resultSuccess )
     {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
 
       result = gapi_domainParticipant_delete_contentfilteredtopic(_gapi_self, handle);
       if (result == DDS::RETCODE_OK)
@@ -733,7 +744,7 @@ DDS::MultiTopic_ptr DDS::DomainParticipant_impl::create_multitopic (
   const char * type_name,
   const char * subscription_expression,
   const DDS::StringSeq & expression_parameters
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ccpp_UserData_ptr myUD;
   gapi_multiTopic handle;
@@ -744,7 +755,7 @@ DDS::MultiTopic_ptr DDS::DomainParticipant_impl::create_multitopic (
   {
     ccpp_sequenceCopyIn(expression_parameters, *gapi_expression_parameters);
     handle = gapi_domainParticipant_create_multitopic(
-                _gapi_self, 
+                _gapi_self,
                 name,
                 type_name,
                 subscription_expression,
@@ -758,7 +769,7 @@ DDS::MultiTopic_ptr DDS::DomainParticipant_impl::create_multitopic (
         myUD = new DDS::ccpp_UserData(result);
         if (myUD)
         {
-          gapi_object_set_user_data(handle, myUD);
+          gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
         }
         else
         {
@@ -782,7 +793,7 @@ DDS::MultiTopic_ptr DDS::DomainParticipant_impl::create_multitopic (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_multitopic (
   DDS::MultiTopic_ptr a_multitopic
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
   gapi_multiTopic handle;
@@ -795,7 +806,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_multitopic (
     handle = multiTopic->__gapi_self;
     if (os_mutexLock(&(multiTopic->mt_mutex)) == os_resultSuccess)
     {
-      myUD = reinterpret_cast<ccpp_UserData_ptr>(gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       result = gapi_domainParticipant_delete_multitopic(_gapi_self, handle);
 
       if (result == DDS::RETCODE_OK)
@@ -823,14 +834,14 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_multitopic (
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_contained_entities (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_delete_contained_entities(_gapi_self, DDS::ccpp_CallBack_DeleteUserData, NULL);
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::set_qos (
   const DDS::DomainParticipantQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
 
@@ -856,10 +867,10 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_qos (
     return result;
 }
 
-DDS::ReturnCode_t 
+DDS::ReturnCode_t
 DDS::DomainParticipant_impl::get_qos (
   DDS::DomainParticipantQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_domainParticipantQos * gapi_dpqos = gapi_domainParticipantQos__alloc();
@@ -881,7 +892,7 @@ DDS::DomainParticipant_impl::get_qos (
 DDS::ReturnCode_t DDS::DomainParticipant_impl::set_listener (
   DDS::DomainParticipantListener_ptr a_listener,
   DDS::StatusMask mask
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result = DDS::RETCODE_ERROR;
   DDS::ccpp_UserData_ptr myUD;
@@ -893,7 +904,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_listener (
     result = gapi_domainParticipant_set_listener(_gapi_self, &gapi_listener, mask);
     if (result == DDS::RETCODE_OK)
     {
-      myUD = reinterpret_cast<DDS::ccpp_UserData_ptr>(gapi_object_get_user_data(_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
       if (myUD)
       {
         myUD->setListener(a_listener);
@@ -907,7 +918,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_listener (
     {
       OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
     }
-  } 
+  }
   else
   {
     OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
@@ -916,12 +927,12 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_listener (
 }
 
 DDS::DomainParticipantListener_ptr DDS::DomainParticipant_impl::get_listener (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::DomainParticipantListener_ptr result;
   gapi_domainParticipantListener gapi_listener;
 
-  
+
   if (os_mutexLock(&dp_mutex) == os_resultSuccess)
   {
     gapi_listener = gapi_domainParticipant_get_listener(_gapi_self);
@@ -934,7 +945,7 @@ DDS::DomainParticipantListener_ptr DDS::DomainParticipant_impl::get_listener (
     {
       OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
     }
-  } 
+  }
   else
   {
     OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
@@ -944,28 +955,28 @@ DDS::DomainParticipantListener_ptr DDS::DomainParticipant_impl::get_listener (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_participant (
   DDS::InstanceHandle_t handle
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_ignore_participant(_gapi_self, handle);
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_topic (
   DDS::InstanceHandle_t handle
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_ignore_topic(_gapi_self, handle);
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_publication (
   DDS::InstanceHandle_t handle
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_ignore_publication(_gapi_self, handle);
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_subscription (
   DDS::InstanceHandle_t handle
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_ignore_subscription(_gapi_self, handle);
 }
@@ -975,7 +986,7 @@ char * DDS::DomainParticipant_impl::get_domain_id (
 {
   char * gapi_name;
   char * name;
-  
+
   gapi_name = gapi_domainParticipant_get_domain_id(_gapi_self);
   name = CORBA::string_dup(gapi_name);
   gapi_free(gapi_name);
@@ -983,14 +994,14 @@ char * DDS::DomainParticipant_impl::get_domain_id (
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::assert_liveliness (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_domainParticipant_assert_liveliness(_gapi_self);
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_publisher_qos (
   const DDS::PublisherQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_publisherQos * gapi_pqos = gapi_publisherQos__alloc();
@@ -998,7 +1009,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_publisher_qos (
     {
       ccpp_PublisherQos_copyIn(qos, *gapi_pqos);
       result = gapi_domainParticipant_set_default_publisher_qos(
-        _gapi_self, 
+        _gapi_self,
         gapi_pqos);
       gapi_free(gapi_pqos);
     }
@@ -1012,7 +1023,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_publisher_qos (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::get_default_publisher_qos (
   DDS::PublisherQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_publisherQos * gapi_pqos = gapi_publisherQos__alloc();
@@ -1032,7 +1043,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_default_publisher_qos (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_subscriber_qos (
   const DDS::SubscriberQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_subscriberQos * gapi_sqos = gapi_subscriberQos__alloc();
@@ -1040,10 +1051,10 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_subscriber_qos (
     {
       ccpp_SubscriberQos_copyIn(qos, *gapi_sqos);
       result = gapi_domainParticipant_set_default_subscriber_qos(
-        _gapi_self, 
+        _gapi_self,
         gapi_sqos);
       gapi_free(gapi_sqos);
-    } 
+    }
     else
     {
       OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
@@ -1054,7 +1065,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_subscriber_qos (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::get_default_subscriber_qos (
   DDS::SubscriberQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_subscriberQos * gapi_sqos = gapi_subscriberQos__alloc();
@@ -1074,7 +1085,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_default_subscriber_qos (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_topic_qos (
   const DDS::TopicQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_topicQos * gapi_tqos = gapi_topicQos__alloc();
@@ -1096,7 +1107,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_default_topic_qos (
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::get_default_topic_qos (
    DDS::TopicQos & qos
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_topicQos * gapi_tqos = gapi_topicQos__alloc();
@@ -1124,7 +1135,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_participants (
     ccpp_sequenceInitialize<gapi_instanceHandleSeq>(gapi_handles);
     result = gapi_domainParticipant_get_discovered_participants(_gapi_self, &gapi_handles);
     if (result == DDS::RETCODE_OK)
-    { 
+    {
         ccpp_sequenceCopyOut<gapi_instanceHandleSeq, gapi_instanceHandle_t, DDS::InstanceHandleSeq, DDS::InstanceHandle_t>
             (gapi_handles, participant_handles);
     }
@@ -1132,14 +1143,14 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_participants (
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_participant_data (
-    DDS::InstanceHandle_t participant_handle,
-    DDS::ParticipantBuiltinTopicData & participant_data
+    DDS::ParticipantBuiltinTopicData & participant_data,
+    DDS::InstanceHandle_t participant_handle
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_participantBuiltinTopicData gapi_data;
 
-    result = gapi_domainParticipant_get_discovered_participant_data(_gapi_self, participant_handle, &gapi_data);
+    result = gapi_domainParticipant_get_discovered_participant_data(_gapi_self, &gapi_data, participant_handle);
     if (result == DDS::RETCODE_OK)
     {
         ccpp_ParticipantBuiltinTopicData_copyOut(gapi_data, participant_data);
@@ -1157,7 +1168,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_topics (
     ccpp_sequenceInitialize<gapi_instanceHandleSeq>(gapi_handles);
     result = gapi_domainParticipant_get_discovered_topics(_gapi_self, &gapi_handles);
     if (result == DDS::RETCODE_OK)
-    { 
+    {
         ccpp_sequenceCopyOut<gapi_instanceHandleSeq, gapi_instanceHandle_t, DDS::InstanceHandleSeq, DDS::InstanceHandle_t>
             (gapi_handles, topic_handles);
     }
@@ -1165,21 +1176,21 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_topics (
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::get_discovered_topic_data (
-    DDS::InstanceHandle_t topic_handle,
-    DDS::TopicBuiltinTopicData & topic_data
+        DDS::TopicBuiltinTopicData & topic_data,
+    DDS::InstanceHandle_t topic_handle
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
     gapi_topicBuiltinTopicData gapi_data;
 
-    result = gapi_domainParticipant_get_discovered_topic_data(_gapi_self, topic_handle, &gapi_data);
+    result = gapi_domainParticipant_get_discovered_topic_data(_gapi_self, &gapi_data, topic_handle);
     if (result == DDS::RETCODE_OK)
     {
         ccpp_TopicBuiltinTopicData_copyOut(gapi_data, topic_data);
     }
     return result;
 }
-        
+
 CORBA::Boolean DDS::DomainParticipant_impl::contains_entity (
     DDS::InstanceHandle_t a_handle
 ) THROW_ORB_EXCEPTIONS
@@ -1208,7 +1219,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::get_current_time (
     return result;
 }
 
-DDS::ReturnCode_t 
+DDS::ReturnCode_t
 DDS::DomainParticipant_impl::initializeBuiltinTopics()
 {
     DDS::ReturnCode_t status;
@@ -1216,7 +1227,7 @@ DDS::DomainParticipant_impl::initializeBuiltinTopics()
     TopicBuiltinTopicDataTypeSupport topicTS;
     PublicationBuiltinTopicDataTypeSupport publicationTS;
     SubscriptionBuiltinTopicDataTypeSupport subscriptionTS;
-    
+
     status = participantTS.register_type(this, NULL);
     if (!status)
     {
@@ -1233,14 +1244,14 @@ DDS::DomainParticipant_impl::initializeBuiltinTopics()
     return status;
 }
 
-bool 
+bool
 DDS::DomainParticipant_impl::initializeBuiltinTopicEntities(
     gapi_subscriber handle
 )
 {
     bool status = false;
     DDS::TopicDescription_var a_topic;
-    
+
     a_topic = unprotected_lookup_topicdescription(PARTICIPANT_BUILTINTOPIC_NAME);
     if ( a_topic.in() )
     {
@@ -1258,11 +1269,11 @@ DDS::DomainParticipant_impl::initializeBuiltinTopicEntities(
             }
         }
     }
-    
+
     return status;
 }
 
-bool 
+bool
 DDS::DomainParticipant_impl::initializeBuiltinReaders(
     gapi_subscriber handle
 )
@@ -1288,7 +1299,7 @@ DDS::DomainParticipant_impl::initializeBuiltinReaders(
     return status;
 }
 
-bool 
+bool
 DDS::DomainParticipant_impl::createBuiltinReader(
     gapi_subscriber subscriber_handle,
     const char *name
@@ -1314,25 +1325,25 @@ DDS::DomainParticipant_impl::createBuiltinReader(
             if (ts_handle)
             {
                 void *tsf = gapi_object_get_user_data(ts_handle);
-            
+
                 if (tsf)
                 {
                     CORBA::Object_ptr anObject;
                     DDS::TypeSupportFactory_impl_ptr factory;
-                    
+
                     anObject = static_cast<CORBA::Object_ptr>(tsf);
                     factory = dynamic_cast<DDS::TypeSupportFactory_impl_ptr>(anObject);
                     if (factory)
                     {
                         a_reader = factory->create_datareader(reader_handle);
                     }
-                
+
                     if (a_reader)
                     {
                         myUD = new ccpp_UserData(a_reader, NULL);
                         if (myUD)
                         {
-                            gapi_object_set_user_data(reader_handle, myUD);
+                            gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD);
                             status = true;
                         }
                     }
@@ -1342,4 +1353,4 @@ DDS::DomainParticipant_impl::createBuiltinReader(
     }
     return status;
 }
- 
+

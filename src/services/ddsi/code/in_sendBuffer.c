@@ -22,7 +22,9 @@ OS_STRUCT(in_sendBuffer)
 	in_long  bufferLength;
 	in_octet buffer[4]; /* variable array buffer[bufferLength],
 	                       should be zero-sized array, but not accepted by
-	                       integrity C-compiler  */
+	                       integrity C-compiler  
+	                       FIXME (mj): How will this work on 64 bit OS?!?: */
+	
 	/* Note: no further struct members must follow */
 };
 

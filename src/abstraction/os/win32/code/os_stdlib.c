@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_report.h"
@@ -9,6 +20,7 @@
 #include <ctype.h>
 
 #include "code/os_stdlib_getopt.c"
+#include "../common/code/os_stdlib_locate.c"
 
 /** 
  *  \brief create a directory with default

@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 #include "os.h"
 #include "d__sampleRequestListener.h"
 #include "d_sampleRequestListener.h"
@@ -588,12 +599,12 @@ d_sampleRequestListenerAddList(
     process = TRUE;
 
     if(data->checkTimeRange){
-        timeCompared = v_timeCompare(message->writeTime, data->request->endTime);
+        timeCompared = c_timeCompare(message->writeTime, data->request->endTime);
 
         if(timeCompared == C_GT) {
             process = FALSE;
         } else if(data->request->withTimeRange == TRUE){
-            timeCompared = v_timeCompare(message->writeTime, data->request->beginTime);
+            timeCompared = c_timeCompare(message->writeTime, data->request->beginTime);
 
             if (timeCompared == C_LT) {
                 process = FALSE;  /* produced before the time-range */

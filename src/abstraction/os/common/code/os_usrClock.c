@@ -1,3 +1,14 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 /* Implements user clock functions, generic part for all
  * operating systems
@@ -93,7 +104,10 @@ os_userClockStart (
     	            module);
     	    }
         }
-        close_userClockModule (moduleHandle);
+        /* Not clear why the userClockModule is closed here...
+         * This leads to unloading of the library for win32,
+         * resulting in segfaults */
+        /* close_userClockModule (moduleHandle); */
     } else {
     	OS_REPORT_1 (OS_ERROR, "os_userClockStart", 0,
     	    "User clock module %s could not be opened",
