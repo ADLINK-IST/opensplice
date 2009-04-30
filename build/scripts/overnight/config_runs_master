@@ -30,7 +30,7 @@ M   ospli/ssso10/PPC604.vxworks5.5-dev-inner 1 heads/master none
 E   ospli/ssso10/PPCE500.vxworks5.5-dev-inner 1 heads/master none
 M   ospli/ssso10/PPC604.vxworks5.5-release-inner 1 heads/master none
 E   ospli/ssso10/PPCE500.vxworks5.5-release-inner 1 heads/master none
-M   ospli/ssso10/solaris-dev-inner 1 heads/master none
+E   ospli/ssso10/solaris-dev-inner 1 heads/master none
 
 M   ospli/DDS1-WIN2K3/x86.win32-dev 50 heads/master none
 E   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/master none
