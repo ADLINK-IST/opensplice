@@ -117,6 +117,8 @@ msvs_check ()
 
     PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
     PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
+    PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
+    export PATH
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
     if [ -z $COMPILER_VER ]
