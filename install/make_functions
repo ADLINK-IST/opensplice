@@ -566,16 +566,23 @@ install_hde_target ()
     fi
     if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" ]
     then
-        printf "*     Copy JAVA host archive files... "
-        release=${OSPL_HOME}/jar/${host}${source_env}
-        if [ -d "${release}" ]
+        case $SOURCE_TARGET_SHORT in
+            int | vxworks) need_host_java=no;;
+            *) need_host_java=yes;;
+        esac
+        if [ $need_host_java = "yes" ]
         then
-            mkdir -p ${HDE_dir}/jar
-            install_dir ${release} ${HDE_dir} jar
-        else
-            echo "* ##    No JAVA archive files detected"
+            printf "*     Copy JAVA host archive files... "
+            release=${OSPL_HOME}/jar/${host}${source_env}
+            if [ -d "${release}" ]
+            then
+                mkdir -p ${HDE_dir}/jar
+                install_dir ${release} ${HDE_dir} jar
+            else
+                echo "* ##    No JAVA archive files detected"
+            fi
+            echo "Ready"
         fi
-        echo "Ready"
     fi
 
     #
