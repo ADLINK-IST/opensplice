@@ -36,6 +36,43 @@ convert_windows_path ()
     return 0
 }
 
+csharp_check ()
+{
+    REQUIRED_VERSION="2.0.50727"
+    REQUIRED_VERSION=`echo $REQUIRED_VERSION | sed -e 's;\.;0;g'`
+    echo -n "C#: "
+    pathcheck csc.exe
+    if [ $? != 0 ]
+    then
+        MAIN_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
+        if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
+        then
+            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            return 1
+        fi
+        VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
+        for i in $VERSIONS
+        do
+            NET_VERSION=`echo $i | sed -e 's;\.;0;g' | tr -d 'v'`
+            if [ "$NET_VERSION" -ge "$REQUIRED_VERSION" ]
+            then
+                PATH=/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH
+                break
+            fi
+        done
+    else
+        CSC_EXE=`which csc`
+        if [ "$CSC_EXE" = "/usr/bin/csc" -o  "$CSC_EXE" = "/bin/csc" ]
+        then
+            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            return 1
+        fi
+    fi
+    
+    echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
+    return 0
+}
+
 # test if CL.exe is at least vs8
 msvs_check ()
 {
@@ -73,6 +110,8 @@ msvs_check ()
 
     LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
     LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
+    FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v2.0"
+    export FrameworkSDKDir
     export LIBPATH 
     export LIB
 
@@ -501,11 +540,13 @@ cleanup_checks ()
     unset tao_check
     unset eorb_check 
     unset gawk_check 
+    unset csharp_check
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
-    unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE
+    unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION IDLCPP_EXE MAIN_DRIVE
     unset EORB_VERSION EORB_BIN T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
     unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
+    unset CSC_EXE VERSIONS NET_VERSION
 }
 

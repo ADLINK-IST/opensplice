@@ -593,8 +593,11 @@ install_hde_target ()
         then
             install_bin_file ${host_release} ${HDE_dir} bin spliced${suffix_exe}
             install_bin_file ${host_release} ${HDE_dir} bin networking${suffix_exe}
-            install_bin_file ${host_release} ${HDE_dir} bin ddsi${suffix_exe}
             install_bin_file ${host_release} ${HDE_dir} bin durability${suffix_exe}
+            if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+            then
+                install_bin_file ${host_release} ${HDE_dir} bin ddsi${suffix_exe}
+            fi
             if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
             then
                 install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
@@ -1250,8 +1253,11 @@ install_rts_target ()
         mkdir -p ${RTS_dir}/bin
         install_bin_file ${release} ${RTS_dir} bin spliced${suffix_exe}
         install_bin_file ${release} ${RTS_dir} bin networking${suffix_exe}
-        install_bin_file ${release} ${RTS_dir} bin ddsi${suffix_exe}
         install_bin_file ${release} ${RTS_dir} bin durability${suffix_exe}
+        if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+        then
+            install_bin_file ${release} ${RTS_dir} bin ddsi${suffix_exe}
+        fi
         if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
         then
             install_bin_file ${release} ${RTS_dir} bin ospl${suffix_exe}
