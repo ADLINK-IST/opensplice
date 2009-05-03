@@ -216,7 +216,7 @@ PP_min_handler (
 	PP_min_reader,
 	&PP_min_dataList,
 	&infoList,
-	1,
+	DDS_LENGTH_UNLIMITED,
 	DDS_ANY_SAMPLE_STATE,
 	DDS_ANY_VIEW_STATE,
 	DDS_ANY_INSTANCE_STATE);
@@ -263,7 +263,7 @@ PP_seq_handler (
 	PP_seq_reader,
 	&PP_seq_dataList,
 	&infoList,
-	1,
+	DDS_LENGTH_UNLIMITED,
 	DDS_ANY_SAMPLE_STATE,
 	DDS_ANY_VIEW_STATE,
 	DDS_ANY_INSTANCE_STATE);
@@ -311,7 +311,7 @@ PP_string_handler (
 	PP_string_reader,
 	&PP_string_dataList,
 	&infoList,
-	1,
+	DDS_LENGTH_UNLIMITED,
 	DDS_ANY_SAMPLE_STATE,
 	DDS_ANY_VIEW_STATE,
 	DDS_ANY_INSTANCE_STATE);
@@ -358,7 +358,7 @@ PP_fixed_handler (
 	PP_fixed_reader,
 	&PP_fixed_dataList,
 	&infoList,
-	1,
+	DDS_LENGTH_UNLIMITED,
 	DDS_ANY_SAMPLE_STATE,
 	DDS_ANY_VIEW_STATE,
 	DDS_ANY_INSTANCE_STATE);
@@ -405,7 +405,7 @@ PP_array_handler (
 	PP_array_reader,
 	&PP_array_dataList,
 	&infoList,
-	1,
+	DDS_LENGTH_UNLIMITED,
 	DDS_ANY_SAMPLE_STATE,
 	DDS_ANY_VIEW_STATE,
 	DDS_ANY_INSTANCE_STATE);
@@ -781,8 +781,8 @@ main (
                                 if (conditionList->_buffer[i] == exp_condition) {
                                     finish_flag = active_handler (nof_cycles);
                                 } else {
-                                    printf ("PING: unexpected condition triggered: %x\n",
-					(unsigned int)conditionList->_buffer[i]);
+                                    printf ("PING: unexpected condition triggered: %lx\n",
+					(unsigned long)conditionList->_buffer[i]);
                                 }
                             }
                         } else {
