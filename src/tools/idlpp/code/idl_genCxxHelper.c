@@ -195,6 +195,7 @@ idl_corbaCxxTypeFromTypeSpec(
 	/* sequence does not have an identification */
 	typeName = os_strdup ("");
 	printf ("idl_corbaCxxTypeFromTypeSpec: Unexpected type handled\n");
+        assert(0);
     } else {
         /* if a user type is specified build it from its scope and its name.
 	   The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
