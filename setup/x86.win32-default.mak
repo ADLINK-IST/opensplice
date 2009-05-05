@@ -64,7 +64,7 @@ ifeq ("$(VS_VER)","14")
    VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
 
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
-   VS_LIB_FLAGS += -L"$(VS_HOME)/lib"
+   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
 endif
 
 ifeq ("$(VS_VER)","15")
