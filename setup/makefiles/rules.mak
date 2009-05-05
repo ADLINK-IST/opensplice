@@ -174,8 +174,13 @@ $(ODL_C): $(ODL_FILES)
 
 jar: $(JAR_FILE)
 
+ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
+$(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
+	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
+else
 $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
 	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
+endif
 
 ifdef MANIFEST_CLASSPATH
 $(MANIFEST):
