@@ -1,9 +1,7 @@
 #
 # Set subsystems to be processed
 #
-ifneq (,$(findstring vxworks,$(SPLICE_TARGET)))
-SUBSYSTEMS      := vxworks
-else
+ifeq (,$(findstring vxworks,$(SPLICE_TARGET)))
 SUBSYSTEMS      := unix
 endif
 
