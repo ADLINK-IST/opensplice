@@ -191,21 +191,34 @@ idl_seqTypeDefs(
     struct idl_genSACPPData *arg)
 {
     char *subTypeName;
+    idl_typeSpec seqType;
 
+    seqType = idl_typeSeqType(typeSeq);
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"struct %s_uniq_ {};\n", name);
 
-    subTypeName = idl_corbaCxxTypeFromTypeSpec(idl_typeSeqType(typeSeq));
-    idl_printIndent(arg->indent_level);
-    if (idl_typeSeqMaxSize(typeSeq) == 0) {
-        idl_fileOutPrintf(idl_fileCur(),"typedef EORBUFLSeq<%s, struct %s_uniq_> %s;\n",
-           subTypeName, name, name);
+    if ((idl_typeSpecType(seqType) == idl_tbasic) &&
+        (idl_typeBasicType(idl_typeBasic(seqType)) == idl_string)) {
+        idl_printIndent(arg->indent_level);
+        if (idl_typeSeqMaxSize(typeSeq) == 0) {
+            idl_fileOutPrintf(idl_fileCur(),"typedef EORBUStrSeqT<struct %s_uniq_> %s;\n",
+               name, name);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(),"typedef EORBBStrSeq<%d> %s;\n",
+                idl_typeSeqMaxSize(typeSeq), name);
+        }
     } else {
-        idl_fileOutPrintf(idl_fileCur(),"typedef EORBBFLSeq<%s, %s, %d> %s;\n",
-            subTypeName, subTypeName, idl_typeSeqMaxSize(typeSeq), name);
+        subTypeName = idl_corbaCxxTypeFromTypeSpec(seqType);
+        idl_printIndent(arg->indent_level);
+        if (idl_typeSeqMaxSize(typeSeq) == 0) {
+            idl_fileOutPrintf(idl_fileCur(),"typedef EORBUFLSeq<%s, struct %s_uniq_> %s;\n",
+               subTypeName, name, name);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(),"typedef EORBBFLSeq<%s, %s, %d> %s;\n",
+                subTypeName, subTypeName, idl_typeSeqMaxSize(typeSeq), name);
+        }
+        os_free(subTypeName);
     }
-    os_free(subTypeName);
-
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"typedef EORBSequence_var<%s> %s_var;\n",
         name, name);
