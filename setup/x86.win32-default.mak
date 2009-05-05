@@ -58,11 +58,27 @@ CFLAGS_OPT       = -O2 -DNDEBUG
 CFLAGS_DEBUG     = -Z7 -Od -D_TYPECHECK_
 CFLAGS_STRICT	 = -W3
 
-WIN32_INCLUDE    = -I"c:/Program Files/Microsoft Visual Studio 8/VC/INCLUDE" -I"c:/Program Files/Microsoft Visual Studio 8/VC/PlatformSDK/include" -I"c:/Program Files/Microsoft Visual Studio 8/VC/atlmfc/include"
+ifeq ("$(VS_VER)","14")
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE" 
+   VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include" 
+   VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
+
+   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
+   VS_LIB_FLAGS += -L"$(VS_HOME)/lib"
+endif
+
+ifeq ("$(VS_VER)","15")
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/include" 
+   VS_INCLUDE += -I"$(VS_HOME)../Microsoft SDKs/Windows/v6.0A/Include" 
+
+   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
+   VS_LIB_FLAGS += -L"$(VS_HOME)../Microsoft SDKs/Windows/v6.0A/lib"
+endif
+
 # Set compiler options for single threaded process
 #    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
-CFLAGS		 = -nologo -TC $(WIN32_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -EHsc -nologo -TP $(WIN32_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS	= -nologo -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	= -EHsc -nologo -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
@@ -72,10 +88,10 @@ CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_USE_32BI
 MTCFLAGS	=
 
 # Set linker options
-LDFLAGS		 = -incremental:no -machine:IX86 -subsystem:console -L$(SPLICE_LIBRARY_PATH) -L"c:/Program Files/Microsoft Visual Studio 8/VC/lib" -L"c:/Program Files/Microsoft Visual Studio 8/VC/PlatformSDK/lib"
+LDFLAGS = -incremental:no -machine:IX86 -subsystem:console -L$(SPLICE_LIBRARY_PATH) $(VS_LIB_FLAGS)
 
 # Identify linker options for building shared libraries
-SHLDFLAGS        = -dll -machine:IX86 -incremental:no
+SHLDFLAGS = -dll -machine:IX86 -incremental:no
 
 # Set library context
 LDLIBS		 =
