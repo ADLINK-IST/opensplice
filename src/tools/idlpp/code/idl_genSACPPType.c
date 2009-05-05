@@ -858,7 +858,8 @@ idl_typedefOpenClose(
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef CORBA::String_out %s_out;\n", name);
         } else {
-            snprintf(arg->buffer,MAX_BUFFER,"typedef %s %s;\n",
+            idl_printIndent(arg->indent_level);
+            idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
                 idl_corbaCxxTypeFromTypeSpec(refType),
                 name);
         }
@@ -936,7 +937,7 @@ idl_constantOpenClose (
 
     t = idl_constSpecTypeGet(constantSpec);
     idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "const %s %s = (%s)%s",
+    idl_fileOutPrintf(idl_fileCur(), "const %s %s = (%s)%s;\n",
         idl_corbaCxxTypeFromTypeSpec(t),
         idl_constSpecName(constantSpec),
         idl_corbaCxxTypeFromTypeSpec(t),
