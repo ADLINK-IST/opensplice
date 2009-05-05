@@ -549,6 +549,23 @@ install_hde_target ()
     fi
 
     #
+    # Copy script files
+    #
+    echo "*     Copy script files"
+    release=${OSPL_HOME}/bin
+    if [ -d "${release}" ]
+    then
+        mkdir -p ${HDE_dir}/bin
+        if [ "${INCLUDE_TOOLS_TUNER}" = "yes" ]
+        then
+          install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
+        fi
+    else
+        echo "* ##    No script files detected"
+    fi
+    echo "*     Script files Ready"
+
+    #
     # Copy java archive files
     #
     if [ "${INCLUDE_JAVA}" = "yes" ]
