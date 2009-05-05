@@ -43,7 +43,7 @@ $(TARGET): $(OBJECTS)
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) -o $@
 else
-	$(LD_EXE) $(LDFLAGS) $^ $(LDLIBS) $(LDLIBS_SYS) -o $@
+	$(LD_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
 endif
 ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
 	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
