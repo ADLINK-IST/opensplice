@@ -136,6 +136,8 @@ namespace DDS_DCPS
    class SACPP_API ValueBase;
    static void add_ref(ValueBase* vb);
    static void remove_ref(ValueBase* vb);
+
+   class SACPP_API Counter;
 }
 
 /* ************************************************************************** */

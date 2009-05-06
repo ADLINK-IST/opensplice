@@ -12,11 +12,10 @@
 #ifndef SACPP_COUNTER_H
 #define SACPP_COUNTER_H
 
-#include "sacpp_dcps.h"
 #include "os_abstract.h"
 #include "sacpp_if.h"
 
-class SACPP_API SACPP_DCPS::Counter
+class SACPP_API DDS_DCPS::Counter
 {
    public:
       Counter(os_uint32 val = 0) {
@@ -51,26 +50,26 @@ class SACPP_API SACPP_DCPS::Counter
 /*                               Inline Methods                               */
 /******************************************************************************/
 
-inline os_uint32 SACPP_DCPS::Counter::operator ++ (int)
+inline os_uint32 DDS_DCPS::Counter::operator ++ (int)
 {
    os_uint32 result = m_value;
    pa_increment ((os_uint32*)&m_value);
    return result;
 }
 
-inline os_uint32 SACPP_DCPS::Counter::operator -- (int)
+inline os_uint32 DDS_DCPS::Counter::operator -- (int)
 {
    os_uint32 result = m_value;
    pa_decrement ((os_uint32*)&m_value);
    return result;
 }
 
-inline os_uint32 SACPP_DCPS::Counter::operator ++ ()
+inline os_uint32 DDS_DCPS::Counter::operator ++ ()
 {
    return (pa_increment((os_uint32*)&m_value));
 }
 
-inline os_uint32 SACPP_DCPS::Counter::operator -- ()
+inline os_uint32 DDS_DCPS::Counter::operator -- ()
 {
    return (pa_decrement((os_uint32*)&m_value));
 }

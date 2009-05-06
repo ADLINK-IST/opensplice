@@ -34,7 +34,7 @@ public:
    Object();
 
 protected:
-   SACPP_DCPS::Counter m_count;
+   DDS_DCPS::Counter m_count;
 };
 
 
