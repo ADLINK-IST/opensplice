@@ -24,7 +24,7 @@
 
 #include "idl_scope.h"
 #include "idl_genSACPPTypeImpl.h"
-#include "idl_genCxxHelper.h"
+#include "idl_genSACPPHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
@@ -79,7 +79,7 @@ idl_arrayTypeImpl(
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"template <>\n");
     idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"%s_slice *EORB_ArrayHelper<%s, %s_slice, %s_uniq_>::alloc()\n",
+    idl_fileOutPrintf(idl_fileCur(),"%s_slice *DDS_DCPS_ArrayHelper<%s, %s_slice, %s_uniq_>::alloc()\n",
         name, name, name, name);
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"{\n");
@@ -91,7 +91,7 @@ idl_arrayTypeImpl(
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"template <>\n");
     idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"void EORB_ArrayHelper<%s, %s_slice, %s_uniq_>::copy(%s_slice *to, const %s_slice *from)\n",
+    idl_fileOutPrintf(idl_fileCur(),"void DDS_DCPS_ArrayHelper<%s, %s_slice, %s_uniq_>::copy(%s_slice *to, const %s_slice *from)\n",
         name, name, name, name, name);
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"{\n");
@@ -103,7 +103,7 @@ idl_arrayTypeImpl(
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"template <>\n");
     idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"void EORB_ArrayHelper<%s, %s_slice, %s_uniq_>::free(%s_slice *ptr)\n",
+    idl_fileOutPrintf(idl_fileCur(),"void DDS_DCPS_ArrayHelper<%s, %s_slice, %s_uniq_>::free(%s_slice *ptr)\n",
         name, name, name, name);
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"{\n");
@@ -121,11 +121,11 @@ idl_arrayTypeImpl(
     if ((idl_typeSpecType(actualType) == idl_tbasic) &&
         (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string)) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"CORBA::String_mgr *ret = (CORBA::String_mgr *) new CORBA::String_mgr[%d];\n",totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"DDS_DCPS::String_mgr *ret = (DDS_DCPS::String_mgr *) new DDS_DCPS::String_mgr[%d];\n",totalDim);
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (CORBA::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (DDS_DCPS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"ret[i] = (CORBA::String)nil;\n");
+        idl_fileOutPrintf(idl_fileCur(),"ret[i] = (DDS_DCPS::String)nil;\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         idl_printIndent(arg->indent_level);
@@ -136,9 +136,9 @@ idl_arrayTypeImpl(
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"%s *ret = (%s *) new %s[%d];\n",
-                idl_corbaCxxTypeFromTypeSpec(actualType),
-                idl_corbaCxxTypeFromTypeSpec(actualType),
-                idl_corbaCxxTypeFromTypeSpec(actualType),
+                idl_sacppTypeFromTypeSpec(actualType),
+                idl_sacppTypeFromTypeSpec(actualType),
+                idl_sacppTypeFromTypeSpec(actualType),
                 totalDim);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"return (%s_slice *)ret;\n", name);
@@ -162,11 +162,11 @@ idl_arrayTypeImpl(
         idl_fileOutPrintf(idl_fileCur(),"if (s) {\n");
         arg->indent_level++;
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"CORBA::String_mgr *base = (CORBA::String_mgr *)s;\n");
+        idl_fileOutPrintf(idl_fileCur(),"DDS_DCPS::String_mgr *base = (DDS_DCPS::String_mgr *)s;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (CORBA::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (DDS_DCPS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"base[i] = (CORBA::String)nil;\n");
+        idl_fileOutPrintf(idl_fileCur(),"base[i] = (DDS_DCPS::String)nil;\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         arg->indent_level--;
@@ -196,13 +196,13 @@ idl_arrayTypeImpl(
     if ((idl_typeSpecType(actualType) == idl_tbasic) &&
         (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string)) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"CORBA::String_mgr *sv = (CORBA::String_mgr *)from;\n");
+        idl_fileOutPrintf(idl_fileCur(),"DDS_DCPS::String_mgr *sv = (DDS_DCPS::String_mgr *)from;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"CORBA::String_mgr *tv = (CORBA::String_mgr *)to;\n");
+        idl_fileOutPrintf(idl_fileCur(),"DDS_DCPS::String_mgr *tv = (DDS_DCPS::String_mgr *)to;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (CORBA::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (DDS_DCPS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"tv[i] = CORBA::string_dup (sv[i]);\n");
+        idl_fileOutPrintf(idl_fileCur(),"tv[i] = DDS_DCPS::string_dup (sv[i]);\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         
@@ -212,14 +212,14 @@ idl_arrayTypeImpl(
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"%s *sv = (%s *)from;\n",
-                idl_corbaCxxTypeFromTypeSpec(actualType),
-                idl_corbaCxxTypeFromTypeSpec(actualType));
+                idl_sacppTypeFromTypeSpec(actualType),
+                idl_sacppTypeFromTypeSpec(actualType));
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"%s *tv = (%s *)to;\n",
-                idl_corbaCxxTypeFromTypeSpec(actualType),
-                idl_corbaCxxTypeFromTypeSpec(actualType));
+                idl_sacppTypeFromTypeSpec(actualType),
+                idl_sacppTypeFromTypeSpec(actualType));
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"for (CORBA::ULong i = 0; i < %d; i++) {\n", totalDim);
+            idl_fileOutPrintf(idl_fileCur(),"for (DDS_DCPS::ULong i = 0; i < %d; i++) {\n", totalDim);
             idl_printIndent(arg->indent_level+1);
             idl_fileOutPrintf(idl_fileCur(),"tv[i] = sv[i];\n");
             idl_printIndent(arg->indent_level);
@@ -245,38 +245,6 @@ idl_arrayTypeImpl(
     idl_fileOutPrintf(idl_fileCur(),"return to;\n");
     arg->indent_level--;
     idl_fileOutPrintf(idl_fileCur(),"}\n\n");
-}
-
-static void
-idl_seqTypeDefs(
-    idl_typeSeq typeSeq,
-    const char *name,
-    struct idl_genSACPPData *arg)
-{
-    char *subTypeName;
-
-    idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"struct %s_uniq_ {};\n", name);
-
-    subTypeName = idl_corbaCxxTypeFromTypeSpec(idl_typeSeqType(typeSeq));
-    idl_printIndent(arg->indent_level);
-    if (idl_typeSeqMaxSize(typeSeq) == 0) {
-        idl_fileOutPrintf(idl_fileCur(),"typedef EORBUFLSeq<%s, struct %s_uniq_> %s;\n",
-           subTypeName, name, name);
-    } else {
-        idl_fileOutPrintf(idl_fileCur(),"typedef EORBBFLSeq<%s, %s, %d> %s;\n",
-            subTypeName, subTypeName, idl_typeSeqMaxSize(typeSeq), name);
-    }
-    os_free(subTypeName);
-
-    idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"typedef EORBSequence_var<%s> %s_var;\n",
-        name, name);
-
-    idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(),"typedef EORBSequence_out<%s> %s_out;\n",
-        name, name);
-
 }
 
 /** @brief generate name which will be used as a macro to prevent multiple inclusions
@@ -630,7 +598,7 @@ idl_typedefOpenClose(
     actualType = idl_typeDefActual(defSpec);
     refType = idl_typeDefRefered(defSpec);
     refName = idl_typeSpecName(refType);
-    scopedName = idl_corbaCxxTypeFromTypeSpec(idl_typeSpec(defSpec));
+    scopedName = idl_sacppTypeFromTypeSpec(idl_typeSpec(defSpec));
     if (idl_typeSpecType(refType) == idl_tarray) { /* ex. typedef long myArr[22]; */
         idl_arrayTypeImpl(idl_typeArray(refType), scopedName, arg); 
     } else {

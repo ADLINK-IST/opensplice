@@ -10,13 +10,13 @@ include      $(OSPL_HOME)/setup/makefiles/orbdeps_sa.mak
 # Input IDL files.
 IDL_DIR		:= ../../../ccpp/idl
 vpath %.idl $(IDL_DIR)
-TOPIC_IDL   := dds_dcps_builtintopics.idl
-DCPS_API_IDL:= dds_dcps.idl
+TOPIC_IDL	:= dds_dcps_builtintopics.idl
+DCPS_API_IDL	:= dds_dcps.idl
 
 # Explicitly point to an alternative location for all required source files.
-CODE_DIR    := ../../../ccpp/code
-EORB_COBJ	:= common_cobject.cpp
-EORB_LOBJ	:= CORBA_LocalObject.cpp
+CODE_DIR	:= ../../../ccpp/code
+EORB_COBJ	:= sacpp_Object.cpp
+EORB_LOBJ	:= sacpp_LocalObject.cpp
 
 CPP_FILES 	:= $(notdir $(wildcard $(CODE_DIR)/*.cpp)) $(EORB_COBJ) $(EORB_LOBJ) $(ORB_API_SRC) $(ORB_TOP_SRC) $(IDLPP_ORB_SRC)
 
@@ -91,11 +91,11 @@ make_idl_preprocessor:
 	cd $(OSPL_HOME)/src/cpp; make
 	cd $(OSPL_HOME)/src/tools/idlpp; make
 
-$(EORB_COBJ): $(EORBHOME)/src/$(EORB_COBJ)
-	cp $(EORBHOME)/src/$(EORB_COBJ) $(EORB_COBJ)
+$(EORB_COBJ): ../../code/$(EORB_COBJ)
+	cp ../../code/$(EORB_COBJ) $(EORB_COBJ)
 
-$(EORB_LOBJ): $(EORBHOME)/src/$(EORB_LOBJ)
-	cp $(EORBHOME)/src/$(EORB_LOBJ) $(EORB_LOBJ)
+$(EORB_LOBJ): ../../code/$(EORB_LOBJ)
+	cp ../../code/$(EORB_LOBJ) $(EORB_LOBJ)
 
 $(ORB_API_SRC) $(ORB_API_HDR): $(IDL_DIR)/$(DCPS_API_IDL)
 	$(ORB_SA_IDL_COMPILER) $(ORB_SA_IDL_FLAGS) $(ORB_SA_CXX_FLAGS) $(ORB_SA_CPP_FLAGS) $<
