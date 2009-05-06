@@ -8,6 +8,7 @@
 #include "in__configChannel.h"
 #include "in__configNetworkPartition.h"
 #include "in__configPartitionMapping.h"
+#include "in__configTracing.h"
 #include "in_report.h"
 
 static void
@@ -58,35 +59,104 @@ in_configTraverseInterfaceElement(
     u_cfElement element,
     in_configDdsiService ddsiService);
 
-void
+static void
 in_configTraversePartitionMappingElement(
     u_cfElement element,
     in_configPartitioning partitioning);
 
-void
+static void
 in_configTraverseNetworkPartitionElement(
     u_cfElement element,
     in_configPartitioning partitioning);
 
-void
+static void
 in_configTraverseGlobalPartitionElement(
     u_cfElement element,
     in_configPartitioning partitioning);
 
-void
+static void
 in_configTraversePartitionMappingsElement(
     u_cfElement element,
     in_configPartitioning partitioning);
 
-void
+static void
 in_configTraverseNetworkPartitionsElement(
     u_cfElement element,
     in_configPartitioning partitioning);
 
-void
+static void
 in_configTraversePartitioningElement(
     u_cfElement element,
     in_configDdsiService ddsiService);
+
+static void
+in_configTraverseTracingElement(
+    u_cfElement element,
+    in_configDdsiService ddsiService);
+
+static void
+in_configTraverseCategoriesElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseDefaultElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseConfigurationElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseConstructionElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseDestructionElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseMainloopElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseGroupsElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseSendElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseReceiveElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseTestElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseDiscoveryTracingElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configTraverseOutputFileElement(
+    u_cfElement element,
+    in_configTracing tracing);
+
+static void
+in_configFinalizeDdsiService(
+    in_configDdsiService _this);
 
 #define INCF_ELEM_DdsiService           "DDSIService"
 #define INCF_ATTRIB_DdsiService_name    "name"
@@ -133,23 +203,36 @@ in_configTraversePartitioningElement(
 #define INCF_ELEM_PartitionMapping      "PartitionMapping"
 #define INCF_ATTRIB_PartitionMapping_networkPartition "NetworkPartition"
 #define INCF_ATTRIB_PartitionMapping_topicPartitionCombo "DCPSPartitionTopic"
-#define INCF_ELEM_Tracing               "Tracing"
-#define INCF_ELEM_OutputFile            "OutputFile"
-#define INCF_ELEM_Timestamps            "Timestamps"
-#define INCF_ELEM_Categories            "Categories"
-#define INCF_ELEM_Default               "Default"
-#define INCF_ELEM_Configuration         "Configuration"
-#define INCF_ELEM_Construction          "Construction"
-#define INCF_ELEM_Destruction           "Destruction"
-#define INCF_ELEM_Mainloop              "Mainloop"
-#define INCF_ELEM_Groups                "Groups"
-#define INCF_ELEM_Send                  "Send"
-#define INCF_ELEM_Receive               "Receive"
-#define INCF_ELEM_Test                  "Test"
-#define INCF_ELEM_DiscoveryTracing      "Discovery"
-#define INCF_ELEM_Reporting             "Reporting"
-#define INCF_ELEM_Debugging             "Debugging"
-#define INCF_ELEM_WaitForDebugger       "WaitForDebugger"
+#define INCF_ELEM_Tracing                   "Tracing"
+#define INCF_ATTRIB_Tracing_isEnabled       "enabled"
+#define INCF_ATTRIB_Tracing_isEnabled_DEF    OS_TRUE
+#define INCF_ELEM_OutputFile                "OutputFile"
+#define INCF_ATTRIB_OutputFile_value_DEF    "ddsi-tracing-output.log"
+#define INCF_ELEM_Timestamps                "Timestamps"
+#define INCF_ELEM_Categories                "Categories"
+#define INCF_ELEM_Default                   "Default"
+#define INCF_ATTRIB_Default_value_DEF       1
+#define INCF_ELEM_Configuration             "Configuration"
+#define INCF_ATTRIB_Configuration_value_DEF 1
+#define INCF_ELEM_Construction              "Construction"
+#define INCF_ATTRIB_Construction_value_DEF  1
+#define INCF_ELEM_Destruction               "Destruction"
+#define INCF_ATTRIB_Destruction_value_DEF   1
+#define INCF_ELEM_Mainloop                  "Mainloop"
+#define INCF_ATTRIB_Mainloop_value_DEF     1
+#define INCF_ELEM_Groups                    "Groups"
+#define INCF_ATTRIB_Groups_value_DEF        1
+#define INCF_ELEM_Send                      "Send"
+#define INCF_ATTRIB_Send_value_DEF          1
+#define INCF_ELEM_Receive                   "Receive"
+#define INCF_ATTRIB_Receive_value_DEF       1
+#define INCF_ELEM_Test                      "Test"
+#define INCF_ATTRIB_Test_value_DEF          1
+#define INCF_ELEM_DiscoveryTracing          "Discovery"
+#define INCF_ATTRIB_DiscoveryTracing_value_DEF   1
+#define INCF_ELEM_Reporting                 "Reporting"
+#define INCF_ELEM_Debugging                 "Debugging"
+#define INCF_ELEM_WaitForDebugger           "WaitForDebugger"
 
 OS_STRUCT(in_config)
 {
@@ -385,6 +468,9 @@ in_configTraverseDdsiServiceElement(
                     } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Partitioning))
                     {
                         in_configTraversePartitioningElement(u_cfElement(childNode), ddsiService);
+                    } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Tracing))
+                    {
+                        in_configTraverseTracingElement(u_cfElement(childNode), ddsiService);
                     } else
                     {
                         IN_REPORT_WARNING_2(
@@ -407,6 +493,7 @@ in_configTraverseDdsiServiceElement(
         }
         os_free(serviceName);
     }
+    in_configFinalizeDdsiService(ddsiService);
 }
 
 void
@@ -919,6 +1006,1070 @@ in_configTraversePartitionMappingElement(
     {
         os_free(partitionTopicCombo);
     }
+}
+
+void
+in_configTraverseTracingElement(
+    u_cfElement element,
+    in_configDdsiService ddsiService)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    in_configTracing tracing;
+    os_boolean isEnabled = INCF_ATTRIB_Tracing_isEnabled_DEF;
+    os_boolean isEnabledDefined = OS_FALSE;
+    os_boolean success;
+
+    tracing = in_configDdsiServiceGetTracing(ddsiService);
+    if(tracing)
+    {
+        IN_REPORT_WARNING_4(
+            IN_SPOT,
+            "Detected duplicate definition for element '%s'. This element was defined within parent element '%s' which had attribute '%s' set to value '%s'. Ignoring duplicate and all child elements.",
+            INCF_ELEM_Tracing,
+            INCF_ELEM_DdsiService,
+            INCF_ATTRIB_DdsiService_name,
+            in_configDdsiServiceGetName(ddsiService));
+    } else
+    {
+        tracing = in_configTracingNew();
+        if(!tracing)
+        {
+            IN_REPORT_ERROR(IN_SPOT, "Out of memory.");
+        } else
+        {
+            /* Step 1: read attributes if there are any, report warning that they are
+             * ignored.
+             */
+            attributes = u_cfElementGetAttributes(element);
+            attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+            while(attribute)
+            {
+                name = u_cfNodeName(u_cfNode(attribute));
+                if(0 == strcmp(name, INCF_ATTRIB_Tracing_isEnabled))
+                {
+                    success = u_cfAttributeBoolValue(attribute, (c_bool*)&isEnabled);
+                    if(!success)
+                    {
+                        IN_REPORT_WARNING_2(
+                            IN_SPOT,
+                            "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                            name,
+                            INCF_ELEM_Tracing);
+                    } else
+                    {
+                        isEnabledDefined = OS_TRUE;
+                    }
+                } else
+                {
+                    IN_REPORT_WARNING_2(
+                        IN_SPOT,
+                        "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+                        name,
+                        INCF_ELEM_Tracing);
+                }
+                os_free(name);
+                attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+            }
+            c_iterFree(attributes);
+            if(!isEnabledDefined)
+            {
+                IN_REPORT_WARNING_3(
+                    IN_SPOT,
+                    "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+                    INCF_ATTRIB_Tracing_isEnabled,
+                    INCF_ELEM_Tracing,
+                    INCF_ATTRIB_Tracing_isEnabled_DEF);
+            }
+            in_tracingSetEnabled(tracing, isEnabled);
+            /* Step 2: traverse child elements */
+            children = u_cfElementGetChildren(element);
+            childNode = u_cfNode(c_iterTakeFirst(children));
+            while(childNode)
+            {
+                name = u_cfNodeName(childNode);
+                nodeKind = u_cfNodeKind(childNode);
+                if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_OutputFile))
+                {
+                    in_configTraverseOutputFileElement(u_cfElement(childNode), tracing);
+                } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Categories))
+                {
+                    in_configTraverseCategoriesElement(u_cfElement(childNode), tracing);
+                } else
+                {
+                    IN_REPORT_WARNING_2(
+                        IN_SPOT,
+                        "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                        name,
+                        INCF_ELEM_Tracing);
+                }
+                os_free(name);
+                childNode = u_cfNode(c_iterTakeFirst(children));
+            }
+            c_iterFree(children);
+        }
+    }
+}
+
+void
+in_configTraverseOutputFileElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_char* outputFile = NULL;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_OutputFile);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataStringValue(u_cfData(childNode), &outputFile);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_OutputFile);
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_OutputFile);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!outputFile)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_OutputFile,
+            INCF_ATTRIB_OutputFile_value_DEF);
+        outputFile = os_malloc(sizeof(INCF_ATTRIB_OutputFile_value_DEF));
+        if(!outputFile)
+        {
+             IN_REPORT_ERROR(IN_SPOT, "Out of memory.");
+        } else
+        {
+            strcpy(outputFile, INCF_ATTRIB_OutputFile_value_DEF);
+        }
+    }
+    if(outputFile)
+    {
+        in_configTracingSetOutputFile(tracing, outputFile);
+    }
+}
+
+void
+in_configTraverseCategoriesElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Categories);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child elements */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Default))
+        {
+            in_configTraverseDefaultElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Configuration))
+        {
+            in_configTraverseConfigurationElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Construction))
+        {
+            in_configTraverseConstructionElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Destruction))
+        {
+            in_configTraverseDestructionElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Mainloop))
+        {
+            in_configTraverseMainloopElement(u_cfElement(childNode), tracing);
+        }  else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Groups))
+        {
+            in_configTraverseGroupsElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Send))
+        {
+            in_configTraverseSendElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Receive))
+        {
+            in_configTraverseReceiveElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Test))
+        {
+            in_configTraverseTestElement(u_cfElement(childNode), tracing);
+        } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DiscoveryTracing))
+        {
+            in_configTraverseDiscoveryTracingElement(u_cfElement(childNode), tracing);
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Categories);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+}
+
+void
+in_configTraverseDefaultElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Default_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Default);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Default);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Default);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Default,
+            INCF_ATTRIB_Default_value_DEF);
+    }
+    in_configTracingSetDefaultLevel(tracing, level);
+}
+
+void
+in_configTraverseConfigurationElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Configuration_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Configuration);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Configuration);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Configuration);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Configuration,
+            INCF_ATTRIB_Configuration_value_DEF);
+    }
+    in_configTracingSetConfigurationLevel(tracing, level);
+}
+
+void
+in_configTraverseConstructionElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Construction_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Construction);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Construction);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Construction);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Construction,
+            INCF_ATTRIB_Construction_value_DEF);
+    }
+    in_configTracingSetInitLevel(tracing, level);
+}
+
+void
+in_configTraverseDestructionElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Destruction_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Destruction);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Destruction);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Destruction);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Destruction,
+            INCF_ATTRIB_Destruction_value_DEF);
+    }
+    in_configTracingSetDeinitLevel(tracing, level);
+}
+
+void
+in_configTraverseMainloopElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Mainloop_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Mainloop);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Mainloop);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Mainloop);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Mainloop,
+            INCF_ATTRIB_Mainloop_value_DEF);
+    }
+    in_configTracingSetMainloopLevel(tracing, level);
+}
+
+void
+in_configTraverseGroupsElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Groups_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Groups);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Groups);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Groups);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Groups,
+            INCF_ATTRIB_Groups_value_DEF);
+    }
+    in_configTracingSetGroupsLevel(tracing, level);
+}
+
+void
+in_configTraverseSendElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Send_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Send);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Send);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Send);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Send,
+            INCF_ATTRIB_Send_value_DEF);
+    }
+    in_configTracingSetWritingLevel(tracing, level);
+}
+
+void
+in_configTraverseReceiveElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Receive_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Receive);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Receive);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Receive);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Receive,
+            INCF_ATTRIB_Receive_value_DEF);
+    }
+    in_configTracingSetReadingLevel(tracing, level);
+}
+
+void
+in_configTraverseTestElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_Test_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_Test);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_Test);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_Test);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_Test,
+            INCF_ATTRIB_Test_value_DEF);
+    }
+    in_configTracingSetTestLevel(tracing, level);
+}
+
+void
+in_configTraverseDiscoveryTracingElement(
+    u_cfElement element,
+    in_configTracing tracing)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    os_boolean success;
+    os_uint32 level = INCF_ATTRIB_DiscoveryTracing_value_DEF;
+    os_boolean levelDefined = OS_FALSE;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_DiscoveryTracing);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child element, ignore any child elements found and
+     * provide a warning for them
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        if(nodeKind == V_CFDATA)
+        {
+            success = u_cfDataULongValue(u_cfData(childNode), &level);
+            if(!success)
+            {
+                IN_REPORT_WARNING_2(
+                    IN_SPOT,
+                    "Failed to retrieve the value for attribute '%s' within element '%s'.",
+                    name,
+                    INCF_ELEM_DiscoveryTracing);
+            } else
+            {
+                levelDefined = OS_TRUE;
+            }
+        } else
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_DiscoveryTracing);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+    if(!levelDefined)
+    {
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            INCF_ELEM_DiscoveryTracing,
+            INCF_ATTRIB_DiscoveryTracing_value_DEF);
+    }
+    in_configTracingSetDiscoveryLevel(tracing, level);
 }
 
 void
@@ -1741,4 +2892,14 @@ in_configTraverseInterfaceElement(
     {
         os_free(networkId);
     }
+}
+
+void
+in_configFinalizeDdsiService(
+    in_configDdsiService _this)
+{
+    assert(_this);
+
+    /* TODO finalize the configuration components with default values. */
+
 }
