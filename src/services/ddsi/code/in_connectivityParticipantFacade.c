@@ -219,7 +219,8 @@ in_connectivityParticipantFacadeGetGuidPrefix(
 {
     assert(_this);
 
-    return &(in_connectivityEntityFacade(_this)->id.guidPrefix);
+    return (in_ddsiGuidPrefixRef)(&(in_connectivityEntityFacade(
+    	_this)->id.guidPrefix));
 
 }
 

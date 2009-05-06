@@ -375,7 +375,8 @@ in_ddsiSubmessageDataInitFromBuffer(
 		if (in_ddsiSubmessageHasFlagQ(OS_SUPER(_this))) {
 			/* take inlineQos */
 			nofOctets =
-				in_ddsiParameterListInitFromBuffer(&(_this->inlineQos), deserializer);
+				in_ddsiParameterListInitFromBuffer(
+						&(_this->inlineQos), deserializer);
 
 			if (nofOctets<0) break;
 			total += nofOctets;

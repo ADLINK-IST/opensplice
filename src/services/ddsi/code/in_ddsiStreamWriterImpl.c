@@ -571,7 +571,8 @@ serializeData(
     in_ddsiEntityId readerId, /* may be UNKOWN */
     in_endpointDiscoveryData discoveryData,
     in_connectivityWriterFacade facade,
-    v_message message)
+    v_message message,
+    v_topic topic)
 {
     const os_ushort encapsFlags = 0x0;
     c_octet* dataHeaderPosition, *endDataPosition;
@@ -617,10 +618,12 @@ serializeData(
 		total += nofOctets;
 
 		if (inlineQosSize > 0) {
-		    nofOctets = in_ddsiParameterListForPublicationSerializeInstantly(
+		    nofOctets = in_ddsiParameterListForDataSerializeInstantly(
 		                facade,
 		                &(_this->serializer),
-		                discoveryData);
+		                discoveryData,
+		                message,
+		                topic);
 		    IN_BREAK_IF(nofOctets<0);
 		    total += nofOctets;
 
@@ -640,9 +643,6 @@ serializeData(
                 in_data firstOctetBehindDataHeader =
                     in_ddsiSerializerGetPosition(&(_this->serializer));
                 in_data firstOctetBehindSerializedData = NULL;
-                os_size_t alignmentDistance = 0;
-                v_topic topic;
-                struct v_publicationInfo * info;
                 c_long topicDataOffset;
 
 
@@ -655,12 +655,7 @@ serializeData(
                         bytesLeft);
                 /* serialize the userData encapsulated within the
                  * v_message object */
-                /* TODO ES: looking up topic for data offset each time is expensive,
-                 * store the data offset value someplace */
-                info = in_connectivityWriterFacadeGetInfo(facade);
-                topic = in_plugKernelLookupTopic(_this->plugKernel, info->topic_name);
                 topicDataOffset = v_topicDataOffset(topic);
-                c_free(topic);
                 retState = in_messageSerializerWrite(
                     _this->messageSerializer,
                     message,
@@ -903,38 +898,34 @@ in_ddsiStreamWriterImplAppendData(
 		os_boolean recipientExpectsInlineQos,
 		Coll_List *locatorList)
 {
+	v_topic topic;
+	struct v_publicationInfo * info;
     const os_size_t sentinelSize = 0U;//IN_DDSI_SUBMESSAGE_HEADER_SIZE;
-
-	const in_ddsiGuid guid =
-        in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
-
-	const os_size_t serializedPayloadSize =
-	    calculatePayloadSize(message);
-
-	const os_size_t inlineQosSize =
-	    recipientExpectsInlineQos
-	    ? in_ddsiParameterListForPublicationCalculateSize(
-	            facade,
-	            discoveryData)
-	    : 0U;
-
+	in_ddsiGuid guid;
+	os_size_t serializedPayloadSize, inlineQosSize, timestampSubmessageLength;
+	os_size_t dataSubmessageLength, totalLength;
 	in_result result = IN_RESULT_OK;
 
-	/* Note: do not store the locatorList permanently, it
-	 * might be modified or erased by owner */
-	const os_size_t timestampSubmessageLength =
-		IN_DDSI_INFOTIMESTAMP_SUBMESSAGE_SIZE;
+	info = in_connectivityWriterFacadeGetInfo(facade);
+	/*TODO: lookup topic is very expensive. It could also be stored at the
+	 * writerFacade on creation.
+	 */
+	topic = in_plugKernelLookupTopic(_this->plugKernel, info->topic_name);
 
-	const os_size_t dataSubmessageLength =
-		in_ddsiSubmessageDataSerializedSize(
-		        inlineQosSize,
-		        serializedPayloadSize);
+	guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(
+		facade));
+	inlineQosSize = recipientExpectsInlineQos ?
+		in_ddsiParameterListForDataCalculateSize(facade, discoveryData, message,
+		topic): 0U;
 
-	const os_size_t totalLength =
-		timestampSubmessageLength +
-		dataSubmessageLength +
-        /* always keep space at end for the terminating sentinel */
-		sentinelSize;
+	serializedPayloadSize = calculatePayloadSize(message);
+	timestampSubmessageLength = IN_DDSI_INFOTIMESTAMP_SUBMESSAGE_SIZE;
+
+	dataSubmessageLength = in_ddsiSubmessageDataSerializedSize(inlineQosSize,
+		serializedPayloadSize);
+
+	totalLength = timestampSubmessageLength + dataSubmessageLength +
+	   /* always keep space at end for the terminating sentinel */ sentinelSize;
 
 	assert(timestampSubmessageLength % 4 == 0);
 	assert(dataSubmessageLength % 4 == 0);
@@ -954,6 +945,7 @@ in_ddsiStreamWriterImplAppendData(
 
         do {
             IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling serializeData %p", facade);
+
             retState = serializeData(
                 _this,
                 inlineQosSize,
@@ -961,7 +953,8 @@ in_ddsiStreamWriterImplAppendData(
                 &unknownId,
                 discoveryData,
                 facade,
-                message);
+                message,
+                topic);
             IN_BREAK_IF(retState!=IN_RESULT_OK);
             /*IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling appendSentinelSubmessage %p", facade);
             retState = appendSentinelSubmessage(_this);
@@ -974,6 +967,7 @@ in_ddsiStreamWriterImplAppendData(
             result = IN_RESULT_OK;
         } while(0);
 	}
+	c_free(topic);
 
 	return result;
 }

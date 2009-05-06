@@ -52,6 +52,16 @@ in_ddsiParameterListForReaderParse(
     in_ddsiDiscoveredReaderData data,
     c_base base);
 
+in_result
+in_ddsiParameterListGetPidKeyHash(
+	 in_ddsiParameterList _this,
+	 c_octet** keyHash);
+
+in_result
+in_ddsiParameterListGetPidStatusInfo(
+	 in_ddsiParameterList _this,
+	 v_state* state);
+
 /* may return with "out of memory" */
 in_result
 in_ddsiParameterListForWriterParse(
@@ -73,6 +83,15 @@ in_ddsiParameterListForPublicationSerializeInstantly(
     in_ddsiSerializer serializer,
     in_endpointDiscoveryData discoveryData);
 
+
+in_long
+in_ddsiParameterListForDataSerializeInstantly(
+    in_connectivityWriterFacade facade,
+    in_ddsiSerializer serializer,
+    in_endpointDiscoveryData discoveryData,
+    v_message message,
+    v_topic topic);
+
 /** */
 in_long
 in_ddsiParameterListForSubscriptionSerializeInstantly(
@@ -88,6 +107,13 @@ in_ddsiParameterListForParticipantCalculateSize(
     in_endpointDiscoveryData discoveryData);
 
 /* \return value multiple of 4 */
+os_size_t
+in_ddsiParameterListForDataCalculateSize(
+    in_connectivityWriterFacade facade,
+    in_endpointDiscoveryData discoveryData,
+    v_message message,
+    v_topic topic);
+
 os_size_t
 in_ddsiParameterListForPublicationCalculateSize(
     in_connectivityWriterFacade facade,

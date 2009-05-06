@@ -1152,7 +1152,7 @@ in_connectivityAdminGetPeerWriter(
     return NULL;
 }
 
-//temp added
+/*TODO: check whether this method is really necessary*/
 Coll_Set*
 in_connectivityAdminGetPeerParticipantsUnsafe(
     in_connectivityAdmin _this)

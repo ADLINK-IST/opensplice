@@ -14,6 +14,7 @@
 #include "in_ddsiSubmessageTokenizer.h"
 #include "in_ddsiSubmessageDeserializer.h"
 #include "in_ddsiElements.h"
+#include "in__ddsiParameter.h"
 #include "in_ddsiSubmessage.h"
 #include "in_ddsiParameterList.h"
 #include "in_connectivityPeerParticipant.h"
@@ -28,6 +29,7 @@
 #include "in_ddsiEncapsulationHeader.h"
 #include "v_topic.h"
 #include "v_state.h"
+#include "v_message.h"
 #include "v_time.h"
 
 /* **** private functions **** */
@@ -158,6 +160,251 @@ releaseTopic(
 /* **** private function implementation **** */
 /* *******************************************/
 
+static in_result
+in_ddsiStreamReaderImplDerializePayloadByKeyHash(
+	in_ddsiStreamReaderImpl _this,
+	in_ddsiSubmessageData submessage,
+	in_connectivityPeerWriter peerWriter,
+	v_topic topic,
+	v_message *messageObject,
+	c_octet* keyHash)
+{
+	in_result result;
+	c_long nrOfKeys, i, bytesCopied;
+	os_size_t inlineQosBytes;
+	c_array messageKeyList;
+	in_ddsiParameterHeader param;
+	c_value value;
+	c_base base;
+
+	assert(_this);
+	assert(submessage);
+	assert(peerWriter);
+	assert(topic);
+	assert(*messageObject);
+
+	messageKeyList = v_topicMessageKeyList(topic);
+	nrOfKeys = c_arraySize(messageKeyList);
+	bytesCopied = 0;
+	base = c_getBase(topic);
+	result = IN_RESULT_OK;
+
+	/*TODO: In case key is larger then 16 bytes, MD5 must be used*/
+	for (i=0;(i<nrOfKeys) && (result == IN_RESULT_OK);i++)
+	{
+		switch(c_fieldValueKind(messageKeyList[i]))
+		{
+		case V_BOOLEAN:
+			value = c_boolValue(*((c_bool*)&(keyHash[bytesCopied])));
+			bytesCopied += sizeof(c_bool);
+		break;
+		case V_OCTET:
+			value = c_octetValue(*((c_octet*)&(keyHash[bytesCopied])));
+			bytesCopied += sizeof(c_octet);
+		break;
+		case V_SHORT:
+#ifdef PA_BIG_ENDIAN
+			value = c_shortValue(*((c_short*)&(keyHash[bytesCopied])));
+#else
+			value = c_shortValue(IN_UINT16_SWAP_LE_BE(*((c_short*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += sizeof(c_short);
+		break;
+		case V_USHORT:
+#ifdef PA_BIG_ENDIAN
+			value = c_ushortValue(*((c_ushort*)&(keyHash[bytesCopied])));
+#else
+			value = c_ushortValue(IN_UINT16_SWAP_LE_BE(*((c_ushort*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += sizeof(c_ushort);
+		break;
+		case V_LONG:
+#ifdef PA_BIG_ENDIAN
+			value = c_longValue(*((c_long*)&(keyHash[bytesCopied])));
+#else
+			value = c_longValue(IN_UINT32_SWAP_LE_BE(*((c_long*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += sizeof(c_long);
+		break;
+
+		case V_ULONG:
+#ifdef PA_BIG_ENDIAN
+			value = c_ulongValue(*((c_ulong*)&(keyHash[bytesCopied])));
+#else
+			value = c_ulongValue(IN_UINT32_SWAP_LE_BE(*((c_ulong*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += sizeof(c_long);
+		break;
+		case V_CHAR:
+			value = c_charValue(*((c_char*)&(keyHash[bytesCopied])));
+			bytesCopied += sizeof(c_char);
+		break;
+		case V_STRING:
+			/*TODO: validate the string copy algorithm*/
+			if(keyHash[bytesCopied] != 0)
+			{
+				value = c_stringValue(
+					c_stringNew(base,
+					*((c_string*)(&(keyHash[bytesCopied+1])))));
+				bytesCopied = 1 + strlen(value.is.String) + 1;
+			} else
+			{
+				value = c_stringValue(NULL);
+				bytesCopied += 1;
+			}
+		break;
+		case V_DOUBLE:
+			value = c_undefinedValue();
+			bytesCopied += sizeof(c_double);
+			result = IN_RESULT_PRECONDITION_NOT_MET;
+		break;
+		case V_FLOAT:
+			value = c_undefinedValue();
+			bytesCopied += sizeof(c_float);
+			result = IN_RESULT_PRECONDITION_NOT_MET;
+		break;
+		case V_ULONGLONG:
+			value = c_undefinedValue();
+			bytesCopied += sizeof(c_ulonglong);
+			result = IN_RESULT_PRECONDITION_NOT_MET;
+		break;
+		case V_LONGLONG:
+			value = c_undefinedValue();
+			bytesCopied += sizeof(c_longlong);
+			result = IN_RESULT_PRECONDITION_NOT_MET;
+		break;
+		default:
+			value = c_undefinedValue();
+			assert(FALSE);
+			result = IN_RESULT_ERROR;
+		break;
+		}
+		c_fieldAssign(messageKeyList[i],*messageObject, value);
+	}
+
+	return result;
+}
+
+static v_state
+in_ddsiStreamReaderImplGetDataState(
+	in_ddsiStreamReaderImpl _this,
+	in_ddsiSubmessageData submessage)
+{
+	os_size_t inlineQosBytes;
+	in_ddsiParameterHeader param;
+	v_state state = L_WRITE;
+
+	param = (in_ddsiParameterHeader)submessage->inlineQos.firstParameter;
+	inlineQosBytes = submessage->inlineQos.totalOctetLength;
+
+	if(param)
+	{
+		while((param->id.value != IN_PID_STATUS_INFO) && (inlineQosBytes > 0))
+		{
+			inlineQosBytes -= param->octetsToNextParameter;
+
+			if(inlineQosBytes > 0)
+			{
+				param = (in_ddsiParameterHeader)(
+						&(param->octetsToNextParameter) +
+						param->octetsToNextParameter);
+			}
+		}
+		if(param->id.value == IN_PID_STATUS_INFO)
+		{
+			assert(FALSE);
+		}
+	}
+
+	return state;
+}
+
+static in_result
+in_ddsiStreamReaderImplProcessAppdefDataPayloadNoData(
+    in_ddsiStreamReaderImpl _this,
+    in_ddsiSubmessageData submessage,
+    in_connectivityPeerWriter peerWriter,
+    v_message *messageObject)
+{
+	v_topic topic;
+	in_result result;
+	c_type messageType;
+	c_octet* keyHash;
+
+	assert(peerWriter);
+	assert(messageObject);
+	assert(submessage);
+
+	*messageObject = NULL;
+	topic = lookupTopic(_this, peerWriter);
+
+	if(topic)
+	{
+		messageType = v_topicMessageType(topic);
+
+		if (c_typeIsRef(messageType))
+		{
+			*messageObject = v_topicMessageNew(topic);
+
+			if(*messageObject)
+			{
+				(*messageObject)->sequenceNumber = (submessage->writerSN.low);
+				(*messageObject)->writerGID = in_connectivityPeerWriterGetGid(
+					peerWriter);
+				(*messageObject)->allocTime = _this->receiver.haveTimestamp ?
+					_this->receiver.timestamp : C_TIME_ZERO;
+				(*messageObject)->writeTime = _this->receiver.haveTimestamp ?
+					_this->receiver.timestamp : C_TIME_ZERO;
+
+				/* WriterInstanceGID unused in kernel, so not necessary to fill it*/
+				(*messageObject)->writerInstanceGID.systemId =
+					(*messageObject)->writerGID.systemId;
+				(*messageObject)->writerInstanceGID.localId = 0;
+				(*messageObject)->writerInstanceGID.serial = 0;
+				(*messageObject)->qos = in_messageQos_new(peerWriter,
+					c_getBase(topic));
+
+				result = in_ddsiParameterListGetPidKeyHash(
+					&(submessage->inlineQos), &keyHash);
+
+				if(result == IN_RESULT_OK)
+				{
+					result = in_ddsiStreamReaderImplDerializePayloadByKeyHash(
+						_this, submessage, peerWriter, topic, messageObject,
+						keyHash);
+					os_free(keyHash);
+
+					if(result == IN_RESULT_OK)
+					{
+						result = in_ddsiParameterListGetPidStatusInfo(
+										&(submessage->inlineQos),
+										&(v_messageState(*messageObject)));
+					} else
+					{
+						printf("Unable to copy key values in message\n");
+					}
+				} else
+				{
+					printf("Found DATA submessage without serializedPayload and no PID_KEY_HASH inlineQos\n");
+					result = IN_RESULT_ERROR;
+				}
+
+
+			} else
+			{
+				result = IN_RESULT_OUT_OF_MEMORY;
+			}
+		} else
+		{
+			result = IN_RESULT_ERROR;
+		}
+		c_free(topic);
+	} else
+	{
+		result = IN_RESULT_ERROR;
+	}
+	return result;
+}
 
 static in_result
 in_ddsiStreamReaderImplProcessAppdefDataPayload(
@@ -220,11 +467,8 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
                 in_messageDeserializerEnd(_this->messageDeserializer);
 
             if (result==IN_RESULT_OK && *messageObject) {
-                const v_gid debugGuid = {0,0,0};
-
                 v_message m = *messageObject;
 
-                OS_SUPER(m)->nodeState = L_WRITE;
                 m->sequenceNumber = (submessage->writerSN.low);
 
                 m->allocTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
@@ -235,6 +479,16 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
                 m->writerInstanceGID.localId = 0;
                 m->writerInstanceGID.serial = 0;
                 m->qos = in_messageQos_new(peerWriter, c_getBase(topic));
+
+                result = in_ddsiParameterListGetPidStatusInfo(
+                								&(submessage->inlineQos),
+                								&(v_messageState(m)));
+
+                if(result == IN_RESULT_NOT_FOUND)
+                {
+                	v_messageState(m) = L_WRITE;
+                	result = IN_RESULT_OK;
+                }
             }
         }
     }
@@ -253,57 +507,88 @@ in_ddsiStreamReaderImplProcessAppdefData(
 		in_ddsiStreamReaderImpl _this,
 		in_ddsiSubmessageData submessage)
 {
-	os_boolean result = OS_FALSE;
+	in_connectivityPeerWriter peerWriter;
+	v_message messageObject = NULL;
+	os_boolean result = OS_TRUE;
+	in_result payloadResult;
 
     /* if the callback is undefined, avoid further parsing and processing,
      * but return with TRUE, so that scanner continues with following
      * submessages */
  	if (!(_this->callbackTable->processData)) {
 	    IN_TRACE(Receive,2,"callback 'processData' not defined, AppeDef Data ignored");
-	    result = OS_TRUE; /* continue buffer scan */
-	} else {
+	} else
+	{
         /*  peerWriter's refcounter is not incremented  */
-        in_connectivityPeerWriter peerWriter =
-            getPeerWriter(
-                    _this,
-                    &(_this->receiver.sourceGuidPrefix[0]),
-                    &(submessage->writerId));
+        peerWriter = getPeerWriter(_this,
+            &(_this->receiver.sourceGuidPrefix[0]),
+            &(submessage->writerId));
 
-        v_message messageObject = NULL;
+        if (!peerWriter)
+        {
+            IN_REPORT_WARNING(IN_SPOT,
+                "ignoring message from unknown peer writer");
+            /* continue with succeeding messages in same buffer */
+        } else
+        {
 
-        if (!peerWriter) {
-            /* TODO, maybe the inlineQos contains the topic-name we could use to fetch the
-             * topic and type objects */
-            IN_REPORT_WARNING(IN_SPOT, "ignoring message from unknwon peer writer");
-            result = OS_TRUE; /* continue with succeeding messages in same buffer */
-        } else {
-            in_result payloadResult =
-                in_ddsiStreamReaderImplProcessAppdefDataPayload(_this,
-                        submessage,
-                        peerWriter,
-                        &messageObject);
-             if (payloadResult!=IN_RESULT_OK) {
-                 IN_REPORT_WARNING(IN_SPOT, "message deserialization failed");
-                 result = OS_FALSE; /* abort processing this buffer */
-             } else if (messageObject==NULL) { /* paranoid check */
-                 IN_REPORT_WARNING(IN_SPOT, "message parsing succeeded, but message object empty");
-                 result = OS_FALSE; /* abort processing this buffer */
-             } else {
-                 /* messageObject points to vali v_message object */
+        	if(in_ddsiSubmessageHasFlagD((in_ddsiSubmessage)submessage))
+			{
+        		/* Deserialize data.*/
+        		payloadResult = in_ddsiStreamReaderImplProcessAppdefDataPayload(
+        		    _this,
+					submessage,
+					peerWriter,
+					&messageObject);
 
-                 /* TODO process inlineQos */
+				if (payloadResult != IN_RESULT_OK)
+				{
+					IN_REPORT_WARNING(IN_SPOT, "message deserialization failed");
+					result = OS_FALSE; /* abort processing this buffer */
+				} else if (messageObject==NULL)
+				{
+					/* paranoid check */
+					IN_REPORT_WARNING(IN_SPOT,
+					    "message parsing succeeded, but message object empty");
+					result = OS_FALSE; /* abort processing this buffer */
+				}
+			} else if(in_ddsiSubmessageHasFlagQ((in_ddsiSubmessage)submessage))
+        	{
+        		/* Lookup StatusInfo, KeyHash and QoS parameters if available.*/
+        		payloadResult = in_ddsiStreamReaderImplProcessAppdefDataPayloadNoData(
+						_this,
+						submessage,
+						peerWriter,
+						&messageObject);
 
-                 in_result callbackResult =
-                       _this->callbackTable->processData(
-                           _this->callbackArg,
-                           messageObject, /* handing over ownership */
-                           peerWriter,
-                           &(_this->receiver));
+					if (payloadResult != IN_RESULT_OK)
+					{
+						IN_REPORT_WARNING(IN_SPOT, "message deserialization failed");
+						result = OS_FALSE; /* abort processing this buffer */
+					} else if (messageObject==NULL)
+					{
+						/* paranoid check */
+						IN_REPORT_WARNING(IN_SPOT,
+							"message parsing succeeded, but message object empty");
+						result = OS_FALSE; /* abort processing this buffer */
+					}
+        	}
 
-                 result = (callbackResult==IN_RESULT_OK)
-                         ? OS_TRUE
-                         : OS_FALSE;
-             }
+        	if(result && messageObject)
+        	{
+        		payloadResult = _this->callbackTable->processData(
+        			_this->callbackArg, messageObject, peerWriter,
+        			&(_this->receiver));
+
+        		if(payloadResult != IN_RESULT_OK)
+        		{
+        			result = OS_FALSE;
+        		}
+        	} else
+        	{
+        		result = OS_FALSE;
+        		/* TODO: report error*/
+        	}
         }
 	}
 	return result;
@@ -784,6 +1069,8 @@ in_ddsiStreamReaderImplProcessData(
 {
 	os_boolean result = OS_TRUE;
     in_long length;
+    v_state state;
+    c_octet keyhash[16];
 
 	OS_STRUCT(in_ddsiSubmessageData) submessage;
 	in_ddsiDeserializer deserializer = NULL;
