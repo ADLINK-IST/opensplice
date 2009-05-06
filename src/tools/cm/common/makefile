@@ -1,5 +1,5 @@
 JAR_MODULE	 = tooling_common.jar
-JAR_LOCATION = `$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)`
+JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 = $(OSPL_HOME)/jar/$(SPLICE_TARGET)
 
 ifeq (,$(findstring win32,$(SPLICE_TARGET))) 

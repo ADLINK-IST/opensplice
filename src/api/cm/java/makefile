@@ -1,6 +1,6 @@
-JAR_MODULE    =cmapi.jar
-JAR_LOCATION	=`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)`
-JAR_INC_DIR	=$(OSPL_HOME)/jar/$(SPLICE_TARGET)
+JAR_MODULE   =cmapi.jar
+JAR_LOCATION =$(OSPL_HOME)
+JAR_INC_DIR	 =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
 JPACKAGES =	org/opensplice/cm/data \
 		org/opensplice/cm/meta \
 		org/opensplice/cm/status \
