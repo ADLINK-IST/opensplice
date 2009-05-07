@@ -171,9 +171,7 @@ in_ddsiStreamReaderImplDerializePayloadByKeyHash(
 {
 	in_result result;
 	c_long nrOfKeys, i, bytesCopied;
-	os_size_t inlineQosBytes;
 	c_array messageKeyList;
-	in_ddsiParameterHeader param;
 	c_value value;
 	c_base base;
 
@@ -1069,8 +1067,6 @@ in_ddsiStreamReaderImplProcessData(
 {
 	os_boolean result = OS_TRUE;
     in_long length;
-    v_state state;
-    c_octet keyhash[16];
 
 	OS_STRUCT(in_ddsiSubmessageData) submessage;
 	in_ddsiDeserializer deserializer = NULL;

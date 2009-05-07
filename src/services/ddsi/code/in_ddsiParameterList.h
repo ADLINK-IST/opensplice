@@ -90,7 +90,8 @@ in_ddsiParameterListForDataSerializeInstantly(
     in_ddsiSerializer serializer,
     in_endpointDiscoveryData discoveryData,
     v_message message,
-    v_topic topic);
+    v_topic topic,
+    os_boolean* keyHashAdded);
 
 /** */
 in_long
@@ -112,7 +113,8 @@ in_ddsiParameterListForDataCalculateSize(
     in_connectivityWriterFacade facade,
     in_endpointDiscoveryData discoveryData,
     v_message message,
-    v_topic topic);
+    v_topic topic,
+    os_boolean* keyHashAdded);
 
 os_size_t
 in_ddsiParameterListForPublicationCalculateSize(

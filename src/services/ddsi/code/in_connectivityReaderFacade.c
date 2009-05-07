@@ -69,10 +69,8 @@ in_connectivityReaderFacadeInit(
     os_boolean success;
     OS_STRUCT(in_ddsiGuid) guid;
     in_ddsiGuidPrefixRef prefix;
-    v_dataReader reader;
 
     assert(_this);
-
 
     prefix =in_connectivityParticipantFacadeGetGuidPrefix(participant);
 
@@ -80,7 +78,6 @@ in_connectivityReaderFacadeInit(
     guid.entityId.entityKey[0] = info->key.localId & 0xFF;
     guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
     guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
-    //should determine the following value based on topic and if it has a key or not
 
     if(hasKey)
     {

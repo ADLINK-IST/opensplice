@@ -417,13 +417,18 @@ in_ddsiSubmessageDataSerializedSize(
         os_size_t  inlineQosSize,
         os_size_t  serializedPayloadSize)
 {
-    os_size_t result =
-        IN_DDSI_SUBMESSAGE_HEADER_SIZE +
-        IN_DDSI_SUBMESSAGE_DATA_HEADER_SIZE +
-        inlineQosSize +
-        IN_DDSI_ENCAPSULATION_HEADER_SIZE
-        + serializedPayloadSize;
+	os_size_t result;
 
+	if(serializedPayloadSize > 0)
+	{
+		result = IN_DDSI_SUBMESSAGE_HEADER_SIZE +
+			IN_DDSI_SUBMESSAGE_DATA_HEADER_SIZE +inlineQosSize +
+			IN_DDSI_ENCAPSULATION_HEADER_SIZE + serializedPayloadSize;
+	} else
+	{
+		result = IN_DDSI_SUBMESSAGE_HEADER_SIZE +
+		    IN_DDSI_SUBMESSAGE_DATA_HEADER_SIZE + inlineQosSize;
+	}
     return result;
 }
 

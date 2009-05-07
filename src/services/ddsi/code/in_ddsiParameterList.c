@@ -1067,7 +1067,8 @@ in_ddsiParameterListForDataSerializeInstantly(
 		in_ddsiSerializer serializer,
 		in_endpointDiscoveryData discoveryData,
 		v_message message,
-		v_topic topic)
+		v_topic topic,
+		os_boolean* keyHashAdded)
 {
 	/*
 	 * +---------------+---------------+---------------+---------------+
@@ -1110,7 +1111,19 @@ in_ddsiParameterListForDataSerializeInstantly(
 			nofOctets = serializeKeyHash(serializer, message, topic);
 
 			if (nofOctets<0) break;
+
 			total += nofOctets;
+		} else
+		{
+			nofOctets = 0;
+		}
+		/*If keyHash serialized, set keyHashAdded to OS_TRUE.*/
+		if(nofOctets > 0)
+		{
+			*keyHashAdded = OS_TRUE;
+		} else
+		{
+			*keyHashAdded = OS_FALSE;
 		}
         /* write sentinel */
         nofOctets = serializeSentinel(serializer);
@@ -1419,14 +1432,15 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                   V_OWNERSHIP_SHARED);
         if (nofOctets<0) break;
         total += nofOctets;
-//todo just added to see if it helps get things to work
+        /* TODO just added to see if it helps get things to work*/
         nofOctets = serializeUint32(
                   serializer,
                   IN_PID_TYPE_MAX_SIZE_SERIALIZED,
                   8);
         if (nofOctets<0) break;
         total += nofOctets;
-//todo just added to see if it helps get things to work
+
+        /*TODO just added to see if it helps get things to work*/
         nofOctets = serializeTime(
                  serializer,
                  IN_PID_LIFESPAN,
@@ -1434,15 +1448,13 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
         if (nofOctets<0) break;
         total += nofOctets;
 
-// not done for ospl, but is done for RTI        IN_PID_GROUP_ENTITY_ID
-//todo just added to see if it helps get things to work
+        /*TODO just added to see if it helps get things to work*/
         nofOctets = serializeUint32(
                   serializer,
                   IN_PID_OWNERSHIP_STRENGTH,
                   0);
         if (nofOctets<0) break;
         total += nofOctets;
-
 
         nofOctets = serializeUint32(
                    serializer,
@@ -1744,7 +1756,8 @@ in_ddsiParameterListForDataCalculateSize(
         in_connectivityWriterFacade facade,
         in_endpointDiscoveryData discoveryData,
         v_message message,
-        v_topic topic)
+        v_topic topic,
+        os_boolean* keyHashAdded)
 {
     OS_STRUCT(in_ddsiSerializer) nilSerializer;
 
@@ -1760,7 +1773,8 @@ in_ddsiParameterListForDataCalculateSize(
              &nilSerializer,
              discoveryData,
              message,
-             topic);
+             topic,
+             keyHashAdded);
     assert(nofOctets>=4);
     result = (os_size_t) nofOctets;
 
@@ -1943,9 +1957,10 @@ serializeGuid(in_ddsiSerializer serializer,
          if (nofOctets<0) break;
          total += nofOctets;
 
-      //   assert(in_ddsiSerializerAlign(serializer,
-      //           IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT) == 0);
-
+         /*
+         assert(in_ddsiSerializerAlign(serializer,
+                 IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT) == 0);
+          */
          result = total;
      } while (0);
 
@@ -2556,30 +2571,22 @@ serializeKeyHash(
 	c_array messageKeyList;
 	c_long nrOfKeys, i, bytesCopied, size;
 	void* copyValue;
+	in_result r;
 	c_value value;
 	os_uint32 int32Value;
 	os_ushort int16Value;
 	c_octet keyHash[16];
 
 	do {
-		nofOctets = in_ddsiSerializerAppendUshort(serializer,
-			IN_PID_KEY_HASH);
-		if (nofOctets<0) break;
-		total += nofOctets;
-
-		nofOctets = in_ddsiSerializerAppendUshort(serializer, 16);
-		if (nofOctets<0) break;
-		total += nofOctets;
-
 		memset(keyHash, 0, 16);
 		bytesCopied = 0;
 
 		/*TODO: Determine keyHash from message (always big endian)*/
 		messageKeyList = v_topicMessageKeyList(topic);
 		nrOfKeys = c_arraySize(messageKeyList);
-		result = IN_RESULT_OK;
+		r = IN_RESULT_OK;
 
-		for (i=0;(i<nrOfKeys) && (result == IN_RESULT_OK);i++)
+		for (i=0;(i<nrOfKeys) && (r == IN_RESULT_OK);i++)
 		{
 			value = c_fieldValue(messageKeyList[i], message);
 
@@ -2614,17 +2621,38 @@ serializeKeyHash(
 			break;
 			/*TODO: complete for all types*/
 			default:
-				assert(FALSE);
+				r = IN_RESULT_PRECONDITION_NOT_MET;
+				size = 0;
 			break;
 			}
-			memcpy(&(keyHash[bytesCopied]), copyValue, size);
+
+			if(bytesCopied+size <= 16)
+			{
+				memcpy(&(keyHash[bytesCopied]), copyValue, size);
+			} else
+			{
+				r = IN_RESULT_PRECONDITION_NOT_MET;
+			}
 			bytesCopied += size;
 		}
-		nofOctets = in_ddsiSerializerAppendOctets(serializer, keyHash, 16);
-		if (nofOctets<0) break;
-		total += nofOctets;
+		if(r == IN_RESULT_OK)
+		{
+			nofOctets = in_ddsiSerializerAppendUshort(serializer,
+				IN_PID_KEY_HASH);
+			if (nofOctets<0) break;
+			total += nofOctets;
 
-		result = total;
+			nofOctets = in_ddsiSerializerAppendUshort(serializer, 16);
+			if (nofOctets<0) break;
+			total += nofOctets;
+			nofOctets = in_ddsiSerializerAppendOctets(serializer, keyHash, 16);
+			if (nofOctets<0) break;
+			total += nofOctets;
+
+			result = total;
+		} else {
+			result = 0;
+		}
 	} while (0);
 
 	return result;
