@@ -1,5 +1,8 @@
 #!/bin/sh
 
+PATH=/usr/bin:/bin:/usr/local/bin:$PATH
+export PATH
+
 Assert setupBuildInfo
 ArchiveLogs
 
