@@ -16,7 +16,9 @@ TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 $(TARGET): $(OBJECTS)
 	$(LD_SO) $(LDFLAGS) $^ $(LDLIBS) -o $@
 ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
+ifneq (vxworks,$(findstring vxworks,$(SPLICE_TARGET))) # but not vxworks
 	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#2"
+endif
 endif
 endif
 endif
@@ -46,7 +48,9 @@ else
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
 endif
 ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
+ifneq (vxworks,$(findstring vxworks,$(SPLICE_TARGET))) # but not vxworks
 	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
+endif
 endif 
 endif
 
