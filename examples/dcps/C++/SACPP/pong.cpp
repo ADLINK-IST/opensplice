@@ -99,6 +99,8 @@ main (
     ULong                             j;
     int                               jmax;
 
+    printf ("Starting pong example\n");
+    fflush(stdout);
     //
     // Evaluate cmdline arguments
     //
@@ -388,5 +390,7 @@ main (
     result = dp->delete_topic (PP_quit_topic);
     result = dpf->delete_participant (dp);
     
+    printf ("Completed pong example\n");
+    fflush(stdout);
     return 0;
 }

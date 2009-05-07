@@ -430,6 +430,8 @@ main (
     int                                  i;
     int                                  block;
 
+    printf ("Starting ping example\n");
+    fflush(stdout);
     //
     // init timing statistics 
     //
@@ -789,5 +791,7 @@ main (
     dp->delete_topic (PP_quit_topic);
     dpf->delete_participant (dp);
 
+    printf ("Completed ping example\n");
+    fflush(stdout);
     return 0;
 }

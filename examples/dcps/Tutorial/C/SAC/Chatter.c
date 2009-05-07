@@ -74,7 +74,14 @@ main (
     char                            *chatterName = NULL;
     char                            *partitionName = NULL;
         
-
+#ifdef INTEGRITY
+#ifdef CHATTER_QUIT
+    ownID = -1;
+#else
+    ownID = 1;
+#endif
+    chatterName = "dds_user";
+#else
     /* Options: Chatter [ownID [name]] */
     if (argc > 1) {
         sscanf(argv[1], "%d", &ownID);
@@ -82,6 +89,7 @@ main (
             chatterName = argv[2];
         }
     }
+#endif
 
     /* Create a DomainParticipantFactory and a DomainParticipant (using Default QoS settings). */
     dpf = DDS_DomainParticipantFactory_get_instance ();
@@ -289,5 +297,7 @@ main (
     status = DDS_DomainParticipantFactory_delete_participant(dpf, participant);
     checkStatus(status, "DDS_DomainParticipantFactory_delete_participant");
 
+    printf("Completed chatter example.\n");
+    fflush(stdout);
     return 0;
 }
