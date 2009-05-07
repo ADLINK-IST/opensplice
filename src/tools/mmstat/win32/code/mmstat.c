@@ -17,7 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
-#include <winioctl.h>
+/* #include <winioctl.h> */
 
 #include "c__base.h"
 #include <u_user.h>
@@ -229,13 +229,14 @@ main (
           pqos = u_participantQosNew(NULL);
           participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
           u_participantQosFree(pqos);
-        
+
           if(participant) 
           {
              if( !raw ) 
              {
                 printf("Connection established.\n\n");
              }
+        
              lost = 0;
              switch (selectedAction) 
              {
@@ -266,6 +267,7 @@ main (
                          ur = u_entityAction(u_entity(participant), monitor_orcAction, orcData);
                          break;
                    }
+                   fflush (stdout);
                    sample++;
                    if (trigger) 
                    {
@@ -279,7 +281,7 @@ main (
                 
                 if(ur == U_RESULT_OK)
                 {
-                   if (isatty (fileno(stdin)) && !raw) 
+                   if (_isatty (fileno(stdin)) && !raw)
                    {
                       count = read (fileno(stdin), &c, 1);
                       /* if count = -1, mmstat is started in background */
@@ -298,28 +300,6 @@ main (
                          count = read (fileno(stdin), &c, 1);
                       }
                    } 
-/*                    else  */
-/*                    { */
-/*                       if (ioctl (fileno(stdin), FIONREAD, &count) == 0)  */
-/*                       { */
-/*                          count = read (fileno(stdin), &c, 1); */
-/*                          if (count)  */
-/*                          { */
-/*                             if (c == 'q' || c == '\03' /\* ^C *\/)  */
-/*                             { */
-/*                                no_break = FALSE; */
-/*                             }  */
-/*                             else if (c == 't')  */
-/*                             { */
-/*                                trigger = 1; */
-/*                             } */
-/*                          } */
-/*                       }  */
-/*                       else  */
-/*                       { */
-/*                          no_break = 0; */
-/*                       } */
-/*                    } */
                    if (no_break && interval)
                    {
                       delay -= 100;

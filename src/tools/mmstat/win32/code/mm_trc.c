@@ -163,7 +163,6 @@ monitor_trcNew (
     c_bool delta
     )
 {
-    char expressionError [1024];
     monitor_trc o = malloc (C_SIZEOF(monitor_trc));
 
     if (o) {
