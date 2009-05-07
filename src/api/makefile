@@ -3,6 +3,10 @@
 #
 SUBSYSTEMS	 :=
 
+ifeq ($(INCLUDE_API_CM),yes)
+SUBSYSTEMS	 += cm
+endif
+
 ifeq ($(INCLUDE_API_DCPS),yes)
 SUBSYSTEMS	 += dcps
 endif
