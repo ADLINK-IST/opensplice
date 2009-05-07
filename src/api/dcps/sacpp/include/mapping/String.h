@@ -15,7 +15,7 @@
 #include "sacpp_if.h"
 #include "mapping/Memory.h"
 
-class SACPP_API DDS_DCPS::String_var
+class SACPP_API DDS::String_var
 {
 public:
 
@@ -32,17 +32,17 @@ public:
    inline operator char * ();
    inline operator const char * () const;
 
-   inline char & operator [] (DDS_DCPS::ULong index);
-   inline char operator [] (DDS_DCPS::ULong index) const;
+   inline char & operator [] (DDS::ULong index);
+   inline char operator [] (DDS::ULong index) const;
 
    inline const char * in () const;
-   inline DDS_DCPS::String & inout ();
-   inline DDS_DCPS::String_out out ();
-   inline DDS_DCPS::String _retn ();
-   inline DDS_DCPS::String & val ();
+   inline DDS::String & inout ();
+   inline DDS::String_out out ();
+   inline DDS::String _retn ();
+   inline DDS::String & val ();
 
    char * m_ptr;
-   DDS_DCPS::Boolean m_rel;
+   DDS::Boolean m_rel;
 
 protected:
 
@@ -56,7 +56,7 @@ protected:
  * string.
  */
 
-class SACPP_API DDS_DCPS::String_mgr : public DDS_DCPS::String_var
+class SACPP_API DDS::String_mgr : public DDS::String_var
 {
 public:
 
@@ -68,13 +68,13 @@ public:
    inline String_mgr (const String_mgr & m)
       : String_var ((const String_var&) m) {};
 
-   inline DDS_DCPS::String_var & operator = (const char * p);
-   inline DDS_DCPS::String_var & operator = (char * p);
-   inline DDS_DCPS::String_var & operator = (const String_var & s);
+   inline DDS::String_var & operator = (const char * p);
+   inline DDS::String_var & operator = (char * p);
+   inline DDS::String_var & operator = (const String_var & s);
 };
 
 
-class SACPP_API DDS_DCPS::String_out
+class SACPP_API DDS::String_out
 {
 public:
 
@@ -97,33 +97,33 @@ private:
 };
 
 
-class SACPP_API DDS_DCPS::String_for_seq
+class SACPP_API DDS::String_for_seq
 {
 public:
 
-   inline String_for_seq (DDS_DCPS::String & p, DDS_DCPS::Boolean rel)
+   inline String_for_seq (DDS::String & p, DDS::Boolean rel)
       : m_pptr (&p), m_rel (rel) {};
    inline ~String_for_seq () {};
 
-   inline DDS_DCPS::String_for_seq & operator = (const char * p);
-   inline DDS_DCPS::String_for_seq & operator = (DDS_DCPS::String p);
-   inline DDS_DCPS::String_for_seq & operator = (const DDS_DCPS::String_var &v);
-   inline DDS_DCPS::String_for_seq & operator = (const DDS_DCPS::String_for_seq &s);
+   inline DDS::String_for_seq & operator = (const char * p);
+   inline DDS::String_for_seq & operator = (DDS::String p);
+   inline DDS::String_for_seq & operator = (const DDS::String_var &v);
+   inline DDS::String_for_seq & operator = (const DDS::String_for_seq &s);
 
    inline operator char *& ();
 
-   inline char & operator [] (DDS_DCPS::ULong index);
-   inline char operator [] (DDS_DCPS::ULong index) const;
+   inline char & operator [] (DDS::ULong index);
+   inline char operator [] (DDS::ULong index) const;
 
    inline const char * in () const;
-   inline DDS_DCPS::String & inout ();
-   inline DDS_DCPS::String_out out ();
-   inline DDS_DCPS::String _retn ();
+   inline DDS::String & inout ();
+   inline DDS::String_out out ();
+   inline DDS::String _retn ();
 
 private:
 
    char ** m_pptr;
-   DDS_DCPS::Boolean m_rel;
+   DDS::Boolean m_rel;
 };
 
 
@@ -131,36 +131,36 @@ private:
 //  inline implementations
 // ------------------------------------------------------------
 
-#include "eOrb/os/eorbiostream.h"
+//#include "eOrb/os/eorbiostream.h"
 
-inline void DDS_DCPS::String_var::reset (char * p)
+inline void DDS::String_var::reset (char * p)
 {
    if (m_rel && m_ptr != NULL)
    {
-      DDS_DCPS::string_free (m_ptr);
+      DDS::string_free (m_ptr);
    }
    m_rel = 1;
    m_ptr = p;
 }
 
-inline DDS_DCPS::String_var::String_var ()
-   : m_ptr (nil), m_rel (1)
+inline DDS::String_var::String_var ()
+   : m_ptr (NULL), m_rel (1)
 {}
 
-inline DDS_DCPS::String_var::String_var (char * p)
+inline DDS::String_var::String_var (char * p)
    : m_ptr (p), m_rel (1)
 {}
 
-inline DDS_DCPS::String_var::String_var (const char * p)
-   : m_ptr (DDS_DCPS::string_dup (p)), m_rel (1)
+inline DDS::String_var::String_var (const char * p)
+   : m_ptr (DDS::string_dup (p)), m_rel (1)
 {}
 
-inline DDS_DCPS::String_var::String_var (const DDS_DCPS::String_var & s)
+inline DDS::String_var::String_var (const DDS::String_var & s)
    : m_rel (1)
 {
    if (s.m_ptr != NULL)
    {
-      m_ptr = DDS_DCPS::string_dup (s.m_ptr);
+      m_ptr = DDS::string_dup (s.m_ptr);
    }
    else
    {
@@ -168,15 +168,15 @@ inline DDS_DCPS::String_var::String_var (const DDS_DCPS::String_var & s)
    }
 }
 
-inline DDS_DCPS::String_var::~String_var ()
+inline DDS::String_var::~String_var ()
 {
    if (m_rel && m_ptr != NULL)
    {
-      DDS_DCPS::string_free (m_ptr);
+      DDS::string_free (m_ptr);
    }
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_var::operator = (char * p)
+inline DDS::String_var & DDS::String_var::operator = (char * p)
 {
    if (p != m_ptr)
    {
@@ -186,18 +186,18 @@ inline DDS_DCPS::String_var & DDS_DCPS::String_var::operator = (char * p)
    return *this;
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_var::operator = (const char * p)
+inline DDS::String_var & DDS::String_var::operator = (const char * p)
 {
    if (p != m_ptr)
    {
-      reset (DDS_DCPS::string_dup (p));
+      reset (DDS::string_dup (p));
    }
 
    return *this;
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_var::operator =
-   (const DDS_DCPS::String_var & s)
+inline DDS::String_var & DDS::String_var::operator =
+   (const DDS::String_var & s)
 {
    if (s.m_ptr == NULL)
    {
@@ -205,100 +205,100 @@ inline DDS_DCPS::String_var & DDS_DCPS::String_var::operator =
    }
    else
    {
-      reset (DDS_DCPS::string_dup (s.m_ptr));
+      reset (DDS::string_dup (s.m_ptr));
    }
    return *this;
 }
 
-inline DDS_DCPS::String_var::operator char * ()
+inline DDS::String_var::operator char * ()
 {
    return m_ptr;
 }
 
-inline DDS_DCPS::String_var::operator const char* () const
+inline DDS::String_var::operator const char* () const
 {
    return m_ptr;
 }
 
-inline char& DDS_DCPS::String_var::operator[] (DDS_DCPS::ULong index)
+inline char& DDS::String_var::operator[] (DDS::ULong index)
 {
    return m_ptr[index];
 }
 
-inline char DDS_DCPS::String_var::operator[] (DDS_DCPS::ULong index) const
+inline char DDS::String_var::operator[] (DDS::ULong index) const
 {
    return m_ptr[index];
 }
 
-inline const char * DDS_DCPS::String_var::in () const
+inline const char * DDS::String_var::in () const
 {
    return m_ptr;
 }
 
-inline DDS_DCPS::String & DDS_DCPS::String_var::inout ()
+inline DDS::String & DDS::String_var::inout ()
 {
    return m_ptr;
 }
 
-inline DDS_DCPS::String_out DDS_DCPS::String_var::out ()
+inline DDS::String_out DDS::String_var::out ()
 {
    return m_ptr;
 }
 
-inline DDS_DCPS::String DDS_DCPS::String_var::_retn ()
+inline DDS::String DDS::String_var::_retn ()
 {
-   DDS_DCPS::String ret = m_ptr;
-   m_ptr = nil;
+   DDS::String ret = m_ptr;
+   m_ptr = NULL;
    return ret;
 }
 
-inline DDS_DCPS::String & DDS_DCPS::String_var::val ()
+inline DDS::String & DDS::String_var::val ()
 {
    return m_ptr;
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_mgr::operator = (const char * p)
+inline DDS::String_var & DDS::String_mgr::operator = (const char * p)
 {
-   return DDS_DCPS::String_var::operator= (p);
+   return DDS::String_var::operator= (p);
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_mgr::operator = (char * p)
+inline DDS::String_var & DDS::String_mgr::operator = (char * p)
 {
-   return DDS_DCPS::String_var::operator= (p);
+   return DDS::String_var::operator= (p);
 }
 
-inline DDS_DCPS::String_var & DDS_DCPS::String_mgr::operator = (const DDS_DCPS::String_var & s)
+inline DDS::String_var & DDS::String_mgr::operator = (const DDS::String_var & s)
 {
-   return DDS_DCPS::String_var::operator= (s);
+   return DDS::String_var::operator= (s);
 }
 
-inline DDS_DCPS::String_out::String_out (char*& p)
+inline DDS::String_out::String_out (char*& p)
    : m_ptr (p)
 {}
 
-inline DDS_DCPS::String_out::String_out (DDS_DCPS::String_var& s)
+inline DDS::String_out::String_out (DDS::String_var& s)
    : m_ptr (s.m_ptr)
 {
-   DDS_DCPS::string_free (m_ptr);
-   m_ptr = nil;
+   DDS::string_free (m_ptr);
+   m_ptr = NULL;
 }
 
-inline DDS_DCPS::String_out::String_out (const DDS_DCPS::String_out & s)
+inline DDS::String_out::String_out (const DDS::String_out & s)
    : m_ptr (s.m_ptr)
 {}
 
-inline DDS_DCPS::String_out& DDS_DCPS::String_out::operator = (char * s)
+inline DDS::String_out& DDS::String_out::operator = (char * s)
 {
    m_ptr = s;
    return *this;
 }
 
-inline DDS_DCPS::String_out::operator char *& ()
+inline DDS::String_out::operator char *& ()
 {
    return m_ptr;
 }
 
-inline char*& DDS_DCPS::String_out::ptr ()
+inline char*& DDS::String_out::ptr ()
 {
    return m_ptr;
 }
@@ -309,49 +309,49 @@ class DDS_DCPSUStrSeq
 {
 public:
 
-   inline static char ** allocbuf (DDS_DCPS::ULong);
+   inline static char ** allocbuf (DDS::ULong);
    inline static void freebuf (char**);
 
    inline DDS_DCPSUStrSeq ();
-   inline DDS_DCPSUStrSeq (DDS_DCPS::ULong);
+   inline DDS_DCPSUStrSeq (DDS::ULong);
    inline DDS_DCPSUStrSeq
    (
-      DDS_DCPS::ULong max,
-      DDS_DCPS::ULong len,
+      DDS::ULong max,
+      DDS::ULong len,
       char ** data,
-      DDS_DCPS::Boolean rel = FALSE
+      DDS::Boolean rel = FALSE
    );
    inline DDS_DCPSUStrSeq (const DDS_DCPSUStrSeq&);
    inline ~DDS_DCPSUStrSeq ();
 
    DDS_DCPSUStrSeq & operator = (const DDS_DCPSUStrSeq&);
 
-   inline DDS_DCPS::ULong maximum () const;
+   inline DDS::ULong maximum () const;
 
-   void length (DDS_DCPS::ULong);
-   inline DDS_DCPS::ULong length() const;
+   void length (DDS::ULong);
+   inline DDS::ULong length() const;
 
-   inline DDS_DCPS::String_for_seq operator [] (DDS_DCPS::ULong index);
-   inline const char * operator [] (DDS_DCPS::ULong index) const;
+   inline DDS::String_for_seq operator [] (DDS::ULong index);
+   inline const char * operator [] (DDS::ULong index) const;
 
-   inline DDS_DCPS::Boolean release () const;
+   inline DDS::Boolean release () const;
 
    void replace
    (
-      DDS_DCPS::ULong max,
-      DDS_DCPS::ULong len,
+      DDS::ULong max,
+      DDS::ULong len,
       char ** data,
-      DDS_DCPS::Boolean rel = FALSE
+      DDS::Boolean rel = FALSE
    );
 
-   char ** get_buffer (DDS_DCPS::Boolean orphan = FALSE);
+   char ** get_buffer (DDS::Boolean orphan = FALSE);
    char * const * get_buffer () const;
 
 private:
 
-   DDS_DCPS::ULong m_max;
-   DDS_DCPS::ULong m_length;
-   DDS_DCPS::Boolean m_release;
+   DDS::ULong m_max;
+   DDS::ULong m_length;
+   DDS::Boolean m_release;
    char ** m_buffer;
 };
 
@@ -362,17 +362,17 @@ template <typename X> class DDS_DCPSUStrSeqT: public DDS_DCPSUStrSeq
    {
    }
 
-   inline DDS_DCPSUStrSeqT (DDS_DCPS::ULong len)
+   inline DDS_DCPSUStrSeqT (DDS::ULong len)
       : DDS_DCPSUStrSeq (len)
    {
    }
 
    inline DDS_DCPSUStrSeqT
    (
-      DDS_DCPS::ULong max,
-      DDS_DCPS::ULong len,
+      DDS::ULong max,
+      DDS::ULong len,
       char ** data,
-      DDS_DCPS::Boolean rel = FALSE
+      DDS::Boolean rel = FALSE
    )
       : DDS_DCPSUStrSeq (max, len, data, rel)
    {
@@ -384,7 +384,7 @@ template <typename X> class DDS_DCPSUStrSeqT: public DDS_DCPSUStrSeq
    }
 };
 
-inline char ** DDS_DCPSUStrSeq::allocbuf (DDS_DCPS::ULong nelems)
+inline char ** DDS_DCPSUStrSeq::allocbuf (DDS::ULong nelems)
 {
    return (char**) DDS_DCPS_Memory::_vec_alloc (sizeof (char*), nelems);
 }
@@ -393,13 +393,13 @@ inline void DDS_DCPSUStrSeq::freebuf (char ** buffer)
 {
    if (buffer)
    {
-      DDS_DCPS::ULong nelems = DDS_DCPS_Memory::_vec_size (buffer);
+      DDS::ULong nelems = DDS_DCPS_Memory::_vec_size (buffer);
 
-      for (DDS_DCPS::ULong i = 0; i < nelems; i++)
+      for (DDS::ULong i = 0; i < nelems; i++)
       {
          if (buffer[i])
          {
-            DDS_DCPS::string_free (buffer[i]);
+            DDS::string_free (buffer[i]);
          }
       }
 
@@ -415,25 +415,25 @@ inline DDS_DCPSUStrSeq::DDS_DCPSUStrSeq ()
    m_buffer (0)
 {}
 
-inline DDS_DCPSUStrSeq::DDS_DCPSUStrSeq (DDS_DCPS::ULong nelems)
+inline DDS_DCPSUStrSeq::DDS_DCPSUStrSeq (DDS::ULong nelems)
 :
    m_max (nelems),
    m_length (0),
    m_release (TRUE),
    m_buffer (nelems ? allocbuf (nelems) : 0)
 {
-   for (DDS_DCPS::ULong i = 0; i < nelems; i++)
+   for (DDS::ULong i = 0; i < nelems; i++)
    {
-      m_buffer[i] = DDS_DCPS::string_dup ("");
+      m_buffer[i] = DDS::string_dup ("");
    }
 }
 
 inline DDS_DCPSUStrSeq::DDS_DCPSUStrSeq
 (
-   DDS_DCPS::ULong max,
-   DDS_DCPS::ULong len,
+   DDS::ULong max,
+   DDS::ULong len,
    char ** data,
-   DDS_DCPS::Boolean rel
+   DDS::Boolean rel
 )
 :
    m_max (max),
@@ -462,28 +462,28 @@ inline DDS_DCPSUStrSeq::~DDS_DCPSUStrSeq ()
    }
 }
 
-inline DDS_DCPS::ULong DDS_DCPSUStrSeq::maximum () const
+inline DDS::ULong DDS_DCPSUStrSeq::maximum () const
 {
    return m_max;
 }
 
-inline DDS_DCPS::ULong DDS_DCPSUStrSeq::length () const
+inline DDS::ULong DDS_DCPSUStrSeq::length () const
 {
    return m_length;
 }
 
-inline DDS_DCPS::Boolean DDS_DCPSUStrSeq::release () const
+inline DDS::Boolean DDS_DCPSUStrSeq::release () const
 {
    return m_release;
 }
 
-inline DDS_DCPS::String_for_seq DDS_DCPSUStrSeq::operator [] (DDS_DCPS::ULong index)
+inline DDS::String_for_seq DDS_DCPSUStrSeq::operator [] (DDS::ULong index)
 {
    assert (index < m_length);
-   return DDS_DCPS::String_for_seq (m_buffer[index], m_release);
+   return DDS::String_for_seq (m_buffer[index], m_release);
 }
 
-inline const char * DDS_DCPSUStrSeq::operator [] (DDS_DCPS::ULong index) const
+inline const char * DDS_DCPSUStrSeq::operator [] (DDS::ULong index) const
 {
    assert (index < m_length);
    return m_buffer[index];
@@ -499,7 +499,7 @@ template <class T> class DDS_DCPSUStrSeq_var
 
 public:
 
-   DDS_DCPSUStrSeq_var () : m_ptr (nil) {}
+   DDS_DCPSUStrSeq_var () : m_ptr (NULL) {}
 
    DDS_DCPSUStrSeq_var (T * p) : m_ptr (p) {}
 
@@ -526,12 +526,12 @@ public:
       return *this;
    }
 
-   DDS_DCPS::String_for_seq operator[] (DDS_DCPS::ULong index)
+   DDS::String_for_seq operator[] (DDS::ULong index)
    {
       return ((*m_ptr)[index]);
    }
 
-   const char * operator[] (DDS_DCPS::ULong index) const
+   const char * operator[] (DDS::ULong index) const
    {
       return (char*&)(*m_ptr)[index];
    }
@@ -580,7 +580,7 @@ public:
    {
       T * ret = m_ptr;
 
-      m_ptr = nil;
+      m_ptr = NULL;
       return ret;
    }
 
@@ -636,11 +636,11 @@ public:
    T *& m_ptr;
 };
 
-inline void DDS_DCPSUStrSeq::length (DDS_DCPS::ULong nelems)
+inline void DDS_DCPSUStrSeq::length (DDS::ULong nelems)
 {     
    if (nelems > m_max)
    {
-      DDS_DCPS::ULong i = 0;
+      DDS::ULong i = 0;
       char ** old = m_buffer;
    
       m_max = nelems;
@@ -655,13 +655,13 @@ inline void DDS_DCPSUStrSeq::length (DDS_DCPS::ULong nelems)
          }
          else
          {
-            m_buffer[i] = DDS_DCPS::string_dup (old[i]);
+            m_buffer[i] = DDS::string_dup (old[i]);
          }
          i++;
       }
       while (i < m_max)
       {
-         m_buffer[i] = DDS_DCPS::string_dup (""); 
+         m_buffer[i] = DDS::string_dup (""); 
          i++;
       }
    
@@ -680,7 +680,7 @@ inline DDS_DCPSUStrSeq & DDS_DCPSUStrSeq::operator = (const DDS_DCPSUStrSeq & th
 {  
    if (this != &that)
    {  
-      DDS_DCPS::ULong i = 0;
+      DDS::ULong i = 0;
       if (m_release)
       {  
          freebuf (m_buffer);
@@ -693,12 +693,12 @@ inline DDS_DCPSUStrSeq & DDS_DCPSUStrSeq::operator = (const DDS_DCPSUStrSeq & th
       
       while (i < m_length)
       {
-         m_buffer[i] = DDS_DCPS::string_dup (that.m_buffer[i]);
+         m_buffer[i] = DDS::string_dup (that.m_buffer[i]);
          i++;
       }
       while (i < m_max)
       {
-         m_buffer[i] = DDS_DCPS::string_dup ("");
+         m_buffer[i] = DDS::string_dup ("");
          i++;
       }
    }
@@ -706,13 +706,13 @@ inline DDS_DCPSUStrSeq & DDS_DCPSUStrSeq::operator = (const DDS_DCPSUStrSeq & th
    return *this;
 }  
 
-inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (DDS_DCPS::String p)
+inline DDS::String_for_seq & DDS::String_for_seq::operator = (DDS::String p)
 {
    assert (m_pptr);
 
    if (m_rel && (*m_pptr) && (*m_pptr != p))
    {
-      DDS_DCPS::string_free (*m_pptr);
+      DDS::string_free (*m_pptr);
    }
 
    *m_pptr = p;
@@ -721,37 +721,37 @@ inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (DDS_DCPS
    return *this;
 }
 
-inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (const char * p)
+inline DDS::String_for_seq & DDS::String_for_seq::operator = (const char * p)
 {
    assert (m_pptr);
 
    if (m_rel && (*m_pptr) && (*m_pptr != p))
    {
-      DDS_DCPS::string_free (*m_pptr);
+      DDS::string_free (*m_pptr);
    }
 
-   *m_pptr = DDS_DCPS::string_dup (p);
+   *m_pptr = DDS::string_dup (p);
    m_rel = TRUE;
 
    return *this;
 }
 
-inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (const DDS_DCPS::String_var &v)
+inline DDS::String_for_seq & DDS::String_for_seq::operator = (const DDS::String_var &v)
 {
    assert (m_pptr);
 
    if (m_rel && (*m_pptr))
    {
-      DDS_DCPS::string_free (*m_pptr);
+      DDS::string_free (*m_pptr);
    }
 
-   *m_pptr = DDS_DCPS::string_dup (v.in ());
+   *m_pptr = DDS::string_dup (v.in ());
    m_rel = TRUE;
 
    return *this;
 }
 
-inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (const DDS_DCPS::String_for_seq &s)
+inline DDS::String_for_seq & DDS::String_for_seq::operator = (const DDS::String_for_seq &s)
 {
    if (&s != this)
    {
@@ -759,61 +759,61 @@ inline DDS_DCPS::String_for_seq & DDS_DCPS::String_for_seq::operator = (const DD
 
       if (m_rel && (*m_pptr))
       {
-         DDS_DCPS::string_free (*m_pptr);
+         DDS::string_free (*m_pptr);
       }
 
-      *m_pptr = DDS_DCPS::string_dup (s.in ());
+      *m_pptr = DDS::string_dup (s.in ());
       m_rel = TRUE;
    }
 
    return *this;
 }
 
-inline DDS_DCPS::String_for_seq::operator char *& ()
+inline DDS::String_for_seq::operator char *& ()
 {
    return *m_pptr;
 }
 
-inline char & DDS_DCPS::String_for_seq::operator [] (DDS_DCPS::ULong index)
+inline char & DDS::String_for_seq::operator [] (DDS::ULong index)
 {
    return (*m_pptr)[index];
 }
 
-inline char DDS_DCPS::String_for_seq::operator [] (DDS_DCPS::ULong index) const
+inline char DDS::String_for_seq::operator [] (DDS::ULong index) const
 {
    return (*m_pptr)[index];
 }
 
-inline const char * DDS_DCPS::String_for_seq::in () const
+inline const char * DDS::String_for_seq::in () const
 {
    assert (m_pptr);
    return *m_pptr;
 }
 
-inline DDS_DCPS::String & DDS_DCPS::String_for_seq::inout ()
+inline DDS::String & DDS::String_for_seq::inout ()
 {
    assert (m_pptr);
    return *m_pptr;
 }
 
-inline DDS_DCPS::String_out DDS_DCPS::String_for_seq::out ()
+inline DDS::String_out DDS::String_for_seq::out ()
 {
    assert (m_pptr);
 
    if (m_rel && (*m_pptr))
    {
-      DDS_DCPS::string_free (*m_pptr);
+      DDS::string_free (*m_pptr);
    }
 
-   *m_pptr = nil;
+   *m_pptr = NULL;
    return *m_pptr;
 }
 
-inline DDS_DCPS::String DDS_DCPS::String_for_seq::_retn ()
+inline DDS::String DDS::String_for_seq::_retn ()
 {
    assert (m_pptr);
-   DDS_DCPS::String result = *m_pptr;
-   *m_pptr = nil;
+   DDS::String result = *m_pptr;
+   *m_pptr = NULL;
    return result;
 }
 

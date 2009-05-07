@@ -9,34 +9,33 @@
  *   for full copyright notice and license terms.
  *
  */
-#include "sacpp_orb_pa.h"
 #include "os_abstract.h"
 #include "sacpp_Object.h"
 
-DDS_DCPS::Boolean
-DDS_DCPS::Object::_local_is_a(const char * id)
+DDS::Boolean
+DDS::Object::_local_is_a(const char * id)
 {
    return (strcmp(id, "IDL:omg.org/DDS_DCPS/Object:1.0") == 0);
 }
 
-DDS_DCPS::Boolean
-DDS_DCPS::Object::is_local_object()
+DDS::Boolean
+DDS::Object::is_local_object()
 {  
    return FALSE;
 } 
 
 void
-DDS_DCPS::release(DDS_DCPS::Object * p)
+DDS::release(DDS::Object * p)
 {
    if (p && (p->m_count != ~0U) && (--(p->m_count) == 0)) {
       delete p;
    }
 }
 
-DDS_DCPS::Boolean
-DDS_DCPS::Object::_is_a(const char * id)    
+DDS::Boolean
+DDS::Object::_is_a(const char * id)    
 {
-   DDS_DCPS::Boolean rt = false;
+   DDS::Boolean rt = false;
 
    if (this->_local_is_a (id)) {
       return true;

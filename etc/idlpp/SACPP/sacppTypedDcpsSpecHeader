@@ -1,9 +1,7 @@
 #ifndef _$upper($(basename))DCPS_H_
 #define _$upper($(basename))DCPS_H_
 
-#include "sacpp_orb_pa.h"
-#include "eOrb/DDS.h"
-#include "eOrb/idl_c.h"
+#include "sacpp_mapping.h"
 #include "dds_dcps.h"
 #include "$(basename).h"
 

@@ -119,12 +119,12 @@ class DDS_DCPS_VArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
          return *this;
       }
 
-      const SliceType & operator [] (DDS_DCPS::ULong index) const
+      const SliceType & operator [] (DDS::ULong index) const
       {
          return this->m_ptr[index];
       }
 
-      SliceType & operator [] (DDS_DCPS::ULong index)
+      SliceType & operator [] (DDS::ULong index)
       {
          return this->m_ptr[index];
       }
@@ -171,12 +171,12 @@ class DDS_DCPS_MArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
          return *this;
       }
 
-      const SliceType & operator [] (DDS_DCPS::ULong index) const
+      const SliceType & operator [] (DDS::ULong index) const
       {
          return (const SliceType&)*this->m_ptr[index];
       }
 
-      SliceType & operator [] (DDS_DCPS::ULong index)
+      SliceType & operator [] (DDS::ULong index)
       {
          return (SliceType&)*this->m_ptr[index];
       }
@@ -223,12 +223,12 @@ class DDS_DCPS_FArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
          return *this;
       }
 
-      const SliceType & operator [] (DDS_DCPS::ULong index) const
+      const SliceType & operator [] (DDS::ULong index) const
       {
          return this->m_ptr[index];
       }
 
-      SliceType & operator [] (DDS_DCPS::ULong index)
+      SliceType & operator [] (DDS::ULong index)
       {
          return this->m_ptr[index];
       }
@@ -253,7 +253,7 @@ class DDS_DCPS_Array_forany
       {
       }
 
-      DDS_DCPS_Array_forany(SliceType* _slice, DDS_DCPS::Boolean nocopy = FALSE)
+      DDS_DCPS_Array_forany(SliceType* _slice, DDS::Boolean nocopy = FALSE)
          : m_ptr(_slice)
       {
          if (nocopy)
@@ -291,13 +291,13 @@ class DDS_DCPS_Array_forany
       }
 
       const SliceType&
-      operator[](DDS_DCPS::ULong index) const
+      operator[](DDS::ULong index) const
       {
          return m_ptr[index];
       }
 
       SliceType&
-      operator[](DDS_DCPS::ULong index)
+      operator[](DDS::ULong index)
       {
          return m_ptr[index];
       }
@@ -337,7 +337,7 @@ class DDS_DCPS_MArray_forany
       {
       }
 
-      DDS_DCPS_MArray_forany(SliceType* _slice, DDS_DCPS::Boolean nocopy = FALSE)
+      DDS_DCPS_MArray_forany(SliceType* _slice, DDS::Boolean nocopy = FALSE)
          : m_ptr(_slice)
       {
          if (nocopy)
@@ -375,13 +375,13 @@ class DDS_DCPS_MArray_forany
       }
 
       const SliceType&
-      operator[](DDS_DCPS::ULong index) const
+      operator[](DDS::ULong index) const
       {
          return (const SliceType&)*m_ptr[index];
       }
 
       SliceType&
-      operator[](DDS_DCPS::ULong index)
+      operator[](DDS::ULong index)
       {
          return (SliceType&)*m_ptr[index];
       }
@@ -442,7 +442,7 @@ class DDS_DCPS_VLArray_out
          return m_ptr;
       }
 
-      SliceType& operator[](DDS_DCPS::ULong index)
+      SliceType& operator[](DDS::ULong index)
       {
          return m_ptr[index];
       }

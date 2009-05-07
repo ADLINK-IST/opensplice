@@ -15,10 +15,10 @@
 #include "os_abstract.h"
 #include "sacpp_if.h"
 
-class SACPP_API DDS_DCPS::Counter
+class SACPP_API DDS_DCPS_Counter
 {
    public:
-      Counter(os_uint32 val = 0) {
+      DDS_DCPS_Counter(os_uint32 val = 0) {
           m_value = val;
       };
 
@@ -26,7 +26,7 @@ class SACPP_API DDS_DCPS::Counter
           return m_value;
       };
 
-      Counter & operator = (os_uint32 val) { 
+      DDS_DCPS_Counter & operator = (os_uint32 val) { 
          m_value = val;
          return *this;
       };
@@ -39,8 +39,8 @@ class SACPP_API DDS_DCPS::Counter
 
    private:
 
-      Counter(const Counter&);
-      Counter &operator= (const Counter&);
+      DDS_DCPS_Counter(const DDS_DCPS_Counter&);
+      DDS_DCPS_Counter &operator= (const DDS_DCPS_Counter&);
 
       os_uint32 m_value;
 };
@@ -50,26 +50,26 @@ class SACPP_API DDS_DCPS::Counter
 /*                               Inline Methods                               */
 /******************************************************************************/
 
-inline os_uint32 DDS_DCPS::Counter::operator ++ (int)
+inline os_uint32 DDS_DCPS_Counter::operator ++ (int)
 {
    os_uint32 result = m_value;
    pa_increment ((os_uint32*)&m_value);
    return result;
 }
 
-inline os_uint32 DDS_DCPS::Counter::operator -- (int)
+inline os_uint32 DDS_DCPS_Counter::operator -- (int)
 {
    os_uint32 result = m_value;
    pa_decrement ((os_uint32*)&m_value);
    return result;
 }
 
-inline os_uint32 DDS_DCPS::Counter::operator ++ ()
+inline os_uint32 DDS_DCPS_Counter::operator ++ ()
 {
    return (pa_increment((os_uint32*)&m_value));
 }
 
-inline os_uint32 DDS_DCPS::Counter::operator -- ()
+inline os_uint32 DDS_DCPS_Counter::operator -- ()
 {
    return (pa_decrement((os_uint32*)&m_value));
 }

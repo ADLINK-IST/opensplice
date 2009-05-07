@@ -24,7 +24,7 @@
 
 #include "idl_scope.h"
 #include "idl_genSACPPType.h"
-#include "idl_genSACPPHelper.h"
+#include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
@@ -127,14 +127,14 @@ idl_arrayTypeDefs(
 
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"typedef %s %s_slice;\n",
-        idl_sacppTypeFromTypeSpec(actualType), name);
+        idl_corbaCxxTypeFromTypeSpec(actualType), name);
     if (idl_typeSpecType(subType) == idl_tarray) {
         idl_arraySliceDimensions(idl_typeArray(subType));
     }
 
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(),"typedef %s %s%s;\n",
-        idl_sacppTypeFromTypeSpec(actualType),
+        idl_corbaCxxTypeFromTypeSpec(actualType),
         name,
         arrayDims);
 
@@ -208,7 +208,7 @@ idl_seqTypeDefs(
                 idl_typeSeqMaxSize(typeSeq), name);
         }
     } else {
-        subTypeName = idl_sacppTypeFromTypeSpec(seqType);
+        subTypeName = idl_corbaCxxTypeFromTypeSpec(seqType);
         idl_printIndent(arg->indent_level);
         if (idl_typeSeqMaxSize(typeSeq) == 0) {
             idl_fileOutPrintf(idl_fileCur(),"typedef DDS_DCPSUFLSeq<%s, struct %s_uniq_> %s;\n",
@@ -489,10 +489,10 @@ idl_structureMemberOpenClose (
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-            snprintf(arg->buffer,MAX_BUFFER,"DDS_DCPS::String_mgr %s;\n", memberName);
+            snprintf(arg->buffer,MAX_BUFFER,"DDS::String_mgr %s;\n", memberName);
         } else {
             snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
-            idl_sacppTypeFromTypeSpec(typeSpec),
+            idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 memberName);
         }
     break;
@@ -501,7 +501,7 @@ idl_structureMemberOpenClose (
     case idl_tstruct:
     case idl_tunion:
         snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
-            idl_sacppTypeFromTypeSpec(typeSpec),
+            idl_corbaCxxTypeFromTypeSpec(typeSpec),
             memberName);
     break;
     case idl_tarray:
@@ -563,7 +563,7 @@ idl_unionOpen(
     char *switchTypeName;
 
     codebuffer = (struct idl_genSACPPCodeBuffer *)os_malloc(sizeof(struct idl_genSACPPCodeBuffer));
-    switchTypeName = idl_sacppTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec));
+    switchTypeName = idl_corbaCxxTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec));
 
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "class %s {\n");
@@ -695,10 +695,10 @@ idl_unionCaseOpenClose(
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-            snprintf(arg->buffer,MAX_BUFFER,"DDS_DCPS::String_mgr %s;\n", name);
+            snprintf(arg->buffer,MAX_BUFFER,"DDS::String_mgr %s;\n", name);
         } else {
             snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
-            idl_sacppTypeFromTypeSpec(typeSpec),
+            idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 name);
         }
     break;
@@ -707,7 +707,7 @@ idl_unionCaseOpenClose(
     case idl_tstruct:
     case idl_tunion:
         snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
-        idl_sacppTypeFromTypeSpec(typeSpec),
+        idl_corbaCxxTypeFromTypeSpec(typeSpec),
             name);
     break;
     case idl_tarray:
@@ -863,23 +863,23 @@ idl_typedefOpenClose(
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string) {
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS_DCPS::String_mgr %s;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_mgr %s;\n", name);
             /* also generate code for _var and _out types */
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS_DCPS::String_var %s_var;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_var %s_var;\n", name);
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS_DCPS::String_out %s_out;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_out %s_out;\n", name);
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
-                idl_sacppTypeFromTypeSpec(refType),
+                idl_corbaCxxTypeFromTypeSpec(refType),
                 name);
         }
     break;
     case idl_tenum:
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
-        idl_sacppTypeFromTypeSpec(refType),
+        idl_corbaCxxTypeFromTypeSpec(refType),
             name);
     break;
     case idl_tstruct:
@@ -890,15 +890,15 @@ idl_typedefOpenClose(
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
-                idl_sacppTypeFromTypeSpec(refType),
+                idl_corbaCxxTypeFromTypeSpec(refType),
                 name);
             /* generate _var and _out */
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s_var %s_var;\n",
-                idl_sacppTypeFromTypeSpec(refType), name);
+                idl_corbaCxxTypeFromTypeSpec(refType), name);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s_out %s_out;\n",
-                idl_sacppTypeFromTypeSpec(refType), name);
+                idl_corbaCxxTypeFromTypeSpec(refType), name);
         }
     break;
     case idl_tarray:
@@ -909,13 +909,13 @@ idl_typedefOpenClose(
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
-                idl_sacppTypeFromTypeSpec(refType), name);
+                idl_corbaCxxTypeFromTypeSpec(refType), name);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s_slice %s_slice;\n",
-               idl_sacppTypeFromTypeSpec(refType), name);
+               idl_corbaCxxTypeFromTypeSpec(refType), name);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s_var %s_var;\n",
-                idl_sacppTypeFromTypeSpec(refType), name);
+                idl_corbaCxxTypeFromTypeSpec(refType), name);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"static %s_slice %s_alloc();\n", name, name);
 
@@ -950,9 +950,9 @@ idl_constantOpenClose (
     t = idl_constSpecTypeGet(constantSpec);
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "const %s %s = (%s)%s;\n",
-        idl_sacppTypeFromTypeSpec(t),
+        idl_corbaCxxTypeFromTypeSpec(t),
         idl_constSpecName(constantSpec),
-        idl_sacppTypeFromTypeSpec(t),
+        idl_corbaCxxTypeFromTypeSpec(t),
         idl_constSpecImage(constantSpec));
 }
 

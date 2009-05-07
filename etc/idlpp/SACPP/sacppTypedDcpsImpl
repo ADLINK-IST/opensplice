@@ -1,5 +1,5 @@
 #if EORB_USE_EXPLICIT_TEMPLATES
-template class EORBUVLSeq <$(scopedtypename), struct $(typename)Seq_uniq_>;
+template class DDS_DCPSUVLSeq <$(scopedtypename), struct $(typename)Seq_uniq_>;
 #endif
 
 const char * $(scopedtypename)TypeSupportInterface::_local_id = "IDL:$(scope)/$(typename)TypeSupportInterface:1.0";
@@ -10,7 +10,7 @@ $(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface:
    return p;
 }
 
-CORBA::Boolean $(scopedtypename)TypeSupportInterface::_local_is_a (const char * _id)
+DDS::Boolean $(scopedtypename)TypeSupportInterface::_local_is_a (const char * _id)
 {
    if (strcmp (_id, $(scopedtypename)TypeSupportInterface::_local_id) == 0)
    {
@@ -27,10 +27,10 @@ CORBA::Boolean $(scopedtypename)TypeSupportInterface::_local_is_a (const char * 
    return FALSE;
 }
 
-$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)TypeSupportInterface_ptr result = NULL;
-   if (p && p->_is_a ($(scopedtypename)TypeSupportInterface::_local_id EORB_ENV_VARN))
+   if (p && p->_is_a ($(scopedtypename)TypeSupportInterface::_local_id))
    {
       result = dynamic_cast<$(scopedtypename)TypeSupportInterface_ptr> (p);
       result->m_count++;
@@ -38,7 +38,7 @@ $(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface:
    return result;
 }
 
-$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_unchecked_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)TypeSupportInterface_ptr $(scopedtypename)TypeSupportInterface::_unchecked_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)TypeSupportInterface_ptr result;
    result = dynamic_cast<$(scopedtypename)TypeSupportInterface_ptr> (p);
@@ -54,7 +54,7 @@ $(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_duplicate ($(scope
    return p;
 }
 
-CORBA::Boolean $(scopedtypename)DataWriter::_local_is_a (const char * _id)
+DDS::Boolean $(scopedtypename)DataWriter::_local_is_a (const char * _id)
 {
    if (strcmp (_id, $(scopedtypename)DataWriter::_local_id) == 0)
    {
@@ -71,10 +71,10 @@ CORBA::Boolean $(scopedtypename)DataWriter::_local_is_a (const char * _id)
    return FALSE;
 }
 
-$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)DataWriter_ptr result = NULL;
-   if (p && p->_is_a ($(scopedtypename)DataWriter::_local_id EORB_ENV_VARN))
+   if (p && p->_is_a ($(scopedtypename)DataWriter::_local_id))
    {
       result = dynamic_cast<$(scopedtypename)DataWriter_ptr> (p);
       result->m_count++;
@@ -82,7 +82,7 @@ $(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_narrow (CORBA::Obj
    return result;
 }
 
-$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_unchecked_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)DataWriter_ptr $(scopedtypename)DataWriter::_unchecked_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)DataWriter_ptr result;
    result = dynamic_cast<$(scopedtypename)DataWriter_ptr> (p);
@@ -98,7 +98,7 @@ $(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_duplicate ($(scope
    return p;
 }
 
-CORBA::Boolean $(scopedtypename)DataReader::_local_is_a (const char * _id)
+DDS::Boolean $(scopedtypename)DataReader::_local_is_a (const char * _id)
 {
    if (strcmp (_id, $(scopedtypename)DataReader::_local_id) == 0)
    {
@@ -115,10 +115,10 @@ CORBA::Boolean $(scopedtypename)DataReader::_local_is_a (const char * _id)
    return FALSE;
 }
 
-$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)DataReader_ptr result = NULL;
-   if (p && p->_is_a ($(scopedtypename)DataReader::_local_id EORB_ENV_VARN))
+   if (p && p->_is_a ($(scopedtypename)DataReader::_local_id))
    {
       result = dynamic_cast<$(scopedtypename)DataReader_ptr> (p);
       result->m_count++;
@@ -126,7 +126,7 @@ $(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_narrow (CORBA::Obj
    return result;
 }
 
-$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_unchecked_narrow (CORBA::Object_ptr p EORB_ENV_ARGN)
+$(scopedtypename)DataReader_ptr $(scopedtypename)DataReader::_unchecked_narrow (DDS::Object_ptr p)
 {
    $(scopedtypename)DataReader_ptr result;
    result = dynamic_cast<$(scopedtypename)DataReader_ptr> (p);

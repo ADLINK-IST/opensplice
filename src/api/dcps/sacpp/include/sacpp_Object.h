@@ -16,25 +16,25 @@
 #include "sacpp_Counter.h"
 #include "sacpp_if.h"
 
-class SACPP_API DDS_DCPS::Object
+class SACPP_API DDS::Object
 {
-   friend void DDS_DCPS::release(DDS_DCPS::Object * p);
-   friend void DDS_DCPS::release(DDS_DCPS::LocalObject * p);
+   friend void DDS::release(DDS::Object * p);
+   friend void DDS::release(DDS::LocalObject * p);
 
 public:
 
-   static DDS_DCPS::Object_ptr _duplicate(DDS_DCPS::Object_ptr obj);
-   static DDS_DCPS::Object_ptr _narrow(DDS_DCPS::Object_ptr obj);
-   static DDS_DCPS::Object_ptr _nil();
+   static DDS::Object_ptr _duplicate(DDS::Object_ptr obj);
+   static DDS::Object_ptr _narrow(DDS::Object_ptr obj);
+   static DDS::Object_ptr _NULL();
    
-   DDS_DCPS::Boolean _is_a(const char * logical_is_type); 
-   virtual DDS_DCPS::Boolean _local_is_a(const char * id);
-   virtual DDS_DCPS::Boolean is_local_object();
+   DDS::Boolean _is_a(const char * logical_is_type); 
+   virtual DDS::Boolean _local_is_a(const char * id);
+   virtual DDS::Boolean is_local_object();
 
    Object();
 
 protected:
-   DDS_DCPS::Counter m_count;
+   DDS_DCPS_Counter m_count;
 };
 
 
@@ -42,23 +42,23 @@ protected:
 //  inline implementations
 // --------------------------------------------------
 
-inline DDS_DCPS::Object::Object() : m_count (1)
+inline DDS::Object::Object() : m_count (1)
 {
 }
 
-inline DDS_DCPS::Object_ptr DDS_DCPS::Object::_nil()
+inline DDS::Object_ptr DDS::Object::_NULL()
 {
    return NULL;
 }
 
-inline DDS_DCPS::Object_ptr
-DDS_DCPS::Object::_narrow( DDS_DCPS::Object *obj)
+inline DDS::Object_ptr
+DDS::Object::_narrow(DDS::Object *obj)
 {
    return (obj?_duplicate(obj):NULL);
 }
 
-inline DDS_DCPS::Object_ptr
-DDS_DCPS::Object::_duplicate(DDS_DCPS::Object * p)
+inline DDS::Object_ptr
+DDS::Object::_duplicate(DDS::Object * p)
 {
    if (p && (p->m_count != ~0U)) {
       p->m_count++;

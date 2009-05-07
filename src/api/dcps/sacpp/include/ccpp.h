@@ -9,12 +9,13 @@
  *   for full copyright notice and license terms. 
  *
  */
-#ifndef IDL_GENSACPPHELPER_H
-#define IDL_GENSACPPHELPER_H
+#ifndef CCPP_H
+#define CCPP_H
 
-#include "idl_program.h"
-#include "idl_genCxxHelper.h"
+#include "ccpp_dcps_if.h"
+#include "sacpp_CORBA.h"
+#include "dds_dcps.h"
+#include <orb_abstraction.h>
 
-c_char *idl_sacppTypeFromTypeSpec(idl_typeSpec typeSpec);
+#endif /* CCPP_H */
 
-#endif /* IDL_GENSACPPHELPER_H */

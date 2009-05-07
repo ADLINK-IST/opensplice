@@ -10,7 +10,7 @@
  *
  */
 #include "idl_genCxxHelper.h"
-
+#include "idl_genLanguageHelper.h"
 #include <os_heap.h>
 #include <os_stdlib.h>
 
@@ -135,6 +135,108 @@ idl_scopeStackCxx(
     return scopeStack;
 }
 
+static c_char *
+standaloneTypeFromTypeSpec(
+    idl_typeBasic t)
+{
+    c_char *typeName;
+
+    typeName = NULL;
+    switch (idl_typeBasicType(t)) {
+    case idl_short:
+        typeName = os_strdup("DDS::Short");
+    break;
+    case idl_ushort:
+        typeName = os_strdup("DDS::UShort");
+    break;
+    case idl_long:
+        typeName = os_strdup("DDS::Long");
+    break;
+    case idl_ulong:
+        typeName = os_strdup("DDS::ULong");
+    break;
+    case idl_longlong:
+        typeName = os_strdup("DDS::LongLong");
+    break;
+    case idl_ulonglong:
+        typeName = os_strdup("DDS::ULongLong");
+    break;
+    case idl_float:
+        typeName = os_strdup("DDS::Float");
+    break;
+    case idl_double:
+        typeName = os_strdup("DDS::Double");
+    break;
+    case idl_char:
+        typeName = os_strdup("DDS::Char");
+    break;
+    case idl_string:
+        typeName = os_strdup("char *");
+    break;
+    case idl_boolean:
+        typeName = os_strdup("DDS::Boolean");
+    break;
+    case idl_octet:
+        typeName = os_strdup("DDS::Octet");
+    break;
+    default:
+        /* No processing required, empty statement to satisfy QAC */
+    break;
+    }
+    return typeName;
+}
+
+static c_char *
+corbaTypeFromTypeSpec(
+    idl_typeBasic t)
+{
+    c_char *typeName;
+
+    typeName = NULL;
+    switch (idl_typeBasicType(t)) {
+    case idl_short:
+        typeName = os_strdup("CORBA::Short");
+    break;
+    case idl_ushort:
+        typeName = os_strdup("CORBA::UShort");
+    break;
+    case idl_long:
+        typeName = os_strdup("CORBA::Long");
+    break;
+    case idl_ulong:
+        typeName = os_strdup("CORBA::ULong");
+    break;
+    case idl_longlong:
+        typeName = os_strdup("CORBA::LongLong");
+    break;
+    case idl_ulonglong:
+        typeName = os_strdup("CORBA::ULongLong");
+    break;
+    case idl_float:
+        typeName = os_strdup("CORBA::Float");
+    break;
+    case idl_double:
+        typeName = os_strdup("CORBA::Double");
+    break;
+    case idl_char:
+        typeName = os_strdup("CORBA::Char");
+    break;
+    case idl_string:
+        typeName = os_strdup("char *");
+    break;
+    case idl_boolean:
+        typeName = os_strdup("CORBA::Boolean");
+    break;
+    case idl_octet:
+        typeName = os_strdup("CORBA::Octet");
+    break;
+    default:
+        /* No processing required, empty statement to satisfy QAC */
+    break;
+    }
+    return typeName;
+}
+
 /* Return the C++ specific type identifier for the
    specified type specification
 */
@@ -147,49 +249,11 @@ idl_corbaCxxTypeFromTypeSpec(
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* if the specified type is a basic type */
-	switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-	case idl_short:
-	    typeName = os_strdup("CORBA::Short");
-	    break;
-	case idl_ushort:
-	    typeName = os_strdup("CORBA::UShort");
-	    break;
-	case idl_long:
-	    typeName = os_strdup("CORBA::Long");
-	    break;
-	case idl_ulong:
-	    typeName = os_strdup("CORBA::ULong");
-	    break;
-	case idl_longlong:
-	    typeName = os_strdup("CORBA::LongLong");
-	    break;
-	case idl_ulonglong:
-	    typeName = os_strdup("CORBA::ULongLong");
-	    break;
-	case idl_float:
-	    typeName = os_strdup("CORBA::Float");
-	    break;
-	case idl_double:
-	    typeName = os_strdup("CORBA::Double");
-	    break;
-	case idl_char:
-	    typeName = os_strdup("CORBA::Char");
-	    break;
-	case idl_string:
-	    typeName = os_strdup("char *");
-	    break;
-	case idl_boolean:
-	    typeName = os_strdup("CORBA::Boolean");
-	    break;
-	case idl_octet:
-	    typeName = os_strdup("CORBA::Octet");
-	    break;
-	default:
-	    /* No processing required, empty statement to satisfy QAC */
-	    break;
-	/* QAC EXPECT 2016; Default case must be empty here */
-	}
-        /* QAC EXPECT 3416; No side effects here */
+        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
+            typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec));
+        } else {
+            typeName = corbaTypeFromTypeSpec(idl_typeBasic(typeSpec));
+        }
     } else if ((idl_typeSpecType(typeSpec) == idl_tseq) ||
 	(idl_typeSpecType(typeSpec) == idl_tarray)) {
 	/* sequence does not have an identification */

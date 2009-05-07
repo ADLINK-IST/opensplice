@@ -44,7 +44,7 @@ template <class T> class DDS_DCPS_var;
 template <class T> class DDS_DCPS_out;
 template <class T> class DDS_DCPS_mgr;
 
-namespace DDS_DCPS
+namespace DDS
 {
    // Primitive types
 
@@ -130,8 +130,8 @@ namespace DDS_DCPS
    static char* string_dup  (const char* str);
    static void  string_free (char * str);
 
-   static void release(LocalObject_ptr p);
-   static void release(Object_ptr p);
+   SACPP_API void release(LocalObject_ptr p);
+   SACPP_API void release(Object_ptr p);
 
    class SACPP_API ValueBase;
    static void add_ref(ValueBase* vb);
@@ -145,24 +145,24 @@ namespace DDS_DCPS
 /* ************************************************************************** */
 
 inline char*
-DDS_DCPS::string_alloc(DDS_DCPS::ULong len)
+DDS::string_alloc(DDS::ULong len)
 {
    return new char [len + 1];
 }
 
 inline void
-DDS_DCPS::string_free(char * str)
+DDS::string_free(char * str)
 {
    delete [] str;
 }
  
 inline char *
-DDS_DCPS::string_dup(const char * s)
+DDS::string_dup(const char * s)
 {
    char *ret = NULL;
 
    if (s) {
-      ret = DDS_DCPS::string_alloc(strlen(s));
+      ret = DDS::string_alloc(strlen(s));
       strcpy(ret, s);
    }
 

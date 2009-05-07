@@ -23,17 +23,17 @@ public:
 
    // DDS_DCPS-Standard
 
-   static T * allocbuf (DDS_DCPS::ULong nelems);
+   static T * allocbuf (DDS::ULong nelems);
    static void freebuf (T * space);
 
    DDS_DCPSUFLSeq ();
-   DDS_DCPSUFLSeq (DDS_DCPS::ULong);
+   DDS_DCPSUFLSeq (DDS::ULong);
    DDS_DCPSUFLSeq
    (
-      DDS_DCPS::ULong max,
-      DDS_DCPS::ULong len,
+      DDS::ULong max,
+      DDS::ULong len,
       T * data,
-      DDS_DCPS::Boolean
+      DDS::Boolean
       rel = 0
    );
    DDS_DCPSUFLSeq (const DDS_DCPSUFLSeq<T, X>&);
@@ -41,24 +41,24 @@ public:
 
    DDS_DCPSUFLSeq<T, X>& operator = (const DDS_DCPSUFLSeq<T, X> &);
 
-   DDS_DCPS::ULong maximum () const;
-   void length (DDS_DCPS::ULong);
-   DDS_DCPS::ULong length () const;
+   DDS::ULong maximum () const;
+   void length (DDS::ULong);
+   DDS::ULong length () const;
 
-   T & operator[] (DDS_DCPS::ULong index);
-   const T & operator[] (DDS_DCPS::ULong index) const;
+   T & operator[] (DDS::ULong index);
+   const T & operator[] (DDS::ULong index) const;
 
-   DDS_DCPS::Boolean release () const;
+   DDS::Boolean release () const;
 
    void replace
    (
-      DDS_DCPS::ULong max,
-      DDS_DCPS::ULong length,
+      DDS::ULong max,
+      DDS::ULong length,
       T * data,
-      DDS_DCPS::Boolean rel = 0
+      DDS::Boolean rel = 0
    );
 
-   T * get_buffer (DDS_DCPS::Boolean orphan = 0);
+   T * get_buffer (DDS::Boolean orphan = 0);
    const T * get_buffer () const;
 
    // Proprietary extensions
@@ -68,9 +68,9 @@ public:
 
 private:
 
-   DDS_DCPS::ULong m_max;
-   DDS_DCPS::ULong m_length;
-   DDS_DCPS::Boolean m_release;
+   DDS::ULong m_max;
+   DDS::ULong m_length;
+   DDS::Boolean m_release;
    T * m_buffer;
 };
 
@@ -84,7 +84,7 @@ template <class T, typename X> inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq ()
 {}
 
 template <class T, typename X>
-inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq (DDS_DCPS::ULong max)
+inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq (DDS::ULong max)
 :
    m_max (max),
    m_length (0),
@@ -100,10 +100,10 @@ inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq (DDS_DCPS::ULong max)
 
 template <class T, typename X> inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq
 (
-   DDS_DCPS::ULong max,
-   DDS_DCPS::ULong length,
+   DDS::ULong max,
+   DDS::ULong length,
    T * data,
-   DDS_DCPS::Boolean rel
+   DDS::Boolean rel
 )
 :
    m_max (max),
@@ -166,10 +166,10 @@ template <class T, typename X> inline DDS_DCPSUFLSeq<T, X>&
 
 template <class T, typename X> inline void DDS_DCPSUFLSeq<T, X>::replace
 (
-   DDS_DCPS::ULong max,
-   DDS_DCPS::ULong length,
+   DDS::ULong max,
+   DDS::ULong length,
    T * data,
-   DDS_DCPS::Boolean rel
+   DDS::Boolean rel
 )
 {
    if (m_release)
@@ -185,7 +185,7 @@ template <class T, typename X> inline void DDS_DCPSUFLSeq<T, X>::replace
 
 template <class T, typename X> inline T * DDS_DCPSUFLSeq<T, X>::allocbuf
 (
-   DDS_DCPS::ULong nelems
+   DDS::ULong nelems
 )
 {
    return new T [nelems];
@@ -197,25 +197,25 @@ template <class T, typename X> inline void DDS_DCPSUFLSeq<T, X>::freebuf (T * bu
 }
 
 template <class T, typename X>
-inline DDS_DCPS::ULong DDS_DCPSUFLSeq<T, X>::maximum () const
+inline DDS::ULong DDS_DCPSUFLSeq<T, X>::maximum () const
 {
    return m_max;
 }
 
 template <class T, typename X>
-inline DDS_DCPS::ULong DDS_DCPSUFLSeq<T, X>::length () const
+inline DDS::ULong DDS_DCPSUFLSeq<T, X>::length () const
 {
    return m_length;
 }
 
 template <class T, typename X>
-inline DDS_DCPS::Boolean DDS_DCPSUFLSeq<T, X>::release () const
+inline DDS::Boolean DDS_DCPSUFLSeq<T, X>::release () const
 {
    return m_release;
 }
 
 template <class T, typename X>
-inline void DDS_DCPSUFLSeq<T, X>::length (DDS_DCPS::ULong nelems)
+inline void DDS_DCPSUFLSeq<T, X>::length (DDS::ULong nelems)
 {
    if (nelems > m_max)
    {
@@ -241,21 +241,21 @@ inline void DDS_DCPSUFLSeq<T, X>::length (DDS_DCPS::ULong nelems)
 }
 
 template <class T, typename X>
-inline T & DDS_DCPSUFLSeq<T, X>::operator[] (DDS_DCPS::ULong index)
+inline T & DDS_DCPSUFLSeq<T, X>::operator[] (DDS::ULong index)
 {
    assert (index < m_length);
    return m_buffer[index];
 }
 
 template <class T, typename X>
-inline const T & DDS_DCPSUFLSeq<T, X>::operator[] (DDS_DCPS::ULong index) const
+inline const T & DDS_DCPSUFLSeq<T, X>::operator[] (DDS::ULong index) const
 {
    assert (index < m_length);
    return m_buffer[index];
 }
 
 template <class T, typename X>
-inline T * DDS_DCPSUFLSeq<T, X>::get_buffer (DDS_DCPS::Boolean orphan)
+inline T * DDS_DCPSUFLSeq<T, X>::get_buffer (DDS::Boolean orphan)
 {
    T * ret = nil;
 
