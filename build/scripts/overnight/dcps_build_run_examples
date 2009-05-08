@@ -31,7 +31,9 @@ echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
 ArchiveLogs
 mkdir $LOGDIR/examples
 cd $LOGDIR/examples
-$OSPL_OUTER_HOME/testsuite/bin/run_examples_pcx86_integrity509 > run_examples.txt
+mkpts > PTSNAME &
+PTSN=`cat PTSNAME`
+$OSPL_OUTER_HOME/testsuite/bin/run_examples_pcx86_integrity509 > run_examples.txt < $PTSN
 $OSPL_OUTER_HOME/testsuite/bin/analyse_examples_pcx86_integrity509 > summary.txt
 
 grep -v PASS summary.txt
