@@ -5,9 +5,9 @@ TARGET_EXEC	:= odlpp
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-LDFLAGS = -L$(OSPL_HOME)/lib/$(SPLICE_HOST)
-LDLIBS += -l$(DDS_DATABASE) -l$(DDS_OS)
-LDLIBS :=$(filter-out -lefence, $(LDLIBS))
+LDFLAGS += -L$(OSPL_HOME)/lib/$(SPLICE_HOST)
+LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS  :=$(filter-out -lefence, $(LDLIBS))
 
 CINCS += -I../../../database/include
 

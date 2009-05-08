@@ -123,7 +123,7 @@ os_pathSep(void);
  */
 OS_API os_result
 os_access(
-    char *file_path,
+    const char *file_path,
     os_int32 permission);
 
 /** \brief Locate an executable file in the path

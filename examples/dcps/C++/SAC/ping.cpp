@@ -459,6 +459,9 @@ main (
     int                                      i;
     unsigned int                             block;
 
+    printf ("Starting ping example\n");
+    fflush(stdout);
+
     /*
      * init timing statistics 
      */
@@ -856,5 +859,7 @@ main (
     DDS_free (dwQos);
     DDS_free (drQos);
 
+    printf ("Completed ping example\n");
+    fflush(stdout);
     return 0;
 }
