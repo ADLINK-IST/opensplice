@@ -1,9 +1,9 @@
 
 include $(OSPL_HOME)/setup/$(SPLICE_TARGET)/config.mak
-include $(OSPL_HOME)/setup/makefiles/orbdeps_sa.mak
+#include $(OSPL_HOME)/setup/makefiles/orbdeps_sa.mak
 
 INCLUDE	:= -I./
-INCLUDE += $(ORB_SA_INCLUDE)
+#INCLUDE += $(ORB_SA_INCLUDE)
 INCLUDE += -I$(OSPL_HOME)/src/include
 INCLUDE += -I$(OSPL_HOME)/src/abstraction/os/include
 INCLUDE += -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
@@ -44,5 +44,5 @@ pingpongSplDcps.o: pingpongSplDcps.cpp
 	$(CXX) -g $(INCLUDE) -c pingpongSplDcps.cpp
 
 pingpongDcps.cpp pingpongDcps.h pingpongDcps.idl pingpong.h pingpong.cpp pingpongDcps_impl.h pingpongSplDcps.h pingpongDcps_impl.cpp pingpongSplDcps.cpp: ../../pingpong.idl
-	idlpp -l cpp -S -I../.. -I$(OSPL_HOME)/src/api/dcps/ccpp/idl -I$(OSPL_HOME)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET) -I$(OSPL_HOME)/src/api/dcps/sacpp/orb/$(SPLICE_SA_ORB) ../../pingpong.idl
-    
+	idlpp -l cpp -S -I../.. -I$(OSPL_HOME)/src/api/dcps/ccpp/idl -I$(OSPL_HOME)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET) ../../pingpong.idl
+

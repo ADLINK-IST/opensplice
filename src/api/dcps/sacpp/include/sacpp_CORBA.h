@@ -26,13 +26,15 @@ namespace CORBA
     typedef DDS::Octet   Octet;
     typedef DDS::Long    Long;
     typedef DDS::ULong   ULong;
-    typedef DDS::Object     Object;
-    typedef DDS::Object_ptr Object_ptr;
+    typedef DDS::Object          Object;
+    typedef DDS::Object_ptr      Object_ptr;
+    typedef DDS::LocalObject     LocalObject;
+    typedef DDS::LocalObject_ptr LocalObject_ptr;
     
     static void string_free(char* str);
     static char* string_dup(const char* s);
     static void release(Object_ptr p);
-
+    static void release(LocalObject_ptr p);
 }
 
 /* ************************************************************************** */
@@ -52,7 +54,12 @@ CORBA::string_dup(const char * s)
 
 inline void CORBA::release(CORBA::Object * p)
 {
-   DDS::release (p);
+   DDS::release(p);
+}
+
+inline void CORBA::release(CORBA::LocalObject * p)
+{
+   DDS::release(p);
 }
 
 #undef SACPP_API
