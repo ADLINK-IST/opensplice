@@ -3,6 +3,12 @@
 #
 SUBSYSTEMS	:=
 
+ifeq ($(INCLUDE_JAVA),yes)
+ifeq ($(INCLUDE_TOOLS_TUNER),yes)
+SUBSYSTEMS	+= cm
+endif
+endif
+
 ifeq ($(INCLUDE_TOOLS_IDLPP),yes)
 SUBSYSTEMS	+= idlpp
 endif
@@ -10,6 +16,11 @@ endif
 ifeq ($(INCLUDE_TOOLS_OSPL),yes)
 SUBSYSTEMS	+= ospl
 endif
+
+ifeq ($(INCLUDE_TOOLS_MMSTAT),yes)
+SUBSYSTEMS	+= mmstat
+endif
+
 
 ifneq (,$(findstring devdat,$(SPLICE_TARGET)))
 SUBSYSTEMS	+= dat

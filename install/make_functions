@@ -541,6 +541,23 @@ install_hde_target ()
     fi
 
     #
+    # Copy script files
+    #
+    echo "*     Copy script files"
+    release=${OSPL_HOME}/bin
+    if [ -d "${release}" ]
+    then
+        mkdir -p ${HDE_dir}/bin
+        if [ "${INCLUDE_TOOLS_TUNER}" = "yes" ]
+        then
+          install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
+        fi
+    else
+        echo "* ##    No script files detected"
+    fi
+    echo "*     Script files Ready"
+
+    #
     # Copy java archive files
     #
     if [ "${INCLUDE_JAVA}" = "yes" ]
@@ -589,6 +606,10 @@ install_hde_target ()
             if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
             then
                 install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+            then
+                install_bin_file ${host_release} ${HDE_dir} bin mmstat${suffix_exe}
             fi
             if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
             then
@@ -1241,6 +1262,11 @@ install_rts_target ()
         then
             install_bin_file ${release} ${RTS_dir} bin shmdump${suffix_exe}
         fi
+        if [ "$INCLUDE_TOOLS_MMSTAT" = "yes" ]
+        then
+            install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
+        fi
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
