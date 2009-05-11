@@ -74,7 +74,7 @@ endif
 	$(YACC) $< -o $@
 
 %.h: %.l
-	$(LEX) -t $< > $@
+	$(LEX) -t  -P $(basename $@)_yy $< > $@
 
 %.c.met: %.c
 	$(QAC) $(CPFLAGS) $(CINCS) $<
