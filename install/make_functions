@@ -258,7 +258,7 @@ set_rts_envs ()
             suffix_exe=".exe"
             suffix_script=".bat"
             ;;
-        PPC604.vxworks6.6)
+        PPC604.vxworks6.6*)
             suffix_exe=".vxe"
             ;;
     esac
