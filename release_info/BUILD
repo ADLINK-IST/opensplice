@@ -30,5 +30,5 @@ For sparc.solaris8-release target, which is suitable for SPARC Solaris 8 distrib
 a TNNL specific build script is available (bin/build.sparc.solaris8).
 Execute bin/build.sparc.solaris8 from within the top level source directory.
 
-To build all target releases the script bin/build.all is vailable.
+To build all target releases the script bin/build.all is available.
 Execute bin/build.all from within the top level source directory.
