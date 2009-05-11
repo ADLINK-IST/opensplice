@@ -474,11 +474,11 @@ namespace DDS
    typedef DDS_DCPSStruct_var <SubscriptionMatchedStatus> SubscriptionMatchedStatus_var;
    typedef SubscriptionMatchedStatus&SubscriptionMatchedStatus_out;
    struct TopicSeq_uniq_ {};
-   typedef EORBUObjSeq <Topic, struct TopicSeq_uniq_> TopicSeq;
+   typedef DDS_DCPSUObjSeq <Topic, struct TopicSeq_uniq_> TopicSeq;
    typedef DDS_DCPSSequence_var <TopicSeq> TopicSeq_var;
    typedef DDS_DCPSSequence_out <TopicSeq> TopicSeq_out;
    struct DataReaderSeq_uniq_ {};
-   typedef EORBUObjSeq <DataReader, struct DataReaderSeq_uniq_> DataReaderSeq;
+   typedef DDS_DCPSUObjSeq <DataReader, struct DataReaderSeq_uniq_> DataReaderSeq;
    typedef DDS_DCPSSequence_var <DataReaderSeq> DataReaderSeq_var;
    typedef DDS_DCPSSequence_out <DataReaderSeq> DataReaderSeq_out;
    class Listener
@@ -712,7 +712,7 @@ namespace DDS
 
 
    struct ConditionSeq_uniq_ {};
-   typedef EORBUObjSeq <Condition, struct ConditionSeq_uniq_> ConditionSeq;
+   typedef DDS_DCPSUObjSeq <Condition, struct ConditionSeq_uniq_> ConditionSeq;
    typedef DDS_DCPSSequence_var <ConditionSeq> ConditionSeq_var;
    typedef DDS_DCPSSequence_out <ConditionSeq> ConditionSeq_out;
    class WaitSetInterface

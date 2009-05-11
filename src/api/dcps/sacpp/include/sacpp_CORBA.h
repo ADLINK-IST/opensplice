@@ -16,10 +16,6 @@
 
 #include "sacpp_if.h"
 
-#if !defined nil
-#define nil (0)
-#endif
-
 namespace CORBA
 {
     typedef DDS::Boolean Boolean;

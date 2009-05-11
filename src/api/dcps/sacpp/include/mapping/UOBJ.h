@@ -14,7 +14,7 @@
 
 // Unbounded object reference sequence
 
-template <class T, typename X> class EORBUObjSeq
+template <class T, typename X> class DDS_DCPSUObjSeq
 {
 public:
 
@@ -24,19 +24,19 @@ public:
    static T ** allocbuf (DDS::ULong);
    static void freebuf (T**);
 
-   EORBUObjSeq ();
-   EORBUObjSeq (DDS::ULong);
-   EORBUObjSeq
+   DDS_DCPSUObjSeq ();
+   DDS_DCPSUObjSeq (DDS::ULong);
+   DDS_DCPSUObjSeq
    (
       DDS::ULong max,
       DDS::ULong len,
       T** data,
       DDS::Boolean rel = FALSE
    );
-   EORBUObjSeq (const EORBUObjSeq<T, X>&);
-   ~EORBUObjSeq ();
+   DDS_DCPSUObjSeq (const DDS_DCPSUObjSeq<T, X>&);
+   ~DDS_DCPSUObjSeq ();
 
-   EORBUObjSeq<T, X>& operator = (const EORBUObjSeq<T, X>&);
+   DDS_DCPSUObjSeq<T, X>& operator = (const DDS_DCPSUObjSeq<T, X>&);
 
    DDS::ULong maximum () const;
 
@@ -67,7 +67,7 @@ private:
 };
 
 template <class T, typename X>
-inline T ** EORBUObjSeq<T, X>::allocbuf (DDS::ULong nelems)
+inline T ** DDS_DCPSUObjSeq<T, X>::allocbuf (DDS::ULong nelems)
 {
    T ** buffer = (T**) DDS_DCPS_Memory::_vec_alloc (sizeof (T*), nelems);
 
@@ -79,7 +79,7 @@ inline T ** EORBUObjSeq<T, X>::allocbuf (DDS::ULong nelems)
    return buffer;
 }
 
-template <class T, typename X> inline void EORBUObjSeq<T, X>::freebuf (T ** buffer)
+template <class T, typename X> inline void DDS_DCPSUObjSeq<T, X>::freebuf (T ** buffer)
 {
    if (buffer)
    {
@@ -94,7 +94,7 @@ template <class T, typename X> inline void EORBUObjSeq<T, X>::freebuf (T ** buff
    }
 }
 
-template <class T, typename X> inline EORBUObjSeq<T, X>::EORBUObjSeq ()
+template <class T, typename X> inline DDS_DCPSUObjSeq<T, X>::DDS_DCPSUObjSeq ()
 :
    m_max (0),
    m_length (0),
@@ -103,7 +103,7 @@ template <class T, typename X> inline EORBUObjSeq<T, X>::EORBUObjSeq ()
 {}
 
 template <class T, typename X>
-inline EORBUObjSeq<T, X>::EORBUObjSeq (DDS::ULong nelems)
+inline DDS_DCPSUObjSeq<T, X>::DDS_DCPSUObjSeq (DDS::ULong nelems)
 :
    m_max (nelems),
    m_length (0),
@@ -111,7 +111,7 @@ inline EORBUObjSeq<T, X>::EORBUObjSeq (DDS::ULong nelems)
    m_release (TRUE)
 {}
 
-template <class T, typename X> inline EORBUObjSeq<T, X>::EORBUObjSeq
+template <class T, typename X> inline DDS_DCPSUObjSeq<T, X>::DDS_DCPSUObjSeq
 (
    DDS::ULong max,
    DDS::ULong len,
@@ -128,7 +128,7 @@ template <class T, typename X> inline EORBUObjSeq<T, X>::EORBUObjSeq
 }
 
 template <class T, typename X>
-inline EORBUObjSeq<T, X>::EORBUObjSeq (const EORBUObjSeq<T, X>& that)
+inline DDS_DCPSUObjSeq<T, X>::DDS_DCPSUObjSeq (const DDS_DCPSUObjSeq<T, X>& that)
 :
    m_max (0),
    m_length (0),
@@ -138,7 +138,7 @@ inline EORBUObjSeq<T, X>::EORBUObjSeq (const EORBUObjSeq<T, X>& that)
    *this = that;
 }
 
-template <class T, typename X> inline EORBUObjSeq<T, X>::~EORBUObjSeq ()
+template <class T, typename X> inline DDS_DCPSUObjSeq<T, X>::~DDS_DCPSUObjSeq ()
 {
    if (m_release)
    {
@@ -147,9 +147,9 @@ template <class T, typename X> inline EORBUObjSeq<T, X>::~EORBUObjSeq ()
 }
 
 template <class T, typename X>
-inline EORBUObjSeq<T, X>& EORBUObjSeq<T, X>::operator =
+inline DDS_DCPSUObjSeq<T, X>& DDS_DCPSUObjSeq<T, X>::operator =
 (
-   const EORBUObjSeq<T, X>& that
+   const DDS_DCPSUObjSeq<T, X>& that
 )
 {
    if (this != &that)
@@ -174,13 +174,13 @@ inline EORBUObjSeq<T, X>& EORBUObjSeq<T, X>::operator =
 }
 
 template <class T, typename X>
-inline DDS::ULong EORBUObjSeq<T, X>::maximum () const
+inline DDS::ULong DDS_DCPSUObjSeq<T, X>::maximum () const
 {
    return m_max;
 }
 
 template <class T, typename X>
-inline void EORBUObjSeq<T, X>::length (DDS::ULong nelems)
+inline void DDS_DCPSUObjSeq<T, X>::length (DDS::ULong nelems)
 {
    if (nelems > m_max)
    {
@@ -206,35 +206,35 @@ inline void EORBUObjSeq<T, X>::length (DDS::ULong nelems)
 }
 
 template <class T, typename X>
-inline DDS::ULong EORBUObjSeq<T, X>::length () const
+inline DDS::ULong DDS_DCPSUObjSeq<T, X>::length () const
 {
    return m_length;
 }
 
 template <class T, typename X>
-inline DDS::Boolean EORBUObjSeq<T, X>::release () const
+inline DDS::Boolean DDS_DCPSUObjSeq<T, X>::release () const
 {
    return m_release;
 }
 
 template <class T, typename X> inline DDS_DCPSInterface_mgr<T>
-EORBUObjSeq<T, X>::operator [] (DDS::ULong index) const
+DDS_DCPSUObjSeq<T, X>::operator [] (DDS::ULong index) const
 {
    assert (index < m_length);
    return DDS_DCPSInterface_mgr<T> (m_buffer[index], FALSE);
 }
 
 template <class T, typename X> inline DDS_DCPSInterface_mgr<T>
-EORBUObjSeq<T, X>::operator [] (DDS::ULong index)
+DDS_DCPSUObjSeq<T, X>::operator [] (DDS::ULong index)
 {
    assert (index < m_length);
    return DDS_DCPSInterface_mgr<T> (m_buffer[index], m_release);
 }
 
 template <class T, typename X> inline T**
-EORBUObjSeq<T, X>::get_buffer (DDS::Boolean orphan)
+DDS_DCPSUObjSeq<T, X>::get_buffer (DDS::Boolean orphan)
 {
-   T** ret = nil;
+   T** ret = NULL;
 
    if (orphan)
    {
@@ -243,7 +243,7 @@ EORBUObjSeq<T, X>::get_buffer (DDS::Boolean orphan)
          m_length = 0;
          m_release = TRUE;
          ret = m_buffer;
-         m_buffer = nil;
+         m_buffer = NULL;
       }
    }
    else
@@ -255,12 +255,12 @@ EORBUObjSeq<T, X>::get_buffer (DDS::Boolean orphan)
 }
 
 template <class T, typename X>
-inline T* const * EORBUObjSeq<T, X>::get_buffer () const
+inline T* const * DDS_DCPSUObjSeq<T, X>::get_buffer () const
 {
    return m_buffer;
 }
 
-template <class T, typename X> inline void EORBUObjSeq<T, X>::replace
+template <class T, typename X> inline void DDS_DCPSUObjSeq<T, X>::replace
 (
    DDS::ULong max,
    DDS::ULong len,

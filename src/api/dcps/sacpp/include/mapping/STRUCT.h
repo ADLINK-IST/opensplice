@@ -16,11 +16,11 @@ template <class Type> class DDS_DCPSStruct_var
 {
 public:
 
-   DDS_DCPSStruct_var (Type * p = nil) : m_ptr (p) {}
+   DDS_DCPSStruct_var (Type * p = NULL) : m_ptr (p) {}
 
    DDS_DCPSStruct_var (const DDS_DCPSStruct_var<Type>& that)
    {
-      m_ptr = (that.m_ptr) ? new Type (*(that.m_ptr)) : nil;
+      m_ptr = (that.m_ptr) ? new Type (*(that.m_ptr)) : NULL;
    }
 
    DDS_DCPSStruct_var (const Type & that)
@@ -41,7 +41,7 @@ public:
       if (this != &that)
       {
          delete m_ptr;
-         m_ptr = (that.m_ptr) ? new Type (*(that.m_ptr)) : nil;
+         m_ptr = (that.m_ptr) ? new Type (*(that.m_ptr)) : NULL;
       }
       return *this;
    }
@@ -70,14 +70,14 @@ public:
    Type *& out ()
    {
       delete m_ptr;
-      m_ptr = nil;
+      m_ptr = NULL;
       return m_ptr;
    }
 
    Type * _retn ()
    {
       Type * ret = m_ptr;
-      m_ptr = nil;
+      m_ptr = NULL;
       return ret;
    }
 

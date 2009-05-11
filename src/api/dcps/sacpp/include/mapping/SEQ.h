@@ -16,13 +16,13 @@ template <class T> class DDS_DCPSSequence_var
 {
 public:
 
-   DDS_DCPSSequence_var () : m_ptr (nil) {}
+   DDS_DCPSSequence_var () : m_ptr (NULL) {}
 
    DDS_DCPSSequence_var (T * p) : m_ptr (p) {}
 
    DDS_DCPSSequence_var (const DDS_DCPSSequence_var<T> & that)
    {
-      m_ptr = (that.m_ptr) ? new T (*(that.m_ptr)) : nil;
+      m_ptr = (that.m_ptr) ? new T (*(that.m_ptr)) : NULL;
    }
 
    ~DDS_DCPSSequence_var () { delete m_ptr; }
@@ -42,7 +42,7 @@ public:
       if (this != &that)
       {
          delete m_ptr;
-         m_ptr = (that.m_ptr) ? new T (*(that.m_ptr)) : nil;
+         m_ptr = (that.m_ptr) ? new T (*(that.m_ptr)) : NULL;
       }
       return *this;
    }
@@ -85,14 +85,14 @@ public:
    T *& out ()
    {
       delete m_ptr;
-      m_ptr = nil;
+      m_ptr = NULL;
       return m_ptr;
    }
 
    T * _retn ()
    {
       T * ret = m_ptr;
-      m_ptr = nil;
+      m_ptr = NULL;
       return ret;
    }
 

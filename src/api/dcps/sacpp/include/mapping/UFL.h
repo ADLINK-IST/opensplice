@@ -257,7 +257,7 @@ inline const T & DDS_DCPSUFLSeq<T, X>::operator[] (DDS::ULong index) const
 template <class T, typename X>
 inline T * DDS_DCPSUFLSeq<T, X>::get_buffer (DDS::Boolean orphan)
 {
-   T * ret = nil;
+   T * ret = NULL;
 
    if (orphan)
    {
@@ -267,11 +267,11 @@ inline T * DDS_DCPSUFLSeq<T, X>::get_buffer (DDS::Boolean orphan)
          m_length = 0;
          m_release = 1;
          ret = m_buffer;
-         m_buffer = nil;
+         m_buffer = NULL;
       }
 
       // if orphan && !m_release
-      // return nil
+      // return NULL
    }
    else
    {

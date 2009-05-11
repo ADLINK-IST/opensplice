@@ -21,7 +21,7 @@ template <class Type> class DDS_DCPSInterface_mgr;
 template <class Type> class DDS_DCPSInterface_var
 {
    public:
-      DDS_DCPSInterface_var (Type * p = nil);
+      DDS_DCPSInterface_var (Type * p = NULL);
 
       DDS_DCPSInterface_var (const DDS_DCPSInterface_var<Type> & v);
 

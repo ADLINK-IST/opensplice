@@ -27,7 +27,7 @@ class DDS_DCPS_BaseArray_var
 
    public:
       DDS_DCPS_BaseArray_var()
-         : m_ptr(nil)
+         : m_ptr(NULL)
       {
       }
 
@@ -64,7 +64,7 @@ class DDS_DCPS_BaseArray_var
       SliceType* _retn()
       {
          SliceType* ret = m_ptr;
-         m_ptr = nil;
+         m_ptr = NULL;
          return ret;
       }
 
@@ -91,7 +91,7 @@ class DDS_DCPS_VArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
 
    public:
       DDS_DCPS_VArray_var()
-         : DDS_DCPS_BaseArray_var<Type, SliceType, Unique> (nil)
+         : DDS_DCPS_BaseArray_var<Type, SliceType, Unique> (NULL)
       {
       }
 
@@ -132,7 +132,7 @@ class DDS_DCPS_VArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
       SliceType*& out()
       {
          Helper::free(this->m_ptr);
-         this->m_ptr = nil;
+         this->m_ptr = NULL;
          return this->m_ptr;
       }
 };
@@ -184,7 +184,7 @@ class DDS_DCPS_MArray_var: public DDS_DCPS_BaseArray_var<Type, SliceType, Unique
       SliceType*& out()
       {
          Helper::free(this->m_ptr);
-         this->m_ptr = nil;
+         this->m_ptr = NULL;
          return this->m_ptr;
       }
 };
@@ -249,7 +249,7 @@ class DDS_DCPS_Array_forany
    public:
 
       DDS_DCPS_Array_forany()
-         : m_ptr(nil)
+         : m_ptr(NULL)
       {
       }
 
@@ -267,7 +267,7 @@ class DDS_DCPS_Array_forany
       }
 
       DDS_DCPS_Array_forany(const DDS_DCPS_Array_forany& that)
-         : m_ptr(nil)
+         : m_ptr(NULL)
       {
          _copy(that.m_ptr);
       }
@@ -333,7 +333,7 @@ class DDS_DCPS_MArray_forany
    public:
 
       DDS_DCPS_MArray_forany()
-         : m_ptr(nil)
+         : m_ptr(NULL)
       {
       }
 
@@ -351,7 +351,7 @@ class DDS_DCPS_MArray_forany
       }
 
       DDS_DCPS_MArray_forany(const DDS_DCPS_MArray_forany& that)
-         : m_ptr(nil)
+         : m_ptr(NULL)
       {
          _copy(that.m_ptr);
       }
