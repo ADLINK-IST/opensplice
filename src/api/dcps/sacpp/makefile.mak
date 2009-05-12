@@ -42,10 +42,10 @@ include	     $(OSPL_HOME)/setup/makefiles/target.mak
 # Fine tune the compiler flags.
 CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP
 
-INCLUDE		+= -I$(OSPL_HOME)/src/kernel/include
-INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
+CXXINCS		+= -I$(OSPL_HOME)/src/kernel/include
+CXXINCS		+= -I$(OSPL_HOME)/src/database/database/include
+CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
+CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
 
 CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS) 
 
