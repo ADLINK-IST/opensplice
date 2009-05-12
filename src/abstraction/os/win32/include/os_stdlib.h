@@ -78,6 +78,7 @@ typedef HANDLE os_os_dirHandle;
 #define fileno   _fileno
 #define unlink   _unlink
 #define getpid   _getpid
+#define putenv   _putenv
 
 /* Since 'read' is also a function on a DCPS DataReader, it is
  * abstracted in a separate function so that there is no macro
