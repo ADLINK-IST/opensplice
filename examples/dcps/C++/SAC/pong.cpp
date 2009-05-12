@@ -95,6 +95,8 @@ main (
     int                                        j;
     int                                        jmax;
 
+    printf ("Starting pong example\n");
+    fflush(stdout);
     /*
      * Evaluate cmdline arguments
      */
@@ -416,5 +418,7 @@ main (
     DDS_free (dwQos);
     DDS_free (drQos);
 
+    printf ("Completed pong example\n");
+    fflush(stdout);
     return 0;
 }

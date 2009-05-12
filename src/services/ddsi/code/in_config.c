@@ -2874,7 +2874,7 @@ in_configTraverseInterfaceElement(
     {
         IN_REPORT_WARNING_2(
             IN_SPOT,
-            "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
+            "Unable to locate the data value within element '%s'! Reverting to the default value of '%s'.",
             INCF_ELEM_Interface,
             INCF_ATTRIB_Interface_value_DEF);
         networkId = os_malloc(sizeof(INCF_ATTRIB_Interface_value_DEF));

@@ -42,7 +42,6 @@ typedef unsigned long long in_uint64;
 #define OCT(_u) ((_u)&0xff)
 #define UI2ENTITYID(_u) { { OCT((_u)>>24), OCT((_u)>>16), OCT((_u)>>8)}, OCT((_u)&0xff) }
 
-
 #define IN_SHORT_MIN  -32768
 #define IN_SHORT_MAX   32767
 #define IN_USHORT_MAX  65535U

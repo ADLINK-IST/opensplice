@@ -478,14 +478,22 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
                 m->writerInstanceGID.serial = 0;
                 m->qos = in_messageQos_new(peerWriter, c_getBase(topic));
 
-                result = in_ddsiParameterListGetPidStatusInfo(
+                /* verify InlineQos parameters are presents */
+                if (submessage->inlineQos.totalOctetLength>0) {
+
+                	/* TODO: invoke the writerQos parameter-list instead,. parsing all of the
+                	 * Qos parameters, not just the PidStatus info. */
+                	result = in_ddsiParameterListGetPidStatusInfo(
                 								&(submessage->inlineQos),
                 								&(v_messageState(m)));
 
-                if(result == IN_RESULT_NOT_FOUND)
-                {
+					if(result == IN_RESULT_NOT_FOUND)
+					{
+						v_messageState(m) = L_WRITE;
+						result = IN_RESULT_OK;
+					}
+                } else {
                 	v_messageState(m) = L_WRITE;
-                	result = IN_RESULT_OK;
                 }
             }
         }

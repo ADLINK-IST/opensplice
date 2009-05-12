@@ -3,13 +3,15 @@ ifndef OSPL_OUTER_HOME
 
 TARGET_DLIB	:= $(DDS_OS)
 
-include         $(OSPL_HOME)/setup/makefiles/target.mak
+include  $(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_OS
-CFLAGS          += $(SHCFLAGS) $(MTCFLAGS)
-LDFLAGS         += $(SHLDFLAGS)
-LDLIBS		+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
-LDLIBS 		+= -lddsosnet
+CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
+CINCS    += -I$(OSPL_HOME)/src/database/database/include
+
+LDFLAGS  += $(SHLDFLAGS)
+LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
+LDLIBS 	+= -lddsosnet
 
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 LDLIBS     += -lposix -lutil
@@ -23,8 +25,6 @@ DEPENDENCIES    += $(LC_FILES:%.c=%.d)
 vpath os__%.c ../../$(OS)$(OS_REV)/code/
 OBJECTS+=$(LOBJECTS)
 $(TARGET): $(LOBJECTS)
-
-INCLUDE		+= -I$(OSPL_HOME)/src/database/database/include
 
 -include $(DEPENDENCIES)
 else

@@ -79,7 +79,11 @@ main (
     ostringstream                   buf;
 
 #ifdef INTEGRITY
+#ifdef CHATTER_QUIT
+    ownID = -1;
+#else
     ownID = 1;
+#endif
     chatterName = "dds_user";
 #else
     /* Options: Chatter [ownID [name]] */
@@ -274,5 +278,7 @@ main (
     status = dpf->delete_participant( participant.in() );
     checkStatus(status, "DDS::DomainParticipantFactory::delete_participant");
 
+    printf("Completed chatter example.\n");
+    fflush(stdout);
     return 0;
 }

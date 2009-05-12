@@ -913,12 +913,15 @@ in_connectivityAdminAddPeerReader(
         iterator = Coll_Iter_getNext(iterator);
     }
 
-    if ( !found )
-    {
-        /* find participant and add sequence number */
-        guid = in_connectivityPeerReaderGetGuid(reader);
-        participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
+    /* find participant and add sequence number */
+    guid = in_connectivityPeerReaderGetGuid(reader);
+    participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
+	assert(guid!=NULL);
 
+    /* just process peer-entities of known peer participants, otherwise reply endpoints
+     * may be undefined */
+    if ( !found && participant )
+    {
         unicastLocators = in_connectivityPeerReaderGetUnicastLocators(reader);
         multicastLocators = in_connectivityPeerReaderGetMulticastLocators(reader);
         if(Coll_List_getNrOfElements(unicastLocators) == 0 && Coll_List_getNrOfElements(multicastLocators) == 0)
@@ -949,6 +952,9 @@ in_connectivityAdminAddPeerReader(
             }
         }
         in_connectivityPeerParticipantFree(participant);
+    } else if (!participant) {
+    	/* corresponding peer participant not found */
+    	result = IN_RESULT_NOT_FOUND;
     }
 
     IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerReader(%x) result = %d",
@@ -998,6 +1004,8 @@ in_connectivityAdminAddPeerWriter(
     Coll_List* multicastLocators;
     Coll_List* partiticpantLocators;
     os_uint32 errorCode;
+    in_ddsiGuid guid = NULL;
+    in_connectivityPeerParticipant participant = NULL;
 
     os_mutexLock(&(_this->mutex));
 
@@ -1015,15 +1023,13 @@ in_connectivityAdminAddPeerWriter(
         iterator = Coll_Iter_getNext(iterator);
     }
 
-    if ( !found ) {
-        in_ddsiGuid guid;
-        in_connectivityPeerParticipant participant;
+    /* find participant and add sequence number */
+    guid = in_connectivityPeerWriterGetGuid(writer);
+    participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
 
-        /* find participant and add sequence number */
-        guid = in_connectivityPeerWriterGetGuid(writer);
-        participant = in_connectivityAdminFindPeerParticipantUnsafe(_this,guid->guidPrefix);
-        assert(participant);
+    assert(guid!=NULL);
 
+    if ( !found  && participant) {
         unicastLocators = in_connectivityPeerWriterGetUnicastLocators(writer);
         multicastLocators = in_connectivityPeerWriterGetMulticastLocators(writer);
         if(Coll_List_getNrOfElements(unicastLocators) == 0 && Coll_List_getNrOfElements(multicastLocators) == 0)
@@ -1051,6 +1057,9 @@ in_connectivityAdminAddPeerWriter(
             }
         }
         in_connectivityPeerParticipantFree(participant);
+    } else if (!participant) {
+    	/* corresponding peer participant not found */
+    	result = IN_RESULT_NOT_FOUND;
     }
 
     IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerWriter(%x) result = %d",

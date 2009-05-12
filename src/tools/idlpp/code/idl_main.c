@@ -72,13 +72,13 @@
 #define MAX_FILE_POSTFIX_LENGTH (20) /* maximum length postfixed to base file name */
 #define MAX_CPP_COMMAND (4192)
 
+const char* IDLCPP_COMMAND = "idlcpp" OS_EXESUFFIX;
+
 #ifdef WIN32
     const char* DEFAULT_ORB = "DDS_OpenFusion_1_5_1";
-    const char* IDLCPP_COMMAND = "idlcpp.exe";
     const char* QUOTE = "\"";
     const char* IDLPP_CMD_OPTIONS = "P:d:o:b:m:t:c:hECSD:I:l:";
 #else
-    const char* IDLCPP_COMMAND = "idlcpp";
     const char* DEFAULT_ORB = "DDS_OpenFusion_1_4_1";
     const char* QUOTE = "";
     const char* IDLPP_CMD_OPTIONS = "d:o:b:m:t:c:hECSD:I:l:";
@@ -289,6 +289,10 @@ addDefine(
     return result;
 }
 
+
+#if 0
+/* Not needed anymore, we now have os_locate */
+
 static c_char*
 getIdlcppPath()
 {
@@ -356,6 +360,7 @@ getIdlcppPath()
     }
     return resultPath;
 }
+#endif
 
 static char*
 getDefaultCcppOrbPath()
@@ -1005,7 +1010,8 @@ main (
                         strncat (cpp_command, c_iterObject(macroDefinitions, i), (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
-                    extIdlpp = getIdlcppPath();
+                    /* extIdlpp = getIdlcppPath(); */
+                    extIdlpp = os_locate(IDLCPP_COMMAND, OS_ROK|OS_XOK);
 
                     if (!extIdlpp) {
                         unlink(fname);

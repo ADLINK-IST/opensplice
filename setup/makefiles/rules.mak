@@ -10,7 +10,7 @@ endif
 
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
-JCODE_DIR  ?=code
+JCODE_DIR ?=code
 JFLAGS    ?= -source 1.4
 JFLAGS    +=-sourcepath '$(JCODE_DIR)'
 MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
@@ -18,6 +18,7 @@ MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
 # If JAR_MODULE is not defined, assign something to prevent warnings in make
 # output.
 JAR_MODULE ?= foo
+
 JAR_TARGET =$(JAR_LOCATION)/jar/$(SPLICE_TARGET)
 JAR_FILE   =$(JAR_TARGET)/$(JAR_MODULE)
 
@@ -26,10 +27,10 @@ MANIFEST_MAIN=Main-Class: $(JAVA_MAIN_CLASS)
 endif
 
 ifdef JAVA_INC
-ifeq (,$(findstring mingw,$(SPLICE_TARGET))) 
+ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst :, ,$(JAVA_INC)))
 #MANIFEST_CLASSPATH=Class-Path: $(subst $(JAR_INC_DIR)/,,$(subst :, ,$(JAVA_INC)))
-else
+else # it is windows
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst ;, ,$(JAVA_INC)))
 endif
 endif
@@ -39,9 +40,6 @@ $(CLASS_DIR):
 
 LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 
-# EXTRA_INC is only needed for cygwin builds to split the INCLUDE length as when it
-# exceeds a certain length make doesn't like it.
-
 .PRECIOUS: %.c %.h
 
 (%.o): %.o
@@ -49,28 +47,28 @@ LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 
 ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(INCLUDE) $< >$@
+	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
 else
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(INCLUDE) $(EXTRA_INC) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
 ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(INCLUDE) $< >$@
+	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
 else
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(INCLUDE) $(EXTRA_INC) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
 %$(OBJ_POSTFIX): %.c
-	$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDE) $(EXTRA_INC) -c $<
+	$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(CINCS) -c $<
 
 %$(OBJ_POSTFIX): %.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) $(EXTRA_INC) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
 
 %$(OBJ_POSTFIX): %.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDE) $(EXTRA_INC) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
 
 %.c: %.y
 	$(YACC) $< -o $@
@@ -79,7 +77,7 @@ endif
 	$(LEX) -t $< > $@
 
 %.c.met: %.c
-	$(QAC) $(CPFLAGS) $(INCLUDE) $<
+	$(QAC) $(CPFLAGS) $(CINCS) $<
 
 %.c.gcov: %.bb
 	$(GCOV) -b -f $< > $@.sum
@@ -100,29 +98,45 @@ vpath %.l		$(CODE_DIR)
 vpath %.odl		$(CODE_DIR)
 #vpath %.class 	$(LOCAL_CLASS_DIR)
 vpath %.idl	$(CODE_DIR)
-INCLUDE		 = -I.
-INCLUDE		+= -I../../include
-INCLUDE		+= -I$(CODE_DIR)
+CINCS		 = -I.
+CINCS		+= -I../../include
+CINCS		+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
-INCLUDE		+= -I$(OSPL_HOME)/src/include
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+CINCS		+= -I$(OSPL_HOME)/src/include
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/include
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
 else
-INCLUDE		+= -I$(OSPL_HOME)/src/include
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/include
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
-INCLUDE		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC_CORE)
-INCLUDE		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+CINCS		+= -I$(OSPL_HOME)/src/include
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/include
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC_CORE)
+CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+endif
+
+CXXINCS	 = -I.
+CXXINCS	+= -I../../include
+CXXINCS	+= -I$(CODE_DIR)
+
+ifndef OSPL_OUTER_HOME
+CXXINCS	+= -I$(OSPL_HOME)/src/include
+CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+else
+CXXINCS	+= -I$(OSPL_HOME)/src/include
+CXXINCS  += -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
+CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
+CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 endif
 
 C_FILES		?= $(notdir $(wildcard $(CODE_DIR)/*.c)) 
@@ -160,8 +174,13 @@ $(ODL_C): $(ODL_FILES)
 
 jar: $(JAR_FILE)
 
+ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
 $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
 	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
+else
+$(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
+	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
+endif
 
 ifdef MANIFEST_CLASSPATH
 $(MANIFEST):

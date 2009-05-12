@@ -1,12 +1,1 @@
-BUILD=no
-SETUP_TYPE=NONE
-BUILD_DIST=no
-KEEP_DIST=no
-RUN_DBT=no
-RUN_RBT=no
-RUN_EXAMPLES=no
-
-. configs/`hostname`/common
-
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Linux-gcc346-inline-64bit-090414
-export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.5.0_16_64
+. configs/common-inner

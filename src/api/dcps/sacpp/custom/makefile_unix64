@@ -15,18 +15,22 @@ include ./orbdeps_sa.mak
 # This determines what will be processed 
 
 # OpenSplice Preprocessor (idlpp) output
-IDLPP_OBJ        = $(TOPIC_IDL:%.idl=%Dcps_impl.o) $(TOPIC_IDL:%.idl=%SplDcps.o)
-IDLPP_SRC        = $(IDLPP_OBJ:%.o=%.cpp)
-IDLPP_IDL        = $(TOPIC_IDL:%.idl=%Dcps.idl)
-IDLPP_HDR        = $(IDLPP_OBJ:%.o=%.h) ccpp_$(TOPIC_IDL:%.idl=%.h)
+IDLPP_OBJ = $(TOPIC_IDL:%.idl=%Dcps_impl.o) $(TOPIC_IDL:%.idl=%SplDcps.o)
+IDLPP_SRC = $(IDLPP_OBJ:%.o=%.cpp)
+IDLPP_IDL = $(TOPIC_IDL:%.idl=%Dcps.idl)
+IDLPP_HDR = $(IDLPP_OBJ:%.o=%.h) ccpp_$(TOPIC_IDL:%.idl=%.h)
 
 # API Classes.
-API_SRC          = $(wildcard ccpp_*.cpp)
-API_OBJ          = $(API_SRC:%.cpp=%.o)
+API_SRC = $(wildcard ccpp_*.cpp)
+API_OBJ = $(API_SRC:%.cpp=%.o)
 
 # EORB implementation classes.
+<<<<<<< HEAD:src/api/dcps/sacpp/custom/makefile
+EORB_OBJ = common_cobject.o CORBA_LocalObject.o
+=======
 EORB_SRC         = common_cobject.cpp CORBA_LocalObject.cpp
 EORB_OBJ         = common_cobject.o CORBA_LocalObject.o
+>>>>>>> 3d041695e02868394f7cf29caa072686d0088546:src/api/dcps/sacpp/custom/makefile_unix64
 
 # All objects
 OBJS = $(IDLPP_OBJ) $(ORB_TOP_OBJ) $(ORB_API_OBJ) $(API_OBJ) $(IDLPP_ORB_OBJ) $(EORB_OBJ)
@@ -38,15 +42,20 @@ DLIB_POSTFIX := .so
 
 TARGET = $(DLIB_PREFIX)$(TARGET_DLIB)$(DLIB_POSTFIX)
 
-INCLUDE += -I./
-INCLUDE += -I$(OSPL_HOME)/include
-INCLUDE += -I$(OSPL_HOME)/include/sys
-INCLUDE += -I$(OSPL_HOME)/include/dcps/C++/SACPP
+CXXINCS += -I./
+CXXINCS += -I$(OSPL_HOME)/include
+CXXINCS += -I$(OSPL_HOME)/include/sys
+CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/SACPP
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := g++
+<<<<<<< HEAD:src/api/dcps/sacpp/custom/makefile
+CXXFLAGS := -g $(ORB_SA_CXX_FLAGS) -fPIC
+CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(ORB_SA_CPP_FLAGS)
+=======
 CXXFLAGS := -m64 -g $(ORB_SA_CXX_FLAGS) -fPIC
 CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(INCLUDE) $(ORB_SA_CPP_FLAGS)
+>>>>>>> 3d041695e02868394f7cf29caa072686d0088546:src/api/dcps/sacpp/custom/makefile_unix64
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)

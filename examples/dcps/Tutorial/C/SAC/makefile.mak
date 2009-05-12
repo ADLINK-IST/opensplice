@@ -15,11 +15,11 @@ DCPS_OBJ	:= $(DCPS_IDL:%.idl=%SplDcps$(OBJ_POSTFIX)) $(DCPS_IDL:%.idl=%SacDcps$(
 DCPS_CPP	:= $(DCPS_OBJ:%$(OBJ_POSTFIX)=%.c)
 DCPS_HDR	:= $(DCPS_OBJ:%$(OBJ_POSTFIX)=%.h) $(DCPS_IDL:%.idl=%.h)
 
-INCLUDE		+= -I../..
-INCLUDE		+= -I$(OSPL_HOME)/src/api/dcps/sac/include
-INCLUDE     += -I$(OSPL_HOME)/src/database/database/include
-INCLUDE		+= -I$(OSPL_HOME)/src/user/include
-INCLUDE		+= -I$(OSPL_HOME)/src/kernel/include
+CINCS		+= -I../..
+CINCS		+= -I$(OSPL_HOME)/src/api/dcps/sac/include
+CINCS     += -I$(OSPL_HOME)/src/database/database/include
+CINCS		+= -I$(OSPL_HOME)/src/user/include
+CINCS		+= -I$(OSPL_HOME)/src/kernel/include
 
 LDLIBS		+= -ldcpssac
 
@@ -29,7 +29,7 @@ $(EXEC_DIR):
 	mkdir -p $(EXEC_DIR)
 
 $(DCPS_CPP) $(DCPS_HDR): ../../$(DCPS_IDL)
-	idlpp -l c -S $(INCLUDE) $<
+	idlpp -l c -S $(CINCS) $<
 	
 $(CHATTER)$(EXEC_POSTFIX): $(DCPS_OBJ) $(SUPPORT) $(CHATTER)$(OBJ_POSTFIX)
 	$(LD_EXE) $(LDFLAGS) $^ $(LDLIBS) -o $@
