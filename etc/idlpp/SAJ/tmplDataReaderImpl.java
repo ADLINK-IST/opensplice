@@ -6,7 +6,7 @@ public class $(type-name)DataReaderImpl extends org.opensplice.dds.dcps.DataRead
     public $(type-name)DataReaderImpl($(scoped-type-name)TypeSupport ts)
     {
         typeSupport = ts;
-        copyCache = ts.get_copyCache ();
+        copyCache = typeSupport.get_copyCache ();
     }
 
     public int read(
