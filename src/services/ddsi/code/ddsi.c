@@ -51,7 +51,7 @@ main(
            "DDSI networking main loop",
            "Usage: ddsi name <configuration-URI>");
     }
-
+    printf("%s is gone...\n", argv[1]);
     return 0;
 
 }
@@ -104,6 +104,7 @@ in_serviceMain(
             /* Get sleeptime from configuration */
             in_retrieveLeaseSettings(&leasePeriod, &sleepTime);
 
+            u_participantRenewLease(u_participant(service), leasePeriod);
             /* Loop until termination is requested */
             u_serviceWatchSpliceDaemon(
                 service,
@@ -117,6 +118,9 @@ in_serviceMain(
                 /* Wait before renewing again */
                 os_nanoSleep(sleepTime);
             }
+            leasePeriod.seconds = 20;
+            u_participantRenewLease(u_participant(service), leasePeriod);
+            u_serviceChangeState(service, STATE_TERMINATING);
             in_controllerStop(controller);
             in_controllerFree(controller);
             IN_REPORT_INFO(1, "DDSI networking stopped");

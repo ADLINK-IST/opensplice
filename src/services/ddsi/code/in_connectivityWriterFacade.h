@@ -81,6 +81,15 @@ in_ddsiSequenceNumber
 in_connectivityWriterFacadeGetSequenceNumber(
     in_connectivityWriterFacade _this);
 
+os_boolean
+in_connectivityWriterFacadeMatchesPeerReader(
+	in_connectivityWriterFacade _this,
+	in_connectivityPeerReader reader);
+
+os_uint32
+in_connectivityWriterFacadeGetPartitionCount(
+	in_connectivityWriterFacade _this);
+
 #if defined (__cplusplus)
 }
 #endif

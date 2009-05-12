@@ -40,6 +40,7 @@ in_ddsiParameterHeaderInitFromBuffer(
 		nofOctets =
 			in_ddsiParameterIdInitFromBuffer(&(_this->id), deserializer);
 
+		assert(nofOctets >= 0);
 		if (nofOctets < 0) break;
 		total += nofOctets;
 
@@ -48,7 +49,7 @@ in_ddsiParameterHeaderInitFromBuffer(
 
             nofOctets =
                 in_ddsiDeserializerParseUshort(deserializer, &(_this->octetsToNextParameter));
-
+            assert(nofOctets >= 0);
             if (nofOctets < 0) break;
             total += nofOctets;
 
@@ -59,12 +60,14 @@ in_ddsiParameterHeaderInitFromBuffer(
             if (lowerTwoBits > 0) {
                 /* Error, lower 2 bits are not 0, length encoding does not
                  * meet preconditions */
+            	assert(FALSE);
                 break; /* result = -1;*/
             }
             /* all succeeeded, assign result */
         } else
         {
             nofOctets = in_ddsiDeserializerAlign(deserializer, IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
+            assert(nofOctets >= 0);
             if (nofOctets < 0) break;
             total += nofOctets;
         }

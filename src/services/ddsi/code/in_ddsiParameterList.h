@@ -127,6 +127,16 @@ in_ddsiParameterListForSubscriptionCalculateSize(
     in_connectivityReaderFacade facade,
     in_endpointDiscoveryData discoveryData);
 
+in_long
+serializeGuid(
+	in_ddsiSerializer serializer,
+    os_ushort pid,
+    in_ddsiGuid guid);
+
+in_long
+serializeSentinel(
+	in_ddsiSerializer serializer);
+
 #if defined (__cplusplus)
 }
 #endif

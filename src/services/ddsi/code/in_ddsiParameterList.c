@@ -52,11 +52,6 @@ static in_long
 serializeVendor(in_ddsiSerializer serializer,
         in_ddsiVendor vendor);
 
-in_long
-serializeGuid(in_ddsiSerializer serializer,
-        os_ushort pid,
-        in_ddsiGuid guid);
-
 static in_long
 serializeBuiltinEndpointSet(
         in_ddsiSerializer serializer,
@@ -125,8 +120,12 @@ static in_long
 serializeReliability(in_ddsiSerializer serializer,
         const struct v_reliabilityPolicy *policy);
 
-in_long
-serializeSentinel(in_ddsiSerializer serializer);
+
+static in_long
+serializePartition(
+    in_ddsiSerializer serializer,
+    const struct v_builtinPartitionPolicy *policy,
+    os_uint32 nofPartitions);
 
 /**/
 static in_long
@@ -416,7 +415,7 @@ forReaderParseParameter(
 {
     in_long result = -1;
     os_char* tmpStr;
-    os_uint32 strLen;
+    os_uint32 strLen, nofPartitions, i;
     in_locator locator;
     OS_STRUCT(in_locator) tmpLocator;
 
@@ -459,13 +458,30 @@ forReaderParseParameter(
     case IN_PID_ENDPOINT_GUID: /* ( 0x005a ) */
         result = in_ddsiGuidInitFromBuffer(&(data->proxy.remoteReaderGuid), deserializer);
         break;
+    case IN_PID_PARTITION: /* ( 0x0029 ) */
+    	nofPartitions = 0;
+    	result = in_ddsiDeserializerParseUlong(deserializer, &nofPartitions);
+
+    	if(nofPartitions > 0)
+    	{
+    		data->topicData.info.partition.name = c_arrayNew(c_string_t(base), nofPartitions);
+
+    		for(i=0; i<nofPartitions; i++)
+    		{
+    			result += in_ddsiDeserializerReferenceString(deserializer,
+    					&tmpStr, &strLen);
+    			data->topicData.info.partition.name[i] = c_stringNew(base, tmpStr);
+    			result += in_ddsiDeserializerAlign(deserializer, IN_DDSI_CDR_BODY_ALIGNMENT);
+    		}
+    	}
+    	break;
     case IN_PID_EXPECTS_INLINE_QOS: /* ( 0x0043 ) */
-        IN_TRACE_1(Receive,6, "Take note: expects_inline_qos (%0x) defaults to false\n",
-                ((os_int) paramId) );
+        IN_TRACE_1(Receive,6,
+        	"Take note: expects_inline_qos (%0x) defaults to false\n",
+            ((os_int) paramId) );
         data->proxy.expectsInlineQos = FALSE;
     case IN_PID_PARTICIPANT_LEASE_DURATION: /* ( 0x0002 ) */
     case IN_PID_TIME_BASED_FILTER: /* ( 0x0004 ) */
-
     case IN_PID_OWNERSHIP_STRENGTH: /* ( 0x0006 ) */
     case IN_PID_METATRAFFIC_MULTICAST_IPADDRESS: /* ( 0x000b ) */
     case IN_PID_DEFAULT_UNICAST_IPADDRESS: /* ( 0x000c ) */
@@ -483,7 +499,6 @@ forReaderParseParameter(
     case IN_PID_DEADLINE: /* ( 0x0023 ) */
     case IN_PID_DESTINATION_ORDER: /* ( 0x0025 ) */
     case IN_PID_LATENCY_BUDGET: /* ( 0x0027 ) */
-    case IN_PID_PARTITION: /* ( 0x0029 ) */
     case IN_PID_LIFESPAN: /* ( 0x002b ) */
     case IN_PID_USER_DATA: /* ( 0x002c ) */
     case IN_PID_GROUP_DATA: /* ( 0x002d ) */
@@ -549,7 +564,7 @@ forWriterParseParameter(
 {
     in_long result = -1;
     os_char* tmpStr;
-    os_uint32 strLen;
+    os_uint32 strLen, nofPartitions, i;
     in_locator locator;
     OS_STRUCT(in_locator) tmpLocator;
 
@@ -592,6 +607,21 @@ forWriterParseParameter(
         result = in_ddsiGuidInitFromBuffer(&(data->proxy.remoteWriterGuid), deserializer);
         break;
     case IN_PID_PARTITION: /* ( 0x0029 ) */
+		nofPartitions = 0;
+		result = in_ddsiDeserializerParseUlong(deserializer, &nofPartitions);
+
+		if(nofPartitions > 0)
+		{
+			data->topicData.info.partition.name = c_arrayNew(c_string_t(base), nofPartitions);
+
+			for(i=0; i<nofPartitions; i++)
+			{
+				result += in_ddsiDeserializerReferenceString(deserializer,
+						&tmpStr, &strLen);
+				data->topicData.info.partition.name[i] = c_stringNew(base, tmpStr);
+				result += in_ddsiDeserializerAlign(deserializer, IN_DDSI_CDR_BODY_ALIGNMENT);			}
+		}
+		break;
     case IN_PID_PARTICIPANT_LEASE_DURATION: /* ( 0x0002 ) */
     case IN_PID_TIME_BASED_FILTER: /* ( 0x0004 ) */
     case IN_PID_OWNERSHIP_STRENGTH: /* ( 0x0006 ) */
@@ -731,45 +761,49 @@ in_ddsiParameterListGetPidStatusInfo(
 	assert(_this);
 	assert(state);
 
-	in_ddsiDeserializerInitRaw(&deserializer, _this->firstParameter,
-		_this->totalOctetLength, _this->isBigEndian);
-
-	while(cont)
+	if(_this->firstParameter)
 	{
-		in_ddsiParameterHeaderInitFromBuffer(&parameterHeader, &deserializer);
+		in_ddsiDeserializerInitRaw(&deserializer, _this->firstParameter,
+			_this->totalOctetLength, _this->isBigEndian);
 
-		if (total == (in_long) _this->totalOctetLength)
-		{
-			cont = FALSE;
-			result = IN_RESULT_ERROR;
-		} else if(in_ddsiParameterHeaderId(&parameterHeader) == IN_PID_SENTINEL)
-		{
-			cont = FALSE;
-			result = IN_RESULT_NOT_FOUND;
-		} else if(in_ddsiParameterHeaderId(&parameterHeader) == IN_PID_STATUS_INFO)
-		{
-			total = in_ddsiDeserializerParseOctets(&deserializer, statusInfo, 4);
-			cont = FALSE;
 
-			if(total != -1)
+		while(cont)
+		{
+			in_ddsiParameterHeaderInitFromBuffer(&parameterHeader, &deserializer);
+
+			if (total == (in_long) _this->totalOctetLength)
 			{
-				if(statusInfo[3] == 1)
+				cont = FALSE;
+				result = IN_RESULT_ERROR;
+			} else if(in_ddsiParameterHeaderId(&parameterHeader) == IN_PID_SENTINEL)
+			{
+				cont = FALSE;
+				result = IN_RESULT_NOT_FOUND;
+			} else if(in_ddsiParameterHeaderId(&parameterHeader) == IN_PID_STATUS_INFO)
+			{
+				total = in_ddsiDeserializerParseOctets(&deserializer, statusInfo, 4);
+				cont = FALSE;
+
+				if(total != -1)
 				{
-					*state = L_DISPOSED;
-				} else if(statusInfo[3] == 2)
-				{
-					*state = L_UNREGISTER;
-				} else
-				{
-					*state = L_WRITE;
+					if(statusInfo[3] == 1)
+					{
+						*state = L_DISPOSED;
+					} else if(statusInfo[3] == 2)
+					{
+						*state = L_UNREGISTER;
+					} else
+					{
+						*state = L_WRITE;
+					}
+					result = IN_RESULT_OK;
 				}
-				result = IN_RESULT_OK;
+			} else
+			{
+				total += parameterHeader.octetsToNextParameter;
+				in_ddsiDeserializerSeek(&deserializer,
+						parameterHeader.octetsToNextParameter);
 			}
-		} else
-		{
-			total += parameterHeader.octetsToNextParameter;
-			in_ddsiDeserializerSeek(&deserializer,
-					parameterHeader.octetsToNextParameter);
 		}
 	}
 	return result;
@@ -834,11 +868,11 @@ in_ddsiParameterListForParticipantParse(
                     result = IN_RESULT_ERROR;
                 } else {
                     paddingSize = octetsToNextParameter - contentSize;
-
+/*
                     if (contentSize > 0 && paddingSize >= (in_long) IN_DDSI_PARAMETER_HEADER_ALIGNMENT) {
                         IN_REPORT_WARNING(IN_SPOT, "inefficient padding");
                     }
-
+*/
                     seekSize =
                         in_ddsiDeserializerSeek(
                             &deserializer,
@@ -954,6 +988,14 @@ in_ddsiParameterListForReaderParse(
         }
     } while (continueLoop);
 
+    /*Set default partition if there is none*/
+	if((result == IN_RESULT_OK) && (!data->topicData.info.partition.name))
+	{
+		data->topicData.info.partition.name =
+			c_arrayNew(c_string_t(base), 1);
+		data->topicData.info.partition.name[0] =
+			c_stringNew(base, "");
+	}
     return result;
 }
 
@@ -1043,6 +1085,14 @@ in_ddsiParameterListForWriterParse(
                     }
                 }
             }
+            /*Set default partition if there is none*/
+			if(!data->topicData.info.partition.name)
+			{
+				data->topicData.info.partition.name =
+					c_arrayNew(c_string_t(base), 1);
+				data->topicData.info.partition.name[0] =
+					c_stringNew(base, "");
+			}
         }
     } while (continueLoop);
 
@@ -1090,6 +1140,10 @@ in_ddsiParameterListForDataSerializeInstantly(
 
 	do
     {
+		/* In case of a non-write message, try to send the key hash instead of
+		 * the serialized data. If the key hash cannot be determined, simply
+		 * send a complete serializedData in the DATA message.
+		 */
 		if(v_stateTest(v_messageState(message), L_DISPOSED))
 		{
 			nofOctets = serializeStatusInfo(serializer, message);
@@ -1117,7 +1171,9 @@ in_ddsiParameterListForDataSerializeInstantly(
 		{
 			nofOctets = 0;
 		}
-		/*If keyHash serialized, set keyHashAdded to OS_TRUE.*/
+		/* If keyHash serialized, set keyHashAdded to OS_TRUE, so the caller
+		 * knows whether or not serializedData must be added to this message.
+		 */
 		if(nofOctets > 0)
 		{
 			*keyHashAdded = OS_TRUE;
@@ -1151,8 +1207,6 @@ in_ddsiParameterListForPublicationSerializeInstantly(
 	 */
     OS_STRUCT(in_ddsiProductVersion) productVersion =
          IN_DDSI_PRODUCT_VERSION;
-    const os_char *entityName =
-        IN_ENTITY_NAME_ENTITY;
     const c_time leaseDuration = {6,500000000};
     /*    C_TIME_INFINITE;  TODO */
     in_long result = -1;
@@ -1180,6 +1234,7 @@ in_ddsiParameterListForPublicationSerializeInstantly(
 	info = in_connectivityWriterFacadeGetInfo(facade);
     guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
 
+    /*TODO: Send IN_PID_PARTITION as well */
 	do
     {
 	    nofOctets = serializeGuid(
@@ -1302,18 +1357,26 @@ in_ddsiParameterListForPublicationSerializeInstantly(
                 &productVersion);
         if (nofOctets<0) break;
         total += nofOctets;
-
+/*
         nofOctets = serializeString(
                 serializer,
                 IN_PID_ENTITY_NAME,
                 entityName);
         if (nofOctets<0) break;
         total += nofOctets;
+*/
+        nofOctets = serializePartition(
+					serializer,
+					&info->partition,
+					in_connectivityWriterFacadeGetPartitionCount(facade));
+		if (nofOctets<0) break;
+		total += nofOctets;
 
         /* write sentinel */
         nofOctets = serializeSentinel(serializer);
         if (nofOctets<0) break;
         total += nofOctets;
+
 		/* final assignment */
 		result = total;
 	} while (0);
@@ -1336,23 +1399,15 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
 	 * |                                                               |
 	 * +---------------+---------------+---------------+---------------+
 	 */
-    OS_STRUCT(in_ddsiProductVersion) productVersion =
-         IN_DDSI_PRODUCT_VERSION;
+    OS_STRUCT(in_ddsiProductVersion) productVersion = IN_DDSI_PRODUCT_VERSION;
 
-    struct v_livelinessPolicy dummyLiveliness =
-        { V_LIVELINESS_AUTOMATIC,
-            {0x7fffffff,0x7fffffffU} /* C_TIME_INFINITE */};
-
-    struct v_reliabilityPolicy dummyReliability =
-        { V_RELIABILITY_BESTEFFORT,
-         {0, 250*1000*1000} /* 250 msecs blocking time, not sure this is relevant */};
-
-    struct v_presentationPolicy dummyPresentation =
-        { V_PRESENTATION_INSTANCE,
-          FALSE, FALSE };
-
+    struct v_livelinessPolicy dummyLiveliness = { V_LIVELINESS_AUTOMATIC,
+		{0x7fffffff,0x7fffffffU} }; /* C_TIME_INFINITE */
+    struct v_reliabilityPolicy dummyReliability = { V_RELIABILITY_BESTEFFORT,
+    	{0, 250*1000*1000} }; /* 250 msecs blocking time*/
+    struct v_presentationPolicy dummyPresentation = { V_PRESENTATION_INSTANCE,
+        FALSE, FALSE };
     c_bool dummyExpectsInlineQos = 0x0; /* FALSE */
-
     in_long result = -1;
 	in_long nofOctets = 0;
 	in_long total = 0;
@@ -1366,11 +1421,10 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
 
     info = in_connectivityReaderFacadeGetInfo(facade);
     guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
-    uniLocators =
-        &discoveryData->defaultUnicastLocatorList;
-    multiLocators =
-        &discoveryData->defaultMulticastLocatorList;
+    uniLocators = &discoveryData->defaultUnicastLocatorList;
+    multiLocators = &discoveryData->defaultMulticastLocatorList;
 
+    /*TODO: Send IN_PID_PARTITION as well */
     do
     {
 	    nofOctets = serializeGuid(serializer,
@@ -1432,7 +1486,7 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                   V_OWNERSHIP_SHARED);
         if (nofOctets<0) break;
         total += nofOctets;
-        /* TODO just added to see if it helps get things to work*/
+/*
         nofOctets = serializeUint32(
                   serializer,
                   IN_PID_TYPE_MAX_SIZE_SERIALIZED,
@@ -1440,7 +1494,6 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
         if (nofOctets<0) break;
         total += nofOctets;
 
-        /*TODO just added to see if it helps get things to work*/
         nofOctets = serializeTime(
                  serializer,
                  IN_PID_LIFESPAN,
@@ -1448,7 +1501,6 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
         if (nofOctets<0) break;
         total += nofOctets;
 
-        /*TODO just added to see if it helps get things to work*/
         nofOctets = serializeUint32(
                   serializer,
                   IN_PID_OWNERSHIP_STRENGTH,
@@ -1462,7 +1514,7 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
                    V_ORDERBY_RECEPTIONTIME);
         if (nofOctets<0) break;
         total += nofOctets;
-/*
+
         nofOctets = serializeTime(
                     serializer,
                     IN_PID_TIME_BASED_FILTER,
@@ -1501,32 +1553,26 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
         if (nofOctets<0) break;
         total += nofOctets;
 
-        /* TODO: not sure if these are really necessary, should suffice to
-         * submit the locators together with participant data
+/*
         nofOctets = serializeLocatorList(
                      serializer,
                      IN_PID_UNICAST_LOCATOR,
                      &(discoveryData->defaultUnicastLocatorList));
         if (nofOctets<0) break;
         total += nofOctets;
-*/
-        /* TODO: not sure if these are really necessary, should suffice to
-          * submit the locators together with participant data
+
         nofOctets = serializeLocatorList(
                      serializer,
                      IN_PID_MULTICAST_LOCATOR,
                      &(discoveryData->defaultMulticastLocatorList));
         if (nofOctets<0) break;
         total += nofOctets;
-*/
-        /*
+
         nofOctets = serializeLeaseDuration(
                 serializer,
                 &leaseDuration);
         if (nofOctets<0) break;
         total += nofOctets;
-
-
 
         nofOctets = serializeString(
                 serializer,
@@ -1535,6 +1581,12 @@ in_ddsiParameterListForSubscriptionSerializeInstantly(
         if (nofOctets<0) break;
         total += nofOctets;
 */
+        nofOctets = serializePartition(
+					serializer,
+					&info->partition,
+					in_connectivityReaderFacadeGetPartitionCount(facade));
+		if (nofOctets<0) break;
+		total += nofOctets;
 
         /* write sentinel */
         nofOctets = serializeSentinel(serializer);
@@ -1563,36 +1615,28 @@ in_ddsiParameterListForParticipantSerializeInstantly(
 	 * |                                                               |
 	 * +---------------+---------------+---------------+---------------+
 	 */
-    OS_STRUCT(in_ddsiProductVersion) productVersion =
-        IN_DDSI_PRODUCT_VERSION;
+    OS_STRUCT(in_ddsiProductVersion) productVersion = IN_DDSI_PRODUCT_VERSION;
     const os_char *entityName = IN_ENTITY_NAME_ENTITY;
     const c_time leaseDuration = {6,500000000}; /* C_TIME_INFINITE;  TODO */
-
     in_long result = -1;
 	in_long nofOctets = 0;
 	in_long total = 0;
 	in_locatorList* defaultUnicastLocatorList =
-        &discoveryData->defaultUnicastLocatorList;
-
+		&discoveryData->defaultUnicastLocatorList;
 	in_locatorList* defaultMulticastLocatorList =
 	    &discoveryData->defaultMulticastLocatorList;
-
 	in_locatorList* metaTrafficUnicastLocatorList =
 	    &discoveryData->metatrafficUnicastLocatorList;
-
 	in_locatorList* metaTrafficMulticastLocatorList =
 	    &discoveryData->metatrafficMulticastLocatorList;
-
-	/* should be provided by facade, check with Patrick */
+	/* TODO: should be provided by facade. */
 	in_ddsiBuiltinEndpointSet endpointSet =
-	    &discoveryData->availableBuiltinEndpoints;
-
-    in_ddsiProtocolVersion protocolVersion =
-        &discoveryData->protocolVersion;
-
-    /* TODO add to discoveryData and rename endpointDiscoveryData to serviceConfig */
+		&discoveryData->availableBuiltinEndpoints;
+    in_ddsiProtocolVersion protocolVersion = &discoveryData->protocolVersion;
+    /* TODO: add to discoveryData and rename endpointDiscoveryData to
+     * serviceConfig
+     */
     in_ddsiVendor vendor = &discoveryData->vendor;
-
     struct v_participantInfo *info;
     in_ddsiGuid guid;
 
@@ -1600,7 +1644,6 @@ in_ddsiParameterListForParticipantSerializeInstantly(
     assert(serializer);
 
     /* Step 1: init all relevant variables */
-
 	guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
 	info = in_connectivityParticipantFacadeGetInfo(facade);
 
@@ -1699,7 +1742,6 @@ in_ddsiParameterListForParticipantCalculateSize(
     in_endpointDiscoveryData discoveryData)
 {
     OS_STRUCT(in_ddsiSerializer) nilSerializer;
-
     os_size_t result = 0;
     in_long nofOctets;
 
@@ -2522,6 +2564,74 @@ serializePresentation(in_ddsiSerializer serializer,
     return result;
 }
 
+
+static in_long
+serializePartition(
+    in_ddsiSerializer serializer,
+    const struct v_builtinPartitionPolicy *policy,
+    os_uint32 nofPartitions)
+{
+	os_uint32 i;
+	in_long total = 0;
+	in_long result = 0;
+	os_ushort policyLength = 0;
+	in_long nofOctets;
+	c_octet *position, *position2;
+
+	do {
+		nofOctets = in_ddsiSerializerAppendUshort(serializer, IN_PID_PARTITION);
+		if (nofOctets<0) break;
+		total += nofOctets;
+
+		/*Remember my position*/
+		position = in_ddsiSerializerGetPosition(serializer);
+
+		/*First set some value and later on return here to set the correct one*/
+		nofOctets = in_ddsiSerializerAppendUshort(serializer, policyLength);
+		if (nofOctets<0) break;
+		total += nofOctets;
+
+		/*Size of the sequence*/
+		nofOctets = in_ddsiSerializerAppendUlong(serializer, nofPartitions);
+		if (nofOctets<0) break;
+		total += nofOctets;
+
+		/*add size of the length of the sequence*/
+		policyLength += nofOctets;
+
+		for(i=0; i<nofPartitions; i++)
+		{
+			/*Partition name*/
+			nofOctets = in_ddsiSerializerAppendString(serializer, policy->name[i]);
+			if (nofOctets<0) break;
+			total += nofOctets;
+			policyLength += nofOctets;
+
+			nofOctets = in_ddsiSerializerAlign(serializer,
+					IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT);
+			if (nofOctets<0) break;
+			total += nofOctets;
+			policyLength += nofOctets;
+		}
+		/*Remember this position to return to*/
+		position2 = in_ddsiSerializerGetPosition(serializer);
+
+		/* Now we know the actual size, so seek back to the position,
+		 * set the correct value and return to the position
+		 */
+		in_ddsiSerializerSeekTo(serializer, position);
+		nofOctets = in_ddsiSerializerAppendUshort(serializer, policyLength);
+		if (nofOctets<0) break;
+		/*Don't add this one again to total, because it has been counted before*/
+
+		/*Now seek back to the end position*/
+		in_ddsiSerializerSeekTo(serializer, position2);
+
+		result = total;
+	} while(0);
+	return result;
+}
+
 static in_long
 serializeStatusInfo(
     in_ddsiSerializer serializer,
@@ -2547,7 +2657,8 @@ serializeStatusInfo(
 		} else if(v_stateTest(v_messageState(message), L_DISPOSED))
 		{
 			nofOctets = in_ddsiSerializerAppendOctets_4(serializer, 0, 0, 0, 1);
-		} else {
+		} else
+		{
 			nofOctets = in_ddsiSerializerAppendOctets_4(serializer, 0, 0, 0, 0);
 		}
 		if (nofOctets<0) break;
@@ -2559,6 +2670,16 @@ serializeStatusInfo(
 	return result;
 }
 
+/**
+ * The key hash will only be serialized when the key is <= 16 bytes since the
+ * content of the keyHash is simply the key value(s) concatenated. Larger keys
+ * require the use of MD5 hashing to calculate the key hash and this introduces
+ * the requirement for the receiver of this message to look up an instance by
+ * the MD5 hash value. Since OpenSplice doesn't administrate the instances
+ * by this hash value, it will become very expensive to lookup the instance
+ * by MD5 key hash. Therefore, no key hash he data is sent when keys are larger
+ * then 16 bytes.
+ */
 static in_long
 serializeKeyHash(
     in_ddsiSerializer serializer,
@@ -2581,13 +2702,18 @@ serializeKeyHash(
 		memset(keyHash, 0, 16);
 		bytesCopied = 0;
 
-		/*TODO: Determine keyHash from message (always big endian)*/
 		messageKeyList = v_topicMessageKeyList(topic);
 		nrOfKeys = c_arraySize(messageKeyList);
 		r = IN_RESULT_OK;
 
+		/* The keyHash must always be big endian, so the algorithm is different
+		 * compared to the 'normal' serialization.
+		 *
+		 * Now walk over the key values and create the key hash.
+		 */
 		for (i=0;(i<nrOfKeys) && (r == IN_RESULT_OK);i++)
 		{
+			/*Determine the value of the key field.*/
 			value = c_fieldValue(messageKeyList[i], message);
 
 			switch(c_fieldValueKind(messageKeyList[i]))
@@ -2619,22 +2745,25 @@ serializeKeyHash(
 				copyValue = (void*)&int16Value;
 #endif
 			break;
-			/*TODO: complete for all types*/
+			/*TODO: complete keyHash calculation for all types*/
 			default:
 				r = IN_RESULT_PRECONDITION_NOT_MET;
 				size = 0;
 			break;
 			}
 
+			/*Now copy the big endian value into the key hash*/
 			if(bytesCopied+size <= 16)
 			{
 				memcpy(&(keyHash[bytesCopied]), copyValue, size);
 			} else
 			{
+				/*The key hash is larger then 16 bytes, so skip key hash*/
 				r = IN_RESULT_PRECONDITION_NOT_MET;
 			}
 			bytesCopied += size;
 		}
+		/*If all went well, serialize the IN_PID_KEY_HASH into the message.*/
 		if(r == IN_RESULT_OK)
 		{
 			nofOctets = in_ddsiSerializerAppendUshort(serializer,

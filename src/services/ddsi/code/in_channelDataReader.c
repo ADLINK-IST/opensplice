@@ -193,7 +193,7 @@ in_channelDataReaderProcessDataFunc(
          * partition-array
          */
 
-        partitionName =  (c_string)(data->topicData.info.partition.name);
+        partitionName =  (c_string)(data->topicData.info.partition.name[0]);
         if(!partitionName)
         {
             /* If there was no partition listed, create the default empty string partition */

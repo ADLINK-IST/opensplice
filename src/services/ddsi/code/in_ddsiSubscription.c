@@ -37,8 +37,8 @@ in_ddsiSubscriptionBuiltinTopicDataInit(
 
     /* does not match DDSi-Guid */
     q->participant_key = KEY_DEF;
-    q->topic_name = NULL;;
-    q->type_name = NULL;;
+    q->topic_name = NULL;
+    q->type_name = NULL;
     q->durability.kind = V_DURABILITY_VOLATILE;
     q->deadline.period = C_TIME_INFINITE;
     q->latency_budget.duration = C_TIME_ZERO;

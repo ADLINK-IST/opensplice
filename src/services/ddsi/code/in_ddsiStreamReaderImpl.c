@@ -630,8 +630,9 @@ in_ddsiStreamReaderImplProcessBuiltinParticipantData(
                 /* TODO handle out-of-memory */
                 result = OS_FALSE;
             } else {
-                /* TODO, to handle fragments, add
-                 * newBuffer-callback to decode operation */
+                /* TODO, to handle fragments, add newBuffer-callback to decode
+                 * operation
+                 */
                 const in_result parseResult =
                     in_ddsiParameterListForParticipantParse(
                                 &parameterList,
@@ -698,6 +699,7 @@ in_ddsiStreamReaderImplProcessBuiltinReaderData(
         in_ddsiSubmessageData submessage)
 {
     os_boolean result = OS_FALSE;
+    c_base base;
     /* if the callback is undefined, avoid further parsing and processing,
      * but return with TRUE, so that scanner continues with following
      * submessages */
@@ -723,6 +725,7 @@ in_ddsiStreamReaderImplProcessBuiltinReaderData(
             /* TODO, no fragmentation supported yet */
             discoveredData =
                 in_ddsiDiscoveredReaderDataNew();
+            base = in_plugKernelGetBase(_this->plugKernel);
 
             if (!discoveredData) {
                 /* TODO handle out-of-memory */
@@ -734,7 +737,7 @@ in_ddsiStreamReaderImplProcessBuiltinReaderData(
                     in_ddsiParameterListForReaderParse(
                         &parameterList,
                         discoveredData,
-                        in_plugKernelGetBase(_this->plugKernel));
+                        base);
 
                 if (parseResult!=IN_RESULT_OK) {
                     /* TODO handle out-of-memory */
@@ -921,7 +924,7 @@ in_ddsiStreamReaderImplProcessBuiltinData(
         break;
 
     case IN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_WRITER: /* 0x000200c2 */
-        IN_REPORT_WARNING_1(IN_SPOT, "entity %0x ignored", writerIdAsUint32);
+        /*IN_REPORT_WARNING_1(IN_SPOT, "entity %0x ignored", writerIdAsUint32);*/
         break;
 
     default:

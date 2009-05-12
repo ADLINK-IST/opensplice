@@ -73,6 +73,15 @@ in_ddsiSequenceNumber
 in_connectivityReaderFacadeGetSequenceNumber(
     in_connectivityReaderFacade _this);
 
+os_uint32
+in_connectivityReaderFacadeGetPartitionCount(
+	in_connectivityReaderFacade _this);
+
+os_boolean
+in_connectivityReaderFacadeMatchesPeerWriter(
+	in_connectivityReaderFacade _this,
+	in_connectivityPeerWriter writer);
+
 #if defined (__cplusplus)
 }
 #endif

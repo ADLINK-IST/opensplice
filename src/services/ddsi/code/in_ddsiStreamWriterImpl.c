@@ -56,15 +56,6 @@ static  OS_STRUCT(in_ddsiEntityId) unknownId =
 /* **** private functions **** */
 
 /*TODO: put in corect headerfile*/
-in_long
-serializeGuid(in_ddsiSerializer serializer,
-        os_ushort pid,
-        in_ddsiGuid guid);
-in_long
-serializeSentinel(in_ddsiSerializer serializer);
-
-
-
 
 static void
 in_ddsiStreamWriterImplDeinit(in_ddsiStreamWriterImpl _this)

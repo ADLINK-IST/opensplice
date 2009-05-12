@@ -178,7 +178,7 @@ findMatchedParticipantFacades(
 /**
  * Determine wether a facade and a peer are compatible.
  * This should include a check on topic and Qos.
- */
+
 static os_boolean
 matchPeerWriter(
     in_connectivityReaderFacade facade,
@@ -188,33 +188,35 @@ matchPeerWriter(
                         in_connectivityPeerWriterGetInfo(peer)->topicData.info.topic_name) != C_EQ ){
       return OS_FALSE;
    }
-   /* TODO: QOS checks must be performed here */
 
    IN_TRACE_2(Connectivity,2,"matchPeerWriter (%x %x) MATCHED",facade,  peer);
 
    return OS_TRUE;
 }
+*/
 
 /**
  * Determine wether a facade and a peer are compatible.
  * This should include a check on topic and Qos.
- */
+
 static os_boolean
 matchPeerReader(
     in_connectivityWriterFacade facade,
     in_connectivityPeerReader peer)
 {
+	c_long nofPartitions;
+
     if ( c_compareString(in_connectivityWriterFacadeGetInfo(facade)->topic_name,
                          in_connectivityPeerReaderGetInfo(peer)->topicData.info.topic_name) != C_EQ ){
        return OS_FALSE;
     }
-    /* TODO: QOS checks must be performed here */
+
 
     IN_TRACE_2(Connectivity,2,"matchPeerReader (%x %x) MATCHED",facade,  peer);
 
     return OS_TRUE;
 }
-
+*/
 
 /**
  * Match a reader against all present Peers and
@@ -233,7 +235,7 @@ findMatchedPeerWriters(
     while(iterator)
     {
         knownpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
-        if ( matchPeerWriter(facade,knownpeer)) {
+        if ( in_connectivityReaderFacadeMatchesPeerWriter(facade,knownpeer)) {
             in_connectivityReaderFacadeAddMatchedPeer(facade, knownpeer);
         } else {
             in_connectivityReaderFacadeRemoveMatchedPeer(facade, knownpeer);
@@ -260,7 +262,7 @@ findMatchedReaderFacades(
     while(iterator)
     {
         facade = in_connectivityReaderFacade(Coll_Iter_getObject(iterator));
-        if ( matchPeerWriter(facade,peer)) {
+        if ( in_connectivityReaderFacadeMatchesPeerWriter(facade,peer)) {
             in_connectivityReaderFacadeAddMatchedPeer(facade, peer);
         }
         iterator = Coll_Iter_getNext(iterator);
@@ -287,7 +289,7 @@ findMatchedPeerReaders(
     while(iterator)
     {
         knownpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
-        if ( matchPeerReader(facade,knownpeer)) {
+        if ( in_connectivityWriterFacadeMatchesPeerReader(facade,knownpeer)) {
             in_connectivityWriterFacadeAddMatchedPeer(facade, knownpeer);
         } else {
             in_connectivityWriterFacadeRemoveMatchedPeer(facade, knownpeer);
@@ -314,7 +316,7 @@ findMatchedWriterFacades(
     while(iterator)
     {
         facade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
-        if ( matchPeerReader(facade,peer)) {
+        if ( in_connectivityWriterFacadeMatchesPeerReader(facade,peer)) {
             in_connectivityWriterFacadeAddMatchedPeer(facade, peer);
         }
         iterator = Coll_Iter_getNext(iterator);
@@ -1051,7 +1053,7 @@ in_connectivityAdminAddPeerWriter(
         in_connectivityPeerParticipantFree(participant);
     }
 
-    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerReader(%x) result = %d",
+    IN_TRACE_2(Connectivity,2,"in_connectivityAdminAddPeerWriter(%x) result = %d",
                writer,  result);
 
     os_mutexUnlock(&(_this->mutex));

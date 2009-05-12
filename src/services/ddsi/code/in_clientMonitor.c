@@ -559,8 +559,7 @@ in_clientMonitorHandleSubscription(
             if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
                (0 == strcmp(data->topic_name, "DCPSPublication")) ||
                (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
-               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
-               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+               (0 == strcmp(data->topic_name, "DCPSSubscription")))
             {
                 ignore = OS_TRUE;
                 IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for subscription.", data->topic_name, data->partition.name[0]);
@@ -610,8 +609,7 @@ in_clientMonitorHandlePublication(
             if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
                (0 == strcmp(data->topic_name, "DCPSPublication")) ||
                (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
-               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
-               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+               (0 == strcmp(data->topic_name, "DCPSSubscription")))
             {
                 IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for publication.", data->topic_name, data->partition.name[0]);
                 ignore = OS_TRUE;
