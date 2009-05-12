@@ -44,7 +44,6 @@ print_setup ()
     echo "SPLICE_HOST =" $SPLICE_HOST
     echo "OSPL_HOME =" $OSPL_HOME
     echo "SPLICE_ORB =" $SPLICE_ORB
-    echo "SPLICE_SA_ORB =" $SPLICE_SA_ORB
 }
 
 display_and_get_target ()

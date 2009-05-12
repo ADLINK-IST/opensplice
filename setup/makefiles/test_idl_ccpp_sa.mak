@@ -7,9 +7,6 @@ endif
 
 vpath %.idl	$(IDL_DIR)
 
-# Import all ORB specific data.
-include         $(OSPL_HOME)/setup/makefiles/orbdeps_sa.mak
-
 # idlpp compiler settings.
 IDLPP		:= idlpp 
 IDLPPFLAGS	:= $(IDL_INC_FLAGS) -l cpp -S

@@ -53,7 +53,7 @@ CXXFLAGS    += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS     += $(SHLDFLAGS)
 
 LDLIBS      += $(SHLDLIBS)
-LDLIBS      += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) $(LDLIBS_CXX)# $(ORB_SA_LDLIBS)
+LDLIBS      += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) $(LDLIBS_CXX)
 
 .PHONY: make_idl_preprocessor
 
@@ -66,7 +66,7 @@ make_idl_preprocessor:
 $(SACPP_CODE):
 	cp ../../code/$@ .
 
-$(IDLPP_HDR) $(IDLPP_CPP) $(ORB_TOP_HDR) $(ORB_TOP_SRC) $(IDLPP_ORB_HDR) $(IDLPP_ORB_SRC): $(IDL_DIR)/$(TOPIC_IDL)
+$(IDLPP_HDR) $(IDLPP_CPP) : $(IDL_DIR)/$(TOPIC_IDL)
 	$(IDLPP) $(IDLPPFLAGS) $<
-	
+
 $(DEPENDENCIES): $(SACPP_CODE)
