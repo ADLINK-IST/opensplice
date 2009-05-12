@@ -118,6 +118,22 @@ namespace DDS
         0
     };
 
+	static const DDS::SubscriptionKeyQosPolicy DEFAULT_SUBSCRIPTIONKEY_QOSPOLICY= {
+		false,
+		DDS::StringSeq()
+	};
+
+	static const DDS::ReaderLifespanQosPolicy DEFAULT_READERLIFESPAN_QOSPOLICY= {
+		false,
+        {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC}
+	};
+
+	static const DDS::ShareQosPolicy DEFAULT_SHARE_QOSPOLICY= {
+		"",
+		false
+	};
+
+
     static const DDS::DomainParticipantFactoryQos * const 
     initializeParticipantFactoryQos()
     {
@@ -192,8 +208,12 @@ namespace DDS
         qos->history                = DEFAULT_HISTORY_QOSPOLICY;
         qos->resource_limits        = DEFAULT_RESOURCELIMITS_QOSPOLICY;
         qos->user_data              = DEFAULT_USERDATA_QOSPOLICY;
+		qos->ownership              = DEFAULT_OWNERSHIP_QOSPOLICY;
         qos->time_based_filter      = DEFAULT_TIMEBASEDFILTER_QOSPOLICY;
         qos->reader_data_lifecycle  = DEFAULT_READERDATALIFECYCLE_QOSPOLICY;
+		qos->subscription_keys      = DEFAULT_SUBSCRIPTIONKEY_QOSPOLICY;
+		qos->reader_lifespan        = DEFAULT_READERLIFESPAN_QOSPOLICY;
+		qos->share                  = DEFAULT_SHARE_QOSPOLICY;
         return qos;
     }
 
@@ -723,7 +743,7 @@ void DDS::ccpp_SubscriptionKeyQosPolicy_copyIn (
      const DDS::SubscriptionKeyQosPolicy &from,
      gapi_subscriptionKeyQosPolicy &to )
 {
-    to.use_key_list = from.use_key_list;
+    to.use_key_list = (from.use_key_list != FALSE);
     DDS::ccpp_sequenceCopyIn(from.key_list, to.key_list);
 }
 
@@ -739,7 +759,7 @@ void DDS::ccpp_ReaderLifespanQosPolicy_copyIn (
      const DDS::ReaderLifespanQosPolicy &from,
      gapi_readerLifespanQosPolicy &to )
 {
-    to.use_lifespan = from.use_lifespan;
+    to.use_lifespan = (from.use_lifespan != FALSE);
     DDS::ccpp_Duration_copyIn( from.duration, to.duration);
 }
 

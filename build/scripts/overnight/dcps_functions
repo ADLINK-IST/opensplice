@@ -122,7 +122,7 @@ test_perform_rbt_tests ()
     fi
 
     TODAY_RBT=`date +'%Y%m%d'`
-    if [ ! -f $1/RBTmetrics_${TODAY_RBT} ]
+    if [ ! -f $1/RBTmetrics_${TODAY_RBT}.txt ]
     then
         return 1
     fi

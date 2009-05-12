@@ -1,63 +1,31 @@
+. $OSPL_HOME/bin/checkconf
+
 SPLICE_HOST=x86.win32-release
 SPLICE_TARGET=x86.win32-release
 export SPLICE_HOST SPLICE_TARGET
+echo
 
-_CYGPATH=/bin/cygpath
-_WIN_SPL_HOME=`$_CYGPATH -m $OSPL_HOME`
+ERRS=0
+msvs_check || ERRS=1
+csharp_check || ERRS=1
+make_check || ERRS=1
+gawk_check || ERRS=1
+bison_check || ERRS=1
+flex_check || ERRS=1
+javac_check || ERRS=1
+tao_check || ERRS=1
+eorb_check || ERRS=1
 
-VSINSTALLDIR=`$_CYGPATH -d "C:/Program Files/Microsoft Visual Studio 8"`
-DevEnvDir="$VSINSTALLDIR\Common7\IDE"
-FrameworkDir=`$_CYGPATH -d "C:/WINDOWS/Microsoft.NET/Framework"`
-FrameworkSDKDir="$VSINSTALLDIR/SDK/v2.0"
-FrameworkVersion=v2.0.50727
-INCLUDE="$VSINSTALLDIR\VC\ATLMFC\INCLUDE;$VSINSTALLDIR\VC\INCLUDE;$VSINSTALLDIR\VC\PlatformSDK\include;$VSINSTALLDIR\SDK\v2.0\include;"
-LIB="$VSINSTALLDIR\VC\ATLMFC\LIB;$VSINSTALLDIR\VC\LIB;$VSINSTALLDIR\VC\PlatformSDK\lib;$VSINSTALLDIR\SDK\v2.0\lib;$_WIN_SPL_HOME\lib\\$SPLICE_HOST"
-LIBPATH="$FrameworkDir\$FrameworkVersion;$VSINSTALLDIR\VC\ATLMFC\LIB"
-VCINSTALLDIR="$VSINSTALLDIR/VC"
-VS80COMNTOOLS="$VSINSTALLDIR/Common7/Tools/"
-
-export DevEnvDir
-export FrameworkDir
-export FrameworkSDKDir
-export FrameworkVersion
-export INCLUDE
-export LIB
-export LIBPATH
-export VCINSTALLDIR
-export VS80COMNTOOLS
-export VSINSTALLDIR
-
-# setup JAVA
-JAVA_HOME="c:/Program Files/Java/jdk1.5.0_07"
-export JAVA_HOME
-
-# setup compiler environment
-# cygwin is used for the make and bison/flex utilities
-PATH="/cygdrive/c/Program Files/Microsoft Visual Studio 8/VC/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/IDE:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/Tools:/cygdrive/c/Program Files/Microsoft Visual Studio 8/Common7/Tools/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/PlatformSDK/bin:/cygdrive/c/Program Files/Microsoft Visual Studio 8/SDK/v2.0/bin:/cygdrive/c/windows/Microsoft.NET/Framework/v2.0.50727:/cygdrive/c/Program Files/Microsoft Visual Studio 8/VC/VCPackages:/usr/local/bin:/mingw/bin:/bin:/cygdrive/c/cygwin/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/jre/bin:/cygdrive/c/Program Files/Java/jdk1.5.0_07/jre/bin/client:$OSPL_HOME/exec/$SPLICE_HOST:$OSPL_HOME/lib/$SPLICE_HOST:$OSPL_HOME/testsuite/lib/$SPLICE_HOST"
-export PATH
-
-. /opt/ospldev/GSOAP2/gsoap-2.7/release.com
-. /opt/ospldev/TAO/openFusion_1.5.1/release.com
-. /opt/ospldev/BitRock/v5.4.2/x86.win32/release.com
-. /opt/ospldev/FLEXnet/v11.3/release.com
-. /opt/ospldev/junit/v3.8.1/release.com
-. /opt/ospldev/openorb/v1.4.0/release.com
-
-SPLICE_ORB=DDS_OpenFusion_1_5_1
-export SPLICE_ORB
-
-# setup standalone CPP ORB environment
-
-SPLICE_SA_ORB=DDS_Eorb_3_0_SA
-export SPLICE_SA_ORB
-
-if [ "$SPLICE_SA_ORB" = "DDS_Eorb_3_0_SA" ]
+if [ -z $REPORT ]
 then
-. /opt/ospldev/eorb/v1.6.0.1_24th_September_2008/release.com
+    if [ "$ERRS" = "0" ]
+    then
+        echo Configuration OK
+        CONFIGURATION=OK
+    else
+        echo Configuration Invalid
+        CONFIGURATION=INVALID
+    fi
+    export CONFIGURATION
+    cleanup_checks
 fi
-
-unset _WIN_SPL_HOME _CYGPATH
-
-# setting CONFIGURATION to OK will mean that this script can still use ospldev
-CONFIGURATION=OK
-export CONFIGURATION

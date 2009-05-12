@@ -1,5 +1,5 @@
 JAR_MODULE	 = dcpssaj.jar
-JAR_LOCATION = `$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)`
+JAR_LOCATION = $(OSPL_HOME)
 JPACKAGES	 = DDS org/opensplice/dds/dcps
 
 all link: jar

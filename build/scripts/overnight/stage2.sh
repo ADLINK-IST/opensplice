@@ -1,5 +1,8 @@
 #!/bin/sh
 
+PATH=/usr/bin:/bin:/usr/local/bin:$PATH
+export PATH
+
 Assert setupBuildInfo
 ArchiveLogs
 
@@ -19,6 +22,8 @@ BUILD_DBT=build-dbt-tests.txt
 BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
+BUILD_EXAMPLES=examples/
+RUN_EXAMPLES=examples/
 BUILD_DIST=build-dist.txt
 KEEP_DIST=archive-dist.txt
 EOF
@@ -30,6 +35,8 @@ BUILD_DBT=build-dbt-tests.txt
 BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
+BUILD_EXAMPLES=examples/
+RUN_EXAMPLES=examples/
 BUILD_DIST=build-dist.txt
 KEEP_DIST=../distro
 EOF
@@ -65,6 +72,14 @@ then
 else
     echo "BUILD/RBT=SKIP" >> $RESFILE
     echo "RUN/RBT=SKIP" >> $RESFILE
+fi
+if [ $RUN_EXAMPLES = "yes" ]
+then
+    echo "BUILD/EXAMPLES=TODO" >> $RESFILE
+    echo "RUN/EXAMPLES=TODO" >> $RESFILE
+else
+    echo "BUILD/EXAMPLES=SKIP" >> $RESFILE
+    echo "RUN/EXAMPLES=SKIP" >> $RESFILE
 fi
 ArchiveLogs
 
@@ -161,21 +176,45 @@ then
         fi
         ArchiveLogs
     fi
+    if [ "$RUN_EXAMPLES" != "yes" ]
+    then
+        echo "BUILD/EXAMPLES=SKIPPED" >> $RESFILE
+        echo "RUN/EXAMPLES=SKIPPED" >> $RESFILE
+        BUILD_RUN_EXAMPLES_STAGE_WORKED=0
+    else
+        $IBSDIR/dcps_build_run_examples $ARGS > $LOGDIR/build-run-examples.txt 2>&1
+        BUILD_RUN_EXAMPLES_STAGE_WORKED=$?
+        if $BUILD_RUN_EXAMPLES_STAGE_WORKED
+        then
+            echo "BUILD/EXAMPLES=PASS" >> $RESFILE
+            echo "RUN/EXAMPLES=PASS" >> $RESFILE
+        else
+            echo "BUILD/EXAMPLES=FAIL" >> $RESFILE
+            echo "RUN/EXAMPLES=FAIL" >> $RESFILE
+            BUILD_RUN_EXAMPLES_STAGE_WORKED=1
+        fi
+        ArchiveLogs
+    fi
 fi
 
 if [ "$BUILD_STAGE_WORKED" = 0 ]
 then
-    if [ "$PERFORM_DBT_STAGE_WORKED" != 0 -o "$PERFORM_RBT_STAGE_WORKED" != 0 ]
+    if [ "$BUILD_RUN_EXAMPLES_STAGE_WORKED" != 0 ]
     then
-        SetState "TestsFailed"
+	SetState "ExamplesFailed"
     else
-        if [ "$BUILD_DIST_STAGE_WORKED" = 0 -a "$ARCHIVE_STAGE_WORKED" = 0 -a \
-            "$BUILD_DBT_STAGE_WORKED" = 0 -a "$BUILD_RBT_STAGE_WORKED" = 0 ]
-        then
-            SetState "Complete"
-        else
-            SetState "Failed"
-        fi
+       if [ "$PERFORM_DBT_STAGE_WORKED" != 0 -o "$PERFORM_RBT_STAGE_WORKED" != 0 ]
+       then
+           SetState "TestsFailed"
+       else
+           if [ "$BUILD_DIST_STAGE_WORKED" = 0 -a "$ARCHIVE_STAGE_WORKED" = 0 -a \
+               "$BUILD_DBT_STAGE_WORKED" = 0 -a "$BUILD_RBT_STAGE_WORKED" = 0 ]
+           then
+               SetState "Complete"
+           else
+               SetState "Failed"
+           fi
+       fi
     fi
 else
    SetState "Failed"
