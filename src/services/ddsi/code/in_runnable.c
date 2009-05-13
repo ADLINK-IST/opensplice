@@ -26,7 +26,7 @@ in_runnableStart(
     threadAttr.schedClass = _this->schedulingAttr.schedulingClass;
 
     IN_TRACE_2(Receive,3,"in_runnableStart %x %d",_this,in_objectGetKind(in_object(_this)));
-    
+
     result = os_threadCreate(
         &_this->threadId,
         _this->name,
@@ -47,9 +47,10 @@ in_runnableStop(
     in_runnable _this)
 {
     assert(_this);
-
+/*
     if (_this->runState == IN_RUNSTATE_RUNNING)
     {
+*/
         /* First stop the running thread */
         os_mutexLock(&_this->mutex);
         _this->terminate = OS_TRUE;
@@ -62,7 +63,9 @@ in_runnableStop(
          */
         os_threadWaitExit(_this->threadId, NULL);
         assert(_this->runState != IN_RUNSTATE_RUNNING);
+/*
     }
+*/
 }
 
 os_boolean
@@ -108,6 +111,7 @@ in_runnableInit(
 
         _this->runState = IN_RUNSTATE_NONE;
         _this->terminate = OS_FALSE;
+        _this->threadId = 0;
 
         os_mutexAttrInit(&mutexAttr);
         mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;

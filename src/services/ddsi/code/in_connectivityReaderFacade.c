@@ -135,9 +135,10 @@ in_connectivityReaderFacadeDeinit(
         in_connectivityPeerWriterFree(writer);
         iterator = Coll_Iter_getNext(iterator);
         Coll_Set_remove(&_this->matchedWriters, writer);
-        os_free(_this->info.type_name);
-        os_free(_this->info.topic_name);
     }
+    os_free(_this->info.type_name);
+	os_free(_this->info.topic_name);
+
     for(i=0; i<_this->partitionCount; i++)
 	{
 		os_free(_this->info.partition.name[i]);

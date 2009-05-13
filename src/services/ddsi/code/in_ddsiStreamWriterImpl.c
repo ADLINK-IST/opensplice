@@ -1687,7 +1687,7 @@ in_streamWriterAppendPublicationData_i(
 
 
 static void
-in_ddsiStreamReaderImplGetBuffer(
+in_ddsiStreamWriterImplGetBuffer(
         in_ddsiStreamWriterImpl _this,
         in_data* bufferPtr,
         os_uint32* length)
@@ -1721,7 +1721,7 @@ in_messageTransformerGetBuffer_i(
         c_voidp userData)
 {
     /* narrow */
-    in_ddsiStreamReaderImplGetBuffer(
+    in_ddsiStreamWriterImplGetBuffer(
             in_ddsiStreamWriterImpl(userData),
             bufferPtr,
             length);
