@@ -107,7 +107,7 @@ namespace DDS
 
    typedef String ObjectId;
 
-   class SACPP_API     Object;
+   class SACPP_API Object;
    typedef Object* Object_ptr;
    typedef DDS_DCPSInterface_var<Object> Object_var;
    typedef DDS_DCPSInterface_out<Object> Object_out;
@@ -126,9 +126,9 @@ namespace DDS
    class SACPP_API UserException;
 
    // Standard string functions
-   static char* string_alloc(ULong len);
-   static char* string_dup  (const char* str);
-   static void  string_free (char * str);
+   SACPP_API char* string_alloc(ULong len);
+   SACPP_API char* string_dup(const char* str);
+   SACPP_API void  string_free(char * str);
 
    SACPP_API void release(LocalObject_ptr p);
    SACPP_API void release(Object_ptr p);
@@ -155,7 +155,7 @@ DDS::string_free(char * str)
 {
    delete [] str;
 }
- 
+
 inline char *
 DDS::string_dup(const char * s)
 {

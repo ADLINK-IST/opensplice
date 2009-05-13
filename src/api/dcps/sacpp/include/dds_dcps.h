@@ -15,6 +15,7 @@
 #include "sacpp_LocalObject.h"
 #include "sacpp_mapping.h"
 #include "dds_dcps_builtintopics.h"
+#include "sacpp_if.h"
 
 namespace DDS
 {
@@ -72,182 +73,182 @@ namespace DDS
    struct PublicationMatchedStatus;
    struct SubscriptionMatchedStatus;
 
-   class Listener;
+   class SACPP_API Listener;
 
    typedef Listener * Listener_ptr;
    typedef DDS_DCPSInterface_var <Listener> Listener_var;
    typedef DDS_DCPSInterface_out <Listener> Listener_out;
 
 
-   class Entity;
+   class SACPP_API Entity;
 
    typedef Entity * Entity_ptr;
    typedef DDS_DCPSInterface_var <Entity> Entity_var;
    typedef DDS_DCPSInterface_out <Entity> Entity_out;
 
 
-   class TopicDescription;
+   class SACPP_API TopicDescription;
 
    typedef TopicDescription * TopicDescription_ptr;
    typedef DDS_DCPSInterface_var <TopicDescription> TopicDescription_var;
    typedef DDS_DCPSInterface_out <TopicDescription> TopicDescription_out;
 
 
-   class Topic;
+   class SACPP_API Topic;
 
    typedef Topic * Topic_ptr;
    typedef DDS_DCPSInterface_var <Topic> Topic_var;
    typedef DDS_DCPSInterface_out <Topic> Topic_out;
 
 
-   class ContentFilteredTopic;
+   class SACPP_API ContentFilteredTopic;
 
    typedef ContentFilteredTopic * ContentFilteredTopic_ptr;
    typedef DDS_DCPSInterface_var <ContentFilteredTopic> ContentFilteredTopic_var;
    typedef DDS_DCPSInterface_out <ContentFilteredTopic> ContentFilteredTopic_out;
 
 
-   class MultiTopic;
+   class SACPP_API MultiTopic;
 
    typedef MultiTopic * MultiTopic_ptr;
    typedef DDS_DCPSInterface_var <MultiTopic> MultiTopic_var;
    typedef DDS_DCPSInterface_out <MultiTopic> MultiTopic_out;
 
 
-   class DataWriter;
+   class SACPP_API DataWriter;
 
    typedef DataWriter * DataWriter_ptr;
    typedef DDS_DCPSInterface_var <DataWriter> DataWriter_var;
    typedef DDS_DCPSInterface_out <DataWriter> DataWriter_out;
 
 
-   class DataReader;
+   class SACPP_API DataReader;
 
    typedef DataReader * DataReader_ptr;
    typedef DDS_DCPSInterface_var <DataReader> DataReader_var;
    typedef DDS_DCPSInterface_out <DataReader> DataReader_out;
 
 
-   class Subscriber;
+   class SACPP_API Subscriber;
 
    typedef Subscriber * Subscriber_ptr;
    typedef DDS_DCPSInterface_var <Subscriber> Subscriber_var;
    typedef DDS_DCPSInterface_out <Subscriber> Subscriber_out;
 
 
-   class Publisher;
+   class SACPP_API Publisher;
 
    typedef Publisher * Publisher_ptr;
    typedef DDS_DCPSInterface_var <Publisher> Publisher_var;
    typedef DDS_DCPSInterface_out <Publisher> Publisher_out;
 
 
-   class TopicListener;
+   class SACPP_API TopicListener;
 
    typedef TopicListener * TopicListener_ptr;
    typedef DDS_DCPSInterface_var <TopicListener> TopicListener_var;
    typedef DDS_DCPSInterface_out <TopicListener> TopicListener_out;
 
 
-   class DataWriterListener;
+   class SACPP_API DataWriterListener;
 
    typedef DataWriterListener * DataWriterListener_ptr;
    typedef DDS_DCPSInterface_var <DataWriterListener> DataWriterListener_var;
    typedef DDS_DCPSInterface_out <DataWriterListener> DataWriterListener_out;
 
 
-   class PublisherListener;
+   class SACPP_API PublisherListener;
 
    typedef PublisherListener * PublisherListener_ptr;
    typedef DDS_DCPSInterface_var <PublisherListener> PublisherListener_var;
    typedef DDS_DCPSInterface_out <PublisherListener> PublisherListener_out;
 
 
-   class DataReaderListener;
+   class SACPP_API DataReaderListener;
 
    typedef DataReaderListener * DataReaderListener_ptr;
    typedef DDS_DCPSInterface_var <DataReaderListener> DataReaderListener_var;
    typedef DDS_DCPSInterface_out <DataReaderListener> DataReaderListener_out;
 
 
-   class SubscriberListener;
+   class SACPP_API SubscriberListener;
 
    typedef SubscriberListener * SubscriberListener_ptr;
    typedef DDS_DCPSInterface_var <SubscriberListener> SubscriberListener_var;
    typedef DDS_DCPSInterface_out <SubscriberListener> SubscriberListener_out;
 
 
-   class DomainParticipantListener;
+   class SACPP_API DomainParticipantListener;
 
    typedef DomainParticipantListener * DomainParticipantListener_ptr;
    typedef DDS_DCPSInterface_var <DomainParticipantListener> DomainParticipantListener_var;
    typedef DDS_DCPSInterface_out <DomainParticipantListener> DomainParticipantListener_out;
 
 
-   class Condition;
+   class SACPP_API Condition;
 
    typedef Condition * Condition_ptr;
    typedef DDS_DCPSInterface_var <Condition> Condition_var;
    typedef DDS_DCPSInterface_out <Condition> Condition_out;
 
 
-   class WaitSetInterface;
+   class SACPP_API WaitSetInterface;
 
    typedef WaitSetInterface * WaitSetInterface_ptr;
    typedef DDS_DCPSInterface_var <WaitSetInterface> WaitSetInterface_var;
    typedef DDS_DCPSInterface_out <WaitSetInterface> WaitSetInterface_out;
 
 
-   class GuardConditionInterface;
+   class SACPP_API GuardConditionInterface;
 
    typedef GuardConditionInterface * GuardConditionInterface_ptr;
    typedef DDS_DCPSInterface_var <GuardConditionInterface> GuardConditionInterface_var;
    typedef DDS_DCPSInterface_out <GuardConditionInterface> GuardConditionInterface_out;
 
 
-   class StatusCondition;
+   class SACPP_API StatusCondition;
 
    typedef StatusCondition * StatusCondition_ptr;
    typedef DDS_DCPSInterface_var <StatusCondition> StatusCondition_var;
    typedef DDS_DCPSInterface_out <StatusCondition> StatusCondition_out;
 
 
-   class ReadCondition;
+   class SACPP_API ReadCondition;
 
    typedef ReadCondition * ReadCondition_ptr;
    typedef DDS_DCPSInterface_var <ReadCondition> ReadCondition_var;
    typedef DDS_DCPSInterface_out <ReadCondition> ReadCondition_out;
 
 
-   class QueryCondition;
+   class SACPP_API QueryCondition;
 
    typedef QueryCondition * QueryCondition_ptr;
    typedef DDS_DCPSInterface_var <QueryCondition> QueryCondition_var;
    typedef DDS_DCPSInterface_out <QueryCondition> QueryCondition_out;
 
 
-   class DomainParticipant;
+   class SACPP_API DomainParticipant;
 
    typedef DomainParticipant * DomainParticipant_ptr;
    typedef DDS_DCPSInterface_var <DomainParticipant> DomainParticipant_var;
    typedef DDS_DCPSInterface_out <DomainParticipant> DomainParticipant_out;
 
 
-   class DomainParticipantFactoryInterface;
+   class SACPP_API DomainParticipantFactoryInterface;
 
    typedef DomainParticipantFactoryInterface * DomainParticipantFactoryInterface_ptr;
    typedef DDS_DCPSInterface_var <DomainParticipantFactoryInterface> DomainParticipantFactoryInterface_var;
    typedef DDS_DCPSInterface_out <DomainParticipantFactoryInterface> DomainParticipantFactoryInterface_out;
 
 
-   class TypeSupport;
+   class SACPP_API TypeSupport;
 
    typedef TypeSupport * TypeSupport_ptr;
    typedef DDS_DCPSInterface_var <TypeSupport> TypeSupport_var;
    typedef DDS_DCPSInterface_out <TypeSupport> TypeSupport_out;
 
 
-   class TypeSupportFactory;
+   class SACPP_API TypeSupportFactory;
 
    typedef TypeSupportFactory * TypeSupportFactory_ptr;
    typedef DDS_DCPSInterface_var <TypeSupportFactory> TypeSupportFactory_var;
@@ -255,7 +256,7 @@ namespace DDS
 
    struct SampleInfo;
 
-   class ErrorInfoInterface;
+   class SACPP_API ErrorInfoInterface;
 
    typedef ErrorInfoInterface * ErrorInfoInterface_ptr;
    typedef DDS_DCPSInterface_var <ErrorInfoInterface> ErrorInfoInterface_var;
@@ -481,10 +482,10 @@ namespace DDS
    typedef DDS_DCPSUObjSeq <DataReader, struct DataReaderSeq_uniq_> DataReaderSeq;
    typedef DDS_DCPSSequence_var <DataReaderSeq> DataReaderSeq_var;
    typedef DDS_DCPSSequence_out <DataReaderSeq> DataReaderSeq_out;
-   class Listener
+   class SACPP_API Listener
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef Listener_ptr _ptr_type;
       typedef Listener_var _var_type;
@@ -507,10 +508,10 @@ namespace DDS
       Listener & operator = (const Listener &);
    };
 
-   class TopicListener
+   class SACPP_API TopicListener
    :
       virtual public Listener
-   { 
+   {
    public:
       typedef TopicListener_ptr _ptr_type;
       typedef TopicListener_var _var_type;
@@ -535,10 +536,10 @@ namespace DDS
    };
 
 
-   class DataWriterListener
+   class SACPP_API DataWriterListener
    :
       virtual public Listener
-   { 
+   {
    public:
       typedef DataWriterListener_ptr _ptr_type;
       typedef DataWriterListener_var _var_type;
@@ -565,10 +566,10 @@ namespace DDS
       DataWriterListener & operator = (const DataWriterListener &);
    };
 
-   class PublisherListener
+   class SACPP_API PublisherListener
    :
       virtual public DataWriterListener
-   { 
+   {
    public:
       typedef PublisherListener_ptr _ptr_type;
       typedef PublisherListener_var _var_type;
@@ -592,10 +593,10 @@ namespace DDS
    };
 
 
-   class DataReaderListener
+   class SACPP_API DataReaderListener
    :
       virtual public Listener
-   { 
+   {
    public:
       typedef DataReaderListener_ptr _ptr_type;
       typedef DataReaderListener_var _var_type;
@@ -626,10 +627,10 @@ namespace DDS
    };
 
 
-   class SubscriberListener
+   class SACPP_API SubscriberListener
    :
       virtual public DataReaderListener
-   { 
+   {
    public:
       typedef SubscriberListener_ptr _ptr_type;
       typedef SubscriberListener_var _var_type;
@@ -654,12 +655,12 @@ namespace DDS
    };
 
 
-   class DomainParticipantListener
+   class SACPP_API DomainParticipantListener
    :
       virtual public TopicListener,
       virtual public PublisherListener,
       virtual public SubscriberListener
-   { 
+   {
    public:
       typedef DomainParticipantListener_ptr _ptr_type;
       typedef DomainParticipantListener_var _var_type;
@@ -683,10 +684,10 @@ namespace DDS
    };
 
 
-   class Condition
+   class SACPP_API Condition
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef Condition_ptr _ptr_type;
       typedef Condition_var _var_type;
@@ -715,10 +716,10 @@ namespace DDS
    typedef DDS_DCPSUObjSeq <Condition, struct ConditionSeq_uniq_> ConditionSeq;
    typedef DDS_DCPSSequence_var <ConditionSeq> ConditionSeq_var;
    typedef DDS_DCPSSequence_out <ConditionSeq> ConditionSeq_out;
-   class WaitSetInterface
+   class SACPP_API WaitSetInterface
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef WaitSetInterface_ptr _ptr_type;
       typedef WaitSetInterface_var _var_type;
@@ -746,10 +747,10 @@ namespace DDS
    };
 
 
-   class GuardConditionInterface
+   class SACPP_API GuardConditionInterface
    :
       virtual public Condition
-   { 
+   {
    public:
       typedef GuardConditionInterface_ptr _ptr_type;
       typedef GuardConditionInterface_var _var_type;
@@ -774,10 +775,10 @@ namespace DDS
    };
 
 
-   class StatusCondition
+   class SACPP_API StatusCondition
    :
       virtual public Condition
-   { 
+   {
    public:
       typedef StatusCondition_ptr _ptr_type;
       typedef StatusCondition_var _var_type;
@@ -839,10 +840,10 @@ namespace DDS
 
     const DDS::ULong ANY_INSTANCE_STATE = (DDS::ULong) 65535UL;
     const DDS::ULong NOT_ALIVE_INSTANCE_STATE = (DDS::ULong) 6UL;
-   class ReadCondition
+   class SACPP_API ReadCondition
    :
       virtual public Condition
-   { 
+   {
    public:
       typedef ReadCondition_ptr _ptr_type;
       typedef ReadCondition_var _var_type;
@@ -870,10 +871,10 @@ namespace DDS
    };
 
 
-   class QueryCondition
+   class SACPP_API QueryCondition
    :
       virtual public ReadCondition
-   { 
+   {
    public:
       typedef QueryCondition_ptr _ptr_type;
       typedef QueryCondition_var _var_type;
@@ -947,10 +948,10 @@ namespace DDS
     const DDS::Long LIFESPAN_QOS_POLICY_ID = (DDS::Long) 21UL;
     const DDS::Long DURABILITYSERVICE_QOS_POLICY_ID = (DDS::Long) 22UL;
     const DDS::Long SCHEDULING_QOS_POLICY_ID = (DDS::Long) 27UL;
-   class Entity
+   class SACPP_API Entity
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef Entity_ptr _ptr_type;
       typedef Entity_var _var_type;
@@ -978,10 +979,10 @@ namespace DDS
    };
 
 
-   class DomainParticipant
+   class SACPP_API DomainParticipant
    :
       virtual public Entity
-   { 
+   {
    public:
       typedef DomainParticipant_ptr _ptr_type;
       typedef DomainParticipant_var _var_type;
@@ -1041,10 +1042,10 @@ namespace DDS
    };
 
 
-   class DomainParticipantFactoryInterface
+   class SACPP_API DomainParticipantFactoryInterface
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef DomainParticipantFactoryInterface_ptr _ptr_type;
       typedef DomainParticipantFactoryInterface_var _var_type;
@@ -1075,10 +1076,10 @@ namespace DDS
    };
 
 
-   class TypeSupport
+   class SACPP_API TypeSupport
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef TypeSupport_ptr _ptr_type;
       typedef TypeSupport_var _var_type;
@@ -1104,10 +1105,10 @@ namespace DDS
    };
 
 
-   class TypeSupportFactory
+   class SACPP_API TypeSupportFactory
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef TypeSupportFactory_ptr _ptr_type;
       typedef TypeSupportFactory_var _var_type;
@@ -1131,10 +1132,10 @@ namespace DDS
    };
 
 
-   class TopicDescription
+   class SACPP_API TopicDescription
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef TopicDescription_ptr _ptr_type;
       typedef TopicDescription_var _var_type;
@@ -1161,11 +1162,11 @@ namespace DDS
    };
 
 
-   class Topic
+   class SACPP_API Topic
    :
       virtual public Entity,
       virtual public TopicDescription
-   { 
+   {
    public:
       typedef Topic_ptr _ptr_type;
       typedef Topic_var _var_type;
@@ -1194,10 +1195,10 @@ namespace DDS
    };
 
 
-   class ContentFilteredTopic
+   class SACPP_API ContentFilteredTopic
    :
       virtual public TopicDescription
-   { 
+   {
    public:
       typedef ContentFilteredTopic_ptr _ptr_type;
       typedef ContentFilteredTopic_var _var_type;
@@ -1225,10 +1226,10 @@ namespace DDS
    };
 
 
-   class MultiTopic
+   class SACPP_API MultiTopic
    :
       virtual public TopicDescription
-   { 
+   {
    public:
       typedef MultiTopic_ptr _ptr_type;
       typedef MultiTopic_var _var_type;
@@ -1255,10 +1256,10 @@ namespace DDS
    };
 
 
-   class Publisher
+   class SACPP_API Publisher
    :
       virtual public Entity
-   { 
+   {
    public:
       typedef Publisher_ptr _ptr_type;
       typedef Publisher_var _var_type;
@@ -1299,10 +1300,10 @@ namespace DDS
    };
 
 
-   class DataWriter
+   class SACPP_API DataWriter
    :
       virtual public Entity
-   { 
+   {
    public:
       typedef DataWriter_ptr _ptr_type;
       typedef DataWriter_var _var_type;
@@ -1340,10 +1341,10 @@ namespace DDS
    };
 
 
-   class Subscriber
+   class SACPP_API Subscriber
    :
       virtual public Entity
-   { 
+   {
    public:
       typedef Subscriber_ptr _ptr_type;
       typedef Subscriber_var _var_type;
@@ -1383,10 +1384,10 @@ namespace DDS
    };
 
 
-   class DataReader
+   class SACPP_API DataReader
    :
       virtual public Entity
-   { 
+   {
    public:
       typedef DataReader_ptr _ptr_type;
       typedef DataReader_var _var_type;
@@ -1453,10 +1454,10 @@ namespace DDS
    typedef DDS_DCPSUFLSeq <SampleInfo, struct SampleInfoSeq_uniq_> SampleInfoSeq;
    typedef DDS_DCPSSequence_var <SampleInfoSeq> SampleInfoSeq_var;
    typedef DDS_DCPSSequence_out <SampleInfoSeq> SampleInfoSeq_out;
-   class ErrorInfoInterface
+   class SACPP_API ErrorInfoInterface
    :
       virtual public DDS::LocalObject
-   { 
+   {
    public:
       typedef ErrorInfoInterface_ptr _ptr_type;
       typedef ErrorInfoInterface_var _var_type;
@@ -1497,4 +1498,4 @@ void DDS_DCPS_ArrayHelper<DDS::BuiltinTopicKey_t, DDS::BuiltinTopicKey_t_slice, 
 
 
 
-#endif 
+#endif

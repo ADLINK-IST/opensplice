@@ -13,6 +13,7 @@
 #include "dds_dcps.h"
 
 #if EORB_USE_EXPLICIT_TEMPLATES
+#error "this is not working!"
 template class DDS_DCPSUFLSeq <DDS::SampleInfo, struct SampleInfoSeq_uniq_>;
 #endif
 #if EORB_USE_EXPLICIT_TEMPLATES

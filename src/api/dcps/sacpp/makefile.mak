@@ -1,8 +1,8 @@
 TARGET_DLIB	:= $(DDS_DCPSSACPP)
 
 # Determine import/export macro and include file.
-DECL_PREFIX := OS_DCPS_API
-DECL_INCLUDE := ccpp_dcps_if.h
+DECL_PREFIX := SACPP_API
+DECL_INCLUDE := sacpp_if.h
 
 # Input IDL files.
 IDL_DIR		:= ../../../ccpp/idl
@@ -44,6 +44,7 @@ CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP
 
 CXXINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CXXINCS		+= -I$(OSPL_HOME)/src/database/database/include
+CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/sacpp/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
 

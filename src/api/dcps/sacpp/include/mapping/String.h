@@ -637,17 +637,17 @@ public:
 };
 
 inline void DDS_DCPSUStrSeq::length (DDS::ULong nelems)
-{     
+{
    if (nelems > m_max)
    {
       DDS::ULong i = 0;
       char ** old = m_buffer;
-   
+
       m_max = nelems;
       m_buffer = allocbuf (m_max);
-      
+
       while (i < m_length)
-      {  
+      {
          if (m_release)
          {
             m_buffer[i] = old[i];
@@ -661,36 +661,36 @@ inline void DDS_DCPSUStrSeq::length (DDS::ULong nelems)
       }
       while (i < m_max)
       {
-         m_buffer[i] = DDS::string_dup (""); 
+         m_buffer[i] = DDS::string_dup ("");
          i++;
       }
-   
+
       if (m_release)
       {
          freebuf (old);
       }
-   
+
       m_release = TRUE;
    }
-   
+
    m_length = nelems;
-}  
+}
 
 inline DDS_DCPSUStrSeq & DDS_DCPSUStrSeq::operator = (const DDS_DCPSUStrSeq & that)
-{  
+{
    if (this != &that)
-   {  
+   {
       DDS::ULong i = 0;
       if (m_release)
-      {  
+      {
          freebuf (m_buffer);
-      }  
-         
+      }
+
       m_max = that.m_max;
       m_length = that.m_length;
       m_release = TRUE;
       m_buffer = allocbuf (m_max);
-      
+
       while (i < m_length)
       {
          m_buffer[i] = DDS::string_dup (that.m_buffer[i]);
@@ -702,9 +702,9 @@ inline DDS_DCPSUStrSeq & DDS_DCPSUStrSeq::operator = (const DDS_DCPSUStrSeq & th
          i++;
       }
    }
-   
+
    return *this;
-}  
+}
 
 inline DDS::String_for_seq & DDS::String_for_seq::operator = (DDS::String p)
 {
