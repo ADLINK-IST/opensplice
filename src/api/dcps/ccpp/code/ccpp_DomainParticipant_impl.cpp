@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <gapi.h>
@@ -150,6 +150,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_publisher (
         result = gapi_domainParticipant_delete_publisher(_gapi_self, pub->_gapi_self);
         if (result == DDS::RETCODE_OK)
         {
+          pub->_gapi_self = NULL;
           if (myUD)
           {
             delete myUD;
@@ -280,6 +281,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_subscriber (
         result = gapi_domainParticipant_delete_subscriber(_gapi_self, sub->_gapi_self);
         if (result == DDS::RETCODE_OK)
         {
+          sub->_gapi_self = NULL;
           if (myUD)
           {
             delete myUD;
@@ -481,6 +483,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_topic (
       result = gapi_domainParticipant_delete_topic(_gapi_self, topic->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
+        topic->_gapi_self = NULL;
         if (myUD)
         {
           delete myUD;
@@ -717,6 +720,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_contentfilteredtopic (
       result = gapi_domainParticipant_delete_contentfilteredtopic(_gapi_self, handle);
       if (result == DDS::RETCODE_OK)
       {
+        contentFilteredTopic->__gapi_self = NULL;
         if (myUD)
         {
           delete myUD;
@@ -811,6 +815,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_multitopic (
 
       if (result == DDS::RETCODE_OK)
       {
+        multiTopic->__gapi_self = NULL;
         if (myUD)
         {
           delete myUD;
