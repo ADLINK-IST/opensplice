@@ -20,27 +20,27 @@
 
 #define YY_NEVER_INTERACTIVE 1
 
-#define yyin                 cfg_yyin
-#define yyout                cfg_yyout
-#define yyparse              cfg_yyparse
-#define yychar               cfg_yychar
-#define yyerror              cfg_yyerror
-#define yylex                cfg_yylex
-#define yylval               cfg_yylval
-#define yyrestart            cfg_yyrestart
-#define yywrap               cfg_yywrap
-#define yytext               cfg_yytext
-#define yynerrs              cfg_yynerrs
-#define yyleng               cfg_yyleng
-#define yy_scan_string       cfg_yy_scan_string
-#define yy_scan_buffer       cfg_yy_scan_buffer
-#define yy_init_buffer       cfg_yy_init_buffer
-#define yy_flush_buffer      cfg_yy_flush_buffer 
-#define yy_switch_to_buffer  cfg_yy_switch_to_buffer
-#define yy_delete_buffer     cfg_yy_delete_buffer
-#define yy_create_buffer     cfg_yy_create_buffer
-#define yy_load_buffer_state cfg_yy_load_buffer_state
-#define yy_scan_bytes        cfg_yy_scan_bytes
+#define yyin                 cfg_scanner_yyin
+#define yyout                cfg_scanner_yyout
+#define yyparse              cfg_scanner_yyparse
+#define yychar               cfg_scanner_yychar
+#define yyerror              cfg_scanner_yyerror
+#define yylex                cfg_scanner_yylex
+#define yylval               cfg_scanner_yylval
+#define yyrestart            cfg_scanner_yyrestart
+#define yywrap               cfg_scanner_yywrap
+#define yytext               cfg_scanner_yytext
+#define yynerrs              cfg_scanner_yynerrs
+#define yyleng               cfg_scanner_yyleng
+#define yy_scan_string       cfg_scanner_yy_scan_string
+#define yy_scan_buffer       cfg_scanner_yy_scan_buffer
+#define yy_init_buffer       cfg_scanner_yy_init_buffer
+#define yy_flush_buffer      cfg_scanner_yy_flush_buffer 
+#define yy_switch_to_buffer  cfg_scanner_yy_switch_to_buffer
+#define yy_delete_buffer     cfg_scanner_yy_delete_buffer
+#define yy_create_buffer     cfg_scanner_yy_create_buffer
+#define yy_load_buffer_state cfg_scanner_yy_load_buffer_state
+#define yy_scan_bytes        cfg_scanner_yy_scan_bytes
 
 #define CFG_MAX_MSG 128
 

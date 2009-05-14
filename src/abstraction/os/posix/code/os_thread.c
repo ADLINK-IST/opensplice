@@ -288,7 +288,7 @@ os_startRoutineWrapper (
     /* return the result of the user routine */
     return resultValue;
 }
-#if 0
+
 /** \brief Create a new thread
  *
  * \b os_threadCreate creates a thread by calling \b pthread_create.
@@ -324,102 +324,9 @@ os_threadCreate (
     assert (start_routine != NULL);
     tattr = *threadAttr;
     if (tattr.schedClass == OS_SCHED_DEFAULT) {
-        tattr.schedClass = os_procAttrGetClass ();
-        tattr.schedPriority = os_procAttrGetPriority ();
-    }
-    if (pthread_attr_init (&attr) != 0 ||
-        pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM) != 0 ||
-        pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE) != 0 ||
-        pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED) != 0) {
-        rv = os_resultFail;
-    }
-
-    if (rv == os_resultSuccess && tattr.stackSize != 0) {
-        if (pthread_attr_setstacksize (&attr, tattr.stackSize) != 0) {
-            rv = os_resultFail;
-        }
-    }
-
-    if (rv == os_resultSuccess) {
-        if (tattr.schedClass == OS_SCHED_REALTIME) {
-#ifndef INTEGRITY
-            if (getuid() == 0 || geteuid() == 0) {
-#endif
-                result = pthread_attr_setschedpolicy (&attr, SCHED_FIFO);
-                if (result != 0) {
-                    OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
-                }
-#ifndef INTEGRITY
-            } else {
-                OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2, "scheduling policy can not be set because of privilege problems (%s)", name);
-            }
-#endif
-        }
-        pthread_attr_getschedpolicy(&attr, &policy);
-        if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
-            (tattr.schedPriority > sched_get_priority_max(policy))) {
-            OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
-                "scheduling priority outside valid range for the policy reverted to valid value (%s)", name);
-            sched_param.sched_priority = (sched_get_priority_min(policy) + sched_get_priority_max(policy)) / 2;
-        } else {
-            sched_param.sched_priority = tattr.schedPriority;
-        }
-        /* Take over the thread context: name, start routine and argument */
-        threadContext = os_malloc (sizeof (os_threadContext));
-        threadContext->threadName = os_malloc (strlen (name)+1);
-        strncpy (threadContext->threadName, name, strlen (name)+1);
-        threadContext->startRoutine = start_routine;
-        threadContext->arguments = arg;
-        /* start the thread */
-        if (pthread_attr_setschedparam (&attr, &sched_param) != 0 ||
-            pthread_create (threadId, &attr, os_startRoutineWrapper, threadContext) != 0) {
-            os_free (threadContext->threadName);
-            os_free (threadContext);
-            rv = os_resultFail;
-        } else {
-            rv = os_resultSuccess;
-        }
-    }
-    pthread_attr_destroy (&attr);
-    return rv;
-}
-#endif
-/** \brief Create a new thread
- *
- * \b os_threadCreate creates a thread by calling \b pthread_create.
- * But first it processes all thread attributes in \b threadAttr and
- * sets the scheduling properties with \b pthread_attr_setscope
- * to create a bounded thread, \b pthread_attr_setschedpolicy to
- * set the scheduling class and \b pthread_attr_setschedparam to
- * set the scheduling priority.
- * \b pthread_attr_setdetachstate is called with parameter
- * \PTHREAD_CREATE_JOINABLE to make the thread joinable, which
- * is needed to be able to wait for the threads termination
- * in \b os_threadWaitExit.
- */
-os_result
-os_threadCreate (
-    os_threadId *threadId,
-    const char *name,
-    const os_threadAttr *threadAttr,
-    void *(* start_routine)(void *),
-    void *arg)
-{
-    pthread_attr_t attr;
-    struct sched_param sched_param;
-    os_result rv = os_resultSuccess;
-    os_threadContext *threadContext;
-    os_threadAttr tattr;
-    int result;
-    int policy;
-
-    assert (threadId != NULL);
-    assert (name != NULL);
-    assert (threadAttr != NULL);
-    assert (start_routine != NULL);
-    tattr = *threadAttr;
-    if (tattr.schedClass == OS_SCHED_DEFAULT) {
+#ifndef VXWORKS_RTP
 	tattr.schedClass = os_procAttrGetClass ();
+#endif
 	tattr.schedPriority = os_procAttrGetPriority ();
     }
     if (pthread_attr_init (&attr) != 0 ||

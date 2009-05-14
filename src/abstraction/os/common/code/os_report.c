@@ -16,6 +16,7 @@
 #include <os_thread.h>
 #include <os_stdlib.h>
 #include <os_heap.h>
+#include <os_socket.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,6 +28,10 @@
 
 #define OS_REPORTSERVICES_MAX	(10)
 #define OS_MAX_DESCRIPTIONSIZE  (2048)
+
+#define SERV_IP "10.1.0.3"
+#define INFO_PORT 20006
+#define ERROR_PORT 20007
 
 typedef struct {
     void (*os_reportService)(
@@ -77,15 +82,43 @@ os_reportSetApiInfoRec (
     const char   *description,
     va_list	  args);
 
-#ifndef INTEGRITY
-static FILE *
-os_open_info_file(
-   void)
+#if !defined(INTEGRITY)
+static FILE * open_socket (char *host, unsigned short port)
+{
+   FILE * file = NULL;
+   struct sockaddr_in sa;
+   int sock;
+
+   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+   {
+      perror("socket");
+      return NULL;
+   }
+
+   memset((char *)&sa, 0, sizeof(sa));
+   sa.sin_family = AF_INET;
+   sa.sin_port = htons(port);
+   sa.sin_addr.s_addr = inet_addr (host);
+
+   if (connect (sock, (struct sockaddr *)&sa, sizeof(sa)) < 0)
+   {
+      perror("connect");
+      return NULL;
+   }
+
+   file = fdopen (sock, "w");
+
+   return file;
+}
+
+static FILE * os_open_info_file (void)
 {
    FILE *logfile=NULL;
    char *file_dir;
    char *file_name;
    char file_path[2048];
+   char host[256];
+   unsigned short port;
    int len;
 
    file_dir = os_getenv("OSPL_LOGPATH");
@@ -108,6 +141,10 @@ os_open_info_file(
       {
          logfile = stdout;
       } 
+      else if (sscanf (file_name, "%255[^:]:%hd", host, &port) == 2)
+      {
+         logfile = open_socket (host, port);
+      }
       else 
       {
          len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
@@ -127,14 +164,14 @@ os_open_info_file(
    return( logfile );
 }
 
-static FILE *
-os_open_error_file (
-   void)
+static FILE * os_open_error_file (void)
 {
    FILE *logfile=NULL;
    char *file_dir;
    char *file_name;
    char file_path[2048];
+   char host[256];
+   unsigned short port;
    int len;
 
    file_dir = os_getenv("OSPL_LOGPATH");
@@ -157,6 +194,10 @@ os_open_error_file (
       {
          logfile = stdout;
       } 
+      else if (sscanf (file_name, "%255[^:]:%hd", host, &port) == 2)
+      {
+         logfile = open_socket (host, port);
+      }
       else 
       {
          len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
@@ -197,6 +238,7 @@ os_defaultReport(
     FILE *log;
     const char *file_name = fileName;
     const char *ptr;
+
 
     switch (reportType) {
     case OS_INFO:

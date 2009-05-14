@@ -627,6 +627,7 @@ os_procAttrGetClass(void)
     return class;
 }
 
+#ifndef VXWORKS_RTP
 /** \brief Get the process effective scheduling priority
  *
  * Possible Results:
@@ -645,6 +646,7 @@ os_procAttrGetPriority(void)
     }
     return param.sched_priority;
 }
+#endif
 
 #ifndef _POSIX_MEMLOCK
 #error "Error: the posix implementation on this platform does not support page locking!"
