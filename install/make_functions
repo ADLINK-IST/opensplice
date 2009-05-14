@@ -112,6 +112,22 @@ install_ascii_fileset()
     done
 }
 
+buildTarGZ ()
+{
+   tar -cf $1.tar $2
+   gzip $1.tar
+}
+
+buildTarZ ()
+{
+   tar -cf - $2 | compress > $1.tar.Z
+}
+
+buildZip ()
+{
+   zip -r $1.zip $2
+}
+
 make_hde_mirror_and_builder ()
 {
     INSTTYPE="HDE"
@@ -1132,6 +1148,32 @@ install_hde_target ()
     fi
     echo "*       DCPS Ready"    
     echo "*     Copy examples Ready"
+
+    #
+    # Copy in ospli src for distro
+    #
+    printf "*     Creating source release ... "
+    mkdir ${HDE_dir}/src
+    sleep 3 &
+    TMP_PID=$!
+    mkdir /tmp/$TMP_PID
+    OSPL_SRC=/tmp/$TMP_PID/OpenSpliceDDS
+    git clone $OSPL_HOME $OSPL_SRC  > /dev/null 2>&1
+    rm -rf $OSPL_SRC/.git
+    rm -rf $OSPL_SRC/docs
+    rm -f $OSPL_SRC/.gitignore
+    rm -f $OSPL_SRC/.gitattributes
+    BUILD=buildTarGZ
+    if [ "${target}" = "x86.win32" ]
+    then
+        BUILD=buildZip
+    fi
+    (
+        cd $OSPL_SRC/..
+        $BUILD ${HDE_dir}/src/OpenSpliceDDS-src OpenSpliceDDS
+    )
+    rm -rf /tmp/$TMP_PID
+    echo "Ready"
 
     #
     # Platform specific redistributables
