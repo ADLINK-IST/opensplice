@@ -223,6 +223,7 @@ set_envs ()
     ENV=`expr "${SPLICE_TARGET}" : '[^-]*\(.*\)'`
     
     SOURCE_HOST=`expr "${SPLICE_HOST}" : '\([^-]*\)'`
+    SOURCE_HOST_SHORT=`expr "${SPLICE_HOST}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     SOURCE_TARGET=`expr "${SPLICE_TARGET}" : '\([^-]*\)'`
     SOURCE_TARGET_SHORT=`expr "${SPLICE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     
@@ -231,14 +232,14 @@ set_envs ()
     TXTFILE_CONVERTER="echo done"
     GETLIC_INFO_NAME=""
     
-    if [ "${SOURCE_TARGET_SHORT}" = "linux" ]
+    if [ "${SOURCE_HOST_SHORT}" = "linux" ]
     then
         BUILDER_TARGET="linux"
         SCRIPT_NAME="release.com"
         GETLIC_INFO_NAME="getlic_info"
     fi
             
-    if [ "${SOURCE_TARGET_SHORT}" = "win" ]
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         (cd ${OSPL_HOME}/install/service_installer; make)
         BUILDER_TARGET="windows"
@@ -258,7 +259,7 @@ set_rts_envs ()
             suffix_exe=".exe"
             suffix_script=".bat"
             ;;
-        PPC604.vxworks6.6)
+        PPC604.vxworks6.6*)
             suffix_exe=".vxe"
             ;;
     esac
@@ -583,16 +584,23 @@ install_hde_target ()
     fi
     if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" ]
     then
-        printf "*     Copy JAVA host archive files... "
-        release=${OSPL_HOME}/jar/${host}${source_env}
-        if [ -d "${release}" ]
+        case $SOURCE_TARGET_SHORT in
+            int | vxworks) need_host_java=no;;
+            *) need_host_java=yes;;
+        esac
+        if [ $need_host_java = "yes" ]
         then
-            mkdir -p ${HDE_dir}/jar
-            install_dir ${release} ${HDE_dir} jar
-        else
-            echo "* ##    No JAVA archive files detected"
+            printf "*     Copy JAVA host archive files... "
+            release=${OSPL_HOME}/jar/${host}${source_env}
+            if [ -d "${release}" ]
+            then
+                mkdir -p ${HDE_dir}/jar
+                install_dir ${release} ${HDE_dir} jar
+            else
+                echo "* ##    No JAVA archive files detected"
+            fi
+            echo "Ready"
         fi
-        echo "Ready"
     fi
 
     #

@@ -13,27 +13,27 @@
 #define YY_NEVER_INTERACTIVE 1
 //#endif
     
-#define yyin                 gapi_yyin
-#define yyout                gapi_yyout
-#define yyparse              gapi_yyparse
-#define yychar               gapi_yychar
-#define yyerror              gapi_yyerror
-#define yylex                gapi_yylex
-#define yylval               gapi_yylval
-#define yyrestart            gapi_yyrestart
-#define yywrap               gapi_yywrap
-#define yytext               gapi_yytext
-#define yynerrs              gapi_yynerrs
-#define yyleng               gapi_yyleng
-#define yy_scan_string       gapi_yy_scan_string
-#define yy_scan_buffer       gapi_yy_scan_buffer
-#define yy_init_buffer       gapi_yy_init_buffer
-#define yy_flush_buffer      gapi_yy_flush_buffer 
-#define yy_switch_to_buffer  gapi_yy_switch_to_buffer
-#define yy_delete_buffer     gapi_yy_delete_buffer
-#define yy_create_buffer     gapi_yy_create_buffer
-#define yy_load_buffer_state gapi_yy_load_buffer_state
-#define yy_scan_bytes        gapi_yy_scan_bytes
+#define yyin                 gapi_parser_yyin
+#define yyout                gapi_parser_yyout
+#define yyparse              gapi_parser_yyparse
+#define yychar               gapi_parser_yychar
+#define yyerror              gapi_parser_yyerror
+#define yylex                gapi_parser_yylex
+#define yylval               gapi_parser_yylval
+#define yyrestart            gapi_parser_yyrestart
+#define yywrap               gapi_parser_yywrap
+#define yytext               gapi_parser_yytext
+#define yynerrs              gapi_parser_yynerrs
+#define yyleng               gapi_parser_yyleng
+#define yy_scan_string       gapi_parser_yy_scan_string
+#define yy_scan_buffer       gapi_parser_yy_scan_buffer
+#define yy_init_buffer       gapi_parser_yy_init_buffer
+#define yy_flush_buffer      gapi_parser_yy_flush_buffer 
+#define yy_switch_to_buffer  gapi_parser_yy_switch_to_buffer
+#define yy_delete_buffer     gapi_parser_yy_delete_buffer
+#define yy_create_buffer     gapi_parser_yy_create_buffer
+#define yy_load_buffer_state gapi_parser_yy_load_buffer_state
+#define yy_scan_bytes        gapi_parser_yy_scan_bytes
 
 static q_expr expr;
 
