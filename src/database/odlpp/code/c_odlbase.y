@@ -12,27 +12,27 @@
 #define YY_NO_UNISTD_H
 #endif
 
-#define yyin                 odl_yyin
-#define yyout                odl_yyout
-#define yyparse              odl_yyparse
-#define yychar               odl_yychar
-#define yyerror              odl_yyerror
-#define yylex                odl_yylex
-#define yylval               odl_yylval
-#define yyrestart            odl_yyrestart
-#define yywrap               odl_yywrap
-#define yytext               odl_yytext
-#define yynerrs              odl_yynerrs
-#define yyleng               odl_yyleng
-#define yy_scan_string       odl_yy_scan_string
-#define yy_scan_buffer       odl_yy_scan_buffer
-#define yy_init_buffer       odl_yy_init_buffer
-#define yy_flush_buffer      odl_yy_flush_buffer 
-#define yy_switch_to_buffer  odl_yy_switch_to_buffer
-#define yy_delete_buffer     odl_yy_delete_buffer
-#define yy_create_buffer     odl_yy_create_buffer
-#define yy_load_buffer_state odl_yy_load_buffer_state
-#define yy_scan_bytes        odl_yy_scan_bytes
+#define yyin                 c_odlbase_yyin
+#define yyout                c_odlbase_yyout
+#define yyparse              c_odlbase_yyparse
+#define yychar               c_odlbase_yychar
+#define yyerror              c_odlbase_yyerror
+#define yylex                c_odlbase_yylex
+#define yylval               c_odlbase_yylval
+#define yyrestart            c_odlbase_yyrestart
+#define yywrap               c_odlbase_yywrap
+#define yytext               c_odlbase_yytext
+#define yynerrs              c_odlbase_yynerrs
+#define yyleng               c_odlbase_yyleng
+#define yy_scan_string       c_odlbase_yy_scan_string
+#define yy_scan_buffer       c_odlbase_yy_scan_buffer
+#define yy_init_buffer       c_odlbase_yy_init_buffer
+#define yy_flush_buffer      c_odlbase_yy_flush_buffer 
+#define yy_switch_to_buffer  c_odlbase_yy_switch_to_buffer
+#define yy_delete_buffer     c_odlbase_yy_delete_buffer
+#define yy_create_buffer     c_odlbase_yy_create_buffer
+#define yy_load_buffer_state c_odlbase_yy_load_buffer_state
+#define yy_scan_bytes        c_odlbase_yy_scan_bytes
 
 void *object;
 void *topLevel;

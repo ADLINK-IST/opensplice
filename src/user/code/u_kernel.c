@@ -38,7 +38,8 @@
 #define IGNORE_THREAD_MESSAGE os_threadMemFree(OS_WARNING)
 #define PRINT_THREAD_MESSAGE(context) printThreadMessage(context)
 
-static printThreadMessage(
+static void
+printThreadMessage(
     const char *context)
 {
     char *msg = os_threadMemGet(OS_WARNING);
