@@ -53,7 +53,8 @@ DDS::LocalObject::_hash(DDS::ULong maximum)
 {
    DDS::ULong hash;
 
-   hash = (DDS::ULong)this;
+   hash =
+    static_cast<DDS::ULong> (reinterpret_cast<ptrdiff_t> (this));
 
    if (maximum) {
       hash = hash % maximum;
