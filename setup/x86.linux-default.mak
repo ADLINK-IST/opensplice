@@ -77,7 +77,8 @@ SHLDFLAGS	 = -shared -fpic
 
 # Set library context
 #RP: -lrt cannot be found
-LDLIBS		 = -lc -lm -lrt -lpthread -ldl
+#LDLIBS          = -lc -lm -lrt -lpthread
+LDLIBS           = -lc -lm -lpthread# -lposix4
 
 # Set library context for building shared libraries
 SHLDLIBS	 = 
