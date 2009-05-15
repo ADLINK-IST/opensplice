@@ -1,4 +1,4 @@
-include $(OSPL_HOME)/setup/makefiles/makefile.mak
+include $(OSPL_HOME)/setup/x86.win32-default.mak
 
 EXES=ServiceUtil.exe ServiceUtil_DEBUG.exe
 CLEAN=$(EXES) ServiceUtil.pdb ServiceUtil_DEBUG.pdb
