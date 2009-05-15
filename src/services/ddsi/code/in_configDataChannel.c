@@ -66,13 +66,13 @@ in_configDataChannelInit(
 
     assert(_this);
     assert(name);
-    success = in_configChannelInit(in_configChannel(_this), isEnabled, owningService, INCF_DEF_DATA_CHANNEL_PORT);
+    success = in_configChannelInit(in_configChannel(_this), IN_CONFIG_CHANNEL_DATA, isEnabled, owningService);
     if(success)
     {
         _this->priority = priority;
         _this->isDefault = isDefault;
         _this->name = os_strdup(name);
-        _this->groupQueueSize = 0;
+        _this->groupQueueSize = 500;/* TODO should use default!! */
         if(!_this->name)
         {
             in_configChannelDeinit(in_configChannel(_this));

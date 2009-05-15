@@ -42,9 +42,39 @@ in_configDdsiServiceNew(
     return _this;
 }
 
+os_boolean
+in_configDdsiServiceInit(
+    in_configDdsiService _this,
+    os_char* name)
+{
+    os_boolean success;
+
+    assert(_this);
+    assert(name);
+
+    Coll_List_init(&(_this->channels));
+    _this->name = os_strdup(name);
+    if(!_this->name)
+    {
+        success = OS_FALSE;
+    } else
+    {
+        success = OS_TRUE;
+    }
+    _this->interfaceId = NULL;
+    _this->pathName = NULL;
+    _this->partitioning = NULL;
+    _this->debugging = NULL;
+    _this->tracing = NULL;
+    _this->discoveryChannel = NULL;
+    _this->hasDefaultChannel = OS_FALSE;
+
+    return success;
+}
+
 /* takes ownership of the discoverychannel */
 void
-in_configDdsiServiceSetDiscoveryChannelConfig(
+in_configDdsiServiceSetDiscoveryChannel(
     in_configDdsiService _this,
     in_configDiscoveryChannel discoveryChannel)
 {
@@ -52,6 +82,17 @@ in_configDdsiServiceSetDiscoveryChannelConfig(
     assert(discoveryChannel);
 
     _this->discoveryChannel = discoveryChannel;
+}
+
+void
+in_configDdsiServiceSetTracing(
+    in_configDdsiService _this,
+    in_configTracing tracing)
+{
+    assert(_this);
+    assert(tracing);
+
+    _this->tracing = tracing;
 }
 
 void
@@ -90,36 +131,6 @@ in_configDdsiServiceSetNetworkId(
     {
         /* TODO report out of memory error */
     }
-}
-
-os_boolean
-in_configDdsiServiceInit(
-    in_configDdsiService _this,
-    os_char* name)
-{
-    os_boolean success;
-
-    assert(_this);
-    assert(name);
-
-    Coll_List_init(&(_this->channels));
-    _this->name = os_strdup(name);
-    if(!_this->name)
-    {
-        success = OS_FALSE;
-    } else
-    {
-        success = OS_TRUE;
-    }
-    _this->interfaceId = NULL;
-    _this->pathName = NULL;
-    _this->partitioning = NULL;
-    _this->debugging = NULL;
-    _this->tracing = NULL;
-    _this->discoveryChannel = NULL;
-    _this->hasDefaultChannel = OS_FALSE;
-
-    return success;
 }
 
 os_boolean

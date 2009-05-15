@@ -10,6 +10,7 @@
 #include "in__configPartitionMapping.h"
 #include "in__configTracing.h"
 #include "in_report.h"
+#include "in_align.h"
 
 static void
 in_configTraverseConfiguration(
@@ -158,81 +159,88 @@ static void
 in_configFinalizeDdsiService(
     in_configDdsiService _this);
 
-#define INCF_ELEM_DdsiService           "DDSIService"
-#define INCF_ATTRIB_DdsiService_name    "name"
-#define INCF_ATTRIB_DdsiService_name_DEF    "ddsi"
-#define INCF_ELEM_General               "General"
-#define INCF_ELEM_Interface             "NetworkInterfaceAddress"
-#define INCF_ATTRIB_Interface_value_DEF INCF_DEF_INTERFACE
-#define INCF_ELEM_Channels              "Channels"
-#define INCF_ELEM_Channel               "Channel"
-#define INCF_ATTRIB_channel_isEnabled   "enabled"
-#define INCF_ATTRIB_channel_priority    "priority"
-#define INCF_ATTRIB_channel_isDefault   "default"
-#define INCF_ATTRIB_channel_isEnabled_DEF TRUE
-#define INCF_ATTRIB_channel_isDefault_DEF FALSE
-#define INCF_ATTRIB_channel_priority_DEF 0
-#define INCF_ATTRIB_channel_priority_MIN 0
-#define INCF_ATTRIB_channel_priority_MAX 1000
-#define INCF_ATTRIB_channel_name        "name"
-#define INCF_ATTRIB_channel_name_DEF        "defaultname"
-#define INCF_ELEM_DiscoveryChannel      "Discovery"
-#define INCF_ELEM_PortNr                "PortNr"
-#define INCF_ATTRIB_PortNr_value_DEF 3131
-#define INCF_ATTRIB_PortNr_value_MIN 0
-#define INCF_ATTRIB_PortNr_value_MAX 32000
-#define INCF_ELEM_GroupQueueSize        "GroupQueueSize"
-#define INCF_ATTRIB_GroupQueueSize_value_DEF 2000
-#define INCF_ATTRIB_GroupQueueSize_value_MIN 500
-#define INCF_ATTRIB_GroupQueueSize_value_MAX 10000
-#define INCF_ELEM_FragmentSize          "FragmentSize"
-#define INCF_ATTRIB_FragmentSize_value_DEF 1200
-#define INCF_ATTRIB_FragmentSize_value_MIN 100
-#define INCF_ATTRIB_FragmentSize_value_MAX 10000
-#define INCF_ELEM_Partitioning          "Partitioning"
-#define INCF_ELEM_GlobalPartition       "GlobalPartition"
-#define INCF_ATTRIB_GlobalPartition_address "Address"
-#define INCF_ATTRIB_GlobalPartition_address_DEF INCF_DEF_GLOBAL_PARTITON
-#define INCF_ELEM_NetworkPartitions     "NetworkPartitions"
-#define INCF_ELEM_NetworkPartition      "NetworkPartition"
+static void
+in_configFinalizeTracing(
+    in_configTracing tracing);
+
+static void
+in_configFinalizePartitioning(
+    in_configPartitioning partitioning);
+
+#define INCF_ELEM_DdsiService                   "DDSIService"
+#define INCF_ATTRIB_DdsiService_name            "name"
+#define INCF_ELEM_General                       "General"
+#define INCF_ELEM_Interface                     "NetworkInterfaceAddress"
+#define INCF_ATTRIB_Interface_value_DEF         INCF_DEF_INTERFACE
+#define INCF_ELEM_Channels                      "Channels"
+#define INCF_ELEM_Channel                       "Channel"
+#define INCF_ATTRIB_channel_isEnabled           "enabled"
+#define INCF_ATTRIB_channel_priority            "priority"
+#define INCF_ATTRIB_channel_isDefault           "default"
+#define INCF_ATTRIB_channel_isEnabled_DEF       OS_TRUE
+#define INCF_ATTRIB_channel_isDefault_DEF       OS_FALSE
+#define INCF_ATTRIB_channel_priority_DEF        0
+#define INCF_ATTRIB_channel_priority_MIN        0
+#define INCF_ATTRIB_channel_priority_MAX        1000
+#define INCF_ATTRIB_channel_name                "name"
+#define INCF_ELEM_DiscoveryChannel              "Discovery"
+#define INCF_ELEM_PortNr                        "PortNr"
+#define INCF_ATTRIB_Discovery_PortNr_value_DEF  INCF_DEF_DISCOVERY_CHANNEL_PORT
+#define INCF_ATTRIB_Data_PortNr_value_DEF       INCF_DEF_DATA_CHANNEL_PORT
+#define INCF_ATTRIB_PortNr_value_MIN            0
+#define INCF_ATTRIB_PortNr_value_MAX            32000
+#define INCF_ELEM_GroupQueueSize                "GroupQueueSize"
+#define INCF_ATTRIB_GroupQueueSize_value_DEF    500
+#define INCF_ATTRIB_GroupQueueSize_value_MIN    100
+#define INCF_ATTRIB_GroupQueueSize_value_MAX    10000
+#define INCF_ELEM_FragmentSize                  "FragmentSize"
+#define INCF_ATTRIB_FragmentSize_value_DEF      1200
+#define INCF_ATTRIB_FragmentSize_value_MIN      100
+#define INCF_ATTRIB_FragmentSize_value_MAX      10000
+#define INCF_ELEM_Partitioning                  "Partitioning"
+#define INCF_ELEM_GlobalPartition               "GlobalPartition"
+#define INCF_ATTRIB_GlobalPartition_address     "Address"
+#define INCF_ATTRIB_GlobalPartition_address_DEF INCF_DEF_GLOBAL_PARTITION
+#define INCF_ELEM_NetworkPartitions             "NetworkPartitions"
+#define INCF_ELEM_NetworkPartition              "NetworkPartition"
 #define INCF_ATTRIB_NetworkPartitions_name      "Name"
 #define INCF_ATTRIB_NetworkPartitions_address   "Address"
 #define INCF_ATTRIB_NetworkPartitions_connected "Connected"
-#define INCF_ATTRIB_NetworkPartitions_connected_DEF OS_TRUE
-#define INCF_ELEM_PartitionMappings     "PartitionMappings"
-#define INCF_ELEM_PartitionMapping      "PartitionMapping"
-#define INCF_ATTRIB_PartitionMapping_networkPartition "NetworkPartition"
-#define INCF_ATTRIB_PartitionMapping_topicPartitionCombo "DCPSPartitionTopic"
-#define INCF_ELEM_Tracing                   "Tracing"
-#define INCF_ATTRIB_Tracing_isEnabled       "enabled"
-#define INCF_ATTRIB_Tracing_isEnabled_DEF    OS_TRUE
-#define INCF_ELEM_OutputFile                "OutputFile"
-#define INCF_ATTRIB_OutputFile_value_DEF    "ddsi-tracing-output.log"
-#define INCF_ELEM_Timestamps                "Timestamps"
-#define INCF_ELEM_Categories                "Categories"
-#define INCF_ELEM_Default                   "Default"
-#define INCF_ATTRIB_Default_value_DEF       1
-#define INCF_ELEM_Configuration             "Configuration"
-#define INCF_ATTRIB_Configuration_value_DEF 1
-#define INCF_ELEM_Construction              "Construction"
-#define INCF_ATTRIB_Construction_value_DEF  1
-#define INCF_ELEM_Destruction               "Destruction"
-#define INCF_ATTRIB_Destruction_value_DEF   1
-#define INCF_ELEM_Mainloop                  "Mainloop"
-#define INCF_ATTRIB_Mainloop_value_DEF     1
-#define INCF_ELEM_Groups                    "Groups"
-#define INCF_ATTRIB_Groups_value_DEF        1
-#define INCF_ELEM_Send                      "Send"
-#define INCF_ATTRIB_Send_value_DEF          1
-#define INCF_ELEM_Receive                   "Receive"
-#define INCF_ATTRIB_Receive_value_DEF       1
-#define INCF_ELEM_Test                      "Test"
-#define INCF_ATTRIB_Test_value_DEF          1
-#define INCF_ELEM_DiscoveryTracing          "Discovery"
-#define INCF_ATTRIB_DiscoveryTracing_value_DEF   1
-#define INCF_ELEM_Reporting                 "Reporting"
-#define INCF_ELEM_Debugging                 "Debugging"
-#define INCF_ELEM_WaitForDebugger           "WaitForDebugger"
+#define INCF_ATTRIB_NetworkPartitions_connected_DEF         OS_TRUE
+#define INCF_ELEM_PartitionMappings             "PartitionMappings"
+#define INCF_ELEM_PartitionMapping              "PartitionMapping"
+#define INCF_ATTRIB_PartitionMapping_networkPartition       "NetworkPartition"
+#define INCF_ATTRIB_PartitionMapping_topicPartitionCombo    "DCPSPartitionTopic"
+#define INCF_ELEM_Tracing                       "Tracing"
+#define INCF_ATTRIB_Tracing_isEnabled           "enabled"
+#define INCF_ATTRIB_Tracing_isEnabled_DEF       OS_TRUE
+#define INCF_ELEM_OutputFile                    "OutputFile"
+#define INCF_ATTRIB_OutputFile_value_DEF        "ddsi-tracing-output.log"
+#define INCF_ELEM_Timestamps                    "Timestamps"
+#define INCF_ELEM_Categories                    "Categories"
+#define INCF_ELEM_Default                       "Default"
+#define INCF_ATTRIB_Default_value_DEF           1
+#define INCF_ELEM_Configuration                 "Configuration"
+#define INCF_ATTRIB_Configuration_value_DEF     1
+#define INCF_ELEM_Construction                  "Construction"
+#define INCF_ATTRIB_Construction_value_DEF      1
+#define INCF_ELEM_Destruction                   "Destruction"
+#define INCF_ATTRIB_Destruction_value_DEF       1
+#define INCF_ELEM_Mainloop                      "Mainloop"
+#define INCF_ATTRIB_Mainloop_value_DEF          1
+#define INCF_ELEM_Groups                        "Groups"
+#define INCF_ATTRIB_Groups_value_DEF            1
+#define INCF_ELEM_Send                          "Send"
+#define INCF_ATTRIB_Send_value_DEF              1
+#define INCF_ELEM_Receive                       "Receive"
+#define INCF_ATTRIB_Receive_value_DEF           1
+#define INCF_ELEM_Test                          "Test"
+#define INCF_ATTRIB_Test_value_DEF              1
+#define INCF_ELEM_DiscoveryTracing              "Discovery"
+#define INCF_ATTRIB_DiscoveryTracing_value_DEF  1
+#define INCF_ELEM_Reporting                     "Reporting"
+#define INCF_ELEM_Debugging                     "Debugging"
+#define INCF_ELEM_WaitForDebugger               "WaitForDebugger"
 
 OS_STRUCT(in_config)
 {
@@ -414,22 +422,12 @@ in_configTraverseDdsiServiceElement(
     /*step 2: verify required attributes are found, then instantiate the class*/
     if(!serviceName)
     {
-        IN_REPORT_WARNING_3(
+        IN_REPORT_WARNING_2(
             IN_SPOT,
-            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+            "Unable to locate the required attribute '%s' within element '%s'! Ignoring element.",
             INCF_ATTRIB_DdsiService_name,
-            INCF_ELEM_DdsiService,
-            INCF_ATTRIB_DdsiService_name_DEF);
-        serviceName = os_malloc(strlen(INCF_ATTRIB_DdsiService_name_DEF));
-        if(!serviceName)
-        {
-             IN_REPORT_ERROR("in_configTraverseDdsiServiceElement", "Out of memory.");
-        } else
-        {
-            strcpy(serviceName, INCF_ATTRIB_DdsiService_name_DEF);
-        }
-    }
-    if(serviceName)
+            INCF_ELEM_DdsiService);
+    } else
     {
         /* check if a service with this name was not already known! */
         ddsiService = in_configGetDdsiServiceByName(_this, serviceName);
@@ -732,11 +730,26 @@ in_configTraverseGlobalPartitionElement(
     }
     c_iterFree(attributes);
 
-    if(addy)
+
+    if(!addy)
     {
-        in_configPartitioningSetGlobalPartitionAddress(partitioning, addy);
-        os_free(addy);
+        IN_REPORT_WARNING_3(
+            IN_SPOT,
+            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+            INCF_ATTRIB_GlobalPartition_address,
+            INCF_ELEM_GlobalPartition,
+            INCF_ATTRIB_GlobalPartition_address_DEF);
+        addy = os_malloc(strlen(INCF_ATTRIB_GlobalPartition_address_DEF));
+        if(!addy)
+        {
+             IN_REPORT_ERROR("in_configTraverseGlobalPartitionElement", "Out of memory.");
+        } else
+        {
+            strcpy(addy, INCF_ATTRIB_GlobalPartition_address_DEF);
+        }
     }
+    in_configPartitioningSetGlobalPartitionAddress(partitioning, addy);
+    os_free(addy);
 
     /* Step 2: traverse child elements, shouldnt be any, report warning if
      * any were found anyway.
@@ -755,6 +768,7 @@ in_configTraverseGlobalPartitionElement(
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
+
 }
 
 void
@@ -1112,6 +1126,7 @@ in_configTraverseTracingElement(
             }
             c_iterFree(children);
         }
+        in_configDdsiServiceSetTracing(ddsiService, tracing);
     }
 }
 
@@ -2280,7 +2295,7 @@ in_configTraverseDiscoveryChannelElement(
             childNode = u_cfNode(c_iterTakeFirst(children));
         }
         c_iterFree(children);
-        in_configDdsiServiceSetDiscoveryChannelConfig(ddsiService, discoveryChannel);
+        in_configDdsiServiceSetDiscoveryChannel(ddsiService, discoveryChannel);
     }
 
 }
@@ -2386,93 +2401,83 @@ in_configTraverseChannelElement(
     }
     c_iterFree(attributes);
 
-    if(!priorityDefined)
-    {
-        IN_REPORT_WARNING_3(
-            IN_SPOT,
-            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
-            INCF_ATTRIB_channel_priority,
-            INCF_ELEM_Channel,
-            INCF_ATTRIB_channel_priority_DEF);
-    }
-    if(!isDefaultDefined)
-    {
-        IN_REPORT_WARNING_3(
-            IN_SPOT,
-            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
-            INCF_ATTRIB_channel_isDefault,
-            INCF_ELEM_Channel,
-            INCF_ATTRIB_channel_isDefault_DEF);
-    }
-    if(!isEnabledDefined)
-    {
-        IN_REPORT_WARNING_3(
-            IN_SPOT,
-            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
-            INCF_ATTRIB_channel_isEnabled,
-            INCF_ELEM_Channel,
-            INCF_ATTRIB_channel_isEnabled_DEF);
-    }
     if(!channelNameDefined)
     {
-        IN_REPORT_WARNING_3(
+        IN_REPORT_WARNING_2(
             IN_SPOT,
-            "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+            "Unable to locate the required attribute '%s' within element '%s'! Ignoring element.",
             INCF_ATTRIB_channel_name,
-            INCF_ELEM_Channel,
-            INCF_ATTRIB_channel_name_DEF);
-        channelName = os_malloc(sizeof(INCF_ATTRIB_channel_name_DEF));
-        if(!channelName)
-        {
-             IN_REPORT_ERROR("in_configTraverseChannelElement", "Out of memory.");
-        } else
-        {
-            strcpy(channelName, INCF_ATTRIB_channel_name_DEF);
-        }
-    }
-    if(priority <= INCF_ATTRIB_channel_priority_MIN)
+            INCF_ELEM_Channel);
+    } else
     {
-        IN_REPORT_WARNING_4(
-            IN_SPOT,
-            "Attribute '%s'  within element '%s' with value %d is below the minimum value for this attribute! Reverting to the minimum value of '%d'.",
-            INCF_ATTRIB_channel_priority,
-            INCF_ELEM_Channel,
-            priority,
-            INCF_ATTRIB_channel_priority_MIN);
-        priority = INCF_ATTRIB_channel_priority_MIN;
-    } else if(priority > INCF_ATTRIB_channel_priority_MAX)
-    {
-        IN_REPORT_WARNING_4(
-            IN_SPOT,
-            "Attribute '%s'  within element '%s' with value %d is above the maximum value for this attribute! Reverting to the maximum value of '%d'.",
-            INCF_ATTRIB_channel_priority,
-            INCF_ELEM_Channel,
-            priority,
-            INCF_ATTRIB_channel_priority_MAX);
-        priority = INCF_ATTRIB_channel_priority_MAX;
-    }
-    if(isDefault)
-    {
-        if(in_configDdsiServiceHasDefaultChannel(ddsiService))
+        if(!priorityDefined)
         {
-            IN_REPORT_WARNING_7(
+            IN_REPORT_WARNING_3(
                 IN_SPOT,
-                "Detected a second default '%s' with '%s'='%s' within '%s' with '%s'='%s'. Only one default channel allowed per '%s', setting this channel default status to false.",
+                "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+                INCF_ATTRIB_channel_priority,
                 INCF_ELEM_Channel,
-                INCF_ATTRIB_channel_name,
-                channelName,
-                INCF_ELEM_DdsiService,
-                INCF_ATTRIB_DdsiService_name,
-                in_configDdsiServiceGetName(ddsiService),
-                INCF_ELEM_Channel);
-            isDefault = OS_FALSE;
-        } else
-        {
-            in_configDdsiServiceSetHasDefaultChannel(ddsiService, OS_TRUE);
+                INCF_ATTRIB_channel_priority_DEF);
         }
-    }
-    if(channelName)
-    {
+        if(!isDefaultDefined)
+        {
+            IN_REPORT_WARNING_3(
+                IN_SPOT,
+                "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+                INCF_ATTRIB_channel_isDefault,
+                INCF_ELEM_Channel,
+                INCF_ATTRIB_channel_isDefault_DEF);
+        }
+        if(!isEnabledDefined)
+        {
+            IN_REPORT_WARNING_3(
+                IN_SPOT,
+                "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+                INCF_ATTRIB_channel_isEnabled,
+                INCF_ELEM_Channel,
+                INCF_ATTRIB_channel_isEnabled_DEF);
+        }
+        if(priority <= INCF_ATTRIB_channel_priority_MIN)
+        {
+            IN_REPORT_WARNING_4(
+                IN_SPOT,
+                "Attribute '%s'  within element '%s' with value %d is below the minimum value for this attribute! Reverting to the minimum value of '%d'.",
+                INCF_ATTRIB_channel_priority,
+                INCF_ELEM_Channel,
+                priority,
+                INCF_ATTRIB_channel_priority_MIN);
+            priority = INCF_ATTRIB_channel_priority_MIN;
+        } else if(priority > INCF_ATTRIB_channel_priority_MAX)
+        {
+            IN_REPORT_WARNING_4(
+                IN_SPOT,
+                "Attribute '%s'  within element '%s' with value %d is above the maximum value for this attribute! Reverting to the maximum value of '%d'.",
+                INCF_ATTRIB_channel_priority,
+                INCF_ELEM_Channel,
+                priority,
+                INCF_ATTRIB_channel_priority_MAX);
+            priority = INCF_ATTRIB_channel_priority_MAX;
+        }
+        if(isDefault)
+        {
+            if(in_configDdsiServiceHasDefaultChannel(ddsiService))
+            {
+                IN_REPORT_WARNING_7(
+                    IN_SPOT,
+                    "Detected a second default '%s' with '%s'='%s' within '%s' with '%s'='%s'. Only one default channel allowed per '%s', setting this channel default status to false.",
+                    INCF_ELEM_Channel,
+                    INCF_ATTRIB_channel_name,
+                    channelName,
+                    INCF_ELEM_DdsiService,
+                    INCF_ATTRIB_DdsiService_name,
+                    in_configDdsiServiceGetName(ddsiService),
+                    INCF_ELEM_Channel);
+                isDefault = OS_FALSE;
+            } else
+            {
+                in_configDdsiServiceSetHasDefaultChannel(ddsiService, OS_TRUE);
+            }
+        }
         dataChannel = in_configDataChannelNew(channelName, priority, isDefault, isEnabled, ddsiService);
         os_free(channelName);
         if(!dataChannel)
@@ -2510,6 +2515,7 @@ in_configTraverseChannelElement(
             c_iterFree(children);
             in_configDdsiServiceAddDataChannelConfig(ddsiService, dataChannel);
         }
+
     }
 }
 
@@ -2625,6 +2631,7 @@ in_configTraverseFragmentSizeElement(
     os_boolean success;
     os_uint32 fragmentSize = INCF_ATTRIB_FragmentSize_value_DEF;
     os_boolean fragmentSizeDefined = OS_FALSE;
+    os_uint32 fragmentSizeAligned;
 
     /* Step 1: read attributes if there are any, report warning that they are
      * ignored.
@@ -2706,6 +2713,17 @@ in_configTraverseFragmentSizeElement(
             INCF_ATTRIB_FragmentSize_value_MAX);
         fragmentSize = INCF_ATTRIB_FragmentSize_value_MAX;
     }
+    /* check if fragment size has an efficient alignment */
+    fragmentSizeAligned = (os_uint32) IN_ALIGN_UINT_FLOOR(fragmentSize, 8U);
+    if (fragmentSize < fragmentSizeAligned)
+    {
+        IN_REPORT_WARNING_3(
+            IN_SPOT,
+            "Defined %s %d not multiple of 8U. Defining %s as a multiple of 8U will increase efficiency.",
+            INCF_ELEM_FragmentSize,
+            fragmentSize,
+            INCF_ELEM_FragmentSize);
+    }
     in_configChannelSetFragmentSize(channel, fragmentSize);
 }
 
@@ -2721,8 +2739,22 @@ in_configTraversePortNrElement(
     u_cfNode childNode;
     v_cfKind nodeKind;
     os_boolean success;
-    os_uint32 portNr = INCF_ATTRIB_PortNr_value_DEF;
+    os_uint32 portNr;
     os_boolean portNrDefined = OS_FALSE;
+    in_configChannelKind kind;
+
+    assert(element);
+    assert(channel);
+
+    kind = in_configChannelGetKind(channel);
+    if(kind == IN_CONFIG_CHANNEL_DISCOVERY)
+    {
+        portNr = INCF_ATTRIB_Discovery_PortNr_value_DEF;
+    } else
+    {
+        assert(kind == IN_CONFIG_CHANNEL_DATA);
+        portNr = INCF_ATTRIB_Data_PortNr_value_DEF;
+    }
 
     /* Step 1: read attributes if there are any, report warning that they are
      * ignored.
@@ -2783,7 +2815,7 @@ in_configTraversePortNrElement(
             IN_SPOT,
             "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
             INCF_ELEM_PortNr,
-            INCF_ATTRIB_PortNr_value_DEF);
+            portNr);
     }
     if(portNr <= INCF_ATTRIB_PortNr_value_MIN)
     {
@@ -2896,10 +2928,99 @@ in_configTraverseInterfaceElement(
 
 void
 in_configFinalizeDdsiService(
-    in_configDdsiService _this)
+    in_configDdsiService ddsiService)
 {
-    assert(_this);
+    os_char* tmp;
+    in_configPartitioning partitioning;
+    in_configTracing tracing;
+    in_configDiscoveryChannel discoveryChannel;
+
+    assert(ddsiService);
 
     /* TODO finalize the configuration components with default values. */
 
+    tmp = in_configDdsiServiceGetInterfaceId(ddsiService);
+    if(!tmp)
+    {
+        in_configDdsiServiceSetNetworkId(ddsiService, INCF_ATTRIB_Interface_value_DEF);
+        /* TODO print message saying default was chosen */
+    }
+
+    partitioning = in_configDdsiServiceGetPartitioning(ddsiService);
+    if(!partitioning)
+    {
+        partitioning = in_configPartitioningNew();
+
+        in_configDdsiServiceSetPartitioning(ddsiService, partitioning);
+    }
+    in_configFinalizePartitioning(partitioning);
+
+    tracing = in_configDdsiServiceGetTracing(ddsiService);
+    if(!tracing)
+    {
+        tracing = in_configTracingNew();
+        in_configDdsiServiceSetTracing(ddsiService, tracing);
+    }
+    in_configFinalizeTracing(tracing);
+
+    discoveryChannel = in_configDdsiServiceGetDiscoveryChannel(ddsiService);
+    if(!discoveryChannel)
+    {
+        discoveryChannel = in_configDiscoveryChannelNew(INCF_ATTRIB_channel_isEnabled_DEF, ddsiService);
+        in_configDdsiServiceSetDiscoveryChannel(ddsiService, discoveryChannel);
+    }
+
+/* TODO define if finalization is needed for the following:
+    Coll_List channels;
+    in_configDebug debugging;
+*/
+}
+
+void
+in_configFinalizePartitioning(
+    in_configPartitioning partitioning)
+{
+    os_char* globalPartitionAddress;
+
+    assert(partitioning);
+
+    globalPartitionAddress = in_configPartitioningGetGlobalPartitionAddress(partitioning);
+    if(!globalPartitionAddress)
+    {
+        globalPartitionAddress = os_malloc(strlen(INCF_ATTRIB_GlobalPartition_address_DEF));
+        if(!globalPartitionAddress)
+        {
+             IN_REPORT_ERROR("in_configFinalizePartitioning", "Out of memory.");
+        } else
+        {
+            strcpy(globalPartitionAddress, INCF_ATTRIB_GlobalPartition_address_DEF);
+        }
+        in_configPartitioningSetGlobalPartitionAddress(partitioning, globalPartitionAddress);
+        /* TODO print message saying default was chosen */
+    }
+}
+
+void
+in_configFinalizeTracing(
+    in_configTracing tracing)
+{
+    os_char* outputFileName;
+
+    assert(tracing);
+
+    outputFileName = in_configTracingGetOutputFileName(tracing);
+    if(!outputFileName)
+    {
+        outputFileName = os_malloc(strlen(INCF_ATTRIB_OutputFile_value_DEF));
+        if(!outputFileName)
+        {
+             IN_REPORT_ERROR("in_configFinalizeTracing", "Out of memory.");
+        } else
+        {
+            strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
+        }
+        in_configTracingSetOutputFile(tracing, outputFileName);
+        /* TODO print message saying default was chosen */
+    }
+    /* TODO finalize timestamps */
 }

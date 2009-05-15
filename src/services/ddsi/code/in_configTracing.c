@@ -50,6 +50,7 @@ in_configTracingInit(
     assert(_this);
 
     _this->pathName = NULL;
+    /* TODO should use default values as defined */
     _this->isEnabled = OS_TRUE;
     _this->outputFileName = NULL;
     _this->initLevel = 1;

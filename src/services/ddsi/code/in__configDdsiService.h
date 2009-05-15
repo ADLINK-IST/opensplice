@@ -44,7 +44,7 @@ in_configDdsiServiceNew(
 
 /* takes ownership of the discoverychannel */
 void
-in_configDdsiServiceSetDiscoveryChannelConfig(
+in_configDdsiServiceSetDiscoveryChannel(
     in_configDdsiService _this,
     in_configDiscoveryChannel discoveryChannel);
 
@@ -110,6 +110,11 @@ void
 in_configDdsiServiceSetPartitioning(
     in_configDdsiService _this,
     in_configPartitioning partitioning);
+
+void
+in_configDdsiServiceSetTracing(
+    in_configDdsiService _this,
+    in_configTracing tracing);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

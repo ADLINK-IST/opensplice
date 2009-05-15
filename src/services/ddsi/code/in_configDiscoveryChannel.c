@@ -44,5 +44,5 @@ in_configDiscoveryChannelInit(
 {
     assert(_this);
 
-    return in_configChannelInit(in_configChannel(_this), isEnabled, owningService, INCF_DEF_DISCOVERY_CHANNEL_PORT);
+    return in_configChannelInit(in_configChannel(_this), IN_CONFIG_CHANNEL_DISCOVERY, isEnabled, owningService);
 }
