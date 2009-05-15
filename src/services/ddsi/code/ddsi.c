@@ -5,6 +5,7 @@
 #include "in_report.h"
 #include "in__config.h"
 #include "in_controller.h"
+#include "in_connectivityAdmin.h"
 
 static void
 in_splicedaemonListener(
