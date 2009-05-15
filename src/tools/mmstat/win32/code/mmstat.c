@@ -23,10 +23,6 @@
 #include <u_user.h>
 #include <u__user.h>
 #include <os_report.h>
-#ifndef OSPL_NO_LICENSING
-#include "ospl_license.h"
-#include "os_defs.h"
-#endif
 
 #include "mm_orc.h"
 #include "mm_trc.h"
@@ -116,24 +112,7 @@ main (
     int sample = 0;
     c_long objectCountLimit = 0;
     char *filterExpression = NULL;
-#ifndef OSPL_NO_LICENSING
-    ospl_licenseAttr licAttr;
-    ospl_license license;
-    os_result osr;
-#endif
 
-#ifndef OSPL_NO_LICENSING
-    ospl_licenseAttrInit(&licAttr);
-    licAttr.feature = LIC_OPENSPLICE_MMSTAT;
-    osr = ospl_licenseCheckout(&license, &licAttr);
-   
-    if (osr != os_resultSuccess) 
-    {
-       printf("License could not be acquired.\n");
-    } 
-    else 
-    {
-#endif
        while ((opt = getopt (argc, argv, "i:l:f:s:hertToOmM")) != -1) 
        {
           switch (opt) 
@@ -358,10 +337,7 @@ main (
        }
        printf("\nExiting now...\n");
 
-#ifndef OSPL_NO_LICENSING
-       ospl_licenseCheckin(&license);
-    }
-#endif
+
     return 0;
 }
 
