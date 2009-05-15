@@ -29,6 +29,9 @@ M   ospli/rhel4d/x86.linux2.6-release-lic-inner 1 heads/master none
 M   ospli/rhel4/PPC604.vxworks6.6-dev-inner 1 heads/master none
 M   ospli/rhel4/PPC604.vxworks6.6-release-inner 1 heads/master none
 
+M   ospli/winxp2/PPC604.vxworks6.6.win32-dev-inner 1 heads/master none
+M   ospli/winxp2/PPC604.vxworks6.6.win32-release-inner 1 heads/master none
+
 M   ospli/ssso10/PPC604.vxworks5.5-dev-inner 1 heads/master none
 E   ospli/ssso10/PPCE500.vxworks5.5-dev-inner 1 heads/master none
 M   ospli/ssso10/PPC604.vxworks5.5-release-inner 1 heads/master none
