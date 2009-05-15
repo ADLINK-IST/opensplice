@@ -432,13 +432,13 @@ forReaderParseParameter(
     case IN_PID_TOPIC_NAME: /* ( 0x0005 ) */
         result = in_ddsiDeserializerReferenceString(deserializer, &tmpStr, &strLen);
         if (result>=0) {
-            data->topicData.info.topic_name = c_stringNew(base, tmpStr);
+            data->topicData.info.topic_name = os_strdup(tmpStr);
         }
         break;
     case IN_PID_TYPE_NAME: /* ( 0x0007 ) */
         result = in_ddsiDeserializerReferenceString(deserializer, &tmpStr, &strLen);
         if (result>=0) {
-            data->topicData.info.type_name = c_stringNew(base, tmpStr);
+            data->topicData.info.type_name = os_strdup(tmpStr);
         }
         break;
     case IN_PID_UNICAST_LOCATOR: /* ( 0x002f ) */
@@ -580,13 +580,13 @@ forWriterParseParameter(
     case IN_PID_TOPIC_NAME: /* ( 0x0005 ) */
         result = in_ddsiDeserializerReferenceString(deserializer, &tmpStr, &strLen);
         if (result>=0) {
-            data->topicData.info.topic_name = c_stringNew(base, tmpStr);
+            data->topicData.info.topic_name = os_strdup(tmpStr);
         }
         break;
     case IN_PID_TYPE_NAME: /* ( 0x0007 ) */
         result = in_ddsiDeserializerReferenceString(deserializer, &tmpStr, &strLen);
         if (result >= 0) {
-            data->topicData.info.type_name = c_stringNew(base, tmpStr);
+            data->topicData.info.type_name = os_strdup(tmpStr);
         }
         break;
     case IN_PID_UNICAST_LOCATOR: /* ( 0x002f ) */

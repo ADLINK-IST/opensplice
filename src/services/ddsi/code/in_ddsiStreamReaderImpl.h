@@ -32,6 +32,8 @@ in_ddsiStreamReaderImplNew(
 		in_transportReceiver receiver,
 		in_plugKernel plug);
 
+#define in_ddsiStreamReaderImplFree(i) in_objectFree(in_object(i))
+
 #if defined (__cplusplus)
 }
 #endif

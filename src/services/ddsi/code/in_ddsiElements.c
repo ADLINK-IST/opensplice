@@ -1161,8 +1161,11 @@ in_long in_ddsiLocatorSerialize(in_ddsiLocator locator,
     return result;
 }
 
-in_long in_ddsiLocatorInitFromBuffer(in_ddsiLocator self,
-        in_ddsiDeserializer reader) {
+in_long
+in_ddsiLocatorInitFromBuffer(
+	in_ddsiLocator self,
+	in_ddsiDeserializer reader)
+{
     in_long nofOctets;
     in_long result = 0;
 

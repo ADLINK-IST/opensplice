@@ -51,6 +51,7 @@ main(
            "DDSI networking main loop",
            "Usage: ddsi name <configuration-URI>");
     }
+    assert(in_objectValidate(0));
     printf("%s is gone...\n", argv[1]);
     return 0;
 
@@ -69,6 +70,7 @@ in_serviceMain(
     v_duration leasePeriod;
     os_time sleepTime;
     os_boolean terminate = OS_FALSE;
+    in_connectivityAdmin admin;
 
     assert(serviceName);
     assert(uri);
@@ -90,6 +92,7 @@ in_serviceMain(
         /* Ask service manager for splicedaemon state */
         serviceManager = u_serviceManagerNew(u_participant(service));
 
+        admin = in_connectivityAdminGetInstance();
         /* Create the controller which starts the updating */
         controller = in_controllerNew(service);
         if (controller)
@@ -131,6 +134,7 @@ in_serviceMain(
     u_serviceChangeState(service, STATE_TERMINATED);
     u_serviceManagerFree(serviceManager);
     u_serviceFree(service);
+    in_objectFree(in_object(admin));
 }
 
 void
