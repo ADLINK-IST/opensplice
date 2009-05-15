@@ -43,7 +43,7 @@ OS_STRUCT(in_abstractReceiveBuffer)
 	OS_EXTENDS(in_object);
 	in_octet *buffer;
 	os_size_t  length; /* Note: ideal for pointer arithmetic */
-	OS_STRUCT(in_locator) sender; /* could be extended in
+	in_locator sender; /* could be extended in
 									 future to hold senders credentials */
 };
 

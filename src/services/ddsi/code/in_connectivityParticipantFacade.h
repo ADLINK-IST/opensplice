@@ -38,7 +38,7 @@ extern "C" {
 #define in_connectivityParticipantFacadeFree(c) in_objectFree(in_object(c))
 
 
-#define in_connectivityParticipantFacadeKeep(c) in_objectKeep(in_object(c))
+#define in_connectivityParticipantFacadeKeep(c) in_connectivityParticipantFacade(in_objectKeep(in_object(c)))
 
 #define in_connectivityParticipantFacadeIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_PARTICIPANT_FACADE)

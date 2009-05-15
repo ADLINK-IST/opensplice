@@ -29,11 +29,10 @@ void
 in_locatorListDeinit(in_locatorList *_this)
 {
     /* delete elements from back */
-    in_locator locator =
-        Coll_List_popBack(_this);
+    in_locator locator = Coll_List_popBack(_this);
     /* locator==NULL if empty list */
-    while (locator!=NULL) {
-        in_objectFree(in_object(locator));
+    while (locator) {
+        in_locatorFree(locator);
         /* get next element of list (from back) */
         locator = Coll_List_popBack(_this);
     }
@@ -48,6 +47,9 @@ in_locatorListPushBack(in_locatorList *_this,
     if (Coll_List_pushBack(_this, newElem)!= COLL_OK) {
         /* out or memory */
         result = OS_FALSE;
+    } else
+    {
+    	in_locatorKeep(newElem);
     }
     return result;
 }
@@ -57,8 +59,8 @@ in_locatorListPushBack(in_locatorList *_this,
 in_locator
 in_locatorListPopBack(in_locatorList *_this)
 {
-    in_locator result =
-        Coll_List_popBack(_this);
+    in_locator result = Coll_List_popBack(_this);
+
     return result;
 }
 

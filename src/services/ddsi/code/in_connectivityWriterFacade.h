@@ -43,7 +43,7 @@ extern "C" {
  */
 #define in_connectivityWriterFacadeFree(c) in_objectFree(in_object(c))
 
-#define in_connectivityWriterFacadeKeep(c) in_objectKeep(in_object(c))
+#define in_connectivityWriterFacadeKeep(c) in_connectivityWriterFacade(in_objectKeep(in_object(c)))
 
 #define in_connectivityWriterFacadeIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_WRITER_FACADE)

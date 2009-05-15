@@ -108,6 +108,58 @@
 #define IN_OBJECT_CONFIDENCE        ((os_uint32)0x4E614D65u) /* 'NaMe' */
 #define IN_OBJECT_CONFIDENCE_NULL   ((os_uint32)0x000000000)
 
+static char* in_kindString[] = {
+	"IN_OBJECT_KIND_INVALID                    ",
+	"IN_OBJECT_KIND_LOCATOR                    ",
+	"IN_OBJECT_KIND_LOCATOR_EMBEDDED           ",
+	"IN_OBJECT_KIND_MESSAGE_DESERIALIZER       ",
+	"IN_OBJECT_KIND_MESSAGE_SERIALIZER         ",
+	"IN_OBJECT_KIND_PEER_READER                ",
+	"IN_OBJECT_KIND_WRITER_FACADE              ",
+	"IN_OBJECT_KIND_READER_FACADE              ",
+	"IN_OBJECT_KIND_RECEIVE_CHANNEL            ",
+	"IN_OBJECT_KIND_SEND_CHANNEL               ",
+	"IN_OBJECT_KIND_DATA_BUFFER_BASIC          ",
+	"IN_OBJECT_KIND_SEND_BUFFER_BASIC          ",
+	"IN_OBJECT_KIND_RECEIVE_BUFFER_BASIC       ",
+	"IN_OBJECT_KIND_TRANSPORT_RECEIVER_BASIC   ",
+	"IN_OBJECT_KIND_TRANSPORT_SENDER_BASIC     ",
+	"IN_OBJECT_KIND_TRANSPORT_PAIR_BASIC       ",
+	"IN_OBJECT_KIND_STREAM_WRITER_BASIC        ",
+	"IN_OBJECT_KIND_STREAM_READER_BASIC        ",
+	"IN_OBJECT_KIND_STREAM_PAIR_BASIC          ",
+	"IN_OBJECT_KIND_CONNECTIVITY_ADMIN         ",
+	"IN_OBJECT_KIND_PARTICIPANT_FACADE         ",
+	"IN_OBJECT_KIND_PEER_PARTICIPANT           ",
+	"IN_OBJECT_KIND_PEER_WRITER                ",
+	"IN_OBJECT_KIND_DATA_CHANNEL               ",
+	"IN_OBJECT_KIND_DATA_CHANNEL_WRITER        ",
+	"IN_OBJECT_KIND_DATA_CHANNEL_READER        ",
+	"IN_OBJECT_KIND_SDP_CHANNEL                ",
+	"IN_OBJECT_KIND_SDP_WRITER                 ",
+	"IN_OBJECT_KIND_SDP_READER                 ",
+	"IN_OBJECT_KIND_PLUG_KERNEL                ",
+	"IN_OBJECT_KIND_DISCOVERED_PARTICIPANT_DATA",
+	"IN_OBJECT_KIND_DISCOVERED_WRITER_DATA     ",
+	"IN_OBJECT_KIND_DISCOVERED_READER_DATA     ",
+	"IN_OBJECT_KIND_ENDPOINT_DISCOVERY_DATA    ",
+	"IN_OBJECT_KIND_SOCKET                     ",
+	"IN_OBJECT_KIND_COUNT                      "
+};
+
+static c_ulong allocationCount = 0;
+static c_ulong maxObjectCount = 0;
+static c_ulong typedObjectCount[IN_OBJECT_KIND_COUNT];
+static c_ulong maxTypedObjectCount[IN_OBJECT_KIND_COUNT];
+
+static c_bool
+doAdd(
+	in_objectKind kind);
+
+static c_bool
+doSub(
+	in_objectKind kind);
+
 os_boolean
 in_objectInit(
     in_object _this,
@@ -123,6 +175,8 @@ in_objectInit(
     _this->kind = kind;
     _this->deinit = deinit;
     _this->refCount = 1;
+
+    assert(doAdd(kind));
 
     return OS_TRUE;
 }
@@ -142,13 +196,19 @@ in_objectFree(
         assert(_this->refCount >= 1);
 
         refCount = pa_decrement(&(_this->refCount));
-
+/*
+        if(_this->kind == IN_OBJECT_KIND_PARTICIPANT_FACADE)
+		{
+			printf("Free %p: %d -> %d\n", _this, _this->refCount+1, _this->refCount);
+		}
+*/
         if(refCount == 0)
         {
             if(_this->deinit)
             {
                 _this->deinit(_this);
             }
+            assert(doSub(_this->kind));
             _this->confidence = IN_OBJECT_CONFIDENCE_NULL;
             _this->kind = IN_OBJECT_KIND_INVALID;
             os_free(_this);
@@ -240,6 +300,12 @@ in_objectKeep(
     if(_this)
     {
         pa_increment(&(_this->refCount));
+/*
+        if(_this->kind == IN_OBJECT_KIND_PARTICIPANT_FACADE)
+        {
+        	printf("Keep %p: %d -> %d\n", _this, _this->refCount-1, _this->refCount);
+        }
+*/
         result = _this;
     } else
     {
@@ -291,3 +357,66 @@ in_objectRefFromObject(
     return ref;
 }
 #endif
+
+c_bool
+in_objectValidate(
+    c_ulong expected)
+{
+    c_bool result;
+    c_ulong i;
+
+    printf("\nHeap allocation report:\n");
+    printf("-------------------------------------------------\n");
+    printf("Type\t\t\t\t\t\tCurrent\tTotal\n");
+    printf("-------------------------------------------------\n");
+
+    for(i=1; i<IN_OBJECT_KIND_COUNT; i++){
+    	/*Not counting IN_OBJECT_KIND_INVALID and IN_OBJECT_KIND_COUNT*/
+        printf("%s\t%d\t%d\n", in_kindString[i], typedObjectCount[i], maxTypedObjectCount[i]);
+    }
+    printf("-------------------------------------------------\n");
+    printf("\n#allocated: %d, #remaining: %d, #expected: %d\n",
+            maxObjectCount, allocationCount, expected);
+
+    if(expected != allocationCount){
+        printf("Allocation validation [ FAILED ]\n");
+        result = FALSE;
+    } else {
+        printf("Allocation validation [   OK   ]\n");
+        result = TRUE;
+    }
+
+    return TRUE;
+}
+
+static c_bool
+doAdd(
+	in_objectKind kind)
+{
+    c_ulong i;
+    c_long add;
+
+    add = pa_increment(&maxObjectCount);
+
+    if(add == 1){
+        for(i=0; i<IN_OBJECT_KIND_COUNT; i++){
+            typedObjectCount[i] = 0;
+            maxTypedObjectCount[i] = 0;
+        }
+    }
+    pa_increment(&allocationCount);
+    pa_increment(&(typedObjectCount[kind]));
+    pa_increment(&(maxTypedObjectCount[kind]));
+
+    return TRUE;
+}
+
+static c_bool
+doSub(
+	in_objectKind kind)
+{
+    pa_decrement(&allocationCount);
+    pa_decrement(&(typedObjectCount[kind]));
+
+    return TRUE;
+}

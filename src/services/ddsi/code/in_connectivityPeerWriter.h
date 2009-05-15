@@ -29,7 +29,7 @@
 
 #define in_connectivityPeerWriterFree(r) in_objectFree(in_object(r))
 
-#define in_connectivityPeerWriterKeep(r) in_objectKeep(in_object(r))
+#define in_connectivityPeerWriterKeep(r) in_connectivityPeerWriter(in_objectKeep(in_object(r)))
 
 #define in_connectivityPeerWriterIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_PEER_WRITER)

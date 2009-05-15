@@ -48,12 +48,79 @@ static in_connectivityAdmin  theConnectivityAdmin = NULL;
 
 
 static void
-in_connectivityAdminDestroy(
+in_connectivityAdminDeinit(
     in_object _this)
 {
-    assert(_this);
+	Coll_Iter* iterator;
+	in_connectivityParticipantFacade pfacade;
+	in_connectivityReaderFacade rfacade;
+	in_connectivityWriterFacade wfacade;
+	in_connectivityPeerParticipant ppeer;
+	in_connectivityPeerReader rpeer;
+	in_connectivityPeerWriter wpeer;
 
-    os_free(_this);
+    assert(_this);
+    assert(_this == (in_object)theConnectivityAdmin);
+
+    iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->Participants);
+
+	while(iterator)
+	{
+		pfacade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->Participants, pfacade);
+		in_connectivityParticipantFacadeFree(pfacade);
+	}
+	iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->Readers);
+
+	while(iterator)
+	{
+		rfacade = in_connectivityReaderFacade(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->Readers, rfacade);
+		in_connectivityReaderFacadeFree(rfacade);
+	}
+	iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->Writers);
+
+	while(iterator)
+	{
+		wfacade = in_connectivityWriterFacade(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->Writers, wfacade);
+		in_connectivityWriterFacadeFree(wfacade);
+
+	}
+	iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->PeerParticipants);
+
+	while(iterator)
+	{
+		ppeer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->PeerParticipants, ppeer);
+		in_connectivityPeerParticipantFree(ppeer);
+
+	}
+	iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->PeerReaders);
+
+	while(iterator)
+	{
+		rpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->PeerReaders, rpeer);
+		in_connectivityPeerReaderFree(rpeer);
+	}
+	iterator = Coll_Set_getFirstElement(&theConnectivityAdmin->PeerWriters);
+
+	while(iterator)
+	{
+		wpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
+		iterator = Coll_Iter_getNext(iterator);
+		Coll_Set_remove(&theConnectivityAdmin->PeerWriters, wpeer);
+		in_connectivityPeerWriterFree(wpeer);
+	}
+    os_mutexDestroy(&(theConnectivityAdmin->mutex));
+    in_objectDeinit(theConnectivityAdmin);
+    theConnectivityAdmin = NULL;
 }
 
 
@@ -69,7 +136,7 @@ in_connectivityAdminInit(
     success = in_objectInit(
         OS_SUPER(_this),
         IN_OBJECT_KIND_CONNECTIVITY_ADMIN,
-        in_connectivityAdminDestroy);
+        in_connectivityAdminDeinit);
 
     if( success ) {
         Coll_Set_init(&_this->Participants,     pointerIsLessThen, OS_TRUE);
@@ -450,6 +517,7 @@ in_connectivityAdminAddReader(
         Coll_Set_add(&_this->Readers, facade);
 
         findMatchedPeerWriters(_this, facade);
+        in_connectivityParticipantFacadeFree(participant);
     }
 
     os_mutexUnlock(&(_this->mutex));
@@ -501,6 +569,7 @@ in_connectivityAdminAddWriter(
         Coll_Set_add(&_this->Writers, facade);
 
         findMatchedPeerReaders(_this, facade);
+        in_connectivityParticipantFacadeFree(participant);
     }
     os_mutexUnlock(&(_this->mutex));
 
@@ -532,7 +601,7 @@ in_connectivityAdminGetParticipant(
 
         /* SHORTCUT: for now all participant map to the same facade */
         os_mutexUnlock(&(_this->mutex));
-        return in_connectivityParticipantFacade(in_objectKeep(in_object(facade)));
+        return in_connectivityParticipantFacadeKeep(facade);
 
 
         iterator = Coll_Iter_getNext(iterator);
@@ -562,7 +631,7 @@ in_connectivityAdminGetReader(
         if ( v_gidCompare(in_connectivityReaderFacadeGetInfo(facade)->key,
                           reader->key) == C_EQ ) {
             os_mutexUnlock(&(_this->mutex));
-            return in_connectivityReaderFacade(in_objectKeep(in_object(facade)));
+            return in_connectivityReaderFacadeKeep(facade);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
@@ -591,7 +660,7 @@ in_connectivityAdminGetWriter(
         if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
                           writer->key) == C_EQ ) {
             os_mutexUnlock(&(_this->mutex));
-            return in_connectivityWriterFacade(in_objectKeep(in_object(facade)));
+            return in_connectivityWriterFacadeKeep(facade);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
@@ -622,7 +691,7 @@ in_connectivityAdminFindWriter(
                           message->writerGID) == C_EQ ) {
             IN_TRACE_1(Send, 2, ">>> in_connectivityAdminFindWriter - owh boy, we found one %p", facade);
             os_mutexUnlock(&(_this->mutex));
-            return in_connectivityWriterFacade(in_objectKeep(in_object(facade)));
+            return in_connectivityWriterFacadeKeep(facade);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
@@ -664,7 +733,7 @@ in_connectivityAdminFindParticipantUnsafe(
         facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
 
         /* SHORTCUT: for now all participant map to the same facade */
-        return in_connectivityParticipantFacade(in_objectKeep(in_object(facade)));
+        return in_connectivityParticipantFacadeKeep(facade);
 
 
         iterator = Coll_Iter_getNext(iterator);
@@ -689,7 +758,7 @@ in_connectivityAdminFindPeerParticipantUnsafe(
 
         if ( in_ddsiGuidPrefixEqual(prefix, in_connectivityPeerParticipantGetGuidPrefix(peer)))
         {
-            return in_connectivityPeerParticipant(in_objectKeep(in_object(peer)));
+            return in_connectivityPeerParticipantKeep(peer);
         }
 
         iterator = Coll_Iter_getNext(iterator);
@@ -952,7 +1021,9 @@ in_connectivityAdminAddPeerReader(
             }
         }
         in_connectivityPeerParticipantFree(participant);
-    } else if (!participant) {
+    } else if (participant) {
+    	in_connectivityPeerParticipantFree(participant);
+    } else {
     	/* corresponding peer participant not found */
     	result = IN_RESULT_NOT_FOUND;
     }
@@ -1057,7 +1128,9 @@ in_connectivityAdminAddPeerWriter(
             }
         }
         in_connectivityPeerParticipantFree(participant);
-    } else if (!participant) {
+    } else if (participant) {
+    	in_connectivityPeerParticipantFree(participant);
+    } else {
     	/* corresponding peer participant not found */
     	result = IN_RESULT_NOT_FOUND;
     }
@@ -1100,7 +1173,7 @@ in_connectivityAdminGetPeerParticipantUnsafe(
     {
         knownpeer = in_connectivityPeerParticipant(Coll_Iter_getObject(iterator));
         if ( in_ddsiGuidPrefixEqual(guidPrefix,in_connectivityPeerParticipantGetGuidPrefix(knownpeer))) {
-            return in_connectivityPeerParticipant(in_objectKeep(in_object(knownpeer)));
+            return in_connectivityPeerParticipantKeep(knownpeer);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
@@ -1126,7 +1199,7 @@ in_connectivityAdminGetPeerReader(
         knownpeer = in_connectivityPeerReader(Coll_Iter_getObject(iterator));
         if ( in_ddsiGuidEqual(guid,in_connectivityPeerReaderGetGuid(knownpeer))) {
             os_mutexUnlock(&(_this->mutex));
-            return in_connectivityPeerReader(in_objectKeep(in_object(knownpeer)));
+            return in_connectivityPeerReaderKeep(knownpeer);
         }
         iterator = Coll_Iter_getNext(iterator);
     }
@@ -1153,7 +1226,7 @@ in_connectivityAdminGetPeerWriter(
         knownpeer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
         if ( in_ddsiGuidEqual(guid,in_connectivityPeerWriterGetGuid(knownpeer))) {
             os_mutexUnlock(&(_this->mutex));
-            return in_connectivityPeerWriter(in_objectKeep(in_object(knownpeer)));
+            return in_connectivityPeerWriterKeep(knownpeer);
         }
         iterator = Coll_Iter_getNext(iterator);
     }

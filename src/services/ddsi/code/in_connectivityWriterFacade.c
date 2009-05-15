@@ -292,6 +292,7 @@ in_connectivityWriterFacadeBuildLocatorList(
     os_uint32 collResult = COLL_OK;
     os_uint32 i;
     os_uint32 size;
+    in_locator loc;
 
     assert(in_connectivityWriterFacadeIsValid(_this));
 
@@ -299,11 +300,9 @@ in_connectivityWriterFacadeBuildLocatorList(
     size = Coll_List_getNrOfElements(&_this->locators);
     for(i = 0; i < size; i++)
     {
-        in_object obj;
-
-        obj = Coll_List_popBack(&_this->locators);
+        loc = in_locator(Coll_List_popBack(&_this->locators));
         /* Must release the ref count of the stored locator! */
-        in_objectFree(obj);
+        in_locatorFree(loc);
     }
     assert(Coll_List_getNrOfElements(&_this->locators) == 0);
 

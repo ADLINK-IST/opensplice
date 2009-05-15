@@ -337,6 +337,7 @@ in_clientMonitorStartMonitoring(
 
     if(topic){
         result = u_entityAction(u_entity(topic), resolveOffset, &participantOffset);
+        u_entityFree(u_entity(topic));
     } else {
         result = U_RESULT_INTERNAL_ERROR;
         printf("Could not resolve participant info offset.\n");
@@ -349,6 +350,7 @@ in_clientMonitorStartMonitoring(
 
         if(topic){
             result = u_entityAction(u_entity(topic), resolveOffset, &publicationOffset);
+            u_entityFree(u_entity(topic));
         } else {
             result = U_RESULT_INTERNAL_ERROR;
             printf("Could not resolve publication info offset.\n");
@@ -362,6 +364,7 @@ in_clientMonitorStartMonitoring(
 
         if(topic){
             result = u_entityAction(u_entity(topic), resolveOffset, &subscriptionOffset);
+            u_entityFree(u_entity(topic));
         } else {
             result = U_RESULT_INTERNAL_ERROR;
             printf("Could not resolve subscription info offset.\n");
