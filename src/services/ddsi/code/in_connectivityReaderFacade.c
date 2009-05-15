@@ -132,9 +132,9 @@ in_connectivityReaderFacadeDeinit(
     while(iterator)
     {
         writer = in_connectivityPeerWriter(Coll_Iter_getObject(iterator));
-        in_connectivityPeerWriterFree(writer);
         iterator = Coll_Iter_getNext(iterator);
         Coll_Set_remove(&_this->matchedWriters, writer);
+        in_connectivityPeerWriterFree(writer);
     }
     os_free(_this->info.type_name);
 	os_free(_this->info.topic_name);

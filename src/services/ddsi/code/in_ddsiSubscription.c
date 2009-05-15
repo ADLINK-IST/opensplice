@@ -68,10 +68,10 @@ in_ddsiSubscriptionBuiltinTopicDataDeinit(
     struct v_subscriptionInfo *q = &(_this->info);
 
     /* conditional frees */
-    if (q->topic_name) c_free(q->topic_name);
-    if (q->type_name) c_free(q->type_name);
+    if (q->topic_name) os_free(q->topic_name);
+    if (q->type_name) os_free(q->type_name);
     if (q->user_data.value) c_free(q->user_data.value);
-    if (q->partition.name) c_free(q->partition.name);
+    /*if (q->partition.name) c_free(q->partition.name);*/
     if (q->topic_data.value) c_free(q->topic_data.value);
     if (q->group_data.value) c_free(q->group_data.value);
  }

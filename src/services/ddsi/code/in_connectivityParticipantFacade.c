@@ -99,9 +99,9 @@ in_connectivityParticipantFacadeDeinit(
     {
         peerParticipant = in_connectivityPeerParticipant(
                 Coll_Iter_getObject(iterator));
-        in_connectivityPeerParticipantFree(peerParticipant);
         iterator = Coll_Iter_getNext(iterator);
         Coll_Set_remove(&_this->matchedPeerParticipants, peerParticipant);
+        in_connectivityPeerParticipantFree(peerParticipant);
     }
     /*Call parent deinit*/
     in_connectivityEntityFacadeDeinit(obj);

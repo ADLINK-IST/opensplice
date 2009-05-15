@@ -103,6 +103,7 @@ in_channelDataInit(
         } else
         {
             in_channelSetWriter(in_channel(_this), in_channelWriter(writer));
+            in_channelDataWriterFree(writer);
         }
     }
     if(success)
@@ -117,6 +118,7 @@ in_channelDataInit(
         } else
         {
             in_channelSetReader(in_channel(_this), in_channelReader(reader));
+            in_channelDataReaderFree(reader);
         }
     }
     return success;

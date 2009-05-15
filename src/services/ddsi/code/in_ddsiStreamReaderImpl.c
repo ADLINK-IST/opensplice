@@ -278,6 +278,7 @@ in_ddsiStreamReaderImplDerializePayloadByKeyHash(
 		break;
 		}
 		c_fieldAssign(messageKeyList[i],*messageObject, value);
+		c_valueFreeRef(value);
 	}
 
 	return result;
@@ -595,6 +596,7 @@ in_ddsiStreamReaderImplProcessAppdefData(
         		result = OS_FALSE;
         		/* TODO: report error*/
         	}
+        	in_connectivityPeerWriterFree(peerWriter);
         }
 	}
 	return result;
@@ -825,8 +827,7 @@ in_ddsiStreamReaderImplProcessBuiltinWriterData(
             result = OS_FALSE;
         } else {
             /* TODO, no fragmentation supported yet */
-            discoveredData =
-                in_ddsiDiscoveredWriterDataNew();
+            discoveredData = in_ddsiDiscoveredWriterDataNew();
 
             if (!discoveredData) {
                 /* TODO handle out-of-memory */
@@ -845,7 +846,7 @@ in_ddsiStreamReaderImplProcessBuiltinWriterData(
                     result = OS_FALSE;
                 } else {
                     in_connectivityPeerWriter newPeer =
-                        in_connectivityPeerWriterNew(discoveredData);
+                    	in_connectivityPeerWriterNew(discoveredData);
 
                     /* in any case release the data object, which should be
                      * refcounted by peer-object now  */
@@ -1322,7 +1323,7 @@ in_ddsiStreamReaderImplFetchBuffer(
 		 * if a message has been received, or an error occured. In the latter
 		 * case the scan-operation shall be exited. */
 		if (_this->currentReceiveBuffer) {
-		    if (!in_ddsiReceiverInit(&(_this->receiver),
+			if (!in_ddsiReceiverInit(&(_this->receiver),
 			        _this->currentReceiveBuffer) ||
 			    !in_ddsiSubmessageTokenizerInit(
 					&(_this->currentReceiveBufferTokenizer),
@@ -1495,15 +1496,21 @@ void
 in_ddsiStreamReaderImplDeinit(
         in_ddsiStreamReaderImpl _this)
 {
-    in_transportReceiverFree(_this->transport);
+
     in_plugKernelFree(_this->plugKernel);
     in_messageDeserializerFree(_this->messageDeserializer);
 
+    if(_this->currentReceiveBuffer)
+    {
+    	in_transportReceiverReleaseBuffer(_this->transport, _this->currentReceiveBuffer);
+    	_this->currentReceiveBuffer = NULL;
+    }
+    in_transportReceiverFree(_this->transport);
     _this->transport = NULL;
     _this->plugKernel = NULL;
 
 
-    in_objectDeinit(OS_SUPER(_this));
+    in_streamReaderDeinit(OS_SUPER(_this));
 }
 
 

@@ -342,6 +342,7 @@ in_configConvertDomTree(
         if(element)
         {
             in_configTraverseConfiguration(element);
+            u_cfElementFree(element);
         }
     }
 
@@ -365,12 +366,18 @@ in_configTraverseConfiguration(
     {
         name = u_cfNodeName(childNode);
         nodeKind = u_cfNodeKind(childNode);
-        if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DdsiService))
+        if(name)
         {
-            in_configTraverseDdsiServiceElement(u_cfElement(childNode));
-        } /* else ignore the element, do not report that we ignore it though */
+            if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_DdsiService))
+            {
+                in_configTraverseDdsiServiceElement(u_cfElement(childNode));
+            } /* else ignore the element, do not report that we ignore it though */
+            os_free(name);
+        }
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
+    c_iterFree(children);
 }
 
 void
@@ -417,8 +424,10 @@ in_configTraverseDdsiServiceElement(
                 INCF_ELEM_DdsiService);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
+    c_iterFree(attributes);
     /*step 2: verify required attributes are found, then instantiate the class*/
     if(!serviceName)
     {
@@ -478,6 +487,7 @@ in_configTraverseDdsiServiceElement(
                             INCF_ELEM_DdsiService);
                     }
                     os_free(name);
+                    u_cfNodeFree(childNode);
                     childNode = u_cfNode(c_iterTakeFirst(children));
                 }
                 c_iterFree(children);
@@ -568,6 +578,7 @@ in_configTraversePartitioningElement(
                         INCF_ELEM_Partitioning);
                 }
                 os_free(name);
+                u_cfNodeFree(childNode);
                 childNode = u_cfNode(c_iterTakeFirst(children));
             }
             c_iterFree(children);
@@ -626,6 +637,7 @@ in_configTraverseNetworkPartitionsElement(
                 INCF_ELEM_NetworkPartitions);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -680,6 +692,7 @@ in_configTraversePartitionMappingsElement(
                 INCF_ELEM_PartitionMappings);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -726,6 +739,7 @@ in_configTraverseGlobalPartitionElement(
                 INCF_ELEM_GlobalPartition);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
     c_iterFree(attributes);
@@ -841,6 +855,7 @@ in_configTraverseNetworkPartitionElement(
                 INCF_ELEM_NetworkPartition);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
     c_iterFree(attributes);
@@ -962,6 +977,7 @@ in_configTraversePartitionMappingElement(
                 INCF_ELEM_PartitionMapping);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
     c_iterFree(attributes);
@@ -2139,6 +2155,7 @@ in_configTraverseGeneralElement(
                 INCF_ELEM_General);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -2196,6 +2213,7 @@ in_configTraverseChannelsElement(
                 INCF_ELEM_Channels);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -2250,6 +2268,7 @@ in_configTraverseDiscoveryChannelElement(
                 INCF_ELEM_DiscoveryChannel);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
     c_iterFree(attributes);
@@ -2292,6 +2311,7 @@ in_configTraverseDiscoveryChannelElement(
                     INCF_ELEM_DiscoveryChannel);
             }
             os_free(name);
+            u_cfNodeFree(childNode);
             childNode = u_cfNode(c_iterTakeFirst(children));
         }
         c_iterFree(children);
@@ -2397,6 +2417,7 @@ in_configTraverseChannelElement(
                 INCF_ELEM_Channel);
         }
         os_free(name);
+        u_cfAttributeFree(attribute);
         attribute = u_cfAttribute(c_iterTakeFirst(attributes));
     }
     c_iterFree(attributes);
@@ -2510,6 +2531,7 @@ in_configTraverseChannelElement(
                         INCF_ELEM_DiscoveryChannel);
                 }
                 os_free(name);
+                u_cfNodeFree(childNode);
                 childNode = u_cfNode(c_iterTakeFirst(children));
             }
             c_iterFree(children);
@@ -2584,6 +2606,7 @@ in_configTraverseGroupQueueElement(
                 INCF_ELEM_GroupQueueSize);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -2683,6 +2706,7 @@ in_configTraverseFragmentSizeElement(
                 INCF_ELEM_FragmentSize);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -2806,6 +2830,7 @@ in_configTraversePortNrElement(
                 INCF_ELEM_PortNr);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
@@ -2900,6 +2925,7 @@ in_configTraverseInterfaceElement(
                 INCF_ELEM_Interface);
         }
         os_free(name);
+        u_cfNodeFree(childNode);
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     if(!networkId)

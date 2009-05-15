@@ -294,24 +294,39 @@ in_channelSdpWriterDeinit(
     in_object _this)
 {
     u_dispatcher service;
+    in_channelSdpWriter w;
+    in_connectivityPeerEntity peer;
+
+    w = in_channelSdpWriter(_this);
 
     assert(_this);
     assert(in_channelSdpWriterIsValid(_this));
 
-    service = u_dispatcher(
-        in_plugKernelGetService(in_channelSdpWriter(_this)->plug));
+    service = u_dispatcher(in_plugKernelGetService(w->plug));
+    u_dispatcherRemoveListener(service, in_channelSdpWriterOnNewGroup);
 
-    u_dispatcherRemoveListener(
-        service,
-        in_channelSdpWriterOnNewGroup);
-
-    if (in_channelSdpWriter(_this)->discoveryData)
+    if (w->discoveryData)
     {
-        in_endpointDiscoveryDataFree(in_channelSdpWriter(_this)->discoveryData);
+        in_endpointDiscoveryDataFree(w->discoveryData);
     }
-    if (in_channelSdpWriter(_this)->streamWriter)
+    if (w->streamWriter)
     {
-        in_streamWriterFree(in_channelSdpWriter(_this)->streamWriter);
+        in_streamWriterFree(w->streamWriter);
+    }
+    if (w->plug)
+    {
+    	in_plugKernelFree(w->plug);
+    }
+    if(&w->discoveredPeers)
+    {
+    	peer = in_connectivityPeerEntity(Coll_List_popBack(&w->discoveredPeers));
+
+    	while(peer)
+		{
+			in_connectivityPeerEntityFree(peer);
+			peer = in_connectivityPeerEntity(Coll_List_popBack(&w->discoveredPeers));
+		}
+
     }
     in_channelWriterDeinit(_this);
     os_mutexDestroy (&(in_channelSdpWriter(_this)->mutex));
@@ -575,6 +590,7 @@ in_channelSdpWriterAcknackHeartbeats(
             {
                 IN_REPORT_ERROR("in_channelSdpWriterAcknackHeartbeats", "Unable to find a suitable UDPV4 locator, unable to transmit acknack.");
             }
+            in_connectivityPeerParticipantFree(peerParticipant);
         }
         os_free(event);
     }
@@ -685,6 +701,7 @@ in_channelSdpWriterSendRequestedDiscoveryInformation(
             {
                 IN_REPORT_ERROR("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to find a suitable UDPV4 locator, unable to transmit reader/writer data.");
             }
+            in_connectivityPeerParticipantFree(peer);
         } else
         {
             IN_REPORT_WARNING("in_channelSdpWriterSendRequestedDiscoveryInformation", "Unable to find a matching peer participant for the received guid. unable to transmit reader/writer data, ignoring request.");
@@ -765,7 +782,8 @@ in_channelSdpWriterSendParticipantsData(
         iterator = Coll_Iter_getNext(iterator);
 
     }
-    Coll_List_popBack(&tempList);
+    locator = Coll_List_popBack(&tempList);
+    in_locatorFree(locator);
 }
 
 void
@@ -874,7 +892,9 @@ in_channelSdpWriterSendParticipantsHeartbeat(
                     singleDestination);
                 if(result != IN_RESULT_OK)
                 {
-                     IN_REPORT_ERROR("in_channelSdpWriterSendParticipantsHeartbeat", "Unable to transmit heartbeat for P2P participant message reader/writer due to a stream error.");
+                     IN_REPORT_ERROR(
+                    	"in_channelSdpWriterSendParticipantsHeartbeat",
+                    	"Unable to transmit heartbeat for P2P participant message reader/writer due to a stream error.");
                 }
                 in_locatorFree(singleDestination);
             }
@@ -882,6 +902,7 @@ in_channelSdpWriterSendParticipantsHeartbeat(
         }
         iterator = Coll_Iter_getNext(iterator);
     }
+
     in_streamWriterFlushSingle(_this->streamWriter, singleDestination);
 }
 
@@ -996,7 +1017,7 @@ in_channelSdpWriterFindDefaultUDPV4Locator(
     switch (kind)
     {
         case IN_OBJECT_KIND_PEER_PARTICIPANT:
-            peerParticipant = in_connectivityPeerParticipant(entity);
+            peerParticipant = in_connectivityPeerParticipantKeep(entity);
             break;
         case IN_OBJECT_KIND_PEER_WRITER:
             guid = in_connectivityPeerWriterGetGuid((in_connectivityPeerWriter)entity);
@@ -1021,6 +1042,7 @@ in_channelSdpWriterFindDefaultUDPV4Locator(
             locators = in_connectivityPeerParticipantGetDefaultMulticastLocators(peerParticipant);
             locator = in_channelSdpWriterFindUDPV4Locator(locators);
         }
+        in_connectivityPeerParticipantFree(peerParticipant);
     }
     return locator;
 }
@@ -1091,8 +1113,10 @@ in_channelSdpWriterParticipantAction (
                     in_streamWriter(sdpWriter->streamWriter),
                     &tempList);
                 /* clear the list */
-                Coll_List_popBack(&tempList);
+                locator = in_locator(Coll_List_popBack(&tempList));
+                in_locatorFree(locator);
             }
+            in_connectivityParticipantFacadeFree(facade);
         } /* else no one interested */
     }
     /* step 3: if the participant was deleted, we can remove it from the

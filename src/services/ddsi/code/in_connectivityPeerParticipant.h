@@ -30,7 +30,7 @@
 
 #define in_connectivityPeerParticipantFree(c) in_objectFree(in_object(c))
 
-#define in_connectivityPeerParticipantKeep(c) in_objectKeep(in_object(c))
+#define in_connectivityPeerParticipantKeep(c) in_connectivityPeerParticipant(in_objectKeep(in_object(c)))
 
 #define in_connectivityPeerParticipantIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_PEER_PARTICIPANT)
