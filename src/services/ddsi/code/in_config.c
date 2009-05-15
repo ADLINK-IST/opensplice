@@ -3037,7 +3037,7 @@ in_configFinalizeTracing(
     outputFileName = in_configTracingGetOutputFileName(tracing);
     if(!outputFileName)
     {
-        outputFileName = os_malloc(strlen(INCF_ATTRIB_OutputFile_value_DEF));
+        outputFileName = os_malloc(strlen(INCF_ATTRIB_OutputFile_value_DEF) + 1);
         if(!outputFileName)
         {
              IN_REPORT_ERROR("in_configFinalizeTracing", "Out of memory.");
