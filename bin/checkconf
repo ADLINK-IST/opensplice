@@ -44,7 +44,7 @@ csharp_check ()
     pathcheck csc.exe
     if [ $? != 0 ]
     then
-        MAIN_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
+        MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
         if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
         then
             echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"

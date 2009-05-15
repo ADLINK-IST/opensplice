@@ -35,6 +35,21 @@
 #define KERNEL_NAME   "defaultDomainKernel"
 #define DATABASE_SIZE (0xA00000)
 
+#define IGNORE_THREAD_MESSAGE os_threadMemFree(OS_WARNING)
+#define PRINT_THREAD_MESSAGE(context) printThreadMessage(context)
+
+static void
+printThreadMessage(
+    const char *context)
+{
+    char *msg = os_threadMemGet(OS_WARNING);
+    if (msg) {
+        OS_REPORT(OS_ERROR,context,0,msg);
+        os_threadMemFree(OS_WARNING);
+    }
+}
+
+
 C_STRUCT(u_kernel) {
     os_mutex        mutex;
     v_kernel        kernel;
@@ -446,6 +461,8 @@ u_kernelNew(
             } else {
                 result = os_sharedMemoryCreate(shm, domainCfg.dbSize);
                 if (result != os_resultSuccess) {
+                    /* Print any message that was generated */
+                    PRINT_THREAD_MESSAGE("u_kernelNew");
                     os_sharedDestroyHandle(shm);
                     OS_REPORT_1(OS_ERROR,OSRPT_CNTXT_USER,0,
                                 "u_kernelNew:os_sharedMemoryCreate failed.\n"
@@ -453,7 +470,10 @@ u_kernelNew(
                                 "              The required SHM size was %d bytes",
                                 domainCfg.dbSize);
                 } else {
+                    /* Ignore any message that was generated */
+                    IGNORE_THREAD_MESSAGE;
                     result = os_sharedMemoryAttach(shm);
+                    PRINT_THREAD_MESSAGE("u_kernelNew");
                     if (result != os_resultSuccess) {
                         os_sharedDestroyHandle(shm);
                         OS_REPORT(OS_ERROR,OSRPT_CNTXT_USER,0,
@@ -643,10 +663,12 @@ u_kernelOpen(
         }
     } else {
         result = os_sharedMemoryAttach(shm);
+        IGNORE_THREAD_MESSAGE;
         while ((timeout > 0) && (result != os_resultSuccess)) {
             os_nanoSleep(pollDelay);
             result = os_sharedMemoryAttach(shm);
             timeout--;
+            PRINT_THREAD_MESSAGE("u_kernelOpen");
         }
         if (result != os_resultSuccess) {
             os_sharedDestroyHandle(shm);

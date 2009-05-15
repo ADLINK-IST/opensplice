@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__writer.h"
@@ -2174,6 +2174,7 @@ resendInstance(
                 switch (v_writerSampleGetStatus(sample)) {
                 case V_SAMPLE_RESEND:
                     v_writerSampleClear(sample);
+                    v_statisticsULongValueInc(v_writer, numberOfRetries, writer);
                     grouparg.instance = instance;
                     grouparg.message = message;
                     grouparg.result = V_WRITE_SUCCESS;
@@ -2440,7 +2441,7 @@ v_writerCheckDeadlineMissed(
         } else {
             if (v_statusNotifyDeadlineMissed(v_entity(w)->status, instance)) {
                 changed = TRUE;
-            }          
+            }
             /* do not use deadlineUpdate(w, instance);
              * since it will also reset instance->deadlineCount
 	         v_deadLineInstanceListUpdate(w->deadlineList,

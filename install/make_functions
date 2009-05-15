@@ -112,6 +112,22 @@ install_ascii_fileset()
     done
 }
 
+buildTarGZ ()
+{
+   tar -cf $1.tar $2
+   gzip $1.tar
+}
+
+buildTarZ ()
+{
+   tar -cf - $2 | compress > $1.tar.Z
+}
+
+buildZip ()
+{
+   zip -r $1.zip $2
+}
+
 make_hde_mirror_and_builder ()
 {
     INSTTYPE="HDE"
@@ -223,6 +239,7 @@ set_envs ()
     ENV=`expr "${SPLICE_TARGET}" : '[^-]*\(.*\)'`
     
     SOURCE_HOST=`expr "${SPLICE_HOST}" : '\([^-]*\)'`
+    SOURCE_HOST_SHORT=`expr "${SPLICE_HOST}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     SOURCE_TARGET=`expr "${SPLICE_TARGET}" : '\([^-]*\)'`
     SOURCE_TARGET_SHORT=`expr "${SPLICE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     
@@ -231,14 +248,14 @@ set_envs ()
     TXTFILE_CONVERTER="echo done"
     GETLIC_INFO_NAME=""
     
-    if [ "${SOURCE_TARGET_SHORT}" = "linux" ]
+    if [ "${SOURCE_HOST_SHORT}" = "linux" ]
     then
         BUILDER_TARGET="linux"
         SCRIPT_NAME="release.com"
         GETLIC_INFO_NAME="getlic_info"
     fi
             
-    if [ "${SOURCE_TARGET_SHORT}" = "win" ]
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         (cd ${OSPL_HOME}/install/service_installer; make)
         BUILDER_TARGET="windows"
@@ -258,7 +275,7 @@ set_rts_envs ()
             suffix_exe=".exe"
             suffix_script=".bat"
             ;;
-        PPC604.vxworks6.6)
+        PPC604.vxworks6.6*)
             suffix_exe=".vxe"
             ;;
     esac
@@ -324,7 +341,7 @@ set_hde_envs ()
     fi
     
     TXTFILE_CONVERTER="$6"
-    SOURCE_TARGET_SHORT="$8"
+    SOURCE_TARGET_SHORT="$7"
 
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
@@ -549,23 +566,6 @@ install_hde_target ()
     fi
 
     #
-    # Copy script files
-    #
-    echo "*     Copy script files"
-    release=${OSPL_HOME}/bin
-    if [ -d "${release}" ]
-    then
-        mkdir -p ${HDE_dir}/bin
-        if [ "${INCLUDE_TOOLS_TUNER}" = "yes" ]
-        then
-          install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
-        fi
-    else
-        echo "* ##    No script files detected"
-    fi
-    echo "*     Script files Ready"
-
-    #
     # Copy java archive files
     #
     if [ "${INCLUDE_JAVA}" = "yes" ]
@@ -581,9 +581,9 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
-    if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" ]
+    if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
-        printf "*     Copy JAVA host archive files... "
+	printf "*     Copy JAVA host archive files... "
         release=${OSPL_HOME}/jar/${host}${source_env}
         if [ -d "${release}" ]
         then
@@ -1130,6 +1130,32 @@ install_hde_target ()
     fi
     echo "*       DCPS Ready"    
     echo "*     Copy examples Ready"
+
+    #
+    # Copy in ospli src for distro
+    #
+    printf "*     Creating source release ... "
+    mkdir ${HDE_dir}/src
+    sleep 3 &
+    TMP_PID=$!
+    mkdir /tmp/$TMP_PID
+    OSPL_SRC=/tmp/$TMP_PID/OpenSpliceDDS
+    git clone $OSPL_HOME $OSPL_SRC  > /dev/null 2>&1
+    rm -rf $OSPL_SRC/.git
+    rm -rf $OSPL_SRC/docs
+    rm -f $OSPL_SRC/.gitignore
+    rm -f $OSPL_SRC/.gitattributes
+    BUILD=buildTarGZ
+    if [ "${target}" = "x86.win32" ]
+    then
+        BUILD=buildZip
+    fi
+    (
+        cd $OSPL_SRC/..
+        $BUILD ${HDE_dir}/src/OpenSpliceDDS-src OpenSpliceDDS
+    )
+    rm -rf /tmp/$TMP_PID
+    echo "Ready"
 
     #
     # Platform specific redistributables

@@ -185,6 +185,8 @@ os_timeGet(
         assert(_ospl_clockGet != NULL);
         result = _msTimeGet();
     }
+
+    return result;
 }
 
 /** \brief Set the user clock

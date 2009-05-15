@@ -19,7 +19,7 @@ public class SubscriptionBuiltinTopicDataDataReaderImpl extends org.opensplice.d
     public SubscriptionBuiltinTopicDataDataReaderImpl(DDS.SubscriptionBuiltinTopicDataTypeSupport ts)
     {
         typeSupport = ts;
-        copyCache = ts.get_copyCache ();
+        copyCache = typeSupport.get_copyCache ();
     }
 
     public int read(

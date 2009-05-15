@@ -12,27 +12,27 @@
 /* This define is needed for Win32, but also applies to other platforms */
 #define YY_NEVER_INTERACTIVE 1
 
-#define yyin                 c_q_yyin
-#define yyout                c_q_yyout
-#define yyparse              c_q_yyparse
-#define yychar               c_q_yychar
-#define yyerror              c_q_yyerror
-#define yylex                c_q_yylex
-#define yylval               c_q_yylval
-#define yyrestart            c_q_yyrestart
-#define yywrap               c_q_yywrap
-#define yytext               c_q_yytext
-#define yynerrs              c_q_yynerrs
-#define yyleng               c_q_yyleng
-#define yy_scan_string       c_q_yy_scan_string
-#define yy_scan_buffer       c_q_yy_scan_buffer
-#define yy_init_buffer       c_q_yy_init_buffer
-#define yy_flush_buffer      c_q_yy_flush_buffer 
-#define yy_switch_to_buffer  c_q_yy_switch_to_buffer
-#define yy_delete_buffer     c_q_yy_delete_buffer
-#define yy_create_buffer     c_q_yy_create_buffer
-#define yy_load_buffer_state c_q_yy_load_buffer_state
-#define yy_scan_bytes        c_q_yy_scan_bytes
+#define yyin                 q_parser_yyin
+#define yyout                q_parser_yyout
+#define yyparse              q_parser_yyparse
+#define yychar               q_parser_yychar
+#define yyerror              q_parser_yyerror
+#define yylex                q_parser_yylex
+#define yylval               q_parser_yylval
+#define yyrestart            q_parser_yyrestart
+#define yywrap               q_parser_yywrap
+#define yytext               q_parser_yytext
+#define yynerrs              q_parser_yynerrs
+#define yyleng               q_parser_yyleng
+#define yy_scan_string       q_parser_yy_scan_string
+#define yy_scan_buffer       q_parser_yy_scan_buffer
+#define yy_init_buffer       q_parser_yy_init_buffer
+#define yy_flush_buffer      q_parser_yy_flush_buffer 
+#define yy_switch_to_buffer  q_parser_yy_switch_to_buffer
+#define yy_delete_buffer     q_parser_yy_delete_buffer
+#define yy_create_buffer     q_parser_yy_create_buffer
+#define yy_load_buffer_state q_parser_yy_load_buffer_state
+#define yy_scan_bytes        q_parser_yy_scan_bytes
 
 #define ResolveType(s,t) c_type(c_metaResolve(c_metaObject(s),#t))
 

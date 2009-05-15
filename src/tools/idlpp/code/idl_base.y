@@ -17,27 +17,27 @@
 #define YY_NO_UNISTD_H
 #endif
 
-#define yyin                 idl_yyin
-#define yyout                idl_yyout
-#define yyparse              idl_yyparse
-#define yychar               idl_yychar
-#define yyerror              idl_yyerror
-#define yylex                idl_yylex
-#define yylval               idl_yylval
-#define yyrestart            idl_yyrestart
-/*#define yywrap               idl_yywrap*/
-#define yytext               idl_yytext
-#define yynerrs              idl_yynerrs
-#define yyleng               idl_yyleng
-#define yy_scan_string       idl_yy_scan_string
-#define yy_scan_buffer       idl_yy_scan_buffer
-#define yy_init_buffer       idl_yy_init_buffer
-#define yy_flush_buffer      idl_yy_flush_buffer 
-#define yy_switch_to_buffer  idl_yy_switch_to_buffer
-#define yy_delete_buffer     idl_yy_delete_buffer
-#define yy_create_buffer     idl_yy_create_buffer
-#define yy_load_buffer_state idl_yy_load_buffer_state
-#define yy_scan_bytes        idl_yy_scan_bytes
+#define yyin                 idl_base_yyin
+#define yyout                idl_base_yyout
+#define yyparse              idl_base_yyparse
+#define yychar               idl_base_yychar
+#define yyerror              idl_base_yyerror
+#define yylex                idl_base_yylex
+#define yylval               idl_base_yylval
+#define yyrestart            idl_base_yyrestart
+/*#define yywrap               idl_base_yywrap*/
+#define yytext               idl_base_yytext
+#define yynerrs              idl_base_yynerrs
+#define yyleng               idl_base_yyleng
+#define yy_scan_string       idl_base_yy_scan_string
+#define yy_scan_buffer       idl_base_yy_scan_buffer
+#define yy_init_buffer       idl_base_yy_init_buffer
+#define yy_flush_buffer      idl_base_yy_flush_buffer 
+#define yy_switch_to_buffer  idl_base_yy_switch_to_buffer
+#define yy_delete_buffer     idl_base_yy_delete_buffer
+#define yy_create_buffer     idl_base_yy_create_buffer
+#define yy_load_buffer_state idl_base_yy_load_buffer_state
+#define yy_scan_bytes        idl_base_yy_scan_bytes
 
 #define YY_INPUT(buf,result,max_size)\
   {\

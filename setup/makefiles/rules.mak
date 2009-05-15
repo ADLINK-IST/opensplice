@@ -11,7 +11,7 @@ endif
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
 JCODE_DIR ?=code
-JFLAGS    ?= -source 1.4
+JFLAGS    ?= -source 1.5
 JFLAGS    +=-sourcepath '$(JCODE_DIR)'
 MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
 
@@ -74,7 +74,7 @@ endif
 	$(YACC) $< -o $@
 
 %.h: %.l
-	$(LEX) -t $< > $@
+	$(LEX) -t  -P$(basename $@)_yy $< > $@
 
 %.c.met: %.c
 	$(QAC) $(CPFLAGS) $(CINCS) $<
