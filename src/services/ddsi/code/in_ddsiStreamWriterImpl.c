@@ -55,16 +55,7 @@ static  OS_STRUCT(in_ddsiEntityId) unknownId =
 
 /* **** private functions **** */
 
-// put in corect headerfile
-in_long
-serializeGuid(in_ddsiSerializer serializer,
-        os_ushort pid,
-        in_ddsiGuid guid);
-in_long
-serializeSentinel(in_ddsiSerializer serializer);
-
-
-
+/*TODO: put in corect headerfile*/
 
 static void
 in_ddsiStreamWriterImplDeinit(in_ddsiStreamWriterImpl _this)
@@ -224,7 +215,7 @@ serializeParticipantMessage(
     in_ddsiGuidPrefixRef destGuidPrefix,
     in_connectivityParticipantFacade facade)
 {
-    /* no inline Qos */
+	/*PID_KEY_HASH (20 bytes) + PID_SENTINEL (2 bytes) + 2 bytes padding*/
     const os_size_t inlineQosSize = 24U;
     in_long result = -1;
     in_long nofOctets = 0;
@@ -233,8 +224,8 @@ serializeParticipantMessage(
     OS_STRUCT(in_ddsiGuid) tmpGuid;
     c_time allocTime;
     os_time timestamp;
-    /* (FR) AFAICS, participants are published best-effort with sequenceNumber=1 */
-    OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber = {0,1U}; /* TODO read from facade */
+    /* TODO resolve sequence number from facade */
+    OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber = {0,1U};
 
     assert(serializer);
     assert(readerId);
@@ -292,7 +283,7 @@ serializeParticipantMessage(
                 encapsKind = IN_ENCAPSULATION_CDR_LE;
             }
 
-            // add the encapsulation header
+            /* add the encapsulation header*/
             nofOctets = in_ddsiSubmessageAppendEncapsulationHeaderInstantly(encapsKind, serializer);
             IN_BREAK_IF(nofOctets<0);
 
@@ -313,10 +304,11 @@ serializeParticipantMessage(
             if (nofOctets<0) break;
             total += nofOctets;
             /* TODO: handle fragmented parameter list */
-           //nofOctets = in_ddsiParameterListForParticipantSerializeInstantly(facade, &(_this->serializer), discoveryData);
-           // IN_BREAK_IF(nofOctets<0);
-           // total += nofOctets;
-
+            /*
+            nofOctets = in_ddsiParameterListForParticipantSerializeInstantly(facade, &(_this->serializer), discoveryData);
+            IN_BREAK_IF(nofOctets<0);
+            total += nofOctets;
+			*/
             nofOctets = in_ddsiSerializerAlign(serializer, IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
             if (nofOctets<0) break;
             total += nofOctets;
@@ -443,7 +435,7 @@ serializeSubscriptionData(
         in_ddsiGuidPrefix writerGuidPrefix)
 {
     /* no inline Qos */
-    const os_size_t inlineQosSize = 24U;//
+    const os_size_t inlineQosSize = 24U;
     const in_ddsiGuid guid =
          in_connectivityEntityFacadeGetGuid(
                  in_connectivityEntityFacade(facade));
@@ -571,14 +563,17 @@ serializeData(
     in_ddsiEntityId readerId, /* may be UNKOWN */
     in_endpointDiscoveryData discoveryData,
     in_connectivityWriterFacade facade,
-    v_message message)
+    v_message message,
+    v_topic topic)
 {
     const os_ushort encapsFlags = 0x0;
-
+    c_octet* dataHeaderPosition, *endDataPosition;
+    os_boolean keyHashAdded = OS_FALSE;
 	in_result result = IN_RESULT_ERROR;
 	in_result retState = IN_RESULT_OK;
 
 	in_long nofOctets = 0;
+	os_ushort octetsToNextHeader = 0;
 	os_size_t total = 0;
     os_size_t serializedDataSize = 0;
 
@@ -600,7 +595,10 @@ serializeData(
 		total += nofOctets;
 
 		/* Must be written a second time when we know the real octet-size of
-		 * payload */
+		 * payload, so keep track of current position.
+		 */
+		dataHeaderPosition = in_ddsiSerializerGetPosition(&(_this->serializer));
+
 		nofOctets = in_ddsiSubmessageDataHeaderSerializeInstantly(
 			        inlineQosSize,
 			        serializedPayloadSize,
@@ -612,10 +610,13 @@ serializeData(
 		total += nofOctets;
 
 		if (inlineQosSize > 0) {
-		    nofOctets = in_ddsiParameterListForPublicationSerializeInstantly(
+		    nofOctets = in_ddsiParameterListForDataSerializeInstantly(
 		                facade,
 		                &(_this->serializer),
-		                discoveryData);
+		                discoveryData,
+		                message,
+		                topic,
+		                &keyHashAdded);
 		    IN_BREAK_IF(nofOctets<0);
 		    total += nofOctets;
 
@@ -635,9 +636,6 @@ serializeData(
                 in_data firstOctetBehindDataHeader =
                     in_ddsiSerializerGetPosition(&(_this->serializer));
                 in_data firstOctetBehindSerializedData = NULL;
-                os_size_t alignmentDistance = 0;
-                v_topic topic;
-                struct v_publicationInfo * info;
                 c_long topicDataOffset;
 
 
@@ -650,12 +648,7 @@ serializeData(
                         bytesLeft);
                 /* serialize the userData encapsulated within the
                  * v_message object */
-                /* TODO ES: looking up topic for data offset each time is expensive,
-                 * store the data offset value someplace */
-                info = in_connectivityWriterFacadeGetInfo(facade);
-                topic = in_plugKernelLookupTopic(_this->plugKernel, info->topic_name);
                 topicDataOffset = v_topicDataOffset(topic);
-                c_free(topic);
                 retState = in_messageSerializerWrite(
                     _this->messageSerializer,
                     message,
@@ -666,6 +659,8 @@ serializeData(
                     /* TODO report error and handle it!! */
                 }
                 IN_BREAK_IF(retState!=IN_RESULT_OK);
+
+
                 /* For DATA it must not exceed the the buffer size */
                 /* serializeData assumes that no fragmentation is done, so
                  * all data fits into the current buffer, so
@@ -700,15 +695,44 @@ serializeData(
                 /* Note: bytesLeft may not be used the same way in case of
                  * fragmentation, as the serializer might have been re-initialized
                  * setting up a fresh buffer */
+
+                /*
                 alignmentDistance =
                     bytesLeft -
                     (firstOctetBehindSerializedData - firstOctetBehindDataHeader);
+
+
                 nofOctets =
                     in_ddsiSerializerSeek(
                             &(_this->serializer),
                             alignmentDistance);
                 IN_BREAK_IF(nofOctets < 0);
                 total += nofOctets;
+                */
+                nofOctets = in_ddsiSerializerAlign(&(_this->serializer),
+                    IN_DDSI_PARAMETER_HEADER_ALIGNMENT);
+
+                if (nofOctets<0) break;
+                total += nofOctets;
+
+                endDataPosition = in_ddsiSerializerGetPosition(&(_this->serializer));
+                octetsToNextHeader = (os_ushort)(endDataPosition -
+                    (dataHeaderPosition + IN_DDSI_SUBMESSAGE_HEADER_SIZE));
+
+                /* Set position of serializer to the location of
+                 * octetsToNextHeader field. These are the last 2 bytes of
+                 * the subMessage header. So add header size to start of the
+                 * subMessage and subtract 2 bytes.
+                 */
+                in_ddsiSerializerSeekTo(&(_this->serializer),
+                    dataHeaderPosition + IN_DDSI_SUBMESSAGE_HEADER_SIZE - 2);
+
+                /* Set correct octetsToNextHeader*/
+                in_ddsiSerializerAppendUshort(&(_this->serializer),
+                    octetsToNextHeader);
+
+                /* Reset serializer to endPosition */
+                in_ddsiSerializerSeekTo(&(_this->serializer), endDataPosition);
             }
 		}
 		/* finally assign result */
@@ -752,8 +776,7 @@ static os_size_t
 calculatePayloadSize(v_message message)
 {
     /* TODO ask the serializer to calculate the size */
-    os_size_t realSize =
-        400;
+    os_size_t realSize = 1300;
     os_size_t result;
 
     /* finally round up the value to match alignment constraints */
@@ -868,38 +891,41 @@ in_ddsiStreamWriterImplAppendData(
 		os_boolean recipientExpectsInlineQos,
 		Coll_List *locatorList)
 {
-    const os_size_t sentinelSize = 0U;//IN_DDSI_SUBMESSAGE_HEADER_SIZE;
-
-	const in_ddsiGuid guid =
-        in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
-
-	const os_size_t serializedPayloadSize =
-	    calculatePayloadSize(message);
-
-	const os_size_t inlineQosSize =
-	    recipientExpectsInlineQos
-	    ? in_ddsiParameterListForPublicationCalculateSize(
-	            facade,
-	            discoveryData)
-	    : 0U;
-
+	v_topic topic;
+	struct v_publicationInfo * info;
+    const os_size_t sentinelSize = 0U;
+	in_ddsiGuid guid;
+	os_boolean keyHashAdded;
+	os_size_t serializedPayloadSize, inlineQosSize, timestampSubmessageLength;
+	os_size_t dataSubmessageLength, totalLength;
 	in_result result = IN_RESULT_OK;
 
-	/* Note: do not store the locatorList permanently, it
-	 * might be modified or erased by owner */
-	const os_size_t timestampSubmessageLength =
-		IN_DDSI_INFOTIMESTAMP_SUBMESSAGE_SIZE;
+	info = in_connectivityWriterFacadeGetInfo(facade);
+	/*TODO: lookup topic is very expensive. It could also be stored at the
+	 * writerFacade on creation.
+	 */
+	topic = in_plugKernelLookupTopic(_this->plugKernel, info->topic_name);
 
-	const os_size_t dataSubmessageLength =
-		in_ddsiSubmessageDataSerializedSize(
-		        inlineQosSize,
-		        serializedPayloadSize);
+	guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(
+		facade));
+	inlineQosSize = recipientExpectsInlineQos ?
+		in_ddsiParameterListForDataCalculateSize(facade, discoveryData, message,
+		topic, &keyHashAdded): 0U;
 
-	const os_size_t totalLength =
-		timestampSubmessageLength +
-		dataSubmessageLength +
-        /* always keep space at end for the terminating sentinel */
-		sentinelSize;
+	if(!keyHashAdded)
+	{
+		serializedPayloadSize = calculatePayloadSize(message);
+	} else
+	{
+		serializedPayloadSize = 0;
+	}
+	timestampSubmessageLength = IN_DDSI_INFOTIMESTAMP_SUBMESSAGE_SIZE;
+
+	dataSubmessageLength = in_ddsiSubmessageDataSerializedSize(inlineQosSize,
+		serializedPayloadSize);
+
+	totalLength = timestampSubmessageLength + dataSubmessageLength +
+	   /* always keep space at end for the terminating sentinel */ sentinelSize;
 
 	assert(timestampSubmessageLength % 4 == 0);
 	assert(dataSubmessageLength % 4 == 0);
@@ -919,6 +945,7 @@ in_ddsiStreamWriterImplAppendData(
 
         do {
             IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling serializeData %p", facade);
+
             retState = serializeData(
                 _this,
                 inlineQosSize,
@@ -926,7 +953,8 @@ in_ddsiStreamWriterImplAppendData(
                 &unknownId,
                 discoveryData,
                 facade,
-                message);
+                message,
+                topic);
             IN_BREAK_IF(retState!=IN_RESULT_OK);
             /*IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling appendSentinelSubmessage %p", facade);
             retState = appendSentinelSubmessage(_this);
@@ -939,6 +967,7 @@ in_ddsiStreamWriterImplAppendData(
             result = IN_RESULT_OK;
         } while(0);
 	}
+	c_free(topic);
 
 	return result;
 }
@@ -951,7 +980,7 @@ in_ddsiStreamWriterImplAppendParticipantData(
 		in_connectivityParticipantFacade facade,
 		Coll_List *locatorList)
 {
-    const os_size_t sentinelSize = 0U;//IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+    const os_size_t sentinelSize = 0U;
 
      const in_ddsiGuid guid =
          in_connectivityEntityFacadeGetGuid(
@@ -959,13 +988,12 @@ in_ddsiStreamWriterImplAppendParticipantData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForParticipantCalculateSize(
                  facade,
                  discoveryData);
 
      /* no inlineQos */
-     const os_size_t inlineQosSize = 24U;//
+     const os_size_t inlineQosSize = 24U;
 
      in_result result = IN_RESULT_ERROR;
 
@@ -1011,10 +1039,10 @@ in_ddsiStreamWriterImplAppendParticipantData(
                  facade);
             IN_BREAK_IF(retState != IN_RESULT_OK);
 
-           //  retState =
-           //      appendSentinelSubmessage(_this);
-           //  IN_BREAK_IF(retState!=IN_RESULT_OK);
-
+            /*
+             retState = appendSentinelSubmessage(_this);
+             IN_BREAK_IF(retState!=IN_RESULT_OK);
+             */
             retState = sendCurrentBufferToMultiple(_this, locatorList);
             IN_BREAK_IF(retState!=IN_RESULT_OK);
 
@@ -1056,7 +1084,7 @@ in_ddsiParameterListForParticipantMessageCalculateSize(
 
     assert(result % 4 == 0);
 
-    return 24;//TODO: patrick will fix this
+    return 24;/* TODO: Calculate actual size.*/
 }
 static in_result
 in_ddsiStreamWriterImplAppendParticipantMessage(
@@ -1066,12 +1094,12 @@ in_ddsiStreamWriterImplAppendParticipantMessage(
     in_locator locator)
 {
     in_result result = IN_RESULT_ERROR;
-    os_size_t sentinelSize = 0U;//IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+    os_size_t sentinelSize = 0U;
     in_ddsiGuid guid;
     in_long nofOctets;
     os_size_t serializedPayloadSize;
     /* no inlineQos */
-    os_size_t inlineQosSize = 24U;//
+    os_size_t inlineQosSize = 24U;
     /* Note: do not store the locatorList permanently, it
      * might be modified or erased by owner
      */
@@ -1088,8 +1116,10 @@ in_ddsiStreamWriterImplAppendParticipantMessage(
 
     guid = in_connectivityEntityFacadeGetGuid(in_connectivityEntityFacade(facade));
 
-     /* payload is encoded as PL_CDR_LE/BE */
-    serializedPayloadSize = IN_DDSI_ENCAPSULATION_HEADER_SIZE + in_ddsiParameterListForParticipantMessageCalculateSize(_this, facade, destGuidPrefix);
+     /* payload of this message doesn't have an encoding, so don't add
+      * encapsulation header size!
+      */
+    serializedPayloadSize = in_ddsiParameterListForParticipantMessageCalculateSize(_this, facade, destGuidPrefix);
     dataSubmessageLength = in_ddsiSubmessageDataSerializedSize(inlineQosSize, serializedPayloadSize);
     /* always keep space at end for the terminating sentinel */
     totalLength = timestampSubmessageLength + dataSubmessageLength + sentinelSize;
@@ -1138,7 +1168,7 @@ in_ddsiStreamWriterImplAppendPublicationData(
         in_connectivityWriterFacade facade,
         Coll_List *locatorList)
 {
-    const os_size_t sentinelSize = 0U;//IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+    const os_size_t sentinelSize = 0U;
 
     const in_ddsiGuid guid =
          in_connectivityEntityFacadeGetGuid(
@@ -1146,7 +1176,6 @@ in_ddsiStreamWriterImplAppendPublicationData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForPublicationCalculateSize(
                  facade,
                  discoveryData);
@@ -1223,7 +1252,7 @@ in_ddsiStreamWriterImplAppendSubscriptionData(
         in_connectivityReaderFacade facade,
         Coll_List *locatorList)
 {
-    const os_size_t sentinelSize = 0U;// IN_DDSI_SUBMESSAGE_HEADER_SIZE;
+    const os_size_t sentinelSize = 0U;
 
     const in_ddsiGuid guid =
          in_connectivityEntityFacadeGetGuid(
@@ -1231,11 +1260,10 @@ in_ddsiStreamWriterImplAppendSubscriptionData(
 
      /* payload is encoded as PL_CDR_LE/BE */
      const os_size_t serializedPayloadSize =
-         IN_DDSI_ENCAPSULATION_HEADER_SIZE +
          in_ddsiParameterListForSubscriptionCalculateSize(facade, discoveryData);
 
      /* no inlineQos */
-     const os_size_t inlineQosSize = 24U;//
+     const os_size_t inlineQosSize = 24U;
 
      in_result result = IN_RESULT_ERROR;
 
@@ -1281,11 +1309,11 @@ in_ddsiStreamWriterImplAppendSubscriptionData(
                          facade,
                          writerGuidPrefix);
              IN_BREAK_IF(retState!=IN_RESULT_OK);
-
-           ///  retState =
-          ///       appendSentinelSubmessage(_this);
-          ///   IN_BREAK_IF(retState!=IN_RESULT_OK);
-
+             /*
+             retState =
+                 appendSentinelSubmessage(_this);
+             IN_BREAK_IF(retState!=IN_RESULT_OK);
+             */
              retState =
                  sendCurrentBufferToMultiple(_this, locatorList);
              IN_BREAK_IF(retState!=IN_RESULT_OK);
@@ -1659,7 +1687,7 @@ in_streamWriterAppendPublicationData_i(
 
 
 static void
-in_ddsiStreamReaderImplGetBuffer(
+in_ddsiStreamWriterImplGetBuffer(
         in_ddsiStreamWriterImpl _this,
         in_data* bufferPtr,
         os_uint32* length)
@@ -1693,7 +1721,7 @@ in_messageTransformerGetBuffer_i(
         c_voidp userData)
 {
     /* narrow */
-    in_ddsiStreamReaderImplGetBuffer(
+    in_ddsiStreamWriterImplGetBuffer(
             in_ddsiStreamWriterImpl(userData),
             bufferPtr,
             length);

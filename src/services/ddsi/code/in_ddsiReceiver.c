@@ -71,20 +71,16 @@ in_ddsiReceiverInit(in_ddsiReceiver _this,
 
         /* get constant reference to sender's locator */
         sender = in_abstractReceiveBufferGetSender(receiveBuffer);
-        if (sender && in_locatorIsValid(sender)) {
+        if (sender) {
             /* deep copy */
-            senderClone = in_locatorClone(sender);
-            if (!senderClone) {
-                /* out of memory */
-                result = OS_FALSE;
-            } else {
-                in_locatorListPushBack(&(_this->unicastReplyLocatorList),
-                        senderClone);
-                /* TODO: So far this reference is not a valid reply locator for OpenSplice, we must
-                 * share a single socket between transportSend and transportReceiver */
-            }
+        	if(in_locatorIsValid(sender))
+        	{
+        		in_locatorListPushBack(&(_this->unicastReplyLocatorList), sender);
+				/* TODO: So far this reference is not a valid reply locator for OpenSplice, we must
+				 * share a single socket between transportSend and transportReceiver */
+        	}
+        	in_locatorFree(sender);
         }
-
         _this->haveTimestamp = OS_FALSE;
         _this->timestamp = zeroTime;
 

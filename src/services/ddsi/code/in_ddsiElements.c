@@ -416,7 +416,8 @@ void in_ddsiTimeAsCTime(in_ddsiTime self, c_time *ctime, os_boolean duration) {
         if (duration) {
             result.seconds = ((os_uint32) (self->seconds));
         } else {
-            result.seconds = ((os_uint32) (self->seconds));//TODO: Check how to represent time - IN_EPOCH_JAN_1970;
+        	/*TODO: Check how to represent time - IN_EPOCH_JAN_1970;*/
+            result.seconds = ((os_uint32) (self->seconds));
         }
 
         result.nanoseconds = dtemp * (double) 1e9;
@@ -698,7 +699,7 @@ in_ddsiSequenceNumberSetSetNthFlag(
     assert(nthBitInSlot < NBITS_PER_SLOT);
 
     /* set the flag at specific index */
-    _this->bitmap[slot] |= 0xffffffff;//(1 << nthBitInSlot);
+    _this->bitmap[slot] |= 0xffffffff;/*(1 << nthBitInSlot);*/
     _this->numBits = IN_MAX(_this->numBits, (nthBit+1));
     return OS_TRUE;
 }
@@ -763,13 +764,14 @@ in_ddsiSequenceNumberSetInit(
         assert(sizeof(_this->bitmap)*8 == 4*8*8);
         memset(&(_this->bitmap), 0, sizeof(_this->bitmap));
 
-        /* (FR) AFAICS, RTI defines numbits=0 if base==0 */
-    //    if (base->high != 0 || base->low != 0)
-    //    {
-            /* initialized with valid base, so
-             * set lowest bit and define numBits=1 */
-   //         in_ddsiSequenceNumberSetSetNthFlag(_this, 0);
-    //    }
+        /* (FR) AFAICS, RTI defines numbits=0 if base==0
+        if (base->high != 0 || base->low != 0)
+        {
+            initialized with valid base, so set lowest bit and define numBits=1
+
+            in_ddsiSequenceNumberSetSetNthFlag(_this, 0);
+        }
+        */
         result = OS_TRUE;
     }
 
@@ -1159,8 +1161,11 @@ in_long in_ddsiLocatorSerialize(in_ddsiLocator locator,
     return result;
 }
 
-in_long in_ddsiLocatorInitFromBuffer(in_ddsiLocator self,
-        in_ddsiDeserializer reader) {
+in_long
+in_ddsiLocatorInitFromBuffer(
+	in_ddsiLocator self,
+	in_ddsiDeserializer reader)
+{
     in_long nofOctets;
     in_long result = 0;
 

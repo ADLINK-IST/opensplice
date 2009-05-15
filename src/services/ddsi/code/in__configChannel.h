@@ -30,6 +30,7 @@ extern "C" {
 
 OS_STRUCT(in_configChannel)
 {
+    in_configChannelKind kind;
     in_configDdsiService owningService;
     os_boolean isEnabled;
     os_ushort portNr;
@@ -44,9 +45,9 @@ OS_STRUCT(in_configChannel)
 os_boolean
 in_configChannelInit(
     in_configChannel _this,
+    in_configChannelKind kind,
     os_boolean isEnabled,
-    in_configDdsiService owningService,
-    os_ushort defaultPortNr);
+    in_configDdsiService owningService);
 
 void
 in_configChannelDeinit(
@@ -117,6 +118,10 @@ in_configChannelGetDifferentiatedServicesField(
 os_time
 in_configChannelGetIOTimeout(
 		in_configChannel _this);
+
+in_configChannelKind
+in_configChannelGetKind(
+    in_configChannel _this);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

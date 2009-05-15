@@ -70,9 +70,8 @@ in_endpointDiscoveryDataAddDefaultMulticastLocator(
 {
     os_boolean result;
 
-    in_locatorList *list =
-        &_this->defaultMulticastLocatorList;
-    result = in_locatorListPushBack(list, in_locatorKeep(loc));
+    result = in_locatorListPushBack(&_this->defaultMulticastLocatorList, loc);
+
     return result;
 }
 
@@ -84,9 +83,8 @@ in_endpointDiscoveryDataAddDefaultUnicastLocator(
 {
     os_boolean result;
 
-    in_locatorList *list =
-        &_this->defaultUnicastLocatorList;
-    result = in_locatorListPushBack(list, in_locatorKeep(loc));
+    result = in_locatorListPushBack(&_this->defaultUnicastLocatorList, loc);
+
     return result;
 }
 
@@ -98,9 +96,9 @@ in_endpointDiscoveryDataAddMetatrafficMulticastLocator(
 {
     os_boolean result;
 
-    in_locatorList *list =
-        &_this->metatrafficMulticastLocatorList;
-    result = in_locatorListPushBack(list, in_locatorKeep(loc));
+    in_locatorList *list = &_this->metatrafficMulticastLocatorList;
+    result = in_locatorListPushBack(list, loc);
+
     return result;
 }
 
@@ -112,9 +110,9 @@ in_endpointDiscoveryDataAddMetatrafficUnicastLocator(
 {
     os_boolean result;
 
-    in_locatorList *list =
-        &_this->metatrafficUnicastLocatorList;
-    result = in_locatorListPushBack(list, in_locatorKeep(loc));
+    in_locatorList *list = &_this->metatrafficUnicastLocatorList;
+    result = in_locatorListPushBack(list, loc);
+
     return result;
 }
 

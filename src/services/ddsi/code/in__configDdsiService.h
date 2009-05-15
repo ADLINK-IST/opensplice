@@ -32,8 +32,6 @@
 extern "C" {
 #endif
 
-
-
 /**
  * Macro that allows the implementation of type checking when casting an
  * object. The signature of the 'casting macro' must look like this:
@@ -46,7 +44,7 @@ in_configDdsiServiceNew(
 
 /* takes ownership of the discoverychannel */
 void
-in_configDdsiServiceSetDiscoveryChannelConfig(
+in_configDdsiServiceSetDiscoveryChannel(
     in_configDdsiService _this,
     in_configDiscoveryChannel discoveryChannel);
 
@@ -59,6 +57,15 @@ void
 in_configDdsiServiceSetNetworkId(
     in_configDdsiService _this,
     os_char* networkId);
+
+os_boolean
+in_configDdsiServiceHasDefaultChannel(
+    in_configDdsiService _this);
+
+void
+in_configDdsiServiceSetHasDefaultChannel(
+    in_configDdsiService _this,
+    os_boolean hasDefaultChannel);
 
 os_char*
 in_configDdsiServiceGetName(
@@ -103,6 +110,11 @@ void
 in_configDdsiServiceSetPartitioning(
     in_configDdsiService _this,
     in_configPartitioning partitioning);
+
+void
+in_configDdsiServiceSetTracing(
+    in_configDdsiService _this,
+    in_configTracing tracing);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

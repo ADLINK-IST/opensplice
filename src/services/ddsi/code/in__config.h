@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /* Default settings */
-#define INCF_DEF_GLOBAL_PARTITON   "239.255.0.1"
+#define INCF_DEF_GLOBAL_PARTITION   "239.255.0.1"
 #define INCF_DEF_INTERFACE "first available"
 #define INCF_DEF_DATA_CHANNEL_PORT  (7412)
 #define INCF_DEF_FRAGMENT_SIZE  (1300U)

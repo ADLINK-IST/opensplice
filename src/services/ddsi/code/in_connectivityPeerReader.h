@@ -34,7 +34,7 @@
 
 #define in_connectivityPeerReaderFree(r) in_objectFree(in_object(r))
 
-#define in_connectivityPeerReaderKeep(r) in_objectKeep(in_object(r))
+#define in_connectivityPeerReaderKeep(r) in_connectivityPeerReader(in_objectKeep(in_object(r)))
 
 #define in_connectivityPeerReaderIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_PEER_READER)

@@ -76,6 +76,7 @@ in_transportReceiverReceive_i(
 		in_result *errorState)
 {
 	in_long nofOctets = 0;
+	in_locator sender;
 	in_transportReceiverIBasic obj =
 		in_transportReceiverIBasic(_this);
 
@@ -92,13 +93,15 @@ in_transportReceiverReceive_i(
 			in_receiveBufferNew(obj->fragmentLength);
 	}
 
+	sender = in_abstractReceiveBufferGetSender(in_abstractReceiveBuffer(result));
 	nofOctets =
 		in_socketReceive(obj->socket,
-			in_abstractReceiveBufferGetSender(in_abstractReceiveBuffer(result)), /* in/out */
+			sender, /* in/out */
 			in_abstractReceiveBufferBegin(in_abstractReceiveBuffer(result)),
 			in_abstractReceiveBufferLength(in_abstractReceiveBuffer(result)),
 			isControl, /* out */
 			timeout);
+	in_locatorFree(sender);
 
 	if (nofOctets <= 0) {
 		/* nothing read, or error. Store the data-buffer for next read
@@ -144,7 +147,7 @@ in_transportReceiverReleaseBuffer_i(
 	}
 }
 
-static OS_STRUCT(in_locator)*
+static in_locator
 in_transportReceiverGetUnicastDataLocator_i(
 		in_transportReceiver _this)
 {
@@ -159,7 +162,7 @@ in_transportReceiverGetUnicastDataLocator_i(
 }
 
 
-static OS_STRUCT(in_locator)*
+static in_locator
 in_transportReceiverGetMulticastDataLocator_i(
 		in_transportReceiver _this)
 {
@@ -174,7 +177,7 @@ in_transportReceiverGetMulticastDataLocator_i(
 }
 
 
-static OS_STRUCT(in_locator)*
+static in_locator
 in_transportReceiverGetUnicastControlLocator_i(
 		in_transportReceiver _this)
 {
@@ -194,7 +197,7 @@ in_transportReceiverGetUnicastControlLocator_i(
 }
 
 
-static OS_STRUCT(in_locator)*
+static in_locator
 in_transportReceiverGetMulticastControlLocator_i(
         in_transportReceiver _this)
 {
@@ -218,6 +221,17 @@ in_transportReceiverGetMulticastControlLocator_i(
 static void
 in_objectDeinit_i(in_object _this)
 {
+	in_transportReceiverIBasic impl = in_transportReceiverIBasic(_this);
+
+	if(impl->nextReceiveBuffer)
+	{
+		in_receiveBufferFree(in_receiveBuffer(impl->nextReceiveBuffer));
+	}
+	if(impl->socket)
+	{
+		in_socketFree(impl->socket);
+	}
+
     /* narrow */
 	in_transportReceiverDeinit(
 	        OS_SUPER(in_transportReceiverIBasic(_this)));
