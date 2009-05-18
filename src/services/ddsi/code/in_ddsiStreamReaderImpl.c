@@ -380,11 +380,11 @@ in_ddsiStreamReaderImplProcessAppdefDataPayloadNoData(
 										&(v_messageState(*messageObject)));
 					} else
 					{
-						printf("Unable to copy key values in message\n");
+                        IN_REPORT_WARNING(IN_SPOT, "Unable to copy key values in message.");
 					}
 				} else
 				{
-					printf("Found DATA submessage without serializedPayload and no PID_KEY_HASH inlineQos\n");
+                    IN_REPORT_WARNING(IN_SPOT, "Found DATA submessage without serializedPayload and no PID_KEY_HASH inlineQos.");
 					result = IN_RESULT_ERROR;
 				}
 
