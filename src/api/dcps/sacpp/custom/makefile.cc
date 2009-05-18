@@ -5,12 +5,7 @@ DCPS_API_IDL := dds_dcps.idl
 # Only valid for Unix/Linux type systems.
 OBJ_POSTFIX := .o 
 
-# Identifier for the StandAlone CORBA libraries.
-SPLICE_SA_ORB := DDS_Eorb_3_0_SA
-
 .PRECIOUS: %SplDcps.cpp %Dcps_impl.cpp
-
-include ./orbdeps_sa.mak
 
 # This determines what will be processed 
 
@@ -21,15 +16,11 @@ IDLPP_IDL        = $(TOPIC_IDL:%.idl=%Dcps.idl)
 IDLPP_HDR        = $(IDLPP_OBJ:%.o=%.h) ccpp_$(TOPIC_IDL:%.idl=%.h)
 
 # API Classes.
-API_SRC          = $(wildcard ccpp_*.cpp)
+API_SRC          = $(notdir $(wildcard *.cpp))
 API_OBJ          = $(API_SRC:%.cpp=%.o)
 
-# EORB implementation classes.
-EORB_SRC         = common_cobject.cpp CORBA_LocalObject.cpp
-EORB_OBJ         = common_cobject.o CORBA_LocalObject.o
-
 # All objects
-OBJS = $(IDLPP_OBJ) $(ORB_TOP_OBJ) $(ORB_API_OBJ) $(API_OBJ) $(IDLPP_ORB_OBJ) $(EORB_OBJ)
+OBJS = $(IDLPP_OBJ) $(API_OBJ)
 
 # library target name
 TARGET_DLIB := dcpssacpp
@@ -46,13 +37,13 @@ CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/SACPP
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := CC
 CXXFLAGS := -g -KPIC -mt -xO4
-CPPFLAGS = $(ORB_SA_SELECT_FLAGS) $(ORB_SA_CPP_FLAGS)
+CPPFLAGS = $(CXXINCS)
 
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)
 SPLICE_LIBRARY_PATH := $(OSPL_HOME)/lib
 LD_FLAGS := -G -mt -R -xildoff
-LD_LIBS  := -lrt -ldl -lpthread -lnsl -ldcpsgapi -lgen -lposix4 -lX11 -lXt -lXm $(ORB_LDLIBS)
+LD_LIBS  := -lrt -ldl -lpthread -lnsl -ldcpsgapi -lgen -lposix4 -lX11 -lXt -lXm
 
 # SPLICE IDL preprocessor and preprocessor flags
 IDLPP := idlpp
@@ -60,34 +51,21 @@ IDLPPFLAGS := -P SACPP_API -S -l cpp
 
 #Dependencies
 
-all : copyeorbinc $(TARGET)
-
-$(IDLPP_OBJ): $(IDLPP_ORB_HDR) $(ORB_TOP_HDR) $(ORB_API_HDR)
-
-$(EORB_SRC): copyeorbsrc
-
-copyeorbinc:
-	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
-
-copyeorbsrc:
-	cp $(EORBHOME)/src/*.cpp .
+all : $(TARGET)
 
 #generic rules for IDL preprocessing
 
-$(ORB_TOP_SRC) $(ORB_TOP_HDR) $(IDLPP_IDL) $(IDLPP_SRC) $(IDLPP_HDR) $(IDLPP_ORB_SRC) $(IDLPP_ORB_HDR) : $(TOPIC_IDL)
+$(IDLPP_IDL) $(IDLPP_CPP) $(IDLPP_HDR) : $(TOPIC_IDL)
 	$(IDLPP) $(IDLPPFLAGS) $<
-
-$(ORB_API_SRC) $(ORB_API_HDR): $(DCPS_API_IDL)
-	$(ORB_SA_IDL_COMPILER) $(ORB_SA_IDL_FLAGS) $<
 
 $(TARGET): $(OBJS) 
 	$(LD_SO) -L$(SPLICE_LIBRARY_PATH) $(LD_FLAGS) $(OBJS) $(LD_LIBS) -o $(TARGET)
 	-mkdir -p SACPP/include
 	-mkdir -p SACPP/lib
-	cp $(TOPIC_IDL) $(DCPS_API_IDL) $(ORB_TOP_HDR) $(ORB_API_HDR) $(IDLPP_ORB_HDR) $(IDLPP_HDR) SACPP/include
+	cp $(TOPIC_IDL) $(DCPS_API_IDL) $(IDLPP_HDR) SACPP/include
 	cp $(TARGET) SACPP/lib
 	
 
 clean:
-	-rm $(TARGET) $(OBJS) $(ORB_TOP_SRC) $(ORB_API_SRC) $(IDLPP_IDL) $(IDLPP_SRC) $(IDLPP_ORB_SRC) $(ORB_TOP_HDR) $(ORB_API_HDR) $(IDLPP_ORB_HDR) $(IDLPP_HDR)
+	-rm $(TARGET) $(OBJS) $(IDLPP_IDL) $(IDLPP_CPP) $(IDLPP_HDR)
 	
