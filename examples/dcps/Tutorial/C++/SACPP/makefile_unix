@@ -28,13 +28,8 @@ DCPS_OBJ_FILES = $(patsubst %.cpp, %.o, $(DCPS_SRC_FILES))
 .cpp.o :
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
-all : dirs copyeorbinc exec/Chatter exec/MessageBoard exec/UserLoad
+all : dirs exec/Chatter exec/MessageBoard exec/UserLoad
 	@echo ">>>> all done"
-
-copyeorbinc:
-ifdef EORBHOME
-	cp -r $(EORBHOME)/include/* $(OSPL_HOME)/include/dcps/C++/SACPP/.
-endif
 
 dirs :
 	@mkdir -p bld
