@@ -9,10 +9,11 @@
  *   for full copyright notice and license terms. 
  *
  */
-#ifndef SACPP_ORB_PA_H
-#define SACPP_ORB_PA_H
+#ifndef IDL_GENSACPPTYPEDCLASSIMPL_H
+#define IDL_GENSACPPTYPEDCLASSIMPL_H
 
-#define linux_gcc_x86
+#include "idl_program.h"
 
-#endif /* SACPP_ORB_PA_H */
+idl_program idl_genSACPPTypedClassImplProgram (void);
 
+#endif /* IDL_GENSACPPTYPEDCLASSIMPL_H */

@@ -9,10 +9,13 @@
  *   for full copyright notice and license terms. 
  *
  */
-#ifndef SACPP_ORB_PA_H
-#define SACPP_ORB_PA_H
+#ifndef CCPP_H
+#define CCPP_H
 
-#define linux_gcc_x86
+#include "ccpp_dcps_if.h"
+#include "sacpp_CORBA.h"
+#include "dds_dcps.h"
+#include <orb_abstraction.h>
 
-#endif /* SACPP_ORB_PA_H */
+#endif /* CCPP_H */
 

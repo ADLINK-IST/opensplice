@@ -9,11 +9,11 @@
  *   for full copyright notice and license terms. 
  *
  */
-#ifndef SACPP_ORB_PA_H
-#define SACPP_ORB_PA_H
+#ifndef IDL_GENSACPPTYPEDCLASSDEFS_H
+#define IDL_GENSACPPTYPEDCLASSDEFS_H
 
-#define win32_msdev_x86
-#include "os_if.h"
+#include "idl_program.h"
 
-#endif /* SACPP_ORB_PA_H */
+idl_program idl_genSACPPTypedClassDefsProgram(void);
 
+#endif /* IDL_GENSACPPTYPEDCLASSDEFS_H */

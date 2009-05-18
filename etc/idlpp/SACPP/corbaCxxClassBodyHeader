@@ -1,0 +1,7 @@
+#include "gapi.h"
+#include "gapi_loanRegistry.h"
+#include "$(basename)SplDcps.h"
+#include "$(basename)Dcps_impl.h"
+#include "ccpp_DataReader_impl.h"
+$(DLL_IMPORTEXPORT_INCLUDE)
+

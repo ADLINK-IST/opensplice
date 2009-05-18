@@ -14,7 +14,6 @@ bison_check || ERRS=1
 flex_check || ERRS=1
 javac_check || ERRS=1
 tao_check || ERRS=1
-eorb_check || ERRS=1
 
 if [ -z $REPORT ]
 then

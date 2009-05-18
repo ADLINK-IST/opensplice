@@ -309,11 +309,6 @@ set_rts_envs ()
 
 set_hde_envs ()
 {
-    if [ -z "$HOST_EORBENV" ]
-    then
-        HOST_EORBENV=$EORBENV
-    fi
-    
     target=$1
     suffix_exe=""
     suffix_script=""
@@ -483,7 +478,7 @@ install_hde_target ()
     then
         printf "*       For SACPP ... "
         mkdir ${HDE_dir}/etc/idlpp/SACPP
-        cp ${OSPL_HOME}/etc/idlpp/SACPP/corba* ${HDE_dir}/etc/idlpp/SACPP/
+        cp ${OSPL_HOME}/etc/idlpp/SACPP/* ${HDE_dir}/etc/idlpp/SACPP/
         echo "Ready"
     fi
 
@@ -735,13 +730,11 @@ install_hde_target ()
             mkdir ${HDE_dir}/include/dcps/C++
         fi
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
+        mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
         cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/sacpp/orb/${SPLICE_SA_ORB}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        if [ -d  ${OSPL_HOME}/src/api/dcps/sacpp/orb_pa/${target} ]
-        then
-            cp ${OSPL_HOME}/src/api/dcps/sacpp/orb_pa/${target}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        fi
         cp ${OSPL_HOME}/src/api/dcps/sacpp/include/*.h ${HDE_dir}/include/dcps/C++/SACPP
+        mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
+        cp ${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h ${HDE_dir}/include/dcps/C++/SACPP/mapping
         cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
         cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/SACPP
         cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h ${HDE_dir}/include/dcps/C++/SACPP
@@ -801,9 +794,9 @@ install_hde_target ()
 
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
+        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
         cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
         cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
-        cp ${OSPL_HOME}/setup/makefiles/orbdeps_sa.mak ${HDE_dir}/custom_lib/sacpp
 
         echo "Ready"
     fi
