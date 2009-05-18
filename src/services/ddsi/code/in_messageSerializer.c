@@ -571,6 +571,8 @@ in_messageSerializerWriteArray(
     assert(type);
     assert(data);
 
+	result = 0;
+
     if (ctype->maxSize > 0) {
         array = data;
         length = ctype->maxSize;

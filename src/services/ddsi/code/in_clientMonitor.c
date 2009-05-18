@@ -128,6 +128,7 @@ in_clientMonitorRun(in_clientMonitor self)
 				participantReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
 				printf("Could not resolve built-in participant reader.\n");
+				participantReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -140,6 +141,7 @@ in_clientMonitorRun(in_clientMonitor self)
 				subscriptionReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
 				printf("Could not resolve built-in subscription reader.\n");
+				subscriptionReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -152,6 +154,7 @@ in_clientMonitorRun(in_clientMonitor self)
 				publicationReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
 				printf("Could not resolve built-in publication reader.\n");
+				publicationReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -275,6 +278,8 @@ in_clientMonitorAttachAndMonitor(
             }
         } else {
             printf("Could not set event mask of waitset.\n");
+            readers = NULL;
+            length = 0;
         }
 
 
