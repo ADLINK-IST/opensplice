@@ -32,7 +32,6 @@ in_ddsiReceiverInit(in_ddsiReceiver _this,
 
     in_long nofOctets = 0;
     in_locator sender = NULL;
-    in_locator senderClone = NULL;
     os_boolean isBigE = OS_TRUE; /* does not matter, the header
                                     is endianess invariant*/
 

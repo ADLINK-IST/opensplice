@@ -929,6 +929,9 @@ in_channelSdpWriterDetermineEntityAction(
     } else if((v_stateTest(sampleState, L_NEW)) || v_stateTest(sampleState, L_READ))
     {
         action = ACTION_NEW;
+    } else
+    {
+    	action = ACTION_DELETED;
     }
 
     return action;

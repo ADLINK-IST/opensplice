@@ -500,8 +500,8 @@ in_configTraverseDdsiServiceElement(
             }
         }
         os_free(serviceName);
+        in_configFinalizeDdsiService(ddsiService);
     }
-    in_configFinalizeDdsiService(ddsiService);
 }
 
 void

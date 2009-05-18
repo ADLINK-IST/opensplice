@@ -649,7 +649,7 @@ in_messageDeserializer__readPrimSwapped(
     assert(data);
 
     /* remove excess padding, if any or needed. The transformer may be renewed! */
-    in_messageDeserializerRemoveCDRPaddingFromStream(_this, size);
+    in_messageDeserializerRemoveCDRPaddingFromStream(_this, dataSize);
 
     srcPtr = in_messageTransformerGetHead(_this);
     if (dataSize <= in_messageTransformerGetAvailable(_this))

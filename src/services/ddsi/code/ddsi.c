@@ -130,12 +130,12 @@ in_serviceMain(
             IN_REPORT_INFO(1, "DDSI networking stopped");
             IN_TRACE(Mainloop, 1, "DDSI networking stopped");
         }
+        u_serviceChangeState(service, STATE_TERMINATED);
+		u_serviceManagerFree(serviceManager);
+		in_objectFree(in_object(admin));
     }
     /* Clean up */
-    u_serviceChangeState(service, STATE_TERMINATED);
-    u_serviceManagerFree(serviceManager);
     u_serviceFree(service);
-    in_objectFree(in_object(admin));
 }
 
 void

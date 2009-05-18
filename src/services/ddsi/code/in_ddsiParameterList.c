@@ -2747,13 +2747,14 @@ serializeKeyHash(
 			break;
 			/*TODO: complete keyHash calculation for all types*/
 			default:
+				copyValue = NULL;
 				r = IN_RESULT_PRECONDITION_NOT_MET;
 				size = 0;
 			break;
 			}
 
 			/*Now copy the big endian value into the key hash*/
-			if(bytesCopied+size <= 16)
+			if(bytesCopied+size <= 16 && copyValue)
 			{
 				memcpy(&(keyHash[bytesCopied]), copyValue, size);
 			} else
