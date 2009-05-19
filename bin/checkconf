@@ -116,13 +116,13 @@ msvs_check ()
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
     if [ -z $COMPILER_VER ]
     then
-        echo "Error - Compiler version cannit be determined"
+        echo "Error - Compiler version cannot be determined"
         return 1
     fi
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
     if [ $CL_MAJOR -lt 14 ]
     then
-        echo "Error - Only .NET 2005 and abovbe supported"
+        echo "Error - Only .NET 2005 and above supported"
         return 1
     fi
     
