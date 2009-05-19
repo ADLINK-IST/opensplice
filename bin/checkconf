@@ -49,17 +49,25 @@ make_check ()
         return 1
     fi
 
-    MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
-    if [ $MAKE_MAJOR -lt 3 ]
-    then
-        echo "Error - Only make 3.80 and above is supported"
-        return 1
-    fi
+    MAKE_V=`make -v 2>/dev/null`
 
-    MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
-    if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
+    if [ -n "$MAKE_V" ]
     then
-        echo "Error - Only make 3.80 and above is supported"
+        MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
+        if [ $MAKE_MAJOR -lt 3 ]
+        then
+            echo "Error - Only make 3.80 and above is supported"
+            return 1
+        fi
+
+        MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
+        if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
+        then
+            echo "Error - Only make 3.80 and above is supported"
+            return 1
+        fi
+    else
+        echo "Error - could not determine the make version"
         return 1
     fi
 
