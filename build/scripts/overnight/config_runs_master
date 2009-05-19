@@ -6,7 +6,7 @@ M   ospli/rhel4d/x86.linux2.6-release 20 heads/OSPL_V4_1_1-branch none
 M   ospli/rhel4d/x86.linux2.6-release-inner 1 heads/OSPL_V4_1_1-branch none
 M   ospli/rhel5a/x86.linux2.6-dev 20 heads/OSPL_V4_1_1-branch none
 M   ospli/rhel5a/x86.linux2.6-release 20 heads/OSPL_V4_1_1-branch none
-M   ospli/rhel5a/x86.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-branch none
+M   ospli/rhel5a/x86.linux2.6-release-inner 1 heads/OSPL_V4_1_1-branch none
 M   ospli/DDS1-WIN2K3/x86.win32-dev 50 heads/OSPL_V4_1_1-branch none
 M   ospli/DDS1-WIN2K3/x86.win32-release 50 heads/OSPL_V4_1_1-branch none
 M   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 heads/OSPL_V4_1_1-branch none

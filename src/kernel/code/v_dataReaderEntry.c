@@ -334,7 +334,10 @@ v_dataReaderEntryUpdatePurgeLists(
                               numberOfSamples,
                               reader,
                               reader->sampleCount);
-
+    v_statisticsMaxValueSetValue(v_reader,
+                                 maxNumberOfSamples,
+                                 reader,
+                                 reader->sampleCount);
 }
 
 #ifndef NDEBUG

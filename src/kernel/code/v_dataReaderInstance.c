@@ -340,23 +340,23 @@ v_dataReaderInstanceInsert(
                 if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
                     if (qos->lifecycle.enable_invalid_samples) {
                     	if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED)) {
-							if (_this->sampleCount > 0) {
-									v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
-							} else {
-								if (v_dataReaderInstanceEmpty(_this)) {
-									assert(v_stateTest(_this->instanceState,L_EMPTY));
-									/* No valid nor invalid samples exist,
-									 * so need to create an invalid sample as
-									 * sample info carier to pass state change
-									 * at nest read or take operation.
-									 */
-									sample = v_dataReaderSampleNew(_this,message);
-									v_dataReaderInstanceStateClear(_this, L_EMPTY);
-									v_dataReaderInstanceSetHead(_this,sample);
-									v_dataReaderInstanceSetTail(_this,sample);
-									v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
-								}
-							}
+                            if (_this->sampleCount > 0) {
+                                v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                            } else {
+                                if (v_dataReaderInstanceEmpty(_this)) {
+                                    assert(v_stateTest(_this->instanceState,L_EMPTY));
+                                    /* No valid nor invalid samples exist,
+                                     * so need to create an invalid sample as
+                                     * sample info carier to pass state change
+                                     * at nest read or take operation.
+                                     */
+                                    sample = v_dataReaderSampleNew(_this,message);
+                                    v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                                    v_dataReaderInstanceSetHead(_this,sample);
+                                    v_dataReaderInstanceSetTail(_this,sample);
+                                    v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                                }
+                            }
                     	}
                     }
                     v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
