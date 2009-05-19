@@ -130,6 +130,37 @@ Coll_List_popBack(
     return object;
 }
 
+
+void *
+Coll_List_popFront(
+    Coll_List *_this)
+{
+    Coll_Iter *element_to_remove;
+    void *object = NULL;
+
+    assert(_this);
+
+    element_to_remove = _this->_first_element;
+
+    if (element_to_remove){
+        object = Coll_Iter_getObject(element_to_remove);
+
+        /*  detach element from linked list */
+        _this->_first_element = Coll_Iter_getNext(element_to_remove);
+        if (_this->_first_element){
+          Coll_Iter_setPrev(_this->_first_element, NULL);
+        } else {
+          _this->_last_element = NULL;
+        }
+        _this->_nr_elements--;
+
+        /*  delete the element */
+        Coll_Iter_delete(element_to_remove);
+
+    }
+    return object;
+}
+
 void *
 Coll_List_getObject(
     Coll_List *_this,
