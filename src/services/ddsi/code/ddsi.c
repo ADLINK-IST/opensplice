@@ -5,6 +5,7 @@
 #include "in_report.h"
 #include "in__config.h"
 #include "in_controller.h"
+#include "in_connectivityAdmin.h"
 
 static void
 in_splicedaemonListener(
@@ -51,7 +52,8 @@ main(
            "DDSI networking main loop",
            "Usage: ddsi name <configuration-URI>");
     }
-
+    assert(in_objectValidate(0));
+    printf("%s is gone...\n", argv[1]);
     return 0;
 
 }
@@ -69,6 +71,7 @@ in_serviceMain(
     v_duration leasePeriod;
     os_time sleepTime;
     os_boolean terminate = OS_FALSE;
+    in_connectivityAdmin admin;
 
     assert(serviceName);
     assert(uri);
@@ -90,6 +93,7 @@ in_serviceMain(
         /* Ask service manager for splicedaemon state */
         serviceManager = u_serviceManagerNew(u_participant(service));
 
+        admin = in_connectivityAdminGetInstance();
         /* Create the controller which starts the updating */
         controller = in_controllerNew(service);
         if (controller)
@@ -104,6 +108,7 @@ in_serviceMain(
             /* Get sleeptime from configuration */
             in_retrieveLeaseSettings(&leasePeriod, &sleepTime);
 
+            u_participantRenewLease(u_participant(service), leasePeriod);
             /* Loop until termination is requested */
             u_serviceWatchSpliceDaemon(
                 service,
@@ -117,15 +122,19 @@ in_serviceMain(
                 /* Wait before renewing again */
                 os_nanoSleep(sleepTime);
             }
+            leasePeriod.seconds = 20;
+            u_participantRenewLease(u_participant(service), leasePeriod);
+            u_serviceChangeState(service, STATE_TERMINATING);
             in_controllerStop(controller);
             in_controllerFree(controller);
             IN_REPORT_INFO(1, "DDSI networking stopped");
             IN_TRACE(Mainloop, 1, "DDSI networking stopped");
         }
+        u_serviceChangeState(service, STATE_TERMINATED);
+		u_serviceManagerFree(serviceManager);
+		in_objectFree(in_object(admin));
     }
     /* Clean up */
-    u_serviceChangeState(service, STATE_TERMINATED);
-    u_serviceManagerFree(serviceManager);
     u_serviceFree(service);
 }
 

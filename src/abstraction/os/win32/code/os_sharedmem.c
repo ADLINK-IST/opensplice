@@ -21,6 +21,7 @@
 
 #include <os_heap.h>
 #include <os_report.h>
+#include <os_thread.h>
 #include <code/os__debug.h>
 
 #include <assert.h>
@@ -170,7 +171,21 @@ os_findKeyFile(
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        OS_REPORT_1(OS_ERROR, "os_findKeyFile", 0, "Could not find any key file: %s", key_file_name);
+        /* Try to communicate error message via thread-specific memory */
+#define ERR_MESSAGE "os_findKeyFile: Could not find any key file: %s"
+        char *message;
+        unsigned int messageSize;
+
+        messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
+        /* Free any existing thread specific warnings */
+        os_threadMemFree(OS_WARNING);
+        message = (char *)os_threadMemMalloc(OS_WARNING, messageSize);
+        if (message) {
+            snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
+        } else {
+            /* Allocation failed, use report mechanism */
+            OS_REPORT_1(OS_WARNING, "os_findKeyFile", 0, "Could not find any key file: %s", key_file_name);
+        }
         return NULL;
     }
 

@@ -102,6 +102,7 @@ in_receiveBufferReset(in_receiveBuffer _this)
 
 	in_abstractReceiveBufferSetLength(OS_SUPER(_this), _this->bufferLength);
 	/* The refcount must be 1, lifecycle of locator is bound to databuffer */
+	in_locatorFree(embeddedLocator);
 	assert(in_objectGetRefCount(in_object(embeddedLocator)) == 1);
 }
 

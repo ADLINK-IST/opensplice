@@ -66,15 +66,15 @@ OS_STRUCT(in_socket) {
     /* Control address corresponding to this interface */
     /* struct sockaddr_in sockAddrControl; */
     /* Default address to send data to */
-    OS_STRUCT(in_locator) dataUnicastLocator;
-    OS_STRUCT(in_locator) dataMulticastLocator;
+    in_locator dataUnicastLocator;
+    in_locator dataMulticastLocator;
 
     /* Parameters idenfitifying socket for control messages (acks etc) */
     os_boolean supportsControl;
     os_socket socketControl;
     /* defined in case of "supportsControl==OS_TRUE" */
-    OS_STRUCT(in_locator) controlUnicastLocator;
-    OS_STRUCT(in_locator) controlMulticastLocator;
+    in_locator controlUnicastLocator;
+    in_locator controlMulticastLocator;
 
     /* Caching for select statement */
     fd_set sockSet;
@@ -149,7 +149,7 @@ in_socketGetUnicastDataLocator(
     in_locator result = NULL;
 
     if (sock) {
-        result = &(sock->dataUnicastLocator);
+        result = in_locatorKeep(sock->dataUnicastLocator);
     }
 
     return result;
@@ -162,7 +162,7 @@ in_socketGetMulticastDataLocator(
     in_locator result = NULL;
 
     if (sock) {
-        result = &(sock->dataMulticastLocator);
+        result = in_locatorKeep(sock->dataMulticastLocator);
     }
 
     return result;
@@ -175,7 +175,7 @@ in_socketGetUnicastControlLocator(
     in_locator result = NULL;
 
     if (sock && sock->supportsControl) {
-        result = &(sock->controlUnicastLocator);
+        result = in_locatorKeep(sock->controlUnicastLocator);
     }
 
     return result;
@@ -189,7 +189,7 @@ in_socketGetMulticastControlLocator(
     in_locator result = NULL;
 
     if (sock && sock->supportsControl) {
-        result = &(sock->controlMulticastLocator);
+        result = in_locatorKeep(sock->controlMulticastLocator);
     }
 
     return result;
@@ -442,7 +442,7 @@ in_socketBind(
 
         /* Transform to "struct sockaddr" format of same kind (v4 or v6)
          * but with unspecified, local IP address */
-		in_locatorToSockaddrForAnyAddress(&(sock->dataUnicastLocator),
+		in_locatorToSockaddrForAnyAddress(sock->dataUnicastLocator,
 				(struct sockaddr*)&bindAddress);
 
         /* bindAddress = sock->sockAddrPrimary;
@@ -462,7 +462,7 @@ in_socketBind(
                                "set socket reuse option", "setsockopt");
 
                 /* this code abstracts from IPv4 and IPv6 */
-                in_locatorToSockaddrForAnyAddress(&(sock->controlUnicastLocator),
+                in_locatorToSockaddrForAnyAddress(sock->controlUnicastLocator,
 							(struct sockaddr*) &bindAddress);
 
                 /*bindAddress = sock->sockAddrControl;
@@ -559,7 +559,7 @@ in_socketNew(
     	in_configChannelGetPathName(configChannel);
     os_int addressFamily;
 
-    assert(portNr < UINT16_MAX);
+    assert(portNr < IN_USHORT_MAX);
 	assert(defaultAddress != NULL);
 	assert(addressLookingFor != NULL);
 
@@ -638,17 +638,19 @@ in_socketNew(
             break;
         }
 
-        in_locatorInit(&(result->dataUnicastLocator),
-        		portNr, &(result->sockAddrPrimary));
-        in_locatorInit(&(result->dataMulticastLocator),
-        		portNr, &(result->sockAddrMulti));
+		result->dataUnicastLocator = in_locatorNew(portNr, &(result->sockAddrPrimary));
+		result->dataMulticastLocator = in_locatorNew(portNr, &(result->sockAddrMulti));
 
         if (supportsControl) {
-        	in_locatorInit(&(result->controlUnicastLocator),
-        			portNrControl, &(result->sockAddrPrimary));
+        	result->controlUnicastLocator = in_locatorNew(portNrControl,
+        		&(result->sockAddrPrimary));
+        	result->controlMulticastLocator = in_locatorNew(portNrControl,
+        		&(result->sockAddrMulti));
         	/* \todo checkme, do we need multicast control transport */
-        	in_locatorInit(&(result->controlMulticastLocator),
-        			portNrControl, &(result->sockAddrMulti));
+        } else
+        {
+        	result->controlUnicastLocator = NULL;
+			result->controlMulticastLocator = NULL;
         }
 
         if (receiving) {
@@ -693,8 +695,8 @@ in_socketNew(
 
 #ifdef OS_SOCKET_BIND_FOR_MULTICAST
         	/* Fix for windows: Bind to socket before setting Multicast options */
-        	if (success && addressType==IN_TYPE_MULTICAST) {
-        		success = nw_socketBind(sock);
+        	if (success && addressType==IN_ADDRESS_TYPE_MULTICAST) {
+        		success = in_socketBind(result);
         	}
 #endif
             if (success) {
@@ -752,7 +754,7 @@ in_socketDuplexNew(
     	in_configChannelGetPathName(configChannel);
     os_int addressFamily;
 
-    assert(portNr < UINT16_MAX);
+    assert(portNr < IN_USHORT_MAX);
 	assert(defaultAddress != NULL);
 	assert(addressLookingFor != NULL);
 
@@ -831,17 +833,17 @@ in_socketDuplexNew(
             break;
         }
 
-        in_locatorInit(&(result->dataUnicastLocator),
-        		portNr, &(result->sockAddrPrimary));
-        in_locatorInit(&(result->dataMulticastLocator),
-        		portNr, &(result->sockAddrMulti));
+        result->dataUnicastLocator = in_locatorNew(portNr, &(result->sockAddrPrimary));
+        result->dataMulticastLocator = in_locatorNew(portNr, &(result->sockAddrMulti));
 
-        if (supportsControl) {
-        	in_locatorInit(&(result->controlUnicastLocator),
-        			portNrControl, &(result->sockAddrPrimary));
-        	/* \todo checkme, do we need multicast control transport */
-        	in_locatorInit(&(result->controlMulticastLocator),
-        			portNrControl, &(result->sockAddrMulti));
+        if (supportsControl)
+        {
+        	result->controlUnicastLocator = in_locatorNew(portNrControl, &(result->sockAddrPrimary));
+			result->controlMulticastLocator = in_locatorNew(portNrControl, &(result->sockAddrMulti));
+        } else
+        {
+        	result->controlUnicastLocator = NULL;
+			result->controlMulticastLocator = NULL;
         }
 
         /* Set option for custom receive buffer size */
@@ -930,22 +932,21 @@ in_socketDeinit(
     os_result retVal;
 
     if (sock) {
-        in_locatorDeinit(&(sock->dataUnicastLocator));
-        in_locatorDeinit(&(sock->dataMulticastLocator));
+        in_locatorFree(sock->dataUnicastLocator);
+        in_locatorFree(sock->dataMulticastLocator);
 
         retVal = os_sockFree(sock->socketData);
         IN_REPORT_SOCKFUNC(2, retVal,
             "release socket resources", "close");
         if ((retVal == os_resultSuccess) && (sock->supportsControl)) {
-            in_locatorDeinit(&(sock->controlUnicastLocator));
-            in_locatorDeinit(&(sock->controlMulticastLocator));
+            in_locatorFree(sock->controlUnicastLocator);
+            in_locatorFree(sock->controlMulticastLocator);
 
             retVal = os_sockFree(sock->socketControl);
             IN_REPORT_SOCKFUNC(2, retVal,
                 "release socket resources", "close");
         }
         os_free(sock->name);
-        os_free(sock);
     }
     /* Not interested in any result */
     /* return result */
@@ -993,6 +994,7 @@ in_socketSendDataTo(
                       in_addressToString(in_locatorGetIp(receiver), buf, 50)
                       ,in_locatorGetPort(receiver));
     IN_HEXDUMP("in_socketSendDataTo", 0, buffer, length);
+    os_free(buf);
     /* Then do the writing */
     IN_PROF_LAPSTART(SendTo);
     in_locatorToSockaddr(receiver, &destAddr);

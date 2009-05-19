@@ -127,7 +127,8 @@ in_clientMonitorRun(in_clientMonitor self)
 			if(length == 1){
 				participantReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
-				printf("Could not resolve built-in participant reader.\n");
+			    IN_REPORT_WARNING(IN_SPOT, "Could not resolve built-in participant reader.");
+				participantReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -139,7 +140,8 @@ in_clientMonitorRun(in_clientMonitor self)
 			if(length == 1){
 				subscriptionReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
-				printf("Could not resolve built-in subscription reader.\n");
+			    IN_REPORT_WARNING(IN_SPOT, "Could not resolve built-in subscription reader.");
+				subscriptionReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -151,7 +153,8 @@ in_clientMonitorRun(in_clientMonitor self)
 			if(length == 1){
 				publicationReader = (u_dataReader)c_iterTakeFirst(readers);
 			} else {
-				printf("Could not resolve built-in publication reader.\n");
+			    IN_REPORT_WARNING(IN_SPOT, "Could not resolve built-in publication reader.");
+				publicationReader = NULL;
 				result = FALSE;
 			}
 			c_iterFree(readers);
@@ -166,44 +169,43 @@ in_clientMonitorRun(in_clientMonitor self)
 				if((uresult != U_RESULT_OK) &&
 				   (uresult != U_RESULT_DETACHING))
 				{
-					printf("Abnormal termination...\n");
+                    IN_REPORT_WARNING(IN_SPOT, "Abnormal termination.");
 					result = FALSE;
 				} else {
-					printf("Deleting entities...\n");
 				}
 			}
 			/*Delete datareaders*/
 			uresult = u_dataReaderFree(participantReader);
 
 			if(uresult != U_RESULT_OK){
-				printf("Deletion of participant reader failed.\n");
+                IN_REPORT_WARNING(IN_SPOT, "Deletion of participant reader failed.");
 				result = FALSE;
 			}
 			uresult = u_dataReaderFree(subscriptionReader);
 
 			if(uresult != U_RESULT_OK){
-				printf("Deletion of subscription reader failed.\n");
+                IN_REPORT_WARNING(IN_SPOT, "Deletion of subscription reader failed.");
 				result = FALSE;
 			}
 			uresult = u_dataReaderFree(publicationReader);
 
 			if(uresult != U_RESULT_OK){
-				printf("Deletion of publication reader failed.\n");
+                IN_REPORT_WARNING(IN_SPOT, "Deletion of publication reader failed.");
 				result = FALSE;
 			}
 			/*Delete subscriber*/
 			uresult = u_subscriberFree(subscriber);
 
 			if(uresult != U_RESULT_OK){
-				printf("Deletion of subscriber failed.\n");
+                IN_REPORT_WARNING(IN_SPOT, "Deletion of subscriber failed.");
 				result = FALSE;
 			}
 		} else {
-			printf("Could not create subscriber.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Could not create subscriber.");
 			result = FALSE;
 		}
 	} else {
-		printf("Could not create participant.\n");
+        IN_REPORT_WARNING(IN_SPOT, "Could not create participant.");
 		result = FALSE;
 	}
     return result;
@@ -267,14 +269,16 @@ in_clientMonitorAttachAndMonitor(
                             waitset, (u_entity)dataReader, (u_entity)dataReader);
 
                     if(result != U_RESULT_OK){
-                        printf("Could not attach datareader to waitset.\n");
+                        IN_REPORT_WARNING(IN_SPOT, "Could not attach datareader to waitset.");
                     }
                 } else {
-                    printf("Could not set event mask of datareader.\n");
+                    IN_REPORT_WARNING(IN_SPOT, "Could not set event mask of datareader.");
                 }
             }
         } else {
-            printf("Could not set event mask of waitset.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Could not set event mask of waitset.");
+            readers = NULL;
+            length = 0;
         }
 
 
@@ -293,10 +297,10 @@ in_clientMonitorAttachAndMonitor(
         result = u_waitsetFree(waitset);
 
         if(result != U_RESULT_OK){
-            printf("Deletion of waitset failed.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Deletion of waitset failed.");
         }
     } else {
-        printf("Could not create waitset.\n");
+        IN_REPORT_WARNING(IN_SPOT, "Could not create waitset.");
     }
 
     return result;
@@ -337,9 +341,10 @@ in_clientMonitorStartMonitoring(
 
     if(topic){
         result = u_entityAction(u_entity(topic), resolveOffset, &participantOffset);
+        u_entityFree(u_entity(topic));
     } else {
         result = U_RESULT_INTERNAL_ERROR;
-        printf("Could not resolve participant info offset.\n");
+        IN_REPORT_WARNING(IN_SPOT, "Could not resolve participant info offset.");
     }
     c_iterFree(topics);
 
@@ -349,9 +354,10 @@ in_clientMonitorStartMonitoring(
 
         if(topic){
             result = u_entityAction(u_entity(topic), resolveOffset, &publicationOffset);
+            u_entityFree(u_entity(topic));
         } else {
             result = U_RESULT_INTERNAL_ERROR;
-            printf("Could not resolve publication info offset.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Could not resolve publication info offset.");
         }
         c_iterFree(topics);
     }
@@ -362,9 +368,10 @@ in_clientMonitorStartMonitoring(
 
         if(topic){
             result = u_entityAction(u_entity(topic), resolveOffset, &subscriptionOffset);
+            u_entityFree(u_entity(topic));
         } else {
             result = U_RESULT_INTERNAL_ERROR;
-            printf("Could not resolve subscription info offset.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Could not resolve subscription info offset.");
         }
         c_iterFree(topics);
     }
@@ -375,7 +382,7 @@ in_clientMonitorStartMonitoring(
         timeout.seconds     = 1;
         timeout.nanoseconds = 0;
 #endif
-        printf("Collecting initial entities...\n");
+        IN_REPORT_WARNING(IN_SPOT, "Collecting initial entities.");
         result = in_clientMonitorHandleParticipant(self,
         		participantReader,
         		participantOffset);
@@ -391,15 +398,15 @@ in_clientMonitorStartMonitoring(
                 		subscriptionOffset);
 
                 if(result == U_RESULT_OK){
-                    printf("Waiting for entities to be created/deleted...\n");
+                    IN_REPORT_WARNING(IN_SPOT, "Waiting for entities to be created/deleted.");
                 } else {
-                    printf("Could not collect initial subscriptions...\n");
+                    IN_REPORT_WARNING(IN_SPOT, "Could not collect initial subscriptions.");
                 }
             } else {
-                printf("Could not collect initial publications...\n");
+                IN_REPORT_WARNING(IN_SPOT, "Could not collect initial publications.");
             }
         } else {
-            printf("Could not collect initial participants...\n");
+            IN_REPORT_WARNING(IN_SPOT, "Could not collect initial participants.");
         }
     }
 
@@ -442,25 +449,24 @@ in_clientMonitorStartMonitoring(
                                     publicationReader,
                                     publicationOffset);
                         } else {
-                            printf("This is impossible.\n");
+                            IN_REPORT_WARNING(IN_SPOT, "This is impossible.");
                             result = U_RESULT_INTERNAL_ERROR;
                         }
                     } else {
-                        printf("DATA_AVAILABLE (%d) but no entity.\n",
-                                event->events);
+                        IN_REPORT_WARNING_1(IN_SPOT, "DATA_AVAILABLE (%d) but no entity.",event->events);
                     }
                 } else {
-                    printf("Received unexpected event %d.\n", event->events);
+                    IN_REPORT_WARNING_1(IN_SPOT, "Received unexpected event %d.", event->events);
                     result = U_RESULT_INTERNAL_ERROR;
                 }
                 u_waitsetEventFree(event);
                 event = (u_waitsetEvent)(c_iterTakeFirst(events));
             }
         } else if(result == U_RESULT_DETACHING){
-            printf("Starting termination now...\n");
+            IN_REPORT_WARNING(IN_SPOT, "Starting termination now.");
             terminate = OS_TRUE;
         } else {
-            printf("Waitset wait failed.\n");
+            IN_REPORT_WARNING(IN_SPOT, "Waitset wait failed.");
             terminate = OS_TRUE;
         }
         if(events){/* events may be null if waitset was deleted */
@@ -559,8 +565,8 @@ in_clientMonitorHandleSubscription(
             if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
                (0 == strcmp(data->topic_name, "DCPSPublication")) ||
                (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
-               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
-               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+               (0 == strcmp(data->topic_name, "DCPSHeartbeat")) ||
+               (0 == strcmp(data->topic_name, "DCPSSubscription")))
             {
                 ignore = OS_TRUE;
                 IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for subscription.", data->topic_name, data->partition.name[0]);
@@ -610,8 +616,8 @@ in_clientMonitorHandlePublication(
             if((0 == strcmp(data->topic_name, "DCPSTopic")) ||
                (0 == strcmp(data->topic_name, "DCPSPublication")) ||
                (0 == strcmp(data->topic_name, "DCPSParticipant")) ||
-               (0 == strcmp(data->topic_name, "DCPSSubscription")) ||
-               (0 == strcmp(data->topic_name, "DCPSHeartbeat")))
+               (0 == strcmp(data->topic_name, "DCPSHeartbeat")) ||
+               (0 == strcmp(data->topic_name, "DCPSSubscription")))
             {
                 IN_TRACE_2(Send, 2, "Ignoring topic '%s' on partition '%s' for publication.", data->topic_name, data->partition.name[0]);
                 ignore = OS_TRUE;

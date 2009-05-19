@@ -183,7 +183,7 @@ in_channelDataReaderProcessDataFunc(
     kernel = v_objectKernel(channelReader->kernelReader);
     if ( kernel )
     {
-        c_string partitionName;
+        os_char* partitionName;
         v_group group = NULL;
 
         data = in_connectivityPeerWriterGetInfo(peerWriter);
@@ -193,11 +193,15 @@ in_channelDataReaderProcessDataFunc(
          * partition-array
          */
 
-        partitionName =  (c_string)(data->topicData.info.partition.name);
-        if(!partitionName)
+        partitionName =  (os_char*)(data->topicData.info.partition.name[0]);
+
+	if(data->topicData.info.partition.name[0])
+        {
+            partitionName =  os_strdup(data->topicData.info.partition.name[0]);
+        } else
         {
             /* If there was no partition listed, create the default empty string partition */
-            partitionName = c_stringNew(c_getBase(kernel), "");
+            partitionName = os_strdup("");
         }
         group = v_groupSetGet(
             kernel->groupSet,
@@ -210,6 +214,8 @@ in_channelDataReaderProcessDataFunc(
             "in_channelDataReader Process Message (%s,%s)",
             partitionName,
             data->topicData.info.topic_name);
+        os_free(partitionName);
+
         if ( group )
         {
             /* find the entry to obtain the networkId */

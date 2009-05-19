@@ -95,10 +95,16 @@ main (
     int                                        j;
     int                                        jmax;
 
+    printf ("Starting pong example\n");
+    fflush(stdout);
+
     /*
      * Evaluate cmdline arguments
      */
-
+#ifdef INTEGRITY
+    write_partition = "PongWrite";
+    read_partition = "PongRead";
+#else
     if (argc != 1) {
         if (argc != 3) {
             printf ("Invalid.....\n Usage: %s [READ_PARTITION WRITE_PARTITION]\n", argv[0]);
@@ -107,6 +113,7 @@ main (
         read_partition  = argv[1];
         write_partition = argv[2];
     }
+#endif
 
     /*
      * Create WaitSet
@@ -411,5 +418,7 @@ main (
     DDS_free (dwQos);
     DDS_free (drQos);
 
+    printf ("Completed pong example\n");
+    fflush(stdout);
     return 0;
 }

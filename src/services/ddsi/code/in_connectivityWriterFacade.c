@@ -11,6 +11,7 @@
 #include "in_connectivityParticipantFacade.h"
 #include "in_locator.h"
 #include "in_report.h"
+#include "in__ddsiSubscription.h"
 
 OS_STRUCT(in_connectivityWriterFacade)
 {
@@ -24,6 +25,7 @@ OS_STRUCT(in_connectivityWriterFacade)
 
     struct v_publicationInfo info;
     Coll_List locators;
+    os_uint32 partitionCount;
     OS_STRUCT(in_ddsiSequenceNumber) sequenceNumber;
 };
 
@@ -99,7 +101,7 @@ in_connectivityWriterFacadeInit(
     os_boolean success;
     OS_STRUCT(in_ddsiGuid) guid;
     in_ddsiGuidPrefixRef prefix;
-
+    os_uint32 i;
     assert(_this);
 
     prefix =in_connectivityParticipantFacadeGetGuidPrefix(participant);
@@ -108,7 +110,6 @@ in_connectivityWriterFacadeInit(
     guid.entityId.entityKey[0] = info->key.localId & 0xFF;
     guid.entityId.entityKey[1] = (info->key.localId >> 8) & 0xFF;
     guid.entityId.entityKey[2] = (info->key.localId >> 16) & 0xFF;
-    //should determine the following value based on topic and if it has a key or not
 
     if(hasKey)
     {
@@ -132,6 +133,15 @@ in_connectivityWriterFacadeInit(
         Coll_List_init(&_this->locators);
         Coll_Set_init(&_this->matchedReaders, pointerIsLessThen, TRUE);
         _this->sequenceNumber = *seq;
+
+        _this->partitionCount = (os_uint32)c_arraySize(info->partition.name);
+        _this->info.partition.name = os_malloc(_this->partitionCount*
+        	sizeof(c_string));
+
+        for(i=0; i<_this->partitionCount; i++)
+        {
+        	_this->info.partition.name[i] = os_strdup(info->partition.name[i]);
+        }
     }
     return success;
 }
@@ -163,7 +173,34 @@ in_connectivityWriterFacadeDeinit(
     os_free(_this->info.type_name);
     os_free(_this->info.topic_name);
 
+    for(i=0; i<_this->partitionCount; i++)
+	{
+		os_free(_this->info.partition.name[i]);
+	}
+    os_free(_this->info.partition.name);
+
     in_connectivityEntityFacadeDeinit(obj);
+}
+
+os_boolean
+in_connectivityWriterFacadeMatchesPartition(
+	in_connectivityWriterFacade _this,
+	os_char* partition)
+{
+	os_uint32 i;
+	os_boolean result = OS_FALSE;
+
+	if(_this && partition)
+	{
+		for(i=0; i<_this->partitionCount && !result; i++)
+		{
+			if(strcmp(partition, _this->info.partition.name[i]) == 0)
+			{
+				result = OS_TRUE;
+			}
+		}
+	}
+	return result;
 }
 
 struct v_publicationInfo *
@@ -255,6 +292,7 @@ in_connectivityWriterFacadeBuildLocatorList(
     os_uint32 collResult = COLL_OK;
     os_uint32 i;
     os_uint32 size;
+    in_locator loc;
 
     assert(in_connectivityWriterFacadeIsValid(_this));
 
@@ -262,11 +300,9 @@ in_connectivityWriterFacadeBuildLocatorList(
     size = Coll_List_getNrOfElements(&_this->locators);
     for(i = 0; i < size; i++)
     {
-        in_object obj;
-
-        obj = Coll_List_popBack(&_this->locators);
+        loc = in_locator(Coll_List_popBack(&_this->locators));
         /* Must release the ref count of the stored locator! */
-        in_objectFree(obj);
+        in_locatorFree(loc);
     }
     assert(Coll_List_getNrOfElements(&_this->locators) == 0);
 
@@ -493,5 +529,67 @@ in_connectivityWriterFacadeGetSequenceNumber(
     assert(in_connectivityWriterFacadeIsValid(_this));
 
     return &_this->sequenceNumber;
+}
+
+os_uint32
+in_connectivityWriterFacadeGetPartitionCount(
+	in_connectivityWriterFacade _this)
+{
+	assert(in_connectivityWriterFacadeIsValid(_this));
+
+	return _this->partitionCount;
+}
+
+os_boolean
+in_connectivityWriterFacadeMatchesPeerReader(
+	in_connectivityWriterFacade _this,
+	in_connectivityPeerReader reader)
+{
+	os_int32 i, j;
+	os_boolean match;
+	struct v_subscriptionInfo* rinfo;
+
+	assert(in_connectivityWriterFacadeIsValid(_this));
+	assert(in_connectivityPeerReaderIsValid(reader));
+
+	if(_this && reader)
+	{
+		rinfo = &(in_connectivityPeerReaderGetInfo(reader)->topicData.info);
+
+		if(strcmp(_this->info.topic_name, rinfo->topic_name) == C_EQ )
+		{
+			if((_this->partitionCount == 0) &&
+				(c_arraySize(rinfo->partition.name) == 0))
+			{
+				match = OS_TRUE;
+			} else
+			{
+				match = OS_FALSE;
+
+				for(i=0; (i<(os_int32)_this->partitionCount) && !match; i++)
+				{
+					for(j=0; j<c_arraySize(rinfo->partition.name) && !match; j++)
+					{
+						if(strcmp(_this->info.partition.name[i],
+							(c_string)(rinfo->partition.name[j])) == C_EQ)
+						{
+							match = OS_TRUE;
+						}
+					}
+				}
+			}
+			if(match)
+			{
+				  /* TODO: QOS checks must be performed here */
+			}
+		} else
+		{
+			match = OS_FALSE;
+		}
+	} else
+	{
+		match = OS_FALSE;
+	}
+	return match;
 }
 

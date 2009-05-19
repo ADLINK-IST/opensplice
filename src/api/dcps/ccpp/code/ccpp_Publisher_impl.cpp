@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <gapi.h>
@@ -60,7 +60,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
   else
   {
     topic_handle = Topic->__gapi_self;
- 
+
     if (a_listener)
     {
       gapi_listener = gapi_dataWriterListener__alloc();
@@ -104,9 +104,9 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
     if (proceed)
     {
       writer_handle = gapi_publisher_create_datawriter(
-                _gapi_self, 
-                topic_handle, 
-                gapi_dwqos, 
+                _gapi_self,
+                topic_handle,
+                gapi_dwqos,
                 gapi_listener,
                 mask);
 
@@ -121,7 +121,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
           gapi_domainParticipant dp_handle = gapi_publisher_get_participant(_gapi_self);
 
           if (dp_handle)
-          { 
+          {
             gapi_typeSupport ts_handle = gapi_domainParticipant_get_typesupport(dp_handle, typeName);
             void *tsf = gapi_object_get_user_data(ts_handle);
 
@@ -154,7 +154,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
           }
           gapi_free(typeName);
         }
-      } 
+      }
     }
   }
   if (gapi_listener)
@@ -168,7 +168,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
   return DataWriter;
 }
 
-   
+
 DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
   DDS::DataWriter_ptr a_datawriter
 ) THROW_ORB_EXCEPTIONS
@@ -186,6 +186,7 @@ DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
       result = gapi_publisher_delete_datawriter(_gapi_self, dataWriter->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
+        dataWriter->_gapi_self = NULL;
         if (myUD)
         {
           delete myUD;
@@ -204,10 +205,10 @@ DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
     {
       OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
     }
-  } 
+  }
   return result;
 }
-    
+
 DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
   const char * topic_name
 ) THROW_ORB_EXCEPTIONS
@@ -215,7 +216,7 @@ DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
   gapi_dataWriter handle;
   DDS::ccpp_UserData_ptr myUD;
   DDS::DataWriter_ptr dataWriter = NULL;
-  
+
   handle = gapi_publisher_lookup_datawriter(_gapi_self, topic_name);
   if (handle)
   {
@@ -250,13 +251,13 @@ DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
   }
   return dataWriter;
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::delete_contained_entities (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_delete_contained_entities(_gapi_self, DDS::ccpp_CallBack_DeleteUserData, NULL);
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::set_qos (
   const DDS::PublisherQos & qos
 ) THROW_ORB_EXCEPTIONS
@@ -284,7 +285,7 @@ DDS::ReturnCode_t DDS::Publisher_impl::set_qos (
   }
   return result;
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::get_qos (
   DDS::PublisherQos & qos
 ) THROW_ORB_EXCEPTIONS
@@ -375,25 +376,25 @@ DDS::PublisherListener_ptr DDS::Publisher_impl::get_listener (
   }
   return result;
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::suspend_publications (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_suspend_publications(_gapi_self);
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::resume_publications (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_resume_publications(_gapi_self);
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::begin_coherent_changes (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_begin_coherent_changes(_gapi_self);
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::end_coherent_changes (
 ) THROW_ORB_EXCEPTIONS
 {
@@ -405,11 +406,11 @@ DDS::ReturnCode_t DDS::Publisher_impl::wait_for_acknowledgments (
 ) THROW_ORB_EXCEPTIONS
 {
     gapi_duration_t gapi_max_wait;
-    
+
     ccpp_Duration_copyIn(max_wait, gapi_max_wait);
     return gapi_publisher_wait_for_acknowledgments(_gapi_self, &gapi_max_wait);
 }
-    
+
 DDS::DomainParticipant_ptr DDS::Publisher_impl::get_participant (
 ) THROW_ORB_EXCEPTIONS
 {
@@ -441,7 +442,7 @@ DDS::DomainParticipant_ptr DDS::Publisher_impl::get_participant (
   }
   return domainParticipant;
 }
-    
+
 DDS::ReturnCode_t  DDS::Publisher_impl::set_default_datawriter_qos (
   const DDS::DataWriterQos & qos
 ) THROW_ORB_EXCEPTIONS
@@ -461,7 +462,7 @@ DDS::ReturnCode_t  DDS::Publisher_impl::set_default_datawriter_qos (
   }
   return result;
 }
-    
+
 DDS::ReturnCode_t  DDS::Publisher_impl::get_default_datawriter_qos (
   DDS::DataWriterQos & qos
 ) THROW_ORB_EXCEPTIONS
@@ -481,7 +482,7 @@ DDS::ReturnCode_t  DDS::Publisher_impl::get_default_datawriter_qos (
   }
   return result;
 }
-    
+
 DDS::ReturnCode_t DDS::Publisher_impl::copy_from_topic_qos (
   DDS::DataWriterQos & a_datawriter_qos,
   const DDS::TopicQos & a_topic_qos
@@ -491,9 +492,9 @@ DDS::ReturnCode_t DDS::Publisher_impl::copy_from_topic_qos (
 
     gapi_dataWriterQos * gapi_dwqos = gapi_dataWriterQos__alloc();
     gapi_topicQos * gapi_tqos = gapi_topicQos__alloc();
- 
+
     if (gapi_dwqos && gapi_tqos)
-    { 
+    {
       ccpp_TopicQos_copyIn(a_topic_qos, *gapi_tqos);
       ccpp_DataWriterQos_copyIn(a_datawriter_qos, *gapi_dwqos);
       result = gapi_publisher_copy_from_topic_qos(_gapi_self, gapi_dwqos, gapi_tqos);

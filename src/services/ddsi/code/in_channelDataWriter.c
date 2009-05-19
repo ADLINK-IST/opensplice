@@ -231,6 +231,7 @@ in_channelDataWriterMain(
                     in_streamWriterFlush(
                         channelWriter->streamWriter,
                         locators);
+                    in_connectivityWriterFacadeFree(facade);
                 }
             }
         }

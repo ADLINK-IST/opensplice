@@ -13,9 +13,14 @@
 #define _IO_
 
 #include "stdincs.h"
+#include "os_stdlib.h"
 
 #define MAX_PUSHBACK 8192
 #define MAXFILES 20
+
+#define CPP_FILESEPCHAR_DEF OS_FILESEPCHAR
+#define CPP_FILESEPCHAR_1   '/'
+#define CPP_FILESEPCHAR_2   '\\'
 
 extern int linefirst;
 extern int willbefirst;

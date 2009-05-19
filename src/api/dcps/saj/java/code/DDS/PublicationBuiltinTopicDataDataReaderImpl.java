@@ -19,7 +19,7 @@ public class PublicationBuiltinTopicDataDataReaderImpl extends org.opensplice.dd
     public PublicationBuiltinTopicDataDataReaderImpl(DDS.PublicationBuiltinTopicDataTypeSupport ts)
     {
         typeSupport = ts;
-        copyCache = ts.get_copyCache ();
+        copyCache = typeSupport.get_copyCache ();
     }
 
     public int read(

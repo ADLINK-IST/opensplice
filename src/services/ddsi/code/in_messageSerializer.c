@@ -571,6 +571,8 @@ in_messageSerializerWriteArray(
     assert(type);
     assert(data);
 
+	result = 0;
+
     if (ctype->maxSize > 0) {
         array = data;
         length = ctype->maxSize;
@@ -627,7 +629,7 @@ in_messageSerializerWritePrimArray(
     c_octet* srcPtr = (c_octet *)data;
     os_uint32 i;
     os_uint32 rest;
-    os_uint32 size;
+    os_uint32 size = 4;
     os_uint32 avail;
     os_uint32 result = 0;
 
@@ -688,7 +690,7 @@ in_messageSerializerWriteString(
     c_type type,
     c_voidp data)
 {
-    os_char *ptr = (os_char *)data;
+    os_char *ptr = *(c_string *)data;
     in_data dst = NULL;
     os_uint32 size = 0;
     os_uint32 len = 0;
@@ -705,12 +707,14 @@ in_messageSerializerWriteString(
         len = strlen(ptr) + 1;
         result = len;
     }
+
     assert(sizeof(os_uint32) == 4);
     /* Add required padding, if any or needed. The stream may be renewed! */
     in_messageSerializerAddCDRPaddingToStream(
         in_messageTransformer(_this),
         sizeof(os_uint32),
         result);
+
     result += in_messageSerializerWritePrim(_this, sizeof(os_uint32), &len);
 
     while (len)

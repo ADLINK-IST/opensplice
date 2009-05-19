@@ -199,9 +199,8 @@ _requiresSwap(os_boolean bigEndianess)
             {                                                                  \
                 in_messageTransformerClaim(__str, __padding);                  \
             } else                                                             \
-            {                                                                  \
-                os_uint32 __remPadding;                                        \
-                                                                               \
+            {																   \
+			    os_uint32 __remPadding;                                        \
                 __remPadding = __padding;                                      \
                 __remPadding -= in_messageTransformerGetAvailable(__str);      \
                 in_messageTransformerClaim(__str,                              \
@@ -650,7 +649,7 @@ in_messageDeserializer__readPrimSwapped(
     assert(data);
 
     /* remove excess padding, if any or needed. The transformer may be renewed! */
-    in_messageDeserializerRemoveCDRPaddingFromStream(_this, size);
+    in_messageDeserializerRemoveCDRPaddingFromStream(_this, dataSize);
 
     srcPtr = in_messageTransformerGetHead(_this);
     if (dataSize <= in_messageTransformerGetAvailable(_this))
@@ -702,7 +701,7 @@ in_messageDeserializerReadArray(
     os_uint32 i;
     c_voidp array = NULL;
     c_object o;
-    c_metaKind typeKind;
+    c_collKind typeKind;
     c_metaKind subTypeKind;
 
     assert(_this);
@@ -714,7 +713,8 @@ in_messageDeserializerReadArray(
      * is known, but for sequences it is encoded ahead of the elements as an
      * unsigned long
      */
-    typeKind = c_baseObjectKind(c_baseObject(type));
+    typeKind = ctype->kind;
+
     if(typeKind == C_ARRAY)
     {
         array = data;
@@ -963,7 +963,7 @@ in_messageDeserializerReadString(
 {
     in_result result = IN_RESULT_OK;
     c_string str = NULL;
-    os_uint32 stringLength;
+    os_uint32 stringLength = 0;
     os_uint32 lenAvail;
     os_uint32 copyLength;
     os_char* stringStart;

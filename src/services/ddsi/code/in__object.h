@@ -521,6 +521,16 @@ in_objectRefFromObject(
     in_object _this);
 #endif
 
+/** Validates whether the expected amount of objects are allocated.
+ *
+ * @param expected The amount of expected objects.
+ * @return OS_TRUE if the expected amount is equal to the actual amount.
+ *         OS_FALSE otherwise.
+ */
+c_bool
+in_objectValidate(
+    c_ulong expected);
+
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)
 }

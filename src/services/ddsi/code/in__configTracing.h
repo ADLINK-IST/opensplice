@@ -30,6 +30,10 @@ extern "C" {
  */
 #define in_configTracing(_this) ((in_configTracing)_this)
 
+in_configTracing
+in_configTracingNew(
+    );
+
 os_char*
 in_configTracingGetPathName(
     in_configTracing _this);
@@ -77,6 +81,66 @@ in_configTracingGetDiscoveryLevel(
 in_configTimestamps
 in_configTracingGetTimeStamps(
     in_configTracing _this);
+
+void
+in_configTracingSetDefaultLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetConfigurationLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetInitLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetDeinitLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetMainloopLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetGroupsLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetWritingLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetReadingLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetTestLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetDiscoveryLevel(
+    in_configTracing _this,
+    os_uint32 level);
+
+void
+in_configTracingSetOutputFile(
+    in_configTracing _this,
+    os_char* outputFileName);
+
+void
+in_tracingSetEnabled(
+    in_configTracing _this,
+    os_boolean isEnabled);
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

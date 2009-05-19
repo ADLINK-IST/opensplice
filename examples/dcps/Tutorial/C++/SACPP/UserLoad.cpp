@@ -99,6 +99,9 @@ main (
     Long                            prevCount = 0;
     pthread_t                       tid;
     pthread_attr_t                  tattr;
+    
+    printf("Starting UserLoad example.\n");
+    fflush(stdout);
 
     /* Create a DomainParticipant (using the 'TheParticipantFactory' convenience macro). */
     participant = TheParticipantFactory->create_participant (

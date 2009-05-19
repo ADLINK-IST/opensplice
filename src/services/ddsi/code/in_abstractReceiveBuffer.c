@@ -16,16 +16,18 @@ in_abstractReceiveBufferInitParent(
 		in_octet *buffer,
 		os_size_t length)
 {
+	OS_STRUCT(in_address) addr;
 	in_objectInit(OS_SUPER(_this), kind, deinit);
 	_this->buffer = buffer;
 	_this->length = length;
-	in_locatorInitInvalid(&(_this->sender));
+	in_addressInitAny(&addr);
+	_this->sender = in_locatorNew(0, &addr);
 }
 
 void
 in_abstractReceiveBufferDeinit(in_abstractReceiveBuffer _this)
 {
-	in_locatorDeinit(&(_this->sender));
+	in_locatorFree(_this->sender);
 	in_objectDeinit(OS_SUPER(_this));
 }
 
@@ -66,14 +68,14 @@ in_abstractReceiveBufferSetLength(in_abstractReceiveBuffer _this, os_size_t leng
 in_locator
 in_abstractReceiveBufferGetSender(in_abstractReceiveBuffer _this)
 {
-	return &(_this->sender);
+	return in_locatorKeep(_this->sender);
 }
 
 void
 in_abstractReceiveBufferSetSender(in_abstractReceiveBuffer _this, in_locator locator)
 {
-	/* do not overwrite refcounters, just copy the ddsiLocator attributes */
-	in_locatorCopy(&(_this->sender), locator);
+	in_locatorFree(_this->sender);
+	_this->sender = in_locatorKeep(locator);
 }
 
 

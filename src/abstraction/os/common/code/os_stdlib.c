@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include "os_stdlib_locate.c"
+
 char *
 os_getenv(
     char *variable)
@@ -54,7 +56,7 @@ os_pathSep(void)
 
 os_result
 os_access(
-    char *file_path,
+    const char *file_path,
     os_int32 permission)
 {
     os_result result;

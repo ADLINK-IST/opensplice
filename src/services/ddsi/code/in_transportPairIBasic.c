@@ -71,6 +71,9 @@ in_transportPairIBasicInit(
                     in_transportPairIBasicDeinit,
                     in_transportReceiver(receiver),
                     in_transportSender(sender));
+
+            in_transportReceiverIBasicFree(receiver);
+            in_transportSenderIBasicFree(sender);
         }
         /*  decrement refcounter */
         in_socketFree(duplexSock);

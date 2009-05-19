@@ -40,6 +40,7 @@ OS_STRUCT(in_controller)
     u_service service;
     u_subscriber subscriber;
     u_networkReader reader;
+    in_plugKernel plug;
     Coll_List channels;
     in_endpointDiscoveryData discoveryData;
     in_controllerChannelData discoveryChannel;
@@ -105,6 +106,7 @@ in_controllerInit(
     _this->reader = u_networkReaderNew(_this->subscriber, "DDSi Reader", NULL, TRUE);
     Coll_List_init(&(_this->channels));
     _this->discoveryData = in_endpointDiscoveryDataNew();
+    _this->plug = in_plugKernelNew(service);
 
     os_free(subscriberQos);
 
@@ -118,6 +120,7 @@ in_controllerFree(
     assert(_this);
 
     in_controllerDeinit(_this);
+    os_free(_this);
 }
 
 void
@@ -131,22 +134,27 @@ in_controllerDeinit(
     while(Coll_List_getNrOfElements(&(_this->channels)) > 0)
     {
         data = (in_controllerChannelData)Coll_List_popBack(&(_this->channels));
-        in_objectFree(in_object(data->transport));
-        in_objectFree(in_object(data->stream));
         in_objectFree(in_object(data->channel));
+        in_objectFree(in_object(data->stream));
+        in_objectFree(in_object(data->transport));
+        in_plugKernelFree(_this->discoveryChannel->plug);
         os_free(data);
     }
     if(_this->discoveryChannel)
     {
+    	in_objectFree(in_object(_this->discoveryChannel->channel));
+    	in_objectFree(in_object(_this->discoveryChannel->stream));
         in_objectFree(in_object(_this->discoveryChannel->transport));
-        in_objectFree(in_object(_this->discoveryChannel->stream));
-        in_objectFree(in_object(_this->discoveryChannel->channel));
+        in_plugKernelFree(_this->discoveryChannel->plug);
         os_free(_this->discoveryChannel);
     }
     if (_this->discoveryData) {
         in_endpointDiscoveryDataFree(_this->discoveryData);
     }
-
+    if(_this->plug)
+    {
+    	in_plugKernelFree(_this->plug);
+    }
     u_networkReaderFree(_this->reader);
     u_subscriberFree(_this->subscriber);
 }
@@ -225,20 +233,27 @@ in_controllerAddTransportToDiscoveryData(
     metatrafficUcastLoc = in_transportReceiverGetCtrlUnicastLocator(rec);
     metatrafficMcastLoc = in_transportReceiverGetCtrlMulticastLocator(rec);
 
+    in_transportReceiverFree(rec);
+
     if (!mcastLoc || !ucastLoc)
     {
-        /* free the locator objects, check  with Patrick */
+        if(mcastLoc)
+        {
+        	in_locatorFree(mcastLoc);
+        }
+        if(ucastLoc)
+        {
+        	in_locatorFree(ucastLoc);
+        }
         result = OS_FALSE;
     } else
     {
         if(!addMetaLocator)
         {
-        in_endpointDiscoveryDataAddDefaultMulticastLocator(
-            discoveryData,
-            mcastLoc);
-        in_endpointDiscoveryDataAddDefaultUnicastLocator(
-            discoveryData,
-            ucastLoc);
+			in_endpointDiscoveryDataAddDefaultMulticastLocator(discoveryData,
+				mcastLoc);
+			in_endpointDiscoveryDataAddDefaultUnicastLocator(discoveryData,
+				ucastLoc);
         }
         if(addMetaLocator)
         {
@@ -248,11 +263,16 @@ in_controllerAddTransportToDiscoveryData(
                 discoveryData,
                 metatrafficUcastLoc);
             in_endpointDiscoveryDataAddMetatrafficMulticastLocator(
-                 discoveryData,
-                 metatrafficMcastLoc);
+                discoveryData,
+                metatrafficMcastLoc);
         }
+        in_locatorFree(mcastLoc);
+        in_locatorFree(ucastLoc);
         result = OS_TRUE;
     }
+    in_locatorFree(metatrafficUcastLoc);
+    in_locatorFree(metatrafficMcastLoc);
+
     return result;
 }
 
@@ -308,7 +328,7 @@ in_controllerCreateDataChannels(
                 channelSpecificEndpoint =
                     in_endpointDiscoveryDataNew();
 
-                channelData->plug = in_plugKernelNew(_this->service);
+                channelData->plug = in_plugKernelKeep(_this->plug);
 
                 if (!channelData->plug ||
                     !channelSpecificEndpoint ||
@@ -396,6 +416,7 @@ in_controllerCreateDiscoveryChannel(
     config = in_configGetInstance();
     serviceName = u_serviceGetName(_this->service);
     ddsiService = in_configGetDdsiServiceByName(config, serviceName);
+    os_free(serviceName);
 
     discoveryChannelConfig = in_configChannel(in_configDdsiServiceGetDiscoveryChannel(ddsiService));
 
@@ -421,7 +442,7 @@ in_controllerCreateDiscoveryChannel(
                      in_configDataChannelGetName(in_configDataChannel(discoveryChannelConfig)));
         } else
         {
-            channelData->plug = in_plugKernelNew(_this->service);
+            channelData->plug = in_plugKernelKeep(_this->plug);
 
             if(!channelData->plug)
             {

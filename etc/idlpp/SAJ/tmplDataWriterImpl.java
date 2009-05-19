@@ -6,7 +6,7 @@ public class $(type-name)DataWriterImpl extends org.opensplice.dds.dcps.DataWrit
     public $(type-name)DataWriterImpl($(scoped-type-name)TypeSupport ts)
     {
         typeSupport = ts;
-        copyCache = ts.get_copyCache ();
+        copyCache = typeSupport.get_copyCache ();
     }
 
     public long register_instance(

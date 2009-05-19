@@ -1,7 +1,8 @@
 # default values for directory and idl-files to process 
-DCPS_IDL    	= $(TOPIC_IDL:%.idl=%Dcps.idl)
-IDL_FILES       = $(TOPIC_IDL) $(DCPS_IDL)
-ifeq (,$(findstring mingw,$(SPLICE_TARGET)))
+DCPS_IDL   = $(TOPIC_IDL:%.idl=%Dcps.idl)
+IDL_FILES  = $(TOPIC_IDL) $(DCPS_IDL)
+
+ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 IDL_INC_FLAGS   = -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
 else
 TMP_IDL_DIR_INC_FLAG  =$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(IDL_DIR))

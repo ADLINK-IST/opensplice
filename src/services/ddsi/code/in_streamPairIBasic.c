@@ -96,11 +96,11 @@ in_streamPairIBasicInit(
     {
         if (writer)
         {
-            in_streamWriterFree(in_streamWriter(writer));
+        	in_ddsiStreamWriterImplFree(writer);
         }
         if (reader)
         {
-            in_streamReaderFree(in_streamReader(reader));
+        	in_ddsiStreamReaderImplFree(reader);
         }
         result = OS_FALSE;
     } else
@@ -111,6 +111,9 @@ in_streamPairIBasicInit(
             in_streamPairIBasicDeinit,
             in_streamReader(reader),
             in_streamWriter(writer));
+
+    	in_ddsiStreamReaderImplFree(reader);
+    	in_ddsiStreamWriterImplFree(writer);
     }
 
     /* decrement refcount */

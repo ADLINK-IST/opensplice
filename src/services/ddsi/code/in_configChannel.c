@@ -1,31 +1,34 @@
 #include "in__configChannel.h"
 #include "in__config.h"
 #include "in_report.h"
-#include "in_align.h"
 #include "in_ddsiDefinitions.h"
 
 os_boolean
 in_configChannelInit(
     in_configChannel _this,
+    in_configChannelKind kind,
     os_boolean isEnabled,
-    in_configDdsiService owningService,
-    os_ushort defaultPortNr)
+    in_configDdsiService owningService)
 {
     assert(_this);
 
+    _this->kind = kind;
     _this->isEnabled = isEnabled;
     _this->owningService = owningService;
-    _this->portNr = defaultPortNr;
+    if(kind == IN_CONFIG_CHANNEL_DISCOVERY)
+    {
+        _this->portNr = INCF_DEF_DISCOVERY_CHANNEL_PORT;
+    } else
+    {
+        assert(kind == IN_CONFIG_CHANNEL_DATA);
+        _this->portNr = INCF_DEF_DATA_CHANNEL_PORT;
+    }
     _this->pathName = NULL;
     _this->fragmentSize = INCF_DEF_FRAGMENT_SIZE;
-
     /* receiving parameters */
-    _this->receiveBufferSize =
-    	INCF_DEF_RECEIVE_BUFFER_SIZE;
-
+    _this->receiveBufferSize = INCF_DEF_RECEIVE_BUFFER_SIZE;
     /* sending parameters */
-    _this->differentiatedServicesField=
-    	INCF_DEF_DIFFERENTIATED_SERVICES_FIELD;
+    _this->differentiatedServicesField= INCF_DEF_DIFFERENTIATED_SERVICES_FIELD;
 
     return OS_TRUE;
 }
@@ -46,7 +49,6 @@ in_configChannelIsEnabled(
     return _this->isEnabled;
 }
 
-
 in_configDdsiService
 in_configChannelGetDdsiService(
     in_configChannel _this)
@@ -55,7 +57,6 @@ in_configChannelGetDdsiService(
 
     return _this->owningService;
 }
-
 
 os_ushort
 in_configChannelGetPortNr(
@@ -94,28 +95,20 @@ in_configChannelGetFragmentSize(
     return _this->fragmentSize;
 }
 
+in_configChannelKind
+in_configChannelGetKind(
+    in_configChannel _this)
+{
+    assert(_this);
+
+    return _this->kind;
+}
+
 void
 in_configChannelSetFragmentSize(
     in_configChannel _this,
     os_uint32 fragmentSize)
 {
-    os_uint32 fragmentSizeAligned =
-        (os_uint32) IN_ALIGN_UINT_FLOOR(fragmentSize, 8U);
-    assert(_this);
-
-    if (fragmentSize < fragmentSizeAligned) {
-        IN_REPORT_WARNING_1(IN_SPOT,
-                        "defined fragment size %d not multiple of 8U",
-                        fragmentSize);
-    }
-
-    if (fragmentSize < INCF_MIN_FRAGMENT_SIZE) {
-        IN_REPORT_WARNING_2(IN_SPOT,
-                        "defined fragment size %d too small, using %d",
-                        fragmentSize, INCF_MIN_FRAGMENT_SIZE);
-        fragmentSize = INCF_MIN_FRAGMENT_SIZE;
-    }
-
     _this->fragmentSize = fragmentSize;
 }
 
@@ -129,31 +122,27 @@ in_configChannelSupportsControl(
     return OS_FALSE;
 }
 
-
 /** shortcuts, mapping to in_configPartitioningGetGlobalPartitionAddress
  * TODO: add to design document */
 os_char*
 in_configChannelGetGlobalPartitionAddress(
 		in_configChannel _this)
 {
-	os_char *result = NULL;
+	os_char *result;
+	in_configDdsiService configDdsi;
+    in_configPartitioning configPartitioning;
 
-	in_configDdsiService configDdsi =
-		in_configChannelGetDdsiService(_this);
+    assert(_this);
 
-	if (!configDdsi || !in_configDdsiServiceGetPartitioning(configDdsi)) {
-		/* for some reason no global partition object defined */
-		result = INCF_DEF_GLOBAL_PARTITON; /* const */
-	} else {
-		in_configPartitioning configPartitioning =
-			in_configDdsiServiceGetPartitioning(configDdsi);
-		result =
-			in_configPartitioningGetGlobalPartitionAddress(configPartitioning);
-	}
+    configDdsi = in_configChannelGetDdsiService(_this);
+    assert(configDdsi); /* should always be present */
+    configPartitioning = in_configDdsiServiceGetPartitioning(configDdsi);
+    assert(configPartitioning); /* should always be present */
+    result = in_configPartitioningGetGlobalPartitionAddress(configPartitioning);
+    assert(result); /* should always be present */
 
 	return result;
 }
-
 
 /** shortcuts, mapping to in_configDdsiServiceGetInterfaceId
  * TODO: add to design document */
@@ -161,22 +150,15 @@ os_char*
 in_configChannelGetInterfaceId(
 		in_configChannel _this)
 {
-	os_char *result = NULL;
+	os_char *result;
+	in_configDdsiService configDdsi;
 
-	in_configDdsiService configDdsi =
-		in_configChannelGetDdsiService(_this);
+    assert(_this);
 
-	if (!configDdsi) {
-		/* for some reason no global partition object defined */
-		result = INCF_DEF_INTERFACE; /* const */
-	} else {
-		result =
-			in_configDdsiServiceGetInterfaceId(configDdsi);
-		/* if not declared in config */
-		if (!result) {
-		    result = INCF_DEF_INTERFACE; /* const */
-		}
-	}
+    configDdsi = in_configChannelGetDdsiService(_this);
+    assert(configDdsi);/* should always be present */
+    result = in_configDdsiServiceGetInterfaceId(configDdsi);
+    assert(result);/* should always be present */
 
 	return result;
 }
@@ -205,6 +187,10 @@ os_time
 in_configChannelGetIOTimeout(
 		in_configChannel _this)
 {
+    /* TODO can't add a default value here, wrong place!! */
 	os_time result = { 0 /*secs*/, 50*1000*1000 /* 50 millis */};
+
+    assert(_this);
+
 	return result;
 }

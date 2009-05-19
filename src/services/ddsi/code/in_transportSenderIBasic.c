@@ -144,6 +144,10 @@ in_objectDeinit_i(
     in_transportSenderIBasic narrowed =
         in_transportSenderIBasic(_this);
 
+    if(narrowed->socket)
+	{
+		in_socketFree(narrowed->socket);
+	}
 	in_transportSenderDeinit(OS_SUPER(narrowed));
 }
 

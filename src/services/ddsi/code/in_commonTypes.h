@@ -42,7 +42,6 @@ typedef unsigned long long in_uint64;
 #define OCT(_u) ((_u)&0xff)
 #define UI2ENTITYID(_u) { { OCT((_u)>>24), OCT((_u)>>16), OCT((_u)>>8)}, OCT((_u)&0xff) }
 
-
 #define IN_SHORT_MIN  -32768
 #define IN_SHORT_MAX   32767
 #define IN_USHORT_MAX  65535U
@@ -153,6 +152,11 @@ OS_CLASS(in_configPartitionMapping);
 OS_CLASS(in_configTimestamps);
 OS_CLASS(in_configTracing);
 
+typedef enum in_configChannelKind_e
+{
+    IN_CONFIG_CHANNEL_DISCOVERY,
+    IN_CONFIG_CHANNEL_DATA
+} in_configChannelKind;
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)
 }

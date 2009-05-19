@@ -98,12 +98,15 @@ in_channelSdpInit(
         writer = in_channelSdpWriterNew(_this, plug, streamWriter,
             discoveryData);
 
+		in_streamWriterFree(streamWriter);
+
         if(!writer)
         {
             success = OS_FALSE;
         } else
         {
             in_channelSetWriter(in_channel(_this), in_channelWriter(writer));
+            in_channelSdpWriterFree(writer);
         }
     }
     if(success)
@@ -117,6 +120,7 @@ in_channelSdpInit(
         } else
         {
             in_channelSetReader(in_channel(_this), in_channelReader(reader));
+            in_channelSdpReaderFree(reader);
         }
     }
     return success;

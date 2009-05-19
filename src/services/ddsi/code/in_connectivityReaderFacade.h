@@ -39,7 +39,7 @@ extern "C" {
  */
 #define in_connectivityReaderFacadeFree(c) in_objectFree(in_object(c))
 
-#define in_connectivityReaderFacadeKeep(c) in_objectKeep(in_object(c))
+#define in_connectivityReaderFacadeKeep(c) in_connectivityReaderFacade(in_objectKeep(in_object(c)))
 
 #define in_connectivityReaderFacadeIsValid(c) \
     in_objectIsValidWithKind(in_object(c), IN_OBJECT_KIND_READER_FACADE)
@@ -72,6 +72,15 @@ in_connectivityReaderFacadeGetMatchedWriters(
 in_ddsiSequenceNumber
 in_connectivityReaderFacadeGetSequenceNumber(
     in_connectivityReaderFacade _this);
+
+os_uint32
+in_connectivityReaderFacadeGetPartitionCount(
+	in_connectivityReaderFacade _this);
+
+os_boolean
+in_connectivityReaderFacadeMatchesPeerWriter(
+	in_connectivityReaderFacade _this,
+	in_connectivityPeerWriter writer);
 
 #if defined (__cplusplus)
 }

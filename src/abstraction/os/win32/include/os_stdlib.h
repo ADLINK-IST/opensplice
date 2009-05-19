@@ -39,6 +39,7 @@ extern "C" {
 
 #define OS_OS_FILESEPCHAR '\\'
 #define OS_OS_PATHSEPCHAR ';'
+#define OS_OS_EXESUFFIX   ".exe"
 
 #define OS_ROK (_S_IFMT & _S_IREAD)
 #define OS_WOK (_S_IFMT & _S_IWRITE)
@@ -64,16 +65,20 @@ typedef HANDLE os_os_dirHandle;
 
 #define MAXHOSTNAMELEN MAX_HOSTNAME_LEN
 
-/* snprintf is not support on windows, use _snprintf */
+/* snprintf is not supported on windows, use _snprintf */
 #define snprintf _snprintf
 #define open     _open
 #define close    _close
 #define popen     _popen
 #define pclose    _pclose
+#define creat    _creat
+#define unlink   _unlink
 //#define read   _read   // Use function substitution: see below.
 #define isatty   _isatty
 #define fileno   _fileno
 #define unlink   _unlink
+#define getpid   _getpid
+#define putenv   _putenv
 
 /* Since 'read' is also a function on a DCPS DataReader, it is
  * abstracted in a separate function so that there is no macro

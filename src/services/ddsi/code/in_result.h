@@ -44,6 +44,7 @@ typedef enum in_result_e
         result = IN_RESULT_OK;                                                  \
         break;                                                                  \
     default:                                                                    \
+		result = IN_RESULT_ERROR;   											\
         assert(0);                                                              \
     }
 

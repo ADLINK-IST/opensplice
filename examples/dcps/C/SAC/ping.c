@@ -106,7 +106,6 @@ static DDS_sequence_pingpong_PP_seq_msg           PP_seq_dataList    = { 0, 0, D
 static DDS_sequence_pingpong_PP_string_msg        PP_string_dataList = { 0, 0, DDS_OBJECT_NIL, FALSE };
 static DDS_sequence_pingpong_PP_fixed_msg         PP_fixed_dataList  = { 0, 0, DDS_OBJECT_NIL, FALSE };
 static DDS_sequence_pingpong_PP_array_msg         PP_array_dataList  = { 0, 0, DDS_OBJECT_NIL, FALSE };
-static DDS_sequence_pingpong_PP_quit_msg          PP_quit_dataList   = { 0, 0, DDS_OBJECT_NIL, FALSE };
 
 static DDS_StatusCondition                        PP_min_sc          = DDS_OBJECT_NIL;
 static DDS_StatusCondition                        PP_seq_sc          = DDS_OBJECT_NIL;
@@ -167,7 +166,15 @@ timeGet (
 {
     struct timeval current_time;
 
+#ifdef USE_CLOCK_GETTIME
+    struct timespec tv;
+
+    clock_gettime (CLOCK_REALTIME, &tv);
+    current_time.tv_sec = tv.tv_sec;
+    current_time.tv_usec = tv.tv_nsec / 1000;
+#else
     gettimeofday (&current_time, NULL);
+#endif
 
     return current_time;
 }
@@ -207,12 +214,11 @@ PP_min_handler (
     DDS_SampleInfoSeq     infoList = { 0, 0, NULL, FALSE };
     int	                  amount;
     DDS_boolean           result = FALSE;
-    DDS_ReturnCode_t      dds_result;
 
     /* printf "PING: PING_min arrived\n"); */
     
     preTakeTime = timeGet ();
-    dds_result = pingpong_PP_min_msgDataReader_take (
+    pingpong_PP_min_msgDataReader_take (
 	PP_min_reader,
 	&PP_min_dataList,
 	&infoList,
@@ -230,7 +236,7 @@ PP_min_handler (
         PP_min_dataList._buffer[0].count++;
         if (PP_min_dataList._buffer[0].count < nof_cycles) {
             preWriteTime = timeGet ();
-            dds_result = pingpong_PP_min_msgDataWriter_write (PP_min_writer, &PP_min_dataList._buffer[0], DDS_HANDLE_NIL);
+            pingpong_PP_min_msgDataWriter_write (PP_min_writer, &PP_min_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -239,7 +245,7 @@ PP_min_handler (
         add_stats(&read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
         add_stats(&roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
         roundTripTime = preWriteTime;
-        dds_result = pingpong_PP_min_msgDataReader_return_loan (PP_min_reader, &PP_min_dataList, &infoList);
+        pingpong_PP_min_msgDataReader_return_loan (PP_min_reader, &PP_min_dataList, &infoList);
     } else {
         printf ("PING: PING_min triggered, but no data available\n");
     }
@@ -254,12 +260,11 @@ PP_seq_handler (
     DDS_SampleInfoSeq     infoList = { 0, 0, NULL, FALSE };
     int                   amount;
     DDS_boolean           result = FALSE;
-    DDS_ReturnCode_t      dds_result;
 
     /* printf "PING: PING_seq arrived\n"); */
 
     preTakeTime = timeGet ();
-    dds_result = pingpong_PP_seq_msgDataReader_take (
+    pingpong_PP_seq_msgDataReader_take (
 	PP_seq_reader,
 	&PP_seq_dataList,
 	&infoList,
@@ -277,7 +282,7 @@ PP_seq_handler (
         PP_seq_dataList._buffer[0].count++;
         if (PP_seq_dataList._buffer[0].count < nof_cycles) {
             preWriteTime = timeGet ();
-            dds_result = pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, &PP_seq_dataList._buffer[0], DDS_HANDLE_NIL);
+            pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, &PP_seq_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -286,7 +291,7 @@ PP_seq_handler (
         add_stats (&read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
         add_stats (&roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
         roundTripTime = preWriteTime;
-        dds_result = pingpong_PP_seq_msgDataReader_return_loan (PP_seq_reader, &PP_seq_dataList, &infoList);
+        pingpong_PP_seq_msgDataReader_return_loan (PP_seq_reader, &PP_seq_dataList, &infoList);
     } else {
         printf ("PING: PING_seq triggered, but no data available\n");
     }
@@ -302,12 +307,11 @@ PP_string_handler (
     DDS_SampleInfoSeq     infoList = { 0, 0, NULL, FALSE };
     int                   amount;
     DDS_boolean           result = FALSE;
-    DDS_ReturnCode_t      dds_result;
     
     /* printf "PING: PING_string arrived\n"); */
     
     preTakeTime = timeGet ();
-    dds_result = pingpong_PP_string_msgDataReader_take (
+    pingpong_PP_string_msgDataReader_take (
 	PP_string_reader,
 	&PP_string_dataList,
 	&infoList,
@@ -325,7 +329,7 @@ PP_string_handler (
         PP_string_dataList._buffer[0].count++;
         if (PP_string_dataList._buffer[0].count < nof_cycles) {
             preWriteTime = timeGet ();
-            dds_result = pingpong_PP_string_msgDataWriter_write (PP_string_writer, &PP_string_dataList._buffer[0], DDS_HANDLE_NIL);
+            pingpong_PP_string_msgDataWriter_write (PP_string_writer, &PP_string_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -334,7 +338,7 @@ PP_string_handler (
         add_stats (&read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
         add_stats (&roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
         roundTripTime = preWriteTime;
-        dds_result = pingpong_PP_string_msgDataReader_return_loan (PP_string_reader, &PP_string_dataList, &infoList);
+        pingpong_PP_string_msgDataReader_return_loan (PP_string_reader, &PP_string_dataList, &infoList);
     } else {
         printf ("PING: PING_string triggered, but no data available\n");
     }
@@ -349,12 +353,11 @@ PP_fixed_handler (
     DDS_SampleInfoSeq     infoList = { 0, 0, NULL, FALSE };
     int                   amount;
     DDS_boolean           result = FALSE;
-    DDS_ReturnCode_t      dds_result;
     
     /* printf "PING: PING_fixed arrived\n"); */
     
     preTakeTime = timeGet ();
-    dds_result = pingpong_PP_fixed_msgDataReader_take (
+    pingpong_PP_fixed_msgDataReader_take (
 	PP_fixed_reader,
 	&PP_fixed_dataList,
 	&infoList,
@@ -372,7 +375,7 @@ PP_fixed_handler (
         PP_fixed_dataList._buffer[0].count++;
         if (PP_fixed_dataList._buffer[0].count < nof_cycles ) {
             preWriteTime = timeGet ();
-            dds_result = pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, &PP_fixed_dataList._buffer[0], DDS_HANDLE_NIL);
+            pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, &PP_fixed_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -381,7 +384,7 @@ PP_fixed_handler (
         add_stats (&read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
         add_stats (&roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
         roundTripTime = preWriteTime;
-        dds_result = pingpong_PP_fixed_msgDataReader_return_loan (PP_fixed_reader, &PP_fixed_dataList, &infoList);
+        pingpong_PP_fixed_msgDataReader_return_loan (PP_fixed_reader, &PP_fixed_dataList, &infoList);
     } else {
         printf ("PING: PING_fixed triggered, but no data available\n");
     }
@@ -396,12 +399,11 @@ PP_array_handler (
     DDS_SampleInfoSeq     infoList = { 0, 0, NULL, FALSE };
     int                   amount;
     DDS_boolean           result = FALSE;
-    DDS_ReturnCode_t      dds_result;
     
     /* printf "PING: PING_array arrived\n"); */
     
     preTakeTime = timeGet ();
-    dds_result = pingpong_PP_array_msgDataReader_take (
+    pingpong_PP_array_msgDataReader_take (
 	PP_array_reader,
 	&PP_array_dataList,
 	&infoList,
@@ -419,7 +421,7 @@ PP_array_handler (
         PP_array_dataList._buffer[0].count++;
         if (PP_array_dataList._buffer[0].count < nof_cycles) {
             preWriteTime = timeGet ();
-            dds_result = pingpong_PP_array_msgDataWriter_write (PP_array_writer, &PP_array_dataList._buffer[0], DDS_HANDLE_NIL);
+            pingpong_PP_array_msgDataWriter_write (PP_array_writer, &PP_array_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -428,7 +430,7 @@ PP_array_handler (
         add_stats (&read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
         add_stats (&roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
         roundTripTime = preWriteTime;
-        dds_result = pingpong_PP_array_msgDataReader_return_loan (PP_array_reader, &PP_array_dataList, &infoList);
+        pingpong_PP_array_msgDataReader_return_loan (PP_array_reader, &PP_array_dataList, &infoList);
     } else {
         printf ("PING: PING_array triggered, but no data available\n");
     }
@@ -460,7 +462,6 @@ main (
     time_t                                   clock = time (NULL);
     DDS_Duration_t                           wait_timeout = {3,0};
 
-    DDS_ReturnCode_t                         result;
     DDS_boolean                              finish_flag = FALSE;
     DDS_boolean                              timeout_flag = FALSE;
     DDS_boolean                              terminate = FALSE;
@@ -468,6 +469,9 @@ main (
     int                                      imax = 1;
     int                                      i;
     unsigned int                             block;
+
+    printf ("Starting ping example\n");
+    fflush(stdout);
 
     /*
      * init timing statistics 
@@ -479,6 +483,25 @@ main (
     /*
      * Evaluate cmdline arguments
      */
+#ifdef INTEGRITY
+    nof_blocks = 100;
+    nof_cycles = 100;
+#if defined (PING1)
+    topic_id = 'm';
+#elif defined (PING2)
+    topic_id = 'q';
+#elif defined (PING3)
+    topic_id = 's';
+#elif defined (PING4)
+    topic_id = 'f';
+#elif defined (PING5)
+    nof_blocks = 1;
+    nof_cycles = 10;
+    topic_id = 't';
+#endif 
+    write_partition = "PongRead";
+    read_partition = "PongWrite";
+#else
     if (argc != 1) {
 	if (argc != 6) {
             printf ("Invalid.....\n Usage: %s [blocks blocksize topic_id WRITE_PARTITION READ_PARTITION]\n", argv[0]);
@@ -490,6 +513,7 @@ main (
         write_partition = argv[4];
         read_partition  = argv[5];
     }
+#endif
 
     /*
      * Create WaitSet
@@ -561,7 +585,7 @@ main (
     /* Add datareader statuscondition to waitset */
     PP_min_sc = DDS_DataReader_get_statuscondition (PP_min_reader);
     DDS_StatusCondition_set_enabled_statuses (PP_min_sc, DDS_DATA_AVAILABLE_STATUS);
-    result = DDS_WaitSet_attach_condition (w, PP_min_sc);
+    DDS_WaitSet_attach_condition (w, PP_min_sc);
 
     /*
      * PP_seq_msg
@@ -581,7 +605,7 @@ main (
     /* Add datareader statuscondition to waitset */
     PP_seq_sc = DDS_DataReader_get_statuscondition (PP_seq_reader);
     DDS_StatusCondition_set_enabled_statuses (PP_seq_sc, DDS_DATA_AVAILABLE_STATUS);
-    result = DDS_WaitSet_attach_condition (w, PP_seq_sc);
+    DDS_WaitSet_attach_condition (w, PP_seq_sc);
     
     /*
      * PP_string_msg
@@ -601,7 +625,7 @@ main (
     /* Add datareader statuscondition to waitset */
     PP_string_sc = DDS_DataReader_get_statuscondition (PP_string_reader);
     DDS_StatusCondition_set_enabled_statuses (PP_string_sc, DDS_DATA_AVAILABLE_STATUS);
-    result = DDS_WaitSet_attach_condition (w, PP_string_sc);
+    DDS_WaitSet_attach_condition (w, PP_string_sc);
     
     /*
      * PP_fixed_msg
@@ -621,7 +645,7 @@ main (
     /* Add datareader statuscondition to waitset */
     PP_fixed_sc = DDS_DataReader_get_statuscondition (PP_fixed_reader);
     DDS_StatusCondition_set_enabled_statuses (PP_fixed_sc, DDS_DATA_AVAILABLE_STATUS);
-    result = DDS_WaitSet_attach_condition (w, PP_fixed_sc);
+    DDS_WaitSet_attach_condition (w, PP_fixed_sc);
     
     /*
      * PP_array_msg
@@ -641,7 +665,7 @@ main (
     /* Add datareader statuscondition to waitset */
     PP_array_sc = DDS_DataReader_get_statuscondition (PP_array_reader);
     DDS_StatusCondition_set_enabled_statuses (PP_array_sc, DDS_DATA_AVAILABLE_STATUS);
-    result = DDS_WaitSet_attach_condition (w, PP_array_sc);
+    DDS_WaitSet_attach_condition (w, PP_array_sc);
 
     /*
      * PP_quit_msg
@@ -672,7 +696,7 @@ main (
                         PPdata->count = 0;
                         PPdata->block = block;
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_min_msgDataWriter_write (PP_min_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_min_msgDataWriter_write (PP_min_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
 			DDS_free (PPdata);
                     }
@@ -695,7 +719,7 @@ main (
                             }
                         }
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
 			DDS_free (PPdata);
                     }
@@ -711,7 +735,7 @@ main (
             			PPdata->a_string = DDS_string_alloc (8);
             			strcpy (PPdata->a_string, "a_string");
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_string_msgDataWriter_write (PP_string_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_string_msgDataWriter_write (PP_string_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
                         DDS_free (PPdata);
                     }
@@ -727,7 +751,7 @@ main (
                         PPdata->a_bstring = DDS_string_alloc (9);
                         strcpy (PPdata->a_bstring, "a_bstring");
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
                         DDS_free (PPdata);
                     }
@@ -741,7 +765,7 @@ main (
                         PPdata->count = 0;
                         PPdata->block = block;
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_array_msgDataWriter_write (PP_array_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_array_msgDataWriter_write (PP_array_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
 			DDS_free (PPdata);
                     }
@@ -754,7 +778,7 @@ main (
 			terminate = TRUE;
 			finish_flag = TRUE;
                         preWriteTime = timeGet ();
-                        result = pingpong_PP_quit_msgDataWriter_write (PP_quit_writer, PPdata, DDS_HANDLE_NIL);
+                        pingpong_PP_quit_msgDataWriter_write (PP_quit_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
 			DDS_free (PPdata);
                     }
@@ -773,7 +797,7 @@ main (
                  */
                 while (!(timeout_flag || finish_flag)) {
                     conditionList = DDS_ConditionSeq__alloc();
-                    result = DDS_WaitSet_wait (w, conditionList, &wait_timeout);
+                    DDS_WaitSet_wait (w, conditionList, &wait_timeout);
                     if (conditionList) {
 			imax = conditionList->_length;
                         if (imax != 0) {
@@ -825,26 +849,26 @@ main (
             init_stats (&roundtrip,    "round_trip");
 	}
     }
-    result = DDS_Subscriber_delete_datareader (s, PP_min_reader);
-    result = DDS_Publisher_delete_datawriter (p, PP_min_writer);
-    result = DDS_Subscriber_delete_datareader (s, PP_seq_reader);
-    result = DDS_Publisher_delete_datawriter (p, PP_seq_writer);
-    result = DDS_Subscriber_delete_datareader (s, PP_string_reader);
-    result = DDS_Publisher_delete_datawriter (p, PP_string_writer);
-    result = DDS_Subscriber_delete_datareader (s, PP_fixed_reader);
-    result = DDS_Publisher_delete_datawriter (p, PP_fixed_writer);
-    result = DDS_Subscriber_delete_datareader (s, PP_array_reader);
-    result = DDS_Publisher_delete_datawriter (p, PP_array_writer);
-    result = DDS_Publisher_delete_datawriter (p, PP_quit_writer);
-    result = DDS_DomainParticipant_delete_subscriber (dp, s);
-    result = DDS_DomainParticipant_delete_publisher (dp, p);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_min_topic);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_seq_topic);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_string_topic);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_fixed_topic);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_array_topic);
-    result = DDS_DomainParticipant_delete_topic (dp, PP_quit_topic);
-    result = DDS_DomainParticipantFactory_delete_participant (dpf, dp);
+    DDS_Subscriber_delete_datareader (s, PP_min_reader);
+    DDS_Publisher_delete_datawriter (p, PP_min_writer);
+    DDS_Subscriber_delete_datareader (s, PP_seq_reader);
+    DDS_Publisher_delete_datawriter (p, PP_seq_writer);
+    DDS_Subscriber_delete_datareader (s, PP_string_reader);
+    DDS_Publisher_delete_datawriter (p, PP_string_writer);
+    DDS_Subscriber_delete_datareader (s, PP_fixed_reader);
+    DDS_Publisher_delete_datawriter (p, PP_fixed_writer);
+    DDS_Subscriber_delete_datareader (s, PP_array_reader);
+    DDS_Publisher_delete_datawriter (p, PP_array_writer);
+    DDS_Publisher_delete_datawriter (p, PP_quit_writer);
+    DDS_DomainParticipant_delete_subscriber (dp, s);
+    DDS_DomainParticipant_delete_publisher (dp, p);
+    DDS_DomainParticipant_delete_topic (dp, PP_min_topic);
+    DDS_DomainParticipant_delete_topic (dp, PP_seq_topic);
+    DDS_DomainParticipant_delete_topic (dp, PP_string_topic);
+    DDS_DomainParticipant_delete_topic (dp, PP_fixed_topic);
+    DDS_DomainParticipant_delete_topic (dp, PP_array_topic);
+    DDS_DomainParticipant_delete_topic (dp, PP_quit_topic);
+    DDS_DomainParticipantFactory_delete_participant (dpf, dp);
     DDS_free (w);
     DDS_free (PP_min_dt);
     DDS_free (PP_seq_dt);
@@ -857,5 +881,7 @@ main (
     DDS_free (dwQos);
     DDS_free (drQos);
 
+    printf ("Completed ping example\n");
+    fflush(stdout);
     return 0;
 }

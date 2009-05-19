@@ -16,6 +16,7 @@ OS_STRUCT(in_configDdsiService)
     in_configTracing tracing;
     in_configDiscoveryChannel discoveryChannel;
     Coll_List channels;
+    os_boolean hasDefaultChannel;
 };
 
 in_configDdsiService
@@ -41,9 +42,39 @@ in_configDdsiServiceNew(
     return _this;
 }
 
+os_boolean
+in_configDdsiServiceInit(
+    in_configDdsiService _this,
+    os_char* name)
+{
+    os_boolean success;
+
+    assert(_this);
+    assert(name);
+
+    Coll_List_init(&(_this->channels));
+    _this->name = os_strdup(name);
+    if(!_this->name)
+    {
+        success = OS_FALSE;
+    } else
+    {
+        success = OS_TRUE;
+    }
+    _this->interfaceId = NULL;
+    _this->pathName = NULL;
+    _this->partitioning = NULL;
+    _this->debugging = NULL;
+    _this->tracing = NULL;
+    _this->discoveryChannel = NULL;
+    _this->hasDefaultChannel = OS_FALSE;
+
+    return success;
+}
+
 /* takes ownership of the discoverychannel */
 void
-in_configDdsiServiceSetDiscoveryChannelConfig(
+in_configDdsiServiceSetDiscoveryChannel(
     in_configDdsiService _this,
     in_configDiscoveryChannel discoveryChannel)
 {
@@ -51,6 +82,17 @@ in_configDdsiServiceSetDiscoveryChannelConfig(
     assert(discoveryChannel);
 
     _this->discoveryChannel = discoveryChannel;
+}
+
+void
+in_configDdsiServiceSetTracing(
+    in_configDdsiService _this,
+    in_configTracing tracing)
+{
+    assert(_this);
+    assert(tracing);
+
+    _this->tracing = tracing;
 }
 
 void
@@ -79,7 +121,8 @@ in_configDdsiServiceSetNetworkId(
     assert(networkId);
 
 	/* free previous definition  */
-    if (_this->interfaceId!=NULL) {
+    if (_this->interfaceId)
+    {
     	os_free(_this->interfaceId);
     	_this->interfaceId = NULL;
     }
@@ -90,34 +133,23 @@ in_configDdsiServiceSetNetworkId(
     }
 }
 
-
 os_boolean
-in_configDdsiServiceInit(
-    in_configDdsiService _this,
-    os_char* name)
+in_configDdsiServiceHasDefaultChannel(
+    in_configDdsiService _this)
 {
-    os_boolean success;
-
     assert(_this);
-    assert(name);
 
-    Coll_List_init(&(_this->channels));
-    _this->name = os_strdup(name);
-    if(!_this->name)
-    {
-        success = OS_FALSE;
-    } else
-    {
-        success = OS_TRUE;
-    }
-    _this->interfaceId = NULL;
-    _this->pathName = NULL;
-    _this->partitioning = NULL;
-    _this->debugging = NULL;
-    _this->tracing = NULL;
-    _this->discoveryChannel = NULL;
+    return _this->hasDefaultChannel;
+}
 
-    return success;
+void
+in_configDdsiServiceSetHasDefaultChannel(
+    in_configDdsiService _this,
+    os_boolean hasDefaultChannel)
+{
+    assert(_this);
+
+    _this->hasDefaultChannel = hasDefaultChannel;
 }
 
 os_char*
