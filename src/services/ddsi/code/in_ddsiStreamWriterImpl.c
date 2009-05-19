@@ -502,7 +502,6 @@ serializeSubscriptionData(
             0x00, 0x00, 0x00, 0x01,
             0x00, 0x00, 0x70 ,0x04 ,
             0x01, 0x00, 0x00 ,0x00};
-        IN_TRACE_1(Send, 2, "serializeSubscriptionData - ################################################################### %d", sizeof(larData));
 
         nofOctets = appendOctets(&(_this->serializer), larData, sizeof(larData));
         IN_BREAK_IF(nofOctets<0);
@@ -862,7 +861,6 @@ sendCurrentBufferToMultiple(
             in_locator destLocator = Coll_Iter_getObject(iter);
 
             assert(destLocator!=NULL);
-            IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer, cos i can %p", _this->transportSender);
             osResult = in_transportSenderSendTo(
                     _this->transportSender,
                     destLocator,
@@ -872,7 +870,6 @@ sendCurrentBufferToMultiple(
                     &(_this->timeout));
             if(osResult == os_resultFail)
             {
-                IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer went oopsie %p", _this->transportSender);
                 result = IN_RESULT_ERROR;
             }
             iter = Coll_Iter_getNext(iter);
@@ -939,12 +936,10 @@ in_ddsiStreamWriterImplAppendData(
 		/* now we should turn to fragmentation, but
 		 * this is not implemented yet */
 	    result = IN_RESULT_ERROR;
-        IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - uh oh %p", facade);
 	} else {
         in_result  retState;
 
         do {
-            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling serializeData %p", facade);
 
             retState = serializeData(
                 _this,
@@ -959,10 +954,8 @@ in_ddsiStreamWriterImplAppendData(
             /*IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling appendSentinelSubmessage %p", facade);
             retState = appendSentinelSubmessage(_this);
             IN_BREAK_IF(retState!=IN_RESULT_OK);*/
-            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling sendCurrentBufferToMultiple %p", facade);
             retState = sendCurrentBufferToMultiple(_this, locatorList);
             IN_BREAK_IF(retState!=IN_RESULT_OK);
-            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - done %p", facade);
             /* all succeeded */
             result = IN_RESULT_OK;
         } while(0);

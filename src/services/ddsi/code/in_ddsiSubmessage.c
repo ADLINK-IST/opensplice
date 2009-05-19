@@ -730,27 +730,10 @@ in_ddsiSubmessageHeartbeatInitFromBuffer(
 
     /* break out in case of error */
     do {
-        OS_STRUCT(in_ddsiEntityId) tmp = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
-        OS_STRUCT(in_ddsiEntityId) tmp2 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_WRITER);
-        OS_STRUCT(in_ddsiEntityId) tmp3 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
-        OS_STRUCT(in_ddsiEntityId) tmp4 = UI2ENTITYID(IN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_WRITER);
 
         nofOctets = in_ddsiEntityIdInitFromBuffer(&(_this->readerId), deserializer);
         if (nofOctets<0) break;
         total += nofOctets;
-        if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp)))
-        {
-            IN_TRACE(Receive, 2, "################################ tmp");
-        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp2)))
-        {
-            IN_TRACE(Receive, 2, "################################ tmp2");
-        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp3)))
-        {
-            IN_TRACE(Receive, 2, "################################ tmp3");
-        } else if((in_ddsiEntityIdEqual(&(_this->readerId), &tmp4)))
-        {
-            IN_TRACE(Receive, 2, "################################ tmp4");
-        }
 
         nofOctets = in_ddsiEntityIdInitFromBuffer(&(_this->writerId), deserializer);
         if (nofOctets<0) break;
@@ -931,27 +914,22 @@ in_ddsiSubmessageAckNackInitFromBuffer(
 
     /* break out in case of error */
     do {
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE1");
         nofOctets =
             in_ddsiEntityIdInitFromBuffer(&(_this->readerId), deserializer);
         if (nofOctets<0) break;
         total += nofOctets;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE2");
         nofOctets =
             in_ddsiEntityIdInitFromBuffer(&(_this->writerId), deserializer);
         if (nofOctets<0) break;
         total += nofOctets;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3");
         nofOctets =
             in_ddsiSequenceNumberSetInitFromBuffer(&(_this->readerSNState), deserializer);
         if (nofOctets<0) break;
         total += nofOctets;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE4");
         nofOctets =
             in_ddsiCountInitFromBuffer(&(_this->count), deserializer);
         if (nofOctets<0) break;
         total += nofOctets;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE5");
         result = total;
     } while (0);
 
