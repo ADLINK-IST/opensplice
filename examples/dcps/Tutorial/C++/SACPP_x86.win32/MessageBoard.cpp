@@ -29,6 +29,8 @@
 #include "ccpp_Chat.h"
 #include "multitopic.h"
 
+#include "Windows.h"
+
 using namespace DDS;
 using namespace Chat;
 
