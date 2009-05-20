@@ -103,6 +103,16 @@ void *
 Coll_List_popBack(
      Coll_List *_this);
 
+
+/**
+ * \brief Removes an object from the head of the list
+ *
+ * A pointer to the removed object is returned. If the list is empty NULL is returned.
+ */
+void *
+Coll_List_popFront(
+    Coll_List *_this);
+
 /**
  * \brief Returns the pointer to the object that is stored in element number 'index' counting from the start of the list
  *
