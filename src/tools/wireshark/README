@@ -1,0 +1,72 @@
+1. Building and installing the wireshark plugin
+
+1.1 Wireshark version and other notes
+
+The plugin has been built against wireshark version 1.0.5. To build the plugin into wireshark it is first necessary to obtain the wireshark source code from http://www.wireshark.org/develop.html. 
+
+In this document <wireshark_dir> is the wireshark source directory.
+In this document <opensplice_dir> is the opensplice installation directory.
+
+Note: for capturing packets with wireshark you need root privileges.
+
+See also <wireshark_dir>/doc/README.plugins file. 
+
+1.2 Add the plugin code
+
+Copy ospl directory from the <opensplice_dir>/tools/wireshark/plugins to <wireshark_dir>/plugins/.
+
+The ospl directory should contain the following files:
+
+	Makefile.am
+	Makefile.common
+	Makefile.nmake
+	moduleinfo.h
+	moduleinfo.nmake
+	packet-ospl.c - the source file for the dissector
+
+According to README.plugins there also should be the files 
+
+	AUTHORS
+	COPYING
+	ChangeLog
+	plugin.rc.in (the Windows resource template file)
+
+but they are not neccesary for the work of the plugin (on Linux).
+
+1.3 Modify existing wireshark files
+
+The following existing wireshark files should be modified as described in README.plugins (section 3):
+
+	configure.in 
+	Makefile.am
+	Makefile.nmake
+	plugins/Makefile.am
+	plugins/Makefile.nmake
+	epan/Makefile.am
+
+The modified files have been included in the opensplice distribution, copy these files from the <opensplice_dir>/tools/wireshark/ directory.
+
+If you want to include the plugin in an installer you have to add lines in the NSIS installer Makefile.nmake and wireshark.nsi files, and the U3 installer makefile.nmake file. (See section 3.7 in <wireshark>/doc/README.plugins)
+ 
+1.4 Building wireshark with the changes
+
+First run 
+
+./autogen.sh  
+
+in <wireshark_dir> directory in order to generate a new configure file. It also generates plugins/ospl/Makefile.in.
+
+Then run 
+
+./configure --prefix=<where_to_install_wireshark>
+
+Note : "prefix" option is needed for "make install"
+
+During this step plugins/ospl/Makefile should be generated.  
+
+After that run 
+
+make 
+make install 
+
+in the same directory. Wireshark should be ready to use from the install directory.

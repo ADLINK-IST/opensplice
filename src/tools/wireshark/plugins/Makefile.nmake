@@ -1,0 +1,162 @@
+#
+# $Id: Makefile.nmake,v 1.1 2008-12-17 14:32:43 eorb Exp $
+#
+
+include ..\config.nmake
+
+############### no need to modify below this line #########
+
+## To add a plugin: Add entry to process-plugins and to install-plugins
+
+all:
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake PLUGIN_TARGET= process-plugins
+
+clean: clean-local
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake PLUGIN_TARGET=clean process-plugins
+
+distclean: distclean-local
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake PLUGIN_TARGET=distclean process-plugins
+
+maintainer-clean: maintainer-clean-local
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake PLUGIN_TARGET=maintainer-clean process-plugins
+
+
+clean-local:
+	rm -rf $(VERSION)
+
+distclean-local: clean-local
+
+maintainer-clean-local: distclean-local
+
+process-plugins:
+	cd agentx
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd artnet
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd asn1
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd ciscosm
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd docsis
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd enttec
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd ethercat
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd giop
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd gryphon
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd infiniband
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd irda
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd lwres
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd m2m
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd mate
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd opcua
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd opsi
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd ospl
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd pcli
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd profinet
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd rlm
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd rtnet
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd rudp
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd sbus
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd stats_tree
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd unistim
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd v5ua
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd wimax
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	cd wimaxasncp
+	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+	cd ..
+	if exist Custom.nmake $(MAKE) /$(MAKEFLAGS) -f Custom.nmake $(PLUGIN_TARGET)
+
+################################################################################
+# copy all plugins to /plugins/$(VERSION), so Wireshark will load them, when
+# started from within the source tree.
+################################################################################
+
+install-plugins:
+!IFDEF ENABLE_LIBWIRESHARK
+	rm -rf $(VERSION)
+	mkdir $(VERSION)
+	xcopy agentx\*.dll $(VERSION) /d
+	xcopy artnet\*.dll $(VERSION) /d
+	xcopy asn1\*.dll $(VERSION) /d
+	xcopy ciscosm\*.dll $(VERSION) /d
+	xcopy docsis\*.dll $(VERSION) /d
+	xcopy enttec\*.dll $(VERSION) /d
+	xcopy ethercat\*.dll $(VERSION) /d
+	xcopy giop\*.dll $(VERSION) /d
+	xcopy gryphon\*.dll $(VERSION) /d
+	xcopy infiniband\*.dll $(VERSION) /d
+	xcopy irda\*.dll $(VERSION) /d
+	xcopy lwres\*.dll $(VERSION) /d
+	xcopy m2m\*.dll $(VERSION) /d
+	xcopy mate\*.dll $(VERSION) /d
+	xcopy opcua\*.dll $(VERSION) /d
+	xcopy opsi\*.dll $(VERSION) /d
+	xcopy ospl\*.dll $(VERSION) /d
+	xcopy pcli\*.dll $(VERSION) /d
+	xcopy profinet\*.dll $(VERSION) /d
+	xcopy rlm\*.dll $(VERSION) /d
+	xcopy rtnet\*.dll $(VERSION) /d
+	xcopy rudp\*.dll $(VERSION) /d
+	xcopy sbus\*.dll $(VERSION) /d
+	xcopy stats_tree\*.dll $(VERSION) /d
+	xcopy unistim\*.dll $(VERSION) /d
+	xcopy v5ua\*.dll $(VERSION) /d
+	xcopy wimax\*.dll $(VERSION) /d
+	xcopy wimaxasncp\*.dll $(VERSION) /d
+	if exist Custom.nmake $(MAKE) /$(MAKEFLAGS) -f Custom.nmake install-plugins
+!ENDIF
+
+clean-deps:
+	rm -rf $(VERSION)
+
+
+

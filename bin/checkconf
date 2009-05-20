@@ -1,0 +1,493 @@
+SPATH=`echo $PATH | tr ':' ' '`
+
+pathcheck ()
+{
+    for i in $SPATH
+    do 
+        test -f $i/$1 && return 0
+    done
+    return 1
+}
+
+convert_windows_path ()
+{
+    case `uname` in
+        CYGWIN_NT*)
+            #Make it a dos path to remove all spaces
+            DOS_CONV_PATH=`cygpath -d "$1"`
+            if [ $? != 0 ]
+            then
+                echo "Error: Could not convert to dos path $1"
+                return 1
+            fi
+            #Now turn into a unix path for useage
+            UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
+            if [ $? != 0 ]
+            then
+                echo "Error: Could not convert to unix path $1"
+                return 1
+            fi
+            ;;
+        *)
+            UNIX_CONV_PATH=$1
+            DOS_CONV_PATH=$1
+            ;;
+    esac
+    return 0
+}
+
+csharp_check ()
+{
+    REQUIRED_VERSION="2.0.50727"
+    REQUIRED_VERSION=`echo $REQUIRED_VERSION | sed -e 's;\.;0;g'`
+    echo -n "C#: "
+    pathcheck csc.exe
+    if [ $? != 0 ]
+    then
+        MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
+        if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
+        then
+            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            return 1
+        fi
+        VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
+        for i in $VERSIONS
+        do
+            NET_VERSION=`echo $i | sed -e 's;\.;0;g' | tr -d 'v'`
+            if [ "$NET_VERSION" -ge "$REQUIRED_VERSION" ]
+            then
+                PATH=/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH
+                break
+            fi
+        done
+    else
+        CSC_EXE=`which csc`
+        if [ "$CSC_EXE" = "/usr/bin/csc" -o  "$CSC_EXE" = "/bin/csc" ]
+        then
+            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            return 1
+        fi
+    fi
+    
+    echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
+    return 0
+}
+
+# test if CL.exe is at least vs8
+msvs_check ()
+{
+    echo -n "VS: "
+    pathcheck cl.exe
+    if [ $? != 0 ]
+    then
+        if [ -z "$VS_HOME" ]
+        then 
+            echo "Error - No VS_HOME not set" 
+            return 1
+        fi
+        if [ ! -d "$VS_HOME" ]
+        then
+            echo "Error - $VS_HOME is not set to a directory"
+            return 1
+        fi
+    else
+        CL_EXE=`which cl.exe`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - cl.exe not found"
+            return 1
+        fi
+  	    VS_HOME=`dirname $CL_EXE`
+  	    VS_HOME=`dirname $VS_HOME`
+  	    VS_HOME=`dirname $VS_HOME`
+       export VS_HOME
+    fi
+    convert_windows_path "$VS_HOME"
+    if [ $? != 0 ]
+    then
+        return 1
+    fi
+
+    PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
+    PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
+    export PATH
+
+    COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
+    if [ -z $COMPILER_VER ]
+    then
+        echo "Error - Compiler version cannot be determined"
+        return 1
+    fi
+    CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
+    if [ $CL_MAJOR -lt 14 ]
+    then
+        echo "Error - Only .NET 2005 and above supported"
+        return 1
+    fi
+    
+    if [ $CL_MAJOR = 14 ]
+    then
+        COMPILER_VER="VS .NET 2005"
+
+        LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
+        LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
+        FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v2.0"
+        export FrameworkSDKDir
+        export LIBPATH 
+        export LIB
+
+    fi
+
+    if [ $CL_MAJOR = 15 ]
+    then
+        COMPILER_VER="VS .NET 2008"
+
+        LIB="$DOS_CONV_PATH\VC\LIB;"
+        FrameworkSDKDir="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
+		  PATH="$FrameworkSDKDir/bin:$PATH"
+        export FrameworkSDKDir
+        export LIB
+        export PATH 
+    fi
+
+    echo "OK - using $COMPILER_VER"
+
+    export VS_VER=$CL_MAJOR
+
+    return 0
+}
+
+
+# test if gcc is at least v3.2
+gcc_check ()
+{
+    echo -n "GCC: "
+    pathcheck gcc
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+
+    GCC_MAJOR=`gcc -dumpversion | cut -f 1 -d .`
+    if [ $GCC_MAJOR -lt 3 ]
+    then
+        echo "Error - Only gcc 3.2 and above is supported"
+        return 1
+    fi
+
+    GCC_MINOR=`gcc -dumpversion | cut -f 2 -d .`
+    if [ $GCC_MAJOR -eq 3 -a $GCC_MINOR -lt 2 ]
+    then
+        echo "Error - Only gcc 3.2 and above is supported"
+        return 1
+    fi
+
+    echo "OK - using version" `gcc -dumpversion`  
+    return 0
+}
+
+# require GNU make 3.80 or 3.81
+make_check ()
+{
+    echo -n "MAKE: "
+    pathcheck make
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+
+    MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
+    if [ $MAKE_MAJOR -lt 3 ]
+    then
+        echo "Error - Only make 3.80 and above is supported"
+        return 1
+    fi
+
+    MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
+    if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
+    then
+        echo "Error - Only make 3.80 and above is supported"
+        return 1
+    fi
+
+    echo "OK - using `make -v 2>/dev/null | head -1`"  
+    return 0
+}
+
+# required Bison
+bison_check ()
+{
+    echo -n "BISON: "
+    pathcheck bison
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+    BISON_VERSION=`bison -V 2>/dev/null | head -1`
+    #BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.' | cut -f 4 -d ' '`
+    #if [ $BISON_MAJOR -lt 2 ]
+    #then
+    #    echo "Error - Only bison 2.x and above is supported"
+    #    return 1
+    #fi
+
+    echo "OK - using $BISON_VERSION"  
+    return 0
+}
+
+# required Flex
+flex_check ()
+{
+    echo -n "FLEX: "
+    pathcheck flex
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+
+    FLEX_VERSION=`flex -V | cut -f 2 -d ' '`
+    # some flex versions say "flex version x" rather than "flex x"
+    if [ "$FLEX_VERSION" = "version" ]
+    then
+        FLEX_VERSION=`flex -V | cut -f 3 -d ' '`
+    fi
+    #FLEX_MAJOR=`echo $FLEX_VERSION | cut -f 1 -d '.'`
+    #if [ $FLEX_MAJOR -lt 2 ]
+    #then
+    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    return 1
+    #fi
+    #FLEX_MINOR=`echo $FLEX_VERSION | cut -f 2 -d '.'`
+    #if [ $FLEX_MAJOR -eq 2 -a $FLEX_MINOR -lt 5 ]
+    #then
+    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    return 1
+    #fi
+
+    echo "OK - using $FLEX_VERSION"  
+    return 0
+}
+
+# require javac and check JAVA_HOME
+javac_check ()
+{
+    echo -n "JAVAC: "
+    REQUIRED_VERSION=1.5
+    REQUIRED_VERSION=`echo $REQUIRED_VERSION | sed -e 's;\.;0;g'`
+    
+    # Check JAVA_HOME directory first
+    if [ -n "$JAVA_HOME" ]
+    then
+        convert_windows_path "$JAVA_HOME"
+        if [ $? != 0 ]
+        then
+            return 1
+        fi
+        T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
+        if [ ! -f $T_JAVAC_EXE ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
+        PATH=$UNIX_CONV_PATH/bin:$PATH
+        export PATH
+    else
+        # If not check the path for java
+        pathcheck javac
+        if [ $? != 0 ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
+        T_JAVAC_EXE=`which javac`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
+    fi
+
+    $JAVAC_EXE -version 2> javac.ver
+    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`  
+    JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
+    rm -f javac.ver
+    if [ -n "$JAVAC_VERSION" ]
+    then
+        if [ $JAVAC_VERSION -ge $REQUIRED_VERSION ]
+        then
+            JAVA_HOME=`echo $JAVAC_EXE | awk '{ print substr($1, 1, length($1)-9); }'`
+            export JAVA_HOME
+        else
+            echo "Error - Only JAVA 1.5 and above is supported"
+            return 1
+        fi
+    else
+        echo "Error - Only JAVA 1.5 and above is supported"
+        return 1
+    fi
+    
+    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
+
+    T_LD_PATH=yes
+    case `uname` in
+        Linux)
+            if [ `uname -m` == "x86_64" ]
+            then  
+		JAVA_PATH_EXT=amd64
+		LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server
+	    else
+		JAVA_PATH_EXT=i386
+	    fi
+            ;;
+        SunOS)
+            JAVA_PATH_EXT=sparc
+            ;;
+        CYGWIN_NT*)
+            JAVA_PATH_EXT=i386
+            PATH=$UNIX_CONV_PATH/lib:$PATH
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
+            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
+            export PATH
+            T_LD_PATH=no
+            ;;
+        *)
+            echo "Error - Not yet supported Java setup"
+            return 1
+            ;;
+    esac
+
+    if [ "$T_LD_PATH" != "no" ]
+    then
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
+        export LD_LIBRARY_PATH
+    fi
+
+    echo "OK - using JAVAC version $REAL_VERSION"
+    echo "  setting JAVA_HOME to $JAVA_HOME"
+    return 0
+}
+
+# require TAO and check TAO_ROOT
+tao_check ()
+{
+    echo -n "TAO: "
+    pathcheck tao_idl
+    if [ $? != 0 ]
+    then
+        if [ -z "$TAO_ROOT" ]
+        then 
+            echo "Error - No TAO found" 
+            return 1
+        fi
+        if [ ! -d "$TAO_ROOT" ]
+        then
+            echo "Error - $TAO_ROOT is not set to a directory"
+            return 1
+        fi
+    else
+        TAOIDL_EXE=`which tao_idl`
+        if [ "$?" != "0" ]
+        then
+            echo "Error - Not TAO found"
+            return 1
+        fi
+  		TAO_ROOT=`dirname \`dirname $TAOIDL_EXE\``
+        export TAO_ROOT
+    fi
+    LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    PATH=$TAO_ROOT/bin:$PATH
+    export PATH
+
+    TAO_VERSION=`tao_idl -V 2>&1 | grep "PrismTech Version"`
+    if [ $? != 0 ]
+    then
+        #ACE TAO
+        TAO_VERSION=`tao_idl -V 2>&1 | grep "TAO_IDL_BE, version "`
+        if [ $? = 0 ]
+        then
+            T_VAR="`echo $TAO_VERSION | awk '{ print $2\" \"$3 }'`"
+            if [ $? != 0 ]
+            then
+                SPLICE_ORB=DDS_ACE_TAO_5_6_6
+            fi
+        else
+            echo "Error - Cannot setup TAO"
+            tao_idl -V
+            return 1
+        fi
+    else
+        T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.4.1\"`"
+        if [ $? = 0 ]
+        then
+            SPLICE_ORB=DDS_OpenFusion_1_4_1 
+        else
+            T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.5.1\"`"
+            if [ $? = 0 ]
+            then
+                SPLICE_ORB=DDS_OpenFusion_1_5_1
+            else
+                T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.6.1\"`"
+                if [ $? = 0 ]
+                then
+                    SPLICE_ORB=DDS_OpenFusion_1_6_1
+                else
+                    echo "Error - Unsupported version of PrismTech TAO"
+                    tao_idl -V
+                    return 1
+                fi
+            fi
+        fi
+    fi
+    
+    export SPLICE_ORB
+
+    echo "OK - using TAO $TAO_VERSION as SPLICE_ORB"
+    echo "  setting TAO_ROOT to $TAO_ROOT"
+    return 0
+}
+
+# require gawk (no version checks)
+gawk_check ()
+{
+    echo -n "GAWK: "
+    pathcheck gawk
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+    GAWK_VERSION=`gawk --version | head -1`
+    echo "OK - using $GAWK_VERSION"  
+    return 0
+}
+
+cleanup_checks ()
+{
+    unset msvs_check
+    unset gcc_check
+    unset make_check
+    unset bison_check
+    unset flex_check
+    unset javac_check
+    unset tao_check
+    unset gawk_check 
+    unset csharp_check
+    unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
+    unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
+    unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
+    unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
+    unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
+    unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
+    unset CSC_EXE VERSIONS NET_VERSION
+}

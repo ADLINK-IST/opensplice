@@ -1,0 +1,9 @@
+#ifndef $upper($(basename))SACDCPS_H
+#define $upper($(basename))SACDCPS_H
+
+#include "$(basename)Dcps.h"
+
+#ifndef DDS_API
+#define DDS_API
+#endif
+

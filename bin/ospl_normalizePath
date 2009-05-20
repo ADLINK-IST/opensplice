@@ -1,0 +1,6 @@
+_npath=$1
+if [ `uname | awk '/_NT-/'` ]
+then
+   _npath=`cygpath -w "$_npath"`
+fi
+echo $_npath

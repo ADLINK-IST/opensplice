@@ -1,0 +1,228 @@
+This file describes how to generate the dcps CCPP interface with an ORB of 
+choice. 
+
+REQUIREMENTS
+------------
+
+It is assumed that the user will make sure the following preconditions are met:
+- gmake is available 
+- compiler is available
+- ORB idl processor is available
+- the path is setup to include the preceding items 
+- library paths are set (as required by the compiler, the ORB, etc)
+- ORB specific environment variables are set (e.g. for OpenFusion and ACE-TAO 
+  the variable TAO_ROOT must point to the appropriate location.)
+- the environment variable SPLICE_ORB specifies what ORB to use 
+
+GENERATING THE CCPP FOR THE SUPPORTED ORBs
+------------------------------------------
+
+The "setup" script should be executed to correctly setup the environment before
+attempting to generate the CCPP api. This script is located in the 
+custom_lib/ccpp code directory and should be modified to select the ORB of 
+choice. It should be executed before gmake is invoked. To generate the CCPP 
+use one of the following values for the environment variable SPLICE_ORB:
+
+- for TAO OpenFusion 1.6.1 use DDS_OpenFusion_1_6_1
+- for TAO OpenFusion 1.5.1 use DDS_OpenFusion_1_5_1
+- for TAO OpenFusion 1.4.1 use DDS_OpenFusion_1_4_1
+- for MICO 2.3.11 use DDS_Mico_2_3_11 
+- for ACE TAO 1.4.1 use DDS_ACE_TAO_1_4_1 
+- for EORB 3.0 use DDS_Eorb_3_0
+
+The "setup" script can easily be tailored by uncommenting the appropriate lines
+inside and by inserting the correct locations in the appropriate variables. 
+Detailed instructions can be found inside the "setup" script itself.
+
+Building the API is done through gmake, which uses the makefile supplied in the
+custom_lib/ccpp directory. When completed successfuly, the makefile creates a 
+directory using the name of the ORB-identifier, and inside that directoty it
+creates two more directories:
+- include: in this directory all the relevant ORB specific include files are
+           copied. Make sure to add this directory to the include path of your
+           compiler when building an application for the specified ORB.
+- lib    : in this directory the ORB specific library containing the DCPS API
+           implementation is copied. Make sure to pass this library file and
+           its path to the linker when building your applications.
+
+Both directories contain copies of the actual makefile output. Performing a
+"make clean" removes the originals, but not the copies in the ORB specific
+directories. When generating multiple API's for different ORB's, you should 
+not only perform each build in a separate shell (using its own tailored setup),
+but you should also perform a make clean on the previous build first. This way
+separate libraries can be build for multiple ORB's from within the same 
+custom_lib directory.
+
+GENERATING FOR ANOTHER ORB
+--------------------------
+
+When using another than the currently supported ORBs there are five files that 
+need modification. These files are:
+1) setup               - used to set platform specific settings and environment
+                         variables: just add your own ORB identifier and ORB 
+                         related path and environment variable settings.
+2) orbdeps.mak         - specifies make rules on how to invoke the ORB idl 
+                         processor and build its output. The meaning of the 
+                         various variables is described below.
+3) orb_abstraction.h   - defines what ORB specific implementation classes are
+                         required to implement a local ref-counted object. Also
+                         defines which ORB specific exceptions are automati-
+                         cally added to each interface operation by the ORB's 
+                         IDL preprocessor. 
+4) ccpp.h              - used to include the ORB specific representation of the
+                         DDS API.
+5) corbaCxxMainInclude - template used by the OpenSplice IDL preprocessor to 
+                         include the ORB specific IDL preprocessor output.
+
+The required modifications to each of these files when adding your own ORB 
+are presented below. 
+
+1: MODIFY THE "SETUP" SCRIPT
+
+The "setup" script is located in the customlib/ccpp directory: just add your 
+own ORB identifier and ORB related path and environment variable settings.
+
+2: MODIFY "ORBDEPS.MAK"
+
+The "orbdeps.mak" file is located in the customlib/ccpp directory and consists
+of a number of variables that is assigned in an ORB dependent manner. There is 
+a special section for each ORB, identified by the value of the $SPLICE_ORB
+variable. Just add your own section identified by the ORB identifier used in
+step 1. You will then need to assign the following variables, whose purpose
+is explained below:
+
+ORB_MK_INCLUDE_NAME - Reserved for internal builds. It can be skipped in
+                      this context. Its value doesn't care.
+ORB_INCLUDE         - location of header files included by the ORB IDL 
+                      preprocessor output files.
+ORB_LDLIBS          - location and names of the orb libraries that need to be 
+                      linked to the ORB IDL preprocessor output.
+ORB_IDL_COMPILER    - name of the ORB specific IDL preprocessor.
+ORB_COMPILER        - Reserved for internal builds. It can be skipped in
+                      this context. Its value doesn't care.
+ORB_IDL_FLAGS       - ORB specific compiler flags for the IDL preprocessor.
+                      Used to minimize the ORB IDL preprocessor output. 
+                      OpenSplice only requires the client side interface 
+                      definitions: server side skeleton definitions and 
+                      marshalling/unmarshalling code may be skipped here. 
+                      In case of doubt, just use default settings (i.e. 
+                      no flags).
+ORB_CPP_FLAGS       - ORB specific flags that need to be passed to the 
+                      C-preprocessor. These flags are used by certain ORBs 
+                      to predefine specific labels as a macro. This way the
+                      ORB can pass some platforms specific information to
+                      its header files, which allows its to choose between
+                      different ways of representing exceptions, namespaces,
+                      etc.
+ORB_CXX_FLAGS       - Compiler flags that might be implied by the usage of
+                      specific lamguage constructions in the ORB specific code.
+                      (For example: if the ORB specific code throws exceptions,
+                      a Microsoft compiler may need to set the -EH flag to 
+                      make sure that memory gets de-allocated appropriately.)
+ORB_TOP_OBJ         - the required object files representing the data model
+                      as specified in the IDL file identified by the TOPIC_IDL
+                      variable. The name of these file(s) is dependent on the
+                      output naming conventions of your ORB's IDL preprocessor.
+ORB_TOP_SRC         - the source code for the object file(s) mentioned above.
+                      This code is generated by your ORB's IDL preprocessor,
+                      and satisfies its output naming conventions.
+ORB_TOP_HDR         - the header files representing the data model as specified
+                      in the IDL file identified by the TOPIC_IDL variable. 
+                      This code is generated by your ORB's IDL preprocessor,
+                      and satisfies its output naming conventions.
+ORB_API_OBJ         - the required object files representing the DCPS API
+                      as specified in the IDL file identified by the 
+                      DCPS_API_IDL variable. The name of these file(s) is 
+                      dependent on the output naming conventions of your ORB's
+                      IDL preprocessor. 
+ORB_API_SRC         - the source code for the object file(s) mentioned above.
+                      This code is generated by your ORB's IDL preprocessor,
+                      and satisfies its output naming conventions.
+ORB_API_HDR         - the header files representing the DCPS API as specified
+                      in the IDL file identified by the DCPS_API_IDL variable.
+                      This code is generated by your ORB's IDL preprocessor,
+                      and satisfies its output naming conventions.
+IDLPP_ORB_OBJ       - the required object files representing the TypeSupport,
+                      DataWriter and DataReader for the types specified in the
+                      IDL file identified by the TOPIC_IDL variable. The
+                      interfaces for these TypeSupports, DataWriters and 
+                      DataReaders is specified in another IDL file that is 
+                      generated by the OpenSplice preprocessor. Its name is
+                      based on the name of the TOPIC_IDL variable, but the
+                      postfix "Dcps" is added. This resulting IDL file must
+                      also be processed by the ORB specific IDL compiler, and
+                      the name of these file(s) is dependent on the output 
+                      naming conventions of your ORB's IDL preprocessor.
+IDLPP_ORB_SRC       - the source code for the object file(s) mentioned above.
+                      This code is generated by your ORB's IDL preprocessor,
+                      and satisfies its output naming conventions.
+IDLPP_ORB_HDR       - the header files representing the interfaces for the 
+                      TypeSupport, DataWriter and DataReader. This code is 
+                      generated by your ORB's IDL preprocessor, and satisfies 
+                      its output naming conventions. 
+
+3: CREATE NEW "ORB_ABSTRACTION.H"
+
+Each ORB requires its own "orb_abstraction.h". There is already an 
+"orb_abstraction.h" file for every preconfigured ORB, located in the 
+"include/dcps/C++/CCPP/$SPLICE_ORB"  directory. It consists of 2 macro's, that are 
+assigned in an ORB dependent manner. To add your own ORB, create a directory
+under "include/dcps/C++/CCPP" with the name of the ORB identifier used in step 1. 
+Create your own "orb_abstraction.h" there and define which ORB specific class is 
+used to implement the local ref-counted object and which ORB specific exceptions 
+are generated for each operation on your IDL interfaces. To do this: perform the 
+following three steps:
+
+1. include the relevant files from your ORB that contain the definitions
+   for the ref-counted object class and exceptions mentioned below.
+2. Create a macro named "LOCAL_REFCOUNTED_OBJECT" that refers to the ORB 
+   specific implementation for the local reference counted object.
+3. Create a macro named "THROW_ORB_EXCEPTIONS" that refers to the exception
+   clause that is generated by the ORB's IDL preprocessor for each interface
+   operation.
+
+4: CREATE NEW "CCPP.H"
+
+The "ccpp.h" file is located in the same directory as the "orb_abstraction.h" in 
+step 3. It includes the ORB specific representation of the DDS API. Create your own
+"ccpp.h" in the same directory as the "orb_abstraction.h" in your ORB directory.
+The file that needs to be included from within "ccpp.h" is the header file that is 
+generated by your ORB specific IDL compiler as a result of processing the 
+dds_dcps.idl file.
+
+5: MODIFY "CORBACXXMAININCLUDE"
+
+The "corbaCxxMainInclude" file is used by the OpenSplice IDL preprocessor to 
+generate a file that includes the ORB specific IDL preprocessor output. There is
+such a template for every pre-configured ORB in the "etc/idlpp/CCPP/$SPLICE_ORB"
+directory. For an IDL file named "Foo.idl", the OpenSplice IDL preprocessor 
+generated a file named "ccpp_Foo.h" that includes all relevant output files from the 
+ORB IDL preprocessor. The "corbaCxxMainInclude" file serves as a template for the 
+this ccpp_Foo.h file and specifies the include statements for the ORB specific IDL 
+preprocessor output files. Just create a directory under "etc/idlpp/CCPP" with the 
+name of the ORB identifier used in step 1. Copy all templates (corba*) from any of
+the preconfigured ORB's to your newly created directory. The only file that needs to
+be modified is the "corbaCxxMainInclude" file. The $(basename) variable 
+represents the base-name of the IDL file (in our example "Foo"). The following two 
+files should be included:
+
+1. The ORB specific header file that contains the data definition.
+2. The ORB specific header file that contains the interfaces for the
+   corresponding TypeSupports, DataWriters and DataReaders. These interfaces
+   are generated by the OpenSplice IDL pre-processor in a file that is named
+   after the datamodel IDL file, but that has added a postfix named "Dcps" 
+   (in our example "FooDcps.idl"). This second IDL file must also be processed
+   by the ORB specific IDL preprocessor, and the resulting header files must 
+   be included by the second include statement.
+ 
+
+Note: By default the OpenSplice IDL preprocessor uses the templates located in 
+"etc/idlpp/CCPP/DDS_OpenFusion_1_4_1" directory for C++ CORBA cohabitation
+except for the Windows platform; there it uses 
+"etc/idlpp/CCPP/DDS_OpenFusion_1_5_1" by default. 
+
+To make sure your application code is generated for your ORB, the OpenSplice
+preprocessor must be instructed to use the correct templates. This can be achieved
+by providing "-b CCPP/$SPLICE_ORB" as command line parameter when invoking it
+or by setting the OSPL_ORB_PATH environment variable to "CCPP/$SPLICE_ORB",
+where $SPLICE_ORB represents your ORB identifier used in step 1 .

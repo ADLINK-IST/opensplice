@@ -1,0 +1,893 @@
+$(type_name)TypeSupport
+$(type_name)TypeSupport__alloc (
+    void
+    )
+{
+    extern c_bool __$(type_name)__copyIn(c_base base, void *from, void *to);
+    extern void __$(type_name)__copyOut(void *from, void *to);
+    extern const char *$(type_name)_metaDescriptor;
+
+    return
+	DDS__FooTypeSupport__alloc (
+	    __$(type_name)__name(),
+            __$(type_name)__keys(),
+            $(type_name)_metaDescriptor,
+            NULL,
+            (DDS_copyIn)__$(type_name)__copyIn,
+            (DDS_copyOut)__$(type_name)__copyOut,
+            (DDS_unsigned_long)(sizeof($(type_name))),
+            (DDS_typeSupportAllocBuffer)DDS_sequence_$(type_name)_allocbuf
+        );
+}
+
+DDS_ReturnCode_t
+$(type_name)TypeSupport_register_type (
+    $(type_name)TypeSupport _this,
+    const DDS_DomainParticipant domain,
+    const DDS_string name
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooTypeSupport_register_type (
+	    (DDS_TypeSupport)_this,
+	    domain,
+	    name
+	);
+    return result;
+}
+
+DDS_string
+$(type_name)TypeSupport_get_type_name (
+    $(type_name)TypeSupport _this
+    )
+{
+    DDS_string result = (DDS_string)
+        DDS__FooTypeSupport_get_type_name (
+	    (DDS_TypeSupport)_this
+	);
+    return result;
+}
+
+DDS_InstanceHandle_t
+$(type_name)DataWriter_register_instance (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data
+    )
+{
+    DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
+        DDS__FooDataWriter_register_instance (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data
+	);
+    return result;
+}
+
+DDS_InstanceHandle_t
+$(type_name)DataWriter_register_instance_w_timestamp (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_Time_t *source_timestamp
+    )
+{
+    DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
+        DDS__FooDataWriter_register_instance_w_timestamp (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    source_timestamp
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_unregister_instance (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_unregister_instance (
+	    (const DDS_DataWriter)_this,
+	    (DDS_sample)instance_data,
+	    handle
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_unregister_instance_w_timestamp (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t handle,
+    const DDS_Time_t *source_timestamp
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_unregister_instance_w_timestamp (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    handle,
+	    source_timestamp
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_write (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_write (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    handle
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_write_w_timestamp (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t handle,
+    const DDS_Time_t *source_timestamp
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_write_w_timestamp (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    handle,
+	    source_timestamp
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_dispose (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t instance_handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_dispose (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    instance_handle
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_dispose_w_timestamp (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t instance_handle,
+    const DDS_Time_t *source_timestamp
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_dispose_w_timestamp (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    instance_handle,
+	    source_timestamp
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_writedispose (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t instance_handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_writedispose (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    instance_handle
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_writedispose_w_timestamp (
+    $(type_name)DataWriter _this,
+    const $(type_name) *instance_data,
+    const DDS_InstanceHandle_t instance_handle,
+    const DDS_Time_t *source_timestamp
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_writedispose_w_timestamp (
+	    (DDS_DataWriter)_this,
+	    (const DDS_sample)instance_data,
+	    instance_handle,
+	    source_timestamp
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataWriter_get_key_value (
+    $(type_name)DataWriter _this,
+    $(type_name) *key_holder,
+    const DDS_InstanceHandle_t handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataWriter_get_key_value (
+	    (DDS_DataWriter)_this,
+	    (DDS_sample)key_holder,
+	    handle
+	);
+    return result;
+}
+
+DDS_InstanceHandle_t
+$(type_name)DataWriter_lookup_instance (
+    $(type_name)DataWriter _this,
+    const $(type_name) *key_holder
+    )
+{
+    DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
+        DDS__FooDataWriter_lookup_instance (
+        (DDS_DataWriter)_this,
+        (DDS_sample)key_holder
+    );
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read_w_condition (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read_w_condition (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_condition
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take_w_condition (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take_w_condition (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_condition
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read_next_sample (
+    $(type_name)DataReader _this,
+    $(type_name) *received_data,
+    DDS_SampleInfo *sample_info
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read_next_sample (
+	    (DDS_DataReader)_this,
+	    (DDS_sample)received_data,
+	    sample_info
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take_next_sample (
+    $(type_name)DataReader _this,
+    $(type_name) *received_data,
+    DDS_SampleInfo *sample_info
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take_next_sample (
+	    (DDS_DataReader)_this,
+	    (DDS_sample)received_data,
+	    sample_info
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read_instance (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read_instance (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take_instance (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take_instance (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read_next_instance (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read_next_instance (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take_next_instance (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take_next_instance (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_read_next_instance_w_condition (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_read_next_instance_w_condition (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    a_condition
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_take_next_instance_w_condition (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_take_next_instance_w_condition (
+	    (DDS_DataReader)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    a_condition
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_return_loan (
+    $(type_name)DataReader _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_return_loan (
+            (DDS_DataReader)_this,
+            (DDS_sequence)received_data,
+            info_seq
+    );
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReader_get_key_value (
+    $(type_name)DataReader _this,
+    $(type_name) *key_holder,
+    const DDS_InstanceHandle_t handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReader_get_key_value (
+	    (DDS_DataReader)_this,
+	    (DDS_sample)key_holder,
+	    handle
+	);
+    return result;
+}
+
+DDS_InstanceHandle_t
+$(type_name)DataReader_lookup_instance (
+    $(type_name)DataReader _this,
+    const $(type_name) *key_holder
+    )
+{
+    DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
+        DDS__FooDataReader_lookup_instance (
+	    (DDS_DataReader)_this,
+	    (DDS_sample)key_holder
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read_next_sample (
+    $(type_name)DataReaderView _this,
+    $(type_name) *received_data,
+    DDS_SampleInfo *sample_info
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read_next_sample (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sample)received_data,
+	    sample_info
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take_next_sample (
+    $(type_name)DataReaderView _this,
+    $(type_name) *received_data,
+    DDS_SampleInfo *sample_info
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take_next_sample (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sample)received_data,
+	    sample_info
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read_instance (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read_instance (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take_instance (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take_instance (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read_next_instance (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read_next_instance (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take_next_instance (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_SampleStateMask sample_states,
+    const DDS_ViewStateMask view_states,
+    const DDS_InstanceStateMask instance_states
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take_next_instance (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+	    sample_states,
+	    view_states,
+	    instance_states
+	);
+    return result;
+}
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_return_loan (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_return_loan (
+            (DDS_DataReaderView)_this,
+            (DDS_sequence)received_data,
+            info_seq
+    );
+    
+    if ( result == DDS_RETCODE_OK ) {
+        DDS__free(received_data->_buffer);
+        received_data->_length  = 0;
+        received_data->_maximum = 0;
+        received_data->_buffer  = NULL;
+        
+        DDS__free(info_seq->_buffer);
+        info_seq->_length  = 0;
+        info_seq->_maximum = 0;
+        info_seq->_buffer  = NULL;
+    }
+        
+    return result;
+}
+
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read_w_condition (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read_w_condition (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+            a_condition
+	);
+    return result;
+}
+
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take_w_condition (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_ReadCondition a_condition
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take_w_condition (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+            a_condition
+	);
+    return result;
+}
+
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_read_next_instance_w_condition (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_ReadCondition a_condition
+   )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_read_next_instance_w_condition (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+            a_condition
+	);
+    return result;
+}
+
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_take_next_instance_w_condition (
+    $(type_name)DataReaderView _this,
+    DDS_sequence_$(type_name) *received_data,
+    DDS_SampleInfoSeq *info_seq,
+    const DDS_long max_samples,
+    const DDS_InstanceHandle_t a_handle,
+    const DDS_ReadCondition a_condition
+   )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_take_next_instance_w_condition (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sequence)received_data,
+	    info_seq,
+	    max_samples,
+	    a_handle,
+            a_condition
+	);
+    return result;
+}
+
+
+DDS_ReturnCode_t
+$(type_name)DataReaderView_get_key_value (
+    $(type_name)DataReaderView _this,
+    $(type_name) *key_holder,
+    const DDS_InstanceHandle_t handle
+    )
+{
+    DDS_ReturnCode_t result = (DDS_ReturnCode_t)
+        DDS__FooDataReaderView_get_key_value (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sample)key_holder,
+	    handle
+	);
+    return result;
+}
+
+
+DDS_InstanceHandle_t
+$(type_name)DataReaderView_lookup_instance (
+    $(type_name)DataReaderView _this,
+    $(type_name) *key_holder
+    )
+{
+    DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
+        DDS__FooDataReaderView_lookup_instance (
+	    (DDS_DataReaderView)_this,
+	    (DDS_sample)key_holder
+	);
+    return result;
+}
+

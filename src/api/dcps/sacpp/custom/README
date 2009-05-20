@@ -1,0 +1,75 @@
+This file describes how to generate the dcps StandAlone C++ (SACPP) API library 
+with a compiler of choice. 
+
+REQUIREMENTS
+------------
+
+It is assumed that the user will make sure the following preconditions are met:
+- gmake is available 
+- compiler is available
+- the path is setup to include the preceding items 
+
+GENERATING THE SACPP WITH A GCC-COMPILER
+----------------------------------------
+
+The makefile is already prepared to build the SACPP with a gcc compiler: it 
+should work for all gcc compilers starting from version 3.2 up to the latest
+version. Simply do the following things to build a SACPP libarary for your
+gcc compiler version of choice:
+- Go to the installation directory of your OpenSplice release.
+- Source the release.com script of your OpenSplice release.
+  In a bash shell this means entering the folloowing command 
+  
+  . ./release.com
+  
+- Go to the SACPP custom_lib direcotry:
+
+  cd custom_lib/sacpp
+ 
+- Run make to rebuild the SACPP library:
+
+  make
+  
+- Once the libray has successfuly been built it is copied into the SACPP/lib
+  directory under your current directory. Removing the temporary build results 
+  with a 'make clean' does not autmatically remove your library as well. So you 
+  may now get rid of the intermediate build results:
+  
+  make clean
+  
+- Replace the original library that was build using gcc3.2.3 with the one you
+  just built. It is probably safe to rename the original library before copying
+  the new library on top of it. So do the following things:
+  
+  cd $OSPL_HOME/lib
+  mv libdcpssacpp.so libdcpssacpp.so.org
+  cp ../custom_lib/sacpp/SACPP/lib/libdcpssacpp.so .
+  
+- Now you can rebuild and run the example code and your own code using the same 
+  compiler.
+  
+GENERATING THE SACPP WITH A NON-GCC-COMPILER
+--------------------------------------------
+
+The basic process for generating the SACPP API with a non-gcc-compiler is the same
+as for a gcc compiler, only the makefile needs to be tailored first. So you should
+edit the makefile in the custom_lib/sacpp directory and replace the value of the 
+following variables:
+
+CXX         : insert the executable name of your C++ compiler of choice here.
+CXXFLAGS    : insert the required compiler flags. 
+              (Refer to your compiler manual for the best possible combination.)
+LD_SO       : insert the executable name of your C++ linker of choice here.
+LD_FLAGS    : insert the required linker flags.
+              (Refer to your linker manual for the best possible combination.)
+LD_LIBS     : insert the names of the compiler specific C++ libraries.
+              (Refer to your linker manual for the best possible combination.)
+
+Once the makefile has been tailored this way, the SACPP API can be built in the 
+same way as for a normal gcc compiler (see the previous section).
+
+Please note that when building the C++ example code, you wil need to use the same
+compiler/linker combination that was used to build the SACPP library. That requires
+you to also edit the BUILD scripts that come with the example code. However, this is 
+simply a matter of substituting the same variables with the same values as in the
+makefile.

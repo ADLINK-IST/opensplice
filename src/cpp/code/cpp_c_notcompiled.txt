@@ -1,0 +1,457 @@
+#include "is.h"
+#include "malloc.h"
+#include "symtbl.h"
+#include "accum.h"
+#include "io.h"
+#include "if.h"
+#include "include.h"
+
+#define DEBUG_MAIN/**/
+
+extern char **argvec;
+
+#ifdef DEBUG_MAIN
+extern int debugging;
+#endif
+
+static char quote;
+
+int keep_comments;
+int no_line_lines;
+int incldep;
+char *incldep_o;
+int do_at_ctrls;
+extern char *predefs[];
+
+int main (int ac, char ** av)
+{
+   int argno;
+   int rest;
+   char *cp;
+   FILE *inf;
+   FILE *outf;
+   char *inname;
+   int backslash;
+   int i;
+
+   init_symtbl();
+#define predef(str) ( (cp=copyofstr("1")), \
+                      check_malloc(cp), \
+                      define((str),-1,(unsigned char *) cp,DEF_PREDEF) )
+
+   for (i = 0;predefs[i];i++)
+   {
+      predef(predefs[i]);
+   }
+   init_include();
+   inf = stdin;
+   outf = stdout;
+   inname = "";
+   keep_comments = 0;
+   no_line_lines = 0;
+   do_at_ctrls = 0;
+   incldep = 0;
+   argno = 0;
+   for (ac--, av++;ac;ac--, av++)
+   {
+      if (**av == '-')
+      {
+         rest = 0;
+         if (!strcmp(*av, "-undef"))
+         {
+            undef_predefs();
+         }
+         else
+         {
+            for (++*av;(**av) && !rest;++*av)
+            {
+               switch (**av)
+               {
+                  case 'C':
+                     keep_comments = 1;
+                     break;
+                  case 'D':
+                     rest = 1;
+                     ++*av;
+                     if (strcmp(*av, "@") == 0)
+                     {
+                        do_at_ctrls = 1;
+                     }
+                     else
+                     {
+                        cp = strchr(*av, '=');
+                        if (cp)
+                        {
+                           if (cp != *av)
+                           {
+                              char *dp;
+                              *cp++ = '\0';
+                              dp = copyofstr(cp);
+                              check_malloc(dp);
+                              define(*av, -1, (unsigned char *) dp, DEF_CMDLINE);
+                           }
+                           else
+                           {
+                              fprintf(stderr, "Must give a name for -D\n");
+                           }
+                        }
+                        else
+                        {
+                           char *dp;
+                           dp = copyofstr("1");
+                           check_malloc(dp);
+                           define(*av, -1, (unsigned char *) dp, DEF_CMDLINE);
+                        }
+                     }
+                     break;
+                  case 'I':
+                     rest = 1;
+                     ++*av;
+                     if (**av)
+                     {
+                        Ifile(*av);
+                     }
+                     else
+                     {
+                        fprintf(stderr, "Must give a directory name for -I\n");
+                     }
+                     break;
+                     /*
+                                     case 'M':
+                                        incldep = 1;
+                                        break;
+                     */
+                  case 'P':
+                     no_line_lines = 1;
+                     break;
+                  case 'U':
+                     rest = 1;
+                     ++*av;
+                     if (**av)
+                     {
+                        undef(*av);
+                     }
+                     else
+                     {
+                        fprintf(stderr, "Must give a name for -U\n");
+                     }
+                     break;
+                  case '?':
+                     {
+                        fprintf (stdout, "cpp [-Dmacro[=defn]] [-Umacro] [-Idir] [-C] [-P] infile [outfile]\n");
+                        fprintf (stdout, "   -D Define macro\n");
+                        fprintf (stdout, "   -U Undefine macro\n");
+                        fprintf (stdout, "   -I Include directory\n");
+                        fprintf (stdout, "   -C Keep comments\n");
+                        fprintf (stdout, "   -P Ignore blank lines\n");
+                        exit (0);
+                        break;
+                     }
+                  default:
+                     {
+                        fprintf (stderr, "Unknown flag -%c\n", **av);
+                        exit (0);
+                        break;
+                     }
+               }
+            }
+         }
+      }
+      else
+      {
+         switch (argno++)
+         {
+            case 0:
+               if (strcmp(*av, "-") != 0)
+               {
+                  FILE *f;
+                  f = fopen(*av, "r");
+                  if (f == NULL)
+                  {
+                     fprintf(stderr, "Cannot open source file %s\n", *av);
+                  }
+                  else
+                  {
+                     inf = f;
+                     inname = *av;
+                  }
+               }
+               break;
+            case 1:
+               if (strcmp(*av, "-") != 0)
+               {
+                  FILE *f;
+                  f = fopen(*av, "w");
+                  if (f == NULL)
+                  {
+                     fprintf(stderr, "Can't create %s\n", *av);
+                  }
+                  else
+                  {
+                     outf = f;
+                  }
+               }
+               break;
+            default:
+               fprintf(stderr, "Extra name %s ignored\n", *av);
+               break;
+         }
+      }
+   }
+   if (incldep && !inname[0])
+   {
+      fprintf(stderr, "No input file for -M flag\n");
+      exit(1);
+   }
+   if (do_at_ctrls)
+   {
+      predef("at_sign_ctrls");
+   }
+   Ifile("/local/include");
+   Ifile("/usr/include");
+   willbefirst = 1;
+   quote = 0;
+   backslash = 0;
+   init_io(inf, inname);
+   outfile = outf;
+   ifstack = 0;
+   n_skipped_ifs = 0;
+   cp = strrchr(inname, CPP_FILESEPCHAR_1);
+   if (!cp) {
+       cp = strrchr(inname, CPP_FILESEPCHAR_2);
+   }
+   if (cp)
+   {
+      char save = *cp;
+      *cp = '\0';
+      init_incldir(inname);
+      *cp = save;
+   }
+   else
+   {
+      init_incldir(".");
+   }
+   autodef_file(inname);
+   autodef_line(1);
+   out_at(1, inname);
+   if (incldep)
+   {
+      char *dp;
+      cp = strrchr(inname, CPP_FILESEPCHAR_1);
+      if (!cp) {
+          cp = strrchr(inname, CPP_FILESEPCHAR_2);
+      }
+      if (cp)
+      {
+         cp ++;
+      }
+      else
+      {
+         cp = inname;
+      }
+      dp = cp + strlen(cp) - 2;
+      if ((dp < cp) || strcmp(dp, ".c"))
+      {
+         fprintf(stderr, "Missing .c in %s\n", inname);
+         exit(1);
+      }
+      incldep_o = copyofstr(cp);
+      incldep_o[dp + 1 - cp] = 'o';
+      fprintf(outfile, "%s: ", incldep_o);
+      fprintf(outfile, "%s\n", inname);
+   }
+   while (1)
+   {
+      char c;
+      int haddigit;
+      c = Get();
+      if (c == -1)
+      {
+         break;
+      }
+      if (backslash)
+      {
+         maybe_print(c);
+         backslash = 0;
+         continue;
+      }
+      if (!incldep && (isdigit(c) || (c == '.')))
+      {
+         haddigit = 0;
+         while (isdigit(c) || (c == '.'))
+         {
+            haddigit |= isdigit(c);
+            maybe_print(c);
+            c = Get();
+            if (c == -1)
+            {
+               break;
+            }
+         }
+         if (haddigit && ((c == 'e') || (c == 'E')))
+         {
+            maybe_print(c);
+            c = Get();
+            if (c == -1)
+            {
+               break;
+            }
+            while (isdigit(c))
+            {
+               maybe_print(c);
+               c = Get();
+               if (c == -1)
+               {
+                  break;
+               }
+            }
+         }
+         Push(c);
+         continue;
+      }
+      if (quote)
+      {
+         if (c == '\\')
+         {
+            maybe_print(c);
+            backslash = 1;
+            continue;
+         }
+         else if ((c == quote) || (c == '\n'))
+         {
+            maybe_print(c);
+            quote = 0;
+            continue;
+         }
+         else
+         {
+            maybe_print(c);
+            continue;
+         }
+      }
+      if (c == '\\') /* this weirdness is Reiser semantics.... */
+      {
+         backslash = 1;
+         maybe_print(c);
+         continue;
+      }
+      if ((c == '\'') || (c == '"'))
+      {
+         quote = c;
+         maybe_print(c);
+      }
+      else if (linefirst && (c == '#'))
+      {
+         do_sharp();
+      }
+      else if (do_at_ctrls && (c == '@'))
+      {
+         do_at();
+      }
+      else if (! incldep)
+      {
+         if (isbsymchar(c) && !in_false_if())
+         {
+            char *cp;
+            DEF *d;
+            cp = init_accum();
+            while (issymchar(c))
+            {
+               accum_char(cp, c);
+               c = Get();
+               if (c == -1)
+               {
+                  break;
+               }
+            }
+            Push(c);
+            cp = accum_result(cp);
+#ifdef DEBUG_MAIN
+
+            if (debugging)
+            {
+               outputs("<word:");
+               outputs(cp);
+               outputs(">");
+            }
+#endif
+            d = find_def(cp);
+            if (d)
+            {
+               expand_def(d);
+            }
+            else
+            {
+               for (;*cp;cp++)
+               {
+                  maybe_print(*cp);
+               }
+            }
+         }
+         else if (c == '/')
+         {
+            char d;
+            d = Get();
+            if (d == -1)
+            {
+               break;
+            }
+            if (d == '*')
+            {
+               d = '\0';
+               if (keep_comments)
+               {
+                  maybe_print('/');
+                  maybe_print('*');
+               }
+               do
+               {
+                  c = d;
+                  d = Get();
+                  if (d == -1)
+                  {
+                     break;
+                  }
+                  if ((d == '\n') || keep_comments)
+                  {
+                     maybe_print(d);
+                  }
+               }
+               while ((c != '*') || (d != '/'));
+            }
+            else if (d == '/')
+            {
+               if (keep_comments)
+               {
+                  maybe_print('/');
+                  maybe_print('/');
+               }
+               do
+               {
+                  c = Get();
+                  if (c == -1)
+                  {
+                     break;
+                  }
+                  if ((c == '\n') || keep_comments)
+                  {
+                     maybe_print(c);
+                  }
+               }
+               while (c != '\n');
+            }
+            else
+            {
+               Push(d);
+               maybe_print(c);
+            }
+         }
+         else
+         {
+            maybe_print(c);
+         }
+      }
+   }
+
+   return 0;
+}

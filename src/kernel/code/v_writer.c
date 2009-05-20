@@ -1,0 +1,2609 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
+#include "v__writer.h"
+#include "v__writerQos.h"
+#include "v__publisher.h"
+#include "v__topic.h"
+#include "v__group.h"
+#include "v__observer.h"
+#include "v__kernel.h"
+#include "v__leaseManager.h"
+#include "v__deadLineInstanceList.h"
+#include "v__lease.h"
+#include "v__observable.h"
+#include "v__status.h"
+#include "v__statCat.h"
+#include "v__statisticsInterface.h"
+#include "v__builtin.h"
+#include "v__participant.h"
+#include "v__messageQos.h"
+
+#include "v_domain.h"
+#include "v_groupSet.h"
+#include "v_time.h"
+#include "v_state.h"
+#include "v_entity.h"
+#include "v_public.h"
+#include "v_status.h"
+#include "v_writerInstance.h"
+#include "v_writerSample.h"
+#include "v_writerCache.h"
+#include "v_groupInstance.h"
+#include "v_event.h"
+#include "v_qos.h"
+#include "v_policy.h"
+#include "v_instance.h"
+#include "v_statistics.h"
+#include "v_writerStatistics.h"
+#include "v_message.h"
+
+#define _EXTENT_
+#ifdef _EXTENT_
+#include "c_extent.h"
+#endif
+
+#include "c_iterator.h"
+#include "c_stringSupport.h"
+
+#include "os_report.h"
+#include "os.h"
+
+#define _INTRANSIT_DECAY_COUNT_ (3)
+
+/**************************************************************
+ * Private functions
+ **************************************************************/
+
+static c_type _v_writerGroup_t = NULL;
+
+c_type
+v_writerGroup_t (
+    c_base base)
+{
+    if (_v_writerGroup_t == NULL) {
+        _v_writerGroup_t = c_resolve(base,"kernelModule::v_writerGroup");
+    }
+    return _v_writerGroup_t;
+}
+
+static void
+deadlineUpdate(
+    v_writer writer,
+    v_writerInstance instance)
+{
+    v_deadLineInstanceListUpdate(writer->deadlineList, v_instance(instance));
+    instance->deadlineCount = 0;
+}
+
+static void
+v_writerGroupSetInit (
+    struct v_writerGroupSet *set)
+{
+    set->firstGroup = NULL;
+}
+
+static v_writerGroup
+v_writerGroupSetAdd (
+    struct v_writerGroupSet *set,
+    v_group g)
+{
+    c_type type;
+    v_writerGroup proxy;
+
+    type = v_writerGroup_t(c_getBase(g));
+    proxy = c_new(type);
+    proxy->group = c_keep(g);
+    proxy->next = set->firstGroup;
+    proxy->groupInstanceCache = v_writerCacheNew(v_objectKernel(g),
+                                                 V_CACHE_OWNER);
+    set->firstGroup = proxy;
+    return c_keep(proxy);
+}
+
+static v_writerGroup
+v_writerGroupSetRemove (
+    struct v_writerGroupSet *set,
+    v_group g)
+{
+    v_writerGroup *proxy;
+    v_writerGroup foundProxy;
+
+    foundProxy = NULL;
+    proxy = &set->firstGroup;
+    while (((*proxy) != NULL) && ((*proxy)->group != g)) {
+        proxy = &(*proxy)->next;
+    }
+    if ((*proxy) != NULL) {
+        foundProxy = *proxy;
+        *proxy = (*proxy)->next;
+        foundProxy->next = NULL;
+    }
+    return foundProxy;
+}
+
+typedef c_bool (*v_writerGroupSetWalkAction)(v_writerGroup group, c_voidp arg);
+
+static c_bool
+v_writerGroupSetWalk(
+    struct v_writerGroupSet *s,
+    v_writerGroupSetWalkAction action,
+    c_voidp arg)
+{
+    v_writerGroup proxy;
+    c_bool proceed = TRUE;
+
+    proxy = s->firstGroup;
+    while ((proceed) && (proxy != NULL)) {
+        proceed = action(proxy,arg);
+        proxy = proxy->next;
+    }
+    return proceed;
+}
+
+static void
+initMsgQos(
+    v_writer w)
+{
+    assert(w);
+    assert(C_TYPECHECK(w,v_writer));
+
+    c_free(w->msgQos); /* free existing value. */
+    c_free(w->relQos); /* free existing value. */
+
+    w->msgQos = v_messageQos_new(w);
+    if (w->qos->reliability.kind == V_RELIABILITY_RELIABLE) {
+        w->relQos = c_keep(w->msgQos);
+    } else {
+        w->relQos = v_messageQos_new(w);
+    }
+}
+
+static void
+keepSample (
+    v_writer writer,
+    v_writerInstance instance,
+    v_writerSample sample)
+{
+    v_writerSample removed;
+    v_writerInstance found;
+    v_publisher publisher;
+    v_participant participant;
+
+    removed = v_writerInstanceInsert(instance, sample);
+    if (removed != NULL) {
+        c_free(removed);
+    } else {
+        writer->count++;
+    }
+
+    if (!instance->resend) {
+        publisher = v_publisher(writer->publisher);
+        if (!v_publisherIsSuspended(publisher)) {
+            instance->resend = TRUE;
+            found = c_tableInsert(writer->resendInstances, instance);
+            assert(found == instance);
+            /* notify participant */
+            participant = v_publisherParticipant(publisher);
+            v_participantResendManagerAddWriter(participant, writer);
+        }
+    }
+}
+
+static v_writeResult
+doWait (
+    v_writer w,
+    c_time until)
+{
+    c_time relTimeOut;
+    c_ulong flags;
+    v_writeResult result;
+
+    if (w->infWait == FALSE) {
+        relTimeOut = c_timeSub(until, v_timeGet());
+        if (c_timeCompare(relTimeOut,C_TIME_ZERO) == C_GT) {
+            flags = v__observerTimedWait(v_observer(w), relTimeOut);
+        } else {
+            flags = V_EVENT_TIMEOUT;
+        }
+    } else {
+        flags = v__observerWait(v_observer(w));
+    }
+    if (flags & V_EVENT_OBJECT_DESTROYED) {
+        result = V_WRITE_PRE_NOT_MET;
+    } else {
+        if (flags & V_EVENT_TIMEOUT) {
+            result = V_WRITE_TIMEOUT;
+        } else {
+            result = V_WRITE_SUCCESS;
+        }
+    }
+    return result;
+}
+
+struct groupWriteArg {
+    v_writerInstance instance;
+    v_message message;
+    v_writeResult result;
+};
+
+static c_bool
+groupWrite(
+    v_writerGroup proxy,
+    c_voidp arg)
+{
+    v_writeResult result;
+    v_writerCacheItem item;
+    struct groupWriteArg *a = (struct groupWriteArg *)arg;
+    v_groupInstance instance;
+    v_message message = v_message(a->message);
+
+    assert(proxy != NULL);
+    assert(C_TYPECHECK(proxy,v_writerGroup));
+
+    instance = NULL;
+    result = v_groupWrite(proxy->group, message, &instance, V_NETWORKID_LOCAL);
+    if (instance != NULL) {
+        item = v_writerCacheItemNew(proxy->groupInstanceCache,instance);
+        v_writerCacheInsert(proxy->groupInstanceCache,item);
+        v_writerCacheInsert(a->instance->groupInstanceCache,item);
+        c_free(instance);
+        c_free(item);
+    }
+    if (result != V_WRITE_SUCCESS) {
+        if ((result == V_WRITE_REJECTED) ||
+            (a->result == V_WRITE_SUCCESS)) {
+            a->result = result;
+        }
+    }
+
+    return TRUE;
+}
+
+static c_bool
+groupInstanceWrite (
+    v_cacheNode node,
+    c_voidp arg)
+{
+    v_writeResult result;
+    v_writerCacheItem item;
+    struct groupWriteArg *a = (struct groupWriteArg *)arg;
+
+    item = v_writerCacheItem(node);
+    result = v_groupInstanceWrite(item->instance,v_message(a->message));
+    if (result != V_WRITE_SUCCESS) {
+        if ((result == V_WRITE_REJECTED) ||
+            (a->result == V_WRITE_SUCCESS)) {
+            a->result = result;
+        }
+    }
+    return TRUE;
+}
+
+static c_bool
+groupInstanceResend (
+    v_cacheNode node,
+    c_voidp arg)
+{
+    v_writeResult result;
+    v_writerCacheItem item;
+    struct groupWriteArg *a = (struct groupWriteArg *)arg;
+
+    item = v_writerCacheItem(node);
+
+    result = v_groupInstanceResend(item->instance,v_message(a->message));
+    if (result != V_WRITE_SUCCESS) {
+        if ((result == V_WRITE_REJECTED) ||
+            (a->result == V_WRITE_SUCCESS)) {
+            a->result = result;
+        }
+    }
+    return TRUE;
+}
+
+static c_bool
+connectInstance(
+    c_object o,
+    c_voidp arg)
+{
+  /**
+   * Locally we can never get a reject of a reader based on max_instance
+   * resource limits, because the writer determines the number of instances,
+   * the reader can never fix the problem that it has reached maximum of the
+   * resource limits. In case of a reliable network we also will never receive
+   * an in-transit state of a sample!
+   * Only in case of an unreliable network it is possible we might need to
+   * keep the register sample, since the sample has the state INTRANSIT.
+   * In this case we should check resource limits, because we need to keep the
+   * sample. However we accept that we exceed the resource limits in order to
+   * implement true reliability.
+   * The only way this can cause a problem is when an application changes the
+   * QoS (partition policy in particular) with a high frequency, which is a
+   * bad practice anyway.
+   */
+    v_writerInstance i = v_writerInstance(o);
+    v_writerGroup proxy = (v_writerGroup)arg;
+    v_writer w = v_writer(i->writer);
+    v_message message;
+    v_writerSample sample, found;
+    struct groupWriteArg grouparg;
+
+    message = v_writerInstanceCreateMessage(i);
+    v_nodeState(message) = L_REGISTER;
+    message->writeTime = v_timeGet();
+    message->writerGID = v_publicGid(v_public(w));
+    message->sequenceNumber = w->sequenceNumber++;
+    message->writerInstanceGID = v_publicGid(v_public(i));
+    message->qos = c_keep(w->relQos);
+
+    grouparg.message = message;
+    grouparg.instance = i;
+    grouparg.result = V_WRITE_SUCCESS;
+    groupWrite(proxy, &grouparg);
+    if (grouparg.result == V_WRITE_INTRANSIT) {
+        sample = v_writerSampleNew(w, message);
+        found = v_writerInstanceInsert(i, sample);
+        c_free(found);
+        c_free(sample);
+    }
+    c_free(message);
+
+    return TRUE;
+}
+
+struct writeGroupInstanceArg {
+    v_message message;
+    v_group group;
+    c_bool keep;
+};
+
+static c_bool
+writeGroupInstance(
+    v_cacheNode node,
+    c_voidp arg)
+{
+    v_writerCacheItem item = v_writerCacheItem(node);
+    struct writeGroupInstanceArg *a = (struct writeGroupInstanceArg *)arg;
+    c_bool result;
+    v_writeResult wr;
+    v_groupInstance instance;
+
+    instance = v_groupInstance(item->instance);
+    if (v_groupInstanceOwner(instance) == a->group) {
+        /* I will never get a rejected status, since datareaders don't need to
+         * store the message.
+         * I can get an INTRANSIT status, in case of an unreliable network.
+         * Again we accep the fact that we will temporarily exceed resource
+         * limits.
+         */
+        wr = v_groupWrite(instance->group,
+                          a->message,
+                          &instance,
+                          V_NETWORKID_ANY);
+
+        assert(wr != V_WRITE_REJECTED);
+        if (wr == V_WRITE_INTRANSIT) {
+            a->keep = TRUE;
+        }
+        result = FALSE;
+    } else {
+        result = TRUE;
+    }
+    return result;
+}
+
+static c_bool
+disconnectInstance(
+    c_object o,
+    c_voidp arg)
+{
+  /**
+   * Locally we can never get a reject of a reader based on max_instance
+   * resource limits, because the writer determines the number of instances,
+   * the reader can never fix the problem that it has reached maximum of the
+   * resource limits.
+   * In case of a reliable network we also will never receive an in-transit
+   * state of a sample!
+   * Only in case of an unreliable network it is possible we might need to
+   * keep the register sample, since the sample has the state INTRANSIT.
+   * In this case we should check resource limits, because we need to keep the
+   * sample. However we accept that we exceed the resource limits in order to
+   * implement true reliability.
+   * The only way this can cause a problem is when an application changes the
+   * QoS (partition policy in particular) with a high frequency, which is a
+   * bad practice anyway.
+   */
+    v_writerInstance i = v_writerInstance(o);
+    v_writerGroup proxy = (v_writerGroup)arg;
+    v_writer w = v_writer(i->writer);
+    v_message message;
+    v_writerSample sample, found;
+    struct writeGroupInstanceArg grouparg;
+    c_time now = v_timeGet();
+
+    if ((w->qos->lifecycle.autodispose_unregistered_instances == TRUE) &&
+        (!v_stateTest(i->state, L_DISPOSED))) {
+        /* Do not dispose instance more than once.
+         * The instance may still be present in the writer history due to
+         * reader rejects or networking intransit.
+         */
+        message = v_writerInstanceCreateMessage(i);
+        v_nodeState(message) = L_DISPOSED;
+        message->writeTime = now;
+        message->writerGID = v_publicGid(v_public(w));
+        message->sequenceNumber = w->sequenceNumber++;
+        message->writerInstanceGID = v_publicGid(v_public(i));
+        message->qos = c_keep(w->relQos);
+
+        grouparg.message = message;
+        grouparg.keep = FALSE;
+        grouparg.group = proxy->group;
+        v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
+        if (grouparg.keep) {
+            sample = v_writerSampleNew(w, message);
+            found = v_writerInstanceInsert(i, sample);
+            c_free(found);
+            c_free(sample);
+        }
+
+        c_free(message);
+    }
+
+    if (!v_stateTest(i->state, L_UNREGISTER)) {
+        /* Do not unregister instance more than once.
+         * The instance may still be present in the writer history due to
+         * reader rejects or networking intransit.
+         */
+        message = v_writerInstanceCreateMessage(i);
+        v_nodeState(message) = L_UNREGISTER;
+        message->writeTime = now;
+        message->writerGID = v_publicGid(v_public(w));
+        message->sequenceNumber = w->sequenceNumber++;
+        message->writerInstanceGID = v_publicGid(v_public(i));
+        message->qos = c_keep(w->relQos);
+
+        grouparg.message = message;
+        grouparg.keep = FALSE;
+        grouparg.group = proxy->group;
+        v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
+        if (grouparg.keep) {
+            sample = v_writerSampleNew(w, message);
+            found = v_writerInstanceInsert(i, sample);
+            c_free(found);
+            c_free(sample);
+        }
+
+        c_free(message);
+    }
+
+    return TRUE;
+}
+
+static v_writeResult
+writerResend(
+    v_writerInstance instance,
+    v_message message,
+    c_bool implicit)
+{
+    v_writeResult result;
+    struct groupWriteArg grouparg;
+    v_writer writer = v_writer(instance->writer);
+    v_writerSample sample;
+
+    assert(writer != NULL);
+
+    if (v_publisherIsSuspended(v_publisher(writer->publisher))) {
+      /* The message is not written to the group(s), but instead kept in the
+       * instance.
+       * Keeping the message in the instance is done by pretending that at
+       * least one reader has no resources left.
+       * The writer will not resend any sample as long as the publisher is
+       * suspended.
+       */
+        if (implicit) {
+            v_stateSet(instance->state, L_SUSPENDED);
+        }
+        sample = v_writerSampleNew(writer,message);
+        keepSample(writer, instance, sample);
+        c_free(sample);
+        result = V_WRITE_SUCCESS;
+    } else {
+        grouparg.message = message;
+        grouparg.instance = instance;
+        grouparg.result = V_WRITE_SUCCESS;
+
+        if (implicit) {
+            v_writerGroupSetWalk(&writer->groupSet,groupWrite,&grouparg);
+        } else {
+            v_writerCacheWalk(instance->groupInstanceCache,
+                              groupInstanceWrite,&grouparg);
+        }
+        result = grouparg.result;
+        if (result == V_WRITE_INTRANSIT) {
+            sample = v_writerSampleNew(writer,message);
+            v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
+            keepSample(writer,instance,sample);
+            c_free(sample);
+        } else if (result == V_WRITE_REJECTED) {
+            sample = v_writerSampleNew(writer,message);
+            v_writerSampleResend(sample);
+            keepSample(writer,instance,sample);
+            c_free(sample);
+        }
+    }
+
+    return result;
+}
+
+static v_writeResult
+writerWrite(
+    v_writerInstance instance,
+    v_message message,
+    c_bool implicit)
+{
+    v_writeResult result;
+    struct groupWriteArg grouparg;
+    v_writer writer = v_writer(instance->writer);
+    v_writerSample sample;
+
+    assert(writer != NULL);
+
+    grouparg.message = message;
+    grouparg.instance = instance;
+    grouparg.result = V_WRITE_SUCCESS;
+
+    if (v_publisherIsSuspended(v_publisher(writer->publisher))) {
+      /* The message is not written to the group(s), but instead kept in the
+       * instance.
+       * Keeping the message in the instance is done by pretending that at
+       * least one reader has no resources left.
+       * The writer will not resend any sample as long as the publisher is
+       * suspended.
+       */
+        if (implicit) {
+            v_stateSet(instance->state, L_SUSPENDED);
+        }
+        sample = v_writerSampleNew(writer,message);
+        keepSample(writer, instance, sample);
+        c_free(sample);
+        result = V_WRITE_SUCCESS;
+    } else {
+        if (v_writerInstanceTestState(instance, L_EMPTY)) {
+            if (implicit) {
+                v_writerGroupSetWalk(&writer->groupSet,groupWrite,&grouparg);
+            } else {
+                v_writerCacheWalk(instance->groupInstanceCache,
+                                  groupInstanceWrite,&grouparg);
+            }
+            result = grouparg.result;
+            if (result == V_WRITE_INTRANSIT) {
+                sample = v_writerSampleNew(writer,message);
+                v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
+                keepSample(writer,instance,sample);
+                c_free(sample);
+            } else if (result == V_WRITE_REJECTED) {
+                sample = v_writerSampleNew(writer,message);
+                v_writerSampleResend(sample);
+                keepSample(writer,instance,sample);
+                c_free(sample);
+            }
+        } else {
+            sample = v_writerSampleNew(writer,message);
+            v_writerSampleResend(sample);
+            keepSample(writer,instance,sample);
+            c_free(sample);
+            result = V_WRITE_REJECTED;
+        }
+    }
+
+    return result;
+}
+
+static v_writeResult
+instanceCheckResources(
+    v_writerInstance _this,
+    v_message message,
+    c_time until)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+    v_writer writer;
+
+    if (v_messageQos_isReliable(message->qos)) {
+        writer = v_writerInstanceWriter(_this);
+        if (writer->qos->history.kind == V_HISTORY_KEEPALL) {
+            while ((_this->messageCount >= writer->depth) &&
+                   (result == V_WRITE_SUCCESS)) {
+                result = doWait(writer,until);
+            }
+        }
+    }
+    return result;
+}
+
+static c_equality
+compareKeyValue(
+    v_writerInstance _this,
+    v_message message)
+{
+    v_writer writer;
+    c_array instanceKeyList;
+    c_array messageKeyList;
+    c_long i, nrOfKeys;
+    c_equality equality = C_EQ;
+
+    writer = v_writerInstanceWriter(_this);
+    messageKeyList = v_topicMessageKeyList(v_writerTopic(writer));
+    instanceKeyList = v_writerKeyList(writer);
+    assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
+    nrOfKeys = c_arraySize(messageKeyList);
+    for (i=0;i<nrOfKeys && equality == C_EQ;i++) {
+        equality = c_fieldCompare(messageKeyList[i],message,
+                                  instanceKeyList[i],_this);
+    }
+    c_free(instanceKeyList);
+    return equality;
+}
+
+static c_bool
+writerInstanceAutoPurgeSuspended(
+    c_object o,
+    c_voidp arg)
+{
+    v_writerInstance instance = v_writerInstance(o);
+    c_time *expiry = (c_time *)arg;
+    v_writer writer = v_writer(instance->writer);
+    v_writerSample sample, found;
+
+    /* Walk from the oldest sample to the newest, so we can stop processing
+     * all samples as soon as we find a sample with a write time newer than
+     * the expiry time.
+     */
+    sample = v_writerInstanceTail(instance);
+    while ((sample != NULL) &&
+           (c_timeCompare(v_writerSampleMessage(sample)->writeTime, *expiry) != C_GT)) {
+        found = v_writerInstanceRemove(instance, sample);
+        assert(found == sample);
+        c_free(found);
+        writer->count--;
+        sample = v_writerInstanceTail(instance);
+    }
+    return TRUE;
+}
+
+static void
+autoPurgeSuspendedSamples(
+    v_writer w)
+{
+    c_time expiry;
+
+    assert(C_TYPECHECK(w,v_writer));
+
+    if (v_publisherIsSuspended(v_publisher(w->publisher))) {
+        if (c_timeCompare(w->qos->lifecycle.autopurge_suspended_samples_delay,
+                          C_TIME_INFINITE) != C_EQ) {
+            expiry = c_timeSub(v_timeGet(),
+                               w->qos->lifecycle.autopurge_suspended_samples_delay);
+            c_tableWalk(w->instances, writerInstanceAutoPurgeSuspended, &expiry);
+        }
+    }
+}
+
+static void
+assertLiveliness (
+    v_writer w)
+{
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    v_leaseRenew(w->livelinessLease, w->qos->liveliness.lease_duration);
+    if (w->alive == FALSE) {
+        kernel = v_objectKernel(w);
+        w->alive = TRUE;
+        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    }
+}
+
+static v_writeResult
+writerDispose(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+    v_writerInstance found;
+    v_writerQos qos;
+    c_time until;
+    c_bool implicit = FALSE;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+    assert(message != NULL);
+
+    v_statisticsULongValueInc(v_writer, numberOfDisposes, w);
+
+    /* only autpurge if publisher is suspended */
+    autoPurgeSuspendedSamples(w);
+
+    v_nodeState(message) = L_DISPOSED;
+
+    if (c_timeIsZero(timestamp)) {
+        timestamp = message->allocTime;
+    }
+
+    message->writeTime = timestamp;
+    message->writerGID = v_publicGid(v_public(w));
+    message->writerInstanceGID = v_publicGid(NULL);
+
+    qos = w->qos;
+    if (!w->infWait) {
+        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+    }
+
+    while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
+           (w->count >= qos->resource.max_samples)) {
+        result = doWait(w,until);
+        if (result != V_WRITE_SUCCESS) {
+            v_observerUnlock(v_observer(w));
+            return result;
+        }
+    }
+    message->qos = c_keep(w->relQos);
+
+    if (instance == NULL) {
+        instance = v_writerInstanceNew(w,message);
+        assert(c_refCount(instance) == 1);
+        found = c_insert(w->instances,instance);
+        if (found != instance) {
+            result = instanceCheckResources(found,message,until);
+        } else {
+            assert(c_refCount(instance) == 2);
+            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+                   (c_count(w->instances) > qos->resource.max_instances) &&
+                   (result == V_WRITE_SUCCESS)) {
+                result = doWait(w,until);
+            }
+            if (result == V_WRITE_SUCCESS) {
+                v_publicInit(v_public(instance));
+                assert(c_refCount(instance) == 3);
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfImplicitRegisters, w);
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfAliveInstances, w);
+                implicit = TRUE;
+            } else {
+                found = c_remove(w->instances,instance,NULL,NULL);
+                assert(found == instance);
+                c_free(found);
+                assert(c_refCount(instance) == 1);
+            }
+        }
+        v_writerInstanceFree(instance);
+        instance = found;
+    } else {
+        if (v_writerInstanceWriter(instance) == w) {
+            if (compareKeyValue(instance,message) == C_EQ) {
+                result = instanceCheckResources(instance,message,until);
+            } else {
+                OS_REPORT_1(OS_API_INFO,
+                            "writerDispose", 0,
+                            "specified instance does not belong to writer %s",
+                            v_entityName2(w));
+                result = V_WRITE_PRE_NOT_MET;
+            }
+        } else {
+            OS_REPORT_1(OS_API_INFO,
+                        "writerDispose", 0,
+                        "specified instance key value does not match "
+                        "data key value for writer %s",
+                        v_entityName2(w));
+            result = V_WRITE_PRE_NOT_MET;
+        }
+    }
+
+    if (result == V_WRITE_SUCCESS) {
+        message->writerInstanceGID = v_publicGid(v_public(instance));
+        message->sequenceNumber = w->sequenceNumber++;
+        deadlineUpdate(w, instance);
+        v_stateSet(instance->state, L_DISPOSED);
+        v_statisticsULongValueInc(v_writer, numberOfDisposedInstances, w);
+        v_statisticsULongValueDec(v_writer, numberOfAliveInstances, w);
+        result = writerWrite(instance,message,implicit);
+    }
+    return result;
+}
+
+static v_writeResult
+writerUnregister(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result;
+    v_writerInstance found;
+    v_writerSample sample;
+    v_writerQos qos;
+    v_message dispose;
+    c_time until;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+    assert(message != NULL);
+
+    result = V_WRITE_SUCCESS;
+
+    v_statisticsULongValueInc(v_writer, numberOfUnregisters, w);
+    /* statistics update */
+    /* only autpurge if publisher is suspended */
+    autoPurgeSuspendedSamples(w);
+
+    v_nodeState(message) = L_UNREGISTER;
+
+    if (c_timeIsZero(timestamp)) {
+        timestamp = message->allocTime;
+    }
+
+    message->writeTime = timestamp;
+    message->writerGID = v_publicGid(v_public(w));
+
+    qos = w->qos;
+    if (!w->infWait) {
+        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+    }
+
+    while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
+           (w->count >= qos->resource.max_samples)) {
+        result = doWait(w,until);
+        if (result != V_WRITE_SUCCESS) {
+            return result;
+        }
+    }
+    message->qos = c_keep(w->relQos);
+
+    if (instance == NULL) {
+        instance = v_writerInstanceNew(w,message);
+        found = c_tableInsert(w->instances,instance);
+        if (found != instance) {
+            v_writerInstanceFree(instance);
+            instance = found;
+            v_deadLineInstanceListRemoveInstance(w->deadlineList,
+                                                 v_instance(instance));
+            result = instanceCheckResources(instance,message,until);
+        } else {
+            found = c_remove(w->instances,instance,NULL,NULL);
+            assert(found == instance);
+            c_free(found);
+            v_writerInstanceFree(instance);
+            result = V_WRITE_PRE_NOT_MET;
+        }
+    } else {
+        if (v_writerInstanceWriter(instance) == w) {
+            if (compareKeyValue(instance,message) == C_EQ) {
+                v_deadLineInstanceListRemoveInstance(w->deadlineList,
+                                                     v_instance(instance));
+                result = instanceCheckResources(instance,message,until);
+            } else {
+                OS_REPORT_1(OS_API_INFO,
+                            "v_writer::writerUnregister", 0,
+                            "specified instance does not belong to writer %s",
+                            v_entityName2(w));
+                result = V_WRITE_PRE_NOT_MET;
+            }
+        } else {
+            OS_REPORT_1(OS_API_INFO,
+                        "v_writer::writerUnregister", 0,
+                        "specified instance key value does not match "
+                        "data key value for writer %s",
+                        v_entityName2(w));
+            result = V_WRITE_PRE_NOT_MET;
+        }
+    }
+
+    /* In case of lifecycle.autodispose_unregistered_instances idealy
+     * one combined message for unregister and dispose should be sent.
+     * But because the current readers cannot handle combined messages
+     * for now separate messages are sent. also see scdds63.
+     */
+    if (result == V_WRITE_SUCCESS) {
+        if( (!v_stateTest(instance->state, L_DISPOSED)) &&
+            (w->qos->lifecycle.autodispose_unregistered_instances))
+        {
+            dispose = v_writerInstanceCreateMessage(instance);
+            result  = writerDispose(w, dispose, timestamp, instance);
+            c_free(dispose);
+        }
+    }
+    if (result == V_WRITE_SUCCESS) {
+        message->writerInstanceGID = v_publicGid(v_public(instance));
+        message->sequenceNumber = w->sequenceNumber++;
+
+        if (v_writerInstanceTestState(instance, L_EMPTY)) {
+            result = writerWrite(instance,message,FALSE);
+            if (v_writerInstanceTestState(instance, L_EMPTY)) {
+                found = c_remove(w->instances,instance,NULL,NULL);
+                assert(found == instance);
+                v_cacheDeinit(v_cache(instance->groupInstanceCache));
+                v_publicFree(v_public(instance));
+                c_free(found);
+            } else {
+                v_writerInstanceUnregister(instance);
+            }
+        } else {
+            v_statisticsULongValueInc(v_writer,
+                                      numberOfUnregisteredInstances, w);
+            v_statisticsULongValueDec(v_writer,
+                                      numberOfAliveInstances, w);
+            sample = v_writerSampleNew(w,message);
+            v_writerSampleResend(sample);
+            keepSample(w,instance,sample);
+            v_writerInstanceUnregister(instance);
+        }
+    }
+
+    return result;
+}
+
+static void
+unregisterAllInstances(
+    v_writer w)
+{
+    c_time time;
+    c_iter instanceList;
+    v_writerInstance instance;
+    v_message message;
+
+    assert(C_TYPECHECK(w, v_writer));
+
+    time = v_timeGet();
+
+    instanceList = c_select(w->instances, 0);
+    instance = v_writerInstance(c_iterTakeFirst(instanceList));
+    while (instance != NULL) {
+        message = v_writerInstanceCreateMessage(instance);
+        writerUnregister(w, message, time, instance);
+        c_free(message);
+
+        c_free(instance);
+        instance = v_writerInstance(c_iterTakeFirst(instanceList));
+    }
+    c_iterFree(instanceList);
+}
+
+void
+v_writerAssertByPublisher(
+    v_writer w)
+{
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    assert(w != NULL);
+    assert(C_TYPECHECK(w,v_writer));
+
+    if (w->qos->liveliness.kind == V_LIVELINESS_PARTICIPANT) {
+        v_observerLock(v_observer(w));
+        kernel = v_objectKernel(w);
+        if (w->alive == FALSE) {
+            w->alive = TRUE;
+            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, w);
+        } else {
+            builtinMsg = NULL;
+        }
+        v_observerUnlock(v_observer(w));
+
+        v_leaseRenew(w->livelinessLease, w->qos->liveliness.lease_duration);
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    }
+}
+
+
+static void
+publish(
+    void *domain,
+    void *writer)
+{
+    v_domain d = v_domain(domain);
+    v_writer w = v_writer(writer);
+    v_kernel kernel;
+    v_writerGroup proxy;
+    v_group g;
+
+    kernel = v_objectKernel(w);
+    g = v_groupSetCreate(kernel->groupSet,d,w->topic);
+
+    proxy = v_writerGroupSetAdd(&w->groupSet,g);
+    c_tableWalk(w->instances, connectInstance, proxy);
+    c_free(proxy);
+}
+
+static void
+unpublish(
+    void *domain,
+    void *writer)
+{
+    v_domain d = v_domain(domain);
+    v_writer w = v_writer(writer);
+    v_kernel kernel;
+    c_value params[2];
+    c_iter list;
+    v_group g;
+    v_writerGroup proxy;
+
+    params[0] = c_objectValue(d);
+    params[1] = c_objectValue(w->topic);
+    kernel = v_objectKernel(w);
+    list = v_groupSetSelect(kernel->groupSet,
+                            "partition = %0 and topic = %1",
+                            params);
+    assert(c_iterLength(list) <= 1);
+    g = v_group(c_iterTakeFirst(list));
+    if (g != NULL) {
+
+        proxy = v_writerGroupSetRemove(&w->groupSet,g);
+        assert(proxy != NULL);
+        c_tableWalk(w->instances, disconnectInstance, proxy);
+        v_writerCacheDeinit(proxy->groupInstanceCache);
+        c_free(proxy);
+        c_free(g);
+    }
+    c_iterFree(list);
+}
+
+static c_type
+createWriterSampleType(
+    v_topic topic)
+{
+    v_kernel kernel;
+    c_type sampleType, baseType, foundType;
+    c_metaObject o;
+    c_base base;
+    c_char *name;
+    c_long length,sres;
+
+    kernel = v_objectKernel(topic);
+    base = c_getBase(kernel);
+    baseType = v_kernelType(kernel,K_WRITERSAMPLE);
+    assert(baseType != NULL);
+
+    sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+        c_class(sampleType)->extends = c_keep(c_class(baseType));
+        o = c_metaDeclare(c_metaObject(sampleType),"message",M_ATTRIBUTE);
+        c_property(o)->type = c_keep(v_topicMessageType(topic));
+        c_free(o);
+    c_metaObject(sampleType)->definedIn = c_keep(base);
+    c_metaFinalize(c_metaObject(sampleType));
+
+#define SAMPLE_NAME   "v_writerSample<>"
+#define SAMPLE_FORMAT "v_writerSample<%s>"
+    /* Create a name and bind type to name */
+    /* The sizeof contains \0 */
+    length = sizeof(SAMPLE_NAME) + strlen(v_topicName(topic));
+    name = os_malloc(length);
+    sres = snprintf(name,length,SAMPLE_FORMAT,v_topicName(topic));
+    assert(sres == (length-1));
+#undef SAMPLE_NAME
+#undef SAMPLE_FORMAT
+
+    foundType = c_type(c_metaBind(c_metaObject(base),
+                                  name,
+                                  c_metaObject(sampleType)));
+    os_free(name);
+    c_free(sampleType);
+
+    return foundType;
+}
+
+static c_type
+createWriterInstanceType(
+    v_topic topic)
+{
+    v_kernel kernel;
+    c_type instanceType, baseType, foundType;
+    c_metaObject o;
+    c_base base;
+    c_char *name;
+    c_long length,sres;
+
+    kernel = v_objectKernel(topic);
+    base = c_getBase(kernel);
+    baseType = v_writerInstanceTemplate_t(base);
+    assert(baseType != NULL);
+
+    instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+    c_class(instanceType)->extends = c_keep(c_class(baseType));
+    foundType = v_topicKeyType(topic);
+    if (foundType != NULL) {
+        o = c_metaDeclare(c_metaObject(instanceType),"key",M_ATTRIBUTE);
+        c_property(o)->type = foundType; /* Transfer refcount */
+        c_free(o);
+    }
+    c_metaObject(instanceType)->definedIn = c_keep(base);
+    c_metaFinalize(c_metaObject(instanceType));
+
+#define INSTANCE_NAME "v_writerInstance<v_writerSample<>>"
+#define INSTANCE_FORMAT "v_writerInstance<v_writerSample<%s>>"
+    /* Create a name and bind type to name */
+    /* Ths sizeof contains \0 */
+    length = sizeof(INSTANCE_NAME) + strlen(v_topicName(topic));
+    name = os_malloc(length);
+    sres = snprintf(name,length,INSTANCE_FORMAT,v_topicName(topic));
+    assert(sres == (length-1));
+#undef INSTANCE_NAME
+#undef INSTANCE_FORMAT
+
+    foundType = c_type(c_metaBind(c_metaObject(base),
+                                  name,
+                                  c_metaObject(instanceType)));
+    os_free(name);
+    c_free(instanceType);
+
+    return foundType;
+}
+
+static c_char *
+createInstanceKeyExpr (
+    v_topic topic)
+{
+    c_char fieldName[16];
+    c_char *keyExpr;
+    c_long i,nrOfKeys,totalSize;
+    c_array keyList;
+
+    assert(C_TYPECHECK(topic,v_topic));
+    keyList = v_topicMessageKeyList(topic);
+    nrOfKeys = c_arraySize(keyList);
+    if (nrOfKeys>0) {
+        totalSize = nrOfKeys * strlen("key.field0,");
+        if (nrOfKeys > 9) {
+            totalSize += (nrOfKeys-9);
+            if (nrOfKeys > 99) {
+                totalSize += (nrOfKeys-99);
+            }
+        }
+        keyExpr = (char *)os_malloc(totalSize);
+        keyExpr[0] = 0;
+        for (i=0;i<nrOfKeys;i++) {
+            sprintf(fieldName,"key.field%d",i);
+            strcat(keyExpr,fieldName);
+            if (i<(nrOfKeys-1)) { strcat(keyExpr,","); }
+        }
+    } else {
+        keyExpr = NULL;
+    }
+    return keyExpr;
+}
+
+/**************************************************************
+ * constructor/destructor
+ **************************************************************/
+v_writer
+v_writerNew(
+    v_publisher p,
+    const c_char *name,
+    v_topic topic,
+    v_writerQos qos,
+    c_bool enable)
+{
+    v_kernel kernel;
+    v_writer w;
+    v_writerQos q;
+
+    assert(p != NULL);
+    assert(C_TYPECHECK(p,v_publisher));
+    assert(C_TYPECHECK(topic,v_topic));
+
+    kernel = v_objectKernel(p);
+
+    if (topic == NULL) {
+        return NULL;
+    }
+
+    q = v_writerQosNew(kernel,qos);
+    if (q != NULL) {
+        w = v_writer(v_objectNew(kernel,K_WRITER));
+        v_writerInit(w, p, name, topic, q, enable);
+        c_free(q); /* ref now in w->qos */
+    } else {
+        OS_REPORT(OS_ERROR, "v_writerNew", 0,
+                  "Writer not created: inconsistent qos");
+        w = NULL;
+    }
+
+    return w;
+}
+
+void
+v_writerInit(
+    v_writer writer,
+    v_publisher p,
+    const c_char *name,
+    v_topic topic,
+    v_writerQos qos,
+    c_bool enable)
+{
+    v_kernel kernel;
+    v_participant participant;
+    c_type instanceType,sampleType;
+    c_char *keyExpr;
+    v_writerStatistics wStat;
+    c_time deadline;
+    c_time unregister;
+
+    assert(writer != NULL);
+    assert(p != NULL);
+    assert(C_TYPECHECK(writer, v_writer));
+    assert(C_TYPECHECK(p,v_publisher));
+    assert(C_TYPECHECK(topic,v_topic));
+
+    kernel = v_objectKernel(writer);
+    if (v_isEnabledStatistics(kernel, V_STATCAT_WRITER)) {
+        wStat = v_writerStatisticsNew(kernel);
+    } else {
+        wStat = NULL;
+    }
+    v_observerInit(v_observer(writer),name, v_statistics(wStat),enable);
+
+    writer->count               = 0;
+    writer->alive               = TRUE;
+    writer->depth               = 0x7fffffff; /* MAX_INT */
+    writer->topic               = c_keep(topic);
+    writer->qos                 = c_keep(qos);
+    writer->pubQos              = c_keep(v_publisherGetQosRef(p));
+    writer->msgQos              = NULL;
+    writer->relQos              = NULL;
+    writer->publisher           = p;
+    writer->deadlineList        = NULL;
+    writer->sequenceNumber      = 0;
+    writer->cachedInstance      = NULL;
+    writer->livelinessLease     = NULL;
+
+    v_writerGroupSetInit(&writer->groupSet);
+    instanceType = createWriterInstanceType(topic);
+    keyExpr = createInstanceKeyExpr(topic);
+    writer->instances = c_tableNew(instanceType, keyExpr);
+    writer->resendInstances = c_tableNew(instanceType, keyExpr);
+    os_free(keyExpr);
+    sampleType = createWriterSampleType(topic);
+    writer->messageField = c_metaResolveProperty(sampleType,"message");
+
+#ifdef _EXTENT_
+#define _COUNT_ (32)
+    writer->instanceExtent = c_extentNew(instanceType,_COUNT_);
+    writer->sampleExtent   = c_extentNew(sampleType,_COUNT_);
+#endif
+    c_free(instanceType);
+    c_free(sampleType);
+
+    participant = v_participant(p->participant);
+    assert(participant != NULL);
+
+    deadline = qos->deadline.period;
+    unregister = qos->lifecycle.autounregister_instance_delay;
+
+    /* The auto unregister instance delay and deadline missed processing
+     * is managed by means of one attribute: deadlineCountLimit.
+     * The deadlineCountLimit is the number of successive deadline missed
+     * before the auto unregister delay expires.
+     * Special values are -1 (no auto unregister delay specified) and
+     * 1 (no deadline specified).
+     */
+    if ((c_timeCompare(unregister, C_TIME_INFINITE) == C_EQ) ||
+        (c_timeCompare(unregister, C_TIME_ZERO) == C_EQ))
+    {
+        writer->deadlineCountLimit = -1;
+    } else {
+        if ((c_timeCompare(deadline, C_TIME_INFINITE) == C_EQ) ||
+            (c_timeCompare(deadline, C_TIME_ZERO) == C_EQ))
+        {
+            writer->deadlineCountLimit = 1; /* no deadline */
+        } else {
+            writer->deadlineCountLimit = (int)(c_timeToReal(unregister) /
+                                               c_timeToReal(deadline));
+            /* if calculated is zero,
+             * this means unregister delay is shorter than deadline delay.
+             */
+            writer->deadlineCountLimit++;
+        }
+    }
+    if (writer->deadlineCountLimit == 1) {
+        writer->deadlineList = v_deadLineInstanceListNew(
+                                      c_getBase(c_object(writer)),
+                                      participant->leaseManager,
+                                      unregister,
+                                      V_LEASEACTION_WRITER_DEADLINE_MISSED,
+                                      v_public(writer));
+    } else {
+        writer->deadlineList = v_deadLineInstanceListNew(
+                                      c_getBase(c_object(writer)),
+                                      participant->leaseManager,
+                                      deadline,
+                                      V_LEASEACTION_WRITER_DEADLINE_MISSED,
+                                      v_public(writer));
+    }
+    v_publisherAddWriter(p,writer);
+
+    if (enable) {
+        v_writerEnable(writer);
+    }
+}
+
+v_result
+v_writerEnable(
+    v_writer writer)
+{
+    v_kernel kernel;
+    v_message builtinMsg;
+    v_participant participant;
+    v_writerQos qos;
+    v_result result = V_RESULT_ILL_PARAM;
+
+    if (writer) {
+        v_observerLock(v_observer(writer));
+        result = V_RESULT_OK;
+        qos = writer->qos;
+        if (qos->history.kind == V_HISTORY_KEEPLAST) {
+            if (qos->history.depth >= 0) {
+                writer->depth = qos->history.depth;
+            }
+        } else {
+            if (qos->resource.max_samples_per_instance >= 0) {
+                writer->depth = qos->resource.max_samples_per_instance;
+            }
+        }
+        writer->infWait = (c_timeCompare(qos->reliability.max_blocking_time,
+                                         C_TIME_INFINITE) == C_EQ);
+
+        /* Register with the lease manager for periodic resending
+         * This has to be done for all kinds of reliability because
+         * dispose-messages always have to be sent reliably */
+        /* The only condition is existence of writer->history */
+        assert(writer->publisher != NULL);
+        participant = v_participant(v_publisher(writer->publisher)->participant);
+        assert(participant != NULL);
+        if (participant) {
+            /* Add writer as observer of participant in case liveliness is
+             * BY PARTICIPANT
+             * This simplifies the liveliness assertion of the participant.
+             */
+            if (qos->liveliness.kind == V_LIVELINESS_PARTICIPANT) {
+                v_observableAddObserver(v_observable(writer),
+                                        v_observer(participant),
+                                        NULL);
+                v_observerSetEvent(v_observer(participant),
+                                   V_EVENT_LIVELINESS_ASSERT);
+            }
+        }
+
+        kernel = v_objectKernel(writer);
+        assert(kernel != NULL);
+
+        /* Register lease for liveliness check, iff duration not infinite.
+         * When liveliness is AUTOMATIC, the liveliness is determined at
+         * node level (i.e. splice daemon)
+         */
+        if (qos->liveliness.kind != V_LIVELINESS_AUTOMATIC) {
+            if (c_timeCompare(qos->liveliness.lease_duration,
+                              C_TIME_INFINITE) != C_EQ) {
+                writer->livelinessLease =
+                    v_leaseManagerRegister(kernel->livelinessLM,
+                                           v_public(writer),
+                                           qos->liveliness.lease_duration,
+                                           V_LEASEACTION_LIVELINESS_CHECK,
+                                           V_LEASE_REPEAT_INFINITE);
+            } /* else liveliness also determined by liveliness of node */
+        }
+
+        initMsgQos(writer);
+        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, writer);
+        v_observerUnlock(v_observer(writer));
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    }
+    return result;
+}
+
+static c_bool
+removeFromGroup (
+    v_writerGroup g,
+    c_voidp arg)
+{
+    v_writer w = v_writer(arg);
+
+    c_tableWalk(w->instances, disconnectInstance, g);
+
+    v_writerCacheDeinit(g->groupInstanceCache);
+    return TRUE;
+}
+
+static c_bool
+reconnectToGroup(
+    v_writerGroup g,
+    c_voidp arg)
+{
+    v_writer w = v_writer(arg);
+
+    c_tableWalk(w->instances, disconnectInstance, g);
+    v_writerCacheDeinit(g->groupInstanceCache);
+    c_tableWalk(w->instances, connectInstance, g);
+    return TRUE;
+}
+
+
+void
+v_writerFree(
+    v_writer w)
+{
+    v_kernel kernel;
+    v_publisher p;
+    v_message builtinMsg;
+    v_message unregisterMsg;
+
+    assert(C_TYPECHECK(w,v_writer));
+
+    /* First create message, only at the end dispose. Applications expect
+       the disposed sample to be the last!
+       In the free algorithm the writer is unpublished from the partitions,
+       which also involves the production of the builtin topic.
+    */
+    v_observerLock(v_observer(w));
+
+    kernel = v_objectKernel(w);
+
+    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+    unregisterMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+    v_observerUnlock(v_observer(w));
+
+    p = v_publisher(w->publisher);
+
+    v_leaseManagerDeregister(kernel->livelinessLM, w->livelinessLease);
+
+    if (p != NULL) {
+        v_participantResendManagerRemoveWriter(v_participant(p->participant), w);
+        v_publisherRemoveWriter(p,w);
+    } else {
+        OS_REPORT(OS_ERROR,"v_writerFree",0,
+                  "Unexpected invalid publisher");
+    }
+    v_writerGroupSetWalk(&w->groupSet,removeFromGroup,w);
+    v_writeDisposeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+    c_free(builtinMsg);
+    v_unregisterBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, unregisterMsg);
+    c_free(unregisterMsg);
+
+    w->publisher = NULL;
+    v_observerFree(v_observer(w));
+}
+
+static c_bool
+instanceFree(
+    c_object o,
+    c_voidp arg)
+{
+    if (arg != NULL) {
+        /* suppress warnings */
+    }
+    v_publicFree(o);
+    return TRUE;
+}
+
+void
+v_writerDeinit(
+    v_writer w)
+{
+    if (w == NULL) {
+        return;
+    }
+    assert(C_TYPECHECK(w,v_writer));
+
+    c_tableWalk(w->instances,instanceFree,NULL);
+    v_deadLineInstanceListFree(w->deadlineList);
+    v_observerDeinit(v_observer(w));
+}
+
+/**************************************************************
+ * Protected functions
+ **************************************************************/
+c_bool
+v_writerPublishGroup(
+    v_writer writer,
+    v_group group)
+{
+    v_writerGroup proxy;
+
+    assert(C_TYPECHECK(writer, v_writer));
+    assert(group != NULL);
+    assert(C_TYPECHECK(group, v_group));
+
+    if (group->topic == writer->topic) {
+        v_observerLock(v_observer(writer));
+
+        proxy = v_writerGroupSetAdd(&writer->groupSet,group);
+        c_tableWalk(writer->instances, connectInstance, proxy);
+        c_free(proxy);
+
+        v_observerUnlock(v_observer(writer));
+    }
+
+    return TRUE;
+}
+
+c_bool
+v_writerUnPublishGroup(
+    v_writer writer,
+    v_group group)
+{
+    v_writerGroup proxy;
+
+    assert(C_TYPECHECK(writer, v_writer));
+    assert(group != NULL);
+    assert(C_TYPECHECK(group, v_group));
+
+    v_observerLock(v_observer(writer));
+
+    proxy = v_writerGroupSetRemove(&writer->groupSet, group);
+    assert(proxy != NULL);
+    c_tableWalk(writer->instances, disconnectInstance, proxy);
+    v_writerCacheDeinit(proxy->groupInstanceCache);
+    c_free(proxy);
+
+    v_observerUnlock(v_observer(writer));
+
+    return TRUE;
+}
+
+typedef struct v_sampleWalkArg {
+    c_iter resendSamples;
+    c_iter releaseSamples;
+} *v_sampleWalkArg;
+
+void
+v_writerNotifyIncompatibleQos(
+    v_writer w,
+    v_policyId id)
+{
+    c_bool changed;
+    C_STRUCT(v_event) e;
+
+    assert(w != NULL);
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+
+    changed = v_statusNotifyIncompatibleQos(v_entity(w)->status, id);
+    if (changed) {
+        e.kind = V_EVENT_INCOMPATIBLE_QOS;
+        e.source = v_publicHandle(v_public(w));
+        e.userData = NULL;
+        v_observerNotify(v_observer(w), &e, NULL);
+        v_observerUnlock(v_observer(w));
+        v_observableNotify(v_observable(w), &e);
+    } else {
+        v_observerUnlock(v_observer(w));
+    }
+
+}
+
+void
+v_writerNotifyChangedQos(
+    v_writer w,
+    v_writerNotifyChangedQosArg *arg)
+{
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    assert(w != NULL);
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+    if ((arg != NULL) &&
+        ((arg->addedDomains != NULL) || (arg->removedDomains != NULL))) {
+      /* partition policy has changed */
+/**
+ * Now the builtin topic is published, after all connections are updated.
+ * Depending on the outcome of the RTPS protocol standardisation, this
+ * solution is subject to change.
+ */
+        c_iterWalk(arg->addedDomains, publish, w);
+        c_iterWalk(arg->removedDomains, unpublish, w);
+    }
+    kernel = v_objectKernel(w);
+    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+    v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+    c_free(builtinMsg);
+    v_observerUnlock(v_observer(w));
+}
+
+
+v_result
+v_writerSetQos(
+    v_writer w,
+    v_writerQos qos)
+{
+    v_result result;
+    v_qosChangeMask cm;
+    v_message builtinMsg;
+    v_kernel kernel;
+
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+    kernel = v_objectKernel(w);
+    result = v_writerQosSet(w->qos, qos, v_entity(w)->enabled, &cm);
+    if ((result == V_RESULT_OK) && (cm != 0)) {
+        initMsgQos(w);
+        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+        if (cm & V_POLICY_BIT_DEADLINE) {
+            v_deadLineInstanceListSetDuration(w->deadlineList,
+                                              w->qos->deadline.period);
+        }
+        v_writerGroupSetWalk(&w->groupSet, reconnectToGroup, (c_voidp)w);
+        v_observerUnlock(v_observer(w));
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    } else {
+        v_observerUnlock(v_observer(w));
+    }
+
+    return result;
+}
+
+void
+v_writerNotifyLivelinessLost(
+    v_writer w)
+{
+    c_bool changed;
+    C_STRUCT(v_event) e;
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+    changed = v_statusNotifyLivelinessLost(v_entity(w)->status);
+    if (changed) { /* first liveliness lost event */
+        e.kind = V_EVENT_LIVELINESS_LOST;
+        e.source = v_publicHandle(v_public(w));
+        e.userData = NULL;
+        v_observerNotify(v_observer(w), &e, NULL);
+        v_observableNotify(v_observable(w), &e);
+    }
+    unregisterAllInstances(w);
+    w->alive = FALSE;
+    kernel = v_objectKernel(w);
+    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+
+    v_observerUnlock(v_observer(w));
+    /* suspend liveliness check */
+    v_leaseRenew(w->livelinessLease, C_TIME_INFINITE);
+
+    v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+    c_free(builtinMsg);
+}
+
+/**************************************************************
+ * Public functions
+ **************************************************************/
+
+v_writeResult
+v_writerRegister(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance *inst)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+    v_writerInstance instance, found;
+    v_writerQos qos;
+    c_time until;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(message != NULL);
+
+    *inst = NULL;
+
+    v_observerLock(v_observer(w));
+
+    v_statisticsULongValueInc(v_writer, numberOfRegisters, w);
+    /* only autpurge if publisher is suspended */
+    autoPurgeSuspendedSamples(w);
+
+    v_nodeState(message) = L_REGISTER;
+
+    if (c_timeIsZero(timestamp)) {
+        timestamp = message->allocTime;
+    }
+
+    message->writeTime = timestamp;
+    message->writerGID = v_publicGid(v_public(w));
+    message->writerInstanceGID = v_publicGid(NULL);
+
+    qos = w->qos;
+    if (!w->infWait) {
+        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+    }
+
+    while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
+           (w->count >= qos->resource.max_samples)) {
+        result = doWait(w,until);
+        if (result != V_WRITE_SUCCESS) {
+            v_observerUnlock(v_observer(w));
+            return result;
+        }
+    }
+    message->qos = c_keep(w->relQos);
+
+    instance = v_writerInstanceNew(w,message);
+    assert(c_refCount(instance) == 1);
+    found = c_tableInsert(w->instances,instance);
+    if (found != instance) {
+        assert(c_refCount(instance) == 1);
+        result = V_WRITE_SUCCESS;
+    } else {
+        assert(c_refCount(instance) == 2);
+        if (!w->infWait) {
+            until = c_timeAdd(message->writeTime,
+                              w->qos->reliability.max_blocking_time);
+        }
+        while ((w->qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+               (c_tableCount(w->instances) > w->qos->resource.max_instances) &&
+               (result == V_WRITE_SUCCESS)) {
+            result = doWait(w,until);
+        }
+        if (result == V_WRITE_SUCCESS) {
+            v_statisticsULongValueInc(v_writer, numberOfAliveInstances, w);
+            v_publicInit(v_public(instance));
+            deadlineUpdate(w, instance);
+            message->writerInstanceGID = v_publicGid(v_public(instance));
+            message->sequenceNumber = w->sequenceNumber++;
+
+            result = writerWrite(instance,message,TRUE);
+        } else {
+            found = c_remove(w->instances, instance, NULL, NULL);
+            assert(found == instance);
+            c_free(found);
+        }
+    }
+    v_writerInstanceFree(instance);
+    if (((result == V_WRITE_SUCCESS) || (result == V_WRITE_REJECTED)) &&
+        (inst != NULL)) {
+        *inst = c_keep(found);
+    }
+    v_observerUnlock(v_observer(w));
+
+    return result;
+}
+
+v_writerInstance
+v_writerLookupInstance(
+    v_writer w,
+    v_message keyTemplate)
+{
+    v_writerInstance instance, found;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(keyTemplate,v_message));
+
+    v_observerLock(v_observer(w));
+
+    instance = v_writerInstanceNew(w, keyTemplate);
+    found = c_find(w->instances, instance);
+    c_free(instance);
+
+    v_observerUnlock(v_observer(w));
+
+    return found;
+}
+
+v_writeResult
+v_writerUnregister(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+    assert(message != NULL);
+
+    v_observerLock(v_observer(w));
+    result = writerUnregister(w, message, timestamp, instance);
+    v_observerUnlock(v_observer(w));
+
+    return result;
+}
+
+v_writeResult
+v_writerWrite(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+    v_writerInstance found;
+    v_writerQos qos;
+    c_time until;
+    c_bool implicit = FALSE;
+    enum v_livelinessKind livKind;
+    C_STRUCT(v_event) event;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+    assert(message != NULL);
+
+    V_MESSAGE_STAMP(message,writerCopyTime);
+
+    v_observerLock(v_observer(w));
+
+    v_statisticsULongValueInc(v_writer, numberOfWrites, w);
+    /* only autpurge if publisher is suspended */
+    autoPurgeSuspendedSamples(w);
+
+    v_nodeState(message) = L_WRITE;
+
+    if (c_timeIsZero(timestamp)) {
+        timestamp = message->allocTime;
+    }
+
+    message->writeTime = timestamp;
+    message->writerGID = v_publicGid(v_public(w));
+    message->writerInstanceGID = v_publicGid(NULL);
+
+    qos = w->qos;
+    if (!w->infWait) {
+        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+    }
+
+    while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
+           (w->count >= qos->resource.max_samples)) {
+        result = doWait(w,until);
+        if (result != V_WRITE_SUCCESS) {
+            v_observerUnlock(v_observer(w));
+            return result;
+        }
+    }
+    message->qos = c_keep(w->msgQos);
+
+    if (instance == NULL) {
+        instance = v_writerInstanceNew(w,message);
+        assert(c_refCount(instance) == 1);
+
+        found = c_tableInsert(w->instances,instance);
+        if (found != instance) {
+            result = instanceCheckResources(found,message,until);
+        } else {
+            assert(c_refCount(instance) == 2);
+            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+                   (c_tableCount(w->instances) > qos->resource.max_instances) &&
+                   (result == V_WRITE_SUCCESS)) {
+                result = doWait(w,until);
+            }
+            if (result == V_WRITE_SUCCESS) {
+                v_publicInit(v_public(instance));
+                assert(c_refCount(instance) == 3);
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfImplicitRegisters, w);
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfAliveInstances, w);
+                implicit = TRUE;
+            } else {
+                found = c_remove(w->instances,instance,NULL,NULL);
+                assert(found == instance);
+                c_free(found);
+                assert(c_refCount(instance) == 1);
+            }
+        }
+        v_writerInstanceFree(instance);
+        instance = found;
+    } else {
+        if (v_writerInstanceWriter(instance) == w) {
+            if (compareKeyValue(instance,message) == C_EQ) {
+                result = instanceCheckResources(instance,message,until);
+            } else {
+                OS_REPORT_1(OS_API_INFO,
+                            "v_writerWrite", 0,
+                            "specified instance does not belong to writer %s",
+                            v_entityName2(w));
+                result = V_WRITE_PRE_NOT_MET;
+            }
+        } else {
+            OS_REPORT_1(OS_API_INFO,
+                        "v_writerWrite", 0,
+                        "specified instance key value does not match "
+                        "data key value for writer %s",
+                        v_entityName2(w));
+            result = V_WRITE_PRE_NOT_MET;
+        }
+    }
+
+    V_MESSAGE_STAMP(message,writerLookupTime);
+
+    if (result == V_WRITE_SUCCESS) {
+        message->writerInstanceGID = v_publicGid(v_public(instance));
+        message->sequenceNumber = w->sequenceNumber++;
+        result = writerWrite(instance,message,implicit);
+        if (v_stateTest(instance->state, L_DISPOSED)) {
+            v_stateClear(instance->state, L_DISPOSED);
+            v_statisticsULongValueInc(v_writer, numberOfAliveInstances, w);
+            v_statisticsULongValueDec(v_writer, numberOfDisposedInstances, w);
+        }
+        deadlineUpdate(w, instance);
+    }
+
+    livKind = qos->liveliness.kind;
+    assertLiveliness(w);
+
+    v_observerUnlock(v_observer(w));
+
+    if (livKind == V_LIVELINESS_PARTICIPANT) {
+        event.kind = V_EVENT_LIVELINESS_ASSERT;
+        event.source = v_publicHandle(v_public(w));
+        event.userData = NULL;
+        v_observableNotify(v_observable(w), &event);
+    }
+    return result;
+}
+v_writeResult
+v_writerDispose(
+    v_writer _this,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+
+    assert(message != NULL);
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+
+    v_observerLock(v_observer(_this));
+    result = writerDispose(_this,message,timestamp,instance);
+    v_observerUnlock(v_observer(_this));
+
+    return result;
+}
+
+v_writeResult
+v_writerWriteDispose(
+    v_writer w,
+    v_message message,
+    c_time timestamp,
+    v_writerInstance instance)
+{
+    v_writeResult result = V_WRITE_SUCCESS;
+    v_writerInstance found;
+    v_writerQos qos;
+    c_time until;
+    c_bool implicit = FALSE;
+    enum v_livelinessKind livKind;
+    C_STRUCT(v_event) event;
+
+    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(message,v_message));
+    assert(message != NULL);
+
+    v_observerLock(v_observer(w));
+    v_statisticsULongValueInc(v_writer, numberOfWrites, w);
+    v_statisticsULongValueInc(v_writer, numberOfDisposes, w);
+
+    /* only autpurge if publisher is suspended */
+    autoPurgeSuspendedSamples(w);
+
+    v_nodeState(message) = L_WRITE | L_DISPOSED;
+
+    if (c_timeIsZero(timestamp)) {
+        timestamp = message->allocTime;
+    }
+
+    message->writeTime = timestamp;
+    message->writerGID = v_publicGid(v_public(w));
+    message->writerInstanceGID = v_publicGid(NULL);
+
+    qos = w->qos;
+    if (!w->infWait) {
+        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+    }
+
+    while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
+           (w->count >= qos->resource.max_samples)) {
+        result = doWait(w,until);
+        if (result != V_WRITE_SUCCESS) {
+            v_observerUnlock(v_observer(w));
+            return result;
+        }
+    }
+    message->qos = c_keep(w->relQos);
+
+    if (instance == NULL) {
+        instance = v_writerInstanceNew(w,message);
+        found = c_tableInsert(w->instances,instance);
+        if (found != instance) {
+            /* Noop */
+        } else {
+            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+                   (c_tableCount(w->instances) > qos->resource.max_instances) &&
+                   (result == V_WRITE_SUCCESS)) {
+                result = doWait(w,until);
+            }
+            if (result == V_WRITE_SUCCESS) {
+                v_publicInit(v_public(instance));
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfImplicitRegisters, w);
+                v_statisticsULongValueInc(v_writer,
+                                          numberOfAliveInstances, w);
+                implicit = TRUE;
+            } else {
+                found = c_remove(w->instances,instance,NULL,NULL);
+                assert(found == instance);
+                c_free(found);
+            }
+        }
+        v_writerInstanceFree(instance);
+        instance = found;
+    } else {
+        if (v_writerInstanceWriter(instance) == w) {
+            if (compareKeyValue(instance,message) == C_EQ) {
+                result = instanceCheckResources(instance,message,until);
+            } else {
+                OS_REPORT_1(OS_API_INFO,
+                            "v_writerWriteDispose", 0,
+                            "specified instance does not belong to writer %s",
+                            v_entityName2(w));
+                result = V_WRITE_PRE_NOT_MET;
+            }
+        } else {
+            OS_REPORT_1(OS_API_INFO,
+                        "v_writerWriteDispose", 0,
+                        "specified instance key value does not match "
+                        "data key value for writer %s",
+                        v_entityName2(w));
+            result = V_WRITE_PRE_NOT_MET;
+        }
+    }
+
+    if (result == V_WRITE_SUCCESS) {
+        message->writerInstanceGID = v_publicGid(v_public(instance));
+        message->sequenceNumber = w->sequenceNumber++;
+        deadlineUpdate(w, instance);
+        v_stateSet(instance->state, L_DISPOSED);
+        v_statisticsULongValueInc(v_writer, numberOfDisposedInstances, w);
+        v_statisticsULongValueDec(v_writer, numberOfAliveInstances, w);
+        result = writerWrite(instance,message,implicit);
+    }
+
+    livKind = qos->liveliness.kind;
+    assertLiveliness(w);
+
+    v_observerUnlock(v_observer(w));
+
+    if (livKind == V_LIVELINESS_PARTICIPANT) {
+        event.kind = V_EVENT_LIVELINESS_ASSERT;
+        event.source = v_publicHandle(v_public(w));
+        event.userData = NULL;
+        v_observableNotify(v_observable(w), &event);
+    }
+    return result;
+}
+
+c_bool
+v_writerPublish(
+    v_writer w,
+    v_domain d)
+{
+    assert(C_TYPECHECK(w,v_writer));
+    assert(d != NULL);
+    assert(C_TYPECHECK(d,v_domain));
+
+    v_observerLock(v_observer(w));
+
+    publish(d, w);
+
+    v_observerUnlock(v_observer(w));
+
+    return TRUE;
+}
+
+c_bool
+v_writerUnPublish(
+    v_writer w,
+    v_domain d)
+{
+    assert(C_TYPECHECK(w,v_writer));
+    assert(d != NULL);
+    assert(C_TYPECHECK(d,v_domain));
+
+    v_observerLock(v_observer(w));
+
+    unpublish(d, w);
+
+    v_observerUnlock(v_observer(w));
+
+    return TRUE;
+}
+
+
+typedef struct collectGarbageArg {
+    c_iter emptyList;
+} *collectGarbageArg;
+
+
+/* Used to resend messages by the resendmanager */
+static c_bool
+resendInstance(
+    v_writerInstance instance,
+    c_voidp arg)
+{
+    v_writerSample prev,sample,removed;
+    v_message message;
+    struct groupWriteArg grouparg;
+    c_iter *emptyList = (c_iter *)arg;
+    v_writer writer;
+    c_bool proceed = TRUE;
+
+    writer = v_writer(instance->writer);
+
+    assert(!v_writerInstanceTestState(instance, L_EMPTY));
+    if (!v_writerInstanceTestState(instance, L_EMPTY)) {
+        sample = v_writerSample(instance->last);
+        while ((sample != NULL) && proceed) {
+            prev = v_writerSample(sample)->prev;
+            message = v_writerSampleMessage(sample);
+            /**
+             * When writetime of the message is smaller than
+             * the suspendTime of the publisher:
+             * - the publisher is NOT suspended or
+             * - the publisher IS suspended after this message was written
+             * In both cases resend the message.
+             */
+            if (c_timeCompare(v_writerPublisher(writer)->suspendTime,
+                              message->writeTime) == C_GT) {
+                switch (v_writerSampleGetStatus(sample)) {
+                case V_SAMPLE_RESEND:
+                    v_writerSampleClear(sample);
+                    v_statisticsULongValueInc(v_writer, numberOfRetries, writer);
+                    grouparg.instance = instance;
+                    grouparg.message = message;
+                    grouparg.result = V_WRITE_SUCCESS;
+                    v_writerCacheWalk(instance->groupInstanceCache,
+                                      groupInstanceResend,
+                                      &grouparg);
+                    if (grouparg.result == V_WRITE_REJECTED) {
+                        v_writerSampleResend(sample);
+                        /* The sample could not be delivered because
+                         * of the lack of resources at the receiver.
+                         * Therefore it is of no use to try to resend
+                         * any other samples so proceed is set to FALSE
+                         * to abort resending for this writer.
+                         */
+                        proceed = FALSE;
+                    }
+                    if (grouparg.result == V_WRITE_INTRANSIT) {
+                        v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
+                    }
+                break;
+                case V_SAMPLE_KEEP:
+                    v_writerSampleRelease(sample);
+                break;
+                default:
+                break;
+                }
+                if (V_SAMPLE_RELEASE == v_writerSampleGetStatus(sample)) {
+                    removed = v_writerInstanceRemove(instance, sample);
+                    assert(removed == sample);
+                    writer->count--;
+                    c_free(removed);
+                }
+            }
+            sample = prev;
+        }
+        if (v_writerInstanceTestState(instance, L_EMPTY)) {
+            /* If the instance is (has become) empty it is inserted into
+             * an emptyList that is returned to the callee.
+             * The callee (the writer) can use this information to remove
+             * the instance from the set of cached 'resend' instances.
+             */
+            *emptyList = c_iterInsert(*emptyList, c_keep(instance));
+        }
+    }
+    return proceed;
+}
+
+/* Used to resend messages by the resendmanager */
+void
+v_writerResend(
+    v_writer writer)
+{
+    c_iter emptyList = NULL;
+    v_writerInstance instance,found;
+    int length;
+
+    assert(writer != NULL);
+    assert(C_TYPECHECK(writer,v_writer));
+
+    v_observerLock(v_observer(writer));
+
+    c_tableWalk(writer->resendInstances,(c_action)resendInstance,&emptyList);
+    length = c_iterLength(emptyList);
+    while ((instance = c_iterTakeFirst(emptyList)) != NULL) {
+        found = c_remove(writer->resendInstances, instance, NULL, NULL);
+        found->resend = FALSE;
+        assert(found == instance);
+        c_free(found);
+        if (v_writerInstanceIsUnregistered(instance)) {
+            v_statisticsULongValueDec(v_writer,
+                                      numberOfAliveInstances,
+                                      writer);
+            v_statisticsULongValueInc(v_writer,
+                                      numberOfUnregisteredInstances,
+                                      writer);
+            found = c_remove(writer->instances,instance,NULL,NULL);
+            assert(found == instance);
+            c_free(found);
+            v_publicFree(v_public(instance));
+            v_writerInstanceFree(instance);
+        }
+        /*NK: Always free because it has been kept in the emptyList iterator!*/
+        v_writerInstanceFree(instance);
+    }
+    /* Free the iterator here. If it is NULL, this statement is also valid */
+    if (c_tableCount(writer->resendInstances) == 0) {
+        v_participantResendManagerRemoveWriter(v_writerParticipant(writer),
+                                               writer);
+    }
+    if (length) {
+        v_observerNotify(v_observer(writer), NULL, NULL);
+    }
+    v_observerUnlock(v_observer(writer));
+    c_iterFree(emptyList);
+}
+
+void
+v_writerAssertLiveliness(
+    v_writer w)
+{
+    enum v_livelinessKind livKind;
+    C_STRUCT(v_event) event;
+
+    assert(w != NULL);
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+    livKind = w->qos->liveliness.kind;
+    assertLiveliness(w);
+    v_observerUnlock(v_observer(w));
+    if (livKind == V_LIVELINESS_PARTICIPANT) {
+        event.kind = V_EVENT_LIVELINESS_ASSERT;
+        event.source = v_publicHandle(v_public(w));
+        event.userData = NULL;
+        v_observableNotify(v_observable(w), &event);
+    }
+}
+
+v_result
+v_writerGetLivelinessLostStatus(
+    v_writer _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_result result;
+    v_status status;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    result = V_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        v_observerLock(v_observer(_this));
+        status = v_entityStatus(v_entity(_this));
+        result = action(&v_writerStatus(status)->livelinessLost, arg);
+        if (reset) {
+            v_statusReset(status, V_EVENT_LIVELINESS_LOST);
+        }
+        v_writerStatus(status)->livelinessLost.totalChanged = 0;
+        v_observerUnlock(v_observer(_this));
+    }
+    return result;
+}
+
+v_result
+v_writerGetDeadlineMissedStatus(
+    v_writer _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_result result;
+    v_status status;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    result = V_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        v_observerLock(v_observer(_this));
+        status = v_entity(_this)->status;
+        result = action(&v_writerStatus(status)->deadlineMissed, arg);
+        if (reset) {
+            v_statusReset(status, V_EVENT_DEADLINE_MISSED);
+        }
+        v_writerStatus(status)->deadlineMissed.totalChanged = 0;
+        v_observerUnlock(v_observer(_this));
+    }
+    return result;
+}
+
+v_result
+v_writerGetIncompatibleQosStatus(
+    v_writer _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_result result;
+    v_status status;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    result = V_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        v_observerLock(v_observer(_this));
+        status = v_entity(_this)->status;
+        result = action(&v_writerStatus(status)->incompatibleQos, arg);
+        if (reset) {
+            v_statusReset(status, V_EVENT_INCOMPATIBLE_QOS);
+        }
+        v_writerStatus(status)->incompatibleQos.totalChanged = 0;
+        v_observerUnlock(v_observer(_this));
+    }
+    return result;
+}
+
+v_result
+v_writerGetTopicMatchStatus(
+    v_writer _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_result result;
+    v_status status;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    result = V_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        v_observerLock(v_observer(_this));
+        status = v_entity(_this)->status;
+        result = action(&v_writerStatus(status)->publicationMatch, arg);
+        if (reset) {
+            v_statusReset(status, V_EVENT_TOPIC_MATCHED);
+        }
+        v_writerStatus(status)->publicationMatch.totalChanged = 0;
+        v_observerUnlock(v_observer(_this));
+    }
+    return result;
+}
+
+void
+v_writerCheckDeadlineMissed(
+    v_writer w,
+    c_time now)
+{
+    c_bool changed = FALSE;
+    C_STRUCT(v_event) e;
+    c_iter missed;
+    v_writerInstance instance;
+    v_message message;
+    v_duration period;
+    v_observerLock(v_observer(w));
+
+    /*
+     * We are dealing with a potential automatic unregister under the
+     * following conditions:
+     * 1. the deadlineCountLimit equals 1
+     * 2. the deadlineList is not empty AND the first instance in the deadline
+     *    list has a deadlineCount equal to the deadlineCountLimit minus 1
+     */
+
+    if ((w->deadlineCountLimit == 1) ||
+        ((!v_deadLineInstanceListEmpty(w->deadlineList)) &&
+         (v_writerInstance(v_instance(w->deadlineList)->next)->deadlineCount == w->deadlineCountLimit - 1))) {
+        period = w->qos->lifecycle.autounregister_instance_delay;
+    } else {
+        period = w->qos->deadline.period;
+    }
+    missed = v_deadLineInstanceListCheckDeadlineMissed(w->deadlineList, period, now);
+
+    instance = v_writerInstance(c_iterTakeFirst(missed));
+    while (instance != NULL) {
+        instance->deadlineCount++;
+        if (instance->deadlineCount == w->deadlineCountLimit) { /* unregister */
+            message = v_writerInstanceCreateMessage(instance);
+            writerUnregister(w, message, now, instance);
+            c_free(message);
+        } else {
+            if (v_statusNotifyDeadlineMissed(v_entity(w)->status, instance)) {
+                changed = TRUE;
+            }
+            /* do not use deadlineUpdate(w, instance);
+             * since it will also reset instance->deadlineCount
+	         v_deadLineInstanceListUpdate(w->deadlineList,
+                                            v_instance(instance));
+	         */
+        }
+        /* do not use deadlineUpdate(w, instance);
+         * since it will also reset instance->deadlineCount */
+        instance = v_writerInstance(c_iterTakeFirst(missed));
+    }
+    c_iterFree(missed);
+    /* next wake-up time only needs to be changed iff
+     * 1. deadlineCountLimit > 1
+     *      if ==1 then
+     *         immediate unregister so period was already equal to
+     *         autounregister_instance_delay
+     *      if <1 then
+     *         autounregister_instance_delay is disabled,
+     *         so period is deadline.period.
+     * 2. deadlineInstanceList is not empty
+     * 3. first instance in deadlineList is the first to expire,
+     *    so only period needs to be adapted if
+     *    it almost reached the deadlineCountLimit.
+     */
+    if ((w->deadlineCountLimit > 1) &&
+        (!v_deadLineInstanceListEmpty(w->deadlineList)) &&
+        (v_writerInstance(v_instance(w->deadlineList)->next)->deadlineCount == w->deadlineCountLimit - 1)) {
+        period = c_timeSub(w->qos->lifecycle.autounregister_instance_delay,
+                           w->qos->deadline.period);
+        v_deadLineInstanceListSetDuration(w->deadlineList, period);
+    }
+
+    if (changed) {
+        e.kind = V_EVENT_DEADLINE_MISSED;
+        e.source = v_publicHandle(v_public(w));
+        e.userData = NULL;
+        v_observerNotify(v_observer(w), &e, NULL);
+        v_observerUnlock(v_observer(w));
+        v_observableNotify(v_observable(w), &e);
+    } else {
+        v_observerUnlock(v_observer(w));
+    }
+
+}
+
+struct instanceActionArg {
+    v_writerInstanceWalkAction action;
+    c_voidp arg;
+};
+
+static c_bool
+instanceRead(
+    c_object o,
+    c_voidp arg)
+{
+    struct instanceActionArg *a = (struct instanceActionArg *)arg;
+    v_writerInstance instance = (v_writerInstance)o;
+
+    v_writerInstanceWalk(instance,a->action,a->arg);
+    return TRUE;
+}
+
+c_bool
+v_writerRead (
+    v_writer writer,
+    c_action action,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+    struct instanceActionArg a;
+
+    assert(C_TYPECHECK(writer,v_writer));
+    assert(action != NULL);
+
+    v_observerLock(v_observer(writer));
+    a.action = (v_writerInstanceWalkAction)action;
+    a.arg = arg;
+    c_tableWalk(writer->instances, instanceRead, &a);
+    v_observerUnlock(v_observer(writer));
+    return result;
+}
+
+static c_bool
+instanceResume(
+    c_object o,
+    c_voidp arg)
+{
+    v_writerInstance instance = v_writerInstance(o);
+    v_writer w = v_writer(instance->writer);
+    c_time *suspendTime = (c_time *)arg;
+    v_message message;
+    v_writerSample removed;
+    v_writerSample s;
+    v_writerSample prev;
+
+/* When the instance state is suspended, the
+ * instance pipeline must be constructed, even when the instance is empty!
+ */
+    if (v_stateTest(instance->state, L_SUSPENDED)) {
+        v_stateClear(instance->state, L_SUSPENDED);
+        /* create a register message, so the instance pipeline is constructed! */
+        message = v_writerInstanceCreateMessage(instance);
+        v_nodeState(message) = L_REGISTER;
+        message->writeTime = v_timeGet();
+        message->writerGID = v_publicGid(v_public(w));
+        message->sequenceNumber = w->sequenceNumber++;
+        message->writerInstanceGID = v_publicGid(v_public(instance));
+        message->qos = c_keep(w->relQos);
+
+        writerResend(instance, message, TRUE);
+        c_free(message);
+    }
+
+    if (v_writerInstanceTestState(instance, L_EMPTY)) {
+        return TRUE; /* just continue with next instance */
+    }
+
+    s = c_keep(v_writerInstance(instance)->last);
+    while (s != NULL) {
+        prev = v_writerSample(c_keep(s->prev));
+        /* Check whether this sample was suspended, samples that were
+         * not suspended are handled through the regular resend mechanism
+         */
+        if (c_timeCompare(v_writerSampleMessage(s)->writeTime,
+                          *suspendTime) != C_LT) {
+            removed = v_writerInstanceRemove(instance, s);
+            assert(removed == s);
+            c_free(removed);
+            w->count--;
+            message = v_writerSampleMessage(s);
+            writerResend(instance, message, FALSE);
+        }
+        c_free(s);
+        s = prev;
+    }
+
+    return TRUE; /* continue with next instance */
+}
+
+void
+v_writerResumePublication(
+    v_writer writer,
+    c_time *suspendTime)
+{
+    c_time expiry;
+    assert(C_TYPECHECK(writer,v_writer));
+
+    v_observerLock(v_observer(writer));
+
+    /* autpurge last remaining samples, since publisher was suspended but
+     * now resumed.
+     * Do not use the static function autoPurgeSuspendedSamples() as this
+     * function will check whether the publisher is suspended, while it is
+     * not anymore.
+     */
+    if (c_timeCompare(writer->qos->lifecycle.autopurge_suspended_samples_delay,
+                      C_TIME_INFINITE) != C_EQ) {
+        expiry = c_timeSub(v_timeGet(),
+                           writer->qos->lifecycle.autopurge_suspended_samples_delay);
+        c_tableWalk(writer->instances, writerInstanceAutoPurgeSuspended, &expiry);
+    }
+
+    c_tableWalk(writer->instances, instanceResume, (c_voidp)suspendTime);
+    v_observerUnlock(v_observer(writer));
+}

@@ -1,0 +1,4 @@
+cp ../../*.java .
+idlpp -l java -S ../../pingpong.idl
+javac -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar pingpong/*.java
+javac -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpssaj.jar *.java
