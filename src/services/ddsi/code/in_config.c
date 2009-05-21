@@ -194,7 +194,7 @@ in_configFinalizePartitioning(
 #define INCF_ATTRIB_GroupQueueSize_value_MIN    100
 #define INCF_ATTRIB_GroupQueueSize_value_MAX    10000
 #define INCF_ELEM_FragmentSize                  "FragmentSize"
-#define INCF_ATTRIB_FragmentSize_value_DEF      1200
+#define INCF_ATTRIB_FragmentSize_value_DEF      INCF_DEF_FRAGMENT_SIZE
 #define INCF_ATTRIB_FragmentSize_value_MIN      100
 #define INCF_ATTRIB_FragmentSize_value_MAX      10000
 #define INCF_ELEM_Partitioning                  "Partitioning"
