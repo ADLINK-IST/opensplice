@@ -53,7 +53,7 @@ csharp_check ()
         VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
         for i in $VERSIONS
         do
-            NET_VERSION=`echo $i | sed -e 's;\.;0;g' | tr -d 'v'`
+            NET_VERSION=`echo $i | sed -e 's;\.;0;g' | tr -d 'v' | tr -d '/'`
             if [ "$NET_VERSION" -ge "$REQUIRED_VERSION" ]
             then
                 PATH=/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH
