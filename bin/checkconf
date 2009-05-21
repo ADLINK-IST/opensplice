@@ -19,10 +19,10 @@ follow_link()
 	PATH_TO_BIN=`dirname $1`
 	echo $FILE_INFO | grep "symbolic link to" > /dev/null
 	if [ "$?" != "0" ]
-	    then
+	then
 	    echo $FILE_INFO | grep "executable" > /dev/null
 	    if [ "$?" = "0" ]
-		then
+            then
 		REAL_LINK=`echo $FILE_INFO | awk -F':' '{ print $1 }'`
 		return 0
 	    else
@@ -337,7 +337,7 @@ javac_check ()
         T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $T_JAVAC_EXE ]
         then
-            echo "Error - Not found"
+            echo "Error - 1 Not found"
             return 1
         fi
 	follow_link $T_JAVAC_EXE
@@ -355,7 +355,7 @@ javac_check ()
         T_JAVAC_EXE=`which javac`
         if [ "$?" != "0" ]
         then
-            echo "Error - Not found"
+            echo "Error - 2 Not found"
             return 1
         fi
 	follow_link $T_JAVAC_EXE
