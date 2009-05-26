@@ -9,44 +9,6 @@ pathcheck ()
     return 1
 }
 
-follow_link()
-{
-    REAL_LINK=""
-    pathcheck readlink
-    if [ $? != 0 ]
-    then
-	FILE_INFO=`file -h $1`
-	PATH_TO_BIN=`dirname $1`
-	echo $FILE_INFO | grep "symbolic link to" > /dev/null
-	if [ "$?" != "0" ]
-	then
-	    echo $FILE_INFO | grep "executable" > /dev/null
-	    if [ "$?" = "0" ]
-            then
-		REAL_LINK=`echo $FILE_INFO | awk -F':' '{ print $1 }'`
-		return 0
-	    else
-		echo "Error - $FILE_INFO found at end of link"
-		return 1
-	    fi
-	fi
-	TARGET_BIN=`echo $FILE_INFO | awk '{ print $NF }' | tr -d '\`' | tr -d '\047'`
-	case `echo $TARGET_BIN` in
-	    /*)
-                TMP_PATH=$TARGET_BIN
-                ;;
-            *)
-                TMP_PATH=$PATH_TO_BIN/$TARGET_BIN
-                ;;
-        esac
-
-        follow_link $TMP_PATH
-    else
-        REAL_LINK=`readlink -f $1`
-    fi
-    return 0
-}
-
 convert_windows_path ()
 {
     case `uname` in
@@ -268,25 +230,17 @@ make_check ()
         return 1
     fi
 
-    MAKE_V=`make -v 2>/dev/null`
-
-    if [ -n "$MAKE_V" ]
+    MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
+    if [ $MAKE_MAJOR -lt 3 ]
     then
-        MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
-        if [ $MAKE_MAJOR -lt 3 ]
-        then
-            echo "Error - Only make 3.80 and above is supported"
-            return 1
-        fi
+        echo "Error - Only make 3.80 and above is supported"
+        return 1
+    fi
 
-        MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
-        if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
-        then
-            echo "Error - Only make 3.80 and above is supported"
-            return 1
-        fi
-    else
-        echo "Error - could not determine the make version"
+    MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
+    if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
+    then
+        echo "Error - Only make 3.80 and above is supported"
         return 1
     fi
 
@@ -368,11 +322,10 @@ javac_check ()
         T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $T_JAVAC_EXE ]
         then
-            echo "Error - 1 Not found"
+            echo "Error - Not found"
             return 1
         fi
-	follow_link $T_JAVAC_EXE
-        JAVAC_EXE=$REAL_LINK
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
         PATH=$UNIX_CONV_PATH/bin:$PATH
         export PATH
     else
@@ -386,11 +339,10 @@ javac_check ()
         T_JAVAC_EXE=`which javac`
         if [ "$?" != "0" ]
         then
-            echo "Error - 2 Not found"
+            echo "Error - Not found"
             return 1
         fi
-	follow_link $T_JAVAC_EXE
-        JAVAC_EXE=$REAL_LINK
+        JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
 
     $JAVAC_EXE -version 2> javac.ver
@@ -562,12 +514,11 @@ cleanup_checks ()
     unset tao_check
     unset gawk_check 
     unset csharp_check
-    unset follow_link
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
-    unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH FILE_INFO
+    unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
     unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
-    unset CSC_EXE VERSIONS NET_VERSION PATH_TO_BIN REAL_LINK TARGET_BIN TMP_PATH
+    unset CSC_EXE VERSIONS NET_VERSION
 }
