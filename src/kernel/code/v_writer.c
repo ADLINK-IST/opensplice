@@ -619,8 +619,16 @@ instanceCheckResources(
     if (v_messageQos_isReliable(message->qos)) {
         writer = v_writerInstanceWriter(_this);
         if (writer->qos->history.kind == V_HISTORY_KEEPALL) {
+            c_ulong blocked = 0;  /* Used for statistics */
+
             while ((_this->messageCount >= writer->depth) &&
                    (result == V_WRITE_SUCCESS)) {
+                blocked++;
+                if(blocked == 1){ /* We only count a blocked write once */
+                    v_statisticsULongValueInc(v_writer,
+                            numberOfWritesBlockedBySamplesPerInstanceLimit,
+                            writer);
+                }
                 result = doWait(writer,until);
             }
         }
@@ -754,6 +762,9 @@ writerDispose(
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
+            if(result == V_WRITE_TIMEOUT){
+                v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
+            }
             v_observerUnlock(v_observer(w));
             return result;
         }
@@ -819,6 +830,8 @@ writerDispose(
         v_statisticsULongValueInc(v_writer, numberOfDisposedInstances, w);
         v_statisticsULongValueDec(v_writer, numberOfAliveInstances, w);
         result = writerWrite(instance,message,implicit);
+    } else if(result == V_WRITE_TIMEOUT){
+        v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
     }
     return result;
 }
@@ -1837,6 +1850,7 @@ v_writerWrite(
     v_writerQos qos;
     c_time until;
     c_bool implicit = FALSE;
+    c_ulong blocked; /* Used for statistics */
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
 
@@ -1867,10 +1881,18 @@ v_writerWrite(
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
 
+    blocked = 0;
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
+        blocked++;
+        if(blocked == 1){ /* We only count a blocked write once */
+            v_statisticsULongValueInc(v_writer, numberOfWritesBlockedBySamplesLimit, w);
+        }
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
+            if(result == V_WRITE_TIMEOUT){
+                v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
+            }
             v_observerUnlock(v_observer(w));
             return result;
         }
@@ -1886,9 +1908,14 @@ v_writerWrite(
             result = instanceCheckResources(found,message,until);
         } else {
             assert(c_refCount(instance) == 2);
+            blocked = 0;
             while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_tableCount(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
+                blocked++;
+                if(blocked == 1){ /* We only count a blocked write once */
+                    v_statisticsULongValueInc(v_writer, numberOfWritesBlockedByInstanceLimit, w);
+                }
                 result = doWait(w,until);
             }
             if (result == V_WRITE_SUCCESS) {
@@ -1941,6 +1968,8 @@ v_writerWrite(
             v_statisticsULongValueDec(v_writer, numberOfDisposedInstances, w);
         }
         deadlineUpdate(w, instance);
+    } else if (result == V_WRITE_TIMEOUT){
+        v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
     }
 
     livKind = qos->liveliness.kind;
@@ -2254,7 +2283,6 @@ v_writerResend(
             assert(found == instance);
             c_free(found);
             v_publicFree(v_public(instance));
-            v_writerInstanceFree(instance);
         }
         /*NK: Always free because it has been kept in the emptyList iterator!*/
         v_writerInstanceFree(instance);

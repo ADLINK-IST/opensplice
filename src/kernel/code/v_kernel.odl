@@ -69,7 +69,10 @@ class v_writerStatistics extends v_statistics {
     attribute c_ulong            numberOfRegisters;
     attribute c_ulong            numberOfImplicitRegisters;
     attribute c_ulong            numberOfUnregisters;
-    attribute c_ulong            numberOfBlockedWrites;
+    attribute c_ulong            numberOfTimedOutWrites;
+    attribute c_ulong            numberOfWritesBlockedBySamplesLimit;
+    attribute c_ulong            numberOfWritesBlockedByInstanceLimit;
+    attribute c_ulong            numberOfWritesBlockedBySamplesPerInstanceLimit;
     attribute c_ulong            numberOfRetries;
 
     attribute c_ulong            numberOfAliveInstances;
@@ -80,7 +83,7 @@ class v_writerStatistics extends v_statistics {
 };
 
 class v_readerStatistics extends v_statistics {
-    attribute v_maxValue         maxSampleSize;         
+    attribute v_maxValue         maxSampleSize;
     attribute v_maxValue         maxSamplesPerInstance;
     attribute v_maxValue         maxNumberOfSamples;
     attribute v_maxValue         maxNumberOfInstances;
@@ -146,13 +149,13 @@ class v_networkChannelStatistics { /* Reachable via v_networkingStatistics only 
     attribute c_ulong            numberOfPacketsInResendBuffer;
     attribute v_maxValue         maxNumberOfBytesResentToOneNode;
     attribute v_maxValue         maxNumberOfPacketsResentToOneNode;
-    
+
     attribute c_ulong            numberOfMessagesReceived;
     attribute c_ulong            numberOfBytesReceived;
     attribute c_ulong            numberOfPacketsReceived;
     attribute c_ulong            numberOfPacketsLost;
     attribute c_ulong            numberOfAcksSent;
-    
+
     attribute c_ulong            numberOfMessagesDelivered;
     attribute c_ulong            numberOfBytesDelivered;
     attribute c_ulong            numberOfMessagesNotInterested;
@@ -290,7 +293,7 @@ enum v_kind {
     K_WAITSET,           K_CONDITION,          K_LISTENER,
     K_QUERY,             K_DATAREADERQUERY,    K_DATAVIEW,
     K_PROJECTION,        K_MAPPING,            K_FILTER,
-    K_DEADLINEINSTANCE,  
+    K_DEADLINEINSTANCE,
     K_MESSAGE,           K_NODE,
     K_WRITERINSTANCE,    K_WRITERSAMPLE,
     K_GROUPINSTANCE,     K_GROUPSAMPLE,
@@ -310,9 +313,9 @@ enum v_kind {
     K_READERSTATUS,      K_WRITERSTATUS,
     K_PUBLISHERSTATUS,   K_SUBSCRIBERSTATUS,
     K_DOMAINSTATUS,      K_TOPICSTATUS,
-    K_PARTICIPANTSTATUS, K_KERNELSTATUS,       
+    K_PARTICIPANTSTATUS, K_KERNELSTATUS,
     K_HANDLE,            K_PROXY,              K_WAITSETEVENT,
-    K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST, 
+    K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
     K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
     K_LEASEMANAGER,      K_LEASE,
@@ -327,7 +330,7 @@ enum v_kind {
     K_NETWORKMAPENTRY,
     K_HISTORICALDATAREQUEST,
     /* This constant must always be the last */
-    K_TYPECOUNT 
+    K_TYPECOUNT
 };
 
 class v_listener {
@@ -353,11 +356,11 @@ enum v_entityState { V_ENTITYSTATE_DISABLED, V_ENTITYSTATE_SUSPENDED, V_ENTITYST
 class v_entity extends v_public {
     attribute c_string                       name;
     attribute v_status                       status;
-    attribute v_statistics                   statistics; 
+    attribute v_statistics                   statistics;
     attribute c_bool                         enabled;
 };
 
-/* This proxy can be used for both local and remote 
+/* This proxy can be used for both local and remote
    public objects.
 */
 class v_proxy extends v_object {
@@ -1117,7 +1120,7 @@ class v_dataViewSampleList;
 class v_readerSample extends v_lifespanSample {
     attribute c_time                         readTime;
     attribute v_state                        sampleState;
-    attribute c_voidp                        instance; 
+    attribute c_voidp                        instance;
     attribute c_voidp                        viewSamples;
 };
 
@@ -1133,7 +1136,7 @@ class v_dataViewSample extends v_dataViewSampleList {
 
 class v_dataViewSampleTemplate extends v_dataViewSample {
     attribute v_readerSample                 sample;
-}; 
+};
 
 class v_dataViewInstance extends v_public {
     attribute c_voidp                        dataView;
@@ -1162,7 +1165,7 @@ class v_dataReaderSample extends v_readerSample {
 
 class v_dataReaderSampleTemplate extends v_dataReaderSample {
     attribute v_message                      message;
-}; 
+};
 
 struct v_owner {
     v_gid  gid;
@@ -1213,7 +1216,7 @@ class v_reader extends v_collection {
     attribute c_voidp                        subscriber;
     attribute v_subscriberQos                subQos; /* ref is ro */
     attribute v_readerQos                    qos;
-    
+
     /* Attributes to support historical data requests with conditions */
     attribute v_historicalDataRequest        historicalDataRequest;
     attribute c_cond                         historicalDataCondition;
@@ -1264,7 +1267,7 @@ class v_groupSample extends v_lifespanSample {
 
 class v_groupSampleTemplate extends v_groupSample {
     attribute v_message                      message;
-}; 
+};
 
 class v_registration {
     attribute v_message                      message;
@@ -1340,7 +1343,7 @@ class v_group extends v_entity {
     attribute c_time                         creationTime;
     attribute c_bool                         infWait;
     attribute c_bool                         complete;
-    
+
     /* Service attachment states*/
     attribute SET<c_string>                  attachedServices;
     attribute SET<c_string>                  notInterestedServices;
@@ -1412,7 +1415,7 @@ class v_writerGroup {
 struct v_writerGroupSet {
     v_writerGroup                            firstGroup;
 };
-    
+
 class v_writer extends v_observer {
     attribute v_topic                        topic;
     attribute v_writerGroupSet               groupSet;
@@ -1972,7 +1975,7 @@ class v_kernel extends v_observable {
     attribute v_handleServer                 handleServer;
     attribute v_kernelQos                    qos;
     attribute v_serviceManager               serviceManager;
-    attribute v_leaseManager                 livelinessLM; 
+    attribute v_leaseManager                 livelinessLM;
     attribute v_configuration                configuration;
     attribute c_long                         userCount;
 
@@ -1984,7 +1987,7 @@ class v_kernel extends v_observable {
     /* Set of shared entities */
     attribute c_mutex                        sharesMutex;
     attribute SET<v_entity>                  shares;
-    
+
     attribute v_crc                          crc;
 };
 
@@ -2003,7 +2006,7 @@ class v_spliced extends v_service {
     attribute v_lease         hbCheck;  /* lease for next check on heartbeats */
     attribute v_waitset       ws;
     attribute c_bool          quit;
-    
+
     attribute c_mutex         mtx;
     attribute SET<v_message>  missedHB;
 };

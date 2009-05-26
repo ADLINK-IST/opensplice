@@ -57,10 +57,12 @@
         }\
     }
 
+/* Updates the statistics for the instance-state flags that are enabled. Updates
+ * are only performed when statistics are enabled for the specified reader. */
 #define UPDATE_READER_STATISTICS(index, instance, oldState) \
-    if (v_statisticsValid(index->reader)) {                         \
-        v_state xoredState = oldState^instance->instanceState;      \
-                                                                    \
+    if (v_statisticsValid(index->reader)) { \
+        v_state xoredState = oldState^instance->instanceState; \
+                                                               \
         __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
         __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
         __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
@@ -68,16 +70,17 @@
     }
 
 /* Subtracts the currently still enabled instance-state flags from the
- * statistics. */
-#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance)   \
-    if (v_statisticsValid(index->reader)) {                         \
-                                                                    \
+ * statistics. Updates are only performed when statistics are enabled for
+ * the specified reader. */
+#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance) \
+    if (v_statisticsValid(index->reader)) { \
+                                                                                   \
         __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,instance->instanceState,instance->instanceState) \
         __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,instance->instanceState,instance->instanceState) \
         __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,instance->instanceState,instance->instanceState) \
-        if(__ALIVE__(instance->instanceState)){ \
-            v_statisticsULongValueDec(v_reader,                         \
-                numberOfInstancesWithStatusAlive, index->reader);       \
+        if(__ALIVE__(instance->instanceState)){                     \
+            v_statisticsULongValueDec(v_reader,                     \
+                numberOfInstancesWithStatusAlive, index->reader);   \
         } \
     }
 

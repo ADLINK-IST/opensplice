@@ -199,22 +199,22 @@ fi
 
 if [ "$BUILD_STAGE_WORKED" = 0 ]
 then
-    if [ "$BUILD_RUN_EXAMPLES_STAGE_WORKED" != 0 ]
+    if [ "$BUILD_DIST_STAGE_WORKED" = 0 -a "$ARCHIVE_STAGE_WORKED" = 0 -a \
+        "$BUILD_DBT_STAGE_WORKED" = 0 -a "$BUILD_RBT_STAGE_WORKED" = 0 ]
     then
-	SetState "ExamplesFailed"
+        if [ "$PERFORM_DBT_STAGE_WORKED" != 0 -o "$PERFORM_RBT_STAGE_WORKED" != 0 ]
+        then
+            SetState "TestsFailed"
+        else
+            if [ "$BUILD_RUN_EXAMPLES_STAGE_WORKED" != 0 ]
+            then
+                SetState "ExamplesFailed"
+            else
+                SetState "Complete"
+            fi
+        fi
     else
-       if [ "$PERFORM_DBT_STAGE_WORKED" != 0 -o "$PERFORM_RBT_STAGE_WORKED" != 0 ]
-       then
-           SetState "TestsFailed"
-       else
-           if [ "$BUILD_DIST_STAGE_WORKED" = 0 -a "$ARCHIVE_STAGE_WORKED" = 0 -a \
-               "$BUILD_DBT_STAGE_WORKED" = 0 -a "$BUILD_RBT_STAGE_WORKED" = 0 ]
-           then
-               SetState "Complete"
-           else
-               SetState "Failed"
-           fi
-       fi
+        SetState "Failed"
     fi
 else
    SetState "Failed"
