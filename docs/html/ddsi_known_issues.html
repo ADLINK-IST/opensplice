@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+   <title>OpenSplice DDS Known Issues regarding DDSI</title>
+      <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+      <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+   </head>
+   <body>
+      <p class="back">
+         <a href="../intro.html">
+         Back to Intro Page<img src="../images/back.gif" align="middle" 
+         height="25" width="30" alt="Back">
+         </a>
+      </p><p>
+      <h1>Contents</h1>
+      <p>
+        Possible problems and known errors within the OpenSplice DDS DDSI implementation.
+      </p>
+        <h1>Limitations</h1>
+        <p>The current implementation has limited functionality, but this will be extended
+        in future releases. Known limitations of the current implementation are:
+        <ul>
+            <li>
+                Only BEST_EFFORT reliability QoS has been implemented. 
+            </li>
+            </li>
+                Only VOLATILE durability QoS has been implemented. 
+            </li>
+            <li>
+                QoS modifications after the creation of an entity is not possible.
+            </li>
+            <li>
+                Only the x86.linux2.6 platform is available.
+            </li>
+        </ul>
+         </p>
+        <h1>Known interoperability issues</h1>
+        <h2>Key hash</h2>
+        <p>The Key Hash provides a hint for the key that uniquely identifies the 
+        data-object that is being changed within the set of objects that have been 
+        registered by a DDS DataWriter. Nominally the key is part of the serialized data
+        of a data submessage. Using the key hash may benefit implementations by 
+        providing a faster alternative than deserializing the full key from the received
+        data-object. Whether this is faster depends on the way instances are stored 
+        internally though. Therefore implementations must also support sending/receiving 
+        serialized data besides or instead of the key hash only.</p>
+            
+        <p>This implementation only supports sending/receiving key hashes for keys up to 16 
+        bytes. For larger keys, the implementation omits the key hash and requires 
+        the serialized data within a data sub-message. This means other implementations
+        must also send this serialized data and be able to handle incoming dispose and 
+        unregister data submessages with serialized data (and without key hash) 
+        correctly.</p>
+      <br/>
+      <hr>
+      <p>
+         <a target="_top" href="http://www.prismtech.com">
+         <img src="../images/logo_prismtech2.jpg" align="right"
+         width="112" height="29" border="0" alt="PrismTech"></a> 
+         <a href="#top" target="_self">
+         <img src="../images/top.gif" width="32" 
+         height="32" border="0" alt="TOP"></a><br/>
+         <a href="#top" target="_self">Top</a>
+      </p>
+   </body>
+</html>
