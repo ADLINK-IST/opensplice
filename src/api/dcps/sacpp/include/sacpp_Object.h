@@ -25,7 +25,7 @@ public:
 
    static DDS::Object_ptr _duplicate(DDS::Object_ptr obj);
    static DDS::Object_ptr _narrow(DDS::Object_ptr obj);
-   static DDS::Object_ptr _NULL();
+   static DDS::Object_ptr _nil();
    
    DDS::Boolean _is_a(const char * logical_is_type); 
    virtual DDS::Boolean _local_is_a(const char * id);
@@ -46,7 +46,7 @@ inline DDS::Object::Object() : m_count (1)
 {
 }
 
-inline DDS::Object_ptr DDS::Object::_NULL()
+inline DDS::Object_ptr DDS::Object::_nil()
 {
    return NULL;
 }
