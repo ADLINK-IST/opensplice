@@ -1760,6 +1760,8 @@ v_writerRegister(
     assert(c_refCount(instance) == 1);
     found = c_tableInsert(w->instances,instance);
     if (found != instance) {
+        /* The existing instance may be unregistered, so clear the flag */
+        v_stateClear(found->state, L_UNREGISTER);
         assert(c_refCount(instance) == 1);
         result = V_WRITE_SUCCESS;
     } else {
