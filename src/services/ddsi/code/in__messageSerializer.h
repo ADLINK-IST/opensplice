@@ -84,7 +84,7 @@ in_messageSerializerWrite(
     in_messageSerializer _this,
     v_message message,
     c_long topicDataOffset,
-    os_size_t* size);
+    os_uint32* size);
 
 #if defined (__cplusplus)
 }

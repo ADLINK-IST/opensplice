@@ -586,7 +586,6 @@ in_ddsiSequenceNumberSerialize(in_ddsiSequenceNumber self,
     assert(sizeof(*self)==8);
     assert(sizeof(self->high)==4);
     assert(sizeof(self->low)==4);
-IN_TRACE_2(Send, 2, "@@@@@@@@@@@@@-----------XXXXXXXXYYYYYYYYYY %d, %d", self->low,self->high);
     result = in_ddsiSerializerAppendLong(writer, self->high);
     if (result < 0) {
         result = -1;
@@ -803,7 +802,6 @@ in_ddsiSequenceNumberSetSerializedSize(
     result = (2*sizeof(os_uint32)) + /* base */
              (1*sizeof(os_uint32)) + /* numBits */
              (nSlots*sizeof(os_uint32)); /* bitlist (seq<ulong,8>) */
-IN_TRACE_1(Send, 2, "*********************length == %d\n", result);
     return result;
 }
 
@@ -870,10 +868,6 @@ in_ddsiSEquenceNumberSetIsValid(in_ddsiSequenceNumberSet _this)
     /* 0<=highestSlotWithBits<8*/
     const os_uint32 highestSlotWithBits = (_this->numBits + (NBITS_PER_SLOT - 1)) / NBITS_PER_SLOT;
     os_boolean result;
-    IN_TRACE_1(Receive,2,"callback 'processAckNack' will be called === FALSE3-6-1 %d", in_ddsiSequenceNumberToInt64(&(_this->bitmapBase)));
-    IN_TRACE_1(Receive,2,"callback 'processAckNack' will be called === FALSE3-6-2 %d", _this->numBits);
-    IN_TRACE_1(Receive,2,"callback 'processAckNack' will be called === FALSE3-6-3 %d", highestSlotWithBits);
-    IN_TRACE_1(Receive,2,"callback 'processAckNack' will be called === FALSE3-6-4 %d", _this->bitmap[highestSlotWithBits]);
 
     result =
 #ifdef IN_WITH_RTI_WORKARROUND
@@ -914,14 +908,12 @@ in_ddsiSequenceNumberSetInitFromBuffer(in_ddsiSequenceNumberSet _this,
     os_uint32 nSlots = 0; /* depends on numBits to be read from buffer */
 
     do {
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-1");
         nofOctets =
              in_ddsiSequenceNumberInitFromBuffer(
                      &(_this->bitmapBase),
                      deserializer);
          if (nofOctets<0) break;
          total += nofOctets;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-2");
          /* serialize the number of bits following */
          nofOctets =
              in_ddsiDeserializerParseUlong(
@@ -930,7 +922,6 @@ in_ddsiSequenceNumberSetInitFromBuffer(in_ddsiSequenceNumberSet _this,
          if (nofOctets<0) break;
          total += nofOctets;
 
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-3");
          nSlots =
              /* by definition numBits > 0, but tolerate also numBits==0.
               * If numBits==0, do not read any further octets from buffer. */
@@ -947,9 +938,7 @@ in_ddsiSequenceNumberSetInitFromBuffer(in_ddsiSequenceNumberSet _this,
          /* verify 256 bits fit into the bitmap */
          assert(sizeof(_this->bitmap)*8 == 4*8*8);
          memset(_this->bitmap, 0, sizeof(_this->bitmap));
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-4");
          for (index=0; index < 8 && index < nSlots; ++index) {
-            IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-5");
              nofOctets =
                  in_ddsiDeserializerParseUlong(
                         deserializer,
@@ -957,11 +946,9 @@ in_ddsiSequenceNumberSetInitFromBuffer(in_ddsiSequenceNumberSet _this,
                 if (nofOctets<0) break;
                 total += nofOctets;
          }
-         IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-6");
 
          /* verify valid bitmap */
          if (!in_ddsiSEquenceNumberSetIsValid(_this)) break;
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE3-7");
          /* done */
          result = total;
     } while(0);
