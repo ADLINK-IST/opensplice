@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_STATISTICSHELPERS_H
@@ -106,12 +106,16 @@
 #define unit_v_writer_numberOfSamples                               unit_samples
 #define unit_v_writer_maxNumberOfSamplesPerInstance                 unit_samplesPerInstance
 
+
 #define resettable_v_writer_numberOfWrites                          (TRUE)
 #define resettable_v_writer_numberOfDisposes                        (TRUE)
 #define resettable_v_writer_numberOfRegisters                       (TRUE)
 #define resettable_v_writer_numberOfImplicitRegisters               (TRUE)
 #define resettable_v_writer_numberOfUnregisters                     (TRUE)
-#define resettable_v_writer_numberOfBlockedWrites                   (TRUE)
+#define resettable_v_writer_numberOfTimedOutWrites                  (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedBySamplesLimit     (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedByInstanceLimit    (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedBySamplesPerInstanceLimit (TRUE)
 #define resettable_v_writer_numberOfRetries                         (TRUE)
 #define resettable_v_writer_numberOfInstancesWithStatusAlive        (FALSE)
 #define resettable_v_writer_numberOfInstancesWithStatusDisposed     (FALSE)
