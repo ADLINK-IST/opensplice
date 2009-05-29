@@ -2,6 +2,9 @@
 
 #ORB dependent settings:
 
+IF_OSPLENV_IS_WIN32:=$(findstring win32, $(SPLICE_TARGET))
+IF_OSPLMODE_IS_DEV:=$(findstring dev, $(SPLICE_TARGET))
+
 ifeq ($(SPLICE_ORB), DDS_ACE_TAO_5_6_6)
     ORB_MK_INCLUDE_NAME = tao15-OF  
     ORB_INCLUDE	     = -I$(TAO_ROOT)/include
@@ -36,7 +39,8 @@ endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_6_1)
     ORB_MK_INCLUDE_NAME = tao15-OF
     ORB_INCLUDE	     = -I$(TAO_ROOT)/include
-if $(and ifneq (,$(findstring win32,$(SPLICE_TARGET))), ifneq (,$(findstring dev,$(SPLICE_TARGET))) )
+# The following hack is to make sure we do not mix debug with release libraries
+ifeq (1, $(and $(IF_OSPLENV_IS_WIN32), $(IF_OSPLMODE_IS_DEV)))
     ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
 else
     ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
@@ -72,7 +76,8 @@ endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_MK_INCLUDE_NAME = tao15-OF  
     ORB_INCLUDE	     = -I$(TAO_ROOT)/include
-if $(and ifneq (,$(findstring win32,$(SPLICE_TARGET))), ifneq (,$(findstring dev,$(SPLICE_TARGET))) )
+# The following hack is to make sure we do not mix debug with release libraries
+ifeq (1, $(and $(IF_OSPLENV_IS_WIN32), $(IF_OSPLMODE_IS_DEV)))
     ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
 else
     ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
@@ -108,7 +113,12 @@ endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
     ORB_MK_INCLUDE_NAME = tao14-OF  
     ORB_INCLUDE	     = -I$(TAO_ROOT)/include
+# The following hack is to make sure we do not mix debug with release libraries
+ifeq (1, $(and $(IF_OSPLENV_IS_WIN32), $(IF_OSPLMODE_IS_DEV)))
+    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd
+else
     ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer
+endif
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -Sv
