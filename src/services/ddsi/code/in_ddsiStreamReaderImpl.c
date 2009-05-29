@@ -238,16 +238,21 @@ in_ddsiStreamReaderImplDerializePayloadByKeyHash(
 			bytesCopied += sizeof(c_char);
 		break;
 		case V_STRING:
+#ifdef PA_BIG_ENDIAN
+			value = c_ulongValue(*((c_ulong*)&(keyHash[bytesCopied])));
+#else
+			value = c_ulongValue(IN_UINT32_SWAP_LE_BE(*((c_ulong*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += 4;
 			/*TODO: validate the string copy algorithm*/
-			if(keyHash[bytesCopied] != 0)
+			if(value.is.ULong != 0)
 			{
 				value = c_stringValue(
-					c_stringNew(base,
-					*((c_string*)(&(keyHash[bytesCopied+1])))));
-				bytesCopied = 1 + strlen(value.is.String) + 1;
+					c_stringNew(base,((c_string)(&(keyHash[bytesCopied])))));
+				bytesCopied += strlen(value.is.String) + 1;
 			} else
 			{
-				value = c_stringValue(NULL);
+				value = c_stringValue(c_stringNew(base, ""));
 				bytesCopied += 1;
 			}
 		break;
@@ -1039,7 +1044,6 @@ in_ddsiStreamReaderImplProcessAckNack(
     os_boolean result = OS_TRUE;
     OS_STRUCT(in_ddsiAckNack) ackNack; /* extends from in_ddsiSubmessageAckNack*/
     if (!_this->callbackTable->processAckNack) {
-        IN_TRACE(Receive,2,"callback 'processAckNack' not defined, AckNack will be ignored");
         result = OS_TRUE; /* continue buffer scan */
     } else {
 
@@ -1053,14 +1057,11 @@ in_ddsiStreamReaderImplProcessAckNack(
                     OS_SUPER(&ackNack),
                     preparsedHeader,
                     deserializer);
-        IN_TRACE(Receive,2,"callback 'processAckNack' will be called");
         if (nofOctets < 0) {
-            IN_TRACE(Receive,2,"callback 'processAckNack' will be called === FALSE");
             result = OS_FALSE;
         } else {
             in_result retVal;
 
-            IN_TRACE(Receive,2,"callback 'processAckNack' will be called === TRUE");
             retVal = _this->callbackTable->processAckNack(
                 _this->callbackArg,
                 &ackNack,

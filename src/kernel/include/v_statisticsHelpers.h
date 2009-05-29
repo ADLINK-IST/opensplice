@@ -106,6 +106,7 @@
 #define unit_v_writer_numberOfSamples                               unit_samples
 #define unit_v_writer_maxNumberOfSamplesPerInstance                 unit_samplesPerInstance
 
+
 #define resettable_v_writer_numberOfWrites                          (TRUE)
 #define resettable_v_writer_numberOfDisposes                        (TRUE)
 #define resettable_v_writer_numberOfRegisters                       (TRUE)
