@@ -37,8 +37,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\DDS_OpenFusion_1_5_1&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(TAO_ROOT)\include&quot;;..\ChatBoxUtil"
-				PreprocessorDefinitions="WIN32;DDS_OpenFusion_1_5_1;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\DDS_OpenFusion_1_6_1&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(TAO_ROOT)\include&quot;;..\ChatBoxUtil"
+				PreprocessorDefinitions="WIN32;DDS_OpenFusion_1_6_1;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="3"
 				DebugInformationFormat="1"
 			/>
@@ -105,8 +105,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\DDS_OpenFusion_1_5_1&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(TAO_ROOT)\include&quot;;..\ChatBoxUtil"
-				PreprocessorDefinitions="WIN32;DDS_OpenFusion_1_5_1;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\DDS_OpenFusion_1_6_1&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(TAO_ROOT)\include&quot;;..\ChatBoxUtil"
+				PreprocessorDefinitions="WIN32;DDS_OpenFusion_1_6_1;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 			/>
 			<Tool
