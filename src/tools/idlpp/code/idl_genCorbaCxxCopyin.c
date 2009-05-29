@@ -801,7 +801,7 @@ idl_arrayLoopCopyBody (
     case idl_tunion:
         idl_printIndent(loopIndent + indent);
     	varIndex = 0;
-        idl_fileOutPrintf(idl_fileCur(), "        extern void __%s__copyIn(c_base base,\n",
+        idl_fileOutPrintf(idl_fileCur(), "        extern c_bool __%s__copyIn(c_base base,\n",
             idl_scopedTypeName(typeSpec));
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "            %s *From,\n",
@@ -831,7 +831,7 @@ idl_arrayLoopCopyBody (
     	case idl_tunion:
     	case idl_tarray:
     	case idl_tseq:
-            idl_fileOutPrintf(idl_fileCur(), "        extern void __%s__copyIn(c_base base,",
+            idl_fileOutPrintf(idl_fileCur(), "        extern c_bool __%s__copyIn(c_base base,",
                 idl_scopedTypeName(typeSpec));
             idl_fileOutPrintf(idl_fileCur(), "            %s *From,",
                 idl_scopeStack(idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
