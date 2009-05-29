@@ -614,7 +614,7 @@ nw_socketNew(
 
         switch (addressType) {
             case SK_TYPE_BROADCAST: nw_socketBroadcastInitialize(result); break;
-            case SK_TYPE_MULTICAST: nw_socketMulticastInitialize(result); break;
+            case SK_TYPE_MULTICAST: nw_socketMulticastInitialize(result, receiving); break;
             default: break;
         }
 
