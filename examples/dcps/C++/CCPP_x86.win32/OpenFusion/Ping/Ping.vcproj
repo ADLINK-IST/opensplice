@@ -53,7 +53,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TAO.lib ACE.lib TAO_AnyTypeCode.lib dcpsccpp.lib dcpsgapi.lib ddsdatabase.lib PingPong.lib"
+				AdditionalDependencies="TAOd.lib ACEd.lib TAO_AnyTypeCoded.lib dcpsccpp.lib dcpsgapi.lib ddsdatabase.lib PingPong.lib"
 				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;..\PingPong\$(ConfigurationName)&quot;;&quot;$(TAO_ROOT)\lib&quot;"
 				GenerateDebugInformation="true"
 			/>
