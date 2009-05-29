@@ -1,0 +1,15 @@
+module Data
+{
+    struct DataTest
+    {
+        long TestId;
+		long ProviderId;
+		string SensorType;
+		string DataType;
+		boolean Emergency;
+		string TestStr;
+		sequence<long> SequenceTest;
+    };
+#pragma keylist DataTest TestId ProviderId
+
+};
