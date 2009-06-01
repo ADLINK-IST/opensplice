@@ -314,12 +314,13 @@ v_dataReaderEntryUpdatePurgeLists(
             }
             /* Update statistics. */
             if (v_statisticsValid(reader)) {
-	        delta = count - reader->sampleCount;
+                delta = count - reader->sampleCount;
                 if (delta) {
                     assert(delta > 0);
-                    *(v_statisticsGetRef(v_reader,
-                                         numberOfSamplesPurgedByDispose,
-                                         reader)) += delta;
+                    v_statisticsULongValueAdd(v_reader,
+                                              numberOfSamplesPurgedByDispose,
+                                              reader,
+                                              delta);
                 }
             }
         }
@@ -334,10 +335,6 @@ v_dataReaderEntryUpdatePurgeLists(
                               numberOfSamples,
                               reader,
                               reader->sampleCount);
-    v_statisticsMaxValueSetValue(v_reader,
-                                 maxNumberOfSamples,
-                                 reader,
-                                 reader->sampleCount);
 }
 
 #ifndef NDEBUG
@@ -506,11 +503,7 @@ v_dataReaderEntryWrite(
                      * L_NOWRITERS set, this change triggers an unwanted de-
                      * crement of the Alive-counter. This special case has to be
                      * handled in the statistics updating. */
-                    if(!qos->userKey.enable){
-                        /* Only notion of instances (and thus instance state
-                        statistics when userkeys are disabled. */
-                        UPDATE_READER_STATISTICS(_this->index,found,0);
-                    }
+                    UPDATE_READER_STATISTICS(_this->index,found,0);
                 }
             } else {
                 /* c_tableInsert returned an existing instance.
@@ -558,8 +551,8 @@ v_dataReaderEntryWrite(
                  v_dataReaderInstanceSampleCount(found);
         switch (res) {
         case V_DATAREADER_INSERTED:
+            UPDATE_READER_STATISTICS(_this->index,found,oldState);
             if (qos->userKey.enable == FALSE) {
-                UPDATE_READER_STATISTICS(_this->index,found,oldState);
                 if (!v_dataReaderInstanceEmpty(found)) {
                     if (wasEmpty && !v_dataReaderInstanceInNotEmptyList(found)) {
                         c_tableInsert(_this->index->notEmptyList, found);

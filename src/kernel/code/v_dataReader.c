@@ -1044,11 +1044,15 @@ instanceTakeSamples(
     count = oldCount - v_dataReaderInstanceSampleCount(instance);
     assert(count >= 0);
     v_dataReader(a->reader)->sampleCount -= count;
-    if (v_statisticsValid(a->reader)) {
-        *(v_statisticsGetRef(v_reader,
-                             numberOfSamplesTaken,
-                             a->reader)) += count;
-    }
+    v_statisticsULongSetValue(v_reader,
+                              numberOfSamples,
+                              a->reader,
+                              v_dataReader(a->reader)->sampleCount);
+    v_statisticsULongValueAdd(v_reader,
+                              numberOfSamplesTaken,
+                              a->reader,
+                              count);
+
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     return proceed;
@@ -1173,11 +1177,14 @@ v_dataReaderTakeInstance(
         assert(count >= 0);
         if (count > 0) {
             _this->sampleCount -= count;
-            if (v_statisticsValid(_this)) {
-                *(v_statisticsGetRef(v_reader,
-                                     numberOfSamplesTaken,
-                                     _this)) += count;
-            }
+            v_statisticsULongSetValue(v_reader,
+                                      numberOfSamples,
+                                      _this,
+                                      _this->sampleCount);
+            v_statisticsULongValueAdd(v_reader,
+                                      numberOfSamplesTaken,
+                                      _this,
+                                      count);
             assert(_this->sampleCount >= 0);
             v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
         }

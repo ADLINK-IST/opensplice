@@ -2694,9 +2694,13 @@ serializeKeyHash(
 	void* copyValue;
 	in_result r;
 	c_value value;
-	os_uint32 int32Value;
-	os_ushort int16Value;
+	os_int32 int32Value;
+	os_uint32 uint32Value;
+	os_ushort uint16Value;
+	os_short int16Value;
+	os_boolean doCopy;
 	c_octet keyHash[16];
+	c_ulong strLength, strLengthBE;
 
 	do {
 		memset(keyHash, 0, 16);
@@ -2705,6 +2709,7 @@ serializeKeyHash(
 		messageKeyList = v_topicMessageKeyList(topic);
 		nrOfKeys = c_arraySize(messageKeyList);
 		r = IN_RESULT_OK;
+		copyValue = NULL;
 
 		/* The keyHash must always be big endian, so the algorithm is different
 		 * compared to the 'normal' serialization.
@@ -2720,6 +2725,7 @@ serializeKeyHash(
 			{
 			case V_LONG:
 				size = 4;
+				doCopy = OS_TRUE;
 #ifdef PA_BIG_ENDIAN
 				copyValue = (void*)(&(value.is.Long));
 #else
@@ -2729,35 +2735,116 @@ serializeKeyHash(
 			break;
 			case V_ULONG:
 				size = 4;
+				doCopy = OS_TRUE;
 #ifdef PA_BIG_ENDIAN
 				copyValue = (void*)(&(value.is.ULong));
 #else
-				int32Value = IN_UINT32_SWAP_LE_BE(value.is.ULong);
-				copyValue = (void*)&int32Value;
+				uint32Value = IN_UINT32_SWAP_LE_BE(value.is.ULong);
+				copyValue = (void*)&uint32Value;
 #endif
 			break;
 			case V_SHORT:
 				size = 2;
+				doCopy = OS_TRUE;
 #ifdef PA_BIG_ENDIAN
 				copyValue = (void*)(&(value.is.Short));
 #else
-				int16Value = IN_UINT32_SWAP_LE_BE(value.is.Short);
+				int16Value = IN_UINT16_SWAP_LE_BE(value.is.Short);
 				copyValue = (void*)&int16Value;
 #endif
 			break;
+			case V_USHORT:
+				size = 2;
+				doCopy = OS_TRUE;
+#ifdef PA_BIG_ENDIAN
+				copyValue = (void*)(&(value.is.UShort));
+#else
+				uint16Value = IN_UINT16_SWAP_LE_BE(value.is.UShort);
+				copyValue = (void*)&uint16Value;
+#endif
+			break;
+			case V_OCTET:
+				size = 1;
+				doCopy = OS_FALSE;
+				if(bytesCopied+size <= 16)
+				{
+					keyHash[bytesCopied] = value.is.Octet;
+				}
+			break;
+			case V_BOOLEAN:
+				size = 1;
+				doCopy = OS_FALSE;
+				if(bytesCopied+size <= 16)
+				{
+					keyHash[bytesCopied] = value.is.Boolean;
+				}
+			break;
+			case V_CHAR:
+				size = 1;
+				doCopy = OS_FALSE;
+				if(bytesCopied+size <= 16)
+				{
+					keyHash[bytesCopied] = value.is.Char;
+				}
+			break;
+			case V_STRING:
+				doCopy = OS_FALSE;
+				size = 4;
+
+				if(value.is.String)
+				{
+					strLength = strlen(value.is.String);
+				} else
+				{
+					strLength = 0;
+				}
+				size += strLength + 1;
+
+				if(bytesCopied+size <= 16)
+				{
+#ifdef PA_BIG_ENDIAN
+					strLengthBE = strLength;
+#else
+					strLengthBE = IN_UINT32_SWAP_LE_BE(strLength);
+#endif
+					memcpy(&(keyHash[bytesCopied]), (void*)&strLengthBE, 4);
+					bytesCopied += 4;
+					memcpy(&(keyHash[bytesCopied]), value.is.String, strLength);
+					bytesCopied += strLength;
+					keyHash[bytesCopied++] = '\0';
+					size = 0;
+				}
+			break;
+			case V_FLOAT:
+			case V_DOUBLE:
+			case V_LONGLONG:
+			case V_ULONGLONG:
+				doCopy = OS_TRUE;
+				copyValue = NULL;
+				r = IN_RESULT_PRECONDITION_NOT_MET;
+				size = 0;
+			break;
 			/*TODO: complete keyHash calculation for all types*/
 			default:
+				doCopy = OS_TRUE;
 				copyValue = NULL;
 				r = IN_RESULT_PRECONDITION_NOT_MET;
 				size = 0;
 			break;
 			}
 
-			/*Now copy the big endian value into the key hash*/
-			if(bytesCopied+size <= 16 && copyValue)
+			if(doCopy)
 			{
-				memcpy(&(keyHash[bytesCopied]), copyValue, size);
-			} else
+				/*Now copy the big endian value into the key hash*/
+				if(bytesCopied+size <= 16 && copyValue)
+				{
+					memcpy(&(keyHash[bytesCopied]), copyValue, size);
+				} else
+				{
+					/*The key hash is larger then 16 bytes, so skip key hash*/
+					r = IN_RESULT_PRECONDITION_NOT_MET;
+				}
+			} else if(bytesCopied+size > 16)
 			{
 				/*The key hash is larger then 16 bytes, so skip key hash*/
 				r = IN_RESULT_PRECONDITION_NOT_MET;
