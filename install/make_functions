@@ -132,23 +132,10 @@ make_hde_mirror_and_builder ()
 {
     INSTTYPE="HDE"
     FULLINSTTYPE="Host_Development_Environment"
-    SOURCE_TARGET="$1"
-    SOURCE_HOST="$2"
-    BUILDER_TARGET="$3"
-    PACKAGE_VERSION="$4"
-    PACKAGE_DATE="$5"
-    SCRIPT_NAME="$6"
-    TXTFILE_CONVERTER="$7"
-    ENV="$8"
-    GETLIC_INFO_NAME="$9"
-    NOINSTALLER="${10}"
-    PLATFORM_EXT="${11}"
-    SOURCE_TARGET_SHORT="${12}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
-
-    sh ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
-        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
+    ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
+        "${PACKAGE_DATE}" "${ENV}" "echo done" "${SOURCE_TARGET_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
@@ -410,17 +397,8 @@ create_rts_mirror ()
 
 install_hde_target ()
 {
-    HDE_dir=$1
-    target=$2
     target_os=`expr "$target" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-    host=$3
     host_os=`expr "$host" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-    target_version=$4
-    target_date=$5
-    suffix_exe=$6
-    suffix_script=$7
-    source_env=$8
-    target_env=$9
 
     #
     # Copy general license file
