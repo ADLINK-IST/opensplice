@@ -22,8 +22,8 @@ BUILD_DBT=build-dbt-tests.txt
 BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
-BUILD_EXAMPLES=examples/
-RUN_EXAMPLES=examples/
+BUILD_EXAMPLES=examples/build
+RUN_EXAMPLES=examples/run
 BUILD_DIST=build-dist.txt
 KEEP_DIST=archive-dist.txt
 EOF
@@ -35,8 +35,8 @@ BUILD_DBT=build-dbt-tests.txt
 BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
-BUILD_EXAMPLES=examples/
-RUN_EXAMPLES=examples/
+BUILD_EXAMPLES=examples/build
+RUN_EXAMPLES=examples/run/summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=../distro
 EOF
@@ -180,18 +180,36 @@ then
     then
         echo "BUILD/EXAMPLES=SKIPPED" >> $RESFILE
         echo "RUN/EXAMPLES=SKIPPED" >> $RESFILE
-        BUILD_RUN_EXAMPLES_STAGE_WORKED=0
+        RUN_EXAMPLES_STAGE_WORKED=0
+        BUILD_EXAMPLES_STAGE_WORKED=0
     else
-        $IBSDIR/dcps_build_run_examples $ARGS > $LOGDIR/build-run-examples.txt 2>&1
-        BUILD_RUN_EXAMPLES_STAGE_WORKED=$?
-        if $BUILD_RUN_EXAMPLES_STAGE_WORKED
+        mkdir $LOGDIR/examples
+        mkdir $LOGDIR/examples/build
+        $IBSDIR/dcps_build_examples $ARGS > $LOGDIR/examples/build/summary.txt 2>&1
+        BUILD_EXAMPLES_STAGE_WORKED=$?
+        if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 ]
         then
             echo "BUILD/EXAMPLES=PASS" >> $RESFILE
-            echo "RUN/EXAMPLES=PASS" >> $RESFILE
         else
             echo "BUILD/EXAMPLES=FAIL" >> $RESFILE
-            echo "RUN/EXAMPLES=FAIL" >> $RESFILE
-            BUILD_RUN_EXAMPLES_STAGE_WORKED=1
+            BUILD_EXAMPLES_STAGE_WORKED=1
+        fi
+        ArchiveLogs
+
+        if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 ]
+        then
+            mkdir $LOGDIR/examples/run
+            $IBSDIR/dcps_run_examples $ARGS > $LOGDIR/examples/run/overview.log 2>&1
+            RUN_EXAMPLES_STAGE_WORKED=$?
+            if [ $RUN_EXAMPLES_STAGE_WORKED = 0 ]
+            then
+                echo "RUN/EXAMPLES=PASS" >> $RESFILE
+            else
+                echo "RUN/EXAMPLES=FAIL" >> $RESFILE
+                RUN_EXAMPLES_STAGE_WORKED=1
+            fi
+        else
+            echo "RUN/EXAMPLES=ABORTED" >> $RESFILE
         fi
         ArchiveLogs
     fi
@@ -206,7 +224,7 @@ then
         then
             SetState "TestsFailed"
         else
-            if [ "$BUILD_RUN_EXAMPLES_STAGE_WORKED" != 0 ]
+            if [ "$RUN_EXAMPLES_STAGE_WORKED" != 0 -o "$BUILD_EXAMPLES_STAGE_WORKED" != 0 ]
             then
                 SetState "ExamplesFailed"
             else
