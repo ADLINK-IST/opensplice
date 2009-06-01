@@ -23,7 +23,7 @@ BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
 BUILD_EXAMPLES=examples/build
-RUN_EXAMPLES=examples/run
+RUN_EXAMPLES=examples/run/summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=archive-dist.txt
 EOF
