@@ -43,7 +43,7 @@ M   ospli/DDS1-WIN2K3/x86.win32-release 50 heads/master none
 E   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/master none
 M   ospli/DDS1-WIN2K3/x86.win32-dev-notest-inner 1 heads/master none
 E   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 heads/master none
-E   ospli/DDS1-WIN2K3/x86.win32-release-notest-inner 1 heads/master none
+M   ospli/DDS1-WIN2K3/x86.win32-release-notest-inner 1 heads/master none
 M   ospli/DDS1-WIN2K3/x86.win32-release-lic-inner 1 heads/master none
 
 M   ospli/rhel5a/x86.linux2.6-dev 20 heads/master none
