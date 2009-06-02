@@ -345,7 +345,10 @@ set_hde_envs ()
     PLATFORM_EXT=unix
     if [ "${target}" = "x86_64.linux2.6" ]
     then
-	PLATFORM_EXT=unix64	
+	PLATFORM_EXT=unix64
+    elif [ "${target}" = "PPC5plus.AIX5.3" ]
+    then
+        PLATFORM_EXT=xlc	
     fi
 }
 
