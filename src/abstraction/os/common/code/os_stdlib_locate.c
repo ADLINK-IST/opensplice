@@ -1,4 +1,5 @@
 #include <os_stdlib.h>
+#include <assert.h>
 
 #define PATH_ENVVAR "PATH"
 

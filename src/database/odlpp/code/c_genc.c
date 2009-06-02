@@ -40,7 +40,6 @@
 #include "c_iterator.h"
 #include "c_metafactory.h"
 #include "c_typenames.h"
-
 /***********************************************************************
  *
  * Global function implementations
