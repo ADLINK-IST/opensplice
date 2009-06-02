@@ -314,12 +314,13 @@ v_dataReaderEntryUpdatePurgeLists(
             }
             /* Update statistics. */
             if (v_statisticsValid(reader)) {
-	        delta = count - reader->sampleCount;
+                delta = count - reader->sampleCount;
                 if (delta) {
                     assert(delta > 0);
-                    *(v_statisticsGetRef(v_reader,
-                                         numberOfSamplesPurgedByDispose,
-                                         reader)) += delta;
+                    v_statisticsULongValueAdd(v_reader,
+                                              numberOfSamplesPurgedByDispose,
+                                              reader,
+                                              delta);
                 }
             }
         }
@@ -334,10 +335,6 @@ v_dataReaderEntryUpdatePurgeLists(
                               numberOfSamples,
                               reader,
                               reader->sampleCount);
-    v_statisticsMaxValueSetValue(v_reader,
-                                 maxNumberOfSamples,
-                                 reader,
-                                 reader->sampleCount);
 }
 
 #ifndef NDEBUG

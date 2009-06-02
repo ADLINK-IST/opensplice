@@ -28,4 +28,7 @@
 #define OS_DEBUG_4(msg, a1, a2, a3, a4)
 #endif
 
+void os_debugModeInit();
+void os_debugModeExit();
+
 #endif /* __OS__DEBUG_H__ */

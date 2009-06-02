@@ -127,20 +127,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pong", "dcps\standalone\C++
 		{004A46A2-F9A5-4582-A430-3339EF65816D} = {004A46A2-F9A5-4582-A430-3339EF65816D}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{B31F503A-B263-4E00-A9F4-4BC58F54A3BE}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DBMSConnect", "DBMSConnect", "{4E12C837-57EA-4058-A1FB-94C3DE7EE761}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL", "SQL", "{28AF1146-C2B2-4D57-971A-0DBA29DD0F0D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{563DFB6F-FAEF-4CCC-AEA6-64377E2132A4}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ODBC", "ODBC", "{260888A0-BB4A-430C-AD49-AB8D163CEAA2}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chatter", "services\dbmsconnect\SQL\C++\ODBC\Chatter\Chatter.vcproj", "{333238F6-552A-4F83-8802-D3F633CBC405}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MessageBoard", "services\dbmsconnect\SQL\C++\ODBC\MessageBoard\MessageBoard.vcproj", "{8A7C223C-2B60-4D45-98D7-CB9236442C57}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #
 # Make HDE mirror
 #
@@ -6,12 +8,12 @@
 
 echo "* Build SPLICE HDE"
 
-set_hde_envs $*
+set_hde_envs "$@"
 remove_hde_mirror
 create_hde_mirror
 
 echo "*   Prepare HDE for target ${HDE_subdir}"
-install_hde_target "${HDE_dir}" "${target}" "${host}" "${target_version}" "${target_date}" "${suffix_exe}" "${suffix_script}" "${source_env}" "${target_env}"
+install_hde_target
 echo "*   HDE prepared for target ${HDE_subdir} Ready"
 
 if [ -z "$OSPL_OUTER_HOME" ]

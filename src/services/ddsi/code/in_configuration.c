@@ -1539,7 +1539,7 @@ in_reportTrace(
 {
     va_list ap;
     os_time useTime;
-#if 0
+#if 1
     in_configuration configuration;
 
     configuration = in_configurationGetConfiguration();
