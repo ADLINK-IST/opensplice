@@ -1145,9 +1145,11 @@ v_dataReaderInstanceTakeSamples(
 
 void
 v_dataReaderInstancePurge(
-    v_dataReaderInstance _this)
+    v_dataReaderInstance _this,
+    c_long disposedCount,
+    c_long noWritersCount)
 {
-    v_dataReaderSample sample, previous;
+    v_dataReaderSample sample, next;
     v_dataReader r;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
@@ -1157,43 +1159,74 @@ v_dataReaderInstancePurge(
     CHECK_INVALIDITY(_this);
 
     if ((_this != NULL) && !v_dataReaderInstanceEmpty(_this)) {
-
         r = v_dataReaderInstanceReader(_this);
         sample = v_dataReaderInstanceHead(_this);
-        while (sample != NULL) {
-            previous = sample->prev;
-            if (_this->sampleCount) {
-                /* Do not decrease sample count on invalid sample */
-                _this->sampleCount--;
-            } else {
-                assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
+        if (disposedCount >= 0) {
+            next = NULL;
+            while ((sample != NULL) && (sample->disposeCount == disposedCount)) {
+                if (_this->sampleCount) {
+                    /* Do not decrease sample count on invalid sample */
+                    _this->sampleCount--;
+                } else {
+                    assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
+                }
+    
+                if (r->views != NULL) {
+                    v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
+                }
+                next = sample;
+                sample = sample->prev;
             }
-
-            if (r->views != NULL) {
-                v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-            }
-            sample = previous;
         }
-        assert(_this->sampleCount == 0);
-        sample = v_dataReaderInstanceHead(_this);
-        v_dataReaderSampleFree(sample);
-        v_dataReaderInstanceSetHead(_this,NULL);
-        v_dataReaderInstanceSetTail(_this,NULL);
-        v_dataReaderInstanceStateClear(_this, L_NEW);
-        v_dataReaderInstanceStateSet(_this, L_EMPTY);
-        v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+        if (noWritersCount >= 0) {
+            while ((sample != NULL) && (sample->noWritersCount == noWritersCount)) {
+                if (_this->sampleCount) {
+                    /* Do not decrease sample count on invalid sample */
+                    _this->sampleCount--;
+                } else {
+                    assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
+                }
+    
+                if (r->views != NULL) {
+                    v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
+                }
+                next = sample;
+                sample = sample->prev;
+            }
+        }
+        /* now next points to the sample in the history from where we need to purge */
+        if (sample == NULL) { /* instance becomes empty, purge all */
+            assert(_this->sampleCount == 0);
+            sample = v_dataReaderInstanceHead(_this);
+            v_dataReaderSampleFree(sample);
+            v_dataReaderInstanceSetHead(_this,NULL);
+            v_dataReaderInstanceSetTail(_this,NULL);
+            v_dataReaderInstanceStateClear(_this, L_NEW);
+            v_dataReaderInstanceStateSet(_this, L_EMPTY);
+            v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
 
-        /* reader internal state of the data has been modified.
-         * so increase readers update count.
-         * This value is used by queries to determine if a query
-         * needs to be reëvaluated.
-         */
-        v_dataReader(r)->updateCnt++;
+            /* reader internal state of the data has been modified.
+             * so increase readers update count.
+             * This value is used by queries to determine if a query
+             * needs to be reëvaluated.
+             */
+            v_dataReader(r)->updateCnt++;
 
-        if (r->triggerValue) {
-            c_free(v_readerSample(r->triggerValue)->instance);
-            c_free(r->triggerValue);
-            r->triggerValue = NULL;
+            if (r->triggerValue) {
+//                c_free(v_readerSample(r->triggerValue)->instance);
+                c_free(r->triggerValue);
+                r->triggerValue = NULL;
+            }
+        } else {
+           if (next != NULL) {
+               v_dataReaderInstanceSetHead(_this, sample);
+               /* break link */
+               sample->next = NULL;
+               next->prev = NULL; /* ref kept by local var. next */
+               v_dataReaderSampleFree(next);
+               /* The instance state is in correct state, so no update needed.
+                */
+           } /* else nothing to purge! */
         }
     }
 
