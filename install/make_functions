@@ -98,6 +98,12 @@ install_ascii_file()
         else
             echo "* ##    ${install_ascii_file_target_dir} does not exist"
         fi
+    elif [ -f ${install_ascii_file_source_file} ]
+       then
+           printf "*                 copy ${install_ascii_file_source_file} ... "
+           cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+           ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+           echo "Ready"     
     fi
 }
 
@@ -752,7 +758,12 @@ install_hde_target ()
 
         cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/ccpp
         cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp/makefile
+
+        if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
+        then 
+            cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp/makefile
+        fi
+
         cp ${release}/custom/README ${HDE_dir}/custom_lib/ccpp
         cp ${release}/custom/setup ${HDE_dir}/custom_lib/ccpp
         cp ${OSPL_HOME}/setup/makefiles/orbdeps.mak ${HDE_dir}/custom_lib/ccpp
@@ -776,7 +787,11 @@ install_hde_target ()
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
         cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
+
+        if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
+        then
+             cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
+        fi
         cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
 
         echo "Ready"
@@ -811,9 +826,12 @@ install_hde_target ()
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.idl" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.cpp" \
-                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong            
-                install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                if [ -f ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT ]
+                then            
+                     install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
+                fi 
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
@@ -849,8 +867,12 @@ install_hde_target ()
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.txt" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-                install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+
+                if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT ]
+                then
+                     install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
+                fi
             else
                 mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
                 mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
@@ -889,8 +911,13 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP/*.cpp" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT ]
+            then
+                install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/README.txt \
@@ -924,8 +951,13 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/*.h" \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/*.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
         else
@@ -969,8 +1001,12 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/README.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong Makefile
+            fi
 
         else
             mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
@@ -1007,8 +1043,13 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/README.txt \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
         else
@@ -1043,8 +1084,12 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial Makefile
+            fi
         else
             mkdir ${HDE_dir}/examples/dcps/standalone/C/Tutorial/ChatBoxUtil
             mkdir ${HDE_dir}/examples/dcps/standalone/C/Tutorial/Chatter
