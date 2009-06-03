@@ -201,7 +201,6 @@ cfgGetSchedule(
     return r;
 }
 
-#ifndef INTEGRITY
 static c_bool
 cfgGetPriority(
     sr_serviceInfo si,
