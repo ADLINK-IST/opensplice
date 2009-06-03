@@ -167,6 +167,11 @@ purgeListInsert(
     item = c_new(v_kernelType(v_objectKernel(instance),K_PURGELISTITEM));
     item->instance = c_keep(instance);
     item->insertionTime = v_timeGet();
+    if (v_dataReaderInstanceStateTest(instance, L_DISPOSED)) {
+        item->genCount = instance->disposeCount;
+    } else {
+        item->genCount = instance->noWritersCount;
+    }
     c_append(purgeList,item);
     instance->purgeInsertionTime = item->insertionTime;
     c_free(item);
@@ -176,21 +181,27 @@ static void
 doInstanceAutoPurge(
     v_dataReader reader,
     v_dataReaderInstance instance,
-    c_time purgeTime)
+    c_long disposedCount,
+    c_long noWritersCount)
 {
     c_long sampleCount;
 
     if (!v_dataReaderInstanceEmpty(instance)) {
-        /* Remove all samples from the instance */
+        /* Remove all samples from the instance, where
+	   sample->disposedCount == disposedCount
+        */
         sampleCount = v_dataReaderInstanceSampleCount(instance);
-        v_dataReaderInstancePurge(instance);
+        v_dataReaderInstancePurge(instance, disposedCount, noWritersCount);
         sampleCount -= v_dataReaderInstanceSampleCount(instance);
         assert(sampleCount >= 0);
-        assert(v_dataReaderInstanceEmpty(instance));
         reader->sampleCount -= sampleCount;
         assert(reader->sampleCount >= 0);
+        if (v_dataReaderInstanceEmpty(instance)) {
+            v_dataReaderRemoveInstance(reader,instance);
+        }         
+    } else {
+        v_dataReaderRemoveInstance(reader,instance);
     }
-    v_dataReaderRemoveInstance(reader,instance);
 }
 
 void
@@ -258,10 +269,14 @@ v_dataReaderEntryUpdatePurgeLists(
             while (purgeListItem != NULL) {
                 if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
                     purgeInstance = purgeListItem->instance;
+#if 0
                     if (v_timeCompare(purgeListItem->insertionTime,
                                       purgeInstance->purgeInsertionTime) == C_EQ){
-                        doInstanceAutoPurge(reader, purgeInstance, now);
+                        doInstanceAutoPurge(reader, purgeInstance, -1, purgeListItem->genCount);
                     }
+#else
+                    doInstanceAutoPurge(reader, purgeInstance, -1, purgeListItem->genCount);
+#endif
                     c_free(purgeListItem);
                     purgeListItem = c_removeAt(purgeList, 0);
                 } else {
@@ -296,10 +311,14 @@ v_dataReaderEntryUpdatePurgeLists(
             while (purgeListItem != NULL) {
                 if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
                     purgeInstance = purgeListItem->instance;
+#if 0
                     if (v_timeCompare(purgeListItem->insertionTime,
                                       purgeInstance->purgeInsertionTime) == C_EQ){
-                        doInstanceAutoPurge(reader, purgeInstance, now);
+                        doInstanceAutoPurge(reader, purgeInstance, purgeListItem->genCount, -1);
                     }
+#else
+                    doInstanceAutoPurge(reader, purgeInstance, purgeListItem->genCount, -1);
+#endif
                     c_free(purgeListItem);
                     purgeListItem = c_removeAt(purgeList, 0);
                 } else {
@@ -559,13 +578,11 @@ v_dataReaderEntryWrite(
                         v_dataReaderInstanceInNotEmptyList(found) = TRUE;
                     }
                     if (v_dataReaderInstanceStateTest(found,L_DISPOSED)) {
-                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_disposed_samples_delay))
-                        {
+                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_disposed_samples_delay)) {
                             purgeListInsert(_this->purgeListDisposed, found);
                         }
                     } else if (v_dataReaderInstanceStateTest(found,L_NOWRITERS)) {
-                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_nowriter_samples_delay))
-                        {
+                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_nowriter_samples_delay)) {
                             purgeListInsert(_this->purgeListNotEmpty, found);
                         }
                     }
