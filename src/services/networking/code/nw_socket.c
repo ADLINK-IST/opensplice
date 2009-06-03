@@ -370,7 +370,7 @@ nw_socketBind(
     if (sock != NULL) {
         /* Avoid already in use error messages */
         optLen = (os_uint32)sizeof(optVal);
-        optVal = 0;
+        optVal = SK_TRUE;
         retVal = os_sockSetsockopt(sock->socketData,
                             SOL_SOCKET, SO_REUSEADDR,
                             (void *)&optVal, optLen);
