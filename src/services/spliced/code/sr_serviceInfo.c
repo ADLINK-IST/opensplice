@@ -201,56 +201,6 @@ cfgGetSchedule(
     return r;
 }
 
-static c_bool
-cfgGetLocking(
-    sr_serviceInfo si,
-    u_cfElement info)
-{
-    c_iter iter;
-    int      iterLength;
-    c_bool r;
-    u_cfData d;
-    c_bool b;
-
-    r = TRUE;
-    iter = u_cfElementXPath(info, "Locking/#text");
-    iterLength = c_iterLength(iter);
-    d = u_cfData(c_iterTakeFirst(iter));
-    if (iterLength == 1) {
-        r = u_cfDataBoolValue(d, &b);
-
-        if (r == TRUE) {
-            if (b == TRUE) {
-                si->procAttr.lockPolicy = OS_LOCKED;
-            } else {
-                si->procAttr.lockPolicy = OS_UNLOCKED;
-            }
-        } else {
-            OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED, 
-                0, "Incorrect <Locking> parameter for service %s -> default", si->name);
-            r = TRUE;
-        }
-        u_cfDataFree(d);
-    } else {
-        if (iterLength == 0) {
-            OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 
-                0, "Taking default for <Locking> parameter service %s", si->name);
-        } else {
-            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED, 
-                0, "One <Locking> parameter expected for service %s", si->name);
-            r = FALSE;
-        }
-        while (d != NULL) {
-            u_cfDataFree(d);
-            d = u_cfData(c_iterTakeFirst(iter));
-        }
-    }
-    c_iterFree(iter);
-
-    return r;
-}
-#endif
-
 #ifndef INTEGRITY
 static c_bool
 cfgGetPriority(
@@ -447,7 +397,6 @@ cfgGetInfo(
             (void)cfgGetArguments(si, info);
 #ifndef INTEGRITY
             (void)cfgGetSchedule(si, info);
-            (void)cfgGetLocking(si, info);
             (void)cfgGetPriority(si, info);
 #endif
             (void)cfgGetPriorityKind(si, info);
