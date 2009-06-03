@@ -16,14 +16,6 @@
 extern "C" {
 #endif
 
-/* Determine CDR endianness of this machine */
-#define DDSI_BIG_ENDIAN_VAL 0x0000
-#define DDSI_LITTLE_ENDIAN_VAL 0x0000
-#ifdef PA_BIG_ENDIAN
-#define IN_ENDIAN_VAL DDSI_BIG_ENDIAN_VAL
-#else
-#define IN_ENDIAN_VAL DDSI_LITTLE_ENDIAN_VAL
-#endif
 
 /*  --------- inline macros --------- */
 

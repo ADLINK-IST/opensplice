@@ -12,7 +12,7 @@ endif
 
 # Compiler flags
 CFLAGS_OPT       = -Od
-# -DE_DEBUG is needed to enable debugging info for the SACPP apis
+# -D_DEBUG is needed to enable debugging info for the SACPP apis
 CFLAGS_DEBUG     = -Z7 -D_TYPECHECK_ -D_DEBUG -MDd -DE_DEBUG
 LDFLAGS          += -DEBUG -MANIFEST -NODEFAULTLIB:MSVCRT
 #Java compiler flags

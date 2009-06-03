@@ -51,9 +51,9 @@ v_writerStatisticsInit(
     ws->numberOfWritesBlockedBySamplesPerInstanceLimit = 0;
     ws->numberOfRetries = 0;
 
-    ws->numberOfAliveInstances = 0;
-    ws->numberOfDisposedInstances = 0;
-    ws->numberOfUnregisteredInstances = 0;
+    ws->numberOfInstancesWithStatusAlive = 0;
+    ws->numberOfInstancesWithStatusDisposed = 0;
+    ws->numberOfInstancesWithStatusUnregistered = 0;
     ws->numberOfSamples = 0;
     v_maxValueInit(&ws->maxNumberOfSamplesPerInstance);
 }
@@ -92,9 +92,9 @@ v_writerStatisticsReset(
         v_statisticsULongResetInternal(v_writer, numberOfWritesBlockedBySamplesPerInstanceLimit, ws);
         v_statisticsULongResetInternal(v_writer, numberOfRetries, ws);
 
-        v_statisticsULongResetInternal(v_writer, numberOfAliveInstances, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfDisposedInstances, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfUnregisteredInstances, ws);
+        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusAlive, ws);
+        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusDisposed, ws);
+        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusUnregistered, ws);
         v_statisticsULongResetInternal(v_writer, numberOfSamples, ws);
         v_maxValueReset(&ws->maxNumberOfSamplesPerInstance);
 

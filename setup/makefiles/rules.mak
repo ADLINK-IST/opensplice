@@ -31,7 +31,8 @@ ifeq (,$(findstring win32,$(SPLICE_TARGET)))
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst :, ,$(JAVA_INC)))
 #MANIFEST_CLASSPATH=Class-Path: $(subst $(JAR_INC_DIR)/,,$(subst :, ,$(JAVA_INC)))
 else # it is windows
-MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst ;, ,$(JAVA_INC)))
+MANIFEST_CLASSPATH=Class-Path: $(notdir $(foreach entry,$(subst ;, ,$(JAVA_INC)),$(shell cygpath "$(entry)")))
+#MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst ;, ,$(JAVA_INC)))
 endif
 endif
 
