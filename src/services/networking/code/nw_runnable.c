@@ -30,10 +30,13 @@ nw_runnableDispatcher(
 {
     nw_runnable runnable = (nw_runnable)userData;
     
+    /* All threads are protected for this daemon */
     if (runnable && runnable->mainFunc) {
         NW_TRACE_1(Mainloop, 2, "Entering thread %s",
                    nw_runnableGetName(runnable));
+        os_threadProtect();
         runnable->mainFunc(runnable,runnable->mainFuncArg);
+        os_threadUnprotect();
         NW_TRACE_1(Mainloop, 2, "Leaving thread %s",
                    nw_runnableGetName(runnable));
     }

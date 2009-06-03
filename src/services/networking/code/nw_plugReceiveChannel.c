@@ -660,7 +660,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             
             sendingPartitionNode->active = FALSE;
           
-            //release all admins for this PartitionNode
+            /*release all admins for this PartitionNode*/
             nw_plugSendingPartitionNodeFree(sendingPartitionNode);          
         } 
         
@@ -1581,6 +1581,50 @@ nw_plugReceiveChannelTakeWaitingDataBuffer(
 }
 
 /*
+ * This operation checks the messageBox and frees the 
+ * administration and buffers for node that have stopped or died.
+ */
+static void
+nw_CheckMessageBox( nw_plugChannel channel )
+{
+    nw_plugReceiveChannel ReceiveChannel = nw_plugReceiveChannel(channel);
+    nw_messageBoxMessageType messageType;
+    nw_bool messageReceived;
+    nw_address sendingAddress;
+    nw_seqNr sendingNodeId;
+    nw_plugSendingPartitionNode currentNode;
+
+    /* Walk over all messages in the messageBox */
+    messageReceived = nw_plugChannelProcessMessageBox(channel,
+        &sendingNodeId, &sendingAddress, &messageType);
+    while (messageReceived) {
+        switch (messageType) {
+            case NW_MBOX_NODE_STARTED:
+            break;
+            case NW_MBOX_NODE_STOPPED:
+            case NW_MBOX_NODE_DIED:
+                /* Now walk over all partitionNodes to find the once that match this NodeId*/
+                currentNode = ReceiveChannel->sendingPartitionNodes;
+                while ((currentNode != NULL)) {
+                    if (currentNode->nodeId == sendingNodeId) {
+                        /* mark as inactive and release all admins for this PartitionNode */
+                        currentNode->active = FALSE;                       
+                        nw_plugSendingPartitionNodeFree(currentNode);          
+                    }
+                    currentNode = currentNode->next;
+                }
+            break;
+            case NW_MBOX_UNDEFINED:
+                NW_CONFIDENCE(messageType != NW_MBOX_UNDEFINED);
+            break;
+        }
+        messageReceived = nw_plugChannelProcessMessageBox(channel,
+            &sendingNodeId, &sendingAddress, &messageType);
+    }
+}
+
+
+/*
  * Read data from the socket as long as there is something to read
  * and communicate incoming data and control messages to the send-thread
  */
@@ -1591,6 +1635,7 @@ nw_plugReceiveChannelProcessIncoming(nw_plugChannel channel)
     nw_bool dataRead = TRUE;
     nw_bool result = TRUE;
 
+    nw_CheckMessageBox(channel);
     while (result && dataRead ) {
         result = nw_plugReceiveChannelReadSocket(nw_plugReceiveChannel(channel), &zeroTime, &dataRead);
     }
