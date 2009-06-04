@@ -73,3 +73,6 @@ E   ospli/ibmp5/PPC5plus.AIX5.3-dev-inner 1 heads/master none
 E   ospli/ibmp5/PPC5plus.AIX5.3-release-inner 1 heads/master none
 M   ospli/ibmp5/PPC5plus.AIX5.3-dev-notest-inner 1 heads/master none
 M   ospli/ibmp5/PPC5plus.AIX5.3-release-notest-inner 1 heads/master none
+
+M   ospli/ultra60/studio12-dev-notest-inner 1 heads/master none
+M   ospli/ultra60/studio12-release-lic-inner 1 heads/master none
