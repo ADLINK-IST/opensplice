@@ -1285,6 +1285,8 @@ nw_plugReceiveChannelIgnoreLastReturnedMessage(
                 DF_DATA(lastReturnedMsgHolderPtr->firstAdmin), NULL, FALSE);
         }
 
+        /* Free the last returned buffer because of the firstAdmin ptr */
+        nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
 
         /* need to determine if the admin is no longer used by any message
          * holder pointer, which can be detected by checking the usedCount of
