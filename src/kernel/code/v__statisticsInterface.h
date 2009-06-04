@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V__STATISTICSINTERFACE_H
@@ -30,10 +30,17 @@
     if (v_statisticsValid(entity)) \
         (*v_statisticsGetRef(entityName, fieldName, entity))++
 
+#define v_statisticsULongValueAdd(entityName, fieldName, entity, value) \
+    if (v_statisticsValid(entity)) \
+        (*v_statisticsGetRef(entityName, fieldName, entity)) += value;
+
 #define v_statisticsULongValueDec(entityName, fieldName, entity) \
     if (v_statisticsValid(entity)) \
         (*v_statisticsGetRef(entityName, fieldName, entity))--
 
+#define v_statisticsULongValueSub(entityName, fieldName, entity, value) \
+    if (v_statisticsValid(entity)) \
+        (*v_statisticsGetRef(entityName, fieldName, entity)) -= value;
 
 /* Macros for MaxValue statistics values */
 
@@ -66,9 +73,9 @@
 
 /* Temporary helper macro which has to be removed at the moment that all
  * statistics filling is done via the macro's above */
- 
+
  #define v_statisticsULongResetInternal(entityName, fieldName, statistics) \
     if (statistics && v_statisticsResettable(entityName, fieldName)) \
-        statistics->fieldName = 0         
+        statistics->fieldName = 0
 
 #endif /*V__STATISTICSINTERFACE_H*/

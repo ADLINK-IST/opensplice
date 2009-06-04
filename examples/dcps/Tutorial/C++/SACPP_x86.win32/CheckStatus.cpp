@@ -22,6 +22,9 @@
  ***/
 
 #include "CheckStatus.h"
+#include "os_process.h"
+
+#include "Windows.h"
 
 /* Array to hold the names for all ReturnCodes. */
 char *RetCodeName[13] = { 
@@ -63,8 +66,8 @@ checkStatus(
      * disconnected from the OpenSplice DDS domain
      */
     if (status != DDS::RETCODE_ALREADY_DELETED) {
-        /* Generate Ctrl-C event to terminate process */
-        GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+        /* Call os_procExit to terminate process */
+       os_procExit(OS_EXIT_SUCCESS);
     }
     /* Wait in infinite loop as process will be terminated,
      * This is needed on windows as calling exit() or ExitProcess()
@@ -86,8 +89,8 @@ checkHandle(
      
      if (!handle) {
         cerr << "Error in " << info << ": Creation failed: invalid handle" << endl;
-        /* Generate Ctrl-C event to terminate process */
-        GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+        /* Call os_procExit to terminate process */
+        os_procExit(OS_EXIT_SUCCESS);
 
         /* Wait in infinite loop as process will be terminated,
          * This is needed on windows as calling exit() or ExitProcess()

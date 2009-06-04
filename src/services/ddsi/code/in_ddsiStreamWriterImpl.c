@@ -776,10 +776,19 @@ static os_size_t
 calculatePayloadSize(v_message message)
 {
     /* TODO ask the serializer to calculate the size */
-    os_size_t realSize = 1300;
+
+	/*Note: Here the effective length of serialized payload should be calculated,
+	 * but so far we assume that users message will not exceed 800 bytes, and that the
+	 * sendbuffer is large enough to hold these 800 plus the required space for headers
+	 * and inline Qos.
+	 * Plan is to implement a one-pass serialization strategy in future, so that this operation
+	 * will become obsolete.
+	 *  */
+	os_size_t realSize = 800;
     os_size_t result;
 
-    /* finally round up the value to match alignment constraints */
+    /* finally round up the value to match alignment constraints (just in
+     * case realSize is not multiple of 4) */
     result = IN_ALIGN_UINT_CEIL(
             realSize,
             IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT);
@@ -895,7 +904,7 @@ in_ddsiStreamWriterImplAppendData(
 	struct v_publicationInfo * info;
     const os_size_t sentinelSize = 0U;
 	in_ddsiGuid guid;
-	os_boolean keyHashAdded;
+	os_boolean keyHashAdded = OS_FALSE; /* must be initialized as FALSE */
 	os_size_t serializedPayloadSize, inlineQosSize, timestampSubmessageLength;
 	os_size_t dataSubmessageLength, totalLength;
 	in_result result = IN_RESULT_OK;

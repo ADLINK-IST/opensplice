@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__dataReader.h"
@@ -949,11 +949,14 @@ instanceTakeSamples(
     count = oldCount - v_dataReaderInstanceSampleCount(instance);
     assert(count >= 0);
     v_dataReader(a->reader)->sampleCount -= count;
-    if (v_statisticsValid(a->reader)) {
-        *(v_statisticsGetRef(v_reader,
-                             numberOfSamplesTaken,
-                             a->reader)) += count;
-    }
+    v_statisticsULongSetValue(v_reader,
+                              numberOfSamples,
+                              a->reader,
+                              v_dataReader(a->reader)->sampleCount);
+    v_statisticsULongValueAdd(v_reader,
+                              numberOfSamplesTaken,
+                              a->reader,
+                              count);
     assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     return proceed;
@@ -1149,11 +1152,14 @@ v_dataReaderQueryTakeInstance(
                     count -= v_dataReaderInstanceSampleCount(instance);
                     assert(count >= 0);
                     r->sampleCount -= count;
-                    if (v_statisticsValid(r)) {
-                        *(v_statisticsGetRef(v_reader,
-                                             numberOfSamplesTaken,
-                                             r)) += count;
-                    }
+                    v_statisticsULongSetValue(v_reader,
+                                              numberOfSamples,
+                                              r,
+                                              r->sampleCount);
+                    v_statisticsULongValueAdd(v_reader,
+                                              numberOfSamplesTaken,
+                                              r,
+                                              count);
                     assert(r->sampleCount >= 0);
                     i++;
                 }
@@ -1243,11 +1249,14 @@ v_dataReaderQueryTakeNextInstance(
                     count -= v_dataReaderInstanceSampleCount(nextInstance);
                     assert(count >= 0);
                     r->sampleCount -= count;
-                    if (v_statisticsValid(r)) {
-                        *(v_statisticsGetRef(v_reader,
-                                             numberOfSamplesTaken,
-                                             r)) += count;
-                    }
+                    v_statisticsULongSetValue(v_reader,
+                                              numberOfSamples,
+                                              r,
+                                              r->sampleCount);
+                    v_statisticsULongValueAdd(v_reader,
+                                              numberOfSamplesTaken,
+                                              r,
+                                              count);
                     assert(r->sampleCount >= 0);
                     i++;
                 }

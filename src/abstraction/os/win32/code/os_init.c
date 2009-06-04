@@ -43,6 +43,7 @@
 void
 os_osInit(void)
 {
+    os_debugModeInit();
     os_timeModuleInit();
     os_socketModuleInit( os_report, os_malloc);
     os_processModuleInit();
@@ -63,6 +64,7 @@ os_osExit(
     os_processModuleExit();
     os_socketModuleExit();
     os_timeModuleExit();
+    os_debugModeExit();
     return;
 }
 

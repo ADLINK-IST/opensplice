@@ -28,10 +28,6 @@
 #include <u_user.h>
 #include <u__user.h>
 #include <os_report.h>
-#ifndef OSPL_NO_LICENSING
-#include "ospl_license.h"
-#include "os_defs.h"
-#endif
 
 #include "mm_orc.h"
 #include "mm_trc.h"
@@ -112,193 +108,194 @@ main (
     int sample = 0;
     c_long objectCountLimit = 0;
     char *filterExpression = NULL;
-#ifndef OSPL_NO_LICENSING
-    ospl_licenseAttr licAttr;
-    ospl_license license;
-    os_result osr;
-#endif
 
-#ifndef OSPL_NO_LICENSING
-    ospl_licenseAttrInit(&licAttr);
-    licAttr.feature = LIC_OPENSPLICE_MMSTAT;
-    osr = ospl_licenseCheckout(&license, &licAttr);
-   
-    if (osr != os_resultSuccess) 
+    while ((opt = getopt (argc, argv, "i:l:f:s:hertToOmM")) != -1) 
     {
-       printf("License could not be acquired.\n");
-    } 
-    else 
+       switch (opt) 
+       {
+          case 'i':
+             sscanf (optarg, "%d", &interval);
+             break;
+          case 's':
+             sscanf (optarg, "%d", &sampleCount);
+             break;
+          case 'l':
+             sscanf (optarg, "%d", &objectCountLimit);
+             break;
+          case 'f':
+             filterExpression = optarg;
+             break;
+          case 'e':
+             extended = TRUE;
+             break;
+          case 'r':
+             raw = TRUE;
+             break;
+          case 'h':
+             print_usage (argv[0]);
+             exit (0);
+             break;
+          case 'm':
+             selectedAction = memoryStats;
+             break;
+          case 'M':
+             selectedAction = memoryStats;
+             delta = TRUE;
+             break;
+          case 't':
+             selectedAction = typeRefCount;
+             break;
+          case 'T':
+             selectedAction = typeRefCount;
+             delta = TRUE;
+             break;
+          case 'o':
+             selectedAction = objectRefCount;
+             break;
+          case 'O':
+             selectedAction = objectRefCount;
+             delta = TRUE;
+             break;
+          case '?':
+             print_usage (argv[0]);
+             exit (-1);
+             break;
+       }
+    }
+    if ((argc - optind) > 1) 
     {
-#endif
-       while ((opt = getopt (argc, argv, "i:l:f:s:hertToOmM")) != -1) 
-       {
-          switch (opt) 
-          {
-             case 'i':
-                sscanf (optarg, "%d", &interval);
-                break;
-             case 's':
-                sscanf (optarg, "%d", &sampleCount);
-                break;
-             case 'l':
-                sscanf (optarg, "%d", &objectCountLimit);
-                break;
-             case 'f':
-                filterExpression = optarg;
-                break;
-             case 'e':
-                extended = TRUE;
-                break;
-             case 'r':
-                raw = TRUE;
-                break;
-             case 'h':
-                print_usage (argv[0]);
-                exit (0);
-                break;
-             case 'm':
-                selectedAction = memoryStats;
-                break;
-             case 'M':
-                selectedAction = memoryStats;
-                delta = TRUE;
-                break;
-             case 't':
-                selectedAction = typeRefCount;
-                break;
-             case 'T':
-                selectedAction = typeRefCount;
-                delta = TRUE;
-                break;
-             case 'o':
-                selectedAction = objectRefCount;
-                break;
-             case 'O':
-                selectedAction = objectRefCount;
-                delta = TRUE;
-                break;
-             case '?':
-                print_usage (argv[0]);
-                exit (-1);
-                break;
-          }
-       }
-       if ((argc - optind) > 1) 
-       {
-          print_usage (argv[0]);
-          exit (-1);
-       }
-       if ((argc - optind) == 1) 
-       {
-          uri = argv[optind];
-       }
+       print_usage (argv[0]);
+       exit (-1);
+    }
+    if ((argc - optind) == 1) 
+    {
+       uri = argv[optind];
+    }
     
-       if( !raw) 
+    if( !raw) 
+    {
+       if(strlen(uri) > 0) 
        {
-          if(strlen(uri) > 0) 
+          sddsURI = os_strdup(uri);
+       } 
+       else 
+       {
+          sddsURI = os_getenv ("OSPL_URI");
+            
+          if(!sddsURI)
           {
-             sddsURI = os_strdup(uri);
+             sddsURI = (c_char*)os_malloc(19);
+             sprintf(sddsURI, "%s", "The default Domain");
           } 
           else 
           {
-             sddsURI = os_getenv ("OSPL_URI");
-            
-             if(!sddsURI)
+             sddsURI = os_strdup(sddsURI);
+          }
+       }
+       printf("Trying to open connection with the OpenSplice system using URI:\n" \
+              "'%s'...\n", sddsURI);
+       os_free(sddsURI);
+    }
+    
+    ur = u_userInitialise();
+    
+    if(ur == U_RESULT_OK) 
+    {
+       pqos = u_participantQosNew(NULL);
+       participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
+       u_participantQosFree(pqos);
+        
+       if(participant) 
+       {
+          if( !raw ) 
+          {
+             printf("Connection established.\n\n");
+             if (isatty (fileno(stdin))) 
              {
-                sddsURI = (c_char*)os_malloc(19);
-                sprintf(sddsURI, "%s", "The default Domain");
-             } 
-             else 
-             {
-                sddsURI = os_strdup(sddsURI);
+                sigemptyset (&sigmask);     /* empty signal mask */
+                sigaddset (&sigmask, SIGTTOU);  /* add SIGTTOU signal */
+                sigaddset (&sigmask, SIGTTIN);  /* add SIGTTIN signal */
+                tcgetattr (fileno(stdin), &old_termios);
+                tcgetattr (fileno(stdin), &new_termios);
+                new_termios.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+                new_termios.c_oflag &= ~OPOST;
+                new_termios.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN|TOSTOP);
+                new_termios.c_cflag &= ~(CSIZE|PARENB);
+                new_termios.c_cflag |= CS8;
+                new_termios.c_cc[VTIME] = 0;
+                new_termios.c_cc[VMIN] = 0;
+                sigprocmask (SIG_BLOCK, &sigmask, NULL);    /* Igore input/output signals */
+                tcsetattr (fileno(stdin), TCSAFLUSH, &new_termios);
              }
           }
-          printf("Trying to open connection with the OpenSplice system using URI:\n" \
-                 "'%s'...\n", sddsURI);
-          os_free(sddsURI);
-       }
-    
-       ur = u_userInitialise();
-    
-       if(ur == U_RESULT_OK) 
-       {
-          pqos = u_participantQosNew(NULL);
-          participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
-          u_participantQosFree(pqos);
-        
-          if(participant) 
+          lost = 0;
+          switch (selectedAction) 
           {
-             if( !raw ) 
-             {
-                printf("Connection established.\n\n");
-                if (isatty (fileno(stdin))) 
-                {
-                   sigemptyset (&sigmask);     /* empty signal mask */
-                   sigaddset (&sigmask, SIGTTOU);  /* add SIGTTOU signal */
-                   sigaddset (&sigmask, SIGTTIN);  /* add SIGTTIN signal */
-                   tcgetattr (fileno(stdin), &old_termios);
-                   tcgetattr (fileno(stdin), &new_termios);
-                   new_termios.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
-                   new_termios.c_oflag &= ~OPOST;
-                   new_termios.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN|TOSTOP);
-                   new_termios.c_cflag &= ~(CSIZE|PARENB);
-                   new_termios.c_cflag |= CS8;
-                   new_termios.c_cc[VTIME] = 0;
-                   new_termios.c_cc[VMIN] = 0;
-                   sigprocmask (SIG_BLOCK, &sigmask, NULL);    /* Igore input/output signals */
-                   tcsetattr (fileno(stdin), TCSAFLUSH, &new_termios);
-                }
-             }
-             lost = 0;
-             switch (selectedAction) 
-             {
-                case memoryStats:
-                   msData = monitor_msNew (extended, raw, delta);
-                   break;
-                case typeRefCount:
-                   trcData = monitor_trcNew (objectCountLimit, filterExpression, delta);
-                   break;
-                case objectRefCount:
-                   orcData = monitor_orcNew (objectCountLimit, filterExpression, delta);
-                   break;
-             }
+             case memoryStats:
+                msData = monitor_msNew (extended, raw, delta);
+                break;
+             case typeRefCount:
+                trcData = monitor_trcNew (objectCountLimit, filterExpression, delta);
+                break;
+             case objectRefCount:
+                orcData = monitor_orcNew (objectCountLimit, filterExpression, delta);
+                break;
+          }
             
-             while (no_break && !lost) 
+          while (no_break && !lost) 
+          {
+             if (delay <= 0 || trigger) 
              {
-                if (delay <= 0 || trigger) 
+                switch (selectedAction) 
                 {
-                   switch (selectedAction) 
-                   {
-                      case memoryStats:
-                         ur = u_entityAction(u_entity(participant), monitor_msAction, msData);
-                         break;
-                      case typeRefCount:
-                         ur = u_entityAction(u_entity(participant), monitor_trcAction, trcData);
-                         break;
-                      case objectRefCount:
-                         ur = u_entityAction(u_entity(participant), monitor_orcAction, orcData);
-                         break;
-                   }
-                   sample++;
-                   if (trigger) 
-                   {
-                      trigger = 0;
-                   } 
-                   else 
-                   {
-                      delay = interval;
-                   }
+                   case memoryStats:
+                      ur = u_entityAction(u_entity(participant), monitor_msAction, msData);
+                      break;
+                   case typeRefCount:
+                      ur = u_entityAction(u_entity(participant), monitor_trcAction, trcData);
+                      break;
+                   case objectRefCount:
+                      ur = u_entityAction(u_entity(participant), monitor_orcAction, orcData);
+                      break;
                 }
-                
-                if(ur == U_RESULT_OK)
+                sample++;
+                if (trigger) 
                 {
-                   if (isatty (fileno(stdin)) && !raw) 
+                   trigger = 0;
+                } 
+                else 
+                {
+                   delay = interval;
+                }
+             }
+                
+             if(ur == U_RESULT_OK)
+             {
+                if (isatty (fileno(stdin)) && !raw) 
+                {
+                   count = read (fileno(stdin), &c, 1);
+                   /* if count = -1, mmstat is started in background */
+                   /* if count = 0, mmstat is started in foreground, */
+                   /* but there is no input */
+                   while (count > 0) 
+                   {
+                      if (c == 'q' || c == '\03' /* ^C */) 
+                      {
+                         no_break = FALSE;
+                      } 
+                      else if (c == 't') 
+                      {
+                         trigger = 1;
+                      }
+                      count = read (fileno(stdin), &c, 1);
+                   }
+                } 
+                else 
+                {
+                   if (ioctl (fileno(stdin), FIONREAD, &count) == 0) 
                    {
                       count = read (fileno(stdin), &c, 1);
-                      /* if count = -1, mmstat is started in background */
-                      /* if count = 0, mmstat is started in foreground, */
-                      /* but there is no input */
-                      while (count > 0) 
+                      if (count) 
                       {
                          if (c == 'q' || c == '\03' /* ^C */) 
                          {
@@ -308,98 +305,76 @@ main (
                          {
                             trigger = 1;
                          }
-                         count = read (fileno(stdin), &c, 1);
                       }
                    } 
                    else 
                    {
-                      if (ioctl (fileno(stdin), FIONREAD, &count) == 0) 
-                      {
-                         count = read (fileno(stdin), &c, 1);
-                         if (count) 
-                         {
-                            if (c == 'q' || c == '\03' /* ^C */) 
-                            {
-                               no_break = FALSE;
-                            } 
-                            else if (c == 't') 
-                            {
-                               trigger = 1;
-                            }
-                         }
-                      } 
-                      else 
-                      {
-                         no_break = 0;
-                      }
+                      no_break = 0;
                    }
-                   if (no_break && interval) 
-                   {
-                      delay -= 100;
-                      usleep (100 * 1000);
-                   }
-                } 
-                else 
-                {
-                   /* Participant is no longer accessible, terminate now... */
-                   no_break = 0;
-                   lost = TRUE;
                 }
-                if (sampleCount && (sample == sampleCount)) 
+                if (no_break && interval) 
                 {
-                   printf ("\nsample_count limit reached\n");
-                   no_break = 0;
+                   delay -= 100;
+                   usleep (100 * 1000);
                 }
-             }
-             if (isatty (fileno(stdin)) && !raw) 
+             } 
+             else 
              {
-                count = read (fileno(stdin), &c, 1);
-                
-                if(count != -1)
-                {
-                   tcsetattr (fileno(stdin), TCSAFLUSH, &old_termios);
-                }
+                /* Participant is no longer accessible, terminate now... */
+                no_break = 0;
+                lost = TRUE;
              }
-             u_participantFree(participant);
-            
-             if(lost) 
+             if (sampleCount && (sample == sampleCount)) 
              {
-                printf("\nConnection with domain lost. The OpenSplice system has\n" \
-                       "probably been shut down.\n");
+                printf ("\nsample_count limit reached\n");
+                no_break = 0;
              }
-          } 
-          else 
-          {
-             printf("Connection could NOT be established (creation of participant failed).\n");
-             printf("Is the OpenSplice system running?\n");
-             OS_REPORT(OS_ERROR,"mmstat", 0, "Creation of participant failed.");
           }
-          u_userDetach();
-          switch (selectedAction) 
+          if (isatty (fileno(stdin)) && !raw) 
           {
-             case memoryStats:
-                monitor_msFree (msData);
-                break;
-             case typeRefCount:
-                monitor_trcFree (trcData);
-                break;
-             case objectRefCount:
-                monitor_orcFree (orcData);
-                break;
+             count = read (fileno(stdin), &c, 1);
+                
+             if(count != -1)
+             {
+                tcsetattr (fileno(stdin), TCSAFLUSH, &old_termios);
+             }
+          }
+          u_participantFree(participant);
+            
+          if(lost) 
+          {
+             printf("\nConnection with domain lost. The OpenSplice system has\n" \
+                    "probably been shut down.\n");
           }
        } 
        else 
        {
-          printf("Connection could NOT be established (could not initialise).\n");
+          printf("Connection could NOT be established (creation of participant failed).\n");
           printf("Is the OpenSplice system running?\n");
-          OS_REPORT(OS_ERROR,"mmstat", 0, "Failed to initialise.");
+          OS_REPORT(OS_ERROR,"mmstat", 0, "Creation of participant failed.");
        }
-       printf("\nExiting now...\n");
-
-#ifndef OSPL_NO_LICENSING
-       ospl_licenseCheckin(&license);
+       u_userDetach();
+       switch (selectedAction) 
+       {
+          case memoryStats:
+             monitor_msFree (msData);
+             break;
+          case typeRefCount:
+             monitor_trcFree (trcData);
+             break;
+          case objectRefCount:
+             monitor_orcFree (orcData);
+             break;
+       }
+    } 
+    else 
+    {
+       printf("Connection could NOT be established (could not initialise).\n");
+       printf("Is the OpenSplice system running?\n");
+       OS_REPORT(OS_ERROR,"mmstat", 0, "Failed to initialise.");
     }
-#endif
+    printf("\nExiting now...\n");
+
     return 0;
 }
 
