@@ -66,125 +66,6 @@ nw_adminMessageFree(
 }
 
 
-/* --------------------------------- Ringbuffer ----------------------------- */
-
-NW_STRUCT(nw_ringBuffer) {
-    unsigned int nofEntries;
-    nw_adminMessage *entries /* [nofEntries] */;
-    unsigned int head;
-    unsigned int tail;
-};
-
-
-#define NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, index) \
-            (ringBuffer->entries[index])
-#define NW_RINGBUFFER_INDEX_INC(ringBuffer, index)     \
-        index++;                                       \
-        if (index >= ringBuffer->nofEntries) {         \
-            index = 0;                                 \
-        }
-
-/** \TODO Review the thread-safety of this class */                       
-
-static void
-nw_ringBufferSetEntryByIndex(
-    nw_ringBuffer ringBuffer,
-    nw_adminMessage message,
-    unsigned int index)
-{
-    if (ringBuffer) {
-        nw_adminMessageFree(NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, index));
-        NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, index) = message;
-    }
-}
-
-
-static nw_ringBuffer
-nw_ringBufferNew(
-    unsigned int nofEntries)
-{
-    nw_ringBuffer result = NULL;
-    unsigned int i;
-    
-    result = (nw_ringBuffer)os_malloc((os_uint32)sizeof(*result));
-    
-    if (result != NULL) {
-        result->entries = (nw_adminMessage *)os_malloc(
-                              nofEntries * (os_uint32)sizeof(*result->entries));
-        if (result->entries) {
-            result->nofEntries = nofEntries;
-            /* Initialize the buffer entries */
-            for (i=0; i<nofEntries; i++) {
-                NW_RINGBUFFER_ENTRY_BY_INDEX(result, i) = NULL;
-            }
-        } else {
-            result->nofEntries = 0;
-        }
-        result->head = 0;
-        result->tail = 0;
-    }
-    
-    return result;
-}
-
-
-static void
-nw_ringBufferFree(
-    nw_ringBuffer ringBuffer)
-{
-    unsigned int i;
-    
-    if (ringBuffer) {
-        if (ringBuffer->entries) {
-            for (i=0; i<ringBuffer->nofEntries; i++) {
-                nw_ringBufferSetEntryByIndex(ringBuffer, NULL, i);
-            }
-            os_free(ringBuffer->entries);
-        }
-        os_free(ringBuffer);
-    }
-}    
-
-
-static void
-nw_ringBufferPostMessage(
-    nw_ringBuffer ringBuffer,
-    nw_adminMessage message)
-{
-    if (ringBuffer) {
-        nw_ringBufferSetEntryByIndex(ringBuffer, message, ringBuffer->head);
-        NW_RINGBUFFER_INDEX_INC(ringBuffer, 
-                                ringBuffer->head);
-        if (ringBuffer->head == ringBuffer->tail) {           
-           NW_REPORT_WARNING_2("posting administrative message", 
-               "Administration buffer full, messages for partition "
-               "%s of topic \"%s\" will be ignored",
-               v_partitionName(v_groupPartition(message->entry->group)),
-               v_topicName(v_groupTopic(message->entry->group)));
-           NW_RINGBUFFER_INDEX_INC(ringBuffer,
-               ringBuffer->tail);
-        }
-    }
-}
-
-
-static nw_adminMessage
-nw_ringBufferProcessMessage(
-    nw_ringBuffer ringBuffer)
-{
-    nw_adminMessage result = NULL;
-    
-    if (ringBuffer &&
-        (ringBuffer->tail != ringBuffer->head)) {
-        result = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->tail);
-        NW_RINGBUFFER_INDEX_INC(ringBuffer,
-                                ringBuffer->tail);
-    }
-    
-    return result;
-}    
-
-
 /* --------------------------------- ChannelUser ---------------------------- */
 
 
@@ -200,7 +81,6 @@ nw_channelUserInitialize(
     const nw_runnableTriggerFunc runnableTriggerFunc,
     const nw_runnableFinalizeFunc runnableFinalizeFunc)
 {
-    c_ulong groupQueueSize;
     /* Initialize parent */
     nw_runnableInitialize((nw_runnable)channelUser, name, pathName,
                           runnableMainFunc, NULL, runnableTriggerFunc,
@@ -208,18 +88,10 @@ nw_channelUserInitialize(
 
     if (channelUser) {
         channelUser->reader = reader;
-        groupQueueSize = NWCF_SIMPLE_PARAM(ULong, name, GroupQueueSize);
-	    if (groupQueueSize < NWCF_MIN(GroupQueueSize)) {
-	        NW_REPORT_WARNING_2("retrieving  channel parameters",
-	            "specified GroupQueueSize %u too small, "
-	            "switching to %u",
-	            groupQueueSize, NWCF_MIN(GroupQueueSize));
-	        groupQueueSize = NWCF_MIN(GroupQueueSize);
-	    }
-        channelUser->messageBuffer = nw_ringBufferNew(groupQueueSize);
+        channelUser->messageBuffer = c_iterNew(NULL);
+        c_mutexInit(&channelUser->messageBufferMutex, PRIVATE_MUTEX);
     }
 }
-#undef NW_DEFAULT_RINGBUFFER_SIZE
 
 
 c_bool
@@ -231,10 +103,14 @@ nw_channelUserRetrieveNewGroup(
     nw_adminMessage message;
     
     if (channelUser) {
-        message = nw_ringBufferProcessMessage(channelUser->messageBuffer);
-        if (message) {
-            result = TRUE;
+        if ( c_iterLength(channelUser->messageBuffer) == 0 ) {
+            c_mutexLock(&channelUser->messageBufferMutex);
+            message = (nw_adminMessage)c_iterTakeFirst(channelUser->messageBuffer);
+            c_mutexUnlock(&channelUser->messageBufferMutex);
+            
             *entry = message->entry;
+            result = TRUE;
+            nw_adminMessageFree(message);
         }
     }
     
@@ -249,10 +125,11 @@ nw_channelUserFinalize(
 {
     /* Finalize self */
     if (channelUser) {
-        nw_ringBufferFree(channelUser->messageBuffer);
+        c_iterFree(channelUser->messageBuffer); 
+        /* c_mutexDestroy(&channelUser->messageBufferMutex);*/
 
-    /* Finalize parent */
-    nw_runnableFinalize((nw_runnable)channelUser);
+        /* Finalize parent */
+        nw_runnableFinalize((nw_runnable)channelUser);
     
     }
 }
@@ -287,7 +164,10 @@ onNewGroup(
     toPost = nw_adminMessageNew(NW_MESSAGE_NEW_GROUP, entry);
     if (toPost) {
         /* Post the message in the buffer */
-        nw_ringBufferPostMessage(channelUser->messageBuffer, toPost);
+        c_mutexLock(&channelUser->messageBufferMutex);
+        c_iterAppend(channelUser->messageBuffer, toPost);
+        c_mutexUnlock(&channelUser->messageBufferMutex);
+        
         /* Wake up the channelUser for processing this message */
         nw_runnableTrigger((nw_runnable)channelUser);
     }

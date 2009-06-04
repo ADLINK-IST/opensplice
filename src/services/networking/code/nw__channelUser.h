@@ -14,6 +14,7 @@
 #define NW__CHANNELUSER_H
 
 #include "c_typebase.h"
+#include "c_sync.h"
 #include "nw__runnable.h"
 #include "nw_channelUser.h"
 #include "kernelModule.h"
@@ -24,8 +25,9 @@ NW_CLASS(nw_ringBuffer);
 
 NW_STRUCT(nw_channelUser) {
     C_EXTENDS(nw_runnable);
-    u_networkReader reader;  
-    nw_ringBuffer messageBuffer;
+    u_networkReader reader; 
+    c_iter messageBuffer;
+    c_mutex messageBufferMutex;
 };
 
 /* Protected functions */
