@@ -1,9 +1,9 @@
 .PHONY: all all_no_installer
 all:
-	sh make_all
+	./make_all
 
 all_no_installer:
-	sh make_all -noinstaller
+	./make_all -noinstaller
 
 clean:
 	(cd service_installer; make clean)

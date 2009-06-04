@@ -1,3 +1,4 @@
+#!/bin/bash
 . $OSPL_HOME/install/make_functions
 
 set_envs $*

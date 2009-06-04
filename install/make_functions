@@ -147,12 +147,12 @@ make_hde_mirror_and_builder ()
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
-    sh ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
+    ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
         "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
-        sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" "${BUILDER_TARGET}" \
+        ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" "${BUILDER_TARGET}" \
             "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}"
     fi
 }
@@ -174,12 +174,12 @@ make_rts_mirror_and_builder ()
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
-    sh ./make_rts_mirror "${SOURCE_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
+    ./make_rts_mirror "${SOURCE_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
         "${ENV}" "${TXTFILE_CONVERTER}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
-        sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
+        ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
             "${BUILDER_TARGET}" "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}"
     fi
 }
