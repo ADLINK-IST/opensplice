@@ -114,12 +114,18 @@ static void change_fstackdepth (int delta)
    incldir[fstackdepth] = cur_incldir;
    lineno[fstackdepth] = cur_lineno;
    fstackdepth += delta;
-   cur_pushback = pushback[fstackdepth];
-   cur_npushed = npushed[fstackdepth];
-   cur_fstack = fstack[fstackdepth];
-   cur_fn = fn[fstackdepth];
-   cur_incldir = incldir[fstackdepth];
-   cur_lineno = lineno[fstackdepth];
+   if (fstackdepth < MAXFILES) {
+      cur_pushback = pushback[fstackdepth];
+      cur_npushed = npushed[fstackdepth];
+      cur_fstack = fstack[fstackdepth];
+      cur_fn = fn[fstackdepth];
+      cur_incldir = incldir[fstackdepth];
+      cur_lineno = lineno[fstackdepth];
+    } else {
+       fprintf(stderr, "fatal error: include recursion too deep, only %d allowed\n",
+          MAXFILES);
+       exit(0);
+    }
 }
 
 #define GET() (cur_pushback[--cur_npushed])
