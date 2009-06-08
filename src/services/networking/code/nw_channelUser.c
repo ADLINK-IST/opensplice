@@ -81,6 +81,8 @@ nw_channelUserInitialize(
     const nw_runnableTriggerFunc runnableTriggerFunc,
     const nw_runnableFinalizeFunc runnableFinalizeFunc)
 {
+    os_mutexAttr attr;
+
     /* Initialize parent */
     nw_runnableInitialize((nw_runnable)channelUser, name, pathName,
                           runnableMainFunc, NULL, runnableTriggerFunc,
@@ -89,7 +91,9 @@ nw_channelUserInitialize(
     if (channelUser) {
         channelUser->reader = reader;
         channelUser->messageBuffer = c_iterNew(NULL);
-        c_mutexInit(&channelUser->messageBufferMutex, PRIVATE_MUTEX);
+        os_mutexAttrInit(&attr);
+        attr.scopeAttr = OS_SCOPE_PRIVATE;
+        os_mutexInit(&channelUser->messageBufferMutex, &attr);
     }
 }
 
@@ -103,10 +107,10 @@ nw_channelUserRetrieveNewGroup(
     nw_adminMessage message;
     
     if (channelUser) {
-        if ( c_iterLength(channelUser->messageBuffer) == 0 ) {
-            c_mutexLock(&channelUser->messageBufferMutex);
+        if ( c_iterLength(channelUser->messageBuffer) != 0 ) {
+            os_mutexLock(&channelUser->messageBufferMutex);
             message = (nw_adminMessage)c_iterTakeFirst(channelUser->messageBuffer);
-            c_mutexUnlock(&channelUser->messageBufferMutex);
+            os_mutexUnlock(&channelUser->messageBufferMutex);
             
             *entry = message->entry;
             result = TRUE;
@@ -126,7 +130,7 @@ nw_channelUserFinalize(
     /* Finalize self */
     if (channelUser) {
         c_iterFree(channelUser->messageBuffer); 
-        /* c_mutexDestroy(&channelUser->messageBufferMutex);*/
+        /* os_mutexDestroy(&channelUser->messageBufferMutex);*/
 
         /* Finalize parent */
         nw_runnableFinalize((nw_runnable)channelUser);
@@ -164,9 +168,9 @@ onNewGroup(
     toPost = nw_adminMessageNew(NW_MESSAGE_NEW_GROUP, entry);
     if (toPost) {
         /* Post the message in the buffer */
-        c_mutexLock(&channelUser->messageBufferMutex);
+        os_mutexLock(&channelUser->messageBufferMutex);
         c_iterAppend(channelUser->messageBuffer, toPost);
-        c_mutexUnlock(&channelUser->messageBufferMutex);
+        os_mutexUnlock(&channelUser->messageBufferMutex);
         
         /* Wake up the channelUser for processing this message */
         nw_runnableTrigger((nw_runnable)channelUser);

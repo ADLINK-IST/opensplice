@@ -27,7 +27,7 @@ NW_STRUCT(nw_channelUser) {
     C_EXTENDS(nw_runnable);
     u_networkReader reader; 
     c_iter messageBuffer;
-    c_mutex messageBufferMutex;
+    os_mutex messageBufferMutex;
 };
 
 /* Protected functions */
