@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d_durability.h"
@@ -416,6 +416,7 @@ d_durabilityDetermineConnectivity(
     if(durability->splicedRunning == TRUE){
 	    myAddr = d_adminGetMyAddress(durability->admin);
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "My address is: '%u'\n", myAddr->systemId);
+        OS_REPORT_1(OS_INFO, D_SERVICE_NAME, 0, "Durability identification is: %u", myAddr->systemId);
         d_networkAddressFree(myAddr);
 
         addr = d_networkAddressUnaddressed();
