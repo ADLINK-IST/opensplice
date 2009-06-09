@@ -282,6 +282,7 @@ idl_fileOpen(
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    int i;
 
     /* First initialize userData */
     arg->indent_level = 0;
@@ -297,6 +298,15 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <sacpp_mapping.h>\n");
 //    idl_fileOutPrintf(idl_fileCur(), "#include <eOrb/idl_c.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
+#ifndef RP
+    /* Generate code for inclusion of application specific include files */
+    for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
+        idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", idl_depGet(idl_depDefGet(), i));
+    }
+    if (idl_depLength(idl_depDefGet()) > 0) {
+        idl_fileOutPrintf(idl_fileCur(), "\n");
+    }
+#endif
 
     /* Setup dll stuff */
     idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
@@ -500,7 +510,7 @@ idl_structureMemberOpenClose (
     case idl_ttypedef:
     case idl_tstruct:
     case idl_tunion:
-        snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
+        snprintf(arg->buffer,MAX_BUFFER,"::%s %s;\n",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             memberName);
     break;
@@ -566,7 +576,7 @@ idl_unionOpen(
     switchTypeName = idl_corbaCxxTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec));
 
     idl_printIndent(arg->indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "class %s {\n");
+    idl_fileOutPrintf(idl_fileCur(), "class %s {\n",name);
     idl_fileOutPrintf(idl_fileCur(), "public:\n");
     arg->indent_level++;
 
@@ -589,7 +599,16 @@ idl_unionOpen(
     arg->indent_level--;
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
-
+#ifndef RP
+    idl_printIndent(arg->indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "%s m__d;\n", switchTypeName);
+    idl_printIndent(arg->indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "union {\n");
+    codebuffer->currentLine = 0;
+    codebuffer->nrOfLines = idl_typeUnionNoCases(unionSpec);
+    codebuffer->lines = (char **)os_malloc(codebuffer->nrOfLines*sizeof(char*));
+    ut_stackPush(arg->structSpecStack, codebuffer);
+#else
     codebuffer->currentLine = 0;
     codebuffer->nrOfLines = idl_typeUnionNoCases(unionSpec)+2;
     codebuffer->lines = (char **)os_malloc(codebuffer->nrOfLines*sizeof(char*));
@@ -597,7 +616,7 @@ idl_unionOpen(
     codebuffer->lines[codebuffer->currentLine++] = os_strdup(arg->buffer);
     codebuffer->lines[codebuffer->currentLine++] = os_strdup("union {\n");
     ut_stackPush(arg->structSpecStack, codebuffer);
-
+#endif
     os_free(switchTypeName);
     /* return idl_explore to indicate that the rest of the union needs to be processed */
     return idl_explore;
@@ -638,14 +657,18 @@ idl_unionClose (
     codebuffer = (struct idl_genSACPPCodeBuffer *)ut_stackPop(arg->structSpecStack);
     assert(codebuffer);
     assert(codebuffer->nrOfLines == codebuffer->currentLine);
+    arg->indent_level++;
     for (line=0;line<codebuffer->currentLine;line++) {
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(), codebuffer->lines[line]);
         os_free(codebuffer->lines[line]);
     }
+    arg->indent_level--;
     os_free(codebuffer->lines);
     os_free(codebuffer);
 
+    idl_printIndent(arg->indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "};\n");
     arg->indent_level--;
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n");
