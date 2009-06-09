@@ -43,8 +43,8 @@ mkdir $LOGDIR/RBT-Results ||
     exit 3; 
 }
 
-sh run_rbt 
-sh RBT_management_data
+bash run_rbt 
+bash RBT_management_data
 for i in `find ../rbt/Results/ -type f`
 do
     FILE=$i
