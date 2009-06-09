@@ -1,5 +1,47 @@
 # BUILDTYPE HOSTNAME/INDEXTIME_OFFSET  version dependency[@VERSION]
 
+################################ OSPL_V4_1_1-20090604 runs ####################
+M   ospli/fedora3/x86.linux2.6-dev 20 heads/OSPL_V4_1_1-20090604 none
+M   ospli/fedora3/x86.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/fedora3/x86.linux2.6-dev-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+
+M   ospli/rhel4d/x86.linux2.6-dev 20 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel4d/x86.linux2.6-release 20 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel4d/x86.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel4d/x86.linux2.6-dev-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel4d/x86.linux2.6-release-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel4d/x86.linux2.6-release-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel4d/x86.linux2.6-release-lic-inner 1 heads/OSPL_V4_1_1-20090604 none
+
+
+M   ospli/DDS1-WIN2K3/x86.win32-dev 50 heads/OSPL_V4_1_1-20090604 none
+M   ospli/DDS1-WIN2K3/x86.win32-release 50 heads/OSPL_V4_1_1-20090604 none
+E   ospli/DDS1-WIN2K3/x86.win32-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/DDS1-WIN2K3/x86.win32-dev-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/DDS1-WIN2K3/x86.win32-release-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/DDS1-WIN2K3/x86.win32-release-nodbt-inner 1 heads/OSPL_V4_1_1-20090604 none
+
+M   ospli/rhel5a/x86.linux2.6-dev 20 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel5a/x86.linux2.6-release 20 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel5a/x86.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel5a/x86.linux2.6-memcheck-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel5a/x86.linux2.6-dev-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel5a/x86.linux2.6-release-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/rhel5a/x86.linux2.6-release-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/rhel5a/x86.linux2.6-release-lic-inner 1 heads/OSPL_V4_1_1-20090604 none
+
+M   ospli/repository2/x86_64.linux2.6-dev 20 heads/OSPL_V4_1_1-20090604 none
+M   ospli/repository2/x86_64.linux2.6-release 20 heads/OSPL_V4_1_1-20090604 none
+E   ospli/repository2/x86.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/repository2/x86.linux2.6-release-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/repository2/x86_64.linux2.6-dev-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/repository2/x86_64.linux2.6-dev-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+M   ospli/repository2/x86_64.linux2.6-release-inner 1 heads/OSPL_V4_1_1-20090604 none
+E   ospli/repository2/x86_64.linux2.6-release-notest-inner 1 heads/OSPL_V4_1_1-20090604 none
+###########################end OSPL_V4_1_1-20090604 runs ######################
+
+
 ################################ scdds658 runs ################################
 M   ospli/ultra60/studio12-dev-notest-inner 1 heads/scdds658-02-branch none
 M   ospli/ultra60/studio12-release-lic-inner 1 heads/scdds658-02-branch none
@@ -49,6 +91,7 @@ M   ospli/DDS1-WIN2K3/x86.win32-release-nodbt-inner 1 heads/master none
 M   ospli/rhel5a/x86.linux2.6-dev 20 heads/master none
 M   ospli/rhel5a/x86.linux2.6-release 20 heads/master none
 E   ospli/rhel5a/x86.linux2.6-dev-inner 1 heads/master none
+M   ospli/rhel5a/x86.linux2.6-memcheck-inner 1 heads/master none
 M   ospli/rhel5a/x86.linux2.6-dev-notest-inner 1 heads/master none
 E   ospli/rhel5a/x86.linux2.6-release-inner 1 heads/master none
 E   ospli/rhel5a/x86.linux2.6-release-notest-inner 1 heads/master none

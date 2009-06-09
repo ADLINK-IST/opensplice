@@ -258,17 +258,21 @@ nw_socketMulticastInitialize(
 
     timeToLive = NWCF_DEF(TimeToLive);
 
+#ifdef OS_SOCKET_BIND_FOR_MULTICAST
     if (receiving) {
-        /* Join multicast group and set options */
+        /* Join multicast group and set options, for receiving socket only */
         sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
         sockAddrMulticast.sin_addr.s_addr = nw_socketDataAddress(sock);
         nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
-#ifndef OS_SOCKET_BIND_FOR_MULTICAST
-    } else {
-        /* Only for non-windows: set outging interface */
-        nw_socketMulticastSetInterface(sock, sockAddrPrimary);
-#endif
     }
+    /* Do not set outgoing multicast interface, doesn't work yet on windows */
+#else
+    /* Join multicast group and set options */
+    sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
+    sockAddrMulticast.sin_addr.s_addr = nw_socketDataAddress(sock);
+    nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
+    nw_socketMulticastSetInterface(sock, sockAddrPrimary);
+#endif
     nw_socketMulticastSetOptions(sock, nw_socketLoopsback(sock), timeToLive);
     /* Multicast socket should be capable of sending broadcast messages as well */
     nw_socketSetBroadcastOption(sock, SK_TRUE);

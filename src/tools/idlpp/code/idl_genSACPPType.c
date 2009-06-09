@@ -594,8 +594,8 @@ idl_unionOpen(
     codebuffer->nrOfLines = idl_typeUnionNoCases(unionSpec)+2;
     codebuffer->lines = (char **)os_malloc(codebuffer->nrOfLines*sizeof(char*));
     snprintf(arg->buffer, MAX_BUFFER, "%s m__d;\n", switchTypeName);
-    codebuffer->lines[codebuffer->nrOfLines++] = os_strdup(arg->buffer);
-    codebuffer->lines[codebuffer->nrOfLines++] = os_strdup("union {\n");
+    codebuffer->lines[codebuffer->currentLine++] = os_strdup(arg->buffer);
+    codebuffer->lines[codebuffer->currentLine++] = os_strdup("union {\n");
     ut_stackPush(arg->structSpecStack, codebuffer);
 
     os_free(switchTypeName);
@@ -884,6 +884,18 @@ idl_typedefOpenClose(
     break;
     case idl_tstruct:
     case idl_tunion:
+        idl_printIndent(arg->indent_level);
+        idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",
+            idl_corbaCxxTypeFromTypeSpec(refType),
+            name);
+        /* generate _var and _out */
+        idl_printIndent(arg->indent_level);
+        idl_fileOutPrintf(idl_fileCur(),"typedef %s_var %s_var;\n",
+            idl_corbaCxxTypeFromTypeSpec(refType), name);
+        idl_printIndent(arg->indent_level);
+        idl_fileOutPrintf(idl_fileCur(),"typedef %s_out %s_out;\n",
+            idl_corbaCxxTypeFromTypeSpec(refType), name);
+    break;
     case idl_tseq:
         if (refType == actualType) {
             idl_seqTypeDefs(idl_typeSeq(refType), name, arg);
