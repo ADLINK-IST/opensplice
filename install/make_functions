@@ -1123,8 +1123,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.h" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.bat" \
-                ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/ChatBoxUtil/*.vcproj" \
