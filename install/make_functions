@@ -866,6 +866,8 @@ install_hde_target ()
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.bat" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/*.vcproj" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/Ping/*.vcproj" \
@@ -951,6 +953,8 @@ install_hde_target ()
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.idl" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.cpp" \
+                ${HDE_dir}/examples/dcps/standalone/C++/PingPong
+            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.bat" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/PingPong/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong/PingPong
