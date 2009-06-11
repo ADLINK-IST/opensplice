@@ -125,17 +125,16 @@ v_lifespanAdminRemove(
             }
         }
         c_free(sample); /* free head reference */
-        admin->sampleCount--;
     } else {
         if (sample == admin->tail) {
             assert(sample->prev);
             assert(c_refCount(sample) > 1);
             assert(sample->next == NULL);
+            c_free(admin->tail);
             admin->tail = c_keep(sample->prev);
             sample->prev = NULL;
-            c_free(sample);
+            c_free(admin->tail->next); /* admin->tail->next == sample */
             admin->tail->next = NULL;
-            admin->sampleCount--;
         } else {
             if ((sample->next != NULL) && (sample->prev != NULL)) {
                 assert(c_refCount(sample) > 1);
@@ -145,10 +144,10 @@ v_lifespanAdminRemove(
                 sample->next = NULL;
                 sample->prev = NULL;
                 c_free(sample);
-                admin->sampleCount--;
             } /* else sample not in admin, so no removing needed */
         }
     }
+    admin->sampleCount--;
 
     CHECK_ADMIN(admin, sample);
 }
