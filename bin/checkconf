@@ -13,6 +13,11 @@ convert_windows_path ()
 {
     case `uname` in
         CYGWIN_NT*)
+            if [ ! -d "$1" ]
+            then
+            	  echo "Error: Path $1 does not exist"
+            	  return 1
+            fi
             #Make it a dos path to remove all spaces
             DOS_CONV_PATH=`cygpath -d "$1"`
             if [ $? != 0 ]
@@ -483,8 +488,7 @@ tao_check ()
     fi
     
     export SPLICE_ORB
-
-    echo "OK - using TAO $TAO_VERSION as SPLICE_ORB"
+    echo "OK - SPLICE_ORB is TAO $TAO_VERSION"
     echo "  setting TAO_ROOT to $TAO_ROOT"
     return 0
 }

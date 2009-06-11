@@ -1240,6 +1240,7 @@ install_hde_target ()
         printf "*     Prepare default release.bat ... "
         RELF=${HDE_dir}/release.bat
         echo "@echo off" >> $RELF
+        echo "echo \"<<< OpenSplice HDE Release ${target_version} For ${target}${target_env}, Date ${target_date} >>>\"" >> ${RELF}
         echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
