@@ -86,7 +86,7 @@ install_ascii_file()
     then
         if [ -d ${install_ascii_file_target_dir} ]
         then
-            if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" -a -f ${install_ascii_file_source_file} ]
+            if [ -f "${install_ascii_file_source_file}" ]
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
                 cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
