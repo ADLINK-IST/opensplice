@@ -44,21 +44,16 @@ static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandle
 #ifndef INTEGRITY
 #define _SIGNALVECTOR_(sig) _ospl_oldSignalVector##sig
 static struct sigaction _SIGNALVECTOR_(SIGINT);
+static struct sigaction _SIGNALVECTOR_(SIGQUIT);
 static struct sigaction _SIGNALVECTOR_(SIGHUP);
-static struct sigaction _SIGNALVECTOR_(SIGPIPE);
-static struct sigaction _SIGNALVECTOR_(SIGALRM);
 static struct sigaction _SIGNALVECTOR_(SIGTERM);
-static struct sigaction _SIGNALVECTOR_(SIGUSR1);
-static struct sigaction _SIGNALVECTOR_(SIGUSR2);
-static struct sigaction _SIGNALVECTOR_(SIGPOLL);
-static struct sigaction _SIGNALVECTOR_(SIGVTALRM);
-static struct sigaction _SIGNALVECTOR_(SIGPROF);
 
 #define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
 #define OSPL_SIGNALHANDLERTHREAD_EXIT      2 /* Instruct thread to call exit() */
 
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
+static int _ospl_signal = 0;
 static pthread_mutex_t _ospl_signalHandlerThreadMutex;
 static pthread_cond_t  _ospl_signalHandlerThreadCondition;
 
@@ -92,10 +87,12 @@ signalHandler(
          */
         if (pthread_equal(pthread_self(), _ospl_signalHandlerThreadId)) {
             _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            _ospl_signal = sig;
             pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
         } else {
             pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
             _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            _ospl_signal = sig;
             pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
             pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
         } 
@@ -120,6 +117,35 @@ signalHandlerThread(
     }
     pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
 
+    /* first call previous signal handler, iff not default */
+    switch (_ospl_signal) {
+    case SIGINT:
+        if ((_SIGNALVECTOR_(SIGINT).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGINT).sa_handler(SIGINT);
+        }
+    break;
+    case SIGQUIT:
+        if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) && 
+            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGQUIT).sa_handler(SIGQUIT);
+        }
+    break;
+    case SIGHUP:
+        if ((_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGHUP).sa_handler(SIGHUP);
+        }
+    break;
+    case SIGTERM:
+        if ((_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
+        }
+    break;
+    default:
+        assert(0);
+    }
     if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
         exit(0);
     }
@@ -128,7 +154,6 @@ signalHandlerThread(
 
 #define _SIGACTION_(sig) sigaction(sig,&action,&_ospl_oldSignalVector##sig)
 #define _SIGCURRENTACTION_(sig) sigaction(sig, NULL, &_ospl_oldSignalVector##sig)
-#define _SIGDEFAULT_(sig) (_ospl_oldSignalVector##sig.sa_handler == SIG_DFL)
 #endif
 
 /* protected functions */
@@ -150,7 +175,7 @@ os_processModuleInit(void)
     pthread_cond_init(&_ospl_signalHandlerThreadCondition, &cvAttr);
 
     pthread_attr_init(&thrAttr);
-    pthread_attr_setstacksize(&thrAttr, 1024); /* 1KB */
+    pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
     pthread_create(&_ospl_signalHandlerThreadId, &thrAttr, signalHandlerThread, (void*)0);
 
     /* install signal handlers */
@@ -160,54 +185,17 @@ os_processModuleInit(void)
     action.sa_flags = SA_SIGINFO;
 
     _SIGCURRENTACTION_(SIGINT);
-    if (_SIGDEFAULT_(SIGINT)) {
-        _SIGACTION_(SIGINT);
-    }
+    _SIGACTION_(SIGINT);
+
+    _SIGCURRENTACTION_(SIGQUIT);
+    _SIGACTION_(SIGQUIT);
 
     _SIGCURRENTACTION_(SIGHUP);
-    if (_SIGDEFAULT_(SIGHUP)) {
-        _SIGACTION_(SIGHUP);
-    }
-
-    _SIGCURRENTACTION_(SIGPIPE);
-    if (_SIGDEFAULT_(SIGPIPE)) {
-        _SIGACTION_(SIGPIPE);
-    }
-
-    _SIGCURRENTACTION_(SIGALRM);
-    if (_SIGDEFAULT_(SIGALRM)) {
-        _SIGACTION_(SIGALRM);
-    }
+    _SIGACTION_(SIGHUP);
 
     _SIGCURRENTACTION_(SIGTERM);
-    if (_SIGDEFAULT_(SIGTERM)) {
-        _SIGACTION_(SIGTERM);
-    }
+    _SIGACTION_(SIGTERM);
 
-    _SIGCURRENTACTION_(SIGUSR1);
-    if (_SIGDEFAULT_(SIGUSR1)) {
-        _SIGACTION_(SIGUSR1);
-    }
-
-    _SIGCURRENTACTION_(SIGUSR2);
-    if (_SIGDEFAULT_(SIGUSR2)) {
-        _SIGACTION_(SIGUSR2);
-    }
-
-    _SIGCURRENTACTION_(SIGPOLL);
-    if (_SIGDEFAULT_(SIGPOLL)) {
-        _SIGACTION_(SIGPOLL);
-    }
-
-    _SIGCURRENTACTION_(SIGVTALRM);
-    if (_SIGDEFAULT_(SIGVTALRM)) {
-        _SIGACTION_(SIGVTALRM);
-    }
-
-    _SIGCURRENTACTION_(SIGPROF);
-    if (_SIGDEFAULT_(SIGPROF)) {
-        _SIGACTION_(SIGPROF);
-    }
 #endif
 }
 
@@ -222,15 +210,9 @@ os_processModuleExit(void)
 #if !defined INTEGRITY && !defined VXWORKS_RTP
     /* deinstall signal handlers */
     _SIGACTION_(SIGINT);
+    _SIGACTION_(SIGQUIT);
     _SIGACTION_(SIGHUP);
-    _SIGACTION_(SIGPIPE);
-    _SIGACTION_(SIGALRM);
     _SIGACTION_(SIGTERM);
-    _SIGACTION_(SIGUSR1);
-    _SIGACTION_(SIGUSR2);
-    _SIGACTION_(SIGPOLL);
-    _SIGACTION_(SIGVTALRM);
-    _SIGACTION_(SIGPROF);
 
     _ospl_signalHandlerThreadTerminate = 1;
     if (_ospl_signalHandlerThreadId != pthread_self()) {
