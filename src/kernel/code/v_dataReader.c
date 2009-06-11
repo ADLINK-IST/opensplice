@@ -1312,7 +1312,7 @@ v_dataReaderNotifyDataAvailable(
 
     if (_this->triggerValue) {
         c_free(v_readerSample(_this->triggerValue)->instance);
-        c_free(_this->triggerValue);
+        v_dataReaderSampleFree(_this->triggerValue);
     }
     if (sample) {
         c_keep(v_readerSample(sample)->instance);

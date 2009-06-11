@@ -711,7 +711,7 @@ v_dataReaderQueryRead (
             }
             if (_this->triggerValue) {
                 c_free(v_readerSample(_this->triggerValue)->instance);
-                c_free(_this->triggerValue);
+                v_dataReaderSampleFree(_this->triggerValue);
                 _this->triggerValue = NULL;
             }
             v_statisticsULongValueInc(v_query, numberOfReads, _this);
@@ -935,8 +935,6 @@ instanceTakeSamples(
     if (v_dataReaderInstanceEmpty(instance)) {
         if (!c_iterContains(a->emptyList, instance)) {
              a->emptyList = c_iterInsert(a->emptyList,instance);
-        } else {
-             printf("instanceTakeSamples: found instance\n");
         }
         return proceed;
     }
@@ -1065,7 +1063,7 @@ v_dataReaderQueryTake(
             }
             if (_this->triggerValue) {
                 c_free(v_readerSample(_this->triggerValue)->instance);
-                c_free(_this->triggerValue);
+                v_dataReaderSampleFree(_this->triggerValue);
                 _this->triggerValue = NULL;
             }
             v_statisticsULongValueInc(v_query, numberOfTakes, _this);

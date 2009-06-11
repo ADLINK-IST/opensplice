@@ -1067,7 +1067,7 @@ v_dataReaderSampleTake(
 
     if (r->triggerValue) {
         c_free(v_readerSample(r->triggerValue)->instance);
-        c_free(r->triggerValue);
+        v_dataReaderSampleFree(r->triggerValue);
         r->triggerValue = NULL;
     }
 
@@ -1214,7 +1214,7 @@ v_dataReaderInstancePurge(
 
             if (r->triggerValue) {
 //                c_free(v_readerSample(r->triggerValue)->instance);
-                c_free(r->triggerValue);
+                v_dataReaderSampleFree(r->triggerValue);
                 r->triggerValue = NULL;
             }
         } else {
