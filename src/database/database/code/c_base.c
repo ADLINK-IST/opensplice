@@ -47,7 +47,7 @@
 #define CHECK_REF (0)
 
 #if CHECK_REF
-#define CHECK_REF_TYPE "v_writerQos"
+#define CHECK_REF_TYPE "v_indexSample<system_track_wipe_prop>"
 #define CHECK_REF_TYPE_LEN (strlen(CHECK_REF_TYPE))
 #define CHECK_REF_DEPTH (64)
 static char* CHECK_REF_FILE = NULL;
@@ -59,8 +59,8 @@ static char* CHECK_REF_FILE = NULL;
     FILE* stream; \
     \
     if(!CHECK_REF_FILE){ \
-        CHECK_REF_FILE = os_malloc(16); \
-        sprintf(CHECK_REF_FILE, "mem.log"); \
+        CHECK_REF_FILE = os_malloc(24); \
+        sprintf(CHECK_REF_FILE, "/tmp/mem.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\
@@ -1958,13 +1958,11 @@ c_free (
     }
 
 #if CHECK_REF
-    if (type) {
-        if (type && c_metaObject(type)->name) {
-            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-                    UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
-                            object, safeCount+1, safeCount);
-                }
+    if (type && c_metaObject(type)->name) {
+        if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+            if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+                UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
+                        object, safeCount+1, safeCount);
             }
         }
     }
@@ -2084,10 +2082,6 @@ c__free(
     }
 }
 
-#if CHECK_REF
-static c_object _check_ref_cache_ = NULL;
-#endif
-
 c_object
 c_keep (
     c_object object)
@@ -2104,21 +2098,22 @@ c_keep (
 #if CHECK_REF
     if (header->type) {
         c_type type;
-        ACTUALTYPE(type, header->type);
-        if (_check_ref_cache_ == NULL) {
-            if (type && c_metaObject(type)->name) {
-                if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-                    if (strncmp(c_metaObject(type)->name,
-                               CHECK_REF_TYPE,
-                               CHECK_REF_TYPE_LEN) == 0) {
-                        _check_ref_cache_ = type;
-                    }
+        if ((c_baseObject(header->type)->kind == M_EXTENT) ||
+            (c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
+            c_type t;
+            t = c_extentType(c_extent(header->type));
+            ACTUALTYPE(type,t);
+            c_free(t);
+        } else {
+            ACTUALTYPE(type,header->type);
+        }
+        if (type && c_metaObject(type)->name) {
+            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, CHECK_REF_TYPE_LEN) == 0) {
+                    UT_TRACE("\n\n============ Keep(0x%x): %d -> %d =============\n",
+                        object, header->refCount, header->refCount+1);
                 }
             }
-        }
-        if (type == _check_ref_cache_) {
-            UT_TRACE("\n\n============ Keep(0x%x): %d -> %d =============\n",
-                    object, header->refCount, header->refCount+1);
         }
     }
 #endif
