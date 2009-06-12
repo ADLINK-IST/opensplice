@@ -1,5 +1,8 @@
 @echo off
 
+set PATH=%~dp0\Ping\Release;%~dp0\Ping\Debug;%PATH%
+set PATH=%~dp0\Pong\Release;%~dp0\Pong\Debug;%PATH%
+
 set BLOKSIZE=100
 set BLOKCOUNT=100
 
@@ -10,27 +13,27 @@ ospl start
 
 %SLEEP4% >NUL
 
-start exec\pong.exe PongRead PongWrite
+start pong.exe PongRead PongWrite
 
 %SLEEP4% >NUL
 
-exec\ping.exe %BLOKCOUNT% %BLOKSIZE% m PongRead PongWrite
+ping.exe %BLOKCOUNT% %BLOKSIZE% m PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\ping.exe %BLOKCOUNT% %BLOKSIZE% q PongRead PongWrite
+ping.exe %BLOKCOUNT% %BLOKSIZE% q PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\ping.exe %BLOKCOUNT% %BLOKSIZE% s PongRead PongWrite
+ping.exe %BLOKCOUNT% %BLOKSIZE% s PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\ping.exe %BLOKCOUNT% %BLOKSIZE% f PongRead PongWrite
+ping.exe %BLOKCOUNT% %BLOKSIZE% f PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\ping.exe 1  10 t PongRead PongWrite 
+ping.exe 1  10 t PongRead PongWrite
 
 %SLEEP4% >NUL
 
