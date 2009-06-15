@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <string.h>
@@ -164,7 +164,7 @@ print_help(
     printf(
             "    -l (c | c++ | cpp | java)\n"
             "       Defines the target language. Note that the OpenSplice preprocessor\n"
-            "       does not support any combination of mode and language. The default\n"
+            "       does not support every combination of mode and language. The default\n"
             "       setting of the OpenSplice preprocessor is c++.\n");
     printf(
             "    <filename>\n"
@@ -178,6 +178,7 @@ print_help(
         "       cpp     N.A.   C      dcpsccpp       CCPP%s%s\n"
         "       c++     N.A.   S      dcpssacpp      SACPP\n"
         "       cpp     N.A.   S      dcpssacpp      SACPP\n"
+        "       Java    JacOrb C      dcpscj         SAJ\n"
         "       Java    N.A.   S      dcpssaj        SAJ\n",
         os_fileSep(), DEFAULT_ORB, os_fileSep(), DEFAULT_ORB);
 }
@@ -1056,14 +1057,14 @@ main (
                     idl_fileOutFree(idl_fileCur());
 
                     /* Generate the implementation file for SACPP types */
-                    snprintf(fname,                 
+                    snprintf(fname,
                              (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                              "%s.cpp", basename);
-                        
+
                     idl_fileSetCur(idl_fileOutNew(fname, "w"));
                     if (idl_fileCur() == NULL) {
                         idl_reportOpenError(fname);
-                    }                        
+                    }
                     idl_walk(base, filename, traceWalk, idl_genSacppTypeImplProgram());
                     idl_fileOutFree(idl_fileCur());
 
@@ -1219,8 +1220,15 @@ main (
                 idl_definitionClean();
 
             } else if (idl_getLanguage() == IDL_LANG_JAVA) {
-                idl_walk(base, filename, traceWalk, idl_genSajTypeProgram());
-                idl_walk(base, filename, traceWalk, idl_genSajHolderProgram());
+
+                if(idl_getCorbaMode() != IDL_MODE_ORB_BOUND)
+                {
+                    idl_walk(base, filename, traceWalk, idl_genSajTypeProgram());
+                    idl_walk(base, filename, traceWalk, idl_genSajHolderProgram());
+                } else
+                {
+                    printf("Not generating holder & type class");
+                }
                 idl_walk(base, filename, traceWalk, idl_genSajMetaProgram());
                 idl_walk(base, filename, traceWalk, idl_genSajTypedClassProgram());
             }
