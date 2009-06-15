@@ -10,6 +10,7 @@ M   ospli/rhel4d/x86.linux2.6-release-lic-inner 1 heads/scdds1518-01-branch none
 
 M   ospli/DDS1-WIN2K3/x86.win32-dev-notest-inner 1 heads/scdds1518-01-branch none
 M   ospli/DDS1-WIN2K3/x86.win32-release-nodbt-inner 1 heads/scdds1518-01-branch none
+M   ospli/DDS1-WIN2K3/x86.win32-release-inner 1 heads/scdds1518-01-branch none
 ###########################end scdds1518-01-branch runs ######################
 
 
