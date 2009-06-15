@@ -4,8 +4,8 @@ JPACKAGES	 = DDS org/opensplice/dds/dcps
 #TODO REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 JACORB_HOME  = /work/emiel/JacORB/v2.3.0/i686.Linux
 
-all: precompile
 link: jar
+jar: precompile
 
 #step 1: Copy contents of saj/code directory to cj/code directory
 #step 2: invoke jacorb to generate the builtintopics idl. This will overwrite any existing files in the code/ directory
@@ -14,7 +14,7 @@ precompile:
 	mkdir -p code
 	cp -r ../../saj/java/code/* code/
 	java -classpath $(JACORB_HOME)/lib/idl.jar:$(JACORB_HOME)/lib/logkit-1.2.jar:$(CLASSPATH) org.jacorb.idl.parser -d code -forceOverwrite code/dds_builtinTopics.idl
-	(make link)
+
 
 #old command:	$(JACORB_HOME)/bin/idl -d code -forceOverwrite code/dds_builtinTopics.idl
 

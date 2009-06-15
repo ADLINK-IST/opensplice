@@ -472,9 +472,9 @@ install_hde_target ()
     #
     # Copy IDL preprocessor configuration file for SAJ/CJ
     #
-    if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+    if  [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ] || [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
     then
-        printf "*       For SAJ ... "
+        printf "*       For SAJ/CJ ... "
         mkdir ${HDE_dir}/etc/idlpp/SAJ
         cp ${OSPL_HOME}/etc/idlpp/SAJ/tmpl* ${HDE_dir}/etc/idlpp/SAJ/
         echo "Ready"
