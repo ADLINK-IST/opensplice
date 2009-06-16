@@ -164,7 +164,7 @@ in_channelDataWriterMain(
 {
     in_channelDataWriter channelWriter;
     in_connectivityWriterFacade facade = NULL;
-    v_message message;
+    v_message message = NULL;
     Coll_List *locators;
     v_networkQueue queue;
     c_bool more = TRUE;
@@ -215,10 +215,8 @@ in_channelDataWriterMain(
 
                 if (facade)
                 {
-                    IN_TRACE_1(Send, 2, ">>> in_channelDataWriterMain - writer facade found for data to be send %p", facade);
                     /* Obtain locator list from connectivity admin for this facade */
                     locators = in_connectivityWriterFacadeGetLocators(facade);
-                    IN_TRACE_1(Send, 2, ">>> in_channelDataWriterMain - locators lar %d", Coll_List_getNrOfElements(locators));
                     /* Write message to Stream with the facade and the locatorlist */
                     in_streamWriterAppendData(
                         channelWriter->streamWriter,
@@ -232,6 +230,10 @@ in_channelDataWriterMain(
                         channelWriter->streamWriter,
                         locators);
                     in_connectivityWriterFacadeFree(facade);
+                }
+                if(message)
+                {
+                    c_free(message);
                 }
             }
         }

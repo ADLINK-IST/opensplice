@@ -2041,44 +2041,125 @@
     </element>
 
     <element name="DDSIService" minOccurrences="0" maxOccurrences="0">
+        <comment><![CDATA[
+            The DDSI Networking configuration expects a root element named
+            OpenSplice/DDSIService. Within this root element, the networking
+            daemon will look for several child-elements.
+        ]]></comment>
         <attributeString name="name" required="true">
+            <comment><![CDATA[
+                This attribute identifies the configuration for the DDSI
+                Networking Service. Multiple Networking Service configurations
+                can be specified in one single resource. The actual applicable
+                configuration is determined by the value of the name attribute,
+                which must match the specified under the element
+                OpenSplice/Domain/Service[@name] in the Domain Service configuration.
+            ]]></comment>
             <maxLength>0</maxLength>
             <default>ddsi</default>
         </attributeString>
         <element name="General" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                The General element describes the networking service as a whole.
+            ]]></comment>
             <leafString name="NetworkInterfaceAddress" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies which network interface card should
+                    be used.
+                    Every DDSI Networking Service is bound to only one network
+                    interface card (NIC). The card can be uniquely identified by
+                    its corresponding IP address. If the value "first available"
+                    is entered here, the OpenSplice middleware will try to look
+                    up an interface that has the required capabilities.
+                ]]></comment>
                 <maxLength>15</maxLength>
                 <default>first available</default>
             </leafString>
         </element>
         <element name="Channels" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                The set of channels defines the behaviour of the service
+                concerning priority. By configuring a set of channels, the
+                DDSI Networking Service is able to function as a ‘scheduler’
+                for the network bandwidth. It achieves this by using the
+                application-defined DDS QoS policies of the data to select
+                the most appropriate channel to send the data.
+            ]]></comment>
             <element name="Channel" minOccurrences="0" maxOccurrences="0">
+                <comment><![CDATA[
+                    The DDSI Networking Service will make sure messages with a
+                    higher priority precede messages with a lower priority.
+                ]]></comment>
                 <attributeString name="name" required="true">
+                    <comment><![CDATA[
+                        This element uniquely identifies the channel.
+                    ]]></comment>
                     <maxLength>0</maxLength>
                     <default>channel1</default>
                 </attributeString>
                 <attributeLong name="priority" required="false">
+                    <comment><![CDATA[
+                        This attribute sets the transport priority of the channel.
+                        Messages sent to the network have a transport_priority
+                        quality of service value. Selection of a networking
+                        channel is based on the priority requested by the
+                        message and the priority offered by the channel. The
+                        priority settings of the different channels divide the
+                        priority range into intervals. Within a channel,
+                        messages are sorted in order of priority.
+                        Please note that this priority element does not have
+                        any relation to the operating system threading priority.
+                    ]]></comment>
                     <minimum>0</minimum>
                     <maximum>1000</maximum>
                     <default>0</default>
                  </attributeLong>
                 <attributeBoolean name="enabled" required="false">
+                    <comment><![CDATA[
+                        This attribute toggles a channel on or off.
+                        Toggling a channel between enabled and disabled is a
+                        quick alternative for commenting out the corresponding
+                        lines in the configuration file.
+                    ]]></comment>
                     <default>true</default>
                 </attributeBoolean>
                 <attributeBoolean name="default" required="false">
+                    <comment><![CDATA[
+                        This attribute indicates whether the channel is used as
+                        the default channel in case no other channel offers the
+                        quality of service requested by a message.
+                        The networking channels should be configured to match the
+                        quality of service settings that are expected to be
+                        requested by the applications. It might happen, however,
+                        that none of the available channels meets the requested
+                        quality of service for a specific message. In that case,
+                        the message will be written into the default channel.
+                    ]]></comment>
                     <default>false</default>
                 </attributeBoolean>
                 <leafInt name="GroupQueueSize" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element defines the length of queue user by the
+                        network database reader.
+                    ]]></comment>
                     <minimum>100</minimum>
                     <maximum>10000</maximum>
                     <default>500</default>
                 </leafInt>
                 <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element defines the length of data fragments sent
+                        by this channel.
+                    ]]></comment>
                     <minimum>100</minimum>
                     <maximum>10000</maximum>
                     <default>1200</default>
                 </leafInt>
                 <leafInt name="PortNr" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                        Messages for the channel are sent to the given port number.
+                        Each channel needs its own unique port number.
+                    ]]></comment>
                     <minimum>0</minimum>
                     <maximum>32000</maximum>
                     <default>7412</default>
@@ -2086,32 +2167,88 @@
             </element>
         </element>
         <element name="Discovery" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                The Discovery Channel is used to discover all participating
+                entities in the current domain. This element is used to
+                configure the various parameters of the Discovery Channel.
+            ]]></comment>
             <attributeBoolean name="enabled" required="false">
+                <comment><![CDATA[
+                    This attribute toggles Discovery on or off.
+                ]]></comment>
                 <default>true</default>
             </attributeBoolean>
             <leafInt name="PortNr" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the port number used by the Discovery
+                    Channel.
+                ]]></comment>
                 <minimum>0</minimum>
                 <maximum>32000</maximum>
                 <default>7400</default>
             </leafInt>
             <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element defines the length of data fragments sent by
+                    this channel.
+                ]]></comment>
                 <minimum>100</minimum>
                 <maximum>10000</maximum>
                 <default>1200</default>
             </leafInt>
         </element>
         <element name="Tracing" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element controls the amount and type of information that is
+                written into the tracing log by the DDSI service. This is useful
+                to track the DDSI service during application development. In the
+                runtime system it should be turned off.
+            ]]></comment>
             <attributeBoolean name="enabled" required="false">
+                <comment><![CDATA[
+                    This attribute toggles tracing on or off.
+                ]]></comment>
                 <default>false</default>
             </attributeBoolean>
             <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This option specifies where the logging is printed to.
+                ]]></comment>
                 <maxLength>0</maxLength>
                 <default>ddsi-tracing-output.log</default>
             </leafString>
         </element>
         <element name="Partitioning" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element defines the default partition being used for all
+                data, except the data items being delivered using an dedicated
+                network partition (support for dedicated Network Partitions will
+                be available in later releases).
+                The OpenSplice DDSI Networking Service can be configured to use
+                static routing via dedicated multicast capabilities. This
+                requires the underlying operating system and network interfaces
+                to be configured properly.
+                The multicast mechanism can be considered a simple implementation
+                of the publish and subscribe technique. The DDSI Networking
+                Service can be configured to make use of this by mapping DCPS
+                partitions onto multicast addresses (networking partitions).
+                Every node is aware of all networking partitions. Using networking
+                configuration, nodes can be disconnected from any networking
+                partition. If a node is connected via a low speed interface,
+                it is not capable of receiving high volume data. If the DCPS
+                partitioning is designed carefully, high volume data is published
+                into a specific partition, which is mapped onto a specific
+                networking partition, which in turn is only connected to those
+                nodes that are capable of handling high volume data.
+            ]]></comment>
             <element name="GlobalPartition" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This Element defines global or default networking partition.
+                ]]></comment>
                 <attributeString name="Address" required="false">
+                    <comment><![CDATA[
+                        This element identifies the global partition address.
+                    ]]></comment>
                     <maxLength>0</maxLength>
                     <default>239.255.0.1</default>
                 </attributeString>

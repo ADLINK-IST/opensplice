@@ -28,7 +28,7 @@
 /**************************************************************
  * Local Macro definitions
  **************************************************************/
-#define __UPDATE_FOR_FLAG__(flag, statSuffix, reader, oldState, xoredState) \
+#define __V_DATAREADER_UPDATE_FOR_FLAG__(flag, statSuffix, reader, oldState, xoredState) \
     if (v_stateTest(xoredState, flag)) {                         \
         if (v_stateTest(oldState, flag)) {                       \
             v_statisticsULongValueDec(v_reader,                  \
@@ -39,45 +39,48 @@
         }                                                        \
     }
 /* Returns TRUE if both the L_DISPOSED and L_NOWRITERS flags are not set. */
-#define __ALIVE__(state) v_stateTestNot(state, (L_DISPOSED | L_NOWRITERS))
+#define __V_DATAREADER_ALIVE__(state) v_stateTestNot(state, (L_DISPOSED | L_NOWRITERS))
 /* Returns TRUE if either the L_DISPOSED or L_NOWRITERS flags is set. */
-#define __LIVELINESS_CHANGED__(xoredState) v_stateTestOr(xoredState, (L_DISPOSED | L_NOWRITERS))
+#define __V_DATAREADER_LIVELINESS_CHANGED__(xoredState) v_stateTestOr(xoredState, (L_DISPOSED | L_NOWRITERS))
 
 /* Updates the liveliness statistic for an instance. If oldState == 0, then
  * nothing is done. This is useful for initialization. It uses the newState
  * (oldState ^ xoredState) to determine whether counters have to be updated. */
-#define __UPDATE_ALIVE__(reader, oldState, xoredState) \
-    if (oldState && __LIVELINESS_CHANGED__(xoredState)) { \
-        if (__ALIVE__(oldState)){\
+#define __V_DATAREADER_UPDATE_ALIVE__(reader, oldState, xoredState) \
+    if (oldState && __V_DATAREADER_LIVELINESS_CHANGED__(xoredState)) { \
+        if (__V_DATAREADER_ALIVE__(oldState)){\
             v_statisticsULongValueDec(v_reader,                         \
                     numberOfInstancesWithStatusAlive, reader);          \
-        } else if (__ALIVE__(oldState ^ xoredState)){                   \
+        } else if (__V_DATAREADER_ALIVE__(oldState ^ xoredState)){      \
             v_statisticsULongValueInc(v_reader,                         \
                     numberOfInstancesWithStatusAlive, reader);          \
         }\
     }
 
+/* Updates the statistics for the instance-state flags that are enabled. Updates
+ * are only performed when statistics are enabled for the specified reader. */
 #define UPDATE_READER_STATISTICS(index, instance, oldState) \
-    if (v_statisticsValid(index->reader)) {                         \
-        v_state xoredState = oldState^instance->instanceState;      \
-                                                                    \
-        __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
-        __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
-        __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
-        __UPDATE_ALIVE__(index->reader,oldState,xoredState) \
+    if (v_statisticsValid(index->reader)) { \
+        v_state xoredState = oldState^instance->instanceState; \
+                                                               \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_ALIVE__(index->reader,oldState,xoredState) \
     }
 
 /* Subtracts the currently still enabled instance-state flags from the
- * statistics. */
-#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance)   \
-    if (v_statisticsValid(index->reader)) {                         \
-                                                                    \
-        __UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,instance->instanceState,instance->instanceState) \
-        __UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,instance->instanceState,instance->instanceState) \
-        __UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,instance->instanceState,instance->instanceState) \
-        if(__ALIVE__(instance->instanceState)){ \
-            v_statisticsULongValueDec(v_reader,                         \
-                numberOfInstancesWithStatusAlive, index->reader);       \
+ * statistics. Updates are only performed when statistics are enabled for
+ * the specified reader. */
+#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance) \
+    if (v_statisticsValid(index->reader)) { \
+                                                                                   \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,instance->instanceState,instance->instanceState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,instance->instanceState,instance->instanceState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,instance->instanceState,instance->instanceState) \
+        if(__V_DATAREADER_ALIVE__(instance->instanceState)){        \
+            v_statisticsULongValueDec(v_reader,                     \
+                numberOfInstancesWithStatusAlive, index->reader);   \
         } \
     }
 

@@ -238,16 +238,21 @@ in_ddsiStreamReaderImplDerializePayloadByKeyHash(
 			bytesCopied += sizeof(c_char);
 		break;
 		case V_STRING:
+#ifdef PA_BIG_ENDIAN
+			value = c_ulongValue(*((c_ulong*)&(keyHash[bytesCopied])));
+#else
+			value = c_ulongValue(IN_UINT32_SWAP_LE_BE(*((c_ulong*)&(keyHash[bytesCopied]))));
+#endif
+			bytesCopied += 4;
 			/*TODO: validate the string copy algorithm*/
-			if(keyHash[bytesCopied] != 0)
+			if(value.is.ULong != 0)
 			{
 				value = c_stringValue(
-					c_stringNew(base,
-					*((c_string*)(&(keyHash[bytesCopied+1])))));
-				bytesCopied = 1 + strlen(value.is.String) + 1;
+					c_stringNew(base,((c_string)(&(keyHash[bytesCopied])))));
+				bytesCopied += strlen(value.is.String) + 1;
 			} else
 			{
-				value = c_stringValue(NULL);
+				value = c_stringValue(c_stringNew(base, ""));
 				bytesCopied += 1;
 			}
 		break;
@@ -586,6 +591,7 @@ in_ddsiStreamReaderImplProcessAppdefData(
         		payloadResult = _this->callbackTable->processData(
         			_this->callbackArg, messageObject, peerWriter,
         			&(_this->receiver));
+                c_free(messageObject);
 
         		if(payloadResult != IN_RESULT_OK)
         		{

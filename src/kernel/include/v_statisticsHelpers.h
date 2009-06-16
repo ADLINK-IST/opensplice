@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_STATISTICSHELPERS_H
@@ -90,29 +90,36 @@
 #define resettable_v_query_numberOfTakes                           (TRUE)
 
 /* WRITER */
-#define unit_v_writer_numberOfWrites                       unit_calls
-#define unit_v_writer_numberOfDisposes                     unit_calls
-#define unit_v_writer_numberOfRegisters                    unit_calls
-#define unit_v_writer_numberOfImplicitRegisters            unit_calls
-#define unit_v_writer_numberOfUnregisters                  unit_calls
-#define unit_v_writer_numberOfBlockedWrites                unit_calls
-#define unit_v_writer_numberOfRetries                      unit_calls
-#define unit_v_writer_numberOfAliveInstances               unit_instances
-#define unit_v_writer_numberOfDisposedInstances            unit_instances
-#define unit_v_writer_numberOfUnregisteredInstances        unit_instances
-#define unit_v_writer_numberOfSamples                      unit_samples
-#define unit_v_writer_maxNumberOfSamplesPerInstance        unit_samplesPerInstance
+#define unit_v_writer_numberOfWrites                                unit_calls
+#define unit_v_writer_numberOfDisposes                              unit_calls
+#define unit_v_writer_numberOfRegisters                             unit_calls
+#define unit_v_writer_numberOfImplicitRegisters                     unit_calls
+#define unit_v_writer_numberOfUnregisters                           unit_calls
+#define unit_v_writer_numberOfTimedOutWrites                        unit_calls
+#define unit_v_writer_numberOfWritesBlockedBySamplesLimit           unit_calls
+#define unit_v_writer_numberOfWritesBlockedByInstanceLimit          unit_calls
+#define unit_v_writer_numberOfWritesBlockedBySamplesPerInstanceLimit  unit_calls
+#define unit_v_writer_numberOfRetries                               unit_calls
+#define unit_v_writer_numberOfInstancesWithStatusAlive              unit_instances
+#define unit_v_writer_numberOfInstancesWithStatusDisposed           unit_instances
+#define unit_v_writer_numberOfInstancesWithStatusUnregistered       unit_instances
+#define unit_v_writer_numberOfSamples                               unit_samples
+#define unit_v_writer_maxNumberOfSamplesPerInstance                 unit_samplesPerInstance
+
 
 #define resettable_v_writer_numberOfWrites                          (TRUE)
 #define resettable_v_writer_numberOfDisposes                        (TRUE)
 #define resettable_v_writer_numberOfRegisters                       (TRUE)
 #define resettable_v_writer_numberOfImplicitRegisters               (TRUE)
 #define resettable_v_writer_numberOfUnregisters                     (TRUE)
-#define resettable_v_writer_numberOfBlockedWrites                   (TRUE)
+#define resettable_v_writer_numberOfTimedOutWrites                  (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedBySamplesLimit     (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedByInstanceLimit    (TRUE)
+#define resettable_v_writer_numberOfWritesBlockedBySamplesPerInstanceLimit (TRUE)
 #define resettable_v_writer_numberOfRetries                         (TRUE)
-#define resettable_v_writer_numberOfAliveInstances                  (FALSE)
-#define resettable_v_writer_numberOfDisposedInstances               (FALSE)
-#define resettable_v_writer_numberOfUnregisteredInstances           (FALSE)
+#define resettable_v_writer_numberOfInstancesWithStatusAlive        (FALSE)
+#define resettable_v_writer_numberOfInstancesWithStatusDisposed     (FALSE)
+#define resettable_v_writer_numberOfInstancesWithStatusUnregistered (FALSE)
 #define resettable_v_writer_numberOfSamples                         (FALSE)
 #define resettable_v_writer_maxNumberOfSamplesPerInstance           (TRUE)
 

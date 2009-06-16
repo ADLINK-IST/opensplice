@@ -1235,6 +1235,7 @@ v_dataReaderInstanceUnregister (
     c_long count)
 {
     v_dataReaderInstance found;
+    c_bool doFree = FALSE;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
@@ -1270,6 +1271,7 @@ v_dataReaderInstanceUnregister (
                 CHECK_EMPTINESS(_this);
                 CHECK_INVALIDITY(_this);
                 c_free(_this);
+                doFree = TRUE;
             }
         }
         if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
@@ -1282,6 +1284,9 @@ v_dataReaderInstanceUnregister (
                 }
             }
             v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
+        }
+        if(doFree){
+        	v_publicFree(v_public(_this));
         }
     }
 
