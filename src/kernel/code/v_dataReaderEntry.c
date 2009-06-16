@@ -198,7 +198,7 @@ doInstanceAutoPurge(
         assert(reader->sampleCount >= 0);
         if (v_dataReaderInstanceEmpty(instance)) {
             v_dataReaderRemoveInstance(reader,instance);
-        }         
+        }
     } else {
         v_dataReaderRemoveInstance(reader,instance);
     }
@@ -550,7 +550,7 @@ v_dataReaderEntryWrite(
         }
         found = NULL;
         c_tableRemove(instanceSet, *instancePtr, alwaysFalse, &found);
-        assert(found == *instancePtr);
+        assert(found == v_dataReaderInstance(*instancePtr));
 #else
         found = c_keep(*instancePtr);
 #endif
@@ -586,6 +586,9 @@ v_dataReaderEntryWrite(
                             purgeListInsert(_this->purgeListNotEmpty, found);
                         }
                     }
+                } else if (v_dataReaderInstanceStateTest(found,L_NOWRITERS)) {
+                	v_dataReaderRemoveInstance(v_dataReader(reader),
+						v_dataReaderInstance(found));
                 }
             } else {
                 v_dataReaderInstanceInNotEmptyList(found) = TRUE;
