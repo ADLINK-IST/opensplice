@@ -169,7 +169,15 @@ timeGet (
 {
     struct timeval current_time;
 
+#ifdef USE_CLOCK_GETTIME
+     struct timespec tv;
+ 
+     clock_gettime (CLOCK_REALTIME, &tv);
+     current_time.tv_sec = tv.tv_sec;
+     current_time.tv_usec = tv.tv_nsec / 1000;
+#else
     gettimeofday (&current_time, NULL);
+#endif
 
     return current_time;
 }
@@ -626,7 +634,7 @@ main (
         printf("Invalid topic-id\n");
         exit(1);
     }
-    for (block = 0; block < nof_blocks ; block++) {
+    for (block = 0; block < (int)nof_blocks ; block++) {
         while (!finish_flag) {
             //
             // Send Initial message
