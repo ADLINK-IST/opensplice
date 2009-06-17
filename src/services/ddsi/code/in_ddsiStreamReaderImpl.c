@@ -591,6 +591,7 @@ in_ddsiStreamReaderImplProcessAppdefData(
         		payloadResult = _this->callbackTable->processData(
         			_this->callbackArg, messageObject, peerWriter,
         			&(_this->receiver));
+                c_free(messageObject);
 
         		if(payloadResult != IN_RESULT_OK)
         		{

@@ -95,7 +95,7 @@ $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_DLIB))
 	cp `pwd`/$(TARGET) $@
 	if [ -f `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) ]; then cp `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) $(TARGET_LINK_DIR)/$(addsuffix .lib, $(TARGET_DLIB)); fi
-	if [ -f `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) ]; then cp `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) $(TARGET_LINK_DIR)/$(addsuffix .lib, $(TARGET_DLIB)); fi
+	if [ -f `pwd`/$(addsuffix .pdb, $(TARGET_DLIB)) ]; then cp `pwd`/$(addsuffix .pdb, $(TARGET_DLIB)) $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_DLIB)); fi
 else # NOT windows
 $(TARGET_LINK_FILE): $(TARGET)
 ifneq (,$(TARGET_LINK_DIR))
@@ -110,7 +110,7 @@ ifneq (, $(findstring win32, $(SPLICE_TARGET)))
 $(TARGET_LINK_FILE): $(TARGET)
 ifdef TARGET_EXEC
 	rm -f $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET))
-	if [ -f `pwd`/$(addsuffix .pdb, $(TARGET)) ]; then cp `pwd`/$(addsuffix .pdb, $(TARGET)) $(addsuffix .pdb, $(TARGET)); fi
+	if [ -f `pwd`/$(addsuffix .pdb, $(TARGET_EXEC)) ]; then cp `pwd`/$(addsuffix .pdb, $(TARGET_EXEC)) $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_EXEC)); fi
 endif
 	rm -f $@
 	cp `pwd`/$(TARGET) $@

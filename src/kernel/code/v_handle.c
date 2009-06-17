@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_handle.h"
@@ -15,8 +15,8 @@
 #include "os_report.h"
 
 /**
- * All handles are kept in a partly preallocated two dimensional array. 
- * The following MACRO's are defined wich specify the maximum dimensions of the array in 
+ * All handles are kept in a partly preallocated two dimensional array.
+ * The following MACRO's are defined wich specify the maximum dimensions of the array in
  * terms of columns and rows. Rows are dynamically allocated when required.
  * Handles are identified by an index and serial number. The index specifies the column and
  * row number, the serial number specifies the generation count af a handle.
@@ -42,6 +42,34 @@
 #define MAXSERIAL   (0x7fffffff)
 
 const v_handle V_HANDLE_NIL = {0, 0, 0};
+
+#define CHECK_REF (0)
+
+#if CHECK_REF
+#define CHECK_REF_TYPE (43)
+#define CHECK_REF_DEPTH (64)
+static char* CHECK_REF_FILE = NULL;
+
+#define UT_TRACE(msgFormat, ...) do { \
+    void *tr[CHECK_REF_DEPTH];\
+    char **strs;\
+    size_t s,i; \
+    FILE* stream; \
+    \
+    if(!CHECK_REF_FILE){ \
+        CHECK_REF_FILE = os_malloc(16); \
+        sprintf(CHECK_REF_FILE, "handle.log"); \
+    } \
+    s = backtrace(tr, CHECK_REF_DEPTH);\
+    strs = backtrace_symbols(tr, s);\
+    stream = fopen(CHECK_REF_FILE, "a");\
+    fprintf(stream, msgFormat, __VA_ARGS__);              \
+    for (i=0;i<s;i++) fprintf(stream, "%s\n", strs[i]);\
+    free(strs);\
+    fflush(stream);\
+    fclose(stream);\
+  } while (0)
+#endif
 
 v_handleServer
 v_handleServerNew (
@@ -295,7 +323,7 @@ v_handleDeregister(
             v_handleInvalidate(handle,info);
         }
     }
-    
+
     return result;
 }
 
@@ -317,6 +345,13 @@ v_handleClaim (
         *o = NULL;
     } else {
         info->count++;
+
+#if CHECK_REF
+		if (v_object(info->object)->kind == CHECK_REF_TYPE) {
+			UT_TRACE("\n\n============ Claim (0x%x): %d -> %d =============\n",
+					info->object, info->count -1, info->count);
+		}
+#endif
         *o = (v_object)info->object;
     }
     c_mutexUnlock(&info->mutex);
@@ -336,6 +371,13 @@ v_handleRelease (
         assert(info != NULL);
         assert(info->count > 0);
         info->count--;
+
+#if CHECK_REF
+		if (v_object(info->object)->kind == CHECK_REF_TYPE) {
+			UT_TRACE("\n\n=========== Release (0x%x): %d -> %d ============\n",
+					info->object, info->count+1, info->count);
+		}
+#endif
         if (info->count == 0) {
             if (info->freed) {
                 v_handleInvalidate(handle,info);
@@ -349,3 +391,6 @@ v_handleRelease (
     return result;
 }
 
+#if CHECK_REF
+#undef UT_TRACE
+#endif
