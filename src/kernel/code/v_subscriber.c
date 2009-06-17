@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_abstract.h"
@@ -79,6 +79,14 @@ v_subscriberNew(
             v_lockShares(kernel);
             found = v_addShareUnsafe(kernel,v_entity(s));
             if (found != v_entity(s)) {
+            	/* Make sure to set the domain list to NULL, because
+				 * v_publicFree will cause a crash in the v_subscriberDeinit
+				 * otherwise.
+				 */
+            	s->domains = NULL;
+            	/*v_publicFree to free reference held by the handle server.*/
+            	v_publicFree(v_public(s));
+            	/*Now free the local reference as well.*/
                 c_free(s);
                 pa_increment(&(v_subscriber(found)->shareCount));
                 v_unlockShares(kernel);
@@ -107,7 +115,7 @@ v_subscriberNew(
         OS_REPORT(OS_ERROR,
                   "v_subscriberNew", 0,
                   "Subscriber not created: inconsistent qos");
-        s = NULL; 
+        s = NULL;
     }
     return s;
 }
@@ -189,7 +197,7 @@ v_subscriberFree(
         s->participant = NULL;
     }
     v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(s));
-    
+
     v_publicFree(v_public(s));
 }
 
@@ -197,8 +205,10 @@ void
 v_subscriberDeinit(
     v_subscriber s)
 {
-    v_domainAdminFree(s->domains);
-    s->domains = NULL;
+	if(s->domains){
+		v_domainAdminFree(s->domains);
+		s->domains = NULL;
+	}
     v_observerDeinit(v_observer(s));
 }
 
@@ -317,7 +327,7 @@ v_subscriberCheckDomainInterest(
     v_domain partition)
 {
     return v_domainAdminFitsInterest(s->domains, partition);
-}    
+}
 
 void
 v_subscriberSubscribe(
@@ -500,7 +510,7 @@ v_subscriberSetQos(
     result = v_subscriberQosSet(s->qos, qos, v_entity(s)->enabled,&cm);
     if ((result == V_RESULT_OK) && (cm != 0)) {
         c_lockUnlock(&s->lock); /* since creation builtin topic might lock subscriber again. */
-        if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */            
+        if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
             v_domainAdminSet(s->domains, s->qos->partition,
                              &arg.addedDomains, &arg.removedDomains);
         }
@@ -548,9 +558,9 @@ v_subscriberNotify(
     v_domain d;
 
     if (e->kind == V_EVENT_NEW_GROUP) {
-        g = v_group(e->userData);                
+        g = v_group(e->userData);
         connect = v_domainAdminFitsInterest(s->domains, g->partition);
-        
+
         if (connect) {
             addedDomains = v_domainAdminAdd(s->domains,
                                             v_partitionName(g->partition));

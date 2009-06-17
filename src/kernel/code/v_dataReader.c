@@ -548,6 +548,15 @@ v_dataReaderNew (
         v_subscriberLockShares(subscriber);
         found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
         if (found != _this) {
+        	/* Make sure to set the index and deadline list to NULL, because
+        	 * v_publicFree will cause a crash in the v_dataReaderDeinit
+        	 * otherwise.
+        	 */
+        	_this->index = NULL;
+        	_this->deadLineList = NULL;
+        	/*v_publicFree to free reference held by the handle server.*/
+        	v_publicFree(v_public(_this));
+        	/*Now free the local reference as well.*/
             c_free(_this);
             pa_increment(&(found->shareCount));
             v_subscriberUnlockShares(subscriber);
@@ -685,7 +694,7 @@ v_dataReaderFree (
         if (subscriber != NULL) {
             found = v_dataReader(v_subscriberRemoveShare(subscriber,v_reader(_this)));
             assert(found == _this);
-
+            c_free(found);
         }
     }
     v_readerFree(v_reader(_this));
@@ -726,9 +735,14 @@ v_dataReaderDeinit (
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
     v_readerDeinit(v_reader(_this));
-    c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
-    c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
-    v_deadLineInstanceListFree(_this->deadLineList);
+
+    if(_this->index){
+    	c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
+    	c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
+    }
+    if(_this->deadLineList){
+    	v_deadLineInstanceListFree(_this->deadLineList);
+    }
 }
 
 /* Helpfunc for writing into the dataViews */
