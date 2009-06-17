@@ -53,9 +53,7 @@ static struct sigaction _SIGNALVECTOR_(SIGTERM);
 
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
-static int _ospl_signal = 0;
-static pthread_mutex_t _ospl_signalHandlerThreadMutex;
-static pthread_cond_t  _ospl_signalHandlerThreadCondition;
+static int _ospl_signalpipe[2] = { 0, 0};
 
 /* private functions */
 static void
@@ -66,6 +64,7 @@ signalHandler(
 {
     os_int32 terminate;
     os_terminationType reason;
+    int result;
 
     if (_ospl_termHandler) {
         switch (sig) {
@@ -82,20 +81,8 @@ signalHandler(
         /* The signalHandlerThread will always perform the
          * exit() call.
          */
-        /* Do not lock _ospl_signalHandlerThreadMutex when the
-         * signalHandler is called from the _ospl_signalHandlerThread
-         */
-        if (pthread_equal(pthread_self(), _ospl_signalHandlerThreadId)) {
-            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
-            _ospl_signal = sig;
-            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
-        } else {
-            pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
-            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
-            _ospl_signal = sig;
-            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
-            pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
-        } 
+        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+        result = write(_ospl_signalpipe[1], &sig, sizeof(int));
     }
 }
 
@@ -107,18 +94,22 @@ signalHandlerThread(
     void *arg)
 {
     sigset_t sigset;
+    int sig;
+    int result;
 
     sigemptyset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
-    while (!_ospl_signalHandlerThreadTerminate) {
-        pthread_cond_wait(&_ospl_signalHandlerThreadCondition, &_ospl_signalHandlerThreadMutex);
+    result = -1;
+    while (result == -1) {
+        result = read(_ospl_signalpipe[0], &sig, sizeof(int));
     }
-    pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
 
     /* first call previous signal handler, iff not default */
-    switch (_ospl_signal) {
+    switch (sig) {
+    case -1: /* used for terminating this thread! */
+        assert(_ospl_signalHandlerThreadTerminate != OSPL_SIGNALHANDLERTHREAD_EXIT);
+    break;
     case SIGINT:
         if ((_SIGNALVECTOR_(SIGINT).sa_handler != SIG_DFL) &&
             (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
@@ -163,16 +154,9 @@ os_processModuleInit(void)
 #if !defined INTEGRITY && !defined VXWORKS_RTP
     struct sigaction action;
     pthread_attr_t      thrAttr;
-    pthread_mutexattr_t mtxAttr;
-    pthread_condattr_t  cvAttr;
+    int result; 
 
-    pthread_mutexattr_init(&mtxAttr);
-    pthread_mutexattr_setpshared (&mtxAttr, PTHREAD_PROCESS_PRIVATE);
-    pthread_mutex_init(&_ospl_signalHandlerThreadMutex, &mtxAttr);
-
-    pthread_condattr_init(&cvAttr);
-    pthread_condattr_setpshared (&cvAttr, PTHREAD_PROCESS_PRIVATE);
-    pthread_cond_init(&_ospl_signalHandlerThreadCondition, &cvAttr);
+     result = pipe(_ospl_signalpipe);
 
     pthread_attr_init(&thrAttr);
     pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
@@ -208,19 +192,20 @@ void
 os_processModuleExit(void)
 {
 #if !defined INTEGRITY && !defined VXWORKS_RTP
+    int sig = -1;
+    void *thread_result;
+
     /* deinstall signal handlers */
     _SIGACTION_(SIGINT);
     _SIGACTION_(SIGQUIT);
     _SIGACTION_(SIGHUP);
     _SIGACTION_(SIGTERM);
 
-    _ospl_signalHandlerThreadTerminate = 1;
-    if (_ospl_signalHandlerThreadId != pthread_self()) {
-        pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
-        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
-        pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
-        pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
-    }
+    _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
+    if (pthread_self() != _ospl_signalHandlerThreadId) {
+        write(_ospl_signalpipe[1], &sig, sizeof(sig));
+        pthread_join(_ospl_signalHandlerThreadId, &thread_result);
+    } 
 #endif
 }
 #undef _SIGACTION_
