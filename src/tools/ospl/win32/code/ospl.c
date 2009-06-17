@@ -28,20 +28,23 @@ print_usage(
             "      ospl list\n\n"
             "      -h       Show this help\n\n");
     printf ("      start    Start the identified system\n\n"
-            "               The system is identified and configured by the URI which is defined\n"
-            "               by the environment variable OSPL_URI. This setting can\n"
-            "               be overruled with the command line URI definition. When none of the\n"
-            "               URI definitions is specified, a default system will be started.\n\n");
+            "               The system is identified and configured by the URI which is\n"
+            "               defined by the environment variable OSPL_URI. This setting can\n"
+            "               be overruled with the command line URI definition. When none of\n"
+            "               the URI definitions is specified, a default system will be\n"
+            "               started.\n\n");
     printf ("      stop     Stop the identified system\n\n"
-            "               Stop is the default command, this when no command is specified stop\n"
-            "               is assumed. The system to stop is identified by the URI which is defined\n"
-            "               by the environment variable OSPL_URI. This setting can\n");
-    printf ("               be overruled by the command line URI definition or the domain name\n"
-            "               which is associated with the URI and specified via the -d option\n"
-            "               When no domain is specified by the URI or by it's name a default\n"
-            "               system is assumed. The -a options specifies to stop all running\n"
-            "               splice systems started by the current user.\n\n");
-    printf ("      list     Show all systems started by the current user by their domain name\n\n");
+            "               Stop is the default command, thus when no command is specified\n" 
+            "               stop is assumed. The system to stop is identified by the URI\n"
+            "               which is defined by the environment variable OSPL_URI. This\n");
+    printf ("               setting can be overruled by the command line URI definition or\n"
+            "               the domain name which is associated with the URI and specified\n"
+            "               via the -d option. \n"
+            "               When no domain is specified by the URI or by it's name a \n"
+            "               default system is assumed. The -a options specifies to stop all\n"
+            "               running splice systems started by the current user.\n\n");
+    printf ("      list     Show all systems started by the current user by their domain\n"
+            "               name\n\n");
 }
 
 static char *key_file_path = NULL;
