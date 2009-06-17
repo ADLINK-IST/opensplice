@@ -1225,9 +1225,6 @@ main (
                 {
                     idl_walk(base, filename, traceWalk, idl_genSajTypeProgram());
                     idl_walk(base, filename, traceWalk, idl_genSajHolderProgram());
-                } else
-                {
-                    printf("Not generating holder & type class");
                 }
                 idl_walk(base, filename, traceWalk, idl_genSajMetaProgram());
                 idl_walk(base, filename, traceWalk, idl_genSajTypedClassProgram());

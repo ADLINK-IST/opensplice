@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "saj_copyOut.h"
@@ -29,7 +29,7 @@ typedef struct {
 } saj_context;
 
 typedef saj_copyResult (*copyOutFromStruct)(sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
-typedef saj_copyResult (*copyOutFromUnion)(sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+typedef saj_copyResult (*copyOutFromUnion)(sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
 typedef saj_copyResult (*copyOutFromArray)(sajCopyHeader *ch, jobject *objectArray, void *srcArray, saj_context *ctx);
 
     /* Primitive types */
@@ -75,46 +75,46 @@ STATIC saj_copyResult saj_cfsoSequence   (sajCopyHeader *ch, jobject javaObject,
 STATIC saj_copyResult saj_cfsoReference  (sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
 
     /* Primitive types */
-STATIC saj_copyResult saj_cfuoBoolean    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoByte       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoChar       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoShort      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoInt        (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoLong       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoFloat      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoDouble     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoBoolean    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoByte       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoChar       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoShort      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoInt        (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoLong       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoFloat      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoDouble     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Array of primitive type */
-STATIC saj_copyResult saj_cfuoArrBoolean (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrByte    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrChar    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrShort   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrInt     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrLong    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrFloat   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoArrDouble  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrBoolean (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrByte    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrChar    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrShort   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrInt     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrLong    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrFloat   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArrDouble  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Sequence of primitive type */
-STATIC saj_copyResult saj_cfuoSeqBoolean (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqByte    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqChar    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqShort   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqInt     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqLong    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqFloat   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoSeqDouble  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqBoolean (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqByte    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqChar    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqShort   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqInt     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqLong    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqFloat   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSeqDouble  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Enumeration type */
-STATIC saj_copyResult saj_cfuoEnum       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoEnum       (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Structured types */
-STATIC saj_copyResult saj_cfuoStruct     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoUnion      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoStruct     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoUnion      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* String types */
-STATIC saj_copyResult saj_cfuoString     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
-STATIC saj_copyResult saj_cfuoBString    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoString     (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoBString    (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Array of object type */
-STATIC saj_copyResult saj_cfuoArray      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoArray      (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Sequence of object type */
-STATIC saj_copyResult saj_cfuoSequence   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoSequence   (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
     /* Reference type */
-STATIC saj_copyResult saj_cfuoReference  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID setterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuoReference  (sajCopyHeader *ch, jobject javaObject, jfieldID caseID, jmethodID getterID, jmethodID setterID, saj_context *ctx);
 
     /* Array of primitive type */
 STATIC saj_copyResult saj_cfooArrBoolean (sajCopyHeader *ch, jobject *objectArray,  void *src, saj_context *ctx);
@@ -260,9 +260,9 @@ saj_copyGetStatus(
 {
     jboolean errorOccurred;
     saj_copyResult result;
-    
+
     errorOccurred = ((*(context->javaEnv))->ExceptionCheck (context->javaEnv));
-    
+
     if(errorOccurred == JNI_TRUE){
         result = SAJ_COPYRESULT_ERROR;
     } else {
@@ -281,11 +281,11 @@ saj_cfsoBoolean (
 {
     saj_copyResult result;
     c_bool *src;
-    
+
     src = (c_bool *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetBooleanField (ctx->javaEnv, javaObject, javaFID, (jboolean)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetBooleanField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Boolean = %d @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
 
@@ -297,19 +297,20 @@ saj_cfuoBoolean (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_bool *src;
-    
+
     src = (c_bool *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jboolean)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Boolean = %d setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -321,14 +322,14 @@ saj_cfsoByte (
     saj_context *ctx)
 {
     saj_copyResult result;
-    
+
     c_octet *src = (c_octet *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetByteField (ctx->javaEnv, javaObject, javaFID, (jbyte)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetByteField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Byte = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -337,19 +338,20 @@ saj_cfuoByte (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_octet *src;
-    
+
     src = (c_octet *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jbyte)*src);
     result = saj_copyGetStatus(ctx);
-        
+
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Byte = %hd setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -362,14 +364,14 @@ saj_cfsoChar (
 {
     saj_copyResult result;
     c_char *src;
-    
+
     src = (c_char *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetCharField (ctx->javaEnv, javaObject, javaFID, (jchar)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetCharField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Char = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -378,19 +380,20 @@ saj_cfuoChar (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_char *src;
-    
+
     src = (c_char *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jchar)*src);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Char = %d setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -403,14 +406,14 @@ saj_cfsoShort (
 {
     saj_copyResult result;
     c_short *src;
-    
+
     src = (c_short *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetShortField (ctx->javaEnv, javaObject, javaFID, (jshort)*src);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetShortField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Short = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -419,19 +422,20 @@ saj_cfuoShort (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_short *src;
-    
+
     src = (c_short *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jshort)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Short = %d setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -444,14 +448,14 @@ saj_cfsoInt (
 {
     saj_copyResult result;
     c_long *src;
-    
+
     src = (c_long *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetIntField (ctx->javaEnv, javaObject, javaFID, (jint)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetIntField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Int = %d @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -460,19 +464,20 @@ saj_cfuoInt (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_long *src;
-    
+
     src = (c_long *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jint)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Int = %d setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -485,14 +490,14 @@ saj_cfsoLong (
 {
     saj_copyResult result;
     c_longlong *src;
-    
+
     src = (c_longlong *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetLongField (ctx->javaEnv, javaObject, javaFID, (jlong)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetLongField (0x%x, %d, %lld)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Long = %lld @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -501,19 +506,20 @@ saj_cfuoLong (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_longlong *src;
-    
+
     src = (c_longlong *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jlong)*src);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %lld)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Long = %lld setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -526,14 +532,14 @@ saj_cfsoFloat (
 {
     saj_copyResult result;
     c_float *src;
-    
+
     src = (c_float *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetFloatField (ctx->javaEnv, javaObject, javaFID, (jfloat)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetFloatField (0x%x, %d, %f)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Float = %f @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -542,19 +548,20 @@ saj_cfuoFloat (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_float *src;
-    
+
     src = (c_float *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jfloat)*src);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Float = %f setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -567,14 +574,14 @@ saj_cfsoDouble (
 {
     saj_copyResult result;
     c_double *src;
-    
+
     src = (c_double *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetDoubleField (ctx->javaEnv, javaObject, javaFID, (jdouble)*src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: SetDoubleField (0x%x, %d, %f)\n", javaObject, javaFID, *src));
     TRACE(printf ("Copied out Double = %f @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
-    
+
     return result;
 }
 
@@ -583,19 +590,20 @@ saj_cfuoDouble (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     saj_copyResult result;
     c_double *src;
-    
+
     src = (c_double *)ctx->src;
     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, (jdouble)*src);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, setterID, *src));
     TRACE(printf ("Copied out Double = %f setterID = %x\n", *src, (int)setterID));
-    
+
     return result;
 }
 
@@ -615,10 +623,10 @@ saj_cfooEnum (
     src = (c_long *)srcEnum;
     *enumObject = (*(ctx->javaEnv))->CallStaticObjectMethod (ctx->javaEnv, copyEnum->enumClass, copyEnum->from_intID, *src);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: CallStaticObjectMethod (0x%x, %d, %d)\n", copyEnum->enumClass, copyEnum->from_intID, *src));
     TRACE(printf ("Copied out Enum = %d @ offset = %d\n", *src, ctx->offset));
-    
+
     return result;
 }
 
@@ -636,9 +644,9 @@ saj_cfsoEnum (
     src = (c_long *)((PA_ADDRCAST)ctx->src + ctx->offset);
     enumObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, enumObject));
-    
+
     if(result == SAJ_COPYRESULT_OK){
         result = saj_cfooEnum (ch, &enumObject, src, ctx);
         (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, enumObject);
@@ -654,6 +662,7 @@ saj_cfuoEnum (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -664,11 +673,11 @@ saj_cfuoEnum (
     src = (c_long *)ctx->src;
     enumObject = NULL;
     result = saj_cfooEnum (ch, &enumObject, src, ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, enumObject);
         result = saj_copyGetStatus(ctx);
-    
+
         TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, enumObject));
     }
     return result;
@@ -700,7 +709,7 @@ saj_cfooArrBoolean (
         result = saj_copyGetStatus(ctx);
     } else if ((*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array) != (int)ah->size) {
         result = saj_copyGetStatus(ctx);
-        
+
         if(result == SAJ_COPYRESULT_OK){
             array = (*(ctx->javaEnv))->NewBooleanArray (ctx->javaEnv, ah->size);
             result = saj_copyGetStatus(ctx);
@@ -710,17 +719,17 @@ saj_cfooArrBoolean (
     } else {
         result = SAJ_COPYRESULT_OK;
     }
-    
+
     if(result == SAJ_COPYRESULT_OK){
         booleanArray = os_alloca (sizeof (jboolean) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             booleanArray[i] = src[i];
             TRACE(printf ("%d;", src[i]));
         }
         (*(ctx->javaEnv))->SetBooleanArrayRegion (ctx->javaEnv, array, 0, ah->size, booleanArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetBooleanArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, booleanArray));
         TRACE(printf ("Copied out Boolean array size %d @ offset = %d\n", ah->size, ctx->offset));
         os_freea (booleanArray);
@@ -743,12 +752,12 @@ saj_cfsoArrBoolean (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         saj_cfooArrBoolean (ch, &array, src, ctx);
-        
+
         if (arr != array) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -763,6 +772,7 @@ saj_cfuoArrBoolean (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -772,15 +782,21 @@ saj_cfuoArrBoolean (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
-        
+
         arr = array;
         result = saj_cfooArrBoolean (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -807,7 +823,7 @@ saj_cfooArrByte (
     src = (c_octet *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jbyteArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewByteArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: array == null -> NewByteArray (%d) = 0x%x\n", ah->size, array));
@@ -818,20 +834,20 @@ saj_cfooArrByte (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         byteArray = os_alloca (sizeof (jbyte) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             byteArray[i] = src[i];
             TRACE(printf ("%d;", src[i]));
         }
         (*(ctx->javaEnv))->SetByteArrayRegion (ctx->javaEnv, array, 0, ah->size, byteArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetByteArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, byteArray));
         TRACE(printf ("Copied out Byte array size %d @ offset = %d\n", ah->size, ctx->offset));
-        
+
         os_freea (byteArray);
     }
     return result;
@@ -852,12 +868,12 @@ saj_cfsoArrByte (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrByte (ch, &array, src, ctx);
-        
+
         if ((arr != array) && (result == SAJ_COPYRESULT_OK)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -872,6 +888,7 @@ saj_cfuoArrByte (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -881,7 +898,13 @@ saj_cfuoArrByte (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
 
     if(result == SAJ_COPYRESULT_OK){
@@ -889,7 +912,7 @@ saj_cfuoArrByte (
 
         arr = array;
         result = saj_cfooArrByte (ch, &array, src, ctx);
-        
+
         if ((arr != array) && (result == SAJ_COPYRESULT_OK)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -916,7 +939,7 @@ saj_cfooArrChar (
     src = (c_char *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jcharArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewCharArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewCharArray (%d) = 0x%x\n", ah->size, array));
@@ -927,20 +950,20 @@ saj_cfooArrChar (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         charArray = os_alloca (sizeof (jchar) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             charArray[i] = src[i];
             TRACE(printf ("%d;", src[i]));
         }
         (*(ctx->javaEnv))->SetCharArrayRegion (ctx->javaEnv, array, 0, ah->size, charArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetCharArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, charArray));
         TRACE(printf ("Copied out Char array size %d @ offset = %d\n", ah->size, ctx->offset));
-        
+
         os_freea (charArray);
     }
     return result;
@@ -961,12 +984,12 @@ saj_cfsoArrChar (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrChar (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -981,6 +1004,7 @@ saj_cfuoArrChar (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -990,14 +1014,20 @@ saj_cfuoArrChar (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooArrChar (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1020,11 +1050,11 @@ saj_cfooArrShort (
     c_short *src;
     unsigned int i;
     saj_copyResult result;
-    
+
     src = (c_short *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jshortArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewShortArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewShortArray (%d) = 0x%x\n", ah->size, array));
@@ -1035,15 +1065,15 @@ saj_cfooArrShort (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         shortArray = os_alloca (sizeof (jshort) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             shortArray[i] = src[i];
             TRACE(printf ("%d;", src[i]));
         }
-        
+
         (*(ctx->javaEnv))->SetShortArrayRegion (ctx->javaEnv, array, 0, ah->size, shortArray);
         result = saj_copyGetStatus(ctx);
         TRACE(printf ("JNI: SetShortArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, shortArray));
@@ -1068,12 +1098,12 @@ saj_cfsoArrShort (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrShort (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1088,6 +1118,7 @@ saj_cfuoArrShort (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1095,16 +1126,22 @@ saj_cfuoArrShort (
     jshortArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooArrShort (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1131,7 +1168,7 @@ saj_cfooArrInt (
     src = (c_long *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jintArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewIntArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewIntArray (%d) = 0x%x\n", ah->size, array));
@@ -1142,20 +1179,20 @@ saj_cfooArrInt (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         intArray = os_alloca (sizeof (jint) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             intArray[i] = src[i];
             TRACE(printf ("%d;", src[i]));
         }
         (*(ctx->javaEnv))->SetIntArrayRegion (ctx->javaEnv, array, 0, ah->size, intArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetIntArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, intArray));
         TRACE(printf ("Copied out Int array size %d @ offset = %d\n", ah->size, ctx->offset));
-        
+
         os_freea (intArray);
     }
     return result;
@@ -1172,16 +1209,16 @@ saj_cfsoArrInt (
     jintArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrInt (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1196,6 +1233,7 @@ saj_cfuoArrInt (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1205,14 +1243,20 @@ saj_cfuoArrInt (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooArrInt (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1239,7 +1283,7 @@ saj_cfooArrLong (
     src = (c_longlong *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jlongArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewLongArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewLongArray (%d) = 0x%x\n", ah->size, array));
@@ -1250,20 +1294,20 @@ saj_cfooArrLong (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         longArray = os_alloca (sizeof (jlong) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
         	longArray[i] = src[i];
         	TRACE(printf ("%lld;", src[i]));
         }
         (*(ctx->javaEnv))->SetLongArrayRegion (ctx->javaEnv, array, 0, ah->size, longArray);
         result = saj_copyGetStatus(ctx);
-    
+
         TRACE(printf ("JNI: SetLongArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, longArray));
         TRACE(printf ("Copied out Long array size %d @ offset = %d\n", ah->size, ctx->offset));
-        
+
         os_freea (longArray);
     }
     return result;
@@ -1284,12 +1328,12 @@ saj_cfsoArrLong (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrLong (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1304,6 +1348,7 @@ saj_cfuoArrLong (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1311,16 +1356,22 @@ saj_cfuoArrLong (
     jlongArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooArrLong (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1348,7 +1399,7 @@ saj_cfooArrFloat (
     src = (c_float *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jfloatArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewFloatArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewFloatArray (%d) = 0x%x\n", ah->size, array));
@@ -1359,11 +1410,11 @@ saj_cfooArrFloat (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         floatArray = (*(ctx->javaEnv))->GetFloatArrayElements(ctx->javaEnv, array, &isCopy);
         result = saj_copyGetStatus(ctx);
-        
+
         if(result == SAJ_COPYRESULT_OK){
             memcpy(floatArray, src, (ah->size * sizeof(jfloat)));
             (*(ctx->javaEnv))->ReleaseFloatArrayElements(ctx->javaEnv, array, floatArray, 0);
@@ -1389,12 +1440,12 @@ saj_cfsoArrFloat (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrFloat (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1409,6 +1460,7 @@ saj_cfuoArrFloat (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1416,16 +1468,22 @@ saj_cfuoArrFloat (
     jfloatArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooArrFloat (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1452,7 +1510,7 @@ saj_cfooArrDouble (
     src = (c_double *)srcArray;
     ah = (sajCopyArray *)ch;
     array = (jdoubleArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewDoubleArray (ctx->javaEnv, ah->size);
         TRACE(printf ("JNI: NewDoubleArray (%d) = 0x%x\n", ah->size, array));
@@ -1463,20 +1521,20 @@ saj_cfooArrDouble (
         *objectArray = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         doubleArray = os_alloca (sizeof (jdouble) * ah->size);
-        
+
         for (i = 0; i < ah->size; i++) {
             doubleArray[i] = src[i];
             TRACE(printf ("%f;", src[i]));
         }
         (*(ctx->javaEnv))->SetDoubleArrayRegion (ctx->javaEnv, array, 0, ah->size, doubleArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetDoubleArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, ah->size, doubleArray));
         TRACE(printf ("Copied out Double array size %d @ offset = %d\n", ah->size, ctx->offset));
-        
+
         os_freea (doubleArray);
     }
     return result;
@@ -1497,12 +1555,12 @@ saj_cfsoArrDouble (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooArrDouble (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1517,6 +1575,7 @@ saj_cfuoArrDouble (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1526,15 +1585,21 @@ saj_cfuoArrDouble (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
-    
+
         arr = array;
         result = saj_cfooArrDouble (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1564,7 +1629,7 @@ saj_cfooSeqBoolean (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jbooleanArray)(*objectArray);
-    
+
     if (array == NULL){
 	    array = (*(ctx->javaEnv))->NewBooleanArray (ctx->javaEnv, seqLen);
 	    TRACE(printf ("JNI: NewBooleanArray (%d) = 0x%x\n", seqLen, array));
@@ -1575,7 +1640,7 @@ saj_cfooSeqBoolean (
 	    *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         if(seqLen > 0)
         {
@@ -1587,10 +1652,10 @@ saj_cfooSeqBoolean (
             }
             (*(ctx->javaEnv))->SetBooleanArrayRegion (ctx->javaEnv, array, 0, seqLen, booleanArray);
             result = saj_copyGetStatus(ctx);
-            
+
             TRACE(printf ("JNI: SetBooleanArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, booleanArray));
             TRACE(printf ("Copied out Boolean sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-            
+
             os_freea (booleanArray);
         }
     }
@@ -1608,16 +1673,16 @@ saj_cfsoSeqBoolean (
     jbooleanArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqBoolean (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1632,6 +1697,7 @@ saj_cfuoSeqBoolean (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1639,16 +1705,22 @@ saj_cfuoSeqBoolean (
     jbooleanArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqBoolean (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1677,7 +1749,7 @@ saj_cfooSeqByte (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jbyteArray)(*objectArray);
-    
+
     if (array == NULL) {
 	    array = (*(ctx->javaEnv))->NewByteArray (ctx->javaEnv, seqLen);
 	    TRACE(printf ("JNI: NewByteArray (%d) = 0x%x\n", seqLen, array));
@@ -1686,22 +1758,22 @@ saj_cfooSeqByte (
 	    array = (*(ctx->javaEnv))->NewByteArray (ctx->javaEnv, seqLen);
 	    TRACE(printf ("JNI: NewByteArray (%d) = 0x%x\n", seqLen, array));
 	    *objectArray = (jobject)array;
-    }  
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if ((result == SAJ_COPYRESULT_OK) && (seqLen > 0)) {
         byteArray = os_alloca (sizeof (jbyte) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             byteArray[i] = (*src)[i];
             TRACE(printf ("%d;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetByteArrayRegion (ctx->javaEnv, array, 0, seqLen, byteArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetByteArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, byteArray));
         TRACE(printf ("Copied out Byte sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (byteArray);
     }
     return result;
@@ -1718,16 +1790,16 @@ saj_cfsoSeqByte (
     jbyteArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqByte (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1742,6 +1814,7 @@ saj_cfuoSeqByte (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1751,14 +1824,20 @@ saj_cfuoSeqByte (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqByte (ch, &array, src, ctx);
-       
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1787,7 +1866,7 @@ saj_cfooSeqChar (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jcharArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewCharArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewCharArray (%d) = 0x%x\n", seqLen, array));
@@ -1798,20 +1877,20 @@ saj_cfooSeqChar (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0 )){
         charArray = os_alloca (sizeof (jchar) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             charArray[i] = (*src)[i];
             TRACE(printf ("%d;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetCharArrayRegion (ctx->javaEnv, array, 0, seqLen, charArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetCharArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, charArray));
         TRACE(printf ("Copied out Char sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (charArray);
     }
     return result;
@@ -1837,7 +1916,7 @@ saj_cfsoSeqChar (
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqChar (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1852,6 +1931,7 @@ saj_cfuoSeqChar (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1859,16 +1939,22 @@ saj_cfuoSeqChar (
     jcharArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqChar (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -1897,7 +1983,7 @@ saj_cfooSeqShort (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jshortArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewShortArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewShortArray (%d) = 0x%x\n", seqLen, array));
@@ -1908,20 +1994,20 @@ saj_cfooSeqShort (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0 )){
         shortArray = os_alloca (sizeof (jshort) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             shortArray[i] = (*src)[i];
             TRACE(printf ("%d;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetShortArrayRegion (ctx->javaEnv, array, 0, seqLen, shortArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetShortArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, shortArray));
         TRACE(printf ("Copied out Short sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (shortArray);
     }
     return result;
@@ -1942,12 +2028,12 @@ saj_cfsoSeqShort (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqShort (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -1962,6 +2048,7 @@ saj_cfuoSeqShort (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -1971,14 +2058,20 @@ saj_cfuoSeqShort (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqShort (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -2007,7 +2100,7 @@ saj_cfooSeqInt (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jintArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewIntArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewIntArray (%d) = 0x%x\n", seqLen, array));
@@ -2018,10 +2111,10 @@ saj_cfooSeqInt (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0)){
         intArray = os_alloca (sizeof (jint) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             intArray[i] = (*src)[i];
             TRACE(printf ("%d;", (*src)[i]));
@@ -2047,16 +2140,16 @@ saj_cfsoSeqInt (
     jintArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqInt (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -2071,6 +2164,7 @@ saj_cfuoSeqInt (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2078,15 +2172,21 @@ saj_cfuoSeqInt (
     jintArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
     arr = array;
     result = saj_cfooSeqInt (ch, &array, src, ctx);
-    
+
     if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
         (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
         result = saj_copyGetStatus(ctx);
@@ -2114,7 +2214,7 @@ saj_cfooSeqLong (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jlongArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewLongArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewLongArray (%d) = 0x%x\n", seqLen, array));
@@ -2125,20 +2225,20 @@ saj_cfooSeqLong (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0)){
         longArray = os_alloca (sizeof (jlong) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             longArray[i] = (*src)[i];
             TRACE(printf ("%lld;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetLongArrayRegion (ctx->javaEnv, array, 0, seqLen, longArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetLongArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, longArray));
         TRACE(printf ("Copied out Long sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (longArray);
     }
     return result;
@@ -2155,20 +2255,20 @@ saj_cfsoSeqLong (
     jlongArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqLong (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
-            
+
             TRACE(printf ("JNI: SetObjectField (0x%x, %d, 0x%x)\n", javaObject, javaFID, array));
         }
     }
@@ -2180,6 +2280,7 @@ saj_cfuoSeqLong (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2189,15 +2290,21 @@ saj_cfuoSeqLong (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
-        
+
         arr = array;
         result = saj_cfooSeqLong (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -2227,7 +2334,7 @@ saj_cfooSeqFloat (
     seqLen = c_arraySize ((c_array)*src);
 
     array = (jfloatArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewFloatArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewFloatArray (%d) = 0x%x\n", seqLen, array));
@@ -2238,20 +2345,20 @@ saj_cfooSeqFloat (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0)){
         floatArray = os_alloca (sizeof (jfloat) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             floatArray[i] = (*src)[i];
             TRACE(printf ("%f;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetFloatArrayRegion (ctx->javaEnv, array, 0, seqLen, floatArray);
         result = saj_copyGetStatus(ctx);
-    
+
         TRACE(printf ("JNI: SetFloatArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, floatArray));
         TRACE(printf ("Copied out Float sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (floatArray);
     }
     return result;
@@ -2272,13 +2379,13 @@ saj_cfsoSeqFloat (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
-        
+
         arr = array;
         result = saj_cfooSeqFloat (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -2293,6 +2400,7 @@ saj_cfuoSeqFloat (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2300,16 +2408,22 @@ saj_cfuoSeqFloat (
     jfloatArray arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqFloat (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -2338,7 +2452,7 @@ saj_cfooSeqDouble (
     sh = (sajCopySequence *)ch;
     seqLen = c_arraySize ((c_array)*src);
     array = (jdoubleArray)(*objectArray);
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewDoubleArray (ctx->javaEnv, seqLen);
         TRACE(printf ("JNI: NewDoubleArray (%d) = 0x%x\n", seqLen, array));
@@ -2349,20 +2463,20 @@ saj_cfooSeqDouble (
         *objectArray = (jobject)array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if((result == SAJ_COPYRESULT_OK) && (seqLen > 0)){
         doubleArray = os_alloca (sizeof (jdouble) * seqLen);
-        
+
         for (i = 0; i < seqLen; i++) {
             doubleArray[i] = (*src)[i];
             TRACE(printf ("%f;", (*src)[i]));
         }
         (*(ctx->javaEnv))->SetDoubleArrayRegion (ctx->javaEnv, array, 0, seqLen, doubleArray);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: SetDoubleArrayRegion (0x%x, %d, %d, 0x%x)\n", array, 0, seqLen, doubleArray));
         TRACE(printf ("Copied out Double sequence size %d @ offset = %d\n", seqLen, ctx->offset));
-        
+
         os_freea (doubleArray);
     }
     return result;
@@ -2383,12 +2497,12 @@ saj_cfsoSeqDouble (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         arr = array;
         result = saj_cfooSeqDouble (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
@@ -2403,6 +2517,7 @@ saj_cfuoSeqDouble (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2412,14 +2527,20 @@ saj_cfuoSeqDouble (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        array = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        array = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, array));
         arr = array;
         result = saj_cfooSeqDouble (ch, &array, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, array);
             result = saj_copyGetStatus(ctx);
@@ -2448,7 +2569,7 @@ saj_cfooStruct (
     csm = sajCopyStructMemberObject (ch);
     context.javaEnv = ctx->javaEnv;
     jObject = *structObject;
-    
+
     if (jObject == NULL) {
         /* Create new object */
         jObject = (*(ctx->javaEnv))->AllocObject (ctx->javaEnv, sh->structClass);
@@ -2459,7 +2580,7 @@ saj_cfooStruct (
     } else {
         result = SAJ_COPYRESULT_OK;
     }
-    
+
     for (mi = 0; (mi < sh->nrOfMembers) && (result == SAJ_COPYRESULT_OK); mi++) {
         context.offset = csm->memberOffset;
         ch = sajCopyStructMemberDescription (csm);
@@ -2467,7 +2588,7 @@ saj_cfooStruct (
         csm = (sajCopyStructMember *)sajCopyHeaderNextObject (ch);
     }
     TRACE(printf ("Copied out Struct @ offset = %d\n", ctx->offset));
-    
+
     return result;
 }
 
@@ -2486,12 +2607,12 @@ saj_cfsoStruct (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     structObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, structObject));
         so = structObject;
         result = saj_cfooStruct (ch, &structObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (so != structObject)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, structObject);
             result = saj_copyGetStatus(ctx);
@@ -2506,6 +2627,7 @@ saj_cfuoStruct (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2515,14 +2637,20 @@ saj_cfuoStruct (
     saj_copyResult result;
 
     src = (void *)ctx->src;
-    structObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        structObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        structObject = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, structObject));
         so = structObject;
         result = saj_cfooStruct (ch, &structObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (so != structObject)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, structObject);
             result = saj_copyGetStatus(ctx);
@@ -2556,7 +2684,7 @@ saj_cfooUnion (
         /* Create new object */
         *unionObject = (*(ctx->javaEnv))->AllocObject (ctx->javaEnv, cuh->unionClass);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: NewObject (0x%x, %d) = 0x%x\n", cuh->unionClass, cuh->constrID, *unionObject));
     } else {
         result = SAJ_COPYRESULT_OK;
@@ -2566,7 +2694,7 @@ saj_cfooUnion (
         case M_ENUMERATION:
     	{
     	    c_long *src;
-    
+
     	    src = (c_long *)srcUnion;
     	    discrVal = (unsigned long long)*src;
     	}
@@ -2576,7 +2704,7 @@ saj_cfooUnion (
     	case P_BOOLEAN:
     	    {
     	        c_bool *src;
-    
+
     	        src = (c_bool *)srcUnion;
     	        discrVal = (unsigned long long)*src;
     	    }
@@ -2592,7 +2720,7 @@ saj_cfooUnion (
     	case P_USHORT:
     	    {
     	        c_short *src;
-    
+
     	        src = (c_short *)srcUnion;
     	        discrVal = (unsigned long long)*src;
     	    }
@@ -2601,7 +2729,7 @@ saj_cfooUnion (
     	case P_ULONG:
     	    {
     	        c_long *src;
-    
+
     	        src = (c_long *)srcUnion;
     	        discrVal = (unsigned long long)*src;
     	    }
@@ -2610,7 +2738,7 @@ saj_cfooUnion (
     	case P_ULONGLONG:
     	    {
     	        c_longlong *src;
-    
+
     	        src = (c_longlong *)srcUnion;
     	        discrVal = (unsigned long long)*src;
     	    }
@@ -2628,20 +2756,20 @@ saj_cfooUnion (
             result = SAJ_COPYRESULT_BAD_PARAMETER;
             assert (0);
         }
-        
+
         srcUnion = (void *)((PA_ADDRCAST)srcUnion + cuh->casesOffset);
         context.javaEnv = ctx->javaEnv;
         context.src = srcUnion;
         context.offset = 0;
         csl = sajCopyUnionLabelsObject (cuh);
         ci = 0;
-        
+
         while ((result == SAJ_COPYRESULT_OK) && (ci < cuh->nrOfCases)) {
         	unsigned int label;
         	sajCopyUnionLabel *lab;
-        
+
         	lab = sajCopyUnionLabelObject (csl);
-        	
+
         	if (csl->labelCount) {
         	    for (label = 0; label < csl->labelCount; label++) {
         	        if (lab->labelVal == discrVal) {
@@ -2654,9 +2782,9 @@ saj_cfooUnion (
         	}
         	unionCase = (sajCopyUnionCase *)lab;
         	ch = (sajCopyHeader *)sajCopyUnionCaseDescription (unionCase);
-        	
+
         	if (active_case) {
-        	    result = coFromUnion[ch->copyType] (ch, *unionObject, unionCase->caseID, unionCase->setterID, &context);
+        	    result = coFromUnion[ch->copyType] (ch, *unionObject, unionCase->caseID, unionCase->getterID, unionCase->setterID, &context);
         	    ci = cuh->nrOfCases;
         	} else {
         	    ci++;
@@ -2667,34 +2795,35 @@ saj_cfooUnion (
         	if (defaultLabel) {
         	    unionCase = (sajCopyUnionCase *)sajCopyUnionLabelObject (defaultLabel);
         	    ch = sajCopyUnionCaseDescription (unionCase);
-        	    result = coFromUnion[ch->copyType] (ch, *unionObject, unionCase->caseID, unionCase->setterID, &context);
+        	    result = coFromUnion[ch->copyType] (ch, *unionObject, unionCase->caseID, unionCase->getterID, unionCase->setterID, &context);
         	} else {
         	    jmethodID __defaultID;
-        
+
         	    __defaultID = (*(ctx->javaEnv))->GetMethodID (ctx->javaEnv, cuh->unionClass, "__default", "()V");
         	    result = saj_copyGetStatus(ctx);
-        	    
+
         	    if(result == SAJ_COPYRESULT_OK){
                     TRACE(printf ("JNI: GetMethodID (0x%x, \"__default\", \"()V\") = %d\n", *unionObject, __defaultID));
                     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d)\n", *unionObject, __defaultID));
-                    
+
                     (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, *unionObject, __defaultID);
                     result = saj_copyGetStatus(ctx);
         	    }
         	}
         }
-        
+#if 0
+    /* this is useless code? ES - june 17th 2009, if you encounter this after july 1st 2009, remove everything between the #if 0 */
         if(result == SAJ_COPYRESULT_OK){
             switch (c_baseObject(cuh->discrType)->kind) {
             case M_ENUMERATION:
         	{
         	    jint enumVal = (jint)discrVal;
         	    jobject enumObject;
-    
+
                 enumObject = (*(ctx->javaEnv))->CallStaticObjectMethod (ctx->javaEnv, cuh->discrClass, cuh->from_intID, enumVal);
                 result = saj_copyGetStatus(ctx);
                 TRACE(printf ("JNI: CallStaticObjectMethod (0x%x, %d, %d)\n", cuh->discrClass, cuh->from_intID, enumVal));
-                
+
                 if(result == SAJ_COPYRESULT_OK){
             	    (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, *unionObject, cuh->discrID, enumObject);
             	    result = saj_copyGetStatus(ctx);
@@ -2707,7 +2836,7 @@ saj_cfooUnion (
         	case P_BOOLEAN:
         	    {
         		jboolean d = (jboolean)discrVal;
-        
+
     	        (*(ctx->javaEnv))->SetBooleanField (ctx->javaEnv, *unionObject, cuh->discrID, d);
     	        result = saj_copyGetStatus(ctx);
     	        TRACE(printf ("JNI: SetBooleanField (0x%x, %d, %d)\n", *unionObject, cuh->discrID, d));
@@ -2716,7 +2845,7 @@ saj_cfooUnion (
         	case P_CHAR:
         	    {
         		jchar d = (jchar)discrVal;
-        
+
     	        (*(ctx->javaEnv))->SetCharField (ctx->javaEnv, *unionObject, cuh->discrID, d);
     	        result = saj_copyGetStatus(ctx);
     	        TRACE(printf ("JNI: SetCharField (0x%x, %d, %d)\n", *unionObject, cuh->discrID, d));
@@ -2726,7 +2855,7 @@ saj_cfooUnion (
         	case P_USHORT:
         	    {
         		jshort d = (jshort)discrVal;
-        
+
     	        (*(ctx->javaEnv))->SetShortField (ctx->javaEnv, *unionObject, cuh->discrID, d);
     	        result = saj_copyGetStatus(ctx);
     	        TRACE(printf ("JNI: SetShortField (0x%x, %d, %d)\n", *unionObject, cuh->discrID, d));
@@ -2736,7 +2865,7 @@ saj_cfooUnion (
         	case P_ULONG:
         	    {
         		jint d = (jint)discrVal;
-        
+
     	        (*(ctx->javaEnv))->SetIntField (ctx->javaEnv, *unionObject, cuh->discrID, d);
     	        result = saj_copyGetStatus(ctx);
     	        TRACE(printf ("JNI: SetIntField (0x%x, %d, %d)\n", *unionObject, cuh->discrID, d));
@@ -2746,7 +2875,7 @@ saj_cfooUnion (
         	case P_ULONGLONG:
         	    {
         		jlong d = (jlong)discrVal;
-        
+
     	        (*(ctx->javaEnv))->SetLongField (ctx->javaEnv, *unionObject, cuh->discrID, d);
     	        result = saj_copyGetStatus(ctx);
     	        TRACE(printf ("JNI: SetIntField (0x%x, %d, %lld)\n", *unionObject, cuh->discrID, d));
@@ -2766,6 +2895,7 @@ saj_cfooUnion (
                 assert (0);
             }
         }
+#endif
         TRACE(printf ("Copied out Union\n"));
     }
     return result;
@@ -2782,16 +2912,16 @@ saj_cfsoUnion (
     jobject uo;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     unionObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, unionObject));
         uo = unionObject;
         result = saj_cfooUnion (ch, &unionObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (uo != unionObject)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, unionObject);
             result = saj_copyGetStatus(ctx);
@@ -2806,6 +2936,7 @@ saj_cfuoUnion (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2815,14 +2946,20 @@ saj_cfuoUnion (
     saj_copyResult result;
 
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
-    unionObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        unionObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        unionObject = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, unionObject));
         uo = unionObject;
         result = saj_cfooUnion (ch, &unionObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (uo != unionObject)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, unionObject);
             result = saj_copyGetStatus(ctx);
@@ -2842,13 +2979,13 @@ saj_cfooString (
 {
     c_string *src;
     saj_copyResult result;
-    
+
     src = (c_string *)srcString;
-    
+
     if(src){
         *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
         result = saj_copyGetStatus(ctx);
-        
+
         TRACE(printf ("JNI: NewStringUTF (\"%s\")\n", *src));
         TRACE(printf ("Copied out string = %s @ offset = %d\n", *src, ctx->offset));
     } else {
@@ -2869,10 +3006,10 @@ saj_cfsoString (
     c_string *src;
     jstring str = NULL;
     saj_copyResult result;
-    
+
     src = (c_string *)((PA_ADDRCAST)ctx->src + ctx->offset);
     result = saj_cfooString (ch, &str, src, ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, str);
         result = saj_copyGetStatus(ctx);
@@ -2886,16 +3023,17 @@ saj_cfuoString (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
     c_string *src;
     jstring str = NULL;
     saj_copyResult result;
-    
+
     src = (c_string *)ctx->src;
     result = saj_cfooString (ch, &str, src, ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, str);
         result = saj_copyGetStatus(ctx);
@@ -2913,9 +3051,9 @@ saj_cfooBString (
 {
     c_string *src;
     saj_copyResult result;
-    
+
     src = (c_string *)srcString;
-    
+
     if(src){
         *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
         result = saj_copyGetStatus(ctx);
@@ -2940,10 +3078,10 @@ saj_cfsoBString (
     c_string *src;
     jstring str = NULL;
     saj_copyResult result;
-    
+
     src = (c_string *)((PA_ADDRCAST)ctx->src + ctx->offset);
     result = saj_cfooString (ch, &str, src, ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, str);
         result = saj_copyGetStatus(ctx);
@@ -2957,6 +3095,7 @@ saj_cfuoBString (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -2966,7 +3105,7 @@ saj_cfuoBString (
 
     src = (c_string *)ctx->src;
     result = saj_cfooString (ch, &str, src, ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, str);
         result = saj_copyGetStatus(ctx);
@@ -2995,7 +3134,7 @@ saj_cfooArray (
     ah = (sajCopyObjectArray *)ch;
     aech = sajCopyObjectArrayDescription (ah);
     array = *arrayObject;
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewObjectArray (ctx->javaEnv, ah->arraySize, ah->arrayClass, NULL);
         TRACE(printf ("JNI: NewObjectArray (%d, 0x%x) = 0x%x\n", ah->arraySize, ah->arrayClass, array));
@@ -3006,15 +3145,15 @@ saj_cfooArray (
         *arrayObject = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     for (i = 0; (i < ah->arraySize) && (result == SAJ_COPYRESULT_OK); i++) {
         element = (*(ctx->javaEnv))->GetObjectArrayElement (ctx->javaEnv, array, i);
         result = saj_copyGetStatus(ctx);
         TRACE(printf ("JNI: GetObjectArrayElement (0x%x, %d) = 0x%x\n", array, i, element));
-        
+
         if(result == SAJ_COPYRESULT_OK){
             result = coFromArray[aech->copyType] (aech, &element, src, ctx);
-            
+
             if(result == SAJ_COPYRESULT_OK){
                 (*(ctx->javaEnv))->SetObjectArrayElement (ctx->javaEnv, array, i, element);
                 result = saj_copyGetStatus(ctx);
@@ -3024,7 +3163,7 @@ saj_cfooArray (
         src = (void *)((PA_ADDRCAST)src + ah->typeSize);
     }
     TRACE(printf ("Copied out Object array size %d @ offset = %d\n", ah->typeSize, ctx->offset));
-    
+
     return result;
 }
 
@@ -3039,16 +3178,16 @@ saj_cfsoArray (
     jobject arr;
     void *src;
     saj_copyResult result;
-    
+
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, arrayObject));
         arr = arrayObject;
         result = saj_cfooArray (ch, &arrayObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, arrayObject);
             result = saj_copyGetStatus(ctx);
@@ -3063,6 +3202,7 @@ saj_cfuoArray (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -3072,14 +3212,20 @@ saj_cfuoArray (
     saj_copyResult result;
 
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
-    arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        arrayObject = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, arrayObject));
         arr = arrayObject;
         result = saj_cfooArray (ch, &arrayObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, arrayObject);
             result = saj_copyGetStatus(ctx);
@@ -3113,7 +3259,7 @@ saj_cfooSequence (
     sh = (sajCopyObjectSequence *)ch;
     sech = sajCopyObjectSequenceDescription (sh);
     array = *seqObject;
-    
+
     if (array == NULL) {
         array = (*(ctx->javaEnv))->NewObjectArray (ctx->javaEnv, seqLen, sh->seqClass, NULL);
         TRACE(printf ("JNI: NewObjectArray (%d, 0x%x) = 0x%x\n", seqLen, sh->seqClass, array));
@@ -3124,16 +3270,16 @@ saj_cfooSequence (
         *seqObject = array;
     }
     result = saj_copyGetStatus(ctx);
-    
+
     if(seqLen > 0){
         for (i = 0;(result == SAJ_COPYRESULT_OK) && (i < seqLen); i++) {
             element = (*(ctx->javaEnv))->GetObjectArrayElement (ctx->javaEnv, array, i);
             result = saj_copyGetStatus(ctx);
-            
+
             if(result == SAJ_COPYRESULT_OK){
                 TRACE(printf ("JNI: GetObjectArrayElement (0x%x, %d) = 0x%x\n", array, i, element));
                 result = coFromArray[sech->copyType] (sech, &element, src, ctx);
-                
+
                 if(result == SAJ_COPYRESULT_OK){
                     (*(ctx->javaEnv))->SetObjectArrayElement (ctx->javaEnv, array, i, element);
                     result = saj_copyGetStatus(ctx);
@@ -3162,12 +3308,12 @@ saj_cfsoSequence (
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
     arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, arrayObject));
         arr = arrayObject;
         result = saj_cfooSequence (ch, &arrayObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, arrayObject);
             result = saj_copyGetStatus(ctx);
@@ -3182,6 +3328,7 @@ saj_cfuoSequence (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -3191,14 +3338,20 @@ saj_cfuoSequence (
     saj_copyResult result;
 
     src = (void *)((PA_ADDRCAST)ctx->src + ctx->offset);
-    arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    if(caseID)
+    {
+        arrayObject = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, caseID);
+    } else
+    {
+        arrayObject = (*(ctx->javaEnv))->CallObjectMethod(ctx->javaEnv, javaObject, getterID);
+    }
     result = saj_copyGetStatus(ctx);
-    
+
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, caseID, arrayObject));
         arr = arrayObject;
         result = saj_cfooSequence (ch, &arrayObject, src, ctx);
-        
+
         if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
             (*(ctx->javaEnv))->CallVoidMethod (ctx->javaEnv, javaObject, setterID, arrayObject);
             result = saj_copyGetStatus(ctx);
@@ -3218,11 +3371,11 @@ saj_cfooReference (
 {
     sajCopyReference *ref;
     sajCopyHeader *nch;
-    
+
     ref = (sajCopyReference *)ch;
     nch = sajCopyReferencedObject (ref);
     return coFromArray[nch->copyType] (nch, object, dst, ctx);
-    
+
 }
 
 STATIC saj_copyResult
@@ -3245,6 +3398,7 @@ saj_cfuoReference (
     sajCopyHeader *ch,
     jobject javaObject,
     jfieldID caseID,
+    jmethodID getterID,
     jmethodID setterID,
     saj_context *ctx)
 {
@@ -3253,7 +3407,7 @@ saj_cfuoReference (
 
     ref = (sajCopyReference *)ch;
     nch = sajCopyReferencedObject (ref);
-    return coFromUnion[nch->copyType] (nch, javaObject, caseID, setterID, ctx);
+    return coFromUnion[nch->copyType] (nch, javaObject, caseID, getterID, setterID, ctx);
 }
 
 void
@@ -3265,16 +3419,16 @@ saj_copyOutStruct (
     saj_dstInfo dstInfo = (saj_dstInfo)dst;
     sajCopyHeader *ch;
     saj_copyResult result;
-    
+
     ch = saj_copyCacheCache(dstInfo->copyProgram);
     context.src = src;
     context.offset = 0;
     context.javaEnv = dstInfo->javaEnv;
     result = coFromArray[ch->copyType] (ch, &dstInfo->javaObject, src, &context);
-    
+
     if(result != SAJ_COPYRESULT_OK){
         (*(dstInfo->javaEnv))->ExceptionDescribe(dstInfo->javaEnv);
     }
-    
+
     return;
 }

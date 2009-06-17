@@ -5,27 +5,27 @@ ospl start
 BLOKSIZE=100
 BLOKCOUNT=100
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar pong PongRead PongWrite&
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar pong PongRead PongWrite&
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpssaj.jar ping 1 10 t PongRead PongWrite 
+java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping 1 10 t PongRead PongWrite
 
 sleep 4
 

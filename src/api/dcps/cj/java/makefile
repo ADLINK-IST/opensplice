@@ -1,31 +1,23 @@
-JAR_MODULE	 = dcpscj.jar
-JAR_LOCATION = $(OSPL_HOME)
-JPACKAGES	 = DDS org/opensplice/dds/dcps
-#TODO REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-JACORB_HOME  = /work/emiel/JacORB/v2.3.0/i686.Linux
+link: precompile
 
-link: jar
-jar: precompile
-
-#step 1: Copy contents of saj/code directory to cj/code directory
-#step 2: invoke jacorb to generate the builtintopics idl. This will overwrite any existing files in the code/ directory
-#step 3: make link target
+#step 1: Copy contents of saj/java/code directory to cj/java/bld/$SPLICE_TARGET/code directory
+#step 2: Copy the makefile_cj to /bld/$SPLICE_TARGET directory and rename it to makefile
+#step 3: invoke jacorb to generate the builtintopics idl. This will overwrite any existing files in the cj/java/bld/$SPLICE_TARGET/code/ directory
+#step 4: go to the bld/$SPLICE_TARGET directory and invoke make link there, this will compile all java files and generate the jar file.
 precompile:
-	mkdir -p code
-	cp -r ../../saj/java/code/* code/
-	java -classpath $(JACORB_HOME)/lib/idl.jar:$(JACORB_HOME)/lib/logkit-1.2.jar:$(CLASSPATH) org.jacorb.idl.parser -d code -forceOverwrite code/dds_builtinTopics.idl
-
-
-#old command:	$(JACORB_HOME)/bin/idl -d code -forceOverwrite code/dds_builtinTopics.idl
+	mkdir -p bld/$(SPLICE_TARGET)/code
+	cp -r ../../saj/java/code/* bld/$(SPLICE_TARGET)/code/
+	cp -r makefile_cj bld/$(SPLICE_TARGET)/makefile
+	java -classpath $(JACORB_HOME)/lib/idl.jar:$(JACORB_HOME)/lib/logkit-1.2.jar:$(CLASSPATH) org.jacorb.idl.parser -d bld/$(SPLICE_TARGET)/code -forceOverwrite  bld/$(SPLICE_TARGET)/code/dds_builtinTopics.idl
+	(cd bld/$(SPLICE_TARGET); make link)
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
 analyse:
-	@$(ANALYSE) bld/$(SPLICE_TARGET) code
+	@$(ANALYSE) bld/$(SPLICE_TARGET)
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE)
-	@rm -rf code/*
 
 
 

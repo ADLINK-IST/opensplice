@@ -18,13 +18,13 @@ java -classpath $JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/logkit-1.2.jar:$CLASSP
 # Compile generated java code
 #
 echo "Compile generated Java classes"
-javac -classpath .:$OSPL_HOME/jar/dcpssaj.jar -d .. pingpong/*.java
+javac -classpath .:$OSPL_HOME/jar/dcpscj.jar -d .. pingpong/*.java
 
 #
 # Compile application java code
 #
 echo "Compile application Java classes"
 cd ..
-javac -classpath .:$OSPL_HOME/jar/dcpssaj.jar -d . ../*.java
+javac -classpath .:$OSPL_HOME/jar/dcpscj.jar -d . ../*.java
 
 cd ..
