@@ -194,6 +194,9 @@ installer_setup ()
     SCRIPT_NAME="$5"
     SOURCE_ENV="$6"
     GETLIC_INFO_NAME="$7"
+
+    # set SOURCE_TARGET_SHORT to be used in bitrock 
+    SOURCE_TARGET_SHORT=`expr "${SOURCE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     
     if [ "${SOURCE_ENV}" = "-release" ]
     then
@@ -211,7 +214,7 @@ installer_setup ()
     fi
     
     echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
-    
+	
     echo Release is ${PACKAGE_VERSION}
     echo Date is ${PACKAGE_DATE}
     
