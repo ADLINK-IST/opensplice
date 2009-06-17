@@ -17,3 +17,5 @@ CFLAGS_DEBUG     = -Z7 -D_TYPECHECK_ -D_DEBUG -MDd -DE_DEBUG
 LDFLAGS          += -DEBUG -MANIFEST -NODEFAULTLIB:MSVCRT
 #Java compiler flags
 JCFLAGS          = -g
+#Csc compiler flags
+CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full

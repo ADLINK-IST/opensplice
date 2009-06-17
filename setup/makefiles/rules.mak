@@ -147,6 +147,7 @@ ODL_FILES	= $(notdir $(wildcard $(CODE_DIR)/*.odl))
 GCOV_FILES	:= $(notdir $(wildcard *.bb))
 JAVA_FILES	= $(wildcard $(addsuffix /*.java,$(addprefix code/,$(JPACKAGES))))
 CLASS_FILES = $(subst .java,.class,$(subst $(JCODE_DIR),$(CLASS_DIR),$(JAVA_FILES)))
+CS_FILES	= $(wildcard $(addsuffix /*.cs,$(addprefix $(CODE_DIR)/,$(CS_NAMESPCS))))
 
 ODL_H		:= $(addsuffix .h,$(ODL_MODULES))
 ODL_C		:= $(addsuffix .c,$(ODL_MODULES))

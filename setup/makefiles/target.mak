@@ -41,7 +41,6 @@ ifdef TARGET_EXEC
 TARGET := $(EXEC_PREFIX)$(TARGET_EXEC)$(EXEC_POSTFIX)
 TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
 
-$(TARGET): $(OBJECTS)
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) -o $@
 else
@@ -52,6 +51,32 @@ ifneq (vxworks,$(findstring vxworks,$(SPLICE_TARGET))) # but not vxworks
 	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
 endif
 endif 
+endif
+
+ifdef TARGET_CSLIB
+TARGET := $(CSLIB_PREFIX)$(TARGET_CSLIB)$(CSLIB_POSTFIX)
+
+csc: $(TARGET)
+
+ifneq "$(CS_FILES)" ""
+TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
+
+$(TARGET): $(CS_FILES)
+	$(CSC) $(CSFLAGS) $(TARGET) $(CSTARGET_LIB) $(CS_FILES)
+endif
+endif
+
+ifdef TARGET_CSEXEC
+TARGET := $(CSEXEC_PREFIX)$(TARGET_CSEXEC)$(CSEXEC_POSTFIX)
+
+csc: $(TARGET)
+
+ifneq "$(CS_FILES)" ""
+TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
+
+$(TARGET): $(CS_FILES)
+	$(CSC) $(CSFLAGS) $(TARGET) $(CSTARGET_EXEC) $(CSLIBS) $(CS_FILES)
+endif
 endif
 
 TARGET_LINK_FILE ?= $(TARGET_LINK_DIR)/$(TARGET)
