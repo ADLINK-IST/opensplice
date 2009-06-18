@@ -156,7 +156,7 @@ static c_char *
 idl_valueFromLabelVal(
     idl_labelVal labelVal)
 {
-    static c_char labelName[100];
+    static c_char labelName[1000];
 
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {

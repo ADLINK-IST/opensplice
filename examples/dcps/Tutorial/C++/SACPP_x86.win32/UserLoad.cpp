@@ -30,6 +30,8 @@
 #include "CheckStatus.h"
 #include "ccpp_Chat.h"
 
+#include "Windows.h"
+
 using namespace DDS;
 using namespace Chat;
 
