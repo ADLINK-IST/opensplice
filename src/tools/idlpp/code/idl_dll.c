@@ -12,6 +12,7 @@
 #include "idl_dll.h"
 #include "c_stringSupport.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 static os_char *idl_dllMacro = (os_char *)0;
 static os_char *idl_dllHeader = (os_char *)0;

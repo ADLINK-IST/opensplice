@@ -69,4 +69,6 @@ ut_traceGetStream()
 #else
 /* empty module */
 
+typedef int ut_dummy;
+
 #endif /* UT__TRACE_ENABLED */
