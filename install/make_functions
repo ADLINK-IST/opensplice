@@ -657,7 +657,7 @@ install_hde_target ()
     printf "*     Copy documentation... "
     cp -r ${OSPL_HOME}/docs ${HDE_dir}
     # remove documentation for components that are not installed
-    if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes"]
+    if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes" ]
     then
         rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_Java.pdf
     fi
@@ -720,7 +720,6 @@ install_hde_target ()
         mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
         cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
         cp ${OSPL_HOME}/src/api/dcps/sacpp/include/*.h ${HDE_dir}/include/dcps/C++/SACPP
-        mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
         cp ${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h ${HDE_dir}/include/dcps/C++/SACPP/mapping
         cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
         cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/SACPP
@@ -1149,6 +1148,39 @@ install_hde_target ()
         echo "*           Ready"
         echo "*         Java Ready"
     fi
+    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" ]
+    then
+        echo "*         For Corba Java"
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB
+        echo "*           For PingPong... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/BUILD${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/RUN${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.txt" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        echo "*           Ready"
+        echo "*           For Tutorial... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial/chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/chatroom/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial/chatroom
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/BUILD${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/*.txt" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        echo "*           Ready"
+        echo "*         Java Ready"
+    fi
+
     echo "*       DCPS Ready"
     echo "*     Copy examples Ready"
 
