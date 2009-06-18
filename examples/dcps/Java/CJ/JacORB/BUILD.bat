@@ -9,7 +9,7 @@ ECHO "Compiling IDL with SPLICE IDL compiler"
 idlpp -l java -C ../../pingpong.idl
 
 ECHO "Compiling IDL with JacORB IDL compiler"
-java -classpath %JACORB_HOME%/lib/idl.jar:%JACORB_HOME%/lib/logkit-1.2.jar:%CLASSPATH% org.jacorb.idl.parser ../../pingpong.idl
+java -classpath %JACORB_HOME%/lib/idl.jar:%JACORB_HOME%/lib/logkit.jar:%CLASSPATH% org.jacorb.idl.parser ../../pingpong.idl
 
 ECHO "Compiling generated java code"
 javac -classpath ".;%OSPL_HOME%/jar/dcpscj.jar" -d .. pingpong\*.java
