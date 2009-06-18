@@ -778,7 +778,7 @@ main (
 
     if (dcpsTypes) {
         if ((idl_getLanguage() == IDL_LANG_CXX) && (idl_getCorbaMode() == IDL_MODE_STANDALONE)) {
-            char *fname[1024];
+            char fname[1024];
             /* add include path OSPL_TMPL_PATH as it contains the file dds_dcps.idl needed by
              * eOrb compiler.
              */
@@ -787,7 +787,7 @@ main (
                 idl_exit(1);
             }
             snprintf(fname, 1024, "%s/etc/idlpp",os_getenv("OSPL_HOME"));
-            includeDefinitions = c_iterAppend(includeDefinitions,fname);
+            includeDefinitions = c_iterAppend(includeDefinitions,os_strdup(fname));
         }
         preLoadSpliceDdsDefinitions();
         /* Reset the preprocessor to its initial state */
