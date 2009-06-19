@@ -9,6 +9,9 @@ ifeq ($(INCLUDE_JAVA),yes)
 ifeq ($(INCLUDE_API_DCPS_SAJ),yes)
 SUBSYSTEMS	+= saj
 endif # INCLUDE_API_DCPS_SAJ
+ifeq ($(INCLUDE_API_DCPS_CJ),yes)
+SUBSYSTEMS	+= cj
+endif # INCLUDE_API_DCPS_CJ
 endif # INCLUDE_JAVA
 ifeq ($(INCLUDE_CXX),yes)
 ifeq ($(INCLUDE_API_DCPS_CCPP),yes)
@@ -21,7 +24,7 @@ endif # INCLUDE_CXX
 endif # INCLUDE_API_DCPS_GAPI
 
 ifeq ($(INCLUDE_JAVA),yes)
-ifeq ($(INCLUDE_API_DCPS_JNI),yes)
+    ifeq ($(INCLUDE_API_DCPS_JNI),yes)
 SUBSYSTEMS	+= jni
 endif
 endif

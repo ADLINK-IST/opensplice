@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_genLanguageHelper.h"
@@ -25,7 +25,7 @@ static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
   /* IDL_LANG_UNKNOWN */        {0, 0, 0},
   /* IDL_LANG_C       */        {0, 0, 1},
   /* IDL_LANG_CXX     */        {0, 1, 1},
-  /* IDL_LANG_JAVA    */        {0, 0, 1}
+  /* IDL_LANG_JAVA    */        {0, 1, 1}
     };
 
 
@@ -70,7 +70,7 @@ idl_setCorbaMode(
 {
     corba_mode = mode;
 }
-                                                                                                         
+
 IDL_CORBA_MODE
 idl_getCorbaMode(void)
 {
