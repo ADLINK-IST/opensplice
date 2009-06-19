@@ -11,7 +11,7 @@
  */
 #include "cpp_malloc.h"
 
-char *copyofstr (char * str)
+char *copyofstr (const char * str)
 {
    char * cp;
 
@@ -28,7 +28,7 @@ char *copyofstr (char * str)
    return (cp);
 }
 
-char *copyofblk (char * blk, int len)
+char *copyofblk (const char * blk, int len)
 {
    char *cp;
 
