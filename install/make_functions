@@ -86,11 +86,14 @@ install_ascii_file()
     then
         if [ -d ${install_ascii_file_target_dir} ]
         then
-            if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" -a -f ${install_ascii_file_source_file} ]
+            if [ -f "${install_ascii_file_source_file}" ]
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
                 cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-                ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+                if [ -n ${TXTFILE_CONVERTER} ]
+                then
+                    ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
+                fi
                 echo "Ready"
             else
                 echo "* ##    file ${install_ascii_file_source_file} not found"
@@ -99,23 +102,33 @@ install_ascii_file()
             echo "* ##    ${install_ascii_file_target_dir} does not exist"
         fi
     elif [ -f ${install_ascii_file_source_file} ]
-       then
-           printf "*                 copy ${install_ascii_file_source_file} ... "
-           cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-           ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-           echo "Ready"
+    then
+        printf "*                 copy ${install_ascii_file_source_file} ... "
+        cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+        if [ -n ${TXTFILE_CONVERTER} ]
+        then
+            ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
+        fi
+        echo "Ready"
     fi
 }
 
 install_ascii_fileset()
 {
-    install_ascii_fileset_fileset=`ls -d $1`
+    install_ascii_fileset=$1
     install_ascii_fileset_target_dir=$2
-
+    
+    printf "*                 copy ${install_ascii_fileset} ... "
     for i in ${install_ascii_fileset_fileset}
     do
         install_ascii_file $i ${install_ascii_fileset_target_dir}
     done
+    if [ -n ${TXTFILE_CONVERTER} ]
+    then
+        ${TXTFILE_CONVERTER} $install_ascii_fileset_target_dir/* >& /dev/null
+    fi
+    echo "Ready"
+
 }
 
 buildTarGZ ()
@@ -141,7 +154,7 @@ make_hde_mirror_and_builder ()
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
     ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
-        "${PACKAGE_DATE}" "${ENV}" "echo done" "${SOURCE_TARGET_SHORT}"
+        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
@@ -238,7 +251,7 @@ set_envs ()
 
     BUILDER_TARGET=""
     SCRIPT_NAME=""
-    TXTFILE_CONVERTER="echo done"
+    TXTFILE_CONVERTER=""
     GETLIC_INFO_NAME=""
 
     if [ "${SOURCE_HOST_SHORT}" = "linux" ]
@@ -633,23 +646,23 @@ install_hde_target ()
     mkdir ${HDE_dir}/include/common
     mkdir ${HDE_dir}/include/common/include
 
-    cp ${OSPL_HOME}/src/abstraction/os/posix/include/os_*.h ${HDE_dir}/include/posix/include/
-    cp ${OSPL_HOME}/src/abstraction/os/common/include/os_*.h ${HDE_dir}/include/common/include/
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/posix/include/os_*.h" "${HDE_dir}/include/posix/include/"
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/common/include/os_*.h" "${HDE_dir}/include/common/include/"
 
     mkdir ${HDE_dir}/include/svr4
     mkdir ${HDE_dir}/include/svr4/include
 
     if [ -d "${OSPL_HOME}/src/abstraction/os/${os}/include/" ]
     then
-        cp ${OSPL_HOME}/src/abstraction/os/${os}/include/os_*.h ${HDE_dir}/include/include
+        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/${os}/include/os_*.h" "${HDE_dir}/include/include"
     fi
 
-    cp ${OSPL_HOME}/src/abstraction/os/include/os_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/abstraction/os/include/os.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/database/database/include/[cq]_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/kernel/include/v_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/user/include/u_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/include/kernelModule.h ${HDE_dir}/include/sys
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/database/database/include/[cq]_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/kernel/include/v_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/user/include/u_*.h" "${HDE_dir}/include/sys"
+    install_ascii_file "${OSPL_HOME}/src/include/kernelModule.h" "${HDE_dir}/include/sys"
 
     #
     # Copy documentation
@@ -685,23 +698,28 @@ install_hde_target ()
     then
         release=`ls -d ${OSPL_HOME}/src/api/dcps/ccpp/bld/${target}${source_env} 2>/dev/null`
         echo "*         For C++"
-        printf "*           For CCPP ... "
+        echo "*           For CCPP ... "
         mkdir ${HDE_dir}/include/dcps/C++
         mkdir ${HDE_dir}/include/dcps/C++/CCPP
 
         for ORB_TMPL in ${ORB_TMPLS}
         do
             mkdir ${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}
-            cp ${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.[ih]  ${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}
+            install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.[ih]" \
+              "${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}"
         done
 
-        cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}
+        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}"
 
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h ${HDE_dir}/include/dcps/C++/CCPP
-        echo "Ready"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        echo "*           CCPP Ready"
     fi
 
     #
@@ -711,21 +729,27 @@ install_hde_target ()
     then
         release=`ls -d ${OSPL_HOME}/src/api/dcps/sacpp/bld/${target}${source_env} 2>/dev/null`
         echo "*         For C++"
-        printf "*           For SACPP ... "
+        echo "*           For SACPP ... "
         if [ ! -d ${HDE_dir}/include/dcps/C++ ]
         then
             mkdir ${HDE_dir}/include/dcps/C++
         fi
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
         mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
-        cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/sacpp/include/*.h ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h ${HDE_dir}/include/dcps/C++/SACPP/mapping
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h ${HDE_dir}/include/dcps/C++/SACPP
-        echo "Ready"
+        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/*.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP/mapping"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        echo "*           SACPP  Ready"
         echo "*         C++ Ready"
     fi
 
@@ -735,11 +759,12 @@ install_hde_target ()
     if [ "${INCLUDE_API_DCPS_SAC}" = "yes" ]
     then
         echo "*         For C"
-        printf "*           For SAC ... "
+        echo "*           For SAC ... "
         mkdir ${HDE_dir}/include/dcps/C
         mkdir ${HDE_dir}/include/dcps/C/SAC
-        cp ${OSPL_HOME}/src/api/dcps/sac/include/*.h ${HDE_dir}/include/dcps/C/SAC
-        echo "Ready"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sac/include/*.h" \
+            "${HDE_dir}/include/dcps/C/SAC"
+        echo "*           SAC Ready"
         echo "*         C Ready"
     fi
     echo "*       DCPS Ready"
@@ -750,24 +775,25 @@ install_hde_target ()
     #
     if [ "${INCLUDE_API_DCPS_CCPP}" = "yes" ]
     then
-        printf "*     Copy custom CCPP support ... "
+        echo "*     Copy custom CCPP support ... "
         release=`ls -d ${OSPL_HOME}/src/api/dcps/ccpp 2>/dev/null`
         mkdir -p ${HDE_dir}/custom_lib
         mkdir -p ${HDE_dir}/custom_lib/ccpp
 
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/ccpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_fileset "${release}/idl/*.idl" "${HDE_dir}/custom_lib/ccpp"
 
         if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
-        then
-            cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp/makefile
+        then 
+            install_ascii_file "${release}/custom/makefile_$PLATFORM_EXT" \
+                "${HDE_dir}/custom_lib/ccpp" "makefile"
         fi
 
-        cp ${release}/custom/README ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/setup ${HDE_dir}/custom_lib/ccpp
-        cp ${OSPL_HOME}/setup/makefiles/orbdeps.mak ${HDE_dir}/custom_lib/ccpp
+        install_ascii_file "${release}/custom/README" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_file "${release}/custom/setup" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_file "${OSPL_HOME}/setup/makefiles/orbdeps.mak" "${HDE_dir}/custom_lib/ccpp"
 
-        echo "Ready"
+        echo "*     custom CCPP supportReady"
     fi
 
     #
@@ -775,25 +801,26 @@ install_hde_target ()
     #
     if [ "${INCLUDE_API_DCPS_SACPP}" = "yes" ]
     then
-        printf "*     Copy custom SACPP support ... "
+        echo "*     Copy custom SACPP support ... "
         mkdir -p ${HDE_dir}/custom_lib/sacpp
 
         # Code that can be re-used from CCPP.
         release=${OSPL_HOME}/src/api/dcps/ccpp
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
-        cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/sacpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/sacpp"
+        install_ascii_fileset "${release}/idl/*.idl" "${HDE_dir}/custom_lib/sacpp"
 
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/sacpp"
 
         if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
         then
-             cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
+             install_ascii_file "${release}/custom/makefile_${PLATFORM_EXT}" \
+                "${HDE_dir}/custom_lib/sacpp" "makefile"
         fi
-        cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
+        install_ascii_file "${release}/custom/README" "${HDE_dir}/custom_lib/sacpp"
 
-        echo "Ready"
+        echo "*     custom SACPP support Ready"
     fi
 
     #
@@ -842,6 +869,8 @@ install_hde_target ()
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.idl" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.bat" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/*.vcproj" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
@@ -928,6 +957,8 @@ install_hde_target ()
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.idl" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.cpp" \
+                ${HDE_dir}/examples/dcps/standalone/C++/PingPong
+            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.bat" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/PingPong/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong/PingPong
@@ -1100,8 +1131,6 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.h" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.bat" \
-                ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/ChatBoxUtil/*.vcproj" \
@@ -1248,6 +1277,7 @@ install_hde_target ()
         printf "*     Prepare default release.bat ... "
         RELF=${HDE_dir}/release.bat
         echo "@echo off" >> $RELF
+        echo "echo \"<<< OpenSplice HDE Release ${target_version} For ${target}${target_env}, Date ${target_date} >>>\"" >> ${RELF}
         echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set OSPL_TARGET=${target}${target_env}" >> $RELF

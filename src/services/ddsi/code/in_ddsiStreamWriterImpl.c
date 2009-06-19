@@ -1720,7 +1720,9 @@ in_ddsiStreamWriterImplGetBuffer(
 
     *length = 0;
     *bufferPtr = NULL;
-    assert(!"never reached");
+    OS_REPORT(OS_ERROR, "ddsi", 0,
+		"Message doesn't fit in one fragment, but fragmentation has not been implemented yet.");
+    assert(!"Fragmentation is not implemented yet");
 }
 
 static void

@@ -258,6 +258,7 @@ os_getShmFile(
     DWORD written;
     DWORD pid;
     char buf[512];
+    size_t key_file_name_len;
 
     key_file_name = os_findKeyFile(name);
     if (key_file_name == NULL) {
@@ -298,7 +299,9 @@ os_getShmFile(
     }
     shm_file_name = (char*)os_malloc(MAX_PATH);
     strcpy(shm_file_name, key_file_name);
-    strcat(shm_file_name, "_DBF");
+    // strcat(shm_file_name, "_DBF");
+    key_file_name_len = strlen(shm_file_name);
+    strcpy (&shm_file_name [key_file_name_len - 3], "DBF");
     os_free(key_file_name);
     return shm_file_name;
 }

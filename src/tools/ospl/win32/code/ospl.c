@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <os.h>
@@ -28,20 +28,23 @@ print_usage(
             "      ospl list\n\n"
             "      -h       Show this help\n\n");
     printf ("      start    Start the identified system\n\n"
-            "               The system is identified and configured by the URI which is defined\n"
-            "               by the environment variable OSPL_URI. This setting can\n"
-            "               be overruled with the command line URI definition. When none of the\n"
-            "               URI definitions is specified, a default system will be started.\n\n");
+            "               The system is identified and configured by the URI which is\n"
+            "               defined by the environment variable OSPL_URI. This setting can\n"
+            "               be overruled with the command line URI definition. When none of\n"
+            "               the URI definitions is specified, a default system will be\n"
+            "               started.\n\n");
     printf ("      stop     Stop the identified system\n\n"
-            "               Stop is the default command, this when no command is specified stop\n"
-            "               is assumed. The system to stop is identified by the URI which is defined\n"
-            "               by the environment variable OSPL_URI. This setting can\n");
-    printf ("               be overruled by the command line URI definition or the domain name\n"
-            "               which is associated with the URI and specified via the -d option\n"
-            "               When no domain is specified by the URI or by it's name a default\n"
-            "               system is assumed. The -a options specifies to stop all running\n"
-            "               splice systems started by the current user.\n\n");
-    printf ("      list     Show all systems started by the current user by their domain name\n\n");
+            "               Stop is the default command, thus when no command is specified\n"
+            "               stop is assumed. The system to stop is identified by the URI\n"
+            "               which is defined by the environment variable OSPL_URI. This\n");
+    printf ("               setting can be overruled by the command line URI definition or\n"
+            "               the domain name which is associated with the URI and specified\n"
+            "               via the -d option. \n"
+            "               When no domain is specified by the URI or by it's name a \n"
+            "               default system is assumed. The -a options specifies to stop all\n"
+            "               running splice systems started by the current user.\n\n");
+    printf ("      list     Show all systems started by the current user by their domain\n"
+            "               name\n\n");
 }
 
 static char *key_file_path = NULL;
@@ -185,7 +188,7 @@ findSpliceSystemAndRemove(
     FindClose(fileHandle);
 }
 
-static void
+static int
 findSpliceSystemAndShow(void)
 {
     HANDLE fileHandle;
@@ -195,6 +198,7 @@ findSpliceSystemAndShow(void)
     int last = 0;
     FILE *key_file;
     int len;
+    int found_count;
 
     strcpy(key_file_name, key_file_path);
     strcat(key_file_name, "\\");
@@ -204,9 +208,10 @@ findSpliceSystemAndShow(void)
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        return;
+        return 0;
     }
 
+      found_count = 0;
     strcpy(key_file_name, key_file_path);
     strcat(key_file_name, "\\");
     strcat(key_file_name, fileData.cFileName);
@@ -220,6 +225,7 @@ findSpliceSystemAndShow(void)
                     uri[len-1] = 0;
                 }
                 printf("Splice System with domain name \"%s\" is found running\n", uri);
+                ++found_count;
             }
         }
 
@@ -235,6 +241,7 @@ findSpliceSystemAndShow(void)
     }
     fclose(key_file);
     FindClose(fileHandle);
+    return found_count;
 }
 
 static int
@@ -380,7 +387,7 @@ skipUntil(
 
     assert(symbolList != NULL);
     if (ptr == NULL) {
-    	return NULL;
+        return NULL;
     }
 
     while ((*ptr != '\0') && (!isOneOf(*ptr,symbolList))) {
@@ -401,7 +408,7 @@ splitString(
     int length;
 
     if (str == NULL) {
-    	return NULL;
+        return NULL;
     }
 
     tail = str;
@@ -573,7 +580,12 @@ main(
                 exit(-1);
             }
         } else {
-            printf("Errors are detected in the configuration. Exiting now...\n");
+            if (r == CFGPRS_NO_INPUT) {
+                printf ("Error: Cannot open URI \"%s\". Exiting now...\n", uri);
+            }
+            else {
+                printf ("Errors are detected in the configuration. Exiting now...\n");
+            }
             exit(-1);
         }
     }
@@ -604,7 +616,7 @@ main(
             }
         } else {
             if (strcmp(command, "list") == 0) {
-                findSpliceSystemAndShow();
+                return findSpliceSystemAndShow();
             } else {
                 print_usage(argv[0]);
                 exit(-1);
