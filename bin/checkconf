@@ -516,6 +516,7 @@ jacorb_check ()
             FOUND_IN_CLASSPATH=true
             JACORB_HOME=`dirname $i`
             JACORB_HOME=`dirname $JACORB_HOME`
+            JACORB_HOME=`dirname $JACORB_HOME`
             export JACORB_HOME
             break
         fi
