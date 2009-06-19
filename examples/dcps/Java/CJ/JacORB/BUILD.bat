@@ -9,10 +9,10 @@ ECHO "Compiling IDL with SPLICE IDL compiler"
 idlpp -l java -C ../../pingpong.idl
 
 ECHO "Compiling IDL with JacORB IDL compiler"
-java -classpath %JACORB_HOME%/lib/idl.jar:%JACORB_HOME%/lib/logkit.jar:%CLASSPATH% org.jacorb.idl.parser ../../pingpong.idl
+java -classpath %JACORB_HOME%\lib\idl.jar:%JACORB_HOME%\lib\logkit.jar:%CLASSPATH% org.jacorb.idl.parser ../../pingpong.idl
 
 ECHO "Compiling generated java code"
-javac -classpath ".;%OSPL_HOME%/jar/dcpscj.jar" -d .. pingpong\*.java
+javac -classpath ".;%OSPL_HOME%\jar\dcpscj.jar" -d .. pingpong\*.java
 IF NOT ERRORLEVEL==0 (
   ECHO:
   ECHO Compilation failed
@@ -23,7 +23,7 @@ IF NOT ERRORLEVEL==0 (
 CD ..
 
 ECHO "Compiling application java code"
-javac -classpath ".;%OSPL_HOME%/jar/dcpscj.jar" -d . ..\*.java
+javac -classpath ".;%OSPL_HOME%\jar\dcpscj.jar" -d . ..\*.java
 IF NOT ERRORLEVEL==0 (
   ECHO:
   ECHO Compilation failed

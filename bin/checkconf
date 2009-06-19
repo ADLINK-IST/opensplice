@@ -3,7 +3,7 @@ SPATH=`echo $PATH | tr ':' ' '`
 pathcheck ()
 {
     for i in $SPATH
-    do 
+    do
         test -f $i/$1 && return 0
     done
     return 1
@@ -89,7 +89,7 @@ csharp_check ()
 
                 PATH=/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH
                 break
-            fi            
+            fi
         done
         if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i/csc.exe" ]
         then
@@ -104,7 +104,7 @@ csharp_check ()
             return 1
         fi
     fi
-    
+
     echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
     return 0
 }
@@ -117,8 +117,8 @@ msvs_check ()
     if [ $? != 0 ]
     then
         if [ -z "$VS_HOME" ]
-        then 
-            echo "Error - No VS_HOME not set" 
+        then
+            echo "Error - No VS_HOME not set"
             return 1
         fi
         if [ ! -d "$VS_HOME" ]
@@ -161,7 +161,7 @@ msvs_check ()
         echo "Error - Only .NET 2005 and above supported"
         return 1
     fi
-    
+
     if [ $CL_MAJOR = 14 ]
     then
         COMPILER_VER="VS .NET 2005"
@@ -170,7 +170,7 @@ msvs_check ()
         LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
         FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v2.0"
         export FrameworkSDKDir
-        export LIBPATH 
+        export LIBPATH
         export LIB
 
     fi
@@ -185,7 +185,7 @@ msvs_check ()
 		  PATH="$FrameworkSDKDir/bin:$PATH"
         export FrameworkSDKDir
         export LIB
-        export PATH 
+        export PATH
     fi
 
     echo "OK - using $COMPILER_VER"
@@ -221,7 +221,7 @@ gcc_check ()
         return 1
     fi
 
-    echo "OK - using version" `gcc -dumpversion`  
+    echo "OK - using version" `gcc -dumpversion`
     return 0
 }
 
@@ -250,7 +250,7 @@ make_check ()
         return 1
     fi
 
-    echo "OK - using `make -v 2>/dev/null | head -1`"  
+    echo "OK - using `make -v 2>/dev/null | head -1`"
     return 0
 }
 
@@ -272,7 +272,7 @@ bison_check ()
     #    return 1
     #fi
 
-    echo "OK - using $BISON_VERSION"  
+    echo "OK - using $BISON_VERSION"
     return 0
 }
 
@@ -306,7 +306,7 @@ flex_check ()
     #    return 1
     #fi
 
-    echo "OK - using $FLEX_VERSION"  
+    echo "OK - using $FLEX_VERSION"
     return 0
 }
 
@@ -316,7 +316,7 @@ javac_check ()
     echo -n "JAVAC: "
     REQUIRED_VERSION=1.5
     REQUIRED_VERSION=`echo $REQUIRED_VERSION | sed -e 's;\.;0;g'`
-    
+
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
     then
@@ -352,7 +352,7 @@ javac_check ()
     fi
 
     $JAVAC_EXE -version 2> javac.ver
-    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`  
+    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
     JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
     rm -f javac.ver
     if [ -n "$JAVAC_VERSION" ]
@@ -369,14 +369,14 @@ javac_check ()
         echo "Error - Only JAVA 1.5 and above is supported"
         return 1
     fi
-    
+
     LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
 
     T_LD_PATH=yes
     case `uname` in
         Linux)
             if [ `uname -m` == "x86_64" ]
-            then  
+            then
 		JAVA_PATH_EXT=amd64
 		LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server
 	    else
@@ -422,8 +422,8 @@ tao_check ()
     if [ $? != 0 ]
     then
         if [ -z "$TAO_ROOT" ]
-        then 
-            echo "Error - No TAO found" 
+        then
+            echo "Error - No TAO found"
             return 1
         fi
         if [ ! -d "$TAO_ROOT" ]
@@ -467,7 +467,7 @@ tao_check ()
         T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.4.1\"`"
         if [ $? = 0 ]
         then
-            SPLICE_ORB=DDS_OpenFusion_1_4_1 
+            SPLICE_ORB=DDS_OpenFusion_1_4_1
         else
             T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.5.1\"`"
             if [ $? = 0 ]
@@ -486,7 +486,7 @@ tao_check ()
             fi
         fi
     fi
-    
+
     export SPLICE_ORB
     echo "OK - SPLICE_ORB is TAO $TAO_VERSION"
     echo "  setting TAO_ROOT to $TAO_ROOT"
@@ -504,14 +504,14 @@ gawk_check ()
         return 1
     fi
     GAWK_VERSION=`gawk --version | head -1`
-    echo "OK - using $GAWK_VERSION"  
+    echo "OK - using $GAWK_VERSION"
     return 0
 }
 
 # jacorb_check - should be on the CLASSPATH
 jacorb_check ()
 {
-    echo -n "JACORB: "
+    echo "JACORB: "
 
     FOUND_IN_CLASSPATH=false
     for i in `echo $CLASSPATH | tr ':' ' '`
@@ -564,6 +564,23 @@ jacorb_check ()
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH
+        CLASSPATH=$JACORB_HOME/lib/idl.jar:$CLASSPATH
+        case `uname` in
+            CYGWIN_NT*)
+                export CLASSPATH
+                WIN_CPATH=`echo $CLASSPATH | tr ':' ' '`
+                CLASSPATH=""
+
+                for i in $WIN_CPATH
+                do
+                    CLASSPATH=`cygpath -d "$i"`\;$CLASSPATH
+                done
+
+                ;;
+            *)
+
+                ;;
+        esac
         export CLASSPATH
     fi
     echo "OK"
@@ -616,7 +633,7 @@ cleanup_checks ()
     unset flex_check
     unset javac_check
     unset tao_check
-    unset gawk_check 
+    unset gawk_check
     unset csharp_check
     unset jacorb_check
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION

@@ -8,7 +8,7 @@ precompile:
 	mkdir -p bld/$(SPLICE_TARGET)/code
 	cp -r ../../saj/java/code/* bld/$(SPLICE_TARGET)/code/
 	cp -r makefile_cj bld/$(SPLICE_TARGET)/makefile
-	java -classpath $(JACORB_HOME)/lib/idl.jar:$(CLASSPATH) org.jacorb.idl.parser -d bld/$(SPLICE_TARGET)/code -forceOverwrite  bld/$(SPLICE_TARGET)/code/dds_builtinTopics.idl
+	java org.jacorb.idl.parser -d bld/$(SPLICE_TARGET)/code -forceOverwrite  bld/$(SPLICE_TARGET)/code/dds_builtinTopics.idl
 	(cd bld/$(SPLICE_TARGET); make link)
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
