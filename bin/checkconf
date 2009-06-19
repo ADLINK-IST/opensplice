@@ -508,6 +508,104 @@ gawk_check ()
     return 0
 }
 
+# jacorb_check - should be on the CLASSPATH
+jacorb_check ()
+{
+    echo -n "JACORB: "
+
+    FOUND_IN_CLASSPATH=false
+    for i in `echo $CLASSPATH | tr ':' ' '`
+    do
+        if [ `basename $i` = "jacorb.jar" -o `basename $i` = "avalon-framework.jar" -o `basename $i` = "logkit.jar" ]
+        then
+            FOUND_IN_CLASSPATH=true
+            JACORB_HOME=`dirname $i`
+            JACORB_HOME=`dirname $JACORB_HOME`
+            export JACORB_HOME
+            break
+        fi
+    done
+
+    if [ "$FOUND_IN_CLASSPATH" != "true" ]
+    then
+        if test ! -d $JACORB_HOME
+        then
+            echo "Error - JACORB_HOME is not a directory"
+            return 1
+        fi
+    fi
+
+    if [ -z "$JACORB_HOME" ]
+    then
+        echo "Error - JACORB_HOME not set and cannot find jacorb.jar in CLASSPATH"
+        return 1
+    fi
+
+    if [ "$FOUND_IN_CLASSPATH" != "true" ]
+    then
+        if [ ! -f $JACORB_HOME/lib/endorsed/jacorb.jar ]
+        then
+            echo "Error - $JACORB_HOME/lib/endorsed/jacorb.jar in CLASSPATH invalid"
+            return 1
+        fi
+        CLASSPATH=$JACORB_HOME/lib/endorsed/jacorb.jar:$CLASSPATH
+
+        if [ ! -f $JACORB_HOME/lib/endorsed/logkit.jar ]
+        then
+            echo "Error - $JACORB_HOME/lib/endorsed/logkit.jar in CLASSPATH invalid"
+            return 1
+        fi
+        CLASSPATH=$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH
+
+        if [ ! -f $JACORB_HOME/lib/endorsed/avalon-framework.jar ]
+        then
+            echo "Error - $JACORB_HOME/lib/endorsed/avalon-framework.jar in CLASSPATH invalid"
+            return 1
+        fi
+        CLASSPATH=$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH
+        export CLASSPATH
+    fi
+    echo "OK"
+    echo "  JACORB_HOME set to $JACORB_HOME"
+    if [ "$FOUND_IN_CLASSPATH" != "true" ]
+    then
+        echo "   $JACORB_HOME/lib/endorsed/jacorb.jar added to CLASSPATH"
+        echo "   $JACORB_HOME/lib/endorsed/logkit.jar added to CLASSPATH"
+        echo "   $JACORB_HOME/lib/endorsed/avalon-framework.jar added to CLASSPATH"
+    fi
+    return 0
+}
+
+#jacorb_check ()
+#{
+#    echo -n "JACORB: "
+#    # Check JACORB_HOME directory first
+#    if [ -n "$JACORB_HOME" ]
+#    then
+#        if [ ! -d $JACORB_HOME ]
+#        then
+#            echo "Error - $JACORB_HOME is invalid"
+#            return 1
+#        fi
+#        if [ ! -f $JACORB_HOME/lib/idl.jar ]
+#        then
+#            echo "Error - Invalid Setup, cannot find $JACORB_HOME/lib/idl.jar"
+#            return 1
+#        fi
+#        if [ ! -f $JACORB_HOME/lib/endorsed/logkit.jar ]
+#        then
+#            echo "Error - Invalid Setup, cannot find $JACORB_HOME/lib/endorsed/logkit.jar"
+#            return 1
+#        fi
+#    else
+#        echo "Error - Invalid Setup, cannot find JACORB_HOME"
+#        return 1
+#    fi
+#    echo "OK"
+#    return 0
+#}
+
+
 cleanup_checks ()
 {
     unset msvs_check
@@ -519,6 +617,7 @@ cleanup_checks ()
     unset tao_check
     unset gawk_check 
     unset csharp_check
+    unset jacorb_check
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
