@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <sys/types.h>
@@ -45,7 +45,7 @@ print_uage(
             "               the URI definitions is specified, a default system will be\n"
             "               started.\n\n");
     printf ("      stop     Stop the identified system\n\n"
-            "               Stop is the default command, thus when no command is specified\n" 
+            "               Stop is the default command, thus when no command is specified\n"
             "               stop is assumed. The system to stop is identified by the URI\n"
             "               which is defined by the environment variable OSPL_URI. This\n");
     printf ("               setting can be overruled by the command line URI definition or\n"
@@ -77,22 +77,22 @@ removeProcesses(
     kill (pid, SIGTERM);
     while ((kill (pid, 0) != -1) && (os_timeCompare(os_timeGet(), stopTime) == OS_LESS) ) {
         printf ("."); fflush (stdout);
-	sleep (1);
+    sleep (1);
     }
     printf("\n");
     if (kill (pid, 0) != -1) {
-	printf ("Process %d would not terminate.\n", pid);
-	printf ("Using force now on ");
-	kill_descendents (pid, SIGKILL);
-	kill (pid, SIGKILL);
+    printf ("Process %d would not terminate.\n", pid);
+    printf ("Using force now on ");
+    kill_descendents (pid, SIGKILL);
+    kill (pid, SIGKILL);
         stopTime = os_timeAdd(os_timeGet(), serviceTerminatePeriod);
         while ((kill (pid, 0) != -1) && (os_timeCompare(os_timeGet(), stopTime) == OS_LESS)) {
             printf ("."); fflush (stdout);
-	    sleep (1);
+        sleep (1);
         }
-	if (kill (pid, 0) != -1) {
-	    printf ("\nProcess %d would not terminate, bailing out\n", pid);
-	}
+    if (kill (pid, 0) != -1) {
+        printf ("\nProcess %d would not terminate, bailing out\n", pid);
+    }
     }
 }
 
@@ -138,21 +138,21 @@ shutdownDDS(
         fgets (size, sizeof(size), kf);
         fgets (implementation, sizeof(implementation), kf);
         fgets (creator_pid, sizeof(creator_pid), kf);
-	fclose (kf);
+    fclose (kf);
         sscanf (creator_pid, "%d", &pid);
-	if (strcmp (implementation, "SVR4-IPCSHM\n") == 0) {
+    if (strcmp (implementation, "SVR4-IPCSHM\n") == 0) {
             key = ftok (key_file_name, 'S');
-	    if (key != -1) {
-	        removeProcesses (pid, serviceTerminatePeriod);
-	        removeSegment (key);
-	        removeKeyfile (key_file_name);
-	    }
-	} else if (strcmp (implementation, "POSIX-SMO\n") == 0) {
-	    printf ("Removal of POSIX shared memory object not yet supported\n");
-	    /** @todo support POSIX shared memory objects */
-	    removeProcesses (pid, serviceTerminatePeriod);
-	    removeKeyfile (key_file_name);
-	}
+        if (key != -1) {
+            removeProcesses (pid, serviceTerminatePeriod);
+            removeSegment (key);
+            removeKeyfile (key_file_name);
+        }
+    } else if (strcmp (implementation, "POSIX-SMO\n") == 0) {
+        printf ("Removal of POSIX shared memory object not yet supported\n");
+        /** @todo support POSIX shared memory objects */
+        removeProcesses (pid, serviceTerminatePeriod);
+        removeKeyfile (key_file_name);
+    }
     }
     printf ("Ready\n\n");
 }
@@ -167,7 +167,7 @@ matchKey(
     struct stat filestat;
 
     if (stat (key_file_name, &filestat) == 0) {
-	if (filestat.st_uid == geteuid()) {
+    if (filestat.st_uid == geteuid()) {
             key_file = fopen (key_file_name, "r");
 
             if (key_file != NULL) {
@@ -195,16 +195,16 @@ matchUid(
     struct stat filestat;
 
     if (stat (key_file_name, &filestat) == 0) {
-	if (filestat.st_uid == uid) {
+    if (filestat.st_uid == uid) {
             key_file = fopen (key_file_name, "r");
             if (key_file != NULL) {
                 if (fgets (domain, sizeof(domain), key_file) != NULL) {
                     fclose (key_file);
-		    return os_strdup (domain);
-                }
-                fclose (key_file);
-	    }
-	}
+                    return os_strdup (domain);
+            }
+            fclose (key_file);
+        }
+    }
     }
     return NULL;
 }
@@ -239,14 +239,16 @@ findSpliceSystemAndRemove(
     }
 }
 
-static void
+static int
 findSpliceSystemAndShow(void)
 {
     DIR *key_dir;
     struct dirent *entry;
     char key_file_name [sizeof(key_file_prefix)+1];
     char *shmName;
+    int found_count;
 
+        found_count = 0;
     key_dir = opendir ("/tmp");
     if (key_dir) {
         entry = readdir (key_dir);
@@ -254,7 +256,8 @@ findSpliceSystemAndShow(void)
             if (strncmp (entry->d_name, "spddskey_", 9) == 0) {
                 snprintf (key_file_name, sizeof(key_file_prefix)+1, "/tmp/%s", entry->d_name);
                 if ((shmName = matchUid (key_file_name, geteuid()))) {
-		    printf ("Splice System with domain name \"%s\" is found running\n", shmName);
+                                    printf ("Splice System with domain name \"%s\" is found running\n", shmName);
+                                    ++found_count;
                     os_free (shmName);
                 }
             }
@@ -262,6 +265,8 @@ findSpliceSystemAndShow(void)
         }
         closedir (key_dir);
     }
+
+    return found_count;
 }
 
 static int
@@ -281,9 +286,9 @@ spliceSystemRunning(
             if (strncmp (entry->d_name, "spddskey_", 9) == 0) {
                 snprintf (key_file_name, sizeof(key_file_prefix)+1, "/tmp/%s", entry->d_name);
                 if ((shmName = matchUid (key_file_name, getuid()))) {
-		    if (strcmp (shmName, domain) == 0) {
-			found = 1;
-		    }
+            if (strcmp (shmName, domain) == 0) {
+            found = 1;
+            }
                     os_free (shmName);
                 }
             }
@@ -311,11 +316,11 @@ findDomain(
         if (elemName) {
             dataName = cf_data(cf_elementChild(elemName, "#text"));
             if (dataName) {
-	        value = cf_dataValue(dataName);
-	        domain_name = value.is.String;
+            value = cf_dataValue(dataName);
+            domain_name = value.is.String;
                 *domain = dc;
             }
-	}
+    }
     }
     return domain_name;
 }
@@ -373,7 +378,7 @@ void
 check_for_LD_ASSUME_KERNEL (void)
 {
     if (os_getenv ("LD_ASSUME_KERNEL")) {
-	fprintf (stderr, "\nWarning: LD_ASSUME_KERNEL is set, this might cause SPLICE-DDS to fail.\n");
+    fprintf (stderr, "\nWarning: LD_ASSUME_KERNEL is set, this might cause SPLICE-DDS to fail.\n");
         fprintf (stderr, "         SPLICE-DDS requires the Native Posix Thread Library to be linked.\n");
         fprintf (stderr, "         You can check by calling: \'ldd `which ospl`', libc.so.* should be linked\n");
         fprintf (stderr, "         with /lib/tls/libc.so.* and not /lib/i686/libc.so.* nor /lib/libc.so.*.\n\n");
@@ -400,36 +405,36 @@ main(
     uri = os_getenv ("OSPL_URI");
 
     while ((opt = getopt (argc, argv, "had:")) != -1) {
-	switch (opt) {
-	case 'h':
-	    print_uage (argv[0]);
-	    exit (0);
-	    break;
-	case 'd':
-	    if (domain_name) {
-	        print_uage (argv[0]);
-	        exit (-1);
-	    }
-	    domain_name = optarg;
-	    break;
-	case 'a':
-	    if (domain_name) {
-	        print_uage (argv[0]);
-	        exit (-1);
-	    }
+    switch (opt) {
+    case 'h':
+        print_uage (argv[0]);
+        exit (0);
+        break;
+    case 'd':
+        if (domain_name) {
+            print_uage (argv[0]);
+            exit (-1);
+        }
+        domain_name = optarg;
+        break;
+    case 'a':
+        if (domain_name) {
+            print_uage (argv[0]);
+            exit (-1);
+        }
         uri = NULL;
-	    domain_name = "*";
-	    break;
-	case '?':
-	    print_uage (argv[0]);
-	    exit (-1);
-	    break;
-	default:
-	    break;
-	}
+        domain_name = "*";
+        break;
+    case '?':
+        print_uage (argv[0]);
+        exit (-1);
+        break;
+    default:
+        break;
+    }
     }
     if ((argc-optind) > 2) {
-	print_uage (argv[0]);
+    print_uage (argv[0]);
         exit(-1);
     }
     command = argv[optind];
@@ -445,42 +450,47 @@ main(
                 exit (-1);
             }
         } else {
-            printf ("Errors are detected in the configuration. Exiting now...\n");
+            if (r == CFGPRS_NO_INPUT) {
+                printf ("Error: Cannot open URI \"%s\". Exiting now...\n", uri);
+            }
+            else {
+                printf ("Errors are detected in the configuration. Exiting now...\n");
+            }
             exit (-1);
         }
     }
     if ((command == NULL) || (strcmp (command, "stop") == 0)) {
-	if (domain_name == NULL) {
-	    domain_name = "The default Domain";
-	}
+    if (domain_name == NULL) {
+        domain_name = "The default Domain";
+    }
         findServiceTerminatePeriod(domain, &serviceTerminatePeriod);
         findSpliceSystemAndRemove (domain_name, serviceTerminatePeriod);
     } else if (strcmp (command, "start") == 0) {
 #ifdef OS_LINUX_DEFS_H
-	check_for_LD_ASSUME_KERNEL ();
+    check_for_LD_ASSUME_KERNEL ();
 #endif
-	if (domain_name == NULL) {
-	    domain_name = "The default Domain";
-	}
-	if (!spliceSystemRunning (domain_name)) {
+    if (domain_name == NULL) {
+        domain_name = "The default Domain";
+    }
+    if (!spliceSystemRunning (domain_name)) {
             printf ("\nStarting up domain \"%s\" .", domain_name);
-	    if (uri) {
-	        snprintf (start_command, sizeof(start_command), "spliced \"%s\" &", uri);
-	    } else {
-	        snprintf (start_command, sizeof(start_command), "spliced &");
-	    }
-	    printf (" Ready\n");
-	    system (start_command);
-	    sleep (2); /* take time to first show the license message from spliced */
-	} else {
-	    printf ("Splice System with domain name \"%s\" is found running, ignoring command\n",
-		domain_name);
-	}
-    } else if (strcmp (command, "list") == 0) {
-	findSpliceSystemAndShow ();
+        if (uri) {
+            snprintf (start_command, sizeof(start_command), "spliced \"%s\" &", uri);
+        } else {
+            snprintf (start_command, sizeof(start_command), "spliced &");
+        }
+        printf (" Ready\n");
+        system (start_command);
+        sleep (2); /* take time to first show the license message from spliced */
     } else {
-	print_uage (argv[0]);
-	exit (-1);
+        printf ("Splice System with domain name \"%s\" is found running, ignoring command\n",
+        domain_name);
+    }
+    } else if (strcmp (command, "list") == 0) {
+          return findSpliceSystemAndShow ();
+    } else {
+    print_uage (argv[0]);
+    exit (-1);
     }
     return 0;
 }
