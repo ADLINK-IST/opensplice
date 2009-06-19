@@ -1,0 +1,5 @@
+cp ../../*.java .
+idlpp -l java -C ../../pingpong.idl
+java -classpath $JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/logkit.jar:$CLASSPATH org.jacorb.idl.parser ../../pingpong.idl
+javac -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpscj.jar pingpong/*.java
+javac -classpath .:$OSPL_HOME/jar/$SPLICE_TARGET/dcpscj.jar *.java

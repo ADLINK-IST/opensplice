@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <jni.h>
@@ -732,6 +732,7 @@ saj_cacheUnionCaseField (
     char fieldDescriptor[512];
     char attributeName[512];
     char operatorDescr[512];
+    jthrowable jexception;
 
     fieldDescriptor[0] = '\0';
     saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor));
@@ -752,9 +753,17 @@ saj_cacheUnionCaseField (
 #endif
     snprintf (attributeName, sizeof(attributeName), "__%s", saj_dekeyedId(c_specifier(o)->name));
     unionCase.caseID = (*(ctx->javaEnv))->GetFieldID (ctx->javaEnv, ctx->javaClass, attributeName, fieldDescriptor);
-    saj_exceptionCheck (ctx->javaEnv);
+    jexception = (*(ctx->javaEnv))->ExceptionOccurred(ctx->javaEnv);
+    if (jexception)
+    {
+        /*  clear the exception, as the case ID is only present when java data model is generated with idlpp */
+        (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+    }
 #if JNI_TRACE
-    printf ("JNI: GetFieldID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, attributeName, fieldDescriptor, unionCase.caseID);
+    else
+    {
+        printf ("JNI: GetFieldID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, attributeName, fieldDescriptor, unionCase.caseID);
+    }
 #endif
 
     TRACE (printf ("    Union Case\n"));
@@ -798,6 +807,7 @@ saj_cacheUnionBuild (
     char methodDescriptor [512];
     char methodSignature [512];
     jclass javaClass;
+    jthrowable jexception;
 
     classDescriptor [0] = '\0';
     saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor));
@@ -868,7 +878,74 @@ saj_cacheUnionBuild (
     }
     copyUnion.discrID = (*(ctx->javaEnv))->GetFieldID (ctx->javaEnv, copyUnion.unionClass,
 	"_d", discrDescriptor);
-    saj_exceptionCheck (ctx->javaEnv);
+    jexception = (*(ctx->javaEnv))->ExceptionOccurred(ctx->javaEnv);
+
+    if (jexception)
+    {
+        /*  clear the exception */
+        (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+        switch (c_baseObject(c_typeActualType(o->switchType))->kind) {
+        case M_ENUMERATION:
+            {
+                char discrClassDescriptor [512];
+
+                discrClassDescriptor[0] = '\0';
+                saj_classDescriptor (c_typeActualType(o->switchType), discrClassDescriptor, sizeof(discrClassDescriptor));
+                snprintf (methodSignature, sizeof(methodSignature), "()L%s;", discrClassDescriptor);
+
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", methodSignature);
+                saj_exceptionCheck((ctx->javaEnv));
+            }
+            break;
+        case M_PRIMITIVE:
+            switch (c_primitive (c_typeActualType(o->switchType))->kind)
+            {
+            case P_BOOLEAN:
+                {
+                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()Z");
+                    saj_exceptionCheck((ctx->javaEnv));
+                }
+                break;
+            case P_CHAR:
+                {
+                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()C");
+                    saj_exceptionCheck((ctx->javaEnv));
+                }
+                break;
+            case P_SHORT:
+            case P_USHORT:
+                {
+                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()S");
+                    saj_exceptionCheck((ctx->javaEnv));
+                }
+                break;
+            case P_LONG:
+            case P_ULONG:
+                {
+                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()I");
+                    saj_exceptionCheck((ctx->javaEnv));
+                }
+                break;
+            case P_LONGLONG:
+            case P_ULONGLONG:
+                {
+                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()J");
+                    saj_exceptionCheck((ctx->javaEnv));
+                }
+
+                break;
+            default:
+                assert (0);
+            }
+            break;
+        default:
+            assert (0);
+        }
+    } else
+    {
+        copyUnion.getDiscrMethodID = NULL;
+    }
+
 #if JNI_TRACE
     printf ("JNI: GetFieldID (0x%x, \"_d\", \"%s\") = %d\n", copyUnion.unionClass, discrDescriptor, copyUnion.discrID);
 #endif
@@ -885,7 +962,6 @@ saj_cacheUnionBuild (
     TRACE (printf ("Union\n    Class name %s\n", classDescriptor));
     TRACE (printf ("    Java class %x\n", (int)copyUnion.unionClass));
     TRACE (printf ("    Constructor ID = %x\n", (int)copyUnion.constrID));
-    /* TRACE (printf ("    get discriminator ID = %x\n", (int)copyUnion.discrGetterID));*/
 
     for (mi = 0; mi < c_arraySize(o->cases); mi++) {
 	saj_cacheUnionCase (o->cases[mi], &context);
