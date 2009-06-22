@@ -1328,7 +1328,7 @@ idl_typedefOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "    %s *to = (%s *)_to;\n",
             idl_scopeStackCxx(scope, "::", name),
             idl_scopeStackCxx(scope, "::", name));
-        idl_arrayElements(idl_typeArray(idl_typeDefActual(defSpec)), "*from", "*to", 0);
+        idl_arrayElements(idl_typeArray(idl_typeDefActual(defSpec)), "from", "*to", 0);
         idl_fileOutPrintf(idl_fileCur(), "}\n");
         idl_fileOutPrintf(idl_fileCur(), "\n");
         break;
