@@ -11,6 +11,7 @@
  */
 #include "v__group.h"
 #include "v_kernel.h"
+#include "v_policy.h"
 #include "v__entry.h"
 #include "v_domain.h"
 #include "v__topic.h"
@@ -1246,6 +1247,27 @@ entryWrite(
     return TRUE;
 }
 
+
+static c_bool
+variantEntryResend(
+    v_groupEntry proxy,
+    c_voidp arg)
+{
+	c_bool success;
+
+	/* Variant entries cannot reject when they have no resource limits. To
+	 * prevent samples that are rejected by another entry to arrive multiple
+	 * times (because there is no administration about pending resends when
+	 * there is no instance cache), don't resend samples in this case.
+	 */
+	if(!v_resourcePolicyIsUnlimited(v_reader(proxy->entry->reader)->qos->resource)){
+		success = entryWrite(proxy, arg);
+	} else {
+		success = TRUE;
+	}
+	return success;
+}
+
 static c_bool
 instanceWrite(
     v_cacheNode node,
@@ -1812,7 +1834,7 @@ v_groupResend (
      * with own storage spectrum.
      */
     if (v_messageStateTest(msg,L_WRITE)) {
-        v_groupEntrySetWalk(&group->variantEntrySet,entryWrite,&writeArg);
+        v_groupEntrySetWalk(&group->variantEntrySet,variantEntryResend,&writeArg);
     }
     v_groupCacheWalk(instance->readerInstanceCache,
                      instanceResend,
