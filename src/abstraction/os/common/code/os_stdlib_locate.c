@@ -35,11 +35,13 @@ std_splitListNew(
         while (*ptr) {
             if (*ptr == separator) {
                 if (inString) {
-                    count++;
                     inString = 0;
                 }
                 *ptr = '\0';
             } else {
+            	if (!inString) {
+            		count++;
+            	}
                 inString = !0;
             }
             ptr = &ptr[1];
