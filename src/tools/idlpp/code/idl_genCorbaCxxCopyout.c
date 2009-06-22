@@ -890,6 +890,8 @@ idl_arrayElements(
     const char *to,
     c_long indent)
 {
+    char *buf;
+
     switch (idl_typeSpecType(idl_typeArrayActual(typeArray))) {
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
@@ -916,7 +918,10 @@ idl_arrayElements(
             /* QAC EXPECT 3416; No side effect here */
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray))))) == idl_string) {
                 loopIndent = 0;
-                idl_arrayLoopCopy(typeArray, from, to, indent);
+                buf = os_malloc(strlen(from)+4);
+                sprintf(buf, "(*%s)", from);
+                idl_arrayLoopCopy(typeArray, buf, to, indent);
+                os_free(buf);
             } else {
             	idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);

@@ -1193,6 +1193,7 @@ idl_arrayElements (
     c_long indent)
 {
     c_long maxLen;
+    char *buf;
 
     switch (idl_typeSpecType(idl_typeArrayActual(typeArray))) {
     case idl_tbasic:
@@ -1225,7 +1226,10 @@ idl_arrayElements (
         /* QAC EXPECT 3416; No side effect here */
 	if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray)))) == idl_tbasic) {
 	    if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray))))) == idl_string) {
-	        idl_arrayLoopCopy (typeArray, from, to, indent);
+           buf = os_malloc(strlen(to)+4);
+            sprintf(buf, "(*%s)", to);
+	        idl_arrayLoopCopy (typeArray, from, buf, indent);
+            os_free(buf);
 	    } else {
 	        idl_printIndent (indent);
 	        idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (*%s));\n", to, from, to);
