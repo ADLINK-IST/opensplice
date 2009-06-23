@@ -1188,10 +1188,7 @@ install_hde_target ()
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/*.txt" \
             ${HDE_dir}/examples/dcps/standalone/Java/Tutorial
         echo "*           Ready"
-        echo "*         Java Ready"
-    fi
-    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" ]
-    then
+
         echo "*         For Corba Java"
         mkdir ${HDE_dir}/examples/dcps/CORBA/Java
         mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB
