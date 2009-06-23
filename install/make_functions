@@ -208,6 +208,9 @@ installer_setup ()
     SOURCE_ENV="$6"
     GETLIC_INFO_NAME="$7"
 
+    # set SOURCE_TARGET_SHORT to be used in bitrock 
+    SOURCE_TARGET_SHORT=`expr "${SOURCE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
+    
     if [ "${SOURCE_ENV}" = "-release" ]
     then
         TARGET_ENV="";
@@ -317,17 +320,27 @@ set_hde_envs ()
 {
     target=$1
     suffix_exe=""
+    target_suffix_exe=""
     suffix_script=""
-    if [ "${target}" = "x86.win32" ]
-    then
-        suffix_exe=".exe"
-        suffix_script=".bat"
-    fi
 
     host=$2
     target_version=$3
     target_date=$4
 
+    if [ "${host}" = "x86.win32" ]
+    then
+        suffix_exe=".exe"
+        suffix_script=".bat"
+    fi
+
+    case ${target} in
+        x86.win32)
+            target_suffix_exe=".exe"
+            ;;
+        PPC604.vxworks6.6*)
+            target_suffix_exe=".vxe"
+            ;;
+    esac
 
     if [ "x_$5" = "x_" ]; then
         source_env="-release"
@@ -343,7 +356,7 @@ set_hde_envs ()
 
     TXTFILE_CONVERTER="$6"
     SOURCE_TARGET_SHORT="$7"
-
+   
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
     then
@@ -509,21 +522,19 @@ install_hde_target ()
     #
     # Copy default configuration file for OpenSplice
     #
-    if [ "${target_os}" = "${host_os}" ]
-    then
-        printf "*     Copy OpenSplice default configuration file "
+   
+    printf "*     Copy OpenSplice default configuration file "
 
-        mkdir ${HDE_dir}/etc/config
-        sed -e "s/__RELEASE__/${target_version}/g" \
-            -e "s/__EXE__/${suffix_exe}/g" \
-            ${OSPL_HOME}/etc/ospl.xml > ${HDE_dir}/etc/config/ospl.xml
-        sed -e "s/__RELEASE__/${target_version}/g" \
-            -e "s/__EXE__/${suffix_exe}/g" \
-            ${OSPL_HOME}/etc/ospl_no_network.xml > ${HDE_dir}/etc/config/ospl_no_network.xml
-
-        echo "Ready"
-    fi
-
+    mkdir ${HDE_dir}/etc/config
+    sed -e "s/__RELEASE__/${target_version}/g" \
+        -e "s/__EXE__/${target_suffix_exe}/g" \
+        ${OSPL_HOME}/etc/ospl.xml > ${HDE_dir}/etc/config/ospl.xml
+    sed -e "s/__RELEASE__/${target_version}/g" \
+        -e "s/__EXE__/${target_suffix_exe}/g" \
+        ${OSPL_HOME}/etc/ospl_no_network.xml > ${HDE_dir}/etc/config/ospl_no_network.xml
+    
+    echo "Ready"
+    
     #
     # Copy libray files
     #
@@ -576,6 +587,7 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
+
     if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
 	printf "*     Copy JAVA host archive files... "
@@ -596,33 +608,33 @@ install_hde_target ()
     echo "*     Copy OpenSplice executables"
     target_release=${OSPL_HOME}/exec/${target}${source_env}
     host_release=${OSPL_HOME}/exec/${host}${source_env}
+    
     if [ -d "${target_release}" -a -d "${host_release}" ]
     then
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
-        # In the HDE we only need the other executables in case host and target are equal
-        if [ "${target_os}" = "${host_os}" ]
+        
+        # Copy the executables for the target 
+        install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
+        install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
+        install_bin_file ${target_release} ${HDE_dir} bin durability${target_suffix_exe}
+        if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
         then
-            install_bin_file ${host_release} ${HDE_dir} bin spliced${suffix_exe}
-            install_bin_file ${host_release} ${HDE_dir} bin networking${suffix_exe}
-            install_bin_file ${host_release} ${HDE_dir} bin durability${suffix_exe}
-            if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin ddsi${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin mmstat${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin shmdump${suffix_exe}
-            fi
+            install_bin_file ${target_release} ${HDE_dir} bin ddsi${target_suffix_exe}
         fi
+        if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin ospl${target_suffix_exe}
+        fi
+        if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin mmstat${target_suffix_exe}
+        fi
+        if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin shmdump${target_suffix_exe}
+        fi
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
@@ -736,6 +748,7 @@ install_hde_target ()
         fi
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
         mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
+
         install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/SACPP"
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/*.h" \
             "${HDE_dir}/include/dcps/C++/SACPP"
@@ -837,7 +850,7 @@ install_hde_target ()
     mkdir ${HDE_dir}/examples/dcps
     mkdir ${HDE_dir}/examples/dcps/standalone
 
-    if [ "${INCLUDE_CXX}" = "yes" ]
+    if [ "${INCLUDE_CXX}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
@@ -1015,7 +1028,7 @@ install_hde_target ()
         echo "*           Ready"
     fi
 
-    if [ "${INCLUDE_C}" = "yes" ]
+    if [ "${INCLUDE_C}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         echo "*         For C++ on C... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC
@@ -1146,7 +1159,7 @@ install_hde_target ()
         echo "*         C Ready"
     fi
 
-    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" ]
+    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         echo "*         For standalone Java"
         mkdir ${HDE_dir}/examples/dcps/standalone/Java

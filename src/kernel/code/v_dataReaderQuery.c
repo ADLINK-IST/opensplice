@@ -682,8 +682,18 @@ v_dataReaderQueryRead (
                     }
 
                     if (pass) {
-                        proceed = v_dataReaderSampleRead(_this->triggerValue,
-                                                         action,arg);
+                        if (instance->sampleCount == 0) {
+                        /* No valid samples exist,
+                         * so there must be one invalid sample.
+                         * Dcps-Spec. demands a Desctructive read -> v_dataReaderSampleTake()
+                         */
+                        assert(v_dataReaderInstanceStateTest(instance, L_STATECHANGED));
+                        proceed = v_dataReaderSampleTake(_this->triggerValue,action,arg);
+                        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
+                        } else {
+                            proceed = v_dataReaderSampleRead(_this->triggerValue,
+                                                             action,arg);
+                        }
                     }
                     proceed = FALSE;
                 }

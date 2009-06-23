@@ -93,8 +93,8 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 #endif
 
 #define SET_USEDCOUNT(admin, value) admin->usedCount = value; PRINT_USEDCOUNT(admin)
-#define INC_USEDCOUNT(admin)        admin->usedCount++;       PRINT_USEDCOUNT(admin)
-#define DEC_USEDCOUNT(admin)        admin->usedCount--;       PRINT_USEDCOUNT(admin)
+#define INC_USEDCOUNT(admin)        pa_increment(&admin->usedCount);       PRINT_USEDCOUNT(admin)
+#define DEC_USEDCOUNT(admin)        pa_decrement(&admin->usedCount);       PRINT_USEDCOUNT(admin)
 
 static nw_plugBufferDefragAdmin
 nw_plugBufferDefragAdminCreate(
