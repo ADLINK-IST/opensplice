@@ -119,7 +119,7 @@ install_ascii_fileset()
     install_ascii_fileset_target_dir=$2
     
     printf "*                 copy ${install_ascii_fileset} ... "
-    for i in ${install_ascii_fileset_fileset}
+    for i in ${install_ascii_fileset}
     do
         install_ascii_file $i ${install_ascii_fileset_target_dir}
     done
