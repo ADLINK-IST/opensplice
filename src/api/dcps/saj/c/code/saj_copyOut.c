@@ -20,7 +20,7 @@
 
 #include <string.h>
 
-#define STATIC
+#define STATIC static
 
 typedef struct {
     void *src;
@@ -149,7 +149,7 @@ STATIC saj_copyResult saj_cfooSequence   (sajCopyHeader *ch, jobject *seqObject,
     /* Reference type */
 STATIC saj_copyResult saj_cfooReference  (sajCopyHeader *ch, jobject *seqObject,    void *srcArray, saj_context *ctx);
 
-copyOutFromStruct coFromStruct[] = {
+STATIC copyOutFromStruct coFromStruct[] = {
     saj_cfsoBoolean,
     saj_cfsoByte,
     saj_cfsoChar,
@@ -184,7 +184,7 @@ copyOutFromStruct coFromStruct[] = {
     saj_cfsoReference
     };
 
-copyOutFromUnion coFromUnion[] = {
+STATIC copyOutFromUnion coFromUnion[] = {
     saj_cfuoBoolean,
     saj_cfuoByte,
     saj_cfuoChar,
@@ -219,7 +219,7 @@ copyOutFromUnion coFromUnion[] = {
     saj_cfuoReference
     };
 
-copyOutFromArray coFromArray[] = {
+STATIC copyOutFromArray coFromArray[] = {
     NULL, /* saj_cfooBoolean */
     NULL, /* saj_cfooByte */
     NULL, /* saj_cfooChar */
@@ -254,7 +254,7 @@ copyOutFromArray coFromArray[] = {
     saj_cfooReference
     };
 
-static saj_copyResult
+STATIC saj_copyResult
 saj_copyGetStatus(
     saj_context* context)
 {

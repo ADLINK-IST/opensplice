@@ -165,7 +165,7 @@ STATIC gapi_boolean gapi_cfoiSequence   (gapiCopyHeader *ch, void * srcSeq, void
     /* reference to previous defined type */
 STATIC gapi_boolean gapi_cfoiReference  (gapiCopyHeader *ch, void * src, void *dst, gapi_ci_context *ctx);
 
-copyInFromStruct ciFromStruct[] = {
+STATIC copyInFromStruct ciFromStruct[] = {
     gapi_cfsiBlackBox,
     gapi_cfsiBoolean,
     gapi_cfsiByte,
@@ -201,7 +201,7 @@ copyInFromStruct ciFromStruct[] = {
     gapi_cfsiReference
     };
 
-copyInFromUnion ciFromUnion[] = {
+STATIC copyInFromUnion ciFromUnion[] = {
     gapi_cfuiBlackBox,
     gapi_cfuiBoolean,
     gapi_cfuiByte,
@@ -237,7 +237,7 @@ copyInFromUnion ciFromUnion[] = {
     gapi_cfuiReference
     };
 
-copyInFromUnion ciUnionDiscr[] = {
+STATIC copyInFromUnion ciUnionDiscr[] = {
     NULL, /*gapi_cfuiBlackBox*/
     gapi_cfuiBoolean,
     NULL, /*gapi_cfuiByte*/
@@ -274,7 +274,7 @@ copyInFromUnion ciUnionDiscr[] = {
     };
 
 
-copyInFromArray ciFromArray[] = {
+STATIC copyInFromArray ciFromArray[] = {
     gapi_cfoiBlackBox,
     NULL, /* gapi_cfoiBoolean */
     NULL, /* gapi_cfoiByte */
