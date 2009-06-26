@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_report.h"
@@ -47,7 +47,7 @@
 #define CHECK_REF (0)
 
 #if CHECK_REF
-#define CHECK_REF_TYPE "v_indexSample<system_track_wipe_prop>"
+#define CHECK_REF_TYPE "v_subscriber"
 #define CHECK_REF_TYPE_LEN (strlen(CHECK_REF_TYPE))
 #define CHECK_REF_DEPTH (64)
 static char* CHECK_REF_FILE = NULL;
@@ -60,7 +60,7 @@ static char* CHECK_REF_FILE = NULL;
     \
     if(!CHECK_REF_FILE){ \
         CHECK_REF_FILE = os_malloc(24); \
-        sprintf(CHECK_REF_FILE, "/tmp/mem.log"); \
+        sprintf(CHECK_REF_FILE, "mem.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\
@@ -985,7 +985,7 @@ c_baseInit (
 #undef _INITCLASS_
 
 #define _SWITCH_TYPE_ c_enumeration(c_union(o)->switchType)
- 
+
     o = c_metaDeclare(c_metaObject(base),"c_value",M_UNION);
         c_union(o)->switchType = ResolveType(base,c_valueKind);
         type = ResolveType(base,c_literal);
@@ -1098,7 +1098,7 @@ c_baseInit (
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
                                                "Object",type,labels);
         c_iterFree(labels);
-        
+
         type = c_voidp_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_VOIDP"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
@@ -1423,15 +1423,23 @@ c_new (
         memset(o,0,size);
     }
 #if CHECK_REF
-        if (type && c_metaObject(type)->name) {
-            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-                    UT_TRACE("\n\n============ New(0x%x) =============\n", o);
-                }
-            }
-        }
+	if ((c_baseObject(header->type)->kind == M_EXTENT) ||
+		(c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
+		c_type t;
+		t = c_extentType(c_extent(header->type));
+		ACTUALTYPE(type,t);
+		c_free(t);
+	} else {
+		ACTUALTYPE(type,header->type);
+	}
+	if (type && c_metaObject(type)->name) {
+		if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+			if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+				UT_TRACE("\n\n============ New(0x%x) =============\n", o);
+			}
+		}
+	}
 #endif
-
     return o;
 }
 
