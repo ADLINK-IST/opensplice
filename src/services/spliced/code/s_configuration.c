@@ -770,7 +770,7 @@ s_configurationRead(
 
          /* ResendManager */
          s_configurationValueString(config, dcfg, "ResendManager/Scheduling/Class/#text", s_configurationSetResendManagerSchedulingClass);
-         s_configurationValueLong(config, dcfg, "Resendmanager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
+         s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
 
     }
     
