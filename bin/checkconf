@@ -325,13 +325,12 @@ javac_check ()
         then
             return 1
         fi
-        T_JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
-        if [ ! -f $T_JAVAC_EXE ]
+        JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
+        if [ ! -f $JAVAC_EXE ]
         then
             echo "Error - Not found"
             return 1
         fi
-        JAVAC_EXE=`readlink -f $T_JAVAC_EXE 2>/dev/null`
         PATH=$UNIX_CONV_PATH/bin:$PATH
         export PATH
     else
