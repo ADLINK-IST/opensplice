@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <errno.h>
 
-static int ospl_mtx_prio_inherit = 0;
+static os_boolean ospl_mtx_prio_inherit = OS_FALSE;
 
 #if defined __GLIBC_PREREQ
 #if __GLIBC_PREREQ(2,5)
@@ -32,24 +32,25 @@ static int ospl_mtx_prio_inherit = 0;
 void
 os_mutexModuleInit()
 {
-#ifdef OSPL_PRIO_INHERIT_SUPPORTED
-/* Priority inheritance is supported by this pthread library */
-    char *value;
-    value = os_getenv("OSPL_PRIO_INHERIT");
-
-    if (value && (strcmp("yes", value)==0)) {
-        ospl_mtx_prio_inherit = 1;
-    } else {
-        ospl_mtx_prio_inherit = 0;
-    }
-#else
     ospl_mtx_prio_inherit = 0;
-#endif
 }
 
 void
 os_mutexModuleExit()
 {
+}
+
+/** \brief Sets the priority inheritance mode for mutexes
+ *   that are created after this call.
+ *
+ * Store the setting in the Static variable to be used when MutexInit is called.
+ */
+os_result
+os_mutexSetPriorityInheritanceMode(
+    os_boolean enabled)
+{
+    ospl_mtx_prio_inherit = enabled;
+    return os_resultSuccess;
 }
 
 /** \brief Initialize the mutex taking the mutex attributes

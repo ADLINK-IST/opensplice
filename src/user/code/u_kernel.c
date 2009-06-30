@@ -66,6 +66,7 @@ C_STRUCT(domain) {
     os_lockPolicy lockPolicy;
     c_bool        heap;
     c_bool        builtinTopicEnabled;
+    c_bool        prioInherEnabled;
 };
 
 C_STRUCT(attributeCopyArg) {
@@ -172,6 +173,17 @@ u_kernelGetDomainConfig(
                         } /* else use default value */
                     } /* No attribute enabled, so use default value */
                 } /* No 'BuiltinTopics' element, so use default value */
+                
+                child = cf_element(cf_elementChild(dc, CFG_PRIOINHER));
+                if (child != NULL) {
+                    attr= cf_elementAttribute(child, "enabled");
+                    if (attr != NULL) {
+                        value = cf_attributeValue(attr);
+                        if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
+                            domainConfig->prioInherEnabled= TRUE;
+                        } /* else use default value */
+                    } /* No attribute enabled, so use default value */
+                } /* No 'PriorityInheritance' element, so use default value */
             }
         }
     }
@@ -433,6 +445,7 @@ u_kernelNew(
     domainCfg.lockPolicy = OS_LOCK_DEFAULT;
     domainCfg.heap = FALSE;
     domainCfg.builtinTopicEnabled = TRUE;
+    domainCfg.prioInherEnabled = FALSE;
 
     if (uri == NULL) {
         base = c_create(DATABASE_NAME,NULL,0);
@@ -638,13 +651,18 @@ u_kernelOpen(
     domainCfg.dbSize = DATABASE_SIZE;
     domainCfg.lockPolicy = OS_LOCK_DEFAULT;
     domainCfg.heap = FALSE;
+    domainCfg.builtinTopicEnabled = TRUE;
+    domainCfg.prioInherEnabled = FALSE;
 
     os_sharedAttrInit(&shm_attr);
     if ((uri != NULL) && (strlen(uri) > 0)) {
         s = cfg_parse(uri, &processConfig);
         if (s == CFGPRS_OK) {
             u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
-	    u_usrClockInit (processConfig);
+    	    u_usrClockInit (processConfig);
+            if (domainCfg.prioInherEnabled) {
+                os_mutexSetPriorityInheritanceMode(OS_TRUE);
+            }           
         } else {
             if (timeout >= 0) {
                 OS_REPORT_1(OS_ERROR, "u_kernelOpen", 0, 

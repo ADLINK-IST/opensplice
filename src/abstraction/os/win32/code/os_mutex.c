@@ -29,6 +29,19 @@
 
 /*** Public functions *****/
 
+/** \brief Sets the priority inheritance mode for mutexes
+ *   that are created after this call.
+ *
+ * Not (yet) supported on this platform
+ */
+os_result
+os_mutexSetPriorityInheritanceMode(
+    os_boolean enabled)
+{
+    /* Priority Inheritance is not supported on this platform (yet) */
+    return os_resultSuccess;
+}
+
 /** \brief Initialize the mutex taking the mutex attributes
  *         into account
  *
