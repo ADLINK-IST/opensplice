@@ -69,10 +69,10 @@ endif
 
 ifeq ("$(VS_VER)","15")
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include" 
-   VS_INCLUDE += -I"$(VS_HOME)../Microsoft SDKs/Windows/v6.0A/Include" 
+   VS_INCLUDE += -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include" 
 
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
-   VS_LIB_FLAGS += -L"$(VS_HOME)../Microsoft SDKs/Windows/v6.0A/lib"
+   VS_LIB_FLAGS += -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib"
 endif
 
 # Set compiler options for single threaded process

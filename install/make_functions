@@ -76,21 +76,24 @@ install_ascii_file()
     install_ascii_file_target_dir="$2"
     install_ascii_file_target_file="$3"
     install_ascii_file_source_file_may_not_exist="$4"
-    
+
     if [ "aap${install_ascii_file_target_file}" = "aap" ]
     then
         install_ascii_file_target_file=`basename ${install_ascii_file_source_file}`
     fi
-    
+
     if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" ]
     then
         if [ -d ${install_ascii_file_target_dir} ]
         then
-            if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" -a -f ${install_ascii_file_source_file} ]
+            if [ -f "${install_ascii_file_source_file}" ]
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
                 cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-                ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+                if [ -n ${TXTFILE_CONVERTER} ]
+                then
+                    ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
+                fi
                 echo "Ready"
             else
                 echo "* ##    file ${install_ascii_file_source_file} not found"
@@ -98,18 +101,34 @@ install_ascii_file()
         else
             echo "* ##    ${install_ascii_file_target_dir} does not exist"
         fi
+    elif [ -f ${install_ascii_file_source_file} ]
+    then
+        printf "*                 copy ${install_ascii_file_source_file} ... "
+        cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
+        if [ -n ${TXTFILE_CONVERTER} ]
+        then
+            ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
+        fi
+        echo "Ready"
     fi
 }
 
 install_ascii_fileset()
 {
-    install_ascii_fileset_fileset=`ls -d $1`
+    install_ascii_fileset=$1
     install_ascii_fileset_target_dir=$2
     
-    for i in ${install_ascii_fileset_fileset}
+    printf "*                 copy ${install_ascii_fileset} ... "
+    for i in ${install_ascii_fileset}
     do
         install_ascii_file $i ${install_ascii_fileset_target_dir}
     done
+    if [ -n ${TXTFILE_CONVERTER} ]
+    then
+        ${TXTFILE_CONVERTER} $install_ascii_fileset_target_dir/* >& /dev/null
+    fi
+    echo "Ready"
+
 }
 
 buildTarGZ ()
@@ -132,18 +151,6 @@ make_hde_mirror_and_builder ()
 {
     INSTTYPE="HDE"
     FULLINSTTYPE="Host_Development_Environment"
-    SOURCE_TARGET="$1"
-    SOURCE_HOST="$2"
-    BUILDER_TARGET="$3"
-    PACKAGE_VERSION="$4"
-    PACKAGE_DATE="$5"
-    SCRIPT_NAME="$6"
-    TXTFILE_CONVERTER="$7"
-    ENV="$8"
-    GETLIC_INFO_NAME="$9"
-    NOINSTALLER="${10}"
-    PLATFORM_EXT="${11}"
-    SOURCE_TARGET_SHORT="${12}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
@@ -201,6 +208,9 @@ installer_setup ()
     SCRIPT_NAME="$5"
     SOURCE_ENV="$6"
     GETLIC_INFO_NAME="$7"
+
+    # set SOURCE_TARGET_SHORT to be used in bitrock 
+    SOURCE_TARGET_SHORT=`expr "${SOURCE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     
     if [ "${SOURCE_ENV}" = "-release" ]
     then
@@ -208,7 +218,7 @@ installer_setup ()
     else
         TARGET_ENV=${SOURCE_ENV}
     fi
-    
+
     #determine if licensing is enabled
     if [ -z "${FLEX_HOME}" ]
     then
@@ -216,12 +226,12 @@ installer_setup ()
     else
         WITHLICENSE=true;
     fi
-    
+
     echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
-    
+
     echo Release is ${PACKAGE_VERSION}
     echo Date is ${PACKAGE_DATE}
-    
+
     #set output directory, currently no parameter
     OUTPUTDIR="$OSPL_HOME/install/VC"
     mkdir -p $OUTPUTDIR
@@ -235,26 +245,26 @@ set_envs ()
     else
         NOINSTALLER=""
     fi
-    
+
     ENV=`expr "${SPLICE_TARGET}" : '[^-]*\(.*\)'`
-    
+
     SOURCE_HOST=`expr "${SPLICE_HOST}" : '\([^-]*\)'`
     SOURCE_HOST_SHORT=`expr "${SPLICE_HOST}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     SOURCE_TARGET=`expr "${SPLICE_TARGET}" : '\([^-]*\)'`
     SOURCE_TARGET_SHORT=`expr "${SPLICE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-    
+
     BUILDER_TARGET=""
     SCRIPT_NAME=""
-    TXTFILE_CONVERTER="echo done"
+    TXTFILE_CONVERTER=""
     GETLIC_INFO_NAME=""
-    
+
     if [ "${SOURCE_HOST_SHORT}" = "linux" ]
     then
         BUILDER_TARGET="linux"
         SCRIPT_NAME="release.com"
         GETLIC_INFO_NAME="getlic_info"
     fi
-            
+
     if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         (cd ${OSPL_HOME}/install/service_installer; make)
@@ -279,18 +289,18 @@ set_rts_envs ()
             suffix_exe=".vxe"
             ;;
     esac
-    
+
     target_version=$2
     target_date=$3
-    
+
     if [ "x_$4" = "x_" ]; then
         source_env="-release"
     else
         source_env=$4
     fi
-    
+
     TXTFILE_CONVERTER="$5"
-    
+
     if [ "x_${source_env}" = "x_-release" ]; then
         target_env="";
     else
@@ -311,33 +321,43 @@ set_hde_envs ()
 {
     target=$1
     suffix_exe=""
+    target_suffix_exe=""
     suffix_script=""
-    if [ "${target}" = "x86.win32" ]
+
+    host=$2
+    target_version=$3
+    target_date=$4
+
+    if [ "${host}" = "x86.win32" ]
     then
         suffix_exe=".exe"
         suffix_script=".bat"
     fi
 
-    host=$2
-    target_version=$3
-    target_date=$4
-    
-    
+    case ${target} in
+        x86.win32)
+            target_suffix_exe=".exe"
+            ;;
+        PPC604.vxworks6.6*)
+            target_suffix_exe=".vxe"
+            ;;
+    esac
+
     if [ "x_$5" = "x_" ]; then
         source_env="-release"
     else
         source_env=$5
     fi
-    
+
     if [ "x_$5" = "x_-release" ]; then
         target_env="";
     else
         target_env=$5;
     fi
-    
+
     TXTFILE_CONVERTER="$6"
     SOURCE_TARGET_SHORT="$7"
-
+   
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
     then
@@ -358,14 +378,17 @@ set_hde_envs ()
     PLATFORM_EXT=unix
     if [ "${target}" = "x86_64.linux2.6" ]
     then
-	PLATFORM_EXT=unix64	
+	PLATFORM_EXT=unix64
+    elif [ "${target}" = "PPC5plus.AIX5.3" ]
+    then
+        PLATFORM_EXT=xlc
     fi
 }
 
 remove_hde_mirror ()
 {
     #
-    # Remove old HDE first 
+    # Remove old HDE first
     #
     if [ -d ${HDE_dir} ]
     then
@@ -379,7 +402,7 @@ remove_hde_mirror ()
 create_hde_mirror ()
 {
     #
-    # Prepare HDE master directory 
+    # Prepare HDE master directory
     #
     printf "*   Prepare HDE master directory ... "
     mkdir -p ${HDE_dir}; echo "Ready"
@@ -394,7 +417,7 @@ remove_rts_mirror ()
     then
         printf "*   Remove old RTS/$target directory ... "
         chmod -R 777 ${RTS_dir} 2> /dev/null
-        rm -rf ${RTS_dir}; 
+        rm -rf ${RTS_dir};
         echo "Ready"
     fi
 }
@@ -410,17 +433,8 @@ create_rts_mirror ()
 
 install_hde_target ()
 {
-    HDE_dir=$1
-    target=$2
     target_os=`expr "$target" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-    host=$3
     host_os=`expr "$host" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-    target_version=$4
-    target_date=$5
-    suffix_exe=$6
-    suffix_script=$7
-    source_env=$8
-    target_env=$9
 
     #
     # Copy general license file
@@ -483,11 +497,11 @@ install_hde_target ()
     fi
 
     #
-    # Copy IDL preprocessor configuration file for SAJ
+    # Copy IDL preprocessor configuration file for SAJ/CJ
     #
-    if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+    if  [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ] || [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
     then
-        printf "*       For SAJ ... "
+        printf "*       For SAJ/CJ ... "
         mkdir ${HDE_dir}/etc/idlpp/SAJ
         cp ${OSPL_HOME}/etc/idlpp/SAJ/tmpl* ${HDE_dir}/etc/idlpp/SAJ/
         echo "Ready"
@@ -509,21 +523,19 @@ install_hde_target ()
     #
     # Copy default configuration file for OpenSplice
     #
-    if [ "${target_os}" = "${host_os}" ]
-    then
-        printf "*     Copy OpenSplice default configuration file "
+   
+    printf "*     Copy OpenSplice default configuration file "
 
-        mkdir ${HDE_dir}/etc/config
-        sed -e "s/__RELEASE__/${target_version}/g" \
-            -e "s/__EXE__/${suffix_exe}/g" \
-            ${OSPL_HOME}/etc/ospl.xml > ${HDE_dir}/etc/config/ospl.xml
-        sed -e "s/__RELEASE__/${target_version}/g" \
-            -e "s/__EXE__/${suffix_exe}/g" \
-            ${OSPL_HOME}/etc/ospl_no_network.xml > ${HDE_dir}/etc/config/ospl_no_network.xml
-
-        echo "Ready"
-    fi
-
+    mkdir ${HDE_dir}/etc/config
+    sed -e "s/__RELEASE__/${target_version}/g" \
+        -e "s/__EXE__/${target_suffix_exe}/g" \
+        ${OSPL_HOME}/etc/ospl.xml > ${HDE_dir}/etc/config/ospl.xml
+    sed -e "s/__RELEASE__/${target_version}/g" \
+        -e "s/__EXE__/${target_suffix_exe}/g" \
+        ${OSPL_HOME}/etc/ospl_no_network.xml > ${HDE_dir}/etc/config/ospl_no_network.xml
+    
+    echo "Ready"
+    
     #
     # Copy libray files
     #
@@ -542,7 +554,7 @@ install_hde_target ()
         echo "* ##    No target library files detected"
     fi
     echo "Ready"
-	
+
     if [ "${target_os}" != "${host_os}" ]
     then
         printf "*         For host ... "
@@ -576,6 +588,7 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
+
     if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
 	printf "*     Copy JAVA host archive files... "
@@ -596,33 +609,33 @@ install_hde_target ()
     echo "*     Copy OpenSplice executables"
     target_release=${OSPL_HOME}/exec/${target}${source_env}
     host_release=${OSPL_HOME}/exec/${host}${source_env}
+    
     if [ -d "${target_release}" -a -d "${host_release}" ]
     then
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
-        # In the HDE we only need the other executables in case host and target are equal
-        if [ "${target_os}" = "${host_os}" ]
+        
+        # Copy the executables for the target 
+        install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
+        install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
+        install_bin_file ${target_release} ${HDE_dir} bin durability${target_suffix_exe}
+        if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
         then
-            install_bin_file ${host_release} ${HDE_dir} bin spliced${suffix_exe}
-            install_bin_file ${host_release} ${HDE_dir} bin networking${suffix_exe}
-            install_bin_file ${host_release} ${HDE_dir} bin durability${suffix_exe}
-            if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin ddsi${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin ospl${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin mmstat${suffix_exe}
-            fi
-            if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
-            then
-                install_bin_file ${host_release} ${HDE_dir} bin shmdump${suffix_exe}
-            fi
+            install_bin_file ${target_release} ${HDE_dir} bin ddsi${target_suffix_exe}
         fi
+        if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin ospl${target_suffix_exe}
+        fi
+        if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin mmstat${target_suffix_exe}
+        fi
+        if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
+        then
+            install_bin_file ${target_release} ${HDE_dir} bin shmdump${target_suffix_exe}
+        fi
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
@@ -646,23 +659,23 @@ install_hde_target ()
     mkdir ${HDE_dir}/include/common
     mkdir ${HDE_dir}/include/common/include
 
-    cp ${OSPL_HOME}/src/abstraction/os/posix/include/os_*.h ${HDE_dir}/include/posix/include/
-    cp ${OSPL_HOME}/src/abstraction/os/common/include/os_*.h ${HDE_dir}/include/common/include/
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/posix/include/os_*.h" "${HDE_dir}/include/posix/include/"
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/common/include/os_*.h" "${HDE_dir}/include/common/include/"
 
     mkdir ${HDE_dir}/include/svr4
     mkdir ${HDE_dir}/include/svr4/include
 
     if [ -d "${OSPL_HOME}/src/abstraction/os/${os}/include/" ]
     then
-        cp ${OSPL_HOME}/src/abstraction/os/${os}/include/os_*.h ${HDE_dir}/include/include
+        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/${os}/include/os_*.h" "${HDE_dir}/include/include"
     fi
 
-    cp ${OSPL_HOME}/src/abstraction/os/include/os_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/abstraction/os/include/os.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/database/database/include/[cq]_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/kernel/include/v_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/user/include/u_*.h ${HDE_dir}/include/sys
-    cp ${OSPL_HOME}/src/include/kernelModule.h ${HDE_dir}/include/sys
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/database/database/include/[cq]_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/kernel/include/v_*.h" "${HDE_dir}/include/sys"
+    install_ascii_fileset "${OSPL_HOME}/src/user/include/u_*.h" "${HDE_dir}/include/sys"
+    install_ascii_file "${OSPL_HOME}/src/include/kernelModule.h" "${HDE_dir}/include/sys"
 
     #
     # Copy documentation
@@ -670,7 +683,7 @@ install_hde_target ()
     printf "*     Copy documentation... "
     cp -r ${OSPL_HOME}/docs ${HDE_dir}
     # remove documentation for components that are not installed
-    if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" ]
+    if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes" ]
     then
         rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_Java.pdf
     fi
@@ -698,23 +711,28 @@ install_hde_target ()
     then
         release=`ls -d ${OSPL_HOME}/src/api/dcps/ccpp/bld/${target}${source_env} 2>/dev/null`
         echo "*         For C++"
-        printf "*           For CCPP ... "
+        echo "*           For CCPP ... "
         mkdir ${HDE_dir}/include/dcps/C++
         mkdir ${HDE_dir}/include/dcps/C++/CCPP
 
         for ORB_TMPL in ${ORB_TMPLS}
         do
             mkdir ${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}
-            cp ${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.[ih]  ${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}
+            install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.[ih]" \
+              "${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}"
         done
 
-        cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}
+        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}"
 
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h ${HDE_dir}/include/dcps/C++/CCPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h ${HDE_dir}/include/dcps/C++/CCPP
-        echo "Ready"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        echo "*           CCPP Ready"
     fi
 
     #
@@ -724,21 +742,28 @@ install_hde_target ()
     then
         release=`ls -d ${OSPL_HOME}/src/api/dcps/sacpp/bld/${target}${source_env} 2>/dev/null`
         echo "*         For C++"
-        printf "*           For SACPP ... "
+        echo "*           For SACPP ... "
         if [ ! -d ${HDE_dir}/include/dcps/C++ ]
         then
             mkdir ${HDE_dir}/include/dcps/C++
         fi
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
         mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
-        cp ${release}/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/sacpp/include/*.h ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h ${HDE_dir}/include/dcps/C++/SACPP/mapping
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih] ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h ${HDE_dir}/include/dcps/C++/SACPP
-        cp ${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h ${HDE_dir}/include/dcps/C++/SACPP
-        echo "Ready"
+
+        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/*.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP/mapping"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/idl/*.idl" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        echo "*           SACPP  Ready"
         echo "*         C++ Ready"
     fi
 
@@ -748,11 +773,12 @@ install_hde_target ()
     if [ "${INCLUDE_API_DCPS_SAC}" = "yes" ]
     then
         echo "*         For C"
-        printf "*           For SAC ... "
+        echo "*           For SAC ... "
         mkdir ${HDE_dir}/include/dcps/C
         mkdir ${HDE_dir}/include/dcps/C/SAC
-        cp ${OSPL_HOME}/src/api/dcps/sac/include/*.h ${HDE_dir}/include/dcps/C/SAC
-        echo "Ready"
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sac/include/*.h" \
+            "${HDE_dir}/include/dcps/C/SAC"
+        echo "*           SAC Ready"
         echo "*         C Ready"
     fi
     echo "*       DCPS Ready"
@@ -763,19 +789,25 @@ install_hde_target ()
     #
     if [ "${INCLUDE_API_DCPS_CCPP}" = "yes" ]
     then
-        printf "*     Copy custom CCPP support ... "
+        echo "*     Copy custom CCPP support ... "
         release=`ls -d ${OSPL_HOME}/src/api/dcps/ccpp 2>/dev/null`
         mkdir -p ${HDE_dir}/custom_lib
         mkdir -p ${HDE_dir}/custom_lib/ccpp
 
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/ccpp/makefile
-        cp ${release}/custom/README ${HDE_dir}/custom_lib/ccpp
-        cp ${release}/custom/setup ${HDE_dir}/custom_lib/ccpp
-        cp ${OSPL_HOME}/setup/makefiles/orbdeps.mak ${HDE_dir}/custom_lib/ccpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_fileset "${release}/idl/*.idl" "${HDE_dir}/custom_lib/ccpp"
 
-        echo "Ready"
+        if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
+        then 
+            install_ascii_file "${release}/custom/makefile_$PLATFORM_EXT" \
+                "${HDE_dir}/custom_lib/ccpp" "makefile"
+        fi
+
+        install_ascii_file "${release}/custom/README" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_file "${release}/custom/setup" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_file "${OSPL_HOME}/setup/makefiles/orbdeps.mak" "${HDE_dir}/custom_lib/ccpp"
+
+        echo "*     custom CCPP supportReady"
     fi
 
     #
@@ -783,21 +815,26 @@ install_hde_target ()
     #
     if [ "${INCLUDE_API_DCPS_SACPP}" = "yes" ]
     then
-        printf "*     Copy custom SACPP support ... "
+        echo "*     Copy custom SACPP support ... "
         mkdir -p ${HDE_dir}/custom_lib/sacpp
 
         # Code that can be re-used from CCPP.
         release=${OSPL_HOME}/src/api/dcps/ccpp
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
-        cp ${release}/idl/*.idl ${HDE_dir}/custom_lib/sacpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/sacpp"
+        install_ascii_fileset "${release}/idl/*.idl" "${HDE_dir}/custom_lib/sacpp"
 
         # SACPP specific makefile stuff.
         release=${OSPL_HOME}/src/api/dcps/sacpp
-        cp ${release}/code/*.cpp ${HDE_dir}/custom_lib/sacpp
-        cp ${release}/custom/makefile_$PLATFORM_EXT ${HDE_dir}/custom_lib/sacpp/makefile
-        cp ${release}/custom/README ${HDE_dir}/custom_lib/sacpp
+        install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/sacpp"
 
-        echo "Ready"
+        if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
+        then
+             install_ascii_file "${release}/custom/makefile_${PLATFORM_EXT}" \
+                "${HDE_dir}/custom_lib/sacpp" "makefile"
+        fi
+        install_ascii_file "${release}/custom/README" "${HDE_dir}/custom_lib/sacpp"
+
+        echo "*     custom SACPP support Ready"
     fi
 
     #
@@ -814,7 +851,7 @@ install_hde_target ()
     mkdir ${HDE_dir}/examples/dcps
     mkdir ${HDE_dir}/examples/dcps/standalone
 
-    if [ "${INCLUDE_CXX}" = "yes" ]
+    if [ "${INCLUDE_CXX}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
@@ -829,9 +866,12 @@ install_hde_target ()
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.idl" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.cpp" \
-                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong            
-                install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                if [ -f ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT ]
+                then
+                     install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
+                fi
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
@@ -843,6 +883,8 @@ install_hde_target ()
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.idl" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.cpp" \
+                    ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/*.bat" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP_x86.win32/OpenFusion/PingPong/*.vcproj" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong/PingPong
@@ -867,8 +909,12 @@ install_hde_target ()
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/*.txt" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial
-                install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
+
+                if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT ]
+                then
+                     install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial Makefile
+                fi
             else
                 mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/ChatBoxUtil
                 mkdir ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/Tutorial/Chatter
@@ -901,14 +947,19 @@ install_hde_target ()
         mkdir ${HDE_dir}/examples/dcps/standalone/C++
         echo "*           For PingPong... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C++/PingPong
-        if [ "${target}" != "x86.win32" ] 
+        if [ "${target}" != "x86.win32" ]
         then
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP/*.idl" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP/*.cpp" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT ]
+            then
+                install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SACPP/README.txt \
@@ -920,6 +971,8 @@ install_hde_target ()
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.idl" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.cpp" \
+                ${HDE_dir}/examples/dcps/standalone/C++/PingPong
+            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.bat" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/PingPong/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong/PingPong
@@ -942,8 +995,13 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/*.h" \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP/*.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial
         else
@@ -971,7 +1029,7 @@ install_hde_target ()
         echo "*           Ready"
     fi
 
-    if [ "${INCLUDE_C}" = "yes" ]
+    if [ "${INCLUDE_C}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         echo "*         For C++ on C... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC
@@ -987,8 +1045,12 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
             install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/README.txt \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong Makefile
+            fi
 
         else
             mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
@@ -1025,8 +1087,13 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/README.txt \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
-            install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong Makefile
+            fi
+
             install_ascii_file ${OSPL_HOME}/examples/dcps/C/SAC/RUN \
                 ${HDE_dir}/examples/dcps/standalone/C/PingPong
         else
@@ -1061,8 +1128,12 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT \
+
+            if [ -f ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT ]
+            then
+                 install_ascii_file ${OSPL_HOME}/examples/dcps/Tutorial/C/SAC/makefile_$PLATFORM_EXT \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial Makefile
+            fi
         else
             mkdir ${HDE_dir}/examples/dcps/standalone/C/Tutorial/ChatBoxUtil
             mkdir ${HDE_dir}/examples/dcps/standalone/C/Tutorial/Chatter
@@ -1073,8 +1144,6 @@ install_hde_target ()
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.c" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.h" \
-                ${HDE_dir}/examples/dcps/standalone/C/Tutorial
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.bat" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C/SAC_x86.win32/*.txt" \
                 ${HDE_dir}/examples/dcps/standalone/C/Tutorial
@@ -1091,7 +1160,7 @@ install_hde_target ()
         echo "*         C Ready"
     fi
 
-    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" ]
+    if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
         echo "*         For standalone Java"
         mkdir ${HDE_dir}/examples/dcps/standalone/Java
@@ -1120,9 +1189,39 @@ install_hde_target ()
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/*.txt" \
             ${HDE_dir}/examples/dcps/standalone/Java/Tutorial
         echo "*           Ready"
+
+        echo "*         For Corba Java"
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB
+        echo "*           For PingPong... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/BUILD${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/RUN${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.txt" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/PingPong
+        echo "*           Ready"
+        echo "*           For Tutorial... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial/chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/chatroom/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial/chatroom
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/BUILD${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/*.txt" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
+        echo "*           Ready"
         echo "*         Java Ready"
     fi
-    echo "*       DCPS Ready"    
+
+    echo "*       DCPS Ready"
     echo "*     Copy examples Ready"
 
     #
@@ -1184,6 +1283,22 @@ install_hde_target ()
             echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> ${RELF}
         fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI CLASSPATH" >> $RELF
+        echo "Ready"
+    else
+        printf "*     Prepare default release.bat ... "
+        RELF=${HDE_dir}/release.bat
+        echo "@echo off" >> $RELF
+        echo "echo \"<<< OpenSplice HDE Release ${target_version} For ${target}${target_env}, Date ${target_date} >>>\"" >> ${RELF}
+        echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+        echo "set OSPL_HOME=%~dp0" >> $RELF
+        echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
+        echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
+        echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
+        echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
         echo "Ready"
     fi
 }
@@ -1249,7 +1364,7 @@ install_rts_target ()
         echo "* ##    No library files detected"
     fi
     echo "Ready"
-    
+
     #
     # Copy java archive files
     #
@@ -1267,7 +1382,7 @@ install_rts_target ()
         fi
         echo "*     JAVA archive Ready"
     fi
-    
+
     #
     # Copy Windows service installer and resources into place
     #
@@ -1305,7 +1420,7 @@ install_rts_target ()
         then
             install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
         fi
-        
+
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
@@ -1353,6 +1468,20 @@ install_rts_target ()
         fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI CLASSPATH" >> $RELF
         echo "Ready"
+    else
+        printf "*     Prepare default release.bat ... "
+        RELF=${RTS_dir}/release.bat
+        echo "@echo off" >> $RELF
+        echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+        echo "set OSPL_HOME=%~dp0" >> $RELF
+        echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
+        echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
+        echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
+        echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        echo "Ready"
     fi
-
 }

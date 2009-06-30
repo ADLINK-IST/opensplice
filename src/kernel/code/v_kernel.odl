@@ -75,9 +75,9 @@ class v_writerStatistics extends v_statistics {
     attribute c_ulong            numberOfWritesBlockedBySamplesPerInstanceLimit;
     attribute c_ulong            numberOfRetries;
 
-    attribute c_ulong            numberOfAliveInstances;
-    attribute c_ulong            numberOfDisposedInstances;
-    attribute c_ulong            numberOfUnregisteredInstances;
+    attribute c_ulong            numberOfInstancesWithStatusAlive;
+    attribute c_ulong            numberOfInstancesWithStatusDisposed;
+    attribute c_ulong            numberOfInstancesWithStatusUnregistered;
     attribute c_ulong            numberOfSamples;
     attribute v_maxValue         maxNumberOfSamplesPerInstance;
 };

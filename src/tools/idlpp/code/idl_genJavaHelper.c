@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_genJavaHelper.h"
@@ -265,13 +265,13 @@ idl_createDir (
     struct os_stat statbuf;
     char* outdir;
     pathName[0] = '\0';
-    
+
     outdir = idl_dirOutCur();
-    
+
     if(outdir){
         sprintf(pathName, "%s%s", outdir, os_fileSep());
     }
-    
+
     for (si = 0; si < idl_scopeStackSize(scope); si++) {
 	se = idl_scopeIndexed (scope, si);
 	strcat (pathName, idl_javaId(idl_scopeJavaElementName(se)));
@@ -298,7 +298,7 @@ idl_createDir (
     }
     return 1;
 }
-    
+
 void
 idl_openJavaPackage (
     idl_scope scope,
@@ -306,7 +306,7 @@ idl_openJavaPackage (
 {
     char *fname;
     char *package_file;
-    
+
     package_file = os_malloc(strlen (name) + strlen (".java") + 1);
     strcpy(package_file, name);
     strcat(package_file, ".java");

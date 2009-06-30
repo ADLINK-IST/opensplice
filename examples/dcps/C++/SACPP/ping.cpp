@@ -169,7 +169,15 @@ timeGet (
 {
     struct timeval current_time;
 
+#ifdef USE_CLOCK_GETTIME
+     struct timespec tv;
+ 
+     clock_gettime (CLOCK_REALTIME, &tv);
+     current_time.tv_sec = tv.tv_sec;
+     current_time.tv_usec = tv.tv_nsec / 1000;
+#else
     gettimeofday (&current_time, NULL);
+#endif
 
     return current_time;
 }
@@ -221,7 +229,7 @@ PP_min_handler (
         if (amount > 1) {
             cout << "PING: Ignore excess messages : " << PP_min_dataList->length () << " msg received" << endl;
         }
-        PP_min_dataList[0U].count++;
+        PP_min_dataList[(DDS::ULong)0U].count++;
         if (PP_min_dataList[0].count < nof_cycles) {
             preWriteTime = timeGet ();
             (void)PP_min_writer->write (PP_min_dataList[0], HANDLE_NIL);
@@ -260,10 +268,10 @@ PP_seq_handler (
         if (amount > 1) {
             cout << "PING: Ignore excess messages : " << PP_seq_dataList->length () << " msg received" << endl;
         }
-        PP_seq_dataList[0U].count++;
-        if (PP_seq_dataList[0U].count < nof_cycles) {
+        PP_seq_dataList[(DDS::ULong)0U].count++;
+        if (PP_seq_dataList[(DDS::ULong)0U].count < nof_cycles) {
             preWriteTime = timeGet ();
-            PP_seq_writer->write (PP_seq_dataList[0U], HANDLE_NIL);
+            PP_seq_writer->write (PP_seq_dataList[(DDS::ULong)0U], HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -300,10 +308,10 @@ PP_string_handler (
         if (amount > 1) {
             cout << "PING: Ignore excess messages : " << PP_string_dataList->length () << " msg received" << endl;
         }
-        PP_string_dataList[0U].count++;
-        if (PP_string_dataList[0U].count < nof_cycles) {
+        PP_string_dataList[(DDS::ULong)0U].count++;
+        if (PP_string_dataList[(DDS::ULong)0U].count < nof_cycles) {
             preWriteTime = timeGet ();
-            PP_string_writer->write (PP_string_dataList[0U], HANDLE_NIL);
+            PP_string_writer->write (PP_string_dataList[(DDS::ULong)0U], HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -339,10 +347,10 @@ PP_fixed_handler (
         if (amount > 1) {
             cout << "PING: Ignore excess messages : " << PP_fixed_dataList->length () << " msg received" << endl;
         }
-        PP_fixed_dataList[0U].count++;
-        if (PP_fixed_dataList[0U].count < nof_cycles ) {
+        PP_fixed_dataList[(DDS::ULong)0U].count++;
+        if (PP_fixed_dataList[(DDS::ULong)0U].count < nof_cycles ) {
             preWriteTime = timeGet ();
-            PP_fixed_writer->write (PP_fixed_dataList[0U], HANDLE_NIL);
+            PP_fixed_writer->write (PP_fixed_dataList[(DDS::ULong)0U], HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
         } else {
@@ -626,7 +634,7 @@ main (
         printf("Invalid topic-id\n");
         exit(1);
     }
-    for (block = 0; block < nof_blocks ; block++) {
+    for (block = 0; block < (int)nof_blocks ; block++) {
         while (!finish_flag) {
             //
             // Send Initial message

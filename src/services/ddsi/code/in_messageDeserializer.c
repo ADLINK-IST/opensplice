@@ -719,7 +719,6 @@ in_messageDeserializerReadArray(
     {
         array = data;
         length = ctype->maxSize;
-        assert(length > 0);
         assert(array);
     } else
     {

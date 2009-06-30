@@ -27,6 +27,8 @@
 #include "CheckStatus.h"
 #include "ccpp_Chat.h"
 
+#include "Windows.h"
+
 #define MAX_MSG_LEN 256
 #define NUM_MSG 10
 #define TERMINATION_MESSAGE -1 

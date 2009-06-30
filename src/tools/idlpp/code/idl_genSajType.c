@@ -828,7 +828,7 @@ static c_char *
 idl_valueFromLabelVal (
     idl_labelVal labelVal)
 {
-    static c_char labelName[100];
+    static c_char labelName[1000];
 
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
         snprintf(labelName, (size_t)sizeof(labelName), "%s",

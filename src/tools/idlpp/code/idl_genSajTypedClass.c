@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_program.h"
@@ -113,7 +113,7 @@ idl_genInterface(
     /* Prepare typeSupportHolder class */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
     /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf ("No template found or protection violation (%s)\n", tmplFileName);
         return -1;
@@ -145,7 +145,7 @@ idl_genInterface(
     /* Prepare typeSupportHelper class */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
     /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf ("No template found or protection violation (%s)\n", tmplFileName);
         return -1;
@@ -177,7 +177,7 @@ idl_genInterface(
     /* Prepare typeSupportOperations class */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
     /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf ("No template found or protection violation (%s)\n", tmplFileName);
         return -1;

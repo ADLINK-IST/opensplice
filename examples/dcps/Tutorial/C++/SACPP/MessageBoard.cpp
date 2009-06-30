@@ -79,6 +79,11 @@ main (
     char  *                         nameServiceTypeName = NULL;
     char  *                         namedMessageTypeName = NULL;
 
+#ifdef USE_NANOSLEEP
+    struct timespec                 sleeptime;
+    struct timespec                 remtime;
+#endif
+
     /* Options: MessageBoard [ownID] */
     /* Messages having owner ownID will be ignored */
     parameterList.length(1);
@@ -227,7 +232,13 @@ main (
         checkStatus(status, "Chat::ChatMessageDataReader::return_loan");
         
         /* Sleep for some amount of time, as not to consume too much CPU cycles. */
+#ifdef USE_NANOSLEEP
+        sleeptime.tv_sec = 0;
+        sleeptime.tv_nsec = 100000000;
+        nanosleep(&sleeptime, &remtime);
+#else
         usleep(100000);
+#endif
     }
 
     /* Remove the DataReader */

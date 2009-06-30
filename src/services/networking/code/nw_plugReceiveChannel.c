@@ -93,8 +93,8 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 #endif
 
 #define SET_USEDCOUNT(admin, value) admin->usedCount = value; PRINT_USEDCOUNT(admin)
-#define INC_USEDCOUNT(admin)        admin->usedCount++;       PRINT_USEDCOUNT(admin)
-#define DEC_USEDCOUNT(admin)        admin->usedCount--;       PRINT_USEDCOUNT(admin)
+#define INC_USEDCOUNT(admin)        pa_increment(&admin->usedCount);       PRINT_USEDCOUNT(admin)
+#define DEC_USEDCOUNT(admin)        pa_decrement(&admin->usedCount);       PRINT_USEDCOUNT(admin)
 
 static nw_plugBufferDefragAdmin
 nw_plugBufferDefragAdminCreate(
@@ -1285,6 +1285,8 @@ nw_plugReceiveChannelIgnoreLastReturnedMessage(
                 DF_DATA(lastReturnedMsgHolderPtr->firstAdmin), NULL, FALSE);
         }
 
+        /* Free the last returned buffer because of the firstAdmin ptr */
+        nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
 
         /* need to determine if the admin is no longer used by any message
          * holder pointer, which can be detected by checking the usedCount of

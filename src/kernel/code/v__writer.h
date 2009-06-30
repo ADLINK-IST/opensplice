@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V__WRITER_H
@@ -15,6 +15,68 @@
 #include "v_writer.h"
 #include "v_writerInstance.h"
 #include "v_entity.h"
+
+/**************************************************************
+ * Local Macro definitions
+ **************************************************************/
+#define __V_WRITER_UPDATE_FOR_FLAG__(flag, statSuffix, writer, oldState, xoredState) \
+    if (v_stateTest(xoredState, flag)) {                         \
+        if (v_stateTest(oldState, flag)) {                       \
+            v_statisticsULongValueDec(v_writer,                  \
+              numberOfInstancesWithStatus##statSuffix, writer); \
+        } else {                                                 \
+            v_statisticsULongValueInc(v_writer,                 \
+              numberOfInstancesWithStatus##statSuffix, writer); \
+        }                                                        \
+    }
+/* Returns TRUE if both the L_DISPOSED and L_UNREGISTER flags are not set. */
+#define __V_WRITER_ALIVE__(state) v_stateTestNot(state, (L_DISPOSED | L_UNREGISTER))
+/* Returns TRUE if either the L_DISPOSED or L_UNREGISTER flags is set. */
+#define __V_WRITER_LIVELINESS_CHANGED__(xoredState) v_stateTestOr(xoredState, (L_DISPOSED | L_UNREGISTER))
+
+/* Updates the liveliness statistic for an instance. If oldState == 0, then
+ * nothing the statistics are updated as if the instance just became ALIVE (so
+ * the new state has to be ALIVE). This is useful for initialization. It uses
+ * the newState (oldState ^ xoredState) to determine whether counters have to be
+ * updated. */
+#define __V_WRITER_UPDATE_ALIVE__(writer, oldState, xoredState) \
+    if (oldState != 0 && __V_WRITER_LIVELINESS_CHANGED__(xoredState)) { \
+        if (__V_WRITER_ALIVE__(oldState)){\
+            v_statisticsULongValueDec(v_writer,                         \
+                    numberOfInstancesWithStatusAlive, writer);          \
+        } else if (__V_WRITER_ALIVE__(oldState ^ xoredState)){          \
+            v_statisticsULongValueInc(v_writer,                         \
+                    numberOfInstancesWithStatusAlive, writer);          \
+        }\
+    } else if (oldState == 0 && __V_WRITER_ALIVE__(oldState ^ xoredState)) { \
+        v_statisticsULongValueInc(v_writer,                         \
+        numberOfInstancesWithStatusAlive, writer);          \
+    }
+
+/* Updates the statistics for the instance-state flags that are enabled. Updates
+ * are only performed when statistics are enabled for the specified reader. */
+#define UPDATE_WRITER_STATISTICS(writer, instance, oldState) \
+    if (v_statisticsValid(writer)) { \
+        v_state xoredState = oldState^instance->state; \
+                                                               \
+        __V_WRITER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, writer,oldState,xoredState) \
+        __V_WRITER_UPDATE_FOR_FLAG__(L_UNREGISTER,Unregistered, writer,oldState,xoredState) \
+        __V_WRITER_UPDATE_ALIVE__(writer,oldState,xoredState) \
+    }
+
+/* Subtracts the currently still enabled instance-state flags from the
+ * statistics. Updates are only performed when statistics are enabled for
+ * the specified writer. */
+#define UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(writer, instance) \
+    if (v_statisticsValid(writer)) { \
+                                                                                   \
+        __V_WRITER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, writer, instance->state, instance->state) \
+        __V_WRITER_UPDATE_FOR_FLAG__(L_UNREGISTER, Unregistered, writer, instance->state, instance->state) \
+        if(__V_WRITER_ALIVE__(instance->state)){             \
+            v_statisticsULongValueDec(v_writer,              \
+                numberOfInstancesWithStatusAlive, writer);   \
+        } \
+    }
 
 #define v_writerKeyList(_this) \
         c_tableKeyList(v_writer(_this)->instances)

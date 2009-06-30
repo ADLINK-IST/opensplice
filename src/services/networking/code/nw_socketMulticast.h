@@ -26,7 +26,8 @@ nw_socketGetDefaultMulticastInterface(
 
 void
 nw_socketMulticastInitialize(
-    nw_socket socket);
+    nw_socket socket,
+    sk_bool receiving);
 
 void
 nw_socketMulticastAddPartition(

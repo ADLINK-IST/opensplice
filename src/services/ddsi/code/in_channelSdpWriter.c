@@ -890,7 +890,11 @@ in_channelSdpWriterSendParticipantsHeartbeat(
                     &nilSN,
                     partCount,
                     singleDestination);
-                if(result != IN_RESULT_OK)
+
+                if(result == IN_RESULT_OK)
+                {
+                	in_streamWriterFlushSingle(_this->streamWriter, singleDestination);
+                } else
                 {
                      IN_REPORT_ERROR(
                     	"in_channelSdpWriterSendParticipantsHeartbeat",
@@ -903,7 +907,6 @@ in_channelSdpWriterSendParticipantsHeartbeat(
         iterator = Coll_Iter_getNext(iterator);
     }
 
-    in_streamWriterFlushSingle(_this->streamWriter, singleDestination);
 }
 
 /*******************************************************************************
