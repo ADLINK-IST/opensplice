@@ -90,7 +90,7 @@ install_ascii_file()
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
                 cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-                if [ -n ${TXTFILE_CONVERTER} ]
+                if [ -n "${TXTFILE_CONVERTER}" ]
                 then
                     ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
                 fi
@@ -105,7 +105,7 @@ install_ascii_file()
     then
         printf "*                 copy ${install_ascii_file_source_file} ... "
         cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-        if [ -n ${TXTFILE_CONVERTER} ]
+        if [ -n "${TXTFILE_CONVERTER}" ]
         then
             ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
         fi
@@ -118,16 +118,16 @@ install_ascii_fileset()
     install_ascii_fileset=$1
     install_ascii_fileset_target_dir=$2
     
-    printf "*                 copy ${install_ascii_fileset} ... "
+    echo "*             File set copy ${install_ascii_fileset} ... "
     for i in ${install_ascii_fileset}
     do
         install_ascii_file $i ${install_ascii_fileset_target_dir}
     done
-    if [ -n ${TXTFILE_CONVERTER} ]
+    if [ -n "${TXTFILE_CONVERTER}" ]
     then
         ${TXTFILE_CONVERTER} $install_ascii_fileset_target_dir/* >& /dev/null
     fi
-    echo "Ready"
+    echo "*             Ready"
 
 }
 
