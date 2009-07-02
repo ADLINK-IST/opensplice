@@ -154,7 +154,7 @@ make_hde_mirror_and_builder ()
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
     ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
-        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
+        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}" 
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
@@ -181,7 +181,7 @@ make_rts_mirror_and_builder ()
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
     sh ./make_rts_mirror "${SOURCE_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
-        "${ENV}" "${TXTFILE_CONVERTER}"
+        "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
@@ -199,7 +199,7 @@ installer_setup ()
     # $5 = name of script to setup environment
     # $6 = environment : for example '-release' or '-dev'
     # $7 = name of script to obtain license information
-
+    
     INSTTYPE="$1"
     INSTTYPE_FULL="$2"
     SOURCE_TARGET="$3"
@@ -299,6 +299,7 @@ set_rts_envs ()
     fi
 
     TXTFILE_CONVERTER="$5"
+    SOURCE_HOST_SHORT="$6"    
 
     if [ "x_${source_env}" = "x_-release" ]; then
         target_env="";
@@ -355,7 +356,8 @@ set_hde_envs ()
     fi
 
     TXTFILE_CONVERTER="$6"
-    SOURCE_TARGET_SHORT="$7"
+    SOURCE_HOST_SHORT="$7"
+    SOURCE_TARGET_SHORT="$8"
    
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
@@ -1252,7 +1254,8 @@ install_hde_target ()
     #
     # Platform specific redistributables
     #
-    if [ "${target}" = "x86.win32" ]
+
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${HDE_dir}/redist
@@ -1443,7 +1446,8 @@ install_rts_target ()
     #
     # Platform specific redistributables
     #
-    if [ "${target}" = "x86.win32" ]
+
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${RTS_dir}/redist
