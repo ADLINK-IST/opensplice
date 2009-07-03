@@ -431,13 +431,11 @@ os_procCreate(
                                 "scheduling policy can not be set because of privilege problems (%s)", name);
 	        }
 	    } else {
-	        if (getuid() == 0 || geteuid() == 0) {
-	            sched_param.sched_priority = procAttr->schedPriority;
-	            if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
-		        OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
-                                    "sched_setscheduler failed with error %d (%s)", errno, name);
-	            }
-		}
+	        sched_param.sched_priority = procAttr->schedPriority;
+	        if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
+		    OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
+                                "sched_setscheduler failed with error %d (%s)", errno, name);
+	        }
 	    }
 	    if (getuid() == 0) {
 	        /* first set the gid */
