@@ -27,7 +27,7 @@ MANIFEST_MAIN=Main-Class: $(JAVA_MAIN_CLASS)
 endif
 
 ifdef JAVA_INC
-ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
+ifeq (,$(findstring win32,$(SPLICE_HOST))) 
 MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst :, ,$(JAVA_INC)))
 #MANIFEST_CLASSPATH=Class-Path: $(subst $(JAR_INC_DIR)/,,$(subst :, ,$(JAVA_INC)))
 else # it is windows
@@ -46,7 +46,7 @@ LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 (%.o): %.o
 	$(AR) r $@ $<
 
-ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+ifeq (,$(findstring win32,$(SPLICE_HOST)))
 %.d: %.c
 	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
 else
@@ -54,7 +54,7 @@ else
 	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
-ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+ifeq (,$(findstring win32,$(SPLICE_HOST)))
 %.d: %.cpp
 	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
 else
@@ -84,7 +84,7 @@ endif
 	$(GCOV) -b -f $< > $@.sum
 
 $(CLASS_DIR)/%.class: $(JCODE_DIR)/%.java 
-ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
+ifeq (,$(findstring win32,$(SPLICE_HOST))) 
 	$(JCC) -classpath $(CLASS_DIR):$(JAVA_INC) $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
 else
 	$(JCC) -classpath '$(CLASS_DIR);$(JAVA_INC)' $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
@@ -175,7 +175,7 @@ $(ODL_C): $(ODL_FILES)
 
 jar: $(JAR_FILE)
 
-ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
+ifeq (,$(findstring win32,$(SPLICE_HOST))) 
 $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
 	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
 else
