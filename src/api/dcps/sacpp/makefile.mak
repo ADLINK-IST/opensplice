@@ -20,7 +20,7 @@ CPP_FILES 	:= $(notdir $(wildcard $(CODE_DIR)/*.cpp)) $(SACPP_CODE)
 IDLPP       := idlpp 
 IDL_INC_FLAGS= -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cpp -S
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(findstring win32,$(SPLICE_HOST)))
 IDLPPFLAGS  += -P$(DECL_PREFIX),$(DECL_INCLUDE)
 endif
 
