@@ -50,6 +50,7 @@ std_splitListNew(
         tail = ptr;
 
         if (count > 0) {
+            count--;
             result = (std_splitList)os_malloc(sizeof(*result));
             result->strings = (char **)os_malloc(count*sizeof(*result->strings));
             result->size = count;
