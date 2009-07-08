@@ -8,12 +8,11 @@ include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 ##
 ## FIXME introduce LDLIBS_IN variable
-LDLIBS += -l$(DDS_OS)
-LDLIBS += -l$(DDS_DATABASE)
-LDLIBS += -l$(DDS_KERNEL)
-LDLIBS += -l$(DDS_USER)
-LDLIBS += -l$(DDS_SERIALIZATION)
-LDLIBS += $(LDLIBS_NW)
+
+LDLIBS += $(LDLIBS_NW) -l$(DDS_USER) -l$(DDS_CONF) -l$(DDS_CONFPARSER)
+LDLIBS += -l$(DDS_UTIL) -l$(DDS_KERNEL) -l$(DDS_SERIALIZATION)
+LDLIBS += -l$(DDS_DATABASE) -l$(DDS_OS_NET) -l$(DDS_OS)
+
 
 # Suppression of macro's (QAC)
 
@@ -29,11 +28,6 @@ CINCS += -I$(OSPL_HOME)/src/utilities/include
 ## workarround until v__networkQueue.h has moved from code/ to include/
 CINCS += -I$(OSPL_HOME)/src/kernel/code
 CINCS += -I$(OSPL_HOME)/src/user/code
-
-LDLIBS  += -l$(DDS_OS_NET) 
-
-#LDLIBS  += -l$(DDS_OS) -l$(DDS_OS_NET) -l$(DDS_DATABASE) -l$(DDS_KERNEL) 
-#LDLIBS  += -l$(DDS_USER) -l$(DDS_SERIALIZATION) $(LDLIBS_NW)
 
 -include $(DEPENDENCIES)
 

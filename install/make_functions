@@ -90,7 +90,7 @@ install_ascii_file()
             then
                 printf "*                 copy ${install_ascii_file_source_file} ... "
                 cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-                if [ -n ${TXTFILE_CONVERTER} ]
+                if [ -n "${TXTFILE_CONVERTER}" ]
                 then
                     ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
                 fi
@@ -105,7 +105,7 @@ install_ascii_file()
     then
         printf "*                 copy ${install_ascii_file_source_file} ... "
         cp -p ${install_ascii_file_source_file} ${install_ascii_file_target_dir}/${install_ascii_file_target_file}
-        if [ -n ${TXTFILE_CONVERTER} ]
+        if [ -n "${TXTFILE_CONVERTER}" ]
         then
             ${TXTFILE_CONVERTER} ${install_ascii_file_target_dir}/${install_ascii_file_target_file} >& /dev/null
         fi
@@ -118,16 +118,16 @@ install_ascii_fileset()
     install_ascii_fileset=$1
     install_ascii_fileset_target_dir=$2
     
-    printf "*                 copy ${install_ascii_fileset} ... "
+    echo "*             File set copy ${install_ascii_fileset} ... "
     for i in ${install_ascii_fileset}
     do
         install_ascii_file $i ${install_ascii_fileset_target_dir}
     done
-    if [ -n ${TXTFILE_CONVERTER} ]
+    if [ -n "${TXTFILE_CONVERTER}" ]
     then
         ${TXTFILE_CONVERTER} $install_ascii_fileset_target_dir/* >& /dev/null
     fi
-    echo "Ready"
+    echo "*             Ready"
 
 }
 
@@ -155,11 +155,11 @@ make_hde_mirror_and_builder ()
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
     ./make_hde_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" \
-        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_TARGET_SHORT}"
+        "${PACKAGE_DATE}" "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}" 
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
-        ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" "${BUILDER_TARGET}" \
+        sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" "${BUILDER_TARGET}" \
             "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}"
     fi
 }
@@ -181,12 +181,12 @@ make_rts_mirror_and_builder ()
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
-    ./make_rts_mirror "${SOURCE_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
-        "${ENV}" "${TXTFILE_CONVERTER}"
+    sh ./make_rts_mirror "${SOURCE_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
+        "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}"
     if [ "$NOINSTALLER" != "-noinstaller" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
-        ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
+        sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
             "${BUILDER_TARGET}" "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}"
     fi
 }
@@ -200,7 +200,7 @@ installer_setup ()
     # $5 = name of script to setup environment
     # $6 = environment : for example '-release' or '-dev'
     # $7 = name of script to obtain license information
-
+    
     INSTTYPE="$1"
     INSTTYPE_FULL="$2"
     SOURCE_TARGET="$3"
@@ -285,7 +285,7 @@ set_rts_envs ()
             suffix_exe=".exe"
             suffix_script=".bat"
             ;;
-        PPC604.vxworks6.6*)
+        PPC604.vxworks6.6)
             suffix_exe=".vxe"
             ;;
     esac
@@ -300,6 +300,7 @@ set_rts_envs ()
     fi
 
     TXTFILE_CONVERTER="$5"
+    SOURCE_HOST_SHORT="$6"    
 
     if [ "x_${source_env}" = "x_-release" ]; then
         target_env="";
@@ -338,7 +339,7 @@ set_hde_envs ()
         x86.win32)
             target_suffix_exe=".exe"
             ;;
-        PPC604.vxworks6.6*)
+        PPC604.vxworks6.6)
             target_suffix_exe=".vxe"
             ;;
     esac
@@ -356,7 +357,8 @@ set_hde_envs ()
     fi
 
     TXTFILE_CONVERTER="$6"
-    SOURCE_TARGET_SHORT="$7"
+    SOURCE_HOST_SHORT="$7"
+    SOURCE_TARGET_SHORT="$8"
    
     HDE_base=${OSPL_HOME}/install/HDE
     if [ "${target}" = "x86.win32" ]
@@ -616,26 +618,29 @@ install_hde_target ()
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
         
         # Copy the executables for the target 
-        install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
-        install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
-        install_bin_file ${target_release} ${HDE_dir} bin durability${target_suffix_exe}
-        if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
-            install_bin_file ${target_release} ${HDE_dir} bin ddsi${target_suffix_exe}
+            install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
+            install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
+            install_bin_file ${target_release} ${HDE_dir} bin durability${target_suffix_exe}
+            if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+            then
+                install_bin_file ${target_release} ${HDE_dir} bin ddsi${target_suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
+            then
+                install_bin_file ${target_release} ${HDE_dir} bin ospl${target_suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+            then
+                install_bin_file ${target_release} ${HDE_dir} bin mmstat${target_suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
+            then
+                install_bin_file ${target_release} ${HDE_dir} bin shmdump${target_suffix_exe}
+            fi
         fi
-        if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
-        then
-            install_bin_file ${target_release} ${HDE_dir} bin ospl${target_suffix_exe}
-        fi
-        if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
-        then
-            install_bin_file ${target_release} ${HDE_dir} bin mmstat${target_suffix_exe}
-        fi
-        if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
-        then
-            install_bin_file ${target_release} ${HDE_dir} bin shmdump${target_suffix_exe}
-        fi
-        
+
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
@@ -1253,7 +1258,8 @@ install_hde_target ()
     #
     # Platform specific redistributables
     #
-    if [ "${target}" = "x86.win32" ]
+
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${HDE_dir}/redist
@@ -1401,24 +1407,27 @@ install_rts_target ()
     if [ -d "${release}" ]
     then
         mkdir -p ${RTS_dir}/bin
-        install_bin_file ${release} ${RTS_dir} bin spliced${suffix_exe}
-        install_bin_file ${release} ${RTS_dir} bin networking${suffix_exe}
-        install_bin_file ${release} ${RTS_dir} bin durability${suffix_exe}
-        if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
-            install_bin_file ${release} ${RTS_dir} bin ddsi${suffix_exe}
-        fi
-        if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
-        then
-            install_bin_file ${release} ${RTS_dir} bin ospl${suffix_exe}
-        fi
-        if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
-        then
-            install_bin_file ${release} ${RTS_dir} bin shmdump${suffix_exe}
-        fi
-        if [ "$INCLUDE_TOOLS_MMSTAT" = "yes" ]
-        then
-            install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
+            install_bin_file ${release} ${RTS_dir} bin spliced${suffix_exe}
+            install_bin_file ${release} ${RTS_dir} bin networking${suffix_exe}
+            install_bin_file ${release} ${RTS_dir} bin durability${suffix_exe}
+            if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+            then
+                install_bin_file ${release} ${RTS_dir} bin ddsi${suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_OSPL}" = "yes" ]
+            then
+                install_bin_file ${release} ${RTS_dir} bin ospl${suffix_exe}
+            fi
+            if [ "${INCLUDE_TOOLS_SHMDUMP}" = "yes" ]
+            then
+                install_bin_file ${release} ${RTS_dir} bin shmdump${suffix_exe}
+            fi
+            if [ "$INCLUDE_TOOLS_MMSTAT" = "yes" ]
+            then
+                install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
+            fi
         fi
 
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
@@ -1444,7 +1453,8 @@ install_rts_target ()
     #
     # Platform specific redistributables
     #
-    if [ "${target}" = "x86.win32" ]
+
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${RTS_dir}/redist
