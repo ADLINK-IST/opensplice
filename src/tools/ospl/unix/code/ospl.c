@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <sys/types.h>
@@ -434,7 +434,7 @@ main(
         uri = argv[optind+1];
     }
     if (uri && (strlen(uri) > 0)) {
-        r = cfg_parse (uri, &platformConfig);
+        r = cfg_parse_ospl (uri, &platformConfig);
         if (r == CFGPRS_OK) {
             domain_name = findDomain (platformConfig, &domain);
             if (domain_name == NULL) {

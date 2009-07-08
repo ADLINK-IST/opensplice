@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__user.h"
@@ -122,11 +122,11 @@ u_kernelGetDomainConfig(
                         elementData = cf_data(cf_elementChild(address, "#text"));
                         if (elementData != NULL) {
                             value = cf_dataValue(elementData);
-                            if ( (strlen(value.is.String) > 2) && 
+                            if ( (strlen(value.is.String) > 2) &&
                                  (strncmp("0x", value.is.String, 2) == 0) ) {
                                 sscanf(value.is.String, "0x" PA_ADDRFMT, &domainConfig->address);
                             } else {
-                                sscanf(value.is.String, PA_ADDRFMT, &domainConfig->address); 
+                                sscanf(value.is.String, PA_ADDRFMT, &domainConfig->address);
                             }
                             shm_attr->map_address = (void*)domainConfig->address;
                         }
@@ -143,7 +143,7 @@ u_kernelGetDomainConfig(
                             } else if (os_strncasecmp(value.is.String, "DEFAULT", 7) == 0) {
                                 domainConfig->lockPolicy = OS_LOCK_DEFAULT;
                             } else {
-                                OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_USER, 0, 
+                                OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_USER, 0,
                                     "Incorrect <Database/Locking> parameter for Domain: \"%s\","
                                     " using default locking",value.is.String);
                             }
@@ -173,7 +173,7 @@ u_kernelGetDomainConfig(
                         } /* else use default value */
                     } /* No attribute enabled, so use default value */
                 } /* No 'BuiltinTopics' element, so use default value */
-                
+
                 child = cf_element(cf_elementChild(dc, CFG_PRIOINHER));
                 if (child != NULL) {
                     attr= cf_elementAttribute(child, "enabled");
@@ -197,7 +197,7 @@ attributeCopy(
     v_cfAttribute a;
     cf_attribute attr = (cf_attribute)o;
     C_STRUCT(attributeCopyArg) *arg = (C_STRUCT(attributeCopyArg) *)argument;
-    
+
     assert(attr != NULL);
     assert(arg->configuration != NULL);
     assert(C_TYPECHECK(arg->element, v_cfElement));
@@ -206,7 +206,7 @@ attributeCopy(
                          cf_nodeGetName(cf_node(attr)),
                          cf_attributeValue(attr));
     v_cfElementAddAttribute(arg->element, a);
-    c_free(a); 
+    c_free(a);
 }
 
 static u_result
@@ -215,7 +215,7 @@ copyConfiguration(
     v_configuration config,
     v_cfNode *node)
 {
-    
+
     cf_node child;
     v_cfNode kChild;
     c_iter i;
@@ -224,7 +224,7 @@ copyConfiguration(
 
     assert(config != NULL);
     assert(C_TYPECHECK(config, v_configuration));
-    
+
     r = U_RESULT_OK;
     if (cfgNode != NULL) {
         switch (cfgNode->kind) {
@@ -315,16 +315,16 @@ lockSharedMemory(
             r = os_sharedSize(shm, &size);
             if (r == os_resultSuccess) {
                 r = os_procMLock(address, size);
-            } 
+            }
             if (r == os_resultSuccess) {
                 result = 0; /* success */
             } else {
                 result = 1; /*fail*/
             }
         } else {
-	  /* this should not happen, as this would mean 
+	  /* this should not happen, as this would mean
 	     we are not attached to shared memory at all */
-            assert(0); 
+            assert(0);
             result = 1; /* fail */
         }
     } else {
@@ -355,9 +355,9 @@ unlockSharedMemory(
                 result = 1; /*fail*/
             }
         } else {
-           /* this should not happen, as this would mean 
+           /* this should not happen, as this would mean
               we are not attach to shared memory at all */
-            assert(0); 
+            assert(0);
             result = 1; /* fail */
         }
     } else {
@@ -457,11 +457,11 @@ u_kernelNew(
     } else {
         os_sharedAttrInit(&shm_attr);
         if ((uri != NULL) && (strlen(uri) > 0)) {
-            s = cfg_parse(uri, &processConfig);
+            s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
                 u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
             } else {
-                OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_USER, 0, 
+                OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_USER, 0,
                             "Cannot read configuration from URI: \"%s\".",uri);
             }
         } /*  else Get default values */
@@ -546,7 +546,7 @@ u_kernelNew(
             /* Copy configuration to kernel */
             rootElement = NULL;
             configuration = v_configurationNew(kernel);
-            r = copyConfiguration(cf_node(processConfig), 
+            r = copyConfiguration(cf_node(processConfig),
                                   configuration, (v_cfNode *)&rootElement);
             if (r != U_RESULT_OK) {
                 v_configurationFree(configuration);
@@ -621,7 +621,7 @@ u_kernelNew(
     r = u_userUnprotect(NULL);
 
     os_free(domainCfg.name);
-    
+
     return uKernel;
 }
 
@@ -656,16 +656,16 @@ u_kernelOpen(
 
     os_sharedAttrInit(&shm_attr);
     if ((uri != NULL) && (strlen(uri) > 0)) {
-        s = cfg_parse(uri, &processConfig);
+        s = cfg_parse_ospl(uri, &processConfig);
         if (s == CFGPRS_OK) {
             u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
     	    u_usrClockInit (processConfig);
             if (domainCfg.prioInherEnabled) {
                 os_mutexSetPriorityInheritanceMode(OS_TRUE);
-            }           
+            }
         } else {
             if (timeout >= 0) {
-                OS_REPORT_1(OS_ERROR, "u_kernelOpen", 0, 
+                OS_REPORT_1(OS_ERROR, "u_kernelOpen", 0,
                             "Cannot read configuration from URI: \"%s\".",uri);
             }
         }
@@ -751,7 +751,7 @@ u_kernelClose (
     if (k != NULL) {
         /* All participants of this kernel must be disabled! */
         r = kernelDisable(k);
-        if (r == U_RESULT_OK) {        
+        if (r == U_RESULT_OK) {
             protectCount = u_userProtectCount();
             while (protectCount > 0) {
                 os_nanoSleep(pollDelay);
@@ -794,7 +794,7 @@ u_kernelFree (
         if (r == U_RESULT_OK) {
             laps = 4;
             count = v_kernelUserCount(k->kernel);
-            
+
             while ((laps > 0) && (count > 1)) {
 #ifndef NDEBUG
                 printf("u_kernelFree: waiting for %d users to detach\n",count);
@@ -864,9 +864,9 @@ u_kernelGetCopy(
     void *result;
     u_result r;
     v_kernel vk;
-    
+
     result = NULL;
-    
+
     if ((_this != NULL) && (copy != NULL)) {
         r = u_kernelClaim(_this,&vk);
         if ((r == U_RESULT_OK) && (vk != NULL)) {
