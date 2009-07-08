@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -201,6 +201,8 @@ d_configurationInit(
     u_cfElement element)
 {
     d_nameSpace ns;
+    c_long i;
+    c_bool found;
 
     if(config != NULL){
         /** First apply all defaults. */
@@ -340,8 +342,23 @@ d_configurationInit(
             ns = d_nameSpaceNew("NoName", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_ALL);
             d_nameSpaceAddElement(ns, "all", "*", "*");
             config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
-        }
+        } else {
+            /*Make sure the V_BUILTIN_PARTITION is part of the namespace*/
+            found = FALSE;
 
+            for(i=0; i<c_iterLength(config->nameSpaces) && !found; i++){
+                found = d_configurationInNameSpace(
+                        d_nameSpace(c_iterObject(config->nameSpaces, i)),
+                        V_BUILTIN_PARTITION, "x", D_DURABILITY_TRANSIENT, TRUE);
+            }
+
+            if(!found){
+                ns = d_nameSpaceNew("NoName", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_TRANSIENT);
+                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, "*");
+                config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
+            }
+
+        }
         d_configurationReport(config, durability);
     }
 }
