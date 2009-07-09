@@ -947,15 +947,12 @@ instanceTakeSamples(
     count = oldCount - v_dataReaderInstanceSampleCount(instance);
     assert(count >= 0);
     v_dataReader(a->reader)->sampleCount -= count;
+    assert(v_dataReader(a->reader)->sampleCount >= 0);
+
     v_statisticsULongSetValue(v_reader,
                               numberOfSamples,
                               a->reader,
                               v_dataReader(a->reader)->sampleCount);
-    v_statisticsULongValueAdd(v_reader,
-                              numberOfSamplesTaken,
-                              a->reader,
-                              count);
-    assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     return proceed;
 }
@@ -1150,15 +1147,11 @@ v_dataReaderQueryTakeInstance(
                     count -= v_dataReaderInstanceSampleCount(instance);
                     assert(count >= 0);
                     r->sampleCount -= count;
+                    assert(r->sampleCount >= 0);
                     v_statisticsULongSetValue(v_reader,
                                               numberOfSamples,
                                               r,
                                               r->sampleCount);
-                    v_statisticsULongValueAdd(v_reader,
-                                              numberOfSamplesTaken,
-                                              r,
-                                              count);
-                    assert(r->sampleCount >= 0);
                     i++;
                 }
                 if (v_dataReaderInstanceEmpty(instance)) {
@@ -1247,15 +1240,11 @@ v_dataReaderQueryTakeNextInstance(
                     count -= v_dataReaderInstanceSampleCount(nextInstance);
                     assert(count >= 0);
                     r->sampleCount -= count;
+                    assert(r->sampleCount >= 0);
                     v_statisticsULongSetValue(v_reader,
                                               numberOfSamples,
                                               r,
                                               r->sampleCount);
-                    v_statisticsULongValueAdd(v_reader,
-                                              numberOfSamplesTaken,
-                                              r,
-                                              count);
-                    assert(r->sampleCount >= 0);
                     i++;
                 }
                 if (v_dataReaderInstanceEmpty(nextInstance)) {

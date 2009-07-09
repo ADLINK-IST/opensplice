@@ -850,6 +850,10 @@ v_dataReaderSampleRead(
      */
     v_dataReaderInstanceReader(instance)->updateCnt++;
 
+    v_statisticsULongValueInc(v_reader,
+                              numberOfSamplesRead,
+                              v_dataReaderInstanceReader(instance));
+
     CHECK_EMPTINESS(instance);
     CHECK_COUNT(instance);
     CHECK_INVALIDITY(instance);
@@ -1194,7 +1198,9 @@ v_dataReaderInstancePurge(
                 sample = sample->prev;
             }
         }
-        /* now next points to the sample in the history from where we need to purge */
+        /* now next points to the sample in the history from where
+         * we need to purge.
+         */
         if (sample == NULL) { /* instance becomes empty, purge all */
             assert(_this->sampleCount == 0);
             sample = v_dataReaderInstanceHead(_this);
@@ -1224,7 +1230,8 @@ v_dataReaderInstancePurge(
                sample->next = NULL;
                next->prev = NULL; /* ref kept by local var. next */
                v_dataReaderSampleFree(next);
-               /* The instance state is in correct state, so no update needed.
+               /* The instance state is in correct state,
+                * so no update needed.
                 */
            } /* else nothing to purge! */
         }
@@ -1295,31 +1302,19 @@ v_dataReaderInstanceUnregister (
 
     if (_this->liveliness == 0) {
         if (v_dataReaderInstanceEmpty(_this)) {
-            found = c_remove(v_index(_this->index)->objects,_this,NULL,NULL);
-            if (found) {
-                assert(found == _this);
-                /* remove from deadline admin. */
-                v_dataReaderInstanceDeinit(_this);
-                CHECK_COUNT(_this);
-                CHECK_EMPTINESS(_this);
-                CHECK_INVALIDITY(_this);
-                c_free(_this);
-                doFree = TRUE;
-            }
-        }
-        if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
-            v_readerQos qos = v_reader(v_index(_this->index)->reader)->qos;
-            if (qos->lifecycle.enable_invalid_samples) {
-                if (_this->sampleCount > 0) {
-                    if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED)) {
-                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+            if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
+                v_readerQos qos = v_reader(v_index(_this->index)->reader)->qos;
+                if (qos->lifecycle.enable_invalid_samples) {
+                    if (_this->sampleCount > 0) {
+                        if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED)) {
+                            v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                        }
                     }
                 }
+                v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
             }
-            v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
-        }
-        if(doFree){
-        	v_publicFree(v_public(_this));
+            v_dataReaderRemoveInstance(v_dataReaderInstanceReader(_this),
+                                       _this);
         }
     }
 
