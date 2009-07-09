@@ -348,6 +348,18 @@
                 <default>true</default>
             </attributeBoolean>
         </element>
+        <element name="PriorityInheritance" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+            This element specifies the usage on Priority Inheritance on Muexes in this domain.
+            ]]></comment>
+            <attributeBoolean name="enabled" required="true">
+                <comment><![CDATA[
+                This attribute enables or disables priority inheritance for mutexes,
+                if that is supported by the underlying Operating System. 
+                ]]></comment>
+                <default>true</default>
+            </attributeBoolean>
+        </element>
         <element name="Statistics" minOccurrences="0" maxOccurrences="1">
            <comment><![CDATA[
             This element specifies the policies regarding statistics. Various statistics
