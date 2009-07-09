@@ -1,5 +1,9 @@
 # BUILDTYPE HOSTNAME/INDEXTIME_OFFSET  version dependency[@VERSION]
 
+################################ scdds1502 runs ################################
+M   ospli/fedora3/x86.linux2.6-dev-inner 1 heads/scdds1502-01-branch none
+################################ end scdds1502 runs ############################
+
 ################################ master runs ##################################
 M   ospli/fedora3/x86.linux2.6-dev 20 heads/master none
 M   ospli/fedora3/x86.linux2.6-dev-inner 1 heads/master none
