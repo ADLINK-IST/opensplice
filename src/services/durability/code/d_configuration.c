@@ -369,14 +369,14 @@ d_configurationNameSpacesCombine(
     c_voidp userData)
 {
     d_nameSpace ns;
-    c_char* result;
+    d_durability durability;
     c_char* partitions;
 
     const c_char* alignee;
     const c_char* kind;
 
     ns = d_nameSpace(object);
-    result = (c_char*)userData;
+    durability = d_durability(userData);
     partitions = d_nameSpaceGetPartitions(ns);
 
     switch(d_nameSpaceGetDurabilityKind(ns)){
@@ -412,13 +412,12 @@ d_configurationNameSpacesCombine(
             assert(FALSE);
             break;
     }
-    sprintf(result,
-                "%s" \
+    d_printEvent(durability, D_LEVEL_CONFIG,
                 "    - NameSpace:\n" \
                 "        - AlignmentKind  : %s\n" \
                 "        - DurabilityKind : %s\n" \
                 "        - Partitions     : %s\n",
-                result, alignee, kind, partitions);
+                alignee, kind, partitions);
 
     os_free(partitions);
 
@@ -451,11 +450,11 @@ d_configurationServiceNamesCombine(
     c_char* serviceName,
     c_voidp userData)
 {
-    c_char* result;
+    d_durability durability;
 
-    result = (c_char*)userData;
+    durability = d_durability(userData);
 
-    sprintf(result, "%s    - %s\n", result, serviceName);
+    d_printEvent(durability, D_LEVEL_CONFIG, "    - %s\n", serviceName);
 
     return TRUE;
 }
@@ -472,8 +471,6 @@ d_configurationReport(
     const c_char* timestamps;
     const c_char* timeAlignment;
     const c_char* relativeTimestamps;
-    c_char serviceNames [512];
-    c_char ns [4096];
 
     d_printTimedEvent(durability, D_LEVEL_CONFIG, D_THREAD_MAIN, "Configuration:\n");
 
@@ -725,26 +722,21 @@ d_configurationReport(
             , class2
             , config->aligneeScheduling.schedPriority);
 
-    serviceNames[0] = '\0';
-    d_tableWalk(config->networkServiceNames, d_configurationServiceNamesCombine, &serviceNames);
-
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- Network.ResendTimeRange                     : %d.%9.9d\n" \
             "- Network.WaitForAttachment.MaxWaitCount      : %u\n" \
-            "- Network.WaitForAttachment.ServiceNames      : \n%s"
+            "- Network.WaitForAttachment.ServiceNames      : \n"
             , config->networkSampleResendTimeRange.tv_sec
             , config->networkSampleResendTimeRange.tv_nsec
             , config->networkMaxWaitCount
-            , serviceNames
             );
 
-    ns[0] = '\0';
-    c_iterWalk(config->nameSpaces, d_configurationNameSpacesCombine, &ns);
+    d_tableWalk(config->networkServiceNames, d_configurationServiceNamesCombine, durability);
 
     d_printEvent(durability, D_LEVEL_CONFIG,
-            "- NameSpaces                                  :\n%s"
-            , ns
-            );
+            "- NameSpaces                                  :\n");
+    c_iterWalk(config->nameSpaces, d_configurationNameSpacesCombine, durability);
+
 }
 
 void
