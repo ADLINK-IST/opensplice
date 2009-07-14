@@ -20,6 +20,7 @@
 #include "mapping/String.h"
 #include "mapping/STRUCT.h"
 #include "mapping/UFL.h"
+#include "mapping/BFL.h"
 #include "mapping/UOBJ.h"
 
 #endif /* SACPP_MAPPING_H */
