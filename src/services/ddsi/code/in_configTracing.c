@@ -1,5 +1,7 @@
 #include "in__configTracing.h"
+#include "in_report.h"
 #include "os_heap.h"
+#include "in__config.h"
 
 static os_boolean
 in_configTracingInit(
@@ -10,6 +12,7 @@ OS_STRUCT(in_configTracing)
     os_char* pathName;
     os_boolean isEnabled;
     os_char* outputFileName;
+    FILE * outputFile;
     os_uint32 initLevel;
     os_uint32 configurationLevel;
     os_uint32 deinitLevel;
@@ -53,6 +56,7 @@ in_configTracingInit(
     /* TODO should use default values as defined */
     _this->isEnabled = OS_TRUE;
     _this->outputFileName = NULL;
+    _this->outputFile = NULL;
     _this->initLevel = 1;
     _this->configurationLevel = 1;
     _this->deinitLevel = 1;
@@ -65,6 +69,21 @@ in_configTracingInit(
     _this->timestamps = NULL;
 
     return OS_TRUE;
+}
+
+void
+in_configTracingFree(
+    in_configTracing _this)
+{
+    if (_this->outputFile)
+    {
+        fclose (_this->outputFile);
+    }
+
+    /* TODO free any other allocated resources here */
+
+    os_free(_this);
+    _this = NULL;
 }
 
 os_char*
@@ -92,6 +111,15 @@ in_configTracingGetOutputFileName(
     assert(_this);
 
     return _this->outputFileName;
+}
+
+FILE *
+in_configTracingGetOutputFile(
+    in_configTracing _this)
+{
+    assert(_this);
+
+    return _this->outputFile;
 }
 
 os_uint32
@@ -294,13 +322,59 @@ in_configTracingSetOutputFile(
     _this->outputFileName = outputFileName;
 }
 
+void in_configTracingOpenOutputFile(
+    in_configTracing _this)
+{
+    FILE * outputFile = NULL;
+
+    assert(_this);
+    assert(_this->outputFileName);
+
+    outputFile = fopen(_this->outputFileName, "w");
+    _this->outputFile = outputFile;
+}
+
+
 void
-in_tracingSetEnabled(
+in_configTracingSetEnabled(
     in_configTracing _this,
     os_boolean isEnabled)
 {
     assert(_this);
 
     _this->isEnabled = isEnabled;
+}
 
+/* in_reportTrace is the static function that actually logs the tracing to the output file */
+void
+in_reportTrace(
+    in_traceClass traceClass,
+    c_ulong level,
+    const c_char *context,
+    const char *description, ...)
+{
+    /* Currently levels of tracing defined in xml is not supported for ddsi */
+
+    va_list ap;
+    os_time useTime;
+    in_configTracing configTracing;
+    FILE * outputFile;
+
+    configTracing = in_configGetConfigTracing();
+
+    if (configTracing)
+    {
+        outputFile = in_configTracingGetOutputFile (configTracing);
+        if (outputFile)
+        {
+            /* Relative timing is not supported so just post the absolute time */
+           useTime = os_timeGet();
+           fprintf(outputFile, "%5d.%3.3d ", useTime.tv_sec, useTime.tv_nsec/1000000);
+           fprintf(outputFile, "%-14s (%d) ", context, level);
+           va_start(ap, description);
+           vfprintf(outputFile, description, ap);
+           va_end(ap);
+           fflush(outputFile);
+        }
+    }
 }

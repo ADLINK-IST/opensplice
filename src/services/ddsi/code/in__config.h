@@ -49,6 +49,18 @@ in_config
 in_configGetInstance(
     );
 
+void
+in_configFree (
+    in_config _this);
+
+in_configTracing
+in_configGetConfigTracing (
+    );
+
+os_boolean
+in_configIsTracingEnabled (
+    );
+
 in_result
 in_configConvertDomTree(
     in_config _this,

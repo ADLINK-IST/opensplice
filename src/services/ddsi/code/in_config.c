@@ -249,6 +249,7 @@ OS_STRUCT(in_config)
 };
 
 static in_config _this = NULL;
+/* static FILE* outputFile = NULL; */
 
 in_config
 in_configGetInstance(
@@ -264,6 +265,33 @@ in_configGetInstance(
         }
     }
     return _this;
+}
+
+void
+in_configFree (
+    in_config _this)
+{
+    Coll_List* ddsiServices;
+    Coll_Iter* iterator;
+    in_configDdsiService ddsiService;
+
+    assert(_this);
+
+    /* free pathName */
+    os_free (_this->pathName);
+
+    /* free the resources allocated for the ddsiServices Coll_List */
+    ddsiServices = in_configGetDdsiServices(_this);
+    iterator = Coll_List_getFirstElement(ddsiServices);
+    while (iterator)
+    {
+       ddsiService = in_configDdsiService(Coll_Iter_getObject(iterator));
+       if (ddsiService)
+       {
+          in_configDdsiServiceFree (ddsiService);
+       }
+       iterator = Coll_Iter_getNext(iterator);
+    }
 }
 
 os_char*
@@ -316,6 +344,50 @@ in_configGetDdsiServiceByName(
     return foundService;
 }
 
+in_configTracing
+in_configGetConfigTracing ()
+{
+    in_config config;
+    in_configDdsiService ddsiService;
+    in_configTracing configTracing = NULL;
+    Coll_List* ddsiServices;
+    Coll_Iter* iterator;
+
+    config = in_configGetInstance();
+    if (config)
+    {
+        /* There will only be one ddsi service in the in_config but check that
+         * the list of ddsi services contains at least one item */
+        ddsiServices = in_configGetDdsiServices(config);
+        iterator = Coll_List_getFirstElement(ddsiServices);
+        if (iterator)
+        {
+           ddsiService = in_configDdsiService(Coll_Iter_getObject(iterator));
+           if (ddsiService)
+           {
+              configTracing = in_configDdsiServiceGetTracing(ddsiService);
+           }
+        }
+    }
+
+    return configTracing;
+}
+
+os_boolean
+in_configIsTracingEnabled ()
+{
+    in_configTracing configTracing;
+    os_boolean isEnabled = OS_FALSE;
+
+    configTracing = in_configGetConfigTracing();
+
+    if (configTracing)
+    {
+       isEnabled = in_configTracingIsEnabled (configTracing);
+    }
+
+    return isEnabled;
+}
 
 in_result
 in_configConvertDomTree(
@@ -1115,7 +1187,7 @@ in_configTraverseTracingElement(
                     INCF_ELEM_Tracing,
                     INCF_ATTRIB_Tracing_isEnabled_DEF);
             }
-            in_tracingSetEnabled(tracing, isEnabled);
+            in_configTracingSetEnabled(tracing, isEnabled);
             /* Step 2: traverse child elements */
             children = u_cfElementGetChildren(element);
             childNode = u_cfNode(c_iterTakeFirst(children));
@@ -1158,7 +1230,7 @@ in_configTraverseOutputFileElement(
     u_cfNode childNode;
     v_cfKind nodeKind;
     os_boolean success;
-    os_char* outputFile = NULL;
+    os_char* outputFileName = NULL;
 
     /* Step 1: read attributes if there are any, report warning that they are
      * ignored.
@@ -1189,7 +1261,7 @@ in_configTraverseOutputFileElement(
         nodeKind = u_cfNodeKind(childNode);
         if(nodeKind == V_CFDATA)
         {
-            success = u_cfDataStringValue(u_cfData(childNode), &outputFile);
+            success = u_cfDataStringValue(u_cfData(childNode), &outputFileName);
             if(!success)
             {
                 IN_REPORT_WARNING_2(
@@ -1210,25 +1282,25 @@ in_configTraverseOutputFileElement(
         childNode = u_cfNode(c_iterTakeFirst(children));
     }
     c_iterFree(children);
-    if(!outputFile)
+    if(!outputFileName)
     {
         IN_REPORT_WARNING_2(
             IN_SPOT,
             "Unable to locate the data value within element '%s'! Reverting to the default value of '%d'.",
             INCF_ELEM_OutputFile,
             INCF_ATTRIB_OutputFile_value_DEF);
-        outputFile = os_malloc(sizeof(INCF_ATTRIB_OutputFile_value_DEF));
-        if(!outputFile)
+        outputFileName = os_malloc(sizeof(INCF_ATTRIB_OutputFile_value_DEF));
+        if(!outputFileName)
         {
              IN_REPORT_ERROR(IN_SPOT, "Out of memory.");
         } else
         {
-            strcpy(outputFile, INCF_ATTRIB_OutputFile_value_DEF);
+            strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
         }
     }
-    if(outputFile)
+    if(outputFileName && in_configTracingIsEnabled(tracing))
     {
-        in_configTracingSetOutputFile(tracing, outputFile);
+        in_configTracingSetOutputFile(tracing, outputFileName);
     }
 }
 
@@ -2982,12 +3054,11 @@ in_configFinalizeDdsiService(
     in_configFinalizePartitioning(partitioning);
 
     tracing = in_configDdsiServiceGetTracing(ddsiService);
-    if(!tracing)
+    if (tracing)
     {
-        tracing = in_configTracingNew();
-        in_configDdsiServiceSetTracing(ddsiService, tracing);
+        /* Finalize the Tracing, if it exists */
+        in_configFinalizeTracing(tracing);
     }
-    in_configFinalizeTracing(tracing);
 
     discoveryChannel = in_configDdsiServiceGetDiscoveryChannel(ddsiService);
     if(!discoveryChannel)
@@ -3031,22 +3102,34 @@ in_configFinalizeTracing(
     in_configTracing tracing)
 {
     os_char* outputFileName;
+    os_boolean isEnabled;
 
     assert(tracing);
 
-    outputFileName = in_configTracingGetOutputFileName(tracing);
-    if(!outputFileName)
+    /* check whether the tracing is enabled before opening the output file */
+    isEnabled = in_configTracingIsEnabled(tracing);
+    if (isEnabled)
     {
-        outputFileName = os_malloc(strlen(INCF_ATTRIB_OutputFile_value_DEF) + 1);
+        /* if the output file has not been set within the xml, use the default */
+        outputFileName = in_configTracingGetOutputFileName(tracing);
         if(!outputFileName)
         {
-             IN_REPORT_ERROR("in_configFinalizeTracing", "Out of memory.");
-        } else
-        {
-            strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
+            outputFileName = os_malloc(strlen(INCF_ATTRIB_OutputFile_value_DEF) + 1);
+            if(!outputFileName)
+            {
+                IN_REPORT_ERROR("in_configFinalizeTracing", "Out of memory.");
+            } else
+            {
+                strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
+            }
+            in_configTracingSetOutputFile(tracing, outputFileName);
+
+            /* report to the user that the default output file was chosen */
+            IN_REPORT_INFO_1(1, "Tracing enabled but OutputFile not specified, using default %s", outputFileName);
         }
-        in_configTracingSetOutputFile(tracing, outputFileName);
-        /* TODO print message saying default was chosen */
+        /* now call fopen on the file so it is ready to be written to */
+        in_configTracingOpenOutputFile(tracing);
     }
     /* TODO finalize timestamps */
 }
+

@@ -34,6 +34,10 @@ in_configTracing
 in_configTracingNew(
     );
 
+void
+in_configTracingFree(
+    in_configTracing _this);
+
 os_char*
 in_configTracingGetPathName(
     in_configTracing _this);
@@ -138,7 +142,11 @@ in_configTracingSetOutputFile(
     os_char* outputFileName);
 
 void
-in_tracingSetEnabled(
+in_configTracingOpenOutputFile(
+    in_configTracing _this);
+
+void
+in_configTracingSetEnabled(
     in_configTracing _this,
     os_boolean isEnabled);
 
