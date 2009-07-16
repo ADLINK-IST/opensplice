@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #define MM_CLUSTER
@@ -18,6 +18,7 @@
 #include "os_abstract.h"
 #include "c_sync.h"
 #include "c_mmbase.h"
+#include "c_mmCache.h"
 
 #define C_MM_INITIALIZED          (0xdeadbeef)
 
@@ -48,6 +49,7 @@
 
 typedef struct c_mmChunk   *c_mmChunk;
 typedef struct c_mmBinding *c_mmBinding;
+typedef struct c_mmCacheListItem *c_mmCacheListItem;
 
 struct mmStatus_s {
     c_long used;
@@ -69,8 +71,10 @@ struct c_mm_s {
     c_address    end;
     c_ulong      size;
     c_ulong      fails;
+    c_mmCacheListItem cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
     c_mutex      listLock;
+    c_mutex      cacheListLock;
     c_mutex      bindLock;
     struct mmStatus_s chunkMapStatus; /* protect with mapLock */
     struct mmStatus_s chunkListStatus; /* protect with listLock */
@@ -96,6 +100,11 @@ struct c_mmBinding {
     c_char      *name;
     void        *start;
     c_long       refCount;
+};
+
+struct c_mmCacheListItem {
+    c_mmCache           cache;
+    c_mmCacheListItem   next;
 };
 
 static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
@@ -274,7 +283,7 @@ c_mmMalloc(
                     if (CoreSize(mm) < chunkSize) {
                         /* No resources left in core memory.
                          * But have found a significant bigger freed block so will split the block.
-			 * Unlocking and re-locking is not efficient but at this point 
+			 * Unlocking and re-locking is not efficient but at this point
 			 * the operational state must be considered degraded.
 			 */
                         remnant = c_mmSplitChunk(mm,chunk,size);
@@ -334,6 +343,105 @@ c_mmMalloc(
     chunk->freed = FALSE;
 #endif
     return ChunkAddress(chunk);
+}
+
+/**
+ * Allocate a piece of memory for a cache. This enlists the cache in cacheList
+ * of the mm. With this list, proper memory-statistics can be generated. The
+ * returned memory should ALWAYS be freed by a call to c_mmFreeCache().
+ *
+ * @param mm a pointer to a memory manager
+ * @param size the size of the piece of memory to claim
+ *
+ * @return a pointer to the claimed piece of memory.
+ */
+void *
+c_mmMallocCache(
+    c_mm mm,
+    c_long size)
+{
+    c_mmCache cache;
+    c_mmCacheListItem li;
+
+    /* Allocate the cache */
+    cache = (c_mmCache)c_mmMalloc(mm, size);
+
+    if(cache){
+        li = (c_mmCacheListItem)c_mmMalloc(mm, ALIGN_SIZE(sizeof(struct c_mmCacheListItem)));
+        li->cache = cache;
+
+        c_mutexLock( &mm->cacheListLock );
+
+        if(mm->cacheList){
+            /* Prepend */
+            li->next = mm->cacheList;
+        } else {
+            /* Linkedlist was empty, so no next */
+            li->next = NULL;
+        }
+        mm->cacheList = li;
+
+        c_mutexUnlock( &mm->cacheListLock );
+    }
+
+    return (void*) cache;
+}
+
+/**
+ * Free a piece of memory malloc'd for a cache by a call to c_mmMallocCache().
+ *
+ * @param mm a pointer to a memory manager
+ * @param memory a pointer to the piece of memory malloc'd for a cache
+ */
+void
+c_mmFreeCache(
+    c_mm mm,
+    void *memory)
+{
+    c_mmCache cache;
+    c_mmCacheListItem current, prev;
+    c_bool found;
+
+    if(memory){
+        /* We are freeing a cache, so the list may not be empty */
+        assert(mm->cacheList);
+
+        c_mutexLock( &mm->cacheListLock );
+
+        cache = (c_mmCache)memory;
+        prev = mm->cacheList;
+
+        if(prev->cache == cache){
+            /* The cache is the first item, replace cacheList with next */
+            mm->cacheList = prev->next;
+            current = prev; /* current will be freed */
+        } else {
+            current = prev->next;
+            found = FALSE;
+
+            while(!found && current->next){
+                found = (current->cache == cache);
+                if(!found){
+                    prev = current;
+                    current = current->next;
+                }
+            }
+
+            /* The cache HAS to be in the list and should be stored in current->cache */
+            assert(found && current->cache == cache);
+
+            /* Cut the item out */
+            prev->next = current->next;
+        }
+
+        c_mutexUnlock( &mm->cacheListLock );
+
+        /* Now free the listitem */
+        c_mmFree(mm, current);
+    }
+
+    /* Now actually free the cache */
+    c_mmFree(mm, memory);
 }
 
 #ifdef MM_CLUSTER
@@ -519,6 +627,7 @@ c_mmDestroy (
         c_mutexUnlock( &mm->bindLock );
         c_mutexUnlock( &mm->mapLock );
         c_mutexUnlock( &mm->listLock );
+        c_mutexUnlock( &mm->cacheListLock );
 
         while ( mm->bindings ) {
             temp = mm->bindings;
@@ -563,6 +672,8 @@ c_mmAdminInit (
         mm->chunkList[listIndex] = NULL;
     }
 
+    mm->cacheList = NULL;
+
     mm->mapEnd   = mm->start;
     mm->listEnd  = mm->end;
     mm->bindings = NULL;
@@ -580,6 +691,7 @@ c_mmAdminInit (
     mm->chunkListStatus.garbage = 0;
     mm->chunkListStatus.count   = 0;
 
+    c_mutexInit(&mm->cacheListLock, SHARED_MUTEX);
     c_mutexInit(&mm->listLock,SHARED_MUTEX);
     c_mutexInit(&mm->mapLock,SHARED_MUTEX);
     c_mutexInit(&mm->bindLock,SHARED_MUTEX);
@@ -776,6 +888,7 @@ c_mmState (
     c_mm mm)
 {
     c_mmStatus s;
+    c_mmCacheListItem cli;
 
     s.fails = mm->fails;
     s.size = mm->size;
@@ -794,6 +907,20 @@ c_mmState (
     s.count   += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
 
+    /* Get the memory allocated for- and free in caches. */
+    c_mutexLock(&mm->cacheListLock);
+    cli = mm->cacheList;
+    s.cached = 0;
+    s.preallocated = 0;
+    while(cli){
+        /* All elements in the list MUST have a cache */
+        assert(cli->cache);
+        s.cached        += c_mmCacheGetAllocated(cli->cache);
+        s.preallocated  += c_mmCacheGetFree(cli->cache);
+
+        cli = cli->next;
+    }
+    c_mutexUnlock(&mm->cacheListLock);
     return s;
 }
 
