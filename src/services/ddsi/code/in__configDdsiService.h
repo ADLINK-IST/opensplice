@@ -42,6 +42,10 @@ in_configDdsiService
 in_configDdsiServiceNew(
     os_char* name);
 
+void
+in_configDdsiServiceFree(
+    in_configDdsiService _this);
+
 /* takes ownership of the discoverychannel */
 void
 in_configDdsiServiceSetDiscoveryChannel(

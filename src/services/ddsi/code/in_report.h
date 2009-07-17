@@ -4,8 +4,9 @@
 
 #include "os_report.h"
 #include "in_configuration.h"
+#include "in__config.h"
 
-/* Errors, warnins and info for everybody who is interested */
+/* Errors, warnings and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
 #define IN_STRINGIFY(X) #X
@@ -46,31 +47,39 @@
 		} \
 	} while(0)
 
-#define IN_REPORT_INFO(level, description)                                     \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description); \
+
+/* Currently the IN_REPORT_INFO macros do not check whether the log level is of
+ * interest or not.  These used to call onto the deprecated in_configurationLevelIsInteresting
+ * functions (the configuration is now handled by the in_config code).
+ * Also the info logging should be disabled when tracing is switched off to prevent
+ * the performance penalty for writing all this info to the ospl-info.log, hence the
+ * in_configIsTracingEnabled checks below
+ */
+
+#define IN_REPORT_INFO(level, description)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                    \
+        OS_REPORT(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description);\
     }\
 
-#define IN_REPORT_INFO_1(level, description, a1)                               \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_1(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1); \
+#define IN_REPORT_INFO_1(level, description, a1)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                          \
+        OS_REPORT_1(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1);\
     }\
 
-#define IN_REPORT_INFO_2(level, description, a1, a2)                           \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_2(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2); \
-    }
+#define IN_REPORT_INFO_2(level, description, a1, a2)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                              \
+        OS_REPORT_2(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2);\
+    }\
 
-#define IN_REPORT_INFO_3(level, description, a1, a2, a3)                       \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_3(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3); \
-    }
+#define IN_REPORT_INFO_3(level, description, a1, a2, a3)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                                  \
+        OS_REPORT_3(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3);\
+    }\
 
-#define IN_REPORT_INFO_4(level, description, a1, a2, a3, a4)                       \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_4(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3, a4); \
-    }
-
+#define IN_REPORT_INFO_4(level, description, a1, a2, a3, a4)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                                      \
+        OS_REPORT_4(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3, a4);\
+    }\
 
 
 /* Tracing for non-release versions only */
