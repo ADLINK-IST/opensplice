@@ -522,6 +522,7 @@ v_dataReaderInstanceInsert(
                 s = v_dataReaderInstanceHead(_this);
                 assert(s);
                 assert(s == v_dataReaderInstanceTail(_this));
+                v_dataReaderSampleRemoveFromLifespanAdmin(s); // Maybe not needed here, but shouldn't harm.
                 v_dataReaderSampleFree(s);
             }
             sample = v_dataReaderSampleNew(_this,message);
@@ -635,6 +636,7 @@ v_dataReaderInstanceInsert(
                                     {
                                         proceed = FALSE;
                                     }
+                                    v_dataReaderSampleRemoveFromLifespanAdmin(oldest);
                                     v_dataReaderSampleFree(oldest);
                                 } while(proceed);
 
@@ -1050,6 +1052,7 @@ v_dataReaderSampleTake(
     }
     _this->prev = NULL;
     _this->next = NULL;
+    v_dataReaderSampleRemoveFromLifespanAdmin(_this);
     v_dataReaderSampleFree(_this);
 
     v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
@@ -1204,6 +1207,7 @@ v_dataReaderInstancePurge(
         if (sample == NULL) { /* instance becomes empty, purge all */
             assert(_this->sampleCount == 0);
             sample = v_dataReaderInstanceHead(_this);
+            v_dataReaderSampleRemoveFromLifespanAdmin(sample);
             v_dataReaderSampleFree(sample);
             v_dataReaderInstanceSetHead(_this,NULL);
             v_dataReaderInstanceSetTail(_this,NULL);
@@ -1229,6 +1233,7 @@ v_dataReaderInstancePurge(
                /* break link */
                sample->next = NULL;
                next->prev = NULL; /* ref kept by local var. next */
+               v_dataReaderSampleRemoveFromLifespanAdmin(next);
                v_dataReaderSampleFree(next);
                /* The instance state is in correct state,
                 * so no update needed.

@@ -102,10 +102,6 @@ v_dataReaderSampleFree(
 
     if (sample) {
         assert(C_TYPECHECK(sample, v_dataReaderSample));
-        instance = v_readerSample(sample)->instance;
-        index = v_index(instance->index);
-        v_lifespanAdminRemove(v_dataReaderEntry(index->entry)->lifespanAdmin,
-                              v_lifespanSample(sample));
         if (c_refCount(sample) == 1) {
             /* Free the slave-samples as well */
 //            v_dataReaderSampleWipeViews(sample);
@@ -135,6 +131,23 @@ v_dataReaderSampleFree(
         }
     }
 }
+
+void
+v_dataReaderSampleRemoveFromLifespanAdmin(
+    v_dataReaderSample sample)
+{
+    v_dataReaderInstance instance;
+    v_index index;
+
+    if (sample) {
+        assert(C_TYPECHECK(sample, v_dataReaderSample));
+        instance = v_readerSample(sample)->instance;
+        index = v_index(instance->index);
+        v_lifespanAdminRemove(v_dataReaderEntry(index->entry)->lifespanAdmin,
+                              v_lifespanSample(sample));
+    }
+}
+    
 
 void
 v_dataReaderSampleWipeViews(
