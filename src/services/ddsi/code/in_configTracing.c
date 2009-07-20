@@ -345,9 +345,9 @@ in_configTracingSetEnabled(
     _this->isEnabled = isEnabled;
 }
 
-/* in_reportTrace is the static function that actually logs the tracing to the output file */
+/* in_configTracingReport is the static function that actually logs the tracing to the output file */
 void
-in_reportTrace(
+in_configTracingReport(
     in_traceClass traceClass,
     c_ulong level,
     const c_char *context,

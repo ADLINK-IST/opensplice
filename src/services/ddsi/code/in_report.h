@@ -4,6 +4,7 @@
 
 #include "os_report.h"
 #include "in_configuration.h"
+#include "in__configTracing.h"
 #include "in__config.h"
 
 /* Errors, warnings and info for everybody who is interested */
@@ -86,41 +87,14 @@
 
 #ifdef IN_TRACING
 
-#define TC(name) TC_##name
-
-typedef enum in_traceClass_e {
-  TC(Undefined),
-  TC(Configuration),
-  TC(Construction),
-  TC(Destruction),
-  TC(Mainloop),
-  TC(Groups),
-  TC(Send),
-  TC(Receive),
-  TC(Discovery),
-  TC(Test),
-  TC(Connectivity),
-  TC(Count)/* Last element, keep this at the end */
-} in_traceClass;
-
-/* You can use this function as is, but using the macro's below is preferred
- * Note: this function is implemented in in_configuration in order to speed
- * up the testing etc. */
-void in_reportTrace(
-         in_traceClass traceClass,
-         c_ulong level,
-         const c_char *context,
-         const char *description, ...);
-
-
 #define IN_TRACE(traceClass, level, description)                           \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n")
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n")
 #define IN_TRACE_1(traceClass, level, description, a1)                 \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1)
 #define IN_TRACE_2(traceClass, level, description, a1, a2)             \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1, a2)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1, a2)
 #define IN_TRACE_3(traceClass, level, description, a1, a2, a3)             \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1, a2, a3)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1, a2, a3)
 
 #else /* IN_TRACING */
 
