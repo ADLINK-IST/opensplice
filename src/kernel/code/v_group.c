@@ -2545,3 +2545,17 @@ v_groupFlushActionWithCondition(
     }
     return;
 }
+
+void
+v_groupUpdatePurgeList(
+    v_group group)
+{
+    assert(group != NULL);
+    assert(C_TYPECHECK(group,v_group));
+
+    if(group){
+        c_mutexLock(&group->mutex);
+        updatePurgeList(group, v_timeGet());
+        c_mutexUnlock(&group->mutex);
+    }
+}
