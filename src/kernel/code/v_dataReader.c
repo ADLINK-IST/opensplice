@@ -1093,10 +1093,12 @@ v_dataReaderRemoveInstance(
 {
     v_dataReaderInstance found;
     c_object instanceSet;
-    c_bool equal;
+    c_bool equal, doFree;
 
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(v_dataReaderInstanceEmpty(instance));
+
+    doFree = FALSE;
 
     if (v_dataReaderInstanceInNotEmptyList(instance)) {
         instanceSet = v_dataReaderNotEmptyInstanceSet(_this);
@@ -1108,6 +1110,12 @@ v_dataReaderRemoveInstance(
         if (equal) {
             v_dataReaderInstanceInNotEmptyList(found) = FALSE;
             c_free(found);
+            /* A v_publicFree is needed here as well, but due to the
+             * fact that the instance actually might be free by that, do
+             * it in the end of the routine for subscriber defined keys
+             * readers only.
+             */
+            doFree = TRUE;
         } else {
             /* The instance apparently isn't a member of the
              * NotEmptySet but there is another instance with equal
@@ -1154,19 +1162,8 @@ v_dataReaderRemoveInstance(
                           "try removed incorrect instance");
             }
         }
-#if 0
-    } else {
-        instanceSet = v_dataReaderNotEmptyInstanceSet(_this);
-        equal = FALSE;
-        found = v_dataReaderInstance(c_remove(instanceSet,
-                                              instance,
-                                              only_if_equal,
-                                              &equal));
-        if (equal) {
-            v_publicFree(v_public(instance));
-            c_free(found);
-        }
-#endif
+    } else if(doFree){
+        v_publicFree(v_public(instance));
     }
 }
 
