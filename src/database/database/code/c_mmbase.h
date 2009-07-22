@@ -19,10 +19,6 @@
 extern "C" {
 #endif
 
-#ifndef NDEBUG
-#define C_MM_CONFIDENCE (0x214D444A)
-#endif /* NDEBUG */
-
 #ifdef OSPL_BUILD_DB
 #define OS_API OS_API_EXPORT
 #else
@@ -40,7 +36,16 @@ struct c_mmStatus_s {
     c_long garbage;
     c_long count;
     c_long fails;
+    /* The cached field will be filled with the amount of memory allocated for
+     * caches (including all headers). */
     c_long cached;
+    /* The preallocated field will be filled with the amount of memory that is
+     * preallocated in caches, but is not in use. So in order to retain the
+     * total amount of memory in use:
+     *      totalInUse = used - preallocated;
+     * And in order to get all free memory (including allocated, but available
+     * in caches):
+     *      totalFree = size - totalInUse */
     c_long preallocated;
 };
 
