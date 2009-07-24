@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -628,7 +628,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
                 result = admin;
                 if (orderPreservation) {
 		  /* Now find the first missing packetnumber.*/
-             
+
                     packetNrPrevious = nw_plugDataBufferGetPacketNr(DF_DATA(admin));
                     currentAdmin = admin->next;
                     holeFound = FALSE;
@@ -657,13 +657,13 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             NW_REPORT_WARNING_1("reliable protocol",
                "Node 0x%x did not resend a missing packet in time, removing that node from the reliable protocol.",
                sendingPartitionNode->nodeId);
-            
+
             sendingPartitionNode->active = FALSE;
-          
+
             //release all admins for this PartitionNode
-            nw_plugSendingPartitionNodeFree(sendingPartitionNode);          
-        } 
-        
+            nw_plugSendingPartitionNodeFree(sendingPartitionNode);
+        }
+
 
         /* Todo: recheck this assert NW_CONFIDENCE((result == NULL) == isOutOfOrder); */
     } else {
@@ -744,7 +744,7 @@ nw_plugSendingPartitionNodeInsertAdmin(
         receiveChannel->fragmentsOutOfOrderDropped++;
         NW_TRACE_1(Receive, 3, "Channel %s: reliable fragment dropped because it "
             "has been received twice or it is too old",
-            nw__plugChannelGetName(nw_plugChannel(receiveChannel)));        
+            nw__plugChannelGetName(nw_plugChannel(receiveChannel)));
     }
     /* Execute the following action only if the admin is directly available */
     if (insertedAdmin == admin) {
@@ -1422,7 +1422,7 @@ nw_plugReceiveChannelInsertDataReceived(
     }
     NW_CONFIDENCE(currentNode != NULL);
 
-    
+
     if ( nw_plugSendingPartitionNodeIsActive(currentNode) ) {
         /* Insert the admin into the defrag of out of order list */
         admin = DF_ADMIN(buffer);
@@ -1491,7 +1491,6 @@ nw_plugReceiveChannelReadSocket(
                     dataLength = nw_plugBufferGetLength(buffer);
                     if (dataLength > 0) {
                         NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
-                        sendingNodeId = nw_plugBufferGetSendingNodeId(buffer);
                         sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
                         connected = FALSE;
                         nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &connected);
