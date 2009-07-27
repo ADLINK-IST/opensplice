@@ -689,7 +689,7 @@ in_connectivityAdminFindWriter(
         /* This should be replaced by an identity match */
         if ( v_gidCompare(in_connectivityWriterFacadeGetInfo(facade)->key,
                           message->writerGID) == C_EQ ) {
-            IN_TRACE_1(Send, 2, ">>> in_connectivityAdminFindWriter - owh boy, we found one %p", facade);
+            IN_TRACE_1(Send, 2, ">>> in_connectivityAdminFindWriter - found %p", facade);
             os_mutexUnlock(&(_this->mutex));
             return in_connectivityWriterFacadeKeep(facade);
         }

@@ -1557,8 +1557,11 @@
                 </leafInt>
                 <leafInt name="AdminQueueSize" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                        The Sending element describes all properties for the transmitting side
-                        of the Channel.
+                        <p>For reliable channels the receiving side needs to keep the sending
+                        side informed about the received data and the received control messages.</p>
+                        <p>This is done by means of an "AdminQueue". This setting determines the
+                        size of this queue, and it must be greater than the maximum number of reliable
+                        messages send or received during each "Resolution" milliseconds.</p>
                     ]]></comment>
                     <minimum>400</minimum>
                     <default>4000</default>
