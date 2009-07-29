@@ -1525,7 +1525,7 @@ onRequestedDeadlineMissed (
 
     if ( _this ) {
         result = _DataReader_get_requested_deadline_missed_status(
-                     _this, FALSE, &info);            
+                     _this, TRUE, &info);            
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1582,7 +1582,7 @@ onRequestedIncompatibleQos (
         info.policies._buffer  = policyCount;
             
         result = _DataReader_get_requested_incompatible_qos_status(
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info); 
             
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1634,7 +1634,7 @@ onSampleRejected (
    
     if ( _this ) {
         result = _DataReader_get_sample_rejected_status(
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info); 
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1686,7 +1686,7 @@ onLivelinessChanged (
 
     if ( _this ) {
         result = _DataReader_get_liveliness_changed_status(
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info); 
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1793,7 +1793,7 @@ onSubscriptionMatch (
    
     if ( _this ) {
         result = _DataReader_get_subscription_matched_status (
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info); 
     
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1845,7 +1845,7 @@ onSampleLost (
    
     if ( _this ) {
         result = _DataReader_get_sample_lost_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
