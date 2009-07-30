@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_SERVICESTATE_H
@@ -71,7 +71,7 @@ extern "C" {
  * </tr>
  * <tr ALIGN=CENTER NOSAVE>
  *   <td>STATE_TERMINATED</td>
- *   <td>-</td><td>-</td><td>-</td><td>-</td><td>x</td><td>x</td>
+ *   <td>-</td><td>-</td><td>-</td><td>-</td><td>x</td><td>-</td>
  * </tr>
  * <tr ALIGN=CENTER NOSAVE>
  *   <td>STATE_DIED</td>
@@ -86,7 +86,7 @@ extern "C" {
  * \return TRUE,  if the state change is allowed and succeeded.<br>
  *         FALSE, if the state change is not allowed.
  */
-OS_API c_bool 
+OS_API c_bool
 v_serviceStateChangeState(
     v_serviceState serviceState,
     v_serviceStateKind newState);
@@ -114,7 +114,7 @@ v_serviceStateGetKind(
  * Each service is uniquely identified by a name and each service has
  * a state object. The state object outlives the service object and
  * therefore also contains a name to uniquely identify the service state
- * object. 
+ * object.
  *
  * \param serviceState the service state object to operate on.
  *
