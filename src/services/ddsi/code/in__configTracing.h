@@ -150,6 +150,30 @@ in_configTracingSetEnabled(
     in_configTracing _this,
     os_boolean isEnabled);
 
+#define TC(name) TC_##name
+
+typedef enum in_traceClass_e {
+  TC(Undefined),
+  TC(Configuration),
+  TC(Construction),
+  TC(Destruction),
+  TC(Mainloop),
+  TC(Groups),
+  TC(Send),
+  TC(Receive),
+  TC(Discovery),
+  TC(Test),
+  TC(Connectivity),
+  TC(Count)/* Last element, keep this at the end */
+} in_traceClass;
+
+void
+in_configTracingReport(
+    in_traceClass traceClass,
+    c_ulong level,
+    const c_char *context,
+    const char *description, ...);
+
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)
 }
