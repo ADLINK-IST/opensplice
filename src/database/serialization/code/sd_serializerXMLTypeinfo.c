@@ -1929,12 +1929,14 @@ sd_findTypeInScope (
     const c_char      *name)
 {
     c_metaObject       o;
+/*
     c_char            *str;
     c_char            *cur;
     sd_elementContext  root = NULL;
-
+*/
     o = c_metaResolve(scope->object, name);
     if ( !o ) {
+/*
         str = sd_stringDup(name);
         cur = strstr(str, "::");
         if ( cur ) {
@@ -1951,10 +1953,13 @@ sd_findTypeInScope (
                 }
             }
         } else {
+*/
             o = c_metaResolve(scope->info->base, name);
+/*
         }
 
         os_free(str);
+*/
     }
 
     return o;
