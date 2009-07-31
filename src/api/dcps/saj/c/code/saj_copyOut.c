@@ -872,7 +872,6 @@ saj_cfuoArrBoolean (
     saj_context *ctx)
 {
     jbooleanArray array = NULL;
-    jbooleanArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -885,11 +884,9 @@ saj_cfuoArrBoolean (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-
-        arr = array;
         result = saj_cfooArrBoolean (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbooleanArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -985,7 +982,6 @@ saj_cfuoArrByte (
     saj_context *ctx)
 {
     jbyteArray array = NULL;
-    jbyteArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -998,11 +994,9 @@ saj_cfuoArrByte (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-
-        arr = array;
         result = saj_cfooArrByte (ch, &array, src, ctx);
 
-        if ((arr != array) && (result == SAJ_COPYRESULT_OK)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbyteArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1098,7 +1092,6 @@ saj_cfuoArrChar (
     saj_context *ctx)
 {
     jcharArray array = NULL;
-    jcharArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1112,10 +1105,9 @@ saj_cfuoArrChar (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooArrChar (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jcharArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1210,7 +1202,6 @@ saj_cfuoArrShort (
     saj_context *ctx)
 {
     jshortArray array = NULL;
-    jshortArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1223,10 +1214,9 @@ saj_cfuoArrShort (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooArrShort (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jshortArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1322,7 +1312,6 @@ saj_cfuoArrInt (
     saj_context *ctx)
 {
     jintArray array = NULL;
-    jintArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1335,10 +1324,9 @@ saj_cfuoArrInt (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooArrInt (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jintArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1434,7 +1422,6 @@ saj_cfuoArrLong (
     saj_context *ctx)
 {
     jlongArray array = NULL;
-    jlongArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1447,10 +1434,9 @@ saj_cfuoArrLong (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooArrLong (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jlongArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1543,7 +1529,6 @@ saj_cfuoArrFloat (
     saj_context *ctx)
 {
     jfloatArray array = NULL;
-    jfloatArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1556,10 +1541,9 @@ saj_cfuoArrFloat (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooArrFloat (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jfloatArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1655,7 +1639,6 @@ saj_cfuoArrDouble (
     saj_context *ctx)
 {
     jdoubleArray array = NULL;
-    jdoubleArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1668,11 +1651,9 @@ saj_cfuoArrDouble (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-
-        arr = array;
         result = saj_cfooArrDouble (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jdoubleArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1774,7 +1755,6 @@ saj_cfuoSeqBoolean (
     saj_context *ctx)
 {
     jbooleanArray array = NULL;
-    jbooleanArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1787,10 +1767,9 @@ saj_cfuoSeqBoolean (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqBoolean (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbooleanArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -1888,7 +1867,6 @@ saj_cfuoSeqByte (
     saj_context *ctx)
 {
     jbyteArray array = NULL;
-    jbyteArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -1901,10 +1879,9 @@ saj_cfuoSeqByte (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqByte (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbyteArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2002,7 +1979,6 @@ saj_cfuoSeqChar (
     saj_context *ctx)
 {
     jcharArray array = NULL;
-    jcharArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2015,10 +1991,9 @@ saj_cfuoSeqChar (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqChar (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jcharArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2116,7 +2091,6 @@ saj_cfuoSeqShort (
     saj_context *ctx)
 {
     jshortArray array = NULL;
-    jshortArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2129,10 +2103,9 @@ saj_cfuoSeqShort (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqShort (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jshortArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2228,8 +2201,7 @@ saj_cfuoSeqInt (
     unsigned long long discrValue,
     saj_context *ctx)
 {
-    jintArray array;
-    jintArray arr;
+    jintArray array = NULL;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2241,10 +2213,9 @@ saj_cfuoSeqInt (
     }
 
     TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-    arr = array;
     result = saj_cfooSeqInt (ch, &array, src, ctx);
 
-    if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+    if (result == SAJ_COPYRESULT_OK) {
         saj_setUnionBranch(javaObject, cuh, unionCase, jintArray, &array, discrValue, ctx);
         result = saj_copyGetStatus(ctx);
         TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2342,7 +2313,6 @@ saj_cfuoSeqLong (
     saj_context *ctx)
 {
     jlongArray array = NULL;
-    jlongArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2355,11 +2325,9 @@ saj_cfuoSeqLong (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-
-        arr = array;
         result = saj_cfooSeqLong (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jlongArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2459,7 +2427,6 @@ saj_cfuoSeqFloat (
     saj_context *ctx)
 {
     jfloatArray array = NULL;
-    jfloatArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2472,10 +2439,9 @@ saj_cfuoSeqFloat (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqFloat (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jfloatArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2573,7 +2539,6 @@ saj_cfuoSeqDouble (
     saj_context *ctx)
 {
     jdoubleArray array = NULL;
-    jdoubleArray arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2586,10 +2551,9 @@ saj_cfuoSeqDouble (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, array));
-        arr = array;
         result = saj_cfooSeqDouble (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != array)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jdoubleArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
@@ -2680,7 +2644,6 @@ saj_cfuoStruct (
     saj_context *ctx)
 {
     jobject structObject = NULL;
-    jobject so;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2693,10 +2656,9 @@ saj_cfuoStruct (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, structObject));
-        so = structObject;
         result = saj_cfooStruct (ch, &structObject, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (so != structObject)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &structObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, structObject));
@@ -2895,7 +2857,6 @@ saj_cfuoUnion (
     saj_context *ctx)
 {
     jobject unionObject = NULL;
-    jobject uo;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -2908,10 +2869,9 @@ saj_cfuoUnion (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, unionObject));
-        uo = unionObject;
         result = saj_cfooUnion (ch, &unionObject, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (uo != unionObject)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &unionObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, unionObject));
@@ -3158,7 +3118,6 @@ saj_cfuoArray (
     saj_context *ctx)
 {
     jobject arrayObject = NULL;
-    jobject arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -3171,10 +3130,9 @@ saj_cfuoArray (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, arrayObject));
-        arr = arrayObject;
         result = saj_cfooArray (ch, &arrayObject, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &arrayObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, arrayObject));
@@ -3281,7 +3239,6 @@ saj_cfuoSequence (
     saj_context *ctx)
 {
     jobject arrayObject = NULL;
-    jobject arr;
     void *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
@@ -3294,10 +3251,9 @@ saj_cfuoSequence (
 
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, unionCase->caseID, arrayObject));
-        arr = arrayObject;
         result = saj_cfooSequence (ch, &arrayObject, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK) && (arr != arrayObject)) {
+        if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &arrayObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, arrayObject));
