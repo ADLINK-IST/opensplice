@@ -1193,11 +1193,11 @@ install_hde_target ()
             ${HDE_dir}/examples/dcps/standalone/Java/Tutorial
         if [ "${target}" != "x86.win32" ]
         then
-           install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README.txt" \
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README.txt" \
                ${HDE_dir}/examples/dcps/standalone/Java/Tutorial
         else
-           install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README_x86.win32.txt" \
-               ${HDE_dir}/examples/dcps/standalone/Java/Tutorial/README.txt
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README_x86.win32.txt" \
+               ${HDE_dir}/examples/dcps/standalone/Java/Tutorial README.txt 
         fi
 
         echo "*           Ready"
@@ -1229,11 +1229,11 @@ install_hde_target ()
             ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
         if [ "${target}" != "x86.win32" ]
         then
-           install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README.txt" \
-               ${HDE_dir}/examples/dcps/standalone/Java/Tutorial
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/README.txt" \
+               ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial
         else
-           install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/SAJ/README_x86.win32.txt" \
-               ${HDE_dir}/examples/dcps/standalone/Java/Tutorial/README.txt
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/README_x86.win32.txt" \
+               ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial README.txt 
         fi
         echo "*           Ready"
         echo "*         Java Ready"
