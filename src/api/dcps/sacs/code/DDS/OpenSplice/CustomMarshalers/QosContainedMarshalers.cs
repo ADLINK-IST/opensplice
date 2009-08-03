@@ -63,9 +63,9 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref BuiltinTopicKey from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_SystemId, from.SystemId);
-            TypeSupport.Write(to, offset + offset_LocalId, from.LocalId);
-            TypeSupport.Write(to, offset + offset_Serial, from.Serial);
+            BaseMarshaler.Write(to, offset + offset_SystemId, from.SystemId);
+            BaseMarshaler.Write(to, offset + offset_LocalId, from.LocalId);
+            BaseMarshaler.Write(to, offset + offset_Serial, from.Serial);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -79,9 +79,9 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out BuiltinTopicKey to, int offset)
         {
-            to.SystemId = TypeSupport.ReadUInt32(from, offset + offset_SystemId);
-            to.LocalId = TypeSupport.ReadUInt32(from, offset + offset_LocalId);
-            to.Serial = TypeSupport.ReadUInt32(from, offset + offset_Serial);
+            to.SystemId = BaseMarshaler.ReadUInt32(from, offset + offset_SystemId);
+            to.LocalId = BaseMarshaler.ReadUInt32(from, offset + offset_LocalId);
+            to.Serial = BaseMarshaler.ReadUInt32(from, offset + offset_Serial);
         }
     }
 
@@ -124,8 +124,8 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref Duration from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_sec, from.Sec);
-            TypeSupport.Write(to, offset + offset_nanosec, from.NanoSec);
+            BaseMarshaler.Write(to, offset + offset_sec, from.Sec);
+            BaseMarshaler.Write(to, offset + offset_nanosec, from.NanoSec);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -142,8 +142,8 @@ namespace DDS.OpenSplice.CustomMarshalers
             int sec;
             uint nanosec;
 
-            sec = TypeSupport.ReadInt32(from, offset + offset_sec);
-            nanosec = TypeSupport.ReadUInt32(from, offset + offset_nanosec);
+            sec = BaseMarshaler.ReadInt32(from, offset + offset_sec);
+            nanosec = BaseMarshaler.ReadUInt32(from, offset + offset_nanosec);
 
             to = new Duration(sec, nanosec);
         }
@@ -245,7 +245,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyIn(ref EntityFactoryQosPolicy from, IntPtr to, int offset)
         {
             // Set autoenable_created_entities field
-            TypeSupport.Write(to, offset + offset_autoenable_created_entities, from.AutoEnableCreatedEntities);
+            BaseMarshaler.Write(to, offset + offset_autoenable_created_entities, from.AutoEnableCreatedEntities);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -261,7 +261,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out EntityFactoryQosPolicy to, int offset)
         {
             // Set autoenable_created_entities field
-            to.AutoEnableCreatedEntities = TypeSupport.ReadBoolean(from, offset + offset_autoenable_created_entities);
+            to.AutoEnableCreatedEntities = BaseMarshaler.ReadBoolean(from, offset + offset_autoenable_created_entities);
         }
     }
 
@@ -306,16 +306,16 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             IntPtr stringPtr = OpenSplice.Gapi.GenericAllocRelease.string_dup(from.Name);
             //            IntPtr stringPtr = Marshal.StringToHGlobalAnsi(from.Name);
-            TypeSupport.Write(to, offset + offset_name, stringPtr);
-            TypeSupport.Write(to, offset + offset_enable, from.Enable);
+            BaseMarshaler.Write(to, offset + offset_name, stringPtr);
+            BaseMarshaler.Write(to, offset + offset_enable, from.Enable);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
-            IntPtr stringPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset_name);
+            IntPtr stringPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset_name);
             OpenSplice.Gapi.GenericAllocRelease.Free(stringPtr);
             //            Marshal.FreeHGlobal(stringPtr);
-            TypeSupport.Write(nativePtr, offset + offset_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset + offset_name, IntPtr.Zero);
         }
 
         internal void CopyOut(out ShareQosPolicy to)
@@ -327,7 +327,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             IntPtr ptr = new IntPtr((long)from + offset + offset_name);
             to.Name = Marshal.PtrToStringAnsi(ptr);
-            to.Enable = TypeSupport.ReadBoolean(from, offset + offset_enable);
+            to.Enable = BaseMarshaler.ReadBoolean(from, offset + offset_enable);
         }
     }
 
@@ -372,13 +372,13 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyIn(ref SchedulingQosPolicy from, IntPtr to, int offset)
         {
             // Set scheduling_class field
-            TypeSupport.Write(to, offset + offset_scheduling_class, (int)from.SchedulingClass.Kind);
+            BaseMarshaler.Write(to, offset + offset_scheduling_class, (int)from.SchedulingClass.Kind);
 
             // Set scheduling_priority_kind field
-            TypeSupport.Write(to, offset + offset_scheduling_priority_kind, (int)from.SchedulingPriorityKind.Kind);
+            BaseMarshaler.Write(to, offset + offset_scheduling_priority_kind, (int)from.SchedulingPriorityKind.Kind);
 
             // Set scheduling_priority field
-            TypeSupport.Write(to, offset + offset_scheduling_priority, from.SchedulingPriority);
+            BaseMarshaler.Write(to, offset + offset_scheduling_priority, from.SchedulingPriority);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -395,14 +395,14 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Get scheduling_class field
             to.SchedulingClass.Kind = (SchedulingClassQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_scheduling_class);
+                BaseMarshaler.ReadInt32(from, offset + offset_scheduling_class);
 
             // Get scheduling_priority_kind field
             to.SchedulingPriorityKind.Kind = (SchedulingPriorityQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_scheduling_priority_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_scheduling_priority_kind);
 
             // Get scheduling_priority field
-            to.SchedulingPriority = TypeSupport.ReadInt32(from, offset + offset_scheduling_priority);
+            to.SchedulingPriority = BaseMarshaler.ReadInt32(from, offset + offset_scheduling_priority);
         }
     }
 
@@ -446,9 +446,9 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref PresentationQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_access_scope, (int)from.AccessScope);
-            TypeSupport.Write(to, offset + offset_coherent_access, from.CoherentAccess);
-            TypeSupport.Write(to, offset + offset_ordered_access, from.OrderedAccess);
+            BaseMarshaler.Write(to, offset + offset_access_scope, (int)from.AccessScope);
+            BaseMarshaler.Write(to, offset + offset_coherent_access, from.CoherentAccess);
+            BaseMarshaler.Write(to, offset + offset_ordered_access, from.OrderedAccess);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -463,9 +463,9 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out PresentationQosPolicy to, int offset)
         {
-            to.AccessScope = (PresentationQosPolicyAccessScopeKind)TypeSupport.ReadInt32(from, offset + offset_access_scope);
-            to.CoherentAccess = TypeSupport.ReadBoolean(from, offset + offset_coherent_access);
-            to.OrderedAccess = TypeSupport.ReadBoolean(from, offset + offset_ordered_access);
+            to.AccessScope = (PresentationQosPolicyAccessScopeKind)BaseMarshaler.ReadInt32(from, offset + offset_access_scope);
+            to.CoherentAccess = BaseMarshaler.ReadBoolean(from, offset + offset_coherent_access);
+            to.OrderedAccess = BaseMarshaler.ReadBoolean(from, offset + offset_ordered_access);
         }
     }
 
@@ -678,7 +678,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref DurabilityQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -694,7 +694,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Get scheduling_class field
             to.Kind = (DurabilityQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
         }
     }
 
@@ -742,11 +742,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyIn(ref DurabilityServiceQosPolicy from, IntPtr to, int offset)
         {
             DurationMarshaler.CopyIn(ref from.ServiceCleanupDelay, to, offset + offset_service_cleanup_delay);
-            TypeSupport.Write(to, offset + offset_history_kind, (int)from.HistoryKind);
-            TypeSupport.Write(to, offset + offset_history_depth, from.HistoryDepth);
-            TypeSupport.Write(to, offset + offset_max_samples, from.MaxSamples);
-            TypeSupport.Write(to, offset + offset_max_instances, from.MaxInstances);
-            TypeSupport.Write(to, offset + offset_max_samples_per_instance, from.MaxSamplesPerInstance);
+            BaseMarshaler.Write(to, offset + offset_history_kind, (int)from.HistoryKind);
+            BaseMarshaler.Write(to, offset + offset_history_depth, from.HistoryDepth);
+            BaseMarshaler.Write(to, offset + offset_max_samples, from.MaxSamples);
+            BaseMarshaler.Write(to, offset + offset_max_instances, from.MaxInstances);
+            BaseMarshaler.Write(to, offset + offset_max_samples_per_instance, from.MaxSamplesPerInstance);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -764,15 +764,15 @@ namespace DDS.OpenSplice.CustomMarshalers
             DurationMarshaler.CopyOut(from, out to.ServiceCleanupDelay, offset + offset_service_cleanup_delay);
 
             to.HistoryKind = (HistoryQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_history_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_history_kind);
 
-            to.HistoryDepth = TypeSupport.ReadInt32(from, offset + offset_history_depth);
+            to.HistoryDepth = BaseMarshaler.ReadInt32(from, offset + offset_history_depth);
 
-            to.MaxSamples = TypeSupport.ReadInt32(from, offset + offset_max_samples);
+            to.MaxSamples = BaseMarshaler.ReadInt32(from, offset + offset_max_samples);
 
-            to.MaxInstances = TypeSupport.ReadInt32(from, offset + offset_max_instances);
+            to.MaxInstances = BaseMarshaler.ReadInt32(from, offset + offset_max_instances);
 
-            to.MaxSamplesPerInstance = TypeSupport.ReadInt32(from, offset + offset_max_samples_per_instance);
+            to.MaxSamplesPerInstance = BaseMarshaler.ReadInt32(from, offset + offset_max_samples_per_instance);
         }
     }
 
@@ -929,7 +929,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref LivelinessQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
             DurationMarshaler.CopyIn(ref from.LeaseDuration, to, offset + offset_lease_duration);
         }
 
@@ -946,7 +946,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out LivelinessQosPolicy to, int offset)
         {
             to.Kind = (LivelinessQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
 
             DurationMarshaler.CopyOut(from, out to.LeaseDuration, offset + offset_lease_duration);
         }
@@ -991,7 +991,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref ReliabilityQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
             DurationMarshaler.CopyIn(ref from.MaxBlockingTime, to, offset + offset_max_blocking_time);
         }
 
@@ -1008,7 +1008,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out ReliabilityQosPolicy to, int offset)
         {
             to.Kind = (ReliabilityQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
 
             DurationMarshaler.CopyOut(from, out to.MaxBlockingTime, offset + offset_max_blocking_time);
         }
@@ -1052,7 +1052,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref DestinationOrderQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1067,7 +1067,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out DestinationOrderQosPolicy to, int offset)
         {
             to.Kind = (DestinationOrderQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
         }
     }
 
@@ -1110,8 +1110,8 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref HistoryQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
-            TypeSupport.Write(to, offset + offset_depth, from.Depth);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_depth, from.Depth);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1126,9 +1126,9 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out HistoryQosPolicy to, int offset)
         {
             to.Kind = (HistoryQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
 
-            to.Depth = TypeSupport.ReadInt32(from, offset + offset_depth);
+            to.Depth = BaseMarshaler.ReadInt32(from, offset + offset_depth);
         }
     }
 
@@ -1172,9 +1172,9 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref ResourceLimitsQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_max_samples, from.MaxSamples);
-            TypeSupport.Write(to, offset + offset_max_instances, from.MaxInstances);
-            TypeSupport.Write(to, offset + offset_max_samples_per_instance, from.MaxSamplesPerInstance);
+            BaseMarshaler.Write(to, offset + offset_max_samples, from.MaxSamples);
+            BaseMarshaler.Write(to, offset + offset_max_instances, from.MaxInstances);
+            BaseMarshaler.Write(to, offset + offset_max_samples_per_instance, from.MaxSamplesPerInstance);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1188,11 +1188,11 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out ResourceLimitsQosPolicy to, int offset)
         {
-            to.MaxSamples = TypeSupport.ReadInt32(from, offset + offset_max_samples);
+            to.MaxSamples = BaseMarshaler.ReadInt32(from, offset + offset_max_samples);
 
-            to.MaxInstances = TypeSupport.ReadInt32(from, offset + offset_max_instances);
+            to.MaxInstances = BaseMarshaler.ReadInt32(from, offset + offset_max_instances);
 
-            to.MaxSamplesPerInstance = TypeSupport.ReadInt32(from, offset + offset_max_samples_per_instance);
+            to.MaxSamplesPerInstance = BaseMarshaler.ReadInt32(from, offset + offset_max_samples_per_instance);
         }
     }
 
@@ -1234,7 +1234,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref TransportPriorityQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_value, from.Value);
+            BaseMarshaler.Write(to, offset + offset_value, from.Value);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1248,7 +1248,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out TransportPriorityQosPolicy to, int offset)
         {
-            to.Value = TypeSupport.ReadInt32(from, offset + offset_value);
+            to.Value = BaseMarshaler.ReadInt32(from, offset + offset_value);
         }
     }
 
@@ -1347,7 +1347,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref OwnershipQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_kind, (int)from.Kind);
+            BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1363,7 +1363,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Get scheduling_class field
             to.Kind = (OwnershipQosPolicyKind)
-                TypeSupport.ReadInt32(from, offset + offset_kind);
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
         }
     }
 
@@ -1466,7 +1466,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             DurationMarshaler.CopyIn(ref from.AutoPurgeNoWriterSamplesDelay, to, offset + offset_autopurge_nowriter_samples_delay);
             DurationMarshaler.CopyIn(ref from.AutoPurgeDisposedSamplesDelay, to, offset + offset_autopurge_disposed_samples_delay);
-            TypeSupport.Write(to, offset + offset_enable_invalid_samples, from.EnableInvalidSamples);
+            BaseMarshaler.Write(to, offset + offset_enable_invalid_samples, from.EnableInvalidSamples);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1484,7 +1484,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             DurationMarshaler.CopyOut(from, out to.AutoPurgeNoWriterSamplesDelay, offset + offset_autopurge_nowriter_samples_delay);
             DurationMarshaler.CopyOut(from, out to.AutoPurgeDisposedSamplesDelay, offset + offset_autopurge_disposed_samples_delay);
-            to.EnableInvalidSamples = TypeSupport.ReadBoolean(from, offset + offset_enable_invalid_samples);
+            to.EnableInvalidSamples = BaseMarshaler.ReadBoolean(from, offset + offset_enable_invalid_samples);
         }
     }
 
@@ -1526,7 +1526,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref OwnershipStrengthQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_value, from.Value);
+            BaseMarshaler.Write(to, offset + offset_value, from.Value);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -1540,7 +1540,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out OwnershipStrengthQosPolicy to, int offset)
         {
-            to.Value = TypeSupport.ReadInt32(from, offset + offset_value);
+            to.Value = BaseMarshaler.ReadInt32(from, offset + offset_value);
         }
     }
 
@@ -1583,7 +1583,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref WriterDataLifecycleQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_autodispose_unregistered_instances,
+            BaseMarshaler.Write(to, offset + offset_autodispose_unregistered_instances,
                 from.AutoDisposeUnregisteredInstances);
         }
 
@@ -1599,7 +1599,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out WriterDataLifecycleQosPolicy to, int offset)
         {
             to.AutoDisposeUnregisteredInstances =
-                TypeSupport.ReadBoolean(from, offset + offset_autodispose_unregistered_instances);
+                BaseMarshaler.ReadBoolean(from, offset + offset_autodispose_unregistered_instances);
         }
     }
 
@@ -1642,7 +1642,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref SubscriptionKeyQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_use_key_list, from.UseKeyList);
+            BaseMarshaler.Write(to, offset + offset_use_key_list, from.UseKeyList);
             SequenceStringMarshaler.CopyIn(from.KeyList, to, offset + offset_key_list);
         }
 
@@ -1658,7 +1658,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out SubscriptionKeyQosPolicy to, int offset)
         {
-            to.UseKeyList = TypeSupport.ReadBoolean(from, offset + offset_use_key_list);
+            to.UseKeyList = BaseMarshaler.ReadBoolean(from, offset + offset_use_key_list);
             SequenceStringMarshaler.CopyOut(from, out to.KeyList, offset + offset_key_list);
         }
     }
@@ -1702,7 +1702,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyIn(ref ReaderLifespanQosPolicy from, IntPtr to, int offset)
         {
-            TypeSupport.Write(to, offset + offset_use_lifespan, from.UseLifespan);
+            BaseMarshaler.Write(to, offset + offset_use_lifespan, from.UseLifespan);
             DurationMarshaler.CopyIn(ref from.Duration, to, offset + offset_duration);
         }
 
@@ -1718,7 +1718,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal static void CopyOut(IntPtr from, out ReaderLifespanQosPolicy to, int offset)
         {
-            to.UseLifespan = TypeSupport.ReadBoolean(from, offset + offset_use_lifespan);
+            to.UseLifespan = BaseMarshaler.ReadBoolean(from, offset + offset_use_lifespan);
             DurationMarshaler.CopyOut(from, out to.Duration, offset + offset_duration);
         }
     }

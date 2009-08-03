@@ -72,10 +72,10 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Set listener_data field
             //            Marshal.WriteIntPtr(to, offset + offset_listener_data, from.listener_data);
-            TypeSupport.Write(to, offset + offset_listener_data, IntPtr.Zero);
+            BaseMarshaler.Write(to, offset + offset_listener_data, IntPtr.Zero);
 
             // Set on_inconsistent_topic field
-            TypeSupport.Write(to, offset + offset_on_inconsistent_topic, MarshalHelper.GetIntPtrForDelegate(from.on_inconsistent_topic));
+            BaseMarshaler.Write(to, offset + offset_on_inconsistent_topic, MarshalHelper.GetIntPtrForDelegate(from.on_inconsistent_topic));
         }
 
         internal static void CleanupIn(IntPtr pNativeData, int offset)
@@ -128,13 +128,13 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Set listener_data field
             //            Marshal.WriteIntPtr(to, offset + offset_listener_data, from.listener_data);
-            TypeSupport.Write(to, offset + offset_listener_data, IntPtr.Zero);
+            BaseMarshaler.Write(to, offset + offset_listener_data, IntPtr.Zero);
 
             // Set callback fields
-            TypeSupport.Write(to, offset + offset_on_offered_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_offered_deadline_missed));
-            TypeSupport.Write(to, offset + offset_on_offered_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_offered_incompatible_qos));
-            TypeSupport.Write(to, offset + offset_on_liveliness_lost, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_lost));
-            TypeSupport.Write(to, offset + offset_on_publication_match, MarshalHelper.GetIntPtrForDelegate(from.on_publication_match));
+            BaseMarshaler.Write(to, offset + offset_on_offered_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_offered_deadline_missed));
+            BaseMarshaler.Write(to, offset + offset_on_offered_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_offered_incompatible_qos));
+            BaseMarshaler.Write(to, offset + offset_on_liveliness_lost, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_lost));
+            BaseMarshaler.Write(to, offset + offset_on_publication_match, MarshalHelper.GetIntPtrForDelegate(from.on_publication_match));
         }
 
         internal static void CleanupIn(IntPtr pNativeData, int offset)
@@ -191,16 +191,16 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // Set listener_data field
             //            Marshal.WriteIntPtr(to, offset + offset_listener_data, from.listener_data);
-            TypeSupport.Write(to, offset + offset_listener_data, IntPtr.Zero);
+            BaseMarshaler.Write(to, offset + offset_listener_data, IntPtr.Zero);
 
             // Set callback fields
-            TypeSupport.Write(to, offset + offset_on_requested_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_requested_deadline_missed));
-            TypeSupport.Write(to, offset + offset_on_requested_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_requested_incompatible_qos));
-            TypeSupport.Write(to, offset + offset_on_sample_rejected, MarshalHelper.GetIntPtrForDelegate(from.on_sample_rejected));
-            TypeSupport.Write(to, offset + offset_on_liveliness_changed, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_changed));
-            TypeSupport.Write(to, offset + offset_on_data_available, MarshalHelper.GetIntPtrForDelegate(from.on_data_available));
-            TypeSupport.Write(to, offset + offset_on_subscription_match, MarshalHelper.GetIntPtrForDelegate(from.on_subscription_match));
-            TypeSupport.Write(to, offset + offset_on_sample_lost, MarshalHelper.GetIntPtrForDelegate(from.on_sample_lost));
+            BaseMarshaler.Write(to, offset + offset_on_requested_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_requested_deadline_missed));
+            BaseMarshaler.Write(to, offset + offset_on_requested_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_requested_incompatible_qos));
+            BaseMarshaler.Write(to, offset + offset_on_sample_rejected, MarshalHelper.GetIntPtrForDelegate(from.on_sample_rejected));
+            BaseMarshaler.Write(to, offset + offset_on_liveliness_changed, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_changed));
+            BaseMarshaler.Write(to, offset + offset_on_data_available, MarshalHelper.GetIntPtrForDelegate(from.on_data_available));
+            BaseMarshaler.Write(to, offset + offset_on_subscription_match, MarshalHelper.GetIntPtrForDelegate(from.on_subscription_match));
+            BaseMarshaler.Write(to, offset + offset_on_sample_lost, MarshalHelper.GetIntPtrForDelegate(from.on_sample_lost));
         }
 
         internal static void CleanupIn(IntPtr pNativeData, int offset)
@@ -252,7 +252,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             DataReaderListenerMarshaler.CopyIn(ref from.dataReader, to, offset_dataReader);
 
             // set on_data_on_readers field
-            TypeSupport.Write(to, offset + offset_on_data_on_readers, MarshalHelper.GetIntPtrForDelegate(from.on_data_on_readers));
+            BaseMarshaler.Write(to, offset + offset_on_data_on_readers, MarshalHelper.GetIntPtrForDelegate(from.on_data_on_readers));
         }
 
         internal static void CleanupIn(IntPtr pNativeData, int offset)
@@ -313,22 +313,22 @@ namespace DDS.OpenSplice.CustomMarshalers
         public static void CopyIn(ref Gapi.gapi_domainParticipantListener from, IntPtr to, int offset)
         {
             // Set listener_data field
-            TypeSupport.Write(to, offset + offset_listener_data, IntPtr.Zero);
+            BaseMarshaler.Write(to, offset + offset_listener_data, IntPtr.Zero);
 
             // Set callback fields
-            TypeSupport.Write(to, offset + offset_on_inconsistent_topic, MarshalHelper.GetIntPtrForDelegate(from.on_inconsistent_topic));
-            TypeSupport.Write(to, offset + offset_on_offered_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_offered_deadline_missed));
-            TypeSupport.Write(to, offset + offset_on_offered_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_offered_incompatible_qos));
-            TypeSupport.Write(to, offset + offset_on_liveliness_lost, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_lost));
-            TypeSupport.Write(to, offset + offset_on_publication_match, MarshalHelper.GetIntPtrForDelegate(from.on_publication_match));
-            TypeSupport.Write(to, offset + offset_on_requested_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_requested_deadline_missed));
-            TypeSupport.Write(to, offset + offset_on_requested_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_requested_incompatible_qos));
-            TypeSupport.Write(to, offset + offset_on_sample_rejected, MarshalHelper.GetIntPtrForDelegate(from.on_sample_rejected));
-            TypeSupport.Write(to, offset + offset_on_liveliness_changed, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_changed));
-            TypeSupport.Write(to, offset + offset_on_data_available, MarshalHelper.GetIntPtrForDelegate(from.on_data_available));
-            TypeSupport.Write(to, offset + offset_on_subscription_match, MarshalHelper.GetIntPtrForDelegate(from.on_subscription_match));
-            TypeSupport.Write(to, offset + offset_on_sample_lost, MarshalHelper.GetIntPtrForDelegate(from.on_sample_lost));
-            TypeSupport.Write(to, offset + offset_on_data_on_readers, MarshalHelper.GetIntPtrForDelegate(from.on_data_on_readers));
+            BaseMarshaler.Write(to, offset + offset_on_inconsistent_topic, MarshalHelper.GetIntPtrForDelegate(from.on_inconsistent_topic));
+            BaseMarshaler.Write(to, offset + offset_on_offered_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_offered_deadline_missed));
+            BaseMarshaler.Write(to, offset + offset_on_offered_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_offered_incompatible_qos));
+            BaseMarshaler.Write(to, offset + offset_on_liveliness_lost, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_lost));
+            BaseMarshaler.Write(to, offset + offset_on_publication_match, MarshalHelper.GetIntPtrForDelegate(from.on_publication_match));
+            BaseMarshaler.Write(to, offset + offset_on_requested_deadline_missed, MarshalHelper.GetIntPtrForDelegate(from.on_requested_deadline_missed));
+            BaseMarshaler.Write(to, offset + offset_on_requested_incompatible_qos, MarshalHelper.GetIntPtrForDelegate(from.on_requested_incompatible_qos));
+            BaseMarshaler.Write(to, offset + offset_on_sample_rejected, MarshalHelper.GetIntPtrForDelegate(from.on_sample_rejected));
+            BaseMarshaler.Write(to, offset + offset_on_liveliness_changed, MarshalHelper.GetIntPtrForDelegate(from.on_liveliness_changed));
+            BaseMarshaler.Write(to, offset + offset_on_data_available, MarshalHelper.GetIntPtrForDelegate(from.on_data_available));
+            BaseMarshaler.Write(to, offset + offset_on_subscription_match, MarshalHelper.GetIntPtrForDelegate(from.on_subscription_match));
+            BaseMarshaler.Write(to, offset + offset_on_sample_lost, MarshalHelper.GetIntPtrForDelegate(from.on_sample_lost));
+            BaseMarshaler.Write(to, offset + offset_on_data_on_readers, MarshalHelper.GetIntPtrForDelegate(from.on_data_on_readers));
         }
 
         public static void CleanupIn(IntPtr nativeData, int offset)

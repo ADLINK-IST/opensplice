@@ -63,7 +63,7 @@ namespace DDS
         public const int ZeroSec = 0;
         public const uint ZeroNanoSec = 0;
 
-        public static readonly Duration Infinite = new Duration(InfiniteSec, 0);
+		public static readonly Duration Infinite = new Duration(InfiniteSec, InfiniteNanoSec);
         public static readonly Duration Zero = new Duration(ZeroSec, ZeroNanoSec);
 
         public static Duration FromTimeSpan(TimeSpan value)
@@ -168,14 +168,34 @@ namespace DDS
             return (int)nanosec;
         }
 
-        public static bool operator ==(Time time1, Time time2)
+        public static bool operator ==(Time left, Time right)
         {
-            return (time1.sec == time2.sec && time1.nanosec == time2.nanosec);
+            return (left.sec == right.sec && left.nanosec == right.nanosec);
         }
 
-        public static bool operator !=(Time time1, Time time2)
+        public static bool operator !=(Time left, Time right)
         {
-            return !(time1 == time2);
+            return !(left == right);
+        }
+
+        public static bool operator >(Time left, Time right)
+        {
+            return (left.sec > right.sec) || (left.sec == right.sec && left.nanosec > right.nanosec);
+        }
+
+        public static bool operator <(Time left, Time right)
+        {
+            return right > left;
+        }
+
+        public static bool operator >=(Time left, Time right)
+        {
+            return (left.sec >= right.sec) || (left.sec == right.sec && left.nanosec >= right.nanosec);
+        }
+
+        public static bool operator <=(Time left, Time right)
+        {
+            return right >= left;
         }
 
         public override string ToString()
@@ -634,13 +654,13 @@ namespace DDS
     // ----------------------------------------------------------------------
     // BuiltinTopicData
     // ----------------------------------------------------------------------
-    public struct ParticipantBuiltinTopicData
+    public class ParticipantBuiltinTopicData
     {
         public BuiltinTopicKey Key;
         public UserDataQosPolicy UserData;
     }
 
-    public struct TopicBuiltinTopicData
+    public class TopicBuiltinTopicData
     {
         public BuiltinTopicKey Key;
         public string Name;
@@ -660,7 +680,7 @@ namespace DDS
         public TopicDataQosPolicy TopicData;
     }
 
-    public struct PublicationBuiltinTopicData
+    public class PublicationBuiltinTopicData
     {
         public BuiltinTopicKey Key;
         public BuiltinTopicKey ParticipantKey;
@@ -681,7 +701,7 @@ namespace DDS
         public GroupDataQosPolicy GroupData;
     }
 
-    public struct SubscriptionBuiltinTopicData
+    public class SubscriptionBuiltinTopicData
     {
         public BuiltinTopicKey Key;
         public BuiltinTopicKey ParticipantKey;

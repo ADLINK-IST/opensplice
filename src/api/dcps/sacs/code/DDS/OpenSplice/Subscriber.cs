@@ -72,11 +72,7 @@ namespace DDS.OpenSplice
                 StatusKind.Any);
             if (gapiPtr != IntPtr.Zero)
             {
-                // TODO: check this and maybe do some error handling
-                IDomainParticipant participant = topic.Participant;
-                string name = topic.TypeName;
-                ITypeSupport support = participant.GetTypeSupport(name);
-                TypeSupport typeSupport = (TypeSupport)support;
+                TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
                 dataReader = typeSupport.CreateDataReader(gapiPtr);
             }
             return dataReader;
@@ -108,11 +104,7 @@ namespace DDS.OpenSplice
                     mask);
                 if (gapiPtr != IntPtr.Zero)
                 {
-                    // TODO: check this and maybe do some error handling
-                    IDomainParticipant participant = topic.Participant;
-                    string name = topic.TypeName;
-                    ITypeSupport support = participant.GetTypeSupport(name);
-                    TypeSupport typeSupport = (TypeSupport)support;
+                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
                     dataReader = typeSupport.CreateDataReader(gapiPtr);
                     dataReader.SetListener(listenerHelper);
                 }
@@ -136,11 +128,7 @@ namespace DDS.OpenSplice
                     StatusKind.Any);
                 if (gapiPtr != IntPtr.Zero)
                 {
-                    // TODO: check this and maybe do some error handling
-                    IDomainParticipant participant = topic.Participant;
-                    string name = topic.TypeName;
-                    ITypeSupport support = participant.GetTypeSupport(name);
-                    TypeSupport typeSupport = (TypeSupport)support;
+                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
                     dataReader = typeSupport.CreateDataReader(gapiPtr);
                 }
             }
@@ -176,11 +164,7 @@ namespace DDS.OpenSplice
                         mask);
                     if (gapiPtr != IntPtr.Zero)
                     {
-                        // TODO: check this and maybe do some error handling
-                        IDomainParticipant participant = topic.Participant;
-                        string name = topic.TypeName;
-                        ITypeSupport support = participant.GetTypeSupport(name);
-                        TypeSupport typeSupport = (TypeSupport)support;
+                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
                         dataReader = typeSupport.CreateDataReader(gapiPtr);
                         dataReader.SetListener(listenerHelper);
                     }

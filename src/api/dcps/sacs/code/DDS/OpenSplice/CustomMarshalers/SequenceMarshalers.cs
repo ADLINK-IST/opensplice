@@ -44,8 +44,8 @@ namespace DDS.OpenSplice.CustomMarshalers
 
             for (int index = 0; index < from._length; index++)
             {
-                to[index].PolicyId = (QosPolicyId)TypeSupport.ReadInt32(from._buffer, (dataSize * index) + offset_policy_id);
-                to[index].Count = TypeSupport.ReadInt32(from._buffer, (dataSize * index) + offset_count);
+                to[index].PolicyId = (QosPolicyId)BaseMarshaler.ReadInt32(from._buffer, (dataSize * index) + offset_policy_id);
+                to[index].Count = BaseMarshaler.ReadInt32(from._buffer, (dataSize * index) + offset_count);
             }
         }
     }
@@ -102,10 +102,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // Set _max field.
-            TypeSupport.Write(to, offset + offset__maximum, length);
+            BaseMarshaler.Write(to, offset + offset__maximum, length);
 
             // Set _length field
-            TypeSupport.Write(to, offset + offset__length, length);
+            BaseMarshaler.Write(to, offset + offset__length, length);
 
             IntPtr bufPtr = IntPtr.Zero;
             if (length > 0)
@@ -116,18 +116,18 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // _buffer field: set the pointer to the appropriate location.
-            TypeSupport.Write(to, offset + offset__buffer, bufPtr);
+            BaseMarshaler.Write(to, offset + offset__buffer, bufPtr);
 
             // Set _release field
-            TypeSupport.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
             // Read the buffer pointer containing the sequence content and de-allocate it.
-            IntPtr bufPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset__buffer);
+            IntPtr bufPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset__buffer);
             OpenSplice.Gapi.GenericAllocRelease.Free(bufPtr);
-            TypeSupport.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(out IntPtr[] to)
@@ -138,7 +138,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out IntPtr[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new IntPtr[length];
@@ -146,12 +146,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     // Loop through the string pointers, deallocating each
-                    to[index] = TypeSupport.ReadIntPtr(arrayPtr, Size * index);
+                    to[index] = BaseMarshaler.ReadIntPtr(arrayPtr, Size * index);
                 }
             }
         }
@@ -209,10 +209,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // Set _max field.
-            TypeSupport.Write(to, offset + offset__maximum, length);
+            BaseMarshaler.Write(to, offset + offset__maximum, length);
 
             // Set _length field
-            TypeSupport.Write(to, offset + offset__length, length);
+            BaseMarshaler.Write(to, offset + offset__length, length);
 
             IntPtr bufPtr = IntPtr.Zero;
             if (length > 0)
@@ -223,18 +223,18 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // _buffer field: set the pointer to the appropriate location.
-            TypeSupport.Write(to, offset + offset__buffer, bufPtr);
+            BaseMarshaler.Write(to, offset + offset__buffer, bufPtr);
 
             // Set _release field
-            TypeSupport.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
             // Read the buffer pointer containing the sequence content and de-allocate it.
-            IntPtr bufPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset__buffer);
+            IntPtr bufPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset__buffer);
             OpenSplice.Gapi.GenericAllocRelease.Free(bufPtr);
-            TypeSupport.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(out byte[] to)
@@ -245,7 +245,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out byte[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new byte[length];
@@ -253,12 +253,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     // Loop through the string pointers, deallocating each
-                    to[index] = TypeSupport.ReadByte(arrayPtr, Size * index);
+                    to[index] = BaseMarshaler.ReadByte(arrayPtr, Size * index);
                 }
             }
         }
@@ -316,10 +316,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // Set _max field.
-            TypeSupport.Write(to, offset + offset__maximum, length);
+            BaseMarshaler.Write(to, offset + offset__maximum, length);
 
             // Set _length field
-            TypeSupport.Write(to, offset + offset__length, length);
+            BaseMarshaler.Write(to, offset + offset__length, length);
 
             // Allocate a buffer containing the sequence content starting at element 0 up til the full Length of the array.
             IntPtr arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
@@ -327,35 +327,35 @@ namespace DDS.OpenSplice.CustomMarshalers
             {
                 //IntPtr stringPtr = OpenSplice.Gapi.GenericAllocRelease.string_dup(from[index]);
                 IntPtr stringPtr = Marshal.StringToHGlobalAnsi(from[index]);
-                TypeSupport.Write(arrayPtr, Size * index, stringPtr);
+                BaseMarshaler.Write(arrayPtr, Size * index, stringPtr);
             }
 
             // _buffer field: set the pointer to the appropriate location.
-            TypeSupport.Write(to, offset + offset__buffer, arrayPtr);
+            BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
             // TODO: Erik: Verify that this is really what we want to do, we are
             // doing our own memory management, so we don't think gapi should
             // clean up memory...
 
             // Set _release field
-            TypeSupport.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
             // Set _max field.
-            int length = TypeSupport.ReadInt32(nativePtr, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(nativePtr, offset + offset__length);
 
             // Read the buffer pointer containing the sequence content
-            IntPtr arrayPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset__buffer);
+            IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset__buffer);
 
             for (int index = 0; index < length; index++)
             {
                 // Loop through the string pointers, deallocating each
-                IntPtr stringPtr = TypeSupport.ReadIntPtr(arrayPtr, Size * index);
+                IntPtr stringPtr = BaseMarshaler.ReadIntPtr(arrayPtr, Size * index);
                 //OpenSplice.Gapi.GenericAllocRelease.Free(stringPtr);
                 Marshal.FreeHGlobal(stringPtr);
-                TypeSupport.Write(arrayPtr, Size * index, IntPtr.Zero);
+                BaseMarshaler.Write(arrayPtr, Size * index, IntPtr.Zero);
             }
 
             // free array
@@ -370,7 +370,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out string[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new string[length];
@@ -378,12 +378,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     // Loop through the string pointers, deallocating each
-                    IntPtr stringPtr = TypeSupport.ReadIntPtr(arrayPtr, Size * index);
+                    IntPtr stringPtr = BaseMarshaler.ReadIntPtr(arrayPtr, Size * index);
                     to[index] = Marshal.PtrToStringAnsi(stringPtr);
                 }
             }
@@ -442,32 +442,32 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // Set _max field.
-            TypeSupport.Write(to, offset + offset__maximum, length);
+            BaseMarshaler.Write(to, offset + offset__maximum, length);
 
             // Set _length field
-            TypeSupport.Write(to, offset + offset__length, length);
+            BaseMarshaler.Write(to, offset + offset__length, length);
 
             // Allocate a buffer containing the sequence content starting at element 0 up til the full Length of the array.
             IntPtr arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
             //IntPtr arrayPtr = Marshal.AllocHGlobal(Size * length);
             for (int index = 0; index < length; index++)
             {
-                TypeSupport.Write(arrayPtr, Size * index, from[index]);
+                BaseMarshaler.Write(arrayPtr, Size * index, from[index]);
             }
 
             // _buffer field: set the pointer to the appropriate location.
-            TypeSupport.Write(to, offset + offset__buffer, arrayPtr);
+            BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
             // Set _release field
-            TypeSupport.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
             // Read the buffer pointer containing the sequence content and de-allocate it.
-            IntPtr arrayPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset__buffer);
+            IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset__buffer);
             OpenSplice.Gapi.GenericAllocRelease.Free(arrayPtr);
-            TypeSupport.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(out InstanceHandle[] to)
@@ -478,7 +478,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out InstanceHandle[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new InstanceHandle[length];
@@ -486,12 +486,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     // Loop through the string pointers, deallocating each
-                    long handle = TypeSupport.ReadInt64(arrayPtr, Size * index);
+                    long handle = BaseMarshaler.ReadInt64(arrayPtr, Size * index);
                     to[index] = handle;
                 }
             }
@@ -518,7 +518,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out DataSample[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new DataSample[length];
@@ -526,12 +526,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     int elementOffset = Size * index;
-                    to[index].data = TypeSupport.ReadIntPtr(arrayPtr, elementOffset + offset_data);
+                    to[index].data = BaseMarshaler.ReadIntPtr(arrayPtr, elementOffset + offset_data);
 
                     IntPtr structLocation = new IntPtr(arrayPtr.ToInt64() + elementOffset + offset_sampleInfo);
                     OpenSplice.CustomMarshalers.SampleInfoMarshaler.CopyOut(structLocation, out to[index].sampleInfo, 0);
@@ -594,10 +594,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
 
             // Set _max field.
-            TypeSupport.Write(to, offset + offset__maximum, length);
+            BaseMarshaler.Write(to, offset + offset__maximum, length);
 
             // Set _length field
-            TypeSupport.Write(to, offset + offset__length, length);
+            BaseMarshaler.Write(to, offset + offset__length, length);
 
             // Allocate a buffer containing the sequence content starting at element 0 up til the full Length of the array.
             IntPtr arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
@@ -605,22 +605,22 @@ namespace DDS.OpenSplice.CustomMarshalers
             for (int index = 0; index < length; index++)
             {
                 T objectType = (T)from[index];
-                TypeSupport.Write(arrayPtr, Size * index, objectType.GapiPeer);
+                BaseMarshaler.Write(arrayPtr, Size * index, objectType.GapiPeer);
             }
 
             // _buffer field: set the pointer to the appropriate location.
-            TypeSupport.Write(to, offset + offset__buffer, arrayPtr);
+            BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
             // Set _release field
-            TypeSupport.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
         {
             // Read the buffer pointer containing the sequence content and de-allocate it.
-            IntPtr arrayPtr = TypeSupport.ReadIntPtr(nativePtr, offset + offset__buffer);
+            IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(nativePtr, offset + offset__buffer);
             OpenSplice.Gapi.GenericAllocRelease.Free(arrayPtr);
-            TypeSupport.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(out TInterface[] to)
@@ -631,7 +631,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out TInterface[] to, int offset)
         {
             // Get _length field
-            int length = TypeSupport.ReadInt32(from, offset + offset__length);
+            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
             to = new TInterface[length];
@@ -639,12 +639,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (length > 0)
             {
                 // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = TypeSupport.ReadIntPtr(from, offset + offset__buffer);
+                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
 
                 for (int index = 0; index < length; index++)
                 {
                     // Loop through the string pointers, deallocating each
-                    IntPtr gapiPtr = TypeSupport.ReadIntPtr(arrayPtr, Size * index);
+                    IntPtr gapiPtr = BaseMarshaler.ReadIntPtr(arrayPtr, Size * index);
                     to[index] = (TInterface)(T)SacsSuperClass.fromUserData(gapiPtr);
                 }
             }

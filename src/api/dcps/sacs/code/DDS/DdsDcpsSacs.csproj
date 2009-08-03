@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -42,12 +42,21 @@
     <Compile Include="DdsDcpsEnums.cs" />
     <Compile Include="DdsDcpsInterfaces.cs" />
     <Compile Include="DdsDcpsStructs.cs" />
-    <Compile Include="BuiltinTopicKeyMarshaler.cs" />
+    <Compile Include="dds_dcps_builtintopicsDcps.cs" />
     <Compile Include="DomainParticipantListener.cs" />
     <Compile Include="ErrorInfo.cs" />
     <Compile Include="GuardCondition.cs" />
+    <Compile Include="Idds_dcps_builtintopicsDcps.cs" />
+    <Compile Include="OpenSplice\BaseMarshaler.cs" />
+    <Compile Include="OpenSplice\BuiltinTopicStructs.cs" />
     <Compile Include="OpenSplice\ContentFilteredTopic.cs" />
+    <Compile Include="OpenSplice\CustomMarshalers\DatabaseSequenceMarshaler.cs" />
     <Compile Include="OpenSplice\CustomMarshalers\DataReaderMarshalers.cs" />
+    <Compile Include="OpenSplice\CustomMarshalers\DDSTopicBuiltinTopicMarshaler.cs" />
+    <Compile Include="OpenSplice\Gapi\Object.cs" />
+    <Compile Include="OpenSplice\IMarshalerTypeGenerator.cs" />
+    <Compile Include="OpenSplice\MarshalerTypeGenerator.cs" />
+    <Compile Include="OpenSplice\ReaderWriterTypeGenerator.cs" />
     <Compile Include="OpenSplice\SubscriberListenerHelper.cs" />
     <Compile Include="OpenSplice\DomainParticipantListenerHelper.cs" />
     <Compile Include="OpenSplice\PublisherDataWriterListenerHelper.cs" />
@@ -70,7 +79,7 @@
     <Compile Include="OpenSplice\Gapi\DataReaderView.cs" />
     <Compile Include="OpenSplice\Gapi\DataWriter.cs" />
     <Compile Include="OpenSplice\Gapi\DcpsGapi.cs" />
-    <Compile Include="OpenSplice\Gapi\DDSDatabase.cs" />
+    <Compile Include="OpenSplice\Database\DDSDatabase.cs" />
     <Compile Include="OpenSplice\Gapi\DomainParticipant.cs" />
     <Compile Include="OpenSplice\Gapi\DomainParticipantFactory.cs" />
     <Compile Include="OpenSplice\Gapi\Entity.cs" />
@@ -102,7 +111,6 @@
     <Compile Include="SubscriberListener.cs" />
     <Compile Include="TopicListener.cs" />
     <Compile Include="WaitSet.cs" />
-    <Compile Include="ParticipantBuiltinTopicDataTypeSupport.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

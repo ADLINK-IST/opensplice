@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice.Gapi
 {
-    static internal class FooDataReader
+    static public class FooDataReader
     {
         /* ReturnCode_t
          * read(

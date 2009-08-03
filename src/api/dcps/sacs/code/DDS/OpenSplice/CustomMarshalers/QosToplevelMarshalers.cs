@@ -679,10 +679,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CopyIn(ref from.Key, to, offset_key);
 
             IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.Name);
-            TypeSupport.Write(to, offset_name, namePtr);
+            BaseMarshaler.Write(to, offset_name, namePtr);
 
             IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            TypeSupport.Write(to, offset_type_name, typeNamePtr);
+            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
             DurabilityServiceQosPolicyMarshaler.CopyIn(ref from.DurabilityService, to, offset_durability_service);
@@ -704,13 +704,13 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             BuiltinTopicKeyMarshaler.CleanupIn(nativePtr, offset_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(nativePtr, offset_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_name);
             Marshal.FreeHGlobal(namePtr);
-            TypeSupport.Write(nativePtr, offset_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_name, IntPtr.Zero);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(nativePtr, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_type_name);
             Marshal.FreeHGlobal(typeNamePtr);
-            TypeSupport.Write(nativePtr, offset_type_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_type_name, IntPtr.Zero);
 
             DurabilityQosPolicyMarshaler.CleanupIn(nativePtr, offset_durability);
             DeadlineQosPolicyMarshaler.CleanupIn(nativePtr, offset_deadline);
@@ -738,10 +738,10 @@ namespace DDS.OpenSplice.CustomMarshalers
 
             BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(from, offset_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_name);
             to.Name = Marshal.PtrToStringAnsi(namePtr);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(from, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
@@ -817,10 +817,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CopyIn(ref from.ParticipantKey, to, offset_participant_key);
 
             IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
-            TypeSupport.Write(to, offset_topic_name, namePtr);
+            BaseMarshaler.Write(to, offset_topic_name, namePtr);
 
             IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            TypeSupport.Write(to, offset_type_name, typeNamePtr);
+            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
             DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
@@ -842,13 +842,13 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CleanupIn(nativePtr, offset_key);
             BuiltinTopicKeyMarshaler.CleanupIn(nativePtr, offset_participant_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(nativePtr, offset_topic_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_topic_name);
             Marshal.FreeHGlobal(namePtr);
-            TypeSupport.Write(nativePtr, offset_topic_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_topic_name, IntPtr.Zero);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(nativePtr, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_type_name);
             Marshal.FreeHGlobal(typeNamePtr);
-            TypeSupport.Write(nativePtr, offset_type_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_type_name, IntPtr.Zero);
 
             DurabilityQosPolicyMarshaler.CleanupIn(nativePtr, offset_durability);
             DeadlineQosPolicyMarshaler.CleanupIn(nativePtr, offset_deadline);
@@ -877,10 +877,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
             BuiltinTopicKeyMarshaler.CopyOut(from, out to.ParticipantKey, offset_participant_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(from, offset_topic_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_topic_name);
             to.TopicName = Marshal.PtrToStringAnsi(namePtr);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(from, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
@@ -957,10 +957,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CopyIn(ref from.ParticipantKey, to, offset_participant_key);
 
             IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
-            TypeSupport.Write(to, offset_topic_name, namePtr);
+            BaseMarshaler.Write(to, offset_topic_name, namePtr);
 
             IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            TypeSupport.Write(to, offset_type_name, typeNamePtr);
+            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
             DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
@@ -982,13 +982,13 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CleanupIn(nativePtr, offset_key);
             BuiltinTopicKeyMarshaler.CleanupIn(nativePtr, offset_participant_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(nativePtr, offset_topic_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_topic_name);
             Marshal.FreeHGlobal(namePtr);
-            TypeSupport.Write(nativePtr, offset_topic_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_topic_name, IntPtr.Zero);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(nativePtr, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(nativePtr, offset_type_name);
             Marshal.FreeHGlobal(typeNamePtr);
-            TypeSupport.Write(nativePtr, offset_type_name, IntPtr.Zero);
+            BaseMarshaler.Write(nativePtr, offset_type_name, IntPtr.Zero);
 
             DurabilityQosPolicyMarshaler.CleanupIn(nativePtr, offset_durability);
             DeadlineQosPolicyMarshaler.CleanupIn(nativePtr, offset_deadline);
@@ -1017,10 +1017,10 @@ namespace DDS.OpenSplice.CustomMarshalers
             BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
             BuiltinTopicKeyMarshaler.CopyOut(from, out to.ParticipantKey, offset_participant_key);
 
-            IntPtr namePtr = TypeSupport.ReadIntPtr(from, offset_topic_name);
+            IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_topic_name);
             to.TopicName = Marshal.PtrToStringAnsi(namePtr);
 
-            IntPtr typeNamePtr = TypeSupport.ReadIntPtr(from, offset_type_name);
+            IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
             DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);

@@ -24,23 +24,63 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
-    internal class DomainParticipant : Entity, IDomainParticipant
+    public class DomainParticipant : Entity, IDomainParticipant
     {
         private readonly DomainParticipantListenerHelper listenerHelper;
 
+        /**
+         * Constructor is only called by DDS.DomainParticipantFactory.
+         */
         internal DomainParticipant(IntPtr gapiPtr)
             : base(gapiPtr)
         {
-            // Base class handles everything.
             listenerHelper = new DomainParticipantListenerHelper();
+            builtinTopicRegisterTypeSupport(this);
         }
 
+        /**
+         * Constructor is only called by DDS.DomainParticipantFactory.
+         */
         internal DomainParticipant(IntPtr gapiPtr, DomainParticipantListenerHelper listenerHelper)
             : base(gapiPtr)
         {
-            // Base class handles everything.
             this.listenerHelper = listenerHelper;
+            builtinTopicRegisterTypeSupport(this);
         }
+
+        /**
+         * Register the four builtin topics:
+         *     "DDS::ParticipantBuiltinTopicData"
+         *     "DDS::TopicBuiltinTopicData"
+         *     "DDS::PublicationBuiltinTopicData"
+         *     "DDS::SubscriptionBuiltinTopicData"
+         */
+        internal static void builtinTopicRegisterTypeSupport(DomainParticipant participant)
+        {
+            DDS.ReturnCode result;
+
+            //DDS.ParticipantBuiltinTopicDataTypeSupport DDSParticipant = new DDS.ParticipantBuiltinTopicDataTypeSupport();
+            //result = DDSParticipant.RegisterType(participant, DDSParticipant.TypeName);
+            //if (result != ReturnCode.Ok)
+            //    throw new Exception("Failed to register builtin topic: DDSParticipant");
+
+            DDS.TopicBuiltinTopicDataTypeSupport DDSTopic = 
+                new DDS.TopicBuiltinTopicDataTypeSupport(new DDSTopicBuiltinTopicMarshaler());
+            result = DDSTopic.RegisterType(participant, DDSTopic.TypeName);
+            if (result != ReturnCode.Ok)
+                throw new Exception("Failed to register builtin topic: DDSTopic");
+
+            //DDS.PublicationBuiltinTopicDataTypeSupport DDSPublication = new DDS.PublicationBuiltinTopicDataTypeSupport();
+            //result = DDSPublication.RegisterType(participant, DDSPublication.TypeName);
+            //if (result != ReturnCode.Ok)
+            //    throw new Exception("Failed to register builtin topic: DDSPublication");
+
+            //DDS.SubscriptionBuiltinTopicDataTypeSupport DDSSubscription = new DDS.SubscriptionBuiltinTopicDataTypeSupport();
+            //result = DDSSubscription.RegisterType(participant, DDSSubscription.TypeName);
+            //if (result != ReturnCode.Ok)
+            //    throw new Exception("Failed to register builtin topic: DDSSubscription");
+        }
+
 
         public ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask)
         {
@@ -283,17 +323,30 @@ namespace DDS.OpenSplice
         {
             get
             {
-                IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipant.get_builtin_subscriber(GapiPeer);
-                ISubscriber subscriber = SacsSuperClass.fromUserData(gapiPtr) as ISubscriber;
+                IntPtr subscriber_gapiPtr = OpenSplice.Gapi.DomainParticipant.get_builtin_subscriber(GapiPeer);
+                ISubscriber subscriber = SacsSuperClass.fromUserData(subscriber_gapiPtr) as ISubscriber;
 
-                // TODO: Verify the assumption that there is only one gapiptr for builtin_subscriber
-
-                // TODO: Verify whether this is needed:
-
-                // if the lookup fails, then we don't have a managed object for subscriber yet
-                if (gapiPtr != IntPtr.Zero && subscriber == null)
+                // If needed, associate the C# wrapper with the gapiPtr.
+                if (subscriber_gapiPtr != IntPtr.Zero && subscriber == null)
                 {
-                    subscriber = new Subscriber(gapiPtr);
+                    subscriber = new Subscriber(subscriber_gapiPtr);
+
+                    IntPtr reader_gapiPtr;
+                    reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSTopic");
+                    if (reader_gapiPtr != IntPtr.Zero)
+                        new DDS.TopicBuiltinTopicDataDataReader(reader_gapiPtr);
+
+                    reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSParticipant");
+                    if (reader_gapiPtr != IntPtr.Zero)
+                        new DDS.ParticipantBuiltinTopicDataDataReader(reader_gapiPtr);
+
+                    reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSPublication");
+                    if (reader_gapiPtr != IntPtr.Zero)
+                        new DDS.PublicationBuiltinTopicDataDataReader(reader_gapiPtr);
+
+                    reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSSubscription");
+                    if (reader_gapiPtr != IntPtr.Zero)
+                        new DDS.SubscriptionBuiltinTopicDataDataReader(reader_gapiPtr);
                 }
 
                 return subscriber;
@@ -426,7 +479,10 @@ namespace DDS.OpenSplice
                 topicName,
                 ref timeout);
 
-            ITopic topic = SacsSuperClass.fromUserData(gapiPtr) as ITopic;
+            ITopic topic = null;
+
+            if (gapiPtr != IntPtr.Zero)
+                topic = new OpenSplice.Topic(gapiPtr);
 
             return topic;
         }

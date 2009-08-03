@@ -820,6 +820,8 @@ namespace DDS.OpenSplice.Gapi
         gapi_resourceLimitsQosPolicy resource_limits;
         gapi_ownershipQosPolicy ownership;
         gapi_topicDataQosPolicy topic_data;
+        IntPtr meta_data;
+        IntPtr key_list;
     }
 
     /*

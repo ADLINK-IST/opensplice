@@ -38,6 +38,8 @@ namespace testNamespace
             DDS.Test.DatabaseTests();
 #endif
 
+            Console.WriteLine("Press enter to enter...");
+            Console.ReadLine();
             Data.DataTest detectionData = new Data.DataTest();
             detectionData.TestId = 3214;
             detectionData.Emergency = true;

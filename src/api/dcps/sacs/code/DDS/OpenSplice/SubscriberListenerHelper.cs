@@ -29,7 +29,7 @@ namespace DDS.OpenSplice
 
         private Gapi.gapi_listener_DataOnReadersListener onDataOnReadersDelegate;
 
-        public ISubscriberListener Listener
+        public new ISubscriberListener Listener
         {
             get { return listener; }
             set { listener = value; }

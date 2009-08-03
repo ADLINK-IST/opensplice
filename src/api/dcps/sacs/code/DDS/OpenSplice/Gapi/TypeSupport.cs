@@ -1,4 +1,4 @@
-﻿// The OpenSplice DDS Community Edition project.
+// The OpenSplice DDS Community Edition project.
 //
 // Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
@@ -22,8 +22,65 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice.Gapi
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public class _TypeSupport 
+    {
+        //gapi_object 
+        public IntPtr   handle;
+        //gapi_string
+        public string   type_name;
+        //gapi_string        
+        public string   type_keys;
+        //gapi_string
+        public string   type_def;
+        //gapi_typeSupportLoad
+        public IntPtr   type_load;
+        //gapi_unsigned_long
+        public uint     alloc_size;
+        //gapi_topicAllocBuffer
+        public IntPtr   alloc_buffer;
+        //gapi_copyIn
+        public Delegate copy_in;
+        //gapi_copyOut
+        public Delegate copy_out;
+        //gapi_copyCache
+        public IntPtr   copy_cache;
+        //gapi_readerCopy
+        public Delegate reader_copy;
+        //gapi_writerCopy
+        public IntPtr   writer_copy;
+        //gapi_createDataWriter
+        public IntPtr   create_datawriter;
+        //gapi_createDataReader
+        public IntPtr   create_datareader;
+        //c_metaObject
+        public IntPtr   typeSpec;
+        //gapi_boolean
+        public bool     useTypeinfo;
+    };
+
     static internal class TypeSupport
     {
+        /**
+         * The 'Claim' returns not only a reference to the C# representation of the _TypeSupport,
+         * but also a pointer to its C-representation (as an 'out' parameter.)
+         * This is necessary since the 'Release' operation will need to marshall the changes
+         * back into the original C-location. Because of this, the signatures of both the
+         * 'Claim' and 'Release' operations have 1 extra parameter when compared the ones on 
+         * the Gapi.
+         **/
+        public static _TypeSupport Claim(IntPtr tsHandle, out IntPtr tsPtr, ref ReturnCode result)
+        {
+            tsPtr = Gapi.Object.Claim(tsHandle, _ObjectKind.OBJECT_KIND_TYPESUPPORT, ref result);
+            return Marshal.PtrToStructure(tsPtr, typeof(_TypeSupport)) as _TypeSupport;
+        }
+    
+        public static IntPtr Release(_TypeSupport typeSupport, IntPtr tsPtr)
+        {
+            Marshal.StructureToPtr(typeSupport, tsPtr, false);
+            return Gapi.Object.Release(tsPtr);
+        }
+    
         /* ReturnCode_t
          * register_type(
          *     in DomainParticipant domain,

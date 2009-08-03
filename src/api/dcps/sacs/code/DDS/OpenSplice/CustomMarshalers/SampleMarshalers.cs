@@ -45,8 +45,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyIn(ref OpenSplice.Gapi.gapi_readerInfo from, IntPtr to)
         {
             // To make things faster, we only write what has changed...
-            TypeSupport.Write(to, offset_data_buffer, from.data_buffer);
-            TypeSupport.Write(to, offset_info_buffer, from.info_buffer);
+            BaseMarshaler.Write(to, offset_data_buffer, from.data_buffer);
+            BaseMarshaler.Write(to, offset_info_buffer, from.info_buffer);
         }
 
         internal static void CopyOut(IntPtr from, out OpenSplice.Gapi.gapi_readerInfo to)
@@ -54,12 +54,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             // To make things faster, we only read what we care about, in this case the 
             // function pointer, which is the delegate to our CopyOut method...
             to = new DDS.OpenSplice.Gapi.gapi_readerInfo();
-            to.max_samples = TypeSupport.ReadInt32(from, offset_max_samples);
-            to.num_samples = TypeSupport.ReadInt32(from, offset_num_samples);
-            to.copy_out = TypeSupport.ReadIntPtr(from, offset_copy_out);
-            //to.alloc_buffer = TypeSupport.ReadIntPtr(from, offset_alloc_buffer);
-            to.data_buffer = TypeSupport.ReadIntPtr(from, offset_data_buffer);
-            to.info_buffer = TypeSupport.ReadIntPtr(from, offset_info_buffer);
+            to.max_samples = BaseMarshaler.ReadInt32(from, offset_max_samples);
+            to.num_samples = BaseMarshaler.ReadInt32(from, offset_num_samples);
+            to.copy_out = BaseMarshaler.ReadIntPtr(from, offset_copy_out);
+            //to.alloc_buffer = BaseMarshaler.ReadIntPtr(from, offset_alloc_buffer);
+            to.data_buffer = BaseMarshaler.ReadIntPtr(from, offset_data_buffer);
+            to.info_buffer = BaseMarshaler.ReadIntPtr(from, offset_info_buffer);
         }
     }
 
@@ -90,19 +90,19 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyOut(IntPtr from, out SampleInfo toSampleInfo, int offset)
         {
             toSampleInfo = new SampleInfo();
-            toSampleInfo.SampleState = (SampleStateKind)TypeSupport.ReadInt32(from, offset + offset_sample_state);
-            toSampleInfo.ViewState = (ViewStateKind)TypeSupport.ReadInt32(from, offset + offset_view_state);
-            toSampleInfo.InstanceState = (InstanceStateKind)TypeSupport.ReadInt32(from, offset + offset_instance_state);
-            toSampleInfo.ValidData = TypeSupport.ReadInt32(from, offset + offset_valid_data) != 0;
-            toSampleInfo.SourceTimestamp = TypeSupport.ReadTime(from, offset + offset_source_timestamp);
-            toSampleInfo.InstanceHandle = TypeSupport.ReadInstanceHandle(from, offset + offset_instance_handle);
-            toSampleInfo.PublicationHandle = TypeSupport.ReadInstanceHandle(from, offset + offset_publication_handle);
-            toSampleInfo.DisposedGenerationCount = TypeSupport.ReadInt32(from, offset + offset_disposed_generation_count);
-            toSampleInfo.NoWritersGenerationCount = TypeSupport.ReadInt32(from, offset + offset_no_writers_generation_count);
-            toSampleInfo.SampleRank = TypeSupport.ReadInt32(from, offset + offset_sample_rank);
-            toSampleInfo.GenerationRank = TypeSupport.ReadInt32(from, offset + offset_generation_rank);
-            toSampleInfo.AbsoluteGenerationRank = TypeSupport.ReadInt32(from, offset + offset_absolute_generation_rank);
-            toSampleInfo.ArrivalTimestamp = TypeSupport.ReadTime(from, offset + offset_arrival_timestamp);
+            toSampleInfo.SampleState = (SampleStateKind)BaseMarshaler.ReadInt32(from, offset + offset_sample_state);
+            toSampleInfo.ViewState = (ViewStateKind)BaseMarshaler.ReadInt32(from, offset + offset_view_state);
+            toSampleInfo.InstanceState = (InstanceStateKind)BaseMarshaler.ReadInt32(from, offset + offset_instance_state);
+            toSampleInfo.ValidData = BaseMarshaler.ReadInt32(from, offset + offset_valid_data) != 0;
+            toSampleInfo.SourceTimestamp = BaseMarshaler.ReadTime(from, offset + offset_source_timestamp);
+            toSampleInfo.InstanceHandle = BaseMarshaler.ReadInstanceHandle(from, offset + offset_instance_handle);
+            toSampleInfo.PublicationHandle = BaseMarshaler.ReadInstanceHandle(from, offset + offset_publication_handle);
+            toSampleInfo.DisposedGenerationCount = BaseMarshaler.ReadInt32(from, offset + offset_disposed_generation_count);
+            toSampleInfo.NoWritersGenerationCount = BaseMarshaler.ReadInt32(from, offset + offset_no_writers_generation_count);
+            toSampleInfo.SampleRank = BaseMarshaler.ReadInt32(from, offset + offset_sample_rank);
+            toSampleInfo.GenerationRank = BaseMarshaler.ReadInt32(from, offset + offset_generation_rank);
+            toSampleInfo.AbsoluteGenerationRank = BaseMarshaler.ReadInt32(from, offset + offset_absolute_generation_rank);
+            toSampleInfo.ArrivalTimestamp = BaseMarshaler.ReadTime(from, offset + offset_arrival_timestamp);
         }
     }
 

@@ -30,12 +30,46 @@ namespace DDS
          * Attribute containing the singleton 'self' reference.
          */
         private static DomainParticipantFactory singletonSelf = null;
+        private static readonly object singleton_lock = new object();
+         
 
         /**
          * Attribute containing the delegates to the individual Listener functions.
          */
 
 
+
+        /**
+         * This operation returns the reference to the singleton DomainParticipantFactory.
+         */
+        public static DomainParticipantFactory GetInstance()
+        {
+            // GetInstance() is called very infrequntly so a simple locked singleton
+            // approach is used.
+            lock(singleton_lock)
+            {
+              if (singletonSelf == null) // If singleton doesn't exist, create it.
+              {
+                  IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipantFactory.get_instance();
+
+                  if (!gapiPtr.Equals(null)) // Wrap Gapi entity in C# object.
+                  {
+                      singletonSelf = new DomainParticipantFactory(gapiPtr);
+                  }
+              }
+              return singletonSelf;
+            }
+        }
+
+        /**
+         * [Non-standard] Property for DomainParticipantFactory.
+         */
+        public static DomainParticipantFactory Instance
+        {
+            get { return GetInstance(); }
+        }
+        
+        
         /**
          * Constructor for DomainParticipantFactory. Only to be used by the static 
          * <code>get_instance</code> operation.
@@ -44,31 +78,6 @@ namespace DDS
             : base(gapiPtr)
         {
             // Base class handles everything.
-        }
-
-        /**
-         * This operation returns the reference to the singleton DomainParticipantFactory.
-         *
-         * TODO: This operation is not yet re-entrant.
-         */
-        public static DomainParticipantFactory GetInstance()
-        {
-
-            // Check whether the singleton is already available.
-            if (singletonSelf == null)
-            {
-                // If not, create a DomainParticipantFactory in the gapi.
-                IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipantFactory.get_instance();
-
-                // If the resulting gapi handle is valid, wrap it in a C# object.
-                if (!gapiPtr.Equals(null))
-                {
-                    singletonSelf = new DomainParticipantFactory(gapiPtr);
-                }
-            }
-
-            // Return the existing singleton wrapper.
-            return singletonSelf;
         }
 
         /**
@@ -90,6 +99,7 @@ namespace DDS
                 IntPtr.Zero,
                 IntPtr.Zero,
                 IntPtr.Zero);
+
             if (gapiParticipant != IntPtr.Zero)
             {
                 participant = new OpenSplice.DomainParticipant(gapiParticipant);

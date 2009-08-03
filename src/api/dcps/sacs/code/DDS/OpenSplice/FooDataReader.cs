@@ -25,11 +25,11 @@ namespace DDS.OpenSplice
 {
     public static class FooDataReader // : DataReader
     {
-        public static ReturnCode Read(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
+        public static ReturnCode Read(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
             SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -42,17 +42,17 @@ namespace DDS.OpenSplice
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode Take(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
+        public static ReturnCode Take(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
             SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -66,17 +66,17 @@ namespace DDS.OpenSplice
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode ReadWithCondition(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos,
+        public static ReturnCode ReadWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
             int maxSamples, IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -88,17 +88,17 @@ namespace DDS.OpenSplice
                         maxSamples,
                         ((ReadCondition)condition).GapiPeer);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode TakeWithCondition(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos,
+        public static ReturnCode TakeWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
             int maxSamples, IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -109,39 +109,37 @@ namespace DDS.OpenSplice
                         maxSamples,
                         ((ReadCondition)condition).GapiPeer);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode ReadNextSample(DataReader reader, ref object dataValue, ref SampleInfo sampleInfo)
+        public static ReturnCode ReadNextSample(DataReader reader, ref object data, ref SampleInfo sampleInfo)
         {
-            ReturnCode result = Gapi.FooDataReader.read_next_sample(
-                reader.GapiPeer,
-                IntPtr.Zero,
-                IntPtr.Zero);
+        //    ReturnCode result = Gapi.FooDataReader.read_next_sample(
+        //        reader.GapiPeer,
+        //        ref data,
+        //        ref sampleInfo);
 
             return ReturnCode.Unsupported;
         }
 
-        public static ReturnCode TakeNextSample(DataReader reader, ref object dataValue, ref SampleInfo sampleInfo)
+        public static ReturnCode TakeNextSample(DataReader reader, ref object data, ref SampleInfo sampleInfo)
         {
-            dataValue = null;
-
-            ReturnCode result = Gapi.FooDataReader.take_next_sample(
-                reader.GapiPeer,
-                IntPtr.Zero,
-                IntPtr.Zero);
+            //ReturnCode result = Gapi.FooDataReader.take_next_sample(
+            //    reader.GapiPeer,
+            //    ref data,
+            //    ref sampleInfo);
 
             return ReturnCode.Unsupported;
         }
 
-        public static ReturnCode ReadInstance(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle handle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode ReadInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
+            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -150,22 +148,22 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         sampleStates,
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode TakeInstance(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle handle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode TakeInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
+            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -174,22 +172,22 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         sampleStates,
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode ReadNextInstance(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle handle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode ReadNextInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
+            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -198,22 +196,22 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         sampleStates,
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode TakeNextInstance(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle handle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode TakeNextInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
+            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -222,22 +220,22 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         sampleStates,
                         viewStates,
                         instanceStates);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode ReadNextInstanceWithCondition(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos,
-            int maxSamples, InstanceHandle handle, IReadCondition condition)
+        public static ReturnCode ReadNextInstanceWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
+            int maxSamples, InstanceHandle instanceHandle, IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -246,20 +244,20 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         ((ReadCondition)condition).GapiPeer);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode TakeNextInstanceWithCondition(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos,
-            int maxSamples, InstanceHandle handle, IReadCondition condition)
+        public static ReturnCode TakeNextInstanceWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
+            int maxSamples, InstanceHandle instanceHandle, IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(dataValues, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
@@ -268,18 +266,18 @@ namespace DDS.OpenSplice
                         ref marshaler.dataValuesPtr,
                         ref marshaler.sampleInfosPtr,
                         maxSamples,
-                        handle,
+                        instanceHandle,
                         ((ReadCondition)condition).GapiPeer);
 
-                    marshaler.CopyOut(ref dataValues, ref sampleInfos);
+                    marshaler.CopyOut(ref data, ref sampleInfos);
                 }
             }
             return result;
         }
 
-        public static ReturnCode ReturnLoan(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos)
+        public static ReturnCode ReturnLoan(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos)
         {
-            GCHandle tmpGCHandleData = GCHandle.Alloc(dataValues, GCHandleType.Normal);
+            GCHandle tmpGCHandleData = GCHandle.Alloc(data, GCHandleType.Normal);
             IntPtr dataValuesPtr = GCHandle.ToIntPtr(tmpGCHandleData);
 
             GCHandle tmpGCHandleInfo = GCHandle.Alloc(sampleInfos, GCHandleType.Normal);
@@ -296,9 +294,9 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static bool IsLoan(DataReader reader, ref object[] dataValues, ref SampleInfo[] sampleInfos)
+        public static bool IsLoan(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos)
         {
-            GCHandle tmpGCHandleData = GCHandle.Alloc(dataValues, GCHandleType.Normal);
+            GCHandle tmpGCHandleData = GCHandle.Alloc(data, GCHandleType.Normal);
             IntPtr dataValuesPtr = GCHandle.ToIntPtr(tmpGCHandleData);
 
             GCHandle tmpGCHandleInfo = GCHandle.Alloc(sampleInfos, GCHandleType.Normal);

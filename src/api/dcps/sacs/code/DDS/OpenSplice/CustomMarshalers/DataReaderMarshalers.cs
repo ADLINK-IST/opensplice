@@ -23,7 +23,7 @@ using DDS.OpenSplice;
 
 namespace DDS.OpenSplice.CustomMarshalers
 {
-    internal class DataReaderMarshaler : IDisposable
+    public class DataReaderMarshaler : IDisposable
     {
         private GCHandle dataValueHandle;
         private GCHandle sampleInfoHandle;
