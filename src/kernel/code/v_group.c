@@ -2383,12 +2383,15 @@ walkMatchingSamples(
             }
 
             if(instancePass){ /* instance matches query*/
+                /* Since history is 'replayed' here, the oldest sample should be
+                 * processed first. We keep a reference to the first sample and
+                 * set the current sample to the tail of the instance (oldest). */
                 firstSample = v_groupInstanceHead(instance);
-                sample = firstSample;
+                sample = v_groupInstanceTail(instance);
 
                 while ((sample != NULL) && proceed) {
                     if (sample != firstSample) {
-                        v_groupInstanceSetHead(instance,sample);
+                        v_groupInstanceSetHeadNoRefCount(instance,sample);
                     }
                     if((condition->sampleQ[i])){
                         pass = c_queryEval(condition->sampleQ[i], instance);
@@ -2397,7 +2400,7 @@ walkMatchingSamples(
                     }
 
                     if (sample != firstSample) {
-                        v_groupInstanceSetHead(instance,firstSample);
+                        v_groupInstanceSetHeadNoRefCount(instance,firstSample);
                     }
                     if(pass){
                         sampleMatch = handleMatchingSample(sample, condition);
@@ -2411,12 +2414,12 @@ walkMatchingSamples(
                                     condition->insertedSamples - samplesBefore);
                         }
                     }
-                    sample = sample->older;
+                    sample = sample->newer;
                 }
             }
         }
     } else {
-        sample = v_groupInstanceHead(instance);
+        sample = v_groupInstanceTail(instance);
 
         while ((sample != NULL) && proceed) {
             sampleMatch = handleMatchingSample(sample, condition);
@@ -2430,7 +2433,7 @@ walkMatchingSamples(
                                     condition->insertedSamples,
                                     condition->insertedSamples - samplesBefore);
             }
-            sample = sample->older;
+            sample = sample->newer;
         }
     }
 
