@@ -45,11 +45,6 @@ typedef _off_t os_os_size_t;
 /* keep in sync with st_mode field def in struct stat in sys/stat.h */
 typedef unsigned short os_os_mode_t;
 
-/* Platform specific integers, 32-bit on most 32-bit and also 64-bit archs (LP64), but it could
- * be also 64-bit wide (ILP64 & SILP64). This type is required for systems calls relying on 
- * 'int' parameters, such as setsockopt */
-typedef unsigned int	os_os_uint;
-typedef          int	os_os_int;
 
 #if defined (__cplusplus)
 }
