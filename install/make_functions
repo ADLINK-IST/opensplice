@@ -979,7 +979,7 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/*.bat" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32c/PingPong/*.vcproj" \
+            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/PingPong/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong/PingPong
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP_x86.win32/Ping/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong/Ping
