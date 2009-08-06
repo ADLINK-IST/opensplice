@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__entity.h"
@@ -21,7 +21,7 @@
 #include "v_dataViewInstance.h"
 
 #include "u__types.h"
-#include "q_expr.h" 
+#include "q_expr.h"
 
 #include "os_report.h"
 
@@ -82,10 +82,10 @@ u_queryNew(
     q_expr copy;
 
     if (source != NULL) {
-        copy = q_exprCopy(predicate);
-        if (copy != NULL) {
-            kc = v_collection(u_entityClaim(u_entity(source)));
-            if (kc != NULL) {
+        kc = v_collection(u_entityClaim(u_entity(source)));
+        if (kc != NULL) {
+            copy = q_exprCopy(predicate);
+            if (copy != NULL) {
                 query = v_queryNew(kc,name,predicate,params);
                 if (query != NULL) {
                     p = u_entityParticipant(u_entity(source));
@@ -102,30 +102,31 @@ u_queryNew(
                             _this->predicate = copy;
                         } else {
                             q_dispose(copy);
-                            OS_REPORT(OS_ERROR, "u_queryNew", 0, 
+                            OS_REPORT(OS_ERROR, "u_queryNew", 0,
                                       "Initialisation failed.");
                         }
                     } else {
                         q_dispose(copy);
-                        OS_REPORT(OS_ERROR, "u_queryNew", 0, 
+                        OS_REPORT(OS_ERROR, "u_queryNew", 0,
                                   "Create user proxy failed.");
                     }
                     c_free(query);
                 } else {
                     q_dispose(copy);
-                    OS_REPORT(OS_ERROR, "u_queryNew", 0, 
+                    OS_REPORT(OS_ERROR, "u_queryNew", 0,
                               "Create kernel entity failed.");
                 }
-                u_entityRelease(u_entity(source));
             } else {
-                q_dispose(copy);
-                OS_REPORT(OS_WARNING, "u_queryNew", 0, 
-                          "Claim Query source failed.");
+                OS_REPORT(OS_ERROR, "u_queryNew", 0,
+                          "Failed to copy Query predicate.");
             }
+            u_entityRelease(u_entity(source));
         } else {
-            OS_REPORT(OS_ERROR, "u_queryNew", 0,
-                      "Failed to copy Query predicate.");
+            q_dispose(copy);
+            OS_REPORT(OS_WARNING, "u_queryNew", 0,
+                      "Claim Query source failed.");
         }
+
     } else {
         OS_REPORT(OS_ERROR,"u_queryNew",0,
                   "No Query source specified.");
@@ -181,7 +182,15 @@ u_queryDeinit(
 
     if (_this != NULL) {
         _this->source = NULL;
-        q_dispose(_this->predicate);
+        if(u_entityClaim(u_entity(_this)))
+        {
+            q_dispose(_this->predicate);
+            u_entityRelease(u_entity(_this));
+        } else
+        {
+            OS_REPORT(OS_WARNING, "u_queryDeinit", 0,
+                      "Claim Query object failed.");
+        }
         os_free(_this->name);
         result = u_readerDeinit(u_reader(_this));
     } else {
@@ -216,16 +225,16 @@ readAction(
 
 u_result
 u_queryRead(
-    u_query _this, 
+    u_query _this,
     u_readerAction action,
     c_voidp actionArg)
 {
     u_result result;
     v_query query;
     C_STRUCT(readActionArg) arg;
-    
+
     result = u_queryClaim(_this,&query);
-    
+
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
@@ -241,16 +250,16 @@ u_queryRead(
 
 u_result
 u_queryTake(
-    u_query _this, 
+    u_query _this,
     u_readerAction action,
     c_voidp actionArg)
 {
     u_result result;
     v_query query;
     C_STRUCT(readActionArg) arg;
-    
+
     result = u_queryClaim(_this,&query);
-    
+
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
@@ -431,7 +440,6 @@ u_querySet(
     u_query _this,
     c_value params[])
 {
-    q_expr predicate;
     v_query query;
     c_bool kr;
     u_result r;
@@ -501,7 +509,7 @@ u_queryReadInstance(
     v_query  query;
     u_result result;
     v_dataReaderInstance instance;
-     
+
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
         result = u_instanceHandleClaim(handle, &instance);
@@ -532,7 +540,7 @@ u_queryTakeInstance(
     v_query  query;
     u_result result;
     v_dataReaderInstance instance;
-     
+
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
         result = u_instanceHandleClaim(handle, &instance);
@@ -551,7 +559,7 @@ u_queryTakeInstance(
         OS_REPORT(OS_WARNING, "u_queryTakeInstance", 0,
                   "Could not claim query.");
     }
-   
+
     return result;
 }
 
@@ -565,7 +573,7 @@ u_queryReadNextInstance(
     v_query  query;
     u_result result;
     v_dataReaderInstance instance;
-     
+
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
         if ( u_instanceHandleIsNil(handle) ) {
@@ -587,7 +595,7 @@ u_queryReadNextInstance(
         OS_REPORT(OS_WARNING, "u_queryReadNextInstance", 0,
                   "Could not claim query.");
     }
-   
+
     return result;
 }
 
@@ -601,7 +609,7 @@ u_queryTakeNextInstance(
     v_query  query;
     u_result result;
     v_dataReaderInstance instance;
-     
+
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
         if ( u_instanceHandleIsNil(handle) ) {
@@ -623,7 +631,7 @@ u_queryTakeNextInstance(
         OS_REPORT(OS_WARNING, "u_queryTakeNextInstance", 0,
                   "Could not claim query.");
     }
-   
+
     return result;
 }
 
