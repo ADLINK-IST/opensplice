@@ -24,7 +24,7 @@ namespace DDS.OpenSplice
     
     public abstract class BaseMarshaler
     {
-        public static Dictionary<KeyValuePair<IntPtr, string>, BaseMarshaler> typeMarshalers = new Dictionary<KeyValuePair<IntPtr, string>, BaseMarshaler>();
+        public static Dictionary<KeyValuePair<IntPtr, Type>, BaseMarshaler> typeMarshalers = new Dictionary<KeyValuePair<IntPtr, Type>, BaseMarshaler>();
         protected static bool initDone = false;
         
         // Used to instantiate an array of the datatype.
@@ -69,93 +69,98 @@ namespace DDS.OpenSplice
         }
 
         public static BaseMarshaler Create(
-                IMarshalerTypeGenerator generator, 
+                IntPtr participant,
+                IntPtr metaData,
                 Type t, 
-                string typeName, 
-                IntPtr participant)
+                IMarshalerTypeGenerator generator)
         {
             BaseMarshaler marshaler;
             
             // Check if a Marshaler for this type already exists, and if not, create it.
-            if (!typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, string>(participant, typeName), out marshaler))
+            if (!typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, Type>(participant, t), out marshaler))
             {
-                string[] nameArray;
-                int[] offsetArray;
-            
-                // Get the attribute names and offsets of this datatype.
-                GetNamesAndOffsets(participant, typeName, out nameArray, out offsetArray);
-
                 // Delegate creation of the marshaler instance to the MarshalerGenerator.
-                marshaler = generator.CreateMarshaler(participant, t, typeName, nameArray, offsetArray);
+                marshaler = generator.CreateMarshaler(participant, metaData, t);
 
-                typeMarshalers.Add(new KeyValuePair<IntPtr, string>(participant, typeName), marshaler);
+                // Add the new marshaler to the list of known marshalers.
+                typeMarshalers.Add(new KeyValuePair<IntPtr, Type>(participant, t), marshaler);
             }
             return marshaler;
         }
-
-        private static void GetNamesAndOffsets(
-                IntPtr participant, 
-                string typeName, 
-                out string[] names, 
-                out int[] offsets)
+        
+        public static BaseMarshaler GetMarshaler(
+                IntPtr participant,
+                Type t)
         {
-            // Get the meta-data description.
-            IntPtr metaPtr = Gapi.DomainParticipant.get_type_metadescription(participant, typeName);
-
-            // copy the ptr into the c# structure
-            OpenSplice.Database.c_structure dbType = Marshal.PtrToStructure(metaPtr, typeof(OpenSplice.Database.c_structure))
-                as OpenSplice.Database.c_structure;
-
-            //Console.WriteLine("GetOffsets: dbType.members: {0}", dbType.members);
-            //Console.WriteLine("GetOffsets: dbType.objectCount: {0}", dbType.objectCount);
-
-            int memberCount = OpenSplice.Database.c.arraySize(dbType.members);
-            //Console.WriteLine("GetOffsets: dbType.members Count: {0}", memberCount);
-
-            /*
-                        // arraySize gives the member count, but v 3.4.3 it is defined as a macro, 
-                        // not a function so cannot p/invoke
+            BaseMarshaler marshaler;
             
-                        //==== start of version 3.4.3 workaround
-                        IntPtr typeMembers = OpenSplice.Gapi.DDSDatabase.getType(dbType.members);
-                        OpenSplice.Gapi.c_collectionType dbcollectionType = Marshal.PtrToStructure(typeMembers, typeof(OpenSplice.Gapi.c_collectionType))
-                            as OpenSplice.Gapi.c_collectionType;
-                        string teststr = Marshal.PtrToStringAnsi(dbcollectionType.name);
-                        //Console.WriteLine("GetOffsets: teststr: {0}", teststr);
-                        int memberCount = dbcollectionType.maxSize;
-                        //==== end of version 3.4.3 workaround
-            */
-            //if (memberCount != expectedMemberCount) { /* Assert!!!! */ }
-
-            offsets = new int[memberCount];
-            names = new string[memberCount];
-            //List<KeyValuePair<string, int>> offsetList = new List<KeyValuePair<string, int>>(memberCount);
-            int ptrSize = Marshal.SizeOf(typeof(IntPtr));
-
-            // loop through all members
-            for (int index = 0; index < memberCount; index++)
-            {
-                // calculate the ptr in the member array
-                IntPtr memberArrayPtr = new IntPtr(dbType.members.ToInt64() + (ptrSize * index));
-
-                // read the ptr to get to the ptr of the member, aka dereference
-                IntPtr memberPtr = Marshal.ReadIntPtr(memberArrayPtr);
-
-                // copy ptr to c# structure
-                OpenSplice.Database.c_member dbMember = Marshal.PtrToStructure(memberPtr, typeof(OpenSplice.Database.c_member))
-                    as OpenSplice.Database.c_member;
-                offsets[index] = dbMember.offset.ToInt32();
-                names[index] = Marshal.PtrToStringAnsi(dbMember.name);
-
-                //Console.WriteLine("GetOffsets: [index]: {0}", index);
-                //Console.WriteLine("GetOffsets: offsets[index]: {0}", offsets[index]);
-                //Console.WriteLine("GetOffsets: names[index]: {0}", names[index]);
-
-                //int offset = dbMember.offset.ToInt32();
-                //string name = Marshal.PtrToStringAnsi(dbMember.name);
-                //offsetList.Add(new KeyValuePair<string, int>(name, offset));
-            }
+            // Check if a Marshaler for this type already exists, and if so return it.
+            typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, Type>(participant, t), out marshaler);
+            return marshaler;
         }
+        
+
+//        private static Layout[] GetNamesAndOffsets(
+//                IntPtr participant, 
+//                string typeName)
+//        {
+//            // Get the meta-data description.
+//            IntPtr metaPtr = Gapi.DomainParticipant.get_type_metadescription(participant, typeName);
+//
+//            // copy the ptr into the c# structure
+//            OpenSplice.Database.c_structure dbType = Marshal.PtrToStructure(metaPtr, typeof(OpenSplice.Database.c_structure))
+//                as OpenSplice.Database.c_structure;
+//
+//            //Console.WriteLine("GetOffsets: dbType.members: {0}", dbType.members);
+//            //Console.WriteLine("GetOffsets: dbType.objectCount: {0}", dbType.objectCount);
+//
+//            int memberCount = OpenSplice.Database.c.arraySize(dbType.members);
+//            //Console.WriteLine("GetOffsets: dbType.members Count: {0}", memberCount);
+//
+//            /*
+//                        // arraySize gives the member count, but v 3.4.3 it is defined as a macro, 
+//                        // not a function so cannot p/invoke
+//            
+//                        //==== start of version 3.4.3 workaround
+//                        IntPtr typeMembers = OpenSplice.Gapi.DDSDatabase.getType(dbType.members);
+//                        OpenSplice.Gapi.c_collectionType dbcollectionType = Marshal.PtrToStructure(typeMembers, typeof(OpenSplice.Gapi.c_collectionType))
+//                            as OpenSplice.Gapi.c_collectionType;
+//                        string teststr = Marshal.PtrToStringAnsi(dbcollectionType.name);
+//                        //Console.WriteLine("GetOffsets: teststr: {0}", teststr);
+//                        int memberCount = dbcollectionType.maxSize;
+//                        //==== end of version 3.4.3 workaround
+//            */
+//            //if (memberCount != expectedMemberCount) { /* Assert!!!! */ }
+//
+//            MetaLayout[] metaData = new MetaLayout[memberCount];
+//            //List<KeyValuePair<string, int>> offsetList = new List<KeyValuePair<string, int>>(memberCount);
+//            int ptrSize = Marshal.SizeOf(typeof(IntPtr));
+//
+//            // loop through all members
+//            for (int index = 0; index < memberCount; index++)
+//            {
+//                // calculate the ptr in the member array
+//                IntPtr memberArrayPtr = new IntPtr(dbType.members.ToInt64() + (ptrSize * index));
+//
+//                // read the ptr to get to the ptr of the member, aka dereference
+//                IntPtr memberPtr = Marshal.ReadIntPtr(memberArrayPtr);
+//
+//                // copy ptr to c# structure
+//                OpenSplice.Database.c_member dbMember = Marshal.PtrToStructure(memberPtr, typeof(OpenSplice.Database.c_member))
+//                    as OpenSplice.Database.c_member;
+//                metaData[index].FieldOffset = dbMember.offset.ToInt32();
+//                metaData[index].FieldName = Marshal.PtrToStringAnsi(dbMember.name);
+//
+//                //Console.WriteLine("GetOffsets: [index]: {0}", index);
+//                //Console.WriteLine("GetOffsets: offsets[index]: {0}", offsets[index]);
+//                //Console.WriteLine("GetOffsets: names[index]: {0}", names[index]);
+//
+//                //int offset = dbMember.offset.ToInt32();
+//                //string name = Marshal.PtrToStringAnsi(dbMember.name);
+//                //offsetList.Add(new KeyValuePair<string, int>(name, offset));
+//            }
+//            return metaData;
+//        }
         
         public virtual void ReaderCopy(IntPtr samples, IntPtr info)
         {

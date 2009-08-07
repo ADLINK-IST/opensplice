@@ -24,7 +24,7 @@ namespace DDS.OpenSplice.Gapi
 {
     static internal class Entity
     {
-        /* ReturnCode_t
+       /* ReturnCode_t
         *     enable();
         */
         [DllImport("dcpsgapi", EntryPoint = "gapi_entity_enable")]

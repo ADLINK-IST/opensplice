@@ -22,6 +22,33 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice.Database
 {
+    enum c_metaKind {
+        M_UNDEFINED,
+        M_ATTRIBUTE, M_CLASS, M_COLLECTION, M_CONSTANT, M_CONSTOPERAND,
+        M_ENUMERATION, M_EXCEPTION, M_EXPRESSION, M_INTERFACE,
+        M_LITERAL, M_MEMBER, M_MODULE, M_OPERATION, M_PARAMETER,
+        M_PRIMITIVE, M_RELATION, M_BASE, M_STRUCTURE, M_TYPEDEF,
+        M_UNION, M_UNIONCASE,
+        M_EXTENT, M_EXTENTSYNC,
+        M_COUNT
+    }
+    
+    enum c_primKind {
+        P_UNDEFINED,
+        P_ADDRESS, P_BOOLEAN, P_CHAR, P_WCHAR, P_OCTET,
+        P_SHORT, P_USHORT, P_LONG, P_ULONG, P_LONGLONG, P_ULONGLONG,
+        P_FLOAT, P_DOUBLE, P_VOIDP,
+        P_MUTEX, P_LOCK, P_COND,
+        P_COUNT
+    }
+    
+    enum c_collKind {
+        C_UNDEFINED,
+        C_LIST, C_ARRAY, C_BAG, C_SET, C_MAP, C_DICTIONARY,
+        C_SEQUENCE, C_STRING, C_WSTRING, C_QUERY, C_SCOPE,
+        C_COUNT
+    }
+    
     static public class c
     {
         // from c_base.h

@@ -57,19 +57,16 @@ namespace DDS.OpenSplice
 
         public TypeSupport(
             Type dataType,
-            BaseMarshaler marshaler,
-            string typeName, 
-            string keyList, 
-            string description)
+            BaseMarshaler marshaler)
         {
             this.dataType = dataType;
             this.marshaler = marshaler;
 
             this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
             IntPtr ptr = Gapi.FooTypeSupport.alloc(
-               typeName,                    /* Original IDL type name */
-               keyList,
-               description,
+               TypeName,                    /* Original IDL type name */
+               KeyList,
+               Description,
                IntPtr.Zero,                 /* type_load */
                marshaler.CopyInDelegate,    /* copyIn: copy from C# types */
                dummyOperationDelegate,      /* copyOut: copy to C# types */
@@ -86,10 +83,7 @@ namespace DDS.OpenSplice
 
         public TypeSupport(
             Type dataType,
-            IMarshalerTypeGenerator generator, 
-            string typeName,
-            string keyList,
-            string description)
+            IMarshalerTypeGenerator generator)
         {
             this.dataType = dataType;
             this.generator = generator;
@@ -97,9 +91,9 @@ namespace DDS.OpenSplice
             //this.fakeCopyOutDelegate = new FakeSampleCopyOutDelegate(FakeCopyOut);
             this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
             IntPtr ptr = Gapi.FooTypeSupport.alloc(
-               typeName,                    /* Original IDL type name */
-               keyList,
-               description,
+               TypeName,                    /* Original IDL type name */
+               KeyList,
+               Description,
                IntPtr.Zero,                 /* type_load */
                dummyOperationDelegate,      /* copyIn: copy from C# types */
                dummyOperationDelegate,      /* copyOut: copy to C# types */
@@ -141,8 +135,11 @@ namespace DDS.OpenSplice
             
             if (marshaler == null)
             {
+                // Get the attribute names and offsets of this datatype.
+                IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, typeName);
+                 
                 // Generate a new marshaller using the available generator.
-                marshaler = BaseMarshaler.Create(generator, dataType, TypeName, domainObj);
+                marshaler = BaseMarshaler.Create(domainObj, metaData, dataType, generator);
                 
                 // Attach the functions in the generated marshaler to the current TypeSupport.
                 result = AttachMarshalerDelegates(this.GapiPeer, marshaler);
