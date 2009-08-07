@@ -25,12 +25,6 @@ namespace DDS.OpenSplice
 {
     public abstract class TypeSupport : SacsSuperClass, ITypeSupport
     {
-        // cache these types for performance
-        //protected static Type copyInType = typeof(SampleCopyInDelegate);
-        //protected static Type copyOutType = typeof(SampleCopyOutDelegate);
-        //protected static Type readerCopyType = typeof(SampleReaderCopyDelegate);
-        //protected static Type allocType = typeof(SampleReaderAllocDelegate);
-
         public abstract string TypeName     { get; }
         public abstract string KeyList      { get; }
         public abstract string Description  { get; }
@@ -40,12 +34,6 @@ namespace DDS.OpenSplice
         
         protected delegate void DummyOperationDelegate();
         protected DummyOperationDelegate dummyOperationDelegate;
-        //protected FakeSampleCopyOutDelegate fakeCopyOutDelegate;
-        //protected SampleCopyInDelegate copyInDelegate;
-        //protected SampleCopyOutDelegate copyOutDelegate;
-        //protected SampleReaderCopyDelegate readerCopyDelegate;
-        //protected SampleReaderAllocDelegate readerAllocDelegate;
-
     
         // HACK: This is a Mono workaround. Currently you cannot marshal a delegate
         // to a function pointer if the parameters include an "object" type. So we
@@ -55,6 +43,9 @@ namespace DDS.OpenSplice
         public void DummyOperation()//)IntPtr from, IntPtr to, int offset)
         { }
 
+        /*
+         * Constructor for a TypeSupport that uses the specified (custom) Marshaler.
+         */
         public TypeSupport(
             Type dataType,
             BaseMarshaler marshaler)
@@ -81,6 +72,10 @@ namespace DDS.OpenSplice
             base.SetPeer(ptr);
         }
 
+        /*
+         * Constructor for a TypeSupport that generates a Marshaler using
+         * the specified Marshaler generator.
+         */
         public TypeSupport(
             Type dataType,
             IMarshalerTypeGenerator generator)
@@ -119,14 +114,7 @@ namespace DDS.OpenSplice
                 return result;
             }
 
-            // Keeps these delegates alive and away from the GC
-            //this.copyInDelegate = copyInDelegate;
-            //this.copyOutDelegate = copyOutDelegate;
-            //this.readerAllocDelegate = readerAllocDelegate;
-            //this.readerCopyDelegate = new SampleReaderCopyDelegate(ReaderCopy);
-            IntPtr domainObj = (participant as DomainParticipant).GapiPeer;
-            //this.fakeCopyOutDelegate = new FakeSampleCopyOutDelegate(FakeCopyOut);
-            
+            IntPtr domainObj = (participant as DomainParticipant).GapiPeer;            
             result = Gapi.FooTypeSupport.register_type(
                 GapiPeer,
                 domainObj,
@@ -152,8 +140,6 @@ namespace DDS.OpenSplice
                 }
             }
             
-
-
             // TODO: Is this Type_Name actually going to be different after 
             // register_type is called?
             //InitType(domainObj.GapiPeer);
@@ -182,50 +168,8 @@ namespace DDS.OpenSplice
             return result;
         }
         
-
-        /*public IntPtr GetMetaPtr(IDomainParticipant participant, string typeName)
-        {
-            DomainParticipant domainObj = (DomainParticipant)participant;
-            return domainObj.GetTypeMetaDescription(typeName);
-        }*/
-
-        //protected abstract void InitType(IntPtr participant);
-
         public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
 
         public abstract DataReader CreateDataReader(IntPtr gapiPtr);
-
-//		public static IntPtr GetArrayType(IntPtr basePtr, string arrayType, string subType, int maxLength)
-//		{
-			//subtype0 = c_type(c_metaResolve(c_metaObject(base), "c_long"));
-			//type0 = c_metaArrayTypeNew(c_metaObject(base), "C_SEQUENCE<c_long>", subtype0, 0);
-			//c_free(subtype0);
-
-//			IntPtr subPtr = Gapi.DDSDatabase.metaResolve(basePtr, subType);
-//			IntPtr arrayPtr = Gapi.DDSDatabase.metaArrayTypeNew(basePtr, arrayType, subPtr, maxLength);
-//			Gapi.DDSDatabase.free(subPtr);
-
-//			return arrayPtr;
-//		}
-
-//		public static IntPtr NewArray(IntPtr dataType, int size)
-//		{
-//			return Gapi.DDSDatabase.newArray(dataType, size);
-//		}
-
-//		public static int ArraySize(IntPtr arrayPtr)
-//		{
-//			return Gapi.DDSDatabase.arraySize(arrayPtr);
-//		}
-
-//        protected static Type CreateReaderType(Type type)
-//        {
-//            return ReaderWriterTypeGenerator.CreateReaderType(type);
-//        }
-
-//        protected static Type CreateWriterType(Type type)
-//        {
-//            return ReaderWriterTypeGenerator.CreateWriterType(type);
-//        }
     }
 }

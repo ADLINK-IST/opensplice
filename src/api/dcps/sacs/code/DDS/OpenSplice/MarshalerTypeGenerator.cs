@@ -13,21 +13,12 @@ namespace DDS.OpenSplice
 {
     public class MarshalerTypeGenerator : IMarshalerTypeGenerator
     {
-        //private Type dataType;
-        //private string[] names;
-        //private int[] offsets;
-        //private CodeTypeDeclaration marshalerClass;
-
         public MarshalerTypeGenerator()
         { }
 
         public BaseMarshaler CreateMarshaler(IntPtr participant, IntPtr metaData, Type dataType)
         {
             CompilerResults results = null;
-
-            //this.dataType = dataType;
-            //this.names = names;
-            //this.offsets = offsets;
 
             // Generate the interface wrapper here and add to namespace
             CodeTypeDeclaration marshalerClass = CreateMarshalerClass(participant, dataType, metaData);
@@ -94,7 +85,6 @@ namespace DDS.OpenSplice
         {
             // Configure a CompilerParameters that links referenced assemblies
             // and produces the specified executable file.
-
             CompilerParameters cp = new CompilerParameters(assemLocationList.ToArray());
 
             // Generate an executable rather than a DLL file.
@@ -151,7 +141,7 @@ namespace DDS.OpenSplice
             implClass.BaseTypes.Add(typeof(BaseMarshaler));
 
             //CreateFieldsAndProperties(implClass);
-            CreateConstructor(participant, implClass, dataType, metaData);            
+            CreateConstructor(implClass, dataType, metaData, participant);            
 
             CreateSampleReaderAlloc(implClass, dataType);
             CreateCopyIn(implClass, dataType, metaData);
@@ -450,33 +440,6 @@ namespace DDS.OpenSplice
             }
         }
 
-//        private void InitType(DomainParticipant participant, string typeName)
-//        {
-//            TypeSupport.GetNamesAndOffsets(participant.GapiPeer, typeName, out nameArray, out offsetArray)
-//            CodeMemberMethod initTypeMethod = new CodeMemberMethod();
-//            initTypeMethod.Name = "InitType";
-//            initTypeMethod.Attributes = MemberAttributes.Public | MemberAttributes.Override;
-//
-//            CodeParameterDeclarationExpression participant = 
-//                new CodeParameterDeclarationExpression(typeof(IntPtr), "participant");
-//            initTypeMethod.Parameters.Add(participant);
-            
-//            string typeName = string.Format("{0}::{1}", dataType.Namespace, dataType.Name);
-
-//            CodeSnippetExpression initNameAndOffsetArray = new CodeSnippetExpression(
-//                string.Format("TypeSupport.GetNamesAndOffsets(participant, \"{0}\", out nameArray, out offsetArray)", typeName));
-//            initTypeMethod.Statements.Add(initNameAndOffsetArray);
-
-            // TODO: handle nested
-            
-//            CodeAssignStatement assignInitDone = new CodeAssignStatement(
-//                new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "initDone"),
-//                new CodePrimitiveExpression(true));
-//            initTypeMethod.Statements.Add(assignInitDone);
-
-//            implClass.Members.Add(initTypeMethod);
-//        }
-
 //        private void CreateFieldsAndProperties(CodeTypeDeclaration implClass)
 //        {
 //            CodeMemberField copyInDelegateField = new CodeMemberField(typeof(SampleCopyInDelegate),
@@ -510,10 +473,10 @@ namespace DDS.OpenSplice
 //        }
 
         private void CreateConstructor(
-                IntPtr participant, 
                 CodeTypeDeclaration implClass, 
                 Type dataType, 
-                IntPtr metaData)
+                IntPtr metaData, 
+                IntPtr participant)
         {
             // Constructor
             CodeConstructor defaultConstructor = new CodeConstructor();
