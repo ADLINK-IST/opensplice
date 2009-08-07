@@ -407,14 +407,14 @@ idl_typedefOpenClose(
             idl_fileCur(),
             "    public %s%s value = null;\n\n",
             idl_corbaJavaTypeFromTypeSpec(idl_typeArrayActual(idl_typeArray(idl_typeDefRefered(defSpec)))),
-            idl_arrayIndexString (idl_typeArray (idl_typeDefRefered (defSpec))));
+            idl_arrayJavaIndexString (idl_typeArray (idl_typeDefRefered (defSpec))));
         idl_fileOutPrintf(idl_fileCur(), "    public %s () { }\n\n", holderName);
         idl_fileOutPrintf(
             idl_fileCur(),
             "    public %s (%s%s initialValue)\n",
             holderName,
             idl_corbaJavaTypeFromTypeSpec(idl_typeArrayActual(idl_typeSeq(idl_typeDefRefered(defSpec)))),
-            idl_arrayIndexString(idl_typeArray (idl_typeDefRefered (defSpec))));
+            idl_arrayJavaIndexString(idl_typeArray (idl_typeDefRefered (defSpec))));
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_fileOutPrintf(idl_fileCur(), "        value = initialValue;\n");
         idl_fileOutPrintf(idl_fileCur(), "    }\n\n");

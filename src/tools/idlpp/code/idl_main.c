@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <string.h>
@@ -56,6 +56,10 @@
 #include "idl_genCHelper.h"
 #include "idl_genSacMeta.h"
 
+/* C# related support */
+#include "idl_genSACSType.h"
+#include "idl_genSACSTypedClassDefs.h"
+
 /* Java related support */
 #include "idl_genCorbaJavaHelper.h"
 #include "idl_genJavaHelper.h"
@@ -96,7 +100,7 @@ print_usage(
 {
     printf("Usage: %s [-c preprocessor-path] [-b ORB-template-path]\n"
            "       [-I path] [-D macro[=definition]] [-S | -C] \n"
-           "       [-l (c | c++ | cpp | java)] [-d directory] \n"
+           "       [-l (c | c++ | cpp | cs | java)] [-d directory] \n"
 #ifdef WIN32
            "       [-P dll_macro_name[,<h-file>]] [-o dds-types] <filename>\n", name);
 #else
@@ -162,10 +166,12 @@ print_help(
         "       For Java, OSPL_ORB_PATH will by default be set to SAJ.\n",
         os_fileSep(), DEFAULT_ORB);
     printf(
-            "    -l (c | c++ | cpp | java)\n"
-            "       Defines the target language. Note that the OpenSplice preprocessor\n"
-            "       does not support any combination of mode and language. The default\n"
-            "       setting of the OpenSplice preprocessor is c++.\n");
+            "    -l (c | c++ | cpp | cs | java)\n"
+            "       Defines the target language, where 'cs' represents C-sharp\n"
+            "       and 'cpp' is just an alias for 'c++'.\n"
+            "       Note that the OpenSplice preprocessor does not support any\n"
+            "       combination of mode and language. The default setting of the\n"
+            "       OpenSplice preprocessor is c++.\n");
     printf(
             "    <filename>\n"
             "       Specifies the IDL input file to process.\n");
@@ -178,6 +184,7 @@ print_help(
         "       cpp     N.A.   C      dcpsccpp       CCPP%s%s\n"
         "       c++     N.A.   S      dcpssacpp      SACPP\n"
         "       cpp     N.A.   S      dcpssacpp      SACPP\n"
+        "       cs      N.A.   S      dcpssacs       SACS\n"
         "       Java    N.A.   S      dcpssaj        SAJ\n",
         os_fileSep(), DEFAULT_ORB, os_fileSep(), DEFAULT_ORB);
 }
@@ -470,14 +477,7 @@ main (
     c_iter macroDefinitions = NULL;
     c_iter typeNames = NULL;
     os_result osr;
-    char* extIdlpp;
-    os_procAttr idlcppProcAttr;
-    os_procId idlcppProcId;
-    char* idlcppArgs;
-    os_int32 idlcppExitStatus;
-    const char* idlcppStdArgs;
     char* ccppOrbPath;
-    os_time sleepTime;
     int returnCode = 0;
 
     /* Use a unique name, so pass NULL as parameter */
@@ -515,6 +515,11 @@ main (
                 idl_setLanguage(IDL_LANG_CXX);
                 if (os_getenv("OSPL_ORB_PATH") == NULL) {
                     os_putenv(ccppOrbPath);
+                }
+            } else if (strcmp(optarg, "cs") == 0) {
+                idl_setLanguage(IDL_LANG_CS);
+                if (os_getenv("OSPL_ORB_PATH") == NULL) {
+                    os_putenv("OSPL_ORB_PATH=SACS");
                 }
             } else if (strcmp(optarg, "java") == 0) {
                 idl_setLanguage(IDL_LANG_JAVA);
@@ -1056,14 +1061,14 @@ main (
                     idl_fileOutFree(idl_fileCur());
 
                     /* Generate the implementation file for SACPP types */
-                    snprintf(fname,                 
+                    snprintf(fname,
                              (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                              "%s.cpp", basename);
-                        
+
                     idl_fileSetCur(idl_fileOutNew(fname, "w"));
                     if (idl_fileCur() == NULL) {
                         idl_reportOpenError(fname);
-                    }                        
+                    }
                     idl_walk(base, filename, traceWalk, idl_genSacppTypeImplProgram());
                     idl_fileOutFree(idl_fileCur());
 
@@ -1218,6 +1223,66 @@ main (
 
                 idl_definitionClean();
 
+            } else if (idl_getLanguage() == IDL_LANG_CS) {
+                /**
+                 * It is not possible to generate type-descriptors while walking over
+                 * the data. This is caused by the fact that the walk holds a lock for
+                 * the type it is currently processing, while the serializer that needs
+                 * to generate the typedescriptor will try to claim the same lock.
+                 * For that purpose we will use an iterator that cashes the relevant
+                 * meta-data on the first walk, and then process and generate the type
+                 * descriptors in the template inititialization phase of the 3rd walk,
+                 * where it does not hold any type locks yet.
+                 */
+                os_iter idlpp_metaList = NULL;
+
+                idl_definitionClean();
+
+                /* Generate the file that defines all DCPS specialized classes for the
+                   user types
+                */
+                snprintf(fname,
+                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                    "%s.cs", basename);
+                idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                if (idl_fileCur() == NULL) {
+                    idl_reportOpenError(fname);
+                }
+
+                idl_walk(base, filename, traceWalk, idl_genSACSTypeProgram(&idlpp_metaList));
+                idl_fileOutFree(idl_fileCur());
+
+                /* Expand Typed Csharp DataReader and DataWriter interfaces.
+                */
+                snprintf(fname,
+                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                    "I%sDcps.cs", basename);
+                idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                if (idl_fileCur() == NULL) {
+                    idl_reportOpenError(fname);
+                }
+                idl_walk(
+                        base,
+                        filename,
+                        traceWalk,
+                        idl_genSACSTypedClassDefsProgram("SacsTypedClassSpec", NULL));
+                idl_fileOutFree(idl_fileCur());
+
+                /* Expand Typed Csharp TypeSupport, DataReader and DataWriter implementation classes.
+                */
+                snprintf(fname,
+                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                    "%sDcps.cs", basename);
+                idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                if (idl_fileCur() == NULL) {
+                    idl_reportOpenError(fname);
+                }
+                idl_walk(
+                        base,
+                        filename,
+                        traceWalk,
+                        idl_genSACSTypedClassDefsProgram("SacsTypedClassBody", &idlpp_metaList));
+                idl_fileOutFree(idl_fileCur());
             } else if (idl_getLanguage() == IDL_LANG_JAVA) {
                 idl_walk(base, filename, traceWalk, idl_genSajTypeProgram());
                 idl_walk(base, filename, traceWalk, idl_genSajHolderProgram());
@@ -1271,6 +1336,7 @@ main (
                 idl_walk(base, filename, traceWalk, idl_genCorbaCCopyoutProgram());
             break;
             case IDL_LANG_JAVA:
+            case IDL_LANG_CS:
                 /* No copy code will be generated */
             break;
             case IDL_LANG_UNKNOWN:
@@ -1298,6 +1364,9 @@ main (
             break;
             case IDL_LANG_JAVA:
                 idl_walk(base, filename, traceWalk, idl_genCorbaJavaHelperProgram());
+            break;
+            case IDL_LANG_CS:
+                /* No Helper code will be generated (yet...) */
             break;
             case IDL_LANG_UNKNOWN:
             default:

@@ -9,11 +9,12 @@
  *   for full copyright notice and license terms.
  *
  */
-#ifndef IDL_GENSACTYPEDCLASSDEFS_H
-#define IDL_GENSACTYPEDCLASSDEFS_H
+#ifndef IDL_GENSACSTYPEDCLASSDEFS_H
+#define IDL_GENSACSTYPEDCLASSDEFS_H
 
 #include "idl_program.h"
 
-idl_program idl_genSacTypedClassDefsProgram (void);
+idl_program
+idl_genSACSTypedClassDefsProgram(c_char *tmplPrefix, os_iter *metaList);
 
-#endif /* IDL_GENSACTYPEDCLASSDEFS_H */
+#endif /* IDL_GENSACSTYPEDCLASSDEFS_H */

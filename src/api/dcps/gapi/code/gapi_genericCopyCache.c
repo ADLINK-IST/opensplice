@@ -77,7 +77,7 @@ STATIC c_long gapi_copyCacheWrite (gapi_copyCache copyCache, void *data, c_long 
 STATIC void gapi_copyCacheWriteIndex (gapi_copyCache copyCache, void *data, c_long size, c_long index);
 STATIC void gapi_copyCacheFinalize (gapi_copyCache copyCache);
 
-STATIC void gapi_metaObject (c_type o, gapi_context context);
+STATIC void gapi_metaObjectBuild (c_type o, gapi_context context);
 STATIC void gapi_cacheStructBuild (c_structure o, gapi_context context);
 STATIC void gapi_cacheStructMember (c_member o, gapi_context context);
 STATIC void gapi_cacheUnionLabel (c_literal lit, gapi_context ctx);
@@ -345,7 +345,7 @@ gapi_copyCacheGetUserSize (
 }
 
 STATIC void
-gapi_metaObject(
+gapi_metaObjectBuild(
     c_type o,
     gapi_context context)
 {
@@ -560,7 +560,7 @@ gapi_metaObject(
         gapi_cacheStructBuild (c_structure(o), context);
         break;
     case M_TYPEDEF:
-            gapi_metaObject (c_typeDef(o)->alias, context);
+            gapi_metaObjectBuild (c_typeDef(o)->alias, context);
         break;
     case M_UNION:
             gapi_cacheUnionBuild (c_union(o), context);
@@ -620,7 +620,7 @@ gapi_cacheStructMember (
     TRACE (printf ("    Struct Member @ %d\n", member.memberOffset));
 
     gapi_copyCacheWrite (ctx->copyCache, &member, sizeof(member));
-    gapi_metaObject (c_specifier(o)->type, ctx);
+    gapi_metaObjectBuild (c_specifier(o)->type, ctx);
 }
 
 STATIC void
@@ -683,7 +683,7 @@ gapi_cacheUnionCaseField (
 {
     TRACE (printf ("    Union Case\n"));
 
-    gapi_metaObject (c_specifier(o)->type, ctx);
+    gapi_metaObjectBuild (c_specifier(o)->type, ctx);
 }
 
 STATIC void
@@ -1004,7 +1004,7 @@ gapi_cacheArrObjectBuild (
                       sizeof(objectArrHeader));
     headerIndex = gapi_copyCacheWrite (ctx->copyCache, &objectArrHeader, sizeof(objectArrHeader));
     
-    gapi_metaObject (c_typeActualType(o->subType), ctx);
+    gapi_metaObjectBuild (c_typeActualType(o->subType), ctx);
     gapi_copyCacheUpdateSize (ctx->copyCache, headerIndex);
 }
 
@@ -1249,7 +1249,7 @@ gapi_cacheSeqObjectBuild (
                                      gapi_headerIndex(c_metaObject(c_typeActualType(o->subType)),
                                      ctx));
     } else {
-        gapi_metaObject (c_typeActualType(o->subType), ctx);
+        gapi_metaObjectBuild (c_typeActualType(o->subType), ctx);
     }
     gapi_copyCacheUpdateSize (ctx->copyCache, headerIndex);
 }
@@ -1603,7 +1603,7 @@ gapi_copyCacheBuild (
     if (context) {
         context->copyCache = copyCache;
         context->typeStack = c_iterNew (NULL);
-        gapi_metaObject (c_type(object), context);
+        gapi_metaObjectBuild (c_type(object), context);
         gapi_copyCacheFinalize (context->copyCache);
         copyCache->userSize = gapi_cacheObjectUserSize(c_type(object));
         c_iterFree (context->typeStack);

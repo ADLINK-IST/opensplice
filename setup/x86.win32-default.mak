@@ -1,11 +1,12 @@
 # target context in platform specific config.mak
 
 WINCMD = sh $(OSPL_HOME)/bin/ospl_wincmd
+WINCSC = sh $(OSPL_HOME)/bin/ospl_wincsc
 
 # Set name context of used tooling
 CC  = $(WINCMD) cl
 CXX = $(WINCMD) cl
-CSC = Csc
+CSC = $(WINCSC) Csc
         
 # Binary used for filtering: in the future must be empty
 FILTER = 
@@ -79,6 +80,7 @@ endif
 #    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
 CFLAGS	= -nologo -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
 CXXFLAGS	= -EHsc -nologo -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
@@ -92,6 +94,10 @@ LDFLAGS = -incremental:no -machine:IX86 -subsystem:console -L$(SPLICE_LIBRARY_PA
 
 # Identify linker options for building shared libraries
 SHLDFLAGS = -dll -machine:IX86 -incremental:no
+
+# Identify linker options for building shared C# libraries and or executables.
+CSTARGET_LIB = -t:library
+CSTARGET_EXEC = -target:exe
 
 # Set library context
 LDLIBS		 =
@@ -118,3 +124,7 @@ JLIB_POSTFIX = .dll
 EXEC_PREFIX =
 EXEC_POSTFIX = .exe
 INLINESRC_POSTFIX = .i
+CSLIB_PREFIX =
+CSLIB_POSTFIX = .dll
+CSEXEC_PREFIX =
+CSEXEC_POSTFIX = .exe
