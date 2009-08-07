@@ -220,8 +220,7 @@ namespace DDS.OpenSplice
                     IntPtr member = Gapi.MetaData.structureMember(metaData, i);
                     string fieldName = Gapi.MetaData.specifierName(member);
                     FieldInfo field = dataType.GetField(fieldName);
-                    copyOutMethod.Statements.Add(CreateTypeSupportRead(
-                            field.FieldType, fieldName, member, i));
+                    CreateTypeSupportRead(copyOutMethod, field.FieldType, fieldName, member, i);
                 }
             }
             else
@@ -235,7 +234,8 @@ namespace DDS.OpenSplice
             implClass.Members.Add(copyOutMethod);
         }
 
-        private CodeExpression CreateTypeSupportRead(
+        private void CreateTypeSupportRead(
+                CodeMemberMethod copyOutMethod,
                 Type fieldType,
                 string fieldName,
                 IntPtr member, 
@@ -252,13 +252,15 @@ namespace DDS.OpenSplice
                 snippet = string.Format(
                         "attr{0}Marshaler.CopyOut(from, ref to, offset + {1})", 
                         index, offset);
-                return new CodeSnippetExpression(snippet);
+                copyOutMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                break;
             case c_metaKind.M_ENUMERATION:
                 // Handle enum.
                 snippet = string.Format(
                         "dataTo.{0} = ({1}) ReadUInt32(from, offset + {2})", 
                         fieldName, fieldType.FullName, offset);
-                return new CodeSnippetExpression(snippet);
+                copyOutMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                break;
             case c_metaKind.M_PRIMITIVE: 
                 // Handle primitive.
                 switch (Gapi.MetaData.primitiveKind(memberType))
@@ -279,22 +281,27 @@ namespace DDS.OpenSplice
 //                case "InstanceHandle":
 //                case "IntPtr":
                     snippet = string.Format("dataTo.{0} = Read{1}(from, offset + {2})", fieldName, fieldType.Name, offset);
-                    return new CodeSnippetExpression(snippet);
+                    copyOutMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                    break;
                 default:
                     throw new Exception("Unsupported primitive type");
-                } 
+                }
+                break; 
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
                 switch (Gapi.MetaData.collectionTypeKind(memberType))
                 {
                 case c_collKind.C_STRING:
                     snippet = string.Format("dataTo.{0} = Read{1}(from, offset + {2})", fieldName, fieldType.Name, offset);
-                    return new CodeSnippetExpression(snippet);
+                    copyOutMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                    break;
                 default:
                     throw new Exception("Unsupported Collection type");
                 }
+                break;
+            default:
+                throw new Exception("Unsupported Base type");
             }
-            return null;
         }
 
         private void CreateCopyIn(
@@ -354,7 +361,7 @@ namespace DDS.OpenSplice
                 for (int i = 0; i < nrMembers; i++)
                 {
                 	IntPtr member = Gapi.MetaData.structureMember(metaData, i);
-                    copyInMethod.Statements.Add(CreateTypeSupportWrite(member, i));
+                    CreateTypeSupportWrite(copyInMethod, member, i);
                 }
             }
             else
@@ -369,7 +376,10 @@ namespace DDS.OpenSplice
             implClass.Members.Add(copyInMethod);
         }
 
-        private CodeExpression CreateTypeSupportWrite(IntPtr member, int index)
+        private void CreateTypeSupportWrite(
+                CodeMemberMethod copyInMethod,
+                IntPtr member, 
+                int index)
         {
             string snippet = string.Empty;
             IntPtr memberType = Gapi.MetaData.memberType(member);
@@ -383,13 +393,15 @@ namespace DDS.OpenSplice
                 snippet = string.Format(
                         "attr{0}Marshaler.CopyIn(basePtr, from.{1}, to, offset + {2})", 
                         index, fieldName, offset);
-                return new CodeSnippetExpression(snippet);
+                copyInMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                break;
             case c_metaKind.M_ENUMERATION:
                 // Handle enum.
                 snippet = string.Format(
                         "Write(to, offset + {0}, (uint) from.{1})", 
                         offset, fieldName);
-                return new CodeSnippetExpression(snippet);
+                copyInMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                break;
             case c_metaKind.M_PRIMITIVE: 
                 // Handle primitive.
                 switch (Gapi.MetaData.primitiveKind(memberType))
@@ -410,22 +422,32 @@ namespace DDS.OpenSplice
 //                case "InstanceHandle":
 //                case "IntPtr":
                     snippet = string.Format("Write(to, offset + {0}, from.{1})", offset, fieldName);
-                    return new CodeSnippetExpression(snippet);
+                    copyInMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                    break;
                 default:
                     throw new Exception("Unsupported primitive type");
-                } 
+                }
+                break;
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
                 switch (Gapi.MetaData.collectionTypeKind(memberType))
                 {
                 case c_collKind.C_STRING:
-                    snippet = string.Format("Write(basePtr, to, offset + {0}, ref from.{1})", offset, fieldName);
-                    return new CodeSnippetExpression(snippet);
+                    snippet = string.Format("if (from.{0} == null) return false;", fieldName);
+                    copyInMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                    snippet = string.Format(
+                            "Write(basePtr, to, offset + {0}, ref from.{1})", 
+                            offset, 
+                            fieldName); 
+                    copyInMethod.Statements.Add(new CodeSnippetExpression(snippet));
+                    break;
                 default:
                     throw new Exception("Unsupported Collection type");
                 }
+                break;
+            default:
+                throw new Exception("Unsupported Base type");
             }
-            return null;
         }
 
 //        private void InitType(DomainParticipant participant, string typeName)

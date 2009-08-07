@@ -87,7 +87,7 @@ gapi_metaData_memberOffset(gapi_member memberBase)
 gapi_long
 gapi_metaData_unionUnionCaseCount(gapi_union unionBase)
 {
-    c_unionUnionCaseCount(unionBase);
+    return c_unionUnionCaseCount(unionBase);
 }
 
 gapi_unionCase
