@@ -1475,6 +1475,16 @@ checkDataAvailability(
     } else {
         *dataAvailable = ((v_statusGetMask(e->status) &
                            V_EVENT_DATA_AVAILABLE) != 0);
+
+        /* A DDS 1.2 requirement is that once the status is accessed it should be reset.
+         * Doing this here will also handle the subscriber's DATA_ON_READERS status since
+         * that is determined by checking the DATA_AVAILABLE status on each reader associated
+         * with the subscriber.
+         * This status is reset in a different manner to the plain communication statuses
+         * which call "_DataReader_get_requested_deadline_missed_status", for example, with
+         * a TRUE parameter to reset the status.
+         */
+        v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
     }
 }
 
