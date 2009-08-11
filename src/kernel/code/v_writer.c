@@ -2176,6 +2176,62 @@ v_writerUnPublish(
     return TRUE;
 }
 
+v_result
+v_writerWaitForAcknowledgments(
+	v_writer w,
+	v_duration timeout)
+{
+	v_result result;
+	c_time curTime, endTime, waitTime;
+	c_ulong flags;
+
+	assert(C_TYPECHECK(w,v_writer));
+
+	if(w){
+		v_observerLock(v_observer(w));
+
+		if(c_tableCount(w->resendInstances) > 0){
+		    if(c_timeIsInfinite(timeout)){
+		        flags = v__observerWait(v_observer(w));
+
+                if(c_tableCount(w->resendInstances) == 0){
+		            result = V_RESULT_OK;
+                } else {
+                    result = V_RESULT_ILL_PARAM;
+                }
+            } else {
+                curTime = v_timeGet();
+                endTime = c_timeAdd(curTime, timeout);
+                waitTime = timeout;
+                result = V_RESULT_TIMEOUT;
+
+                do{
+                    flags = v__observerTimedWait(v_observer(w), waitTime);
+
+                    if(c_tableCount(w->resendInstances) == 0){
+                        result = V_RESULT_OK;
+                    } else if (flags & V_EVENT_OBJECT_DESTROYED) {
+                        result = V_RESULT_ILL_PARAM;
+                        curTime = endTime;
+                    } else if (flags & V_EVENT_TIMEOUT) {
+                        curTime = endTime;
+                    } else {
+                        curTime = v_timeGet();
+                        waitTime = c_timeSub(endTime, curTime);
+                    }
+                } while( (c_tableCount(w->resendInstances) > 0) &&
+                         (c_timeCompare(curTime, endTime) == C_LT));
+            }
+		} else {
+		    result = V_RESULT_OK;
+		}
+		v_observerUnlock(v_observer(w));
+	} else {
+	    result = V_RESULT_ILL_PARAM;
+	}
+    return result;
+}
+
 
 typedef struct collectGarbageArg {
     c_iter emptyList;

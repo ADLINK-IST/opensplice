@@ -40,6 +40,7 @@ extern "C" {
 #define CFG_LOCKING       "Locking"
 #define CFG_HEAP          "Heap"
 #define CFG_BUILTINTOPICS "BuiltinTopics"
+#define CFG_PRIOINHER     "PriorityInheritance"
 #define CFG_LEASE         "Lease"
 #define CFG_EXPIRYTIME    "ExpiryTime"
 #define CFG_TERMPERIOD    "ServiceTerminatePeriod"

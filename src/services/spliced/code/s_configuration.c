@@ -412,6 +412,29 @@ s_configurationSetGCSchedulingPriority(
 }
 
 static void
+s_configurationSetResendManagerSchedulingClass(
+    s_configuration config,
+    const c_char* class)
+{
+    if (os_strcasecmp(class, "Timeshare") == 0) {
+        config->resendManagerScheduling.schedClass = OS_SCHED_TIMESHARE;
+    } else if (os_strcasecmp(class, "Realtime") == 0) {
+        config->resendManagerScheduling.schedClass = OS_SCHED_REALTIME;
+    } else {
+        config->resendManagerScheduling.schedClass = OS_SCHED_DEFAULT;
+    }
+}
+
+static void
+s_configurationSetResendManagerSchedulingPriority(
+    s_configuration config,
+    c_long priority)
+{
+    config->resendManagerScheduling.schedPriority = priority;
+}
+
+
+static void
 s_configurationSetTracingSynchronous(
     s_configuration config,
     const c_bool synchronous)
@@ -549,6 +572,11 @@ s_configurationInit(
         config->garbageCollectorScheduling.stackSize = 512*1024; /* 512KB */
         s_configurationSetGCSchedulingClass(config, S_CFG_GCSCHEDULING_CLASS_DEFAULT);
         s_configurationSetGCSchedulingPriority(config, S_CFG_GCSCHEDULING_PRIORITY_DEFAULT);
+        
+        os_threadAttrInit(&config->resendManagerScheduling);
+        config->resendManagerScheduling.stackSize = 512*1024; /* 512KB */
+        s_configurationSetResendManagerSchedulingClass(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
+        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
     }
 }
 
@@ -736,9 +764,13 @@ s_configurationRead(
         s_configurationValueString(config, dcfg, "KernelManager/Scheduling/Class/#text", s_configurationSetKernelManagerSchedulingClass);
         s_configurationValueLong(config, dcfg, "KernelManager/Scheduling/Priority/#text", s_configurationSetKernelManagerSchedulingPriority);
          
-        /* GarbageCollector */
-        s_configurationValueString(config, dcfg, "GarbageCollector/Scheduling/Class/#text", s_configurationSetGCSchedulingClass);
-        s_configurationValueLong(config, dcfg, "GarbageCollector/Scheduling/Priority/#text", s_configurationSetGCSchedulingPriority);
+         /* GarbageCollector */
+         s_configurationValueString(config, dcfg, "GarbageCollector/Scheduling/Class/#text", s_configurationSetGCSchedulingClass);
+         s_configurationValueLong(config, dcfg, "GarbageCollector/Scheduling/Priority/#text", s_configurationSetGCSchedulingPriority);
+
+         /* ResendManager */
+         s_configurationValueString(config, dcfg, "ResendManager/Scheduling/Class/#text", s_configurationSetResendManagerSchedulingClass);
+         s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
 
     }
     

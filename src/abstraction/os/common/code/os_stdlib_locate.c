@@ -36,11 +36,13 @@ std_splitListNew(
         while (*ptr) {
             if (*ptr == separator) {
                 if (inString) {
-                    count++;
                     inString = 0;
                 }
                 *ptr = '\0';
             } else {
+            	if (!inString) {
+            		count++;
+            	}
                 inString = !0;
             }
             ptr = &ptr[1];
@@ -63,7 +65,10 @@ std_splitListNew(
                 i++;
                 while (*ptr != '\0') {
                     ptr = &ptr[1];
-                    assert(ptr != tail);
+
+                    if(i<count){
+                        assert(ptr != tail);
+                    }
                 }
             }
             assert(*ptr == '\0');

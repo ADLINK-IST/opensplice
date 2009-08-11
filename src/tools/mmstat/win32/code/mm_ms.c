@@ -16,6 +16,56 @@
 #include "mm_ms.h"
 #include <os_time.h>
 
+#define MM_MS_TIME_BUF_HDR_FMT          "%-12s"
+#define MM_MS_TIME_BUF_FMT              "%-12s"
+#define MM_MS_AVAILABLE_HDR             "available"
+#define MM_MS_AVAILABLE_HDR_FMT         "%14s"
+#define MM_MS_AVAILABLE_FMT             "%14s"
+#define MM_MS_COUNT_HDR                 "count"
+#define MM_MS_COUNT_HDR_FMT             "%11s"
+#define MM_MS_COUNT_FMT                 "%11d"
+#define MM_MS_USED_HDR                  "used"
+#define MM_MS_USED_HDR_FMT              "%14s"
+#define MM_MS_USED_FMT                  "%14s"
+#define MM_MS_PREALLOCATED_HDR          "preallocated"
+#define MM_MS_PREALLOCATED_HDR_FMT      "%14s"
+#define MM_MS_PREALLOCATED_FMT          "%14s"
+#define MM_MS_MAXUSED_HDR               "maxUsed"
+#define MM_MS_MAXUSED_HDR_FMT           "%14s"
+#define MM_MS_MAXUSED_FMT               "%14s"
+#define MM_MS_REUSABLE_HDR              "reusable"
+#define MM_MS_REUSABLE_HDR_FMT          "%14s"
+#define MM_MS_REUSABLE_FMT              "%14s"
+#define MM_MS_FAILS_HDR                 "fails"
+#define MM_MS_FAILS_HDR_FMT             "%11s"
+#define MM_MS_FAILS_FMT                 "%11d"
+#define MM_MS_EXTRA_FMT                 "%s"
+
+#define MM_MS_D_FMT_WIDTH               "%11"
+#define MM_MS_D_AVAILABLE_HDR           "D-avail"
+#define MM_MS_D_AVAILABLE_HDR_FMT       MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_AVAILABLE_FMT           MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_USED_HDR                "D-used"
+#define MM_MS_D_USED_HDR_FMT            MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_USED_FMT                MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_PREALLOCATED_HDR        "D-prealloc"
+#define MM_MS_D_PREALLOCATED_HDR_FMT    MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_PREALLOCATED_FMT        MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_MAXUSED_HDR             "D-maxUsed"
+#define MM_MS_D_MAXUSED_HDR_FMT         MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_MAXUSED_FMT             MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_FAILS_HDR               "D-fails"
+#define MM_MS_D_FAILS_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_FAILS_FMT               MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_REUSABLE_HDR            "D-reusable"
+#define MM_MS_D_REUSABLE_HDR_FMT        MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_REUSABLE_FMT            MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_COUNT_HDR               "D-count"
+#define MM_MS_D_COUNT_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
+#define MM_MS_D_COUNT_FMT               MM_MS_D_FMT_WIDTH "d"
+
+#define MM_MS_NEWLINE                   "\r\n"
+
 C_STRUCT(monitor_ms) {
     c_long header;
     c_bool extendedMode;
@@ -122,12 +172,45 @@ monitor_msAction (
         if (msData->header == 0) {
             strftime (timbuf, sizeof(timbuf), "%d/%m/%Y", localtime(&ct));
 	    if (msData->delta) {
-                printf ("%-12s%11s%11s%11s%11s%11s%11s\r\n",
-                    timbuf, "D-size", "D-used", "D-maxUsed", "D-fails", "D-garbage", "D-count");
+                printf (MM_MS_TIME_BUF_FMT
+                        MM_MS_D_AVAILABLE_HDR_FMT
+                        MM_MS_D_COUNT_HDR_FMT
+                        MM_MS_D_USED_HDR_FMT
+                        MM_MS_D_PREALLOCATED_HDR_FMT
+                        MM_MS_D_MAXUSED_HDR_FMT
+                        MM_MS_D_REUSABLE_HDR_FMT
+                        MM_MS_D_FAILS_HDR_FMT
+                        MM_MS_NEWLINE
+                        ,
+                        timbuf,
+                        MM_MS_D_AVAILABLE_HDR,
+                        MM_MS_D_COUNT_HDR,
+                        MM_MS_D_USED_HDR,
+                        MM_MS_D_PREALLOCATED_HDR,
+                        MM_MS_D_MAXUSED_HDR,
+                        MM_MS_D_REUSABLE_HDR,
+                        MM_MS_D_FAILS_HDR);
+
                 msData->header = 1;
 	    } else {
-                printf ("%-12s%14s%11s%14s%14s%14s%11s\r\n",
-                    timbuf, "available", "count", "used", "maxUsed", "reusable", "fails");
+                printf (MM_MS_TIME_BUF_HDR_FMT
+                        MM_MS_AVAILABLE_HDR_FMT
+                        MM_MS_COUNT_HDR_FMT
+                        MM_MS_USED_HDR_FMT
+                        MM_MS_PREALLOCATED_HDR_FMT
+                        MM_MS_MAXUSED_HDR_FMT
+                        MM_MS_REUSABLE_HDR_FMT
+                        MM_MS_FAILS_HDR_FMT
+                        MM_MS_NEWLINE
+                        ,
+                        timbuf,
+                        MM_MS_AVAILABLE_HDR,
+                        MM_MS_COUNT_HDR,
+                        MM_MS_USED_HDR,
+                        MM_MS_PREALLOCATED_HDR,
+                        MM_MS_MAXUSED_HDR,
+                        MM_MS_REUSABLE_HDR,
+                        MM_MS_FAILS_HDR);
                 msData->header = 15;
 	    }
 	}
@@ -147,17 +230,28 @@ monitor_msAction (
         strncpy (extra, "\r\n", sizeof(extra));
     }
     if (msData->delta) {
-        printf("%-12s%11d%11d%11d%11d%11d%11d\n\r",
-            timbuf,
-	    s.size - msData->prevState.size,
-	    s.used - msData->prevState.used,
-	    s.maxUsed - msData->prevState.maxUsed, 
-            s.fails - msData->prevState.fails,
-	    s.garbage - msData->prevState.garbage,
-	    s.count - msData->prevState.count);
-            msData->prevState = s;
+        printf (MM_MS_TIME_BUF_FMT
+                MM_MS_D_AVAILABLE_FMT
+                MM_MS_D_COUNT_FMT
+                MM_MS_D_USED_FMT
+                MM_MS_D_PREALLOCATED_FMT
+                MM_MS_D_MAXUSED_FMT
+                MM_MS_D_REUSABLE_FMT
+                MM_MS_D_FAILS_FMT
+                MM_MS_NEWLINE
+                ,
+                timbuf,
+                s.size - msData->prevState.size,
+                s.count - msData->prevState.count,
+                s.used - msData->prevState.used,
+                s.preallocated - msData->prevState.preallocated,
+                s.maxUsed - msData->prevState.maxUsed,
+                s.garbage - msData->prevState.garbage,
+                s.fails - msData->prevState.fails);
+
+        msData->prevState = s;
     } else {
-        char _size[32], _used[32], _maxUsed[32], _reusable[32];
+        char _size[32], _used[32], _preallocated[32], _maxUsed[32], _reusable[32];
 
 #if 0
         to_string(ms.size,_size);
@@ -180,12 +274,29 @@ monitor_msAction (
 #else
         to_string(ls.size + ls.garbage + ms.garbage, _size);
         to_string(ls.used + ms.used, _used);
+        to_string(s.preallocated, _preallocated);
         to_string(ls.maxUsed + ms.maxUsed, _maxUsed);
         to_string(ls.garbage + ms.garbage, _reusable);
 
-        printf("%-12s%14s%11d%14s%14s%14s%11d%s",
-            timbuf, _size, ls.count + ms.count, _used, 
-            _maxUsed, _reusable, ls.fails + ms.fails, extra);
+        printf(MM_MS_TIME_BUF_FMT
+               MM_MS_AVAILABLE_FMT
+               MM_MS_COUNT_FMT
+               MM_MS_USED_FMT
+               MM_MS_PREALLOCATED_FMT
+               MM_MS_MAXUSED_FMT
+               MM_MS_REUSABLE_FMT
+               MM_MS_FAILS_FMT
+               MM_MS_EXTRA_FMT
+               ,
+               timbuf,
+               _size,
+               ls.count + ms.count,
+               _used,
+               _preallocated,
+               _maxUsed,
+               _reusable,
+               ls.fails + ms.fails,
+               extra);
 #endif
     }
     msData->header--;

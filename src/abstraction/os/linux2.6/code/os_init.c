@@ -35,6 +35,7 @@ os_osInit (
     os_processModuleInit();
     os_threadModuleInit();
     os_sharedMemoryInit();
+    os_mutexModuleInit();
     return;
 }
 
@@ -48,6 +49,7 @@ void
 os_osExit (
     void)
 {
+    os_mutexModuleExit();
     os_sharedMemoryExit();
     os_threadModuleExit();
     os_processModuleExit();

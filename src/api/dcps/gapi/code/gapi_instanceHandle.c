@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_instanceHandle.h"
@@ -96,6 +96,15 @@ gapi_instanceHandleToHandle(
     if ((id.lid.localId == 0) && (id.lid.lifecycleId == 0)) {
         handle->server = 0;
     } else {
+        /* ES 7/16/2009. Be aware that the user layer entity being used here
+         * can also be a user layer entity without the userdata referring back
+         * to the gapi object. This is a use case within DLRL which is maintained
+         * for performance reasons.
+         * Currently the fact that the user layer entity does not have a
+         * reference back to the gapi object is not an issue, so this will work
+         * fine. This comment is placed here merely to be made aware of this use
+         * case as this scenario might not be directly obvious
+         */
         handle->server = u_entitySystemId(entity);
     }
     handle->index = id.lid.localId;

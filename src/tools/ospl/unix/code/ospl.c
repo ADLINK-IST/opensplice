@@ -442,7 +442,7 @@ main(
         uri = argv[optind+1];
     }
     if (uri && (strlen(uri) > 0)) {
-        r = cfg_parse (uri, &platformConfig);
+        r = cfg_parse_ospl (uri, &platformConfig);
         if (r == CFGPRS_OK) {
             domain_name = findDomain (platformConfig, &domain);
             if (domain_name == NULL) {
