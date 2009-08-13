@@ -13,8 +13,8 @@
 package DDS;
 
 
-public interface TopicListenerOperations  extends DDS.ListenerOperations
+public interface DomainOperations
 {
-  void on_inconsistent_topic (DDS.Topic the_topic, DDS.InconsistentTopicStatus status);
-  void on_all_data_disposed (DDS.Topic the_topic);
-} // interface TopicListenerOperations
+
+  int create_persistent_snapshot (String partition_expression, String topic_expression, String URI);
+} // interface DomainOperations

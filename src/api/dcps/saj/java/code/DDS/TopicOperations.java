@@ -22,4 +22,5 @@ public interface TopicOperations  extends DDS.EntityOperations, DDS.TopicDescrip
   int set_qos (DDS.TopicQos qos);
   DDS.TopicListener get_listener ();
   int set_listener (DDS.TopicListener a_listener, int mask);
+  int dispose_all_data();
 } // interface TopicOperations

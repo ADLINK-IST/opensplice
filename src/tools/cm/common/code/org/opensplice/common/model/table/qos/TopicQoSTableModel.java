@@ -50,130 +50,136 @@ public class TopicQoSTableModel extends EntityQoSTableModel{
 
     protected void init() {
         Object[] data = new Object[3];
+        int row;
         
-        /*row 0*/
+        row = 0;
         data[0] = "TOPIC_DATA";
         data[1] = "value";
         data[2] = "N/A";
         this.addRow(data);
         
-        /*row 1*/
+        row++;
         data[0] = "DURABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(1));
+        nonEditRows.add(new Integer(row));
         
-        /*row 2*/
+        row++;
         data[0] = "DURABILITY_SERVICE";
         data[1] = "service_cleanup_delay";
         this.addRow(data);
-        nonEditRows.add(new Integer(2));
+        nonEditRows.add(new Integer(row));
         
-        /*row 3*/
+        row++;
         data[1] = "history_kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(3));
+        nonEditRows.add(new Integer(row));
         
-        /*row 4*/
+        row++;
         data[1] = "history_depth";
         this.addRow(data);
-        nonEditRows.add(new Integer(4));
+        nonEditRows.add(new Integer(row));
         
-        /*row 5*/
+        row++;
         data[1] = "max_samples";
         this.addRow(data);
-        nonEditRows.add(new Integer(5));
+        nonEditRows.add(new Integer(row));
         
-        /*row 6*/
+        row++;
         data[1] = "max_instances";
         this.addRow(data);
-        nonEditRows.add(new Integer(6));
+        nonEditRows.add(new Integer(row));
         
-        /*row 7*/
+        row++;
         data[1] = "max_samples_per_instance";
         this.addRow(data);
-        nonEditRows.add(new Integer(7));
+        nonEditRows.add(new Integer(row));
         
-        /*row 8*/
+        row++;
         data[0] = "DEADLINE";
         data[1] = "period";
         this.addRow(data);
         
-        /*row 9*/
+        row++;
         data[0] = "LATENCY_BUDGET";
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 10*/
+        row++;
         data[0] = "LIVELINESS";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(10));
+        nonEditRows.add(new Integer(row));
         
-        /*row 11*/
+        row++;
         data[1] = "lease_duration";
         this.addRow(data);
-        nonEditRows.add(new Integer(11));
+        nonEditRows.add(new Integer(row));
         
-        /*row 12*/
+        row++;
         data[0] = "RELIABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(12));
+        nonEditRows.add(new Integer(row));
         
-        /*row 13*/
+        row++;
         data[1] = "max_blocking_time";
         this.addRow(data);
-        nonEditRows.add(new Integer(13)); 
+        nonEditRows.add(new Integer(row)); 
         
-        /*row 14*/
+        row++;
+        data[1] = "synchronous";
+        this.addRow(data);
+        nonEditRows.add(new Integer(row)); 
+        
+        row++;
         data[0] = "DESTINATION_ORDER";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(14));
+        nonEditRows.add(new Integer(row));
         
-        /*row 15*/
+        row++;
         data[0] = "HISTORY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(15));
+        nonEditRows.add(new Integer(row));
         
-        /*row 16*/
+        row++;
         data[1] = "depth";
         this.addRow(data);
-        nonEditRows.add(new Integer(16));
+        nonEditRows.add(new Integer(row));
         
-        /*row 17*/
+        row++;
         data[0] = "RESOURCE_LIMITS";
         data[1] = "max_samples";
         this.addRow(data);
-        nonEditRows.add(new Integer(17));
+        nonEditRows.add(new Integer(row));
         
-        /*row 18*/
+        row++;
         data[1] = "max_instances";
         this.addRow(data);
-        nonEditRows.add(new Integer(18));
+        nonEditRows.add(new Integer(row));
         
-        /*row 19*/
+        row++;
         data[1] = "max_samples_per_instance";
         this.addRow(data);
-        nonEditRows.add(new Integer(19));
+        nonEditRows.add(new Integer(row));
         
-        /*row 20*/
+        row++;
         data[0] = "TRANSPORT_PRIORITY";
         data[1] = "value";
         this.addRow(data);
         
-        /*row 21*/
+        row++;
         data[0] = "LIFESPAN";
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 22*/
+        row++;
         data[0] = "OWNERSHIP";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(22));
+        nonEditRows.add(new Integer(row));
     }
 
     public boolean update() {
@@ -245,7 +251,9 @@ public class TopicQoSTableModel extends EntityQoSTableModel{
             if(rlp != null){
                 this.setValueAt(rlp.kind, row++, 2);
                 this.setValueAt(rlp.max_blocking_time, row++, 2);
+                this.setValueAt(rlp.synchronous, row++, 2);
             } else {
+                this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
             }

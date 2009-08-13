@@ -86,4 +86,6 @@ public interface DomainParticipantFactoryOperations
   
   int set_qos (DDS.DomainParticipantFactoryQos qos);
   int get_qos (DDS.DomainParticipantFactoryQosHolder qos);
+
+  DDS.Domain lookup_domain (String domain_id);
 } // interface DomainParticipantFactoryOperations

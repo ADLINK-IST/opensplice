@@ -60,6 +60,7 @@ extern "C" {
 
 #define v_reliabilityPolicyEqual(p1,p2)\
     ((p1.kind == p2.kind) &&\
+     (p1.synchronous == p2.synchronous) && \
      ((p1.kind == V_RELIABILITY_BESTEFFORT) ||\
       (c_timeCompare(p1.max_blocking_time,p2.max_blocking_time) == C_EQ)))
 

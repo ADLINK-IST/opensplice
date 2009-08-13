@@ -12,9 +12,12 @@
 
 package DDS;
 
-
-public interface TopicListenerOperations  extends DDS.ListenerOperations
+public final class DomainHolder 
 {
-  void on_inconsistent_topic (DDS.Topic the_topic, DDS.InconsistentTopicStatus status);
-  void on_all_data_disposed (DDS.Topic the_topic);
-} // interface TopicListenerOperations
+  public DDS.Domain value = null;
+
+  public DomainHolder ()
+  {
+  }
+
+}

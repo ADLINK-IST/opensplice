@@ -51,6 +51,10 @@ namespace DDS
             const char * domainId
         ) THROW_ORB_EXCEPTIONS;
 
+        virtual ::DDS::Domain_ptr lookup_domain (
+            const char * domainId
+        ) THROW_ORB_EXCEPTIONS;
+
 
         virtual ::DDS::ReturnCode_t set_qos (
           const ::DDS::DomainParticipantFactoryQos & qos
