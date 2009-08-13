@@ -218,6 +218,10 @@ module DDS {
 	on_inconsistent_topic(
 	    in Topic the_topic,
 	    in InconsistentTopicStatus status);
+
+	void
+	on_all_data_disposed(
+	    in Topic the_topic);
     };
 
     local interface DataWriterListener : Listener {
@@ -483,6 +487,13 @@ module DDS {
 
         InstanceHandle_t
         get_instance_handle();
+
+	string
+	get_name();
+
+	ReturnCode_t
+	set_name(in string name);
+
     };
 
     // ----------------------------------------------------------------------
@@ -646,6 +657,14 @@ module DDS {
             inout Time_t current_time);
     };
 
+    local interface Domain {
+        ReturnCode_t
+        create_persistent_snapshot(
+            in string partition_expression,
+            in string topic_expression,
+            in string URI);
+    };
+
     local interface DomainParticipantFactoryInterface {
 	DomainParticipant
 	create_participant(
@@ -677,6 +696,11 @@ module DDS {
 	ReturnCode_t
 	get_default_participant_qos(
 	    inout DomainParticipantQos qos);
+
+        Domain
+        lookup_domain(
+            in DomainId_t domain_id);
+
     };
 
     local interface TypeSupport {
@@ -703,18 +727,18 @@ module DDS {
 
 
     // ----------------------------------------------------------------------
-    local interface TopicDescription {
+    local interface TopicDescription : Entity {
 	string
 	get_type_name();
 
-	string
-	get_name();
+//	string
+//	get_name();
 
 	DomainParticipant
 	get_participant();
     };
 
-    local interface Topic : Entity, TopicDescription {
+    local interface Topic : TopicDescription {
 
 	ReturnCode_t 
 	get_inconsistent_topic_status(
@@ -731,6 +755,9 @@ module DDS {
 
 	ReturnCode_t
 	set_listener(in TopicListener a_listener, in StatusMask mask);
+
+        ReturnCode_t
+        dispose_all_data();
     };
 
     local interface ContentFilteredTopic : TopicDescription {

@@ -112,7 +112,6 @@ public class Config {
         configFile = new File(homeDir + separator + ".ospl_tooling.properties");
         config = new Properties();
         
-        
         if(!(configFile.exists())){
             try {
                 configFile.createNewFile();

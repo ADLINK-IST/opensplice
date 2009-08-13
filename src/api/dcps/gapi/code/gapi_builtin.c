@@ -57,7 +57,8 @@ const gapi_dataReaderQos  _builtinDataReaderQos = {
     /* gapi_reliabilityQosPolicy reliability */
     {
         GAPI_RELIABLE_RELIABILITY_QOS,  /* gapi_reliabilityQosPolicyKind kind */
-        GAPI_DURATION_INFINITE          /* gapi_duration_t max_blocking_time */
+        GAPI_DURATION_INFINITE,         /* gapi_duration_t max_blocking_time */
+        FALSE                           /* gapi_boolean synchronous */
     },
     /* gapi_destinationOrderQosPolicy destination_order */
     {
@@ -876,6 +877,8 @@ userDataQosPolicyCopyin (
             ((gapi_reliabilityQosPolicy *)src)->kind; \
             kernelCopyInDuration(&((gapi_reliabilityQosPolicy *)src)->max_blocking_time, \
                                  &((struct v_reliabilityPolicy *)dst)->max_blocking_time); \
+            ((struct v_reliabilityPolicy *)dst)->synchronous = \
+            ((gapi_reliabilityQosPolicy *)src)->synchronous; \
         }
 
 #define reliabilityQosPolicyCopyout(src,dst) \
@@ -884,6 +887,8 @@ userDataQosPolicyCopyin (
             ((struct v_reliabilityPolicy *)src)->kind; \
             kernelCopyOutDuration(&((struct v_reliabilityPolicy *)src)->max_blocking_time, \
                                  &((gapi_reliabilityQosPolicy *)dst)->max_blocking_time); \
+            ((gapi_reliabilityQosPolicy *)dst)->synchronous = \
+            ((struct v_reliabilityPolicy *)src)->synchronous; \
         }
 
 #define historyQosPolicyCopyin(src,dst) \

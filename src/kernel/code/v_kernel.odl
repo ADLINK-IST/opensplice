@@ -776,6 +776,7 @@ struct v_livelinessPolicy {
 struct v_reliabilityPolicy {
     v_reliabilityKind                 kind;
     v_duration                        max_blocking_time;
+    c_bool                            synchronous;
 };
 
 struct v_historyPolicy {

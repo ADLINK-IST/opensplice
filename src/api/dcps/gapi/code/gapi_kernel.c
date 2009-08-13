@@ -533,6 +533,7 @@ gapi_kernelReaderQosCopyIn (
         dstQos->reliability.kind = srcQos->reliability.kind;
         kernelCopyInDuration(&srcQos->reliability.max_blocking_time,
                              &dstQos->reliability.max_blocking_time);
+        dstQos->reliability.synchronous = srcQos->reliability.synchronous;
         dstQos->orderby.kind = srcQos->destination_order.kind;
         dstQos->history.kind = srcQos->history.kind;
         dstQos->history.depth = srcQos->history.depth;
@@ -614,6 +615,7 @@ gapi_kernelReaderQosCopyOut (
         kernelCopyOutDuration(&srcQos->liveliness.lease_duration, &dstQos->liveliness.lease_duration);
         dstQos->reliability.kind = srcQos->reliability.kind;
         kernelCopyOutDuration(&srcQos->reliability.max_blocking_time, &dstQos->reliability.max_blocking_time);
+        dstQos->reliability.synchronous = srcQos->reliability.synchronous;
         dstQos->destination_order.kind = srcQos->orderby.kind;
         dstQos->history.kind  = srcQos->history.kind;
         dstQos->history.depth = srcQos->history.depth;

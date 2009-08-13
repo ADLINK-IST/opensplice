@@ -699,9 +699,16 @@ typedef void (*gapi_listener_InconsistentTopicListener)
     const gapi_inconsistentTopicStatus *status
     );
 
+typedef void (*gapi_listener_AllDataDisposedListener)
+    (
+    void *listener_data,
+    gapi_topic topic
+    );
+
 struct gapi_topicListener {
     void *listener_data;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
+    gapi_listener_AllDataDisposedListener on_all_data_disposed;
 };
 OS_API struct gapi_topicListener *
 gapi_topicListener__alloc (void);
@@ -1579,6 +1586,7 @@ typedef enum
 typedef C_STRUCT(gapi_reliabilityQosPolicy) {
     gapi_reliabilityQosPolicyKind kind;
     gapi_duration_t max_blocking_time;
+    gapi_boolean synchronous;
 } gapi_reliabilityQosPolicy;
 
 /* enum DestinationOrderQosPolicyKind {
@@ -2254,6 +2262,23 @@ OS_API gapi_instanceHandle_t
 gapi_entity_get_instance_handle (
     gapi_entity _this);
 
+/*
+ *     String
+ *     gapi_entity_get_name();
+ */
+OS_API gapi_string
+gapi_entity_get_name (
+    gapi_entity _this);
+
+/*
+ *     ReturnCode_t
+ *     gapi_entity_set_name();
+ */
+OS_API gapi_returnCode_t
+gapi_entity_set_name (
+    gapi_entity _this,
+    gapi_string name);
+
 OS_API void
 gapi_object_set_user_data (
     gapi_object _this,
@@ -2698,6 +2723,18 @@ gapi_domainParticipant_lookup_typesupport (
     const gapi_char *type_name);
 
 /*
+ * interface Domain {
+ */
+typedef gapi_object gapi_domain;
+
+OS_API gapi_returnCode_t
+gapi_domain_create_persistent_snapshot (
+    gapi_domain _this,
+    const gapi_char * partition_expression,
+    const gapi_char * topic_expression,
+    const gapi_char * URI);
+
+/*
  * interface DomainParticipantFactory {
  */
 typedef gapi_object gapi_domainParticipantFactory;
@@ -2801,6 +2838,15 @@ OS_API gapi_returnCode_t
 gapi_domainParticipantFactory_get_default_participant_qos (
     gapi_domainParticipantFactory _this,
     gapi_domainParticipantQos *qos);
+
+/*     Domain
+ *     lookup_domain(
+ *         in DomainId domain_id);
+ */
+OS_API gapi_domain
+gapi_domainParticipantFactory_lookup_domain (
+    gapi_domainParticipantFactory _this,
+    gapi_domainId_t domain_id);
 
 /*
  * interface TypeSupport
@@ -2992,6 +3038,13 @@ OS_API gapi_returnCode_t
 gapi_topic_get_qos (
     gapi_topic _this,
     gapi_topicQos *qos);
+
+/*     DDS_ReturnCode_t
+ *     dispose_all_data();
+ */
+OS_API gapi_returnCode_t
+gapi_topic_dispose_all_data (
+    gapi_topic _this);
 
 /*
  * interface ContentFilteredTopic : TopicDescription
