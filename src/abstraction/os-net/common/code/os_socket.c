@@ -63,7 +63,11 @@ os_sockRecvfrom(
     struct sockaddr *from,
     os_uint32 *fromlen)
 {
-    return recvfrom(s, buf, len, 0, from, (socklen_t*) fromlen);
+   int res;
+   socklen_t fl = *fromlen;;
+   res = recvfrom(s, buf, len, 0, from, &fl);
+   *fromlen=fl;
+   return res;
 }
 
 os_result
@@ -74,12 +78,11 @@ os_sockGetsockopt(
     void *optval,
     os_uint32 *optlen)
 {
-    os_result result = os_resultSuccess;
-
-    if (getsockopt(s, level, optname, optval, (socklen_t*) optlen) == -1) {
-        result = os_resultFail;
-    }
-    return result;
+    int res;
+    socklen_t ol = *optlen;
+    res = getsockopt(s, level, optname, optval, &ol);
+    *optlen = ol;
+    return ( res == -1 ? os_resultFail : os_resultSuccess );
 }
 
 os_result
