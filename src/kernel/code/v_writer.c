@@ -619,8 +619,16 @@ instanceCheckResources(
     if (v_messageQos_isReliable(message->qos)) {
         writer = v_writerInstanceWriter(_this);
         if (writer->qos->history.kind == V_HISTORY_KEEPALL) {
+            c_ulong blocked = 0;  /* Used for statistics */
+
             while ((_this->messageCount >= writer->depth) &&
                    (result == V_WRITE_SUCCESS)) {
+                blocked++;
+                if(blocked == 1){ /* We only count a blocked write once */
+                    v_statisticsULongValueInc(v_writer,
+                            numberOfWritesBlockedBySamplesPerInstanceLimit,
+                            writer);
+                }
                 result = doWait(writer,until);
             }
         }
@@ -754,6 +762,9 @@ writerDispose(
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
+            if(result == V_WRITE_TIMEOUT){
+                v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
+            }
             v_observerUnlock(v_observer(w));
             return result;
         }
@@ -776,11 +787,12 @@ writerDispose(
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
                 assert(c_refCount(instance) == 3);
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfImplicitRegisters, w);
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfAliveInstances, w);
                 implicit = TRUE;
+                v_statisticsULongValueInc(v_writer, numberOfImplicitRegisters, w);
+                /* The writer statistics are updated for the newly inserted
+                 * instance (with its initial values). The previous state
+                 * was nothing, so 0 is passed as the oldState. */
+                UPDATE_WRITER_STATISTICS(w, instance, 0);
             } else {
                 found = c_remove(w->instances,instance,NULL,NULL);
                 assert(found == instance);
@@ -812,13 +824,15 @@ writerDispose(
     }
 
     if (result == V_WRITE_SUCCESS) {
+        v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
         deadlineUpdate(w, instance);
         v_stateSet(instance->state, L_DISPOSED);
-        v_statisticsULongValueInc(v_writer, numberOfDisposedInstances, w);
-        v_statisticsULongValueDec(v_writer, numberOfAliveInstances, w);
         result = writerWrite(instance,message,implicit);
+        UPDATE_WRITER_STATISTICS(w, instance, oldState);
+    } else if(result == V_WRITE_TIMEOUT){
+        v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
     }
     return result;
 }
@@ -910,7 +924,7 @@ writerUnregister(
         }
     }
 
-    /* In case of lifecycle.autodispose_unregistered_instances idealy
+    /* In case of lifecycle.autodispose_unregistered_instances ideally
      * one combined message for unregister and dispose should be sent.
      * But because the current readers cannot handle combined messages
      * for now separate messages are sent. also see scdds63.
@@ -925,6 +939,7 @@ writerUnregister(
         }
     }
     if (result == V_WRITE_SUCCESS) {
+        v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
 
@@ -932,22 +947,23 @@ writerUnregister(
             result = writerWrite(instance,message,FALSE);
             if (v_writerInstanceTestState(instance, L_EMPTY)) {
                 found = c_remove(w->instances,instance,NULL,NULL);
+                /* Instance is removed from writer, so also subtract related
+                 * statistics. */
+                UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(w, instance);
                 assert(found == instance);
                 v_cacheDeinit(v_cache(instance->groupInstanceCache));
                 v_publicFree(v_public(instance));
                 c_free(found);
             } else {
                 v_writerInstanceUnregister(instance);
+                UPDATE_WRITER_STATISTICS(w, instance, oldState);
             }
         } else {
-            v_statisticsULongValueInc(v_writer,
-                                      numberOfUnregisteredInstances, w);
-            v_statisticsULongValueDec(v_writer,
-                                      numberOfAliveInstances, w);
             sample = v_writerSampleNew(w,message);
             v_writerSampleResend(sample);
             keepSample(w,instance,sample);
             v_writerInstanceUnregister(instance);
+            UPDATE_WRITER_STATISTICS(w, instance, oldState);
         }
     }
 
@@ -1747,6 +1763,11 @@ v_writerRegister(
     assert(c_refCount(instance) == 1);
     found = c_tableInsert(w->instances,instance);
     if (found != instance) {
+        v_state oldState = found->state;
+        /* The existing instance may be unregistered, so clear the flag */
+        v_stateClear(found->state, L_UNREGISTER);
+        UPDATE_WRITER_STATISTICS(w, found, oldState);
+
         assert(c_refCount(instance) == 1);
         result = V_WRITE_SUCCESS;
     } else {
@@ -1761,13 +1782,16 @@ v_writerRegister(
             result = doWait(w,until);
         }
         if (result == V_WRITE_SUCCESS) {
-            v_statisticsULongValueInc(v_writer, numberOfAliveInstances, w);
             v_publicInit(v_public(instance));
             deadlineUpdate(w, instance);
             message->writerInstanceGID = v_publicGid(v_public(instance));
             message->sequenceNumber = w->sequenceNumber++;
 
             result = writerWrite(instance,message,TRUE);
+            /* The writer statistics are updated for the newly inserted
+            * instance (with its initial values). The previous state
+            * was nothing, so 0 is passed as the oldState. */
+            UPDATE_WRITER_STATISTICS(w, instance, 0);
         } else {
             found = c_remove(w->instances, instance, NULL, NULL);
             assert(found == instance);
@@ -1837,6 +1861,7 @@ v_writerWrite(
     v_writerQos qos;
     c_time until;
     c_bool implicit = FALSE;
+    c_ulong blocked; /* Used for statistics */
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
 
@@ -1867,10 +1892,18 @@ v_writerWrite(
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
 
+    blocked = 0;
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
+        blocked++;
+        if(blocked == 1){ /* We only count a blocked write once */
+            v_statisticsULongValueInc(v_writer, numberOfWritesBlockedBySamplesLimit, w);
+        }
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
+            if(result == V_WRITE_TIMEOUT){
+                v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
+            }
             v_observerUnlock(v_observer(w));
             return result;
         }
@@ -1886,19 +1919,25 @@ v_writerWrite(
             result = instanceCheckResources(found,message,until);
         } else {
             assert(c_refCount(instance) == 2);
+            blocked = 0;
             while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_tableCount(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
+                blocked++;
+                if(blocked == 1){ /* We only count a blocked write once */
+                    v_statisticsULongValueInc(v_writer, numberOfWritesBlockedByInstanceLimit, w);
+                }
                 result = doWait(w,until);
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
                 assert(c_refCount(instance) == 3);
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfImplicitRegisters, w);
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfAliveInstances, w);
                 implicit = TRUE;
+                v_statisticsULongValueInc(v_writer, numberOfImplicitRegisters, w);
+                /* The writer statistics are updated for the newly inserted
+                * instance (with its initial values). The previous state
+                * was nothing, so 0 is passed as the oldState. */
+                UPDATE_WRITER_STATISTICS(w, instance, 0);
             } else {
                 found = c_remove(w->instances,instance,NULL,NULL);
                 assert(found == instance);
@@ -1932,15 +1971,15 @@ v_writerWrite(
     V_MESSAGE_STAMP(message,writerLookupTime);
 
     if (result == V_WRITE_SUCCESS) {
+        v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
         result = writerWrite(instance,message,implicit);
-        if (v_stateTest(instance->state, L_DISPOSED)) {
-            v_stateClear(instance->state, L_DISPOSED);
-            v_statisticsULongValueInc(v_writer, numberOfAliveInstances, w);
-            v_statisticsULongValueDec(v_writer, numberOfDisposedInstances, w);
-        }
+        v_stateClear(instance->state, L_DISPOSED);
         deadlineUpdate(w, instance);
+        UPDATE_WRITER_STATISTICS(w, instance, oldState);
+    } else if (result == V_WRITE_TIMEOUT){
+        v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
     }
 
     livKind = qos->liveliness.kind;
@@ -2041,11 +2080,13 @@ v_writerWriteDispose(
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfImplicitRegisters, w);
-                v_statisticsULongValueInc(v_writer,
-                                          numberOfAliveInstances, w);
+                assert(c_refCount(instance) == 3);
                 implicit = TRUE;
+                v_statisticsULongValueInc(v_writer, numberOfImplicitRegisters, w);
+                /* The writer statistics are updated for the newly inserted
+                * instance (with its initial values). The previous state
+                * was nothing, so 0 is passed as the oldState. */
+                UPDATE_WRITER_STATISTICS(w, instance, 0);
             } else {
                 found = c_remove(w->instances,instance,NULL,NULL);
                 assert(found == instance);
@@ -2076,13 +2117,13 @@ v_writerWriteDispose(
     }
 
     if (result == V_WRITE_SUCCESS) {
+        v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
         deadlineUpdate(w, instance);
         v_stateSet(instance->state, L_DISPOSED);
-        v_statisticsULongValueInc(v_writer, numberOfDisposedInstances, w);
-        v_statisticsULongValueDec(v_writer, numberOfAliveInstances, w);
         result = writerWrite(instance,message,implicit);
+        UPDATE_WRITER_STATISTICS(w, instance, oldState);
     }
 
     livKind = qos->liveliness.kind;
@@ -2244,17 +2285,11 @@ v_writerResend(
         assert(found == instance);
         c_free(found);
         if (v_writerInstanceIsUnregistered(instance)) {
-            v_statisticsULongValueDec(v_writer,
-                                      numberOfAliveInstances,
-                                      writer);
-            v_statisticsULongValueInc(v_writer,
-                                      numberOfUnregisteredInstances,
-                                      writer);
             found = c_remove(writer->instances,instance,NULL,NULL);
             assert(found == instance);
+            UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(writer, instance);
             c_free(found);
             v_publicFree(v_public(instance));
-            v_writerInstanceFree(instance);
         }
         /*NK: Always free because it has been kept in the emptyList iterator!*/
         v_writerInstanceFree(instance);

@@ -502,6 +502,7 @@ serializeSubscriptionData(
             0x00, 0x00, 0x00, 0x01,
             0x00, 0x00, 0x70 ,0x04 ,
             0x01, 0x00, 0x00 ,0x00};
+        IN_TRACE_1(Send, 2, "serializeSubscriptionData - ################################################################### %d", sizeof(larData));
 
         nofOctets = appendOctets(&(_this->serializer), larData, sizeof(larData));
         IN_BREAK_IF(nofOctets<0);
@@ -775,10 +776,19 @@ static os_size_t
 calculatePayloadSize(v_message message)
 {
     /* TODO ask the serializer to calculate the size */
-    os_size_t realSize = 1300;
+
+	/*Note: Here the effective length of serialized payload should be calculated,
+	 * but so far we assume that users message will not exceed 800 bytes, and that the
+	 * sendbuffer is large enough to hold these 800 plus the required space for headers
+	 * and inline Qos.
+	 * Plan is to implement a one-pass serialization strategy in future, so that this operation
+	 * will become obsolete.
+	 *  */
+	os_size_t realSize = 800;
     os_size_t result;
 
-    /* finally round up the value to match alignment constraints */
+    /* finally round up the value to match alignment constraints (just in
+     * case realSize is not multiple of 4) */
     result = IN_ALIGN_UINT_CEIL(
             realSize,
             IN_DDSI_SUBMESSAGE_HEADER_ALIGNMENT);
@@ -861,6 +871,7 @@ sendCurrentBufferToMultiple(
             in_locator destLocator = Coll_Iter_getObject(iter);
 
             assert(destLocator!=NULL);
+            IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer, cos i can %p", _this->transportSender);
             osResult = in_transportSenderSendTo(
                     _this->transportSender,
                     destLocator,
@@ -870,6 +881,7 @@ sendCurrentBufferToMultiple(
                     &(_this->timeout));
             if(osResult == os_resultFail)
             {
+                IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer went oopsie %p", _this->transportSender);
                 result = IN_RESULT_ERROR;
             }
             iter = Coll_Iter_getNext(iter);
@@ -892,7 +904,7 @@ in_ddsiStreamWriterImplAppendData(
 	struct v_publicationInfo * info;
     const os_size_t sentinelSize = 0U;
 	in_ddsiGuid guid;
-	os_boolean keyHashAdded;
+	os_boolean keyHashAdded = OS_FALSE; /* must be initialized as FALSE */
 	os_size_t serializedPayloadSize, inlineQosSize, timestampSubmessageLength;
 	os_size_t dataSubmessageLength, totalLength;
 	in_result result = IN_RESULT_OK;
@@ -936,10 +948,12 @@ in_ddsiStreamWriterImplAppendData(
 		/* now we should turn to fragmentation, but
 		 * this is not implemented yet */
 	    result = IN_RESULT_ERROR;
+        IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - uh oh %p", facade);
 	} else {
         in_result  retState;
 
         do {
+            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling serializeData %p", facade);
 
             retState = serializeData(
                 _this,
@@ -954,8 +968,10 @@ in_ddsiStreamWriterImplAppendData(
             /*IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling appendSentinelSubmessage %p", facade);
             retState = appendSentinelSubmessage(_this);
             IN_BREAK_IF(retState!=IN_RESULT_OK);*/
+            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - calling sendCurrentBufferToMultiple %p", facade);
             retState = sendCurrentBufferToMultiple(_this, locatorList);
             IN_BREAK_IF(retState!=IN_RESULT_OK);
+            IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - done %p", facade);
             /* all succeeded */
             result = IN_RESULT_OK;
         } while(0);
@@ -1704,7 +1720,9 @@ in_ddsiStreamWriterImplGetBuffer(
 
     *length = 0;
     *bufferPtr = NULL;
-    assert(!"never reached");
+    OS_REPORT(OS_ERROR, "ddsi", 0,
+		"Message doesn't fit in one fragment, but fragmentation has not been implemented yet.");
+    assert(!"Fragmentation is not implemented yet");
 }
 
 static void

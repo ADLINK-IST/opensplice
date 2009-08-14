@@ -16,7 +16,7 @@
 #include "os_stdlib.h"
 
 #define MAX_PUSHBACK 8192
-#define MAXFILES 20
+#define MAXFILES 100
 
 #define CPP_FILESEPCHAR_DEF OS_FILESEPCHAR
 #define CPP_FILESEPCHAR_1   '/'
