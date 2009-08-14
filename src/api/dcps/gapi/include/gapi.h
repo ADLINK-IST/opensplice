@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_H
@@ -6473,6 +6473,81 @@ gapi_errorInfo_get_message(
 OS_API gapi_errorInfo
 gapi_errorInfo__alloc (
     void);
+
+/*
+ *  GAPI MetaData Interface definitions.
+ */
+
+#define GAPI_SUBCLASS(parent,child) typedef parent child
+
+/* Definition of gapi_baseObject. */
+typedef void *gapi_baseObject;
+
+/* Children for gapi_baseObject. */
+GAPI_SUBCLASS(gapi_baseObject, gapi_specifier);
+GAPI_SUBCLASS(gapi_baseObject, gapi_metaObject);
+
+/* Children for gapi_specifier. */
+GAPI_SUBCLASS(gapi_specifier, gapi_member);
+GAPI_SUBCLASS(gapi_specifier, gapi_unionCase);
+
+/* Children for gapi_metaObject. */
+GAPI_SUBCLASS(gapi_metaObject, gapi_type);
+GAPI_SUBCLASS(gapi_metaObject, gapi_property);
+
+/* Children for gapi_type. */
+GAPI_SUBCLASS(gapi_type, gapi_enumeration);
+GAPI_SUBCLASS(gapi_type, gapi_primitive);
+GAPI_SUBCLASS(gapi_type, gapi_collectionType);
+GAPI_SUBCLASS(gapi_type, gapi_structure);
+GAPI_SUBCLASS(gapi_type, gapi_union);
+
+
+OS_API c_metaKind
+gapi_metaData_baseObjectKind(gapi_baseObject objBase);
+
+OS_API gapi_type
+gapi_metaData_specifierType(gapi_specifier specBase);
+
+OS_API const gapi_char *
+gapi_metaData_specifierName(gapi_specifier specBase);
+
+OS_API gapi_long
+gapi_metaData_enumerationCount(gapi_enumeration enumBase);
+
+OS_API c_primKind
+gapi_metaData_primitiveKind(gapi_primitive primBase);
+
+OS_API c_collKind
+gapi_metaData_collectionTypeKind(gapi_collectionType collBase);
+
+OS_API gapi_long
+gapi_metaData_collectionTypeMaxSize(gapi_collectionType collBase);
+
+OS_API gapi_type
+gapi_metaData_collectionTypeSubType(gapi_collectionType collBase);
+
+OS_API gapi_long
+gapi_metaData_structureMemberCount(gapi_structure structBase);
+
+OS_API gapi_member
+gapi_metaData_structureMember(gapi_structure structBase, c_long index);
+
+OS_API gapi_type
+gapi_metaData_memberType(gapi_member memberBase);
+
+OS_API gapi_unsigned_long
+gapi_metaData_memberOffset(gapi_member memberBase);
+
+OS_API gapi_long
+gapi_metaData_unionUnionCaseCount(gapi_union unionBase);
+
+OS_API gapi_unionCase
+gapi_metaData_unionUnionCase(gapi_union unionBase, c_long index);
+
+OS_API gapi_type
+gapi_metaData_unionCaseType(gapi_unionCase caseBase);
+
 
 #undef OS_API
 

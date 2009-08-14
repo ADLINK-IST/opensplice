@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_METABASE_H
@@ -198,7 +198,7 @@ C_STRUCT(c_metaObject) {
 
 C_STRUCT(c_property) {
     C_EXTENDS(c_metaObject);
-    c_address offset;      /* implementation memory mapping */
+    c_ulong offset;      /* implementation memory mapping */
     c_type type;
 };
 
@@ -317,7 +317,7 @@ C_STRUCT(c_union) {
     C_EXTENDS(c_type);
     c_array cases;      /* c_unionCase */
     c_array references; /* optimization */
-    c_scope scope;      
+    c_scope scope;
     c_type switchType;
 };
 
@@ -325,7 +325,7 @@ C_STRUCT(c_structure) {
     C_EXTENDS(c_type);
     c_array members;    /* c_member */
     c_array references; /* optimization */
-    c_scope scope;      
+    c_scope scope;
 };
 
 C_STRUCT(c_exception) {
@@ -408,17 +408,17 @@ OS_API c_object
 c_metaDefine(
     c_metaObject scope,
     c_metaKind kind);
-    
+
 OS_API c_metaObject
 c_metaDeclare(
     c_metaObject scope,
     const c_char *name,
     c_metaKind kind);
-    
+
 OS_API c_result
 c_metaFinalize(
     c_metaObject object);
-    
+
 OS_API c_metaObject
 c_metaBind(
     c_metaObject scope,
@@ -429,50 +429,50 @@ OS_API c_metaObject
 c_metaResolve(
     c_metaObject scope,
     const c_char *name);
-    
+
 OS_API c_metaObject
 c_metaResolveType(
     c_metaObject scope,
     const c_char *name);
-    
+
 OS_API c_metaObject
 c_metaResolveSpecifier(
     c_metaObject scope,
     const c_char *name);
-    
+
 OS_API c_baseObject
 c_metaFindByName(
     c_metaObject scope,
-    const char *name, 
+    const char *name,
     c_long metaFilter);
-    
+
 OS_API void
 c_metaWalk(
     c_metaObject scope,
     c_metaWalkAction action,
     c_metaWalkActionArg arg);
-    
+
 OS_API c_metaObject
 c_metaModule(
     c_metaObject object);
-    
+
 OS_API c_string
 c_metaName(
     c_metaObject object);
-    
+
 OS_API c_long
 c_metaNameLength(
     c_metaObject object);
-    
+
 OS_API c_char *
 c_metaScopedName(
     c_metaObject object); /* mallocs heap memeory */
-    
+
 OS_API c_metaEquality
 c_metaCompare(
     c_metaObject object,
     c_metaObject o);
-    
+
 OS_API c_valueKind
 c_metaValueKind(
     c_metaObject object);
@@ -484,7 +484,7 @@ OS_API c_literal
 c_enumValue(
     c_enumeration e,
     const c_char *label);
-    
+
 OS_API c_literal
 c_operandValue(
     c_operand operand);
@@ -492,7 +492,7 @@ c_operandValue(
 OS_API c_bool
 c_typeIsRef(
     c_type type);
-    
+
 OS_API c_bool
 c_typeHasRef(
     c_type type);
@@ -510,6 +510,9 @@ c_typeActualType(
 
 #define c_specifierType(_this) \
         c_type(c_specifier(_this)->type)
+
+#define c_specifierName(_this) \
+        c_specifier(_this)->name
 
 #define c_enumerationCount(_this) \
         c_arraySize(c_enumeration(_this)->elements)
@@ -537,6 +540,9 @@ c_typeActualType(
 
 #define c_memberType(_this) \
         c_specifierType(_this)
+
+#define c_memberOffset(_this) \
+        c_member(_this)->offset
 
 #define c_unionUnionCaseCount(_this) \
         c_arraySize(c_union(_this)->cases)
