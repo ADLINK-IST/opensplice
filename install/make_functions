@@ -76,12 +76,12 @@ install_ascii_file()
     install_ascii_file_target_dir="$2"
     install_ascii_file_target_file="$3"
     install_ascii_file_source_file_may_not_exist="$4"
-
+    
     if [ "aap${install_ascii_file_target_file}" = "aap" ]
     then
         install_ascii_file_target_file=`basename ${install_ascii_file_source_file}`
     fi
-
+    
     if [ "$install_ascii_file_source_file_may_not_exist" != "nocheck" ]
     then
         if [ -d ${install_ascii_file_target_dir} ]
@@ -117,7 +117,7 @@ install_ascii_fileset()
 {
     install_ascii_fileset=$1
     install_ascii_fileset_target_dir=$2
-
+    
     printf "*                 copy ${install_ascii_fileset} ... "
     cp $install_ascii_fileset $install_ascii_fileset_target_dir
     if [ -n ${TXTFILE_CONVERTER} ]
@@ -203,14 +203,14 @@ installer_setup ()
     SCRIPT_NAME="$5"
     SOURCE_ENV="$6"
     GETLIC_INFO_NAME="$7"
-
+    
     if [ "${SOURCE_ENV}" = "-release" ]
     then
         TARGET_ENV="";
     else
         TARGET_ENV=${SOURCE_ENV}
     fi
-
+    
     #determine if licensing is enabled
     if [ -z "${FLEX_HOME}" ]
     then
@@ -218,12 +218,12 @@ installer_setup ()
     else
         WITHLICENSE=true;
     fi
-
+    
     echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
-
+    
     echo Release is ${PACKAGE_VERSION}
     echo Date is ${PACKAGE_DATE}
-
+    
     #set output directory, currently no parameter
     OUTPUTDIR="$OSPL_HOME/install/VC"
     mkdir -p $OUTPUTDIR
@@ -237,26 +237,26 @@ set_envs ()
     else
         NOINSTALLER=""
     fi
-
+    
     ENV=`expr "${SPLICE_TARGET}" : '[^-]*\(.*\)'`
-
+    
     SOURCE_HOST=`expr "${SPLICE_HOST}" : '\([^-]*\)'`
     SOURCE_HOST_SHORT=`expr "${SPLICE_HOST}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
     SOURCE_TARGET=`expr "${SPLICE_TARGET}" : '\([^-]*\)'`
     SOURCE_TARGET_SHORT=`expr "${SPLICE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
-
+    
     BUILDER_TARGET=""
     SCRIPT_NAME=""
     TXTFILE_CONVERTER=""
     GETLIC_INFO_NAME=""
-
+    
     if [ "${SOURCE_HOST_SHORT}" = "linux" ]
     then
         BUILDER_TARGET="linux"
         SCRIPT_NAME="release.com"
         GETLIC_INFO_NAME="getlic_info"
     fi
-
+            
     if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
         (cd ${OSPL_HOME}/install/service_installer; make)
@@ -281,18 +281,18 @@ set_rts_envs ()
             suffix_exe=".vxe"
             ;;
     esac
-
+    
     target_version=$2
     target_date=$3
-
+    
     if [ "x_$4" = "x_" ]; then
         source_env="-release"
     else
         source_env=$4
     fi
-
+    
     TXTFILE_CONVERTER="$5"
-
+    
     if [ "x_${source_env}" = "x_-release" ]; then
         target_env="";
     else
@@ -323,20 +323,20 @@ set_hde_envs ()
     host=$2
     target_version=$3
     target_date=$4
-
-
+    
+    
     if [ "x_$5" = "x_" ]; then
         source_env="-release"
     else
         source_env=$5
     fi
-
+    
     if [ "x_$5" = "x_-release" ]; then
         target_env="";
     else
         target_env=$5;
     fi
-
+    
     TXTFILE_CONVERTER="$6"
     SOURCE_TARGET_SHORT="$7"
 
@@ -363,14 +363,14 @@ set_hde_envs ()
 	PLATFORM_EXT=unix64
     elif [ "${target}" = "PPC5plus.AIX5.3" ]
     then
-        PLATFORM_EXT=xlc
+        PLATFORM_EXT=xlc	
     fi
 }
 
 remove_hde_mirror ()
 {
     #
-    # Remove old HDE first
+    # Remove old HDE first 
     #
     if [ -d ${HDE_dir} ]
     then
@@ -384,7 +384,7 @@ remove_hde_mirror ()
 create_hde_mirror ()
 {
     #
-    # Prepare HDE master directory
+    # Prepare HDE master directory 
     #
     printf "*   Prepare HDE master directory ... "
     mkdir -p ${HDE_dir}; echo "Ready"
@@ -399,7 +399,7 @@ remove_rts_mirror ()
     then
         printf "*   Remove old RTS/$target directory ... "
         chmod -R 777 ${RTS_dir} 2> /dev/null
-        rm -rf ${RTS_dir};
+        rm -rf ${RTS_dir}; 
         echo "Ready"
     fi
 }
@@ -538,7 +538,7 @@ install_hde_target ()
         echo "* ##    No target library files detected"
     fi
     echo "Ready"
-
+	
     if [ "${target_os}" != "${host_os}" ]
     then
         printf "*         For host ... "
@@ -585,25 +585,6 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
-
-    #
-    # Copy script files
-    #
-    echo "*     Copy script files"
-    release=${OSPL_HOME}/install/bin
-    if [ -d "${release}" ]
-    then
-        mkdir -p ${HDE_dir}/bin
-        install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
-    else
-        echo "* ##    No script files detected"
-    fi
-    echo "*     Script files Ready"
-
-    if [ "${INCLUDE_TOOLS_TUNER}" = "yes" ]
-        then
-
-        fi
 
     #
     # Copy executable files
@@ -799,7 +780,7 @@ install_hde_target ()
         install_ascii_fileset "${release}/idl/*.idl" "${HDE_dir}/custom_lib/ccpp"
 
         if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
-        then
+        then 
             install_ascii_file "${release}/custom/makefile_$PLATFORM_EXT" \
                 "${HDE_dir}/custom_lib/ccpp" "makefile"
         fi
@@ -869,10 +850,10 @@ install_hde_target ()
                 install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/*.cpp" \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 if [ -f ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT ]
-                then
+                then            
                      install_ascii_file ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/makefile_$PLATFORM_EXT \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong Makefile
-                fi
+                fi 
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/RUN \
                     ${HDE_dir}/examples/dcps/CORBA/C++/OpenFusion/PingPong
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/CCPP/OpenFusion/README.txt \
@@ -948,7 +929,7 @@ install_hde_target ()
         mkdir ${HDE_dir}/examples/dcps/standalone/C++
         echo "*           For PingPong... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C++/PingPong
-        if [ "${target}" != "x86.win32" ]
+        if [ "${target}" != "x86.win32" ] 
         then
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SACPP/*.idl" \
                 ${HDE_dir}/examples/dcps/standalone/C++/PingPong
@@ -1192,7 +1173,7 @@ install_hde_target ()
         echo "*           Ready"
         echo "*         Java Ready"
     fi
-    echo "*       DCPS Ready"
+    echo "*       DCPS Ready"    
     echo "*     Copy examples Ready"
 
     #
@@ -1316,7 +1297,7 @@ install_rts_target ()
     # done with etc dir
 
     #
-    # Copy library files
+    # Copy libray files
     #
     printf "*     Copy library files ... "
     release=${OSPL_HOME}/lib/${target}${source_env}
@@ -1335,7 +1316,7 @@ install_rts_target ()
         echo "* ##    No library files detected"
     fi
     echo "Ready"
-
+    
     #
     # Copy java archive files
     #
@@ -1353,7 +1334,7 @@ install_rts_target ()
         fi
         echo "*     JAVA archive Ready"
     fi
-
+    
     #
     # Copy Windows service installer and resources into place
     #
@@ -1363,20 +1344,6 @@ install_rts_target ()
         install_ascii_file ${OSPL_HOME}/install/service_installer/service_info.txt ${RTS_dir}/etc
         echo "*     Ready"
     fi
-
-    #
-    # Copy script files
-    #
-    echo "*     Copy script files"
-    release=${OSPL_HOME}/install/bin
-    if [ -d "${release}" ]
-    then
-        mkdir -p ${RTS_dir}/bin
-        install_bin_file $release ${RTS_dir} bin osplconf${suffix_script}
-    else
-        echo "* ##    No script files detected"
-    fi
-    echo "*     Script files Ready"
 
     #
     # Copy executable files
@@ -1405,7 +1372,7 @@ install_rts_target ()
         then
             install_bin_file ${release} ${RTS_dir} bin mmstat${suffix_exe}
         fi
-
+        
         pdbfiles=`ls ${OSPL_HOME}/exec/${target}${source_env}/*.pdb 2>/dev/null`
         if [ "${target}" = "x86.win32" ] && [ -n "${pdbfiles}" ]
         then
