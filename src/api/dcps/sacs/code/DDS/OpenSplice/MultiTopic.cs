@@ -1,0 +1,79 @@
+﻿// The OpenSplice DDS Community Edition project.
+//
+// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2009  L-3 Communications / IS
+// 
+//  This library is free software; you can redistribute it and/or
+//  modify it under the terms of the GNU Lesser General Public
+//  License Version 3 dated 29 June 2007, as published by the
+//  Free Software Foundation.
+// 
+//  This library is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//  Lesser General Public License for more details.
+// 
+//  You should have received a copy of the GNU Lesser General Public
+//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
+//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+using System;
+using System.Runtime.InteropServices;
+using DDS;
+using DDS.OpenSplice.CustomMarshalers;
+
+namespace DDS.OpenSplice
+{
+    internal class MultiTopic : TopicDescription, IMultiTopic
+    {
+        internal MultiTopic(IntPtr gapiPtr)
+            : base(gapiPtr)
+        {
+            // Base class handles everything.
+        }
+
+        public string SubscriptionExpression
+        {
+            get
+            {
+                IntPtr ptr = Gapi.MultiTopic.get_subscription_expression(GapiPeer);
+                string result = Marshal.PtrToStringAnsi(ptr);
+                Gapi.GenericAllocRelease.Free(ptr);
+
+                return result;
+            }
+        }
+
+        public ReturnCode GetExpressionParameters(out string[] expressionParameters)
+        {
+            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
+            {
+				ReturnCode result = Gapi.MultiTopic.get_expression_parameters(
+                GapiPeer,
+                marshaler.GapiPtr);
+
+                if (result == ReturnCode.Ok)
+                {
+                    marshaler.CopyOut(out expressionParameters);
+					return result;
+                }
+            }
+
+			expressionParameters = new string[0];
+			return ReturnCode.Error;
+        }
+
+        public ReturnCode SetExpressionParameters(params string[] expressionParameters)
+        {
+            ReturnCode result = ReturnCode.Error;
+            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler(expressionParameters))
+            {
+                result = Gapi.MultiTopic.set_expression_parameters(
+                GapiPeer,
+                marshaler.GapiPtr);
+            }
+
+            return result;
+        }
+    }
+}
