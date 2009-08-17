@@ -1088,7 +1088,6 @@ in_socketReceive(
     os_int32 selectRes;
     struct sockaddr_in6 sockAddr; /* TODO sockaddr_storage */
     os_int fromLen = (os_int)sizeof(sockAddr);
-    os_boolean ownMessage;
     os_boolean readDone = OS_FALSE;
     os_time tmpTimeOut = *timeOut;
 #ifdef IN_DEBUGGING

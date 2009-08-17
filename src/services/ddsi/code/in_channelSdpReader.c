@@ -43,7 +43,7 @@ static in_result in_channelSdpReaderProcessHeartbeatFunc(
     in_ddsiReceiver receiver);
 
 static os_boolean in_channelSdpReaderIsLocalEntityFunc(
-        in_streamReader _this,
+        in_streamReaderCallbackArg _this,
         in_ddsiGuidPrefixRef guidPrefixRef);
 
 OS_STRUCT(in_channelSdpReader)
@@ -308,7 +308,7 @@ in_channelSdpReaderProcessHeartbeatFunc(
 
 os_boolean 
 in_channelSdpReaderIsLocalEntityFunc(
-	in_streamReader _this,
+	in_streamReaderCallbackArg _this,
 	in_ddsiGuidPrefixRef guidPrefixRef)
 {
 	in_connectivityAdmin admin;

@@ -11,6 +11,7 @@
 #include "in_channelReader.h"
 #include "in_channelDataReader.h"
 #include "in_report.h"
+#include "in_connectivityAdmin.h"
 
 static in_result
 in_channelDataReaderProcessDataFunc(
@@ -27,7 +28,7 @@ in_channelDataReaderProcessAckNackFunc(
 
 static os_boolean 
 in_channelDataReaderIsLocalEntityFunc(
-	in_streamReader _this,
+	in_streamReaderCallbackArg _this,
 	in_ddsiGuidPrefixRef guidPrefixRef);
 
 static void
@@ -330,7 +331,7 @@ in_channelDataReaderTrigger(
 
 os_boolean 
 in_channelDataReaderIsLocalEntityFunc(
-	in_streamReader _this,
+	in_streamReaderCallbackArg _this,
 	in_ddsiGuidPrefixRef guidPrefixRef)
 {
 	in_connectivityAdmin admin;
