@@ -111,7 +111,7 @@ s_kernelManagerNew(
             if (osr == os_resultSuccess) {
                 config = splicedGetConfiguration(daemon);
                 osr = os_threadCreate(&km->resendManager,
-                            S_THREAD_RESENDMANAGER, &config->kernelManagerScheduling,
+                            S_THREAD_RESENDMANAGER, &config->resendManagerScheduling,
                             resendManager, km);
                 if (osr != os_resultSuccess) {
                     /* don't care if the following statements succeeds, already in error situation */

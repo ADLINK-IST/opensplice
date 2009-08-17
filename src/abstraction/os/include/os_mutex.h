@@ -58,6 +58,19 @@ typedef struct os_mutexAttr {
     os_scopeAttr	scopeAttr;
 } os_mutexAttr;
 
+/** \brief Sets the priority inheritance mode for mutexes
+ *   that are created after this call. (only effective on 
+ *   platforms that support priority inheritance)
+ *
+ * Possible Results:
+ * - returns os_resultSuccess if
+ *     mutex is successfuly initialized
+ * - returns os_resultSuccess
+ */
+OS_API os_result
+os_mutexSetPriorityInheritanceMode(
+    os_boolean enabled);
+
 /** \brief Initialize the mutex taking the mutex attributes
  *         into account
  *
