@@ -25,6 +25,11 @@ in_channelDataReaderProcessAckNackFunc(
     in_ddsiAckNack event,
     in_ddsiReceiver receiver);
 
+static os_boolean 
+in_channelDataReaderIsLocalEntityFunc(
+	in_streamReader _this,
+	in_ddsiGuidPrefixRef guidPrefixRef);
+
 static void
 in_channelDataReaderMain(
     v_entity e,
@@ -67,7 +72,8 @@ in_channelDataReaderCallbackTable =
         in_channelDataReaderProcessAckNackFunc, /* processAckNack */
         NULL, /* processNackFrag */
         NULL, /* processHeartbeat */
-        NULL /* requestNackFrag */
+        NULL, /* requestNackFrag */
+        in_channelDataReaderIsLocalEntityFunc
 };
 
 in_channelDataReader
@@ -320,4 +326,22 @@ in_channelDataReaderTrigger(
     in_runnable runnable)
 {
     /* TODO tbd */
+}
+
+os_boolean 
+in_channelDataReaderIsLocalEntityFunc(
+	in_streamReader _this,
+	in_ddsiGuidPrefixRef guidPrefixRef)
+{
+	in_connectivityAdmin admin;
+	os_boolean result = OS_FALSE;
+	
+	admin = in_connectivityAdminGetInstance();
+	
+	assert(admin);
+    
+	/* TODO, optme - could be cached */ 
+	result = in_connectivityAdminIsLocalEntity(admin, guidPrefixRef);
+	
+	return result;
 }
