@@ -186,7 +186,7 @@ print_help(
         "       c++     N.A.   S      dcpssacpp      SACPP\n"
         "       cpp     N.A.   S      dcpssacpp      SACPP\n"
         "       cs      N.A.   S      dcpssacs       SACS\n"
-        "       Java    JacOrb C      dcpscj         SAJ\n"
+        "       Java    JacOrb C      dcpscj         SAJ\n",
         os_fileSep(), DEFAULT_ORB, os_fileSep(), DEFAULT_ORB);
 }
 
