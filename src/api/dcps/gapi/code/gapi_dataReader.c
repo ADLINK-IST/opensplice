@@ -1487,6 +1487,14 @@ checkDataAvailability(
 }
 
 static void
+resetDataAvailable(
+   v_entity e,
+   c_voidp arg)
+{
+    v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
+}
+
+static void
 notifyDataOnReaders (
     _DataReader _this,
     gapi_object target)
@@ -1756,7 +1764,7 @@ onDataAvailable (
          * with a parameter of the related Subscriber;  if this does not succeed (no listener or
          * operation non-enabled), it tries to trigger on_data_available on all the related
          * DataReaderListener objects, with as parameter the related DataReader.
-         * This is implemented in the following if else block.
+         * This is implemented by the following if else block.
          */
 
         if ( target != NULL ) {
@@ -1767,16 +1775,20 @@ onDataAvailable (
                                        GAPI_DATA_AVAILABLE_STATUS);
 
             if (target) {
-                c_bool dataAvailable = FALSE;
                 u_result result;
 
+                /* No need to check the status again, control wouldn't be here unless the
+                 * data was available on this reader.  Just reset the status here before
+                 * the callback to the listener is made (a DDS 1.2 requirement)
+                 */
+
                 result = u_entityAction(U_ENTITY_GET(_this),
-                                        checkDataAvailability,
-                                        &dataAvailable);
+                                        resetDataAvailable,
+                                        NULL);
 
                 assert(result == U_RESULT_OK);
 
-                if (result == U_RESULT_OK && dataAvailable) {
+                if (result == U_RESULT_OK) {
 
                     if ( target != source ) {
                         entity = gapi_entityClaim(target, NULL);
