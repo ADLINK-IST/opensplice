@@ -480,6 +480,7 @@ main (
     char* ccppOrbPath;
     os_time sleepTime;
     int returnCode = 0;
+    char* idlcppIgnoreInterfaces = " -ignore_interfaces ";
 
     /* Use a unique name, so pass NULL as parameter */
     osr = os_serviceStart(NULL);
@@ -953,14 +954,16 @@ main (
                         /* Extend command line with all include path options */
                         strncat (cpp_command, " -I", (size_t)3);
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        strncat (cpp_command, c_iterObject(includeDefinitions, i), (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
+                        strncat (cpp_command, c_iterObject(includeDefinitions, i), 
+                                 (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
                     for (i = 0; i < c_iterLength(macroDefinitions); i++) {
                         /* Extend command line with all macro definitions options */
                         strncat (cpp_command, " -D", (size_t)3);
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        strncat (cpp_command, c_iterObject(macroDefinitions, i), (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
+                        strncat (cpp_command, c_iterObject(macroDefinitions, i), 
+                                 (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
                     /* extIdlpp = getIdlcppPath(); */
@@ -983,40 +986,54 @@ main (
                     idlcppStdArgs = " -dds ";
 
                     if (outputDir) {
-                        if (idl_dllGetMacro() != NULL) {
+                        if (strcmp(idl_dllGetMacro(), "") != 0) {
                             idlcppArgs = os_malloc(strlen(cpp_command) +
-                                             strlen(idlcppStdArgs) +
-                                             16 + strlen(idl_dllGetMacro()) +
-                                             9 /* -output=*/+ strlen(QUOTE) + strlen(idl_dirOutCur()) + strlen(QUOTE) + 1 +
-                                             strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-                            sprintf(idlcppArgs, "%s%s-import_export=%s -output=%s%s%s %s%s%s",
-                                                cpp_command, idlcppStdArgs, idl_dllGetMacro(),
-                                                QUOTE, idl_dirOutCur(), QUOTE,
-                                                QUOTE, filename, QUOTE);
+                                                   strlen(idlcppStdArgs) +
+                                                   strlen(idlcppIgnoreInterfaces) +
+                                                   16 + strlen(idl_dllGetMacro()) +
+                                                   9 /* -output=*/+ strlen(QUOTE) + 
+                                                   strlen(idl_dirOutCur()) + 
+                                                   strlen(QUOTE) + 1 +
+                                                   strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
+                            sprintf(idlcppArgs, "%s%s-import_export=%s %s -output=%s%s%s %s%s%s",
+                                    cpp_command, idlcppStdArgs,
+                                    idl_dllGetMacro(),
+                                    idlcppIgnoreInterfaces,
+                                    QUOTE, idl_dirOutCur(), QUOTE,
+                                    QUOTE, filename, QUOTE);
                         } else {
-                            idlcppArgs = os_malloc(strlen(cpp_command) +
-                                             strlen(idlcppStdArgs) +
-                                             8 /*-output=*/+ strlen(QUOTE) + strlen(idl_dirOutCur()) + strlen(QUOTE) + 1 +
-                                             strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-                            sprintf(idlcppArgs, "%s%s-output=%s%s%s %s%s%s",
-                                                    cpp_command, idlcppStdArgs,
-                                                    QUOTE, idl_dirOutCur(), QUOTE,
-                                                    QUOTE, filename, QUOTE);
+                           idlcppArgs = os_malloc(strlen(cpp_command) +
+                                                  strlen(idlcppStdArgs) +
+                                                  strlen(idlcppIgnoreInterfaces) +
+                                                  8 /*-output=*/+ strlen(QUOTE) + 
+                                                  strlen(idl_dirOutCur()) + strlen(QUOTE) + 1 +
+                                                  strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
+                           sprintf(idlcppArgs, "%s%s%s-output=%s%s%s %s%s%s",
+                                   cpp_command, idlcppStdArgs,
+                                   idlcppIgnoreInterfaces,
+                                   QUOTE, idl_dirOutCur(), QUOTE,
+                                   QUOTE, filename, QUOTE);
                         }
                     } else {
-                        if (idl_dllGetMacro() != NULL) {
-                            idlcppArgs = os_malloc(strlen(cpp_command) +
-                                             strlen(idlcppStdArgs) +
-                                             16 + strlen(idl_dllGetMacro()) +
-                                             strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-                            sprintf(idlcppArgs, "%s%s-import_export=%s %s%s%s",
-                                        cpp_command, idlcppStdArgs, idl_dllGetMacro(),
-                                        QUOTE, filename, QUOTE);
+                        if (strcmp(idl_dllGetMacro(), "") != 0) {
+                           idlcppArgs = os_malloc(strlen(cpp_command) +
+                                                  strlen(idlcppStdArgs) +
+                                                  strlen(idlcppIgnoreInterfaces) +
+                                                  16 + strlen(idl_dllGetMacro()) +
+                                                  strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
+                           sprintf(idlcppArgs, "%s%s%s-import_export=%s %s%s%s",
+                                   cpp_command, idlcppStdArgs,
+                                   idlcppIgnoreInterfaces, idl_dllGetMacro(),
+                                   QUOTE, filename, QUOTE);
                         } else {
                             idlcppArgs = os_malloc(strlen(cpp_command) +
-                                             strlen(idlcppStdArgs) +
-                                             strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-                            sprintf(idlcppArgs, "%s%s%s%s%s", cpp_command, idlcppStdArgs, QUOTE, filename, QUOTE);
+                                                   strlen(idlcppStdArgs) +
+                                                   strlen(idlcppIgnoreInterfaces) +
+                                                   strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
+                            sprintf(idlcppArgs, "%s%s%s%s%s%s",
+                                    cpp_command, idlcppStdArgs,
+                                    idlcppIgnoreInterfaces, QUOTE,
+                                    filename, QUOTE);
                         }
                     }
                     printf("Running: %s%s\n", extIdlpp, idlcppArgs);
@@ -1048,7 +1065,8 @@ main (
                         eOrbOutputFile = os_malloc(strlen(basename) + 2 /* ".h" */ + 1);
                         sprintf(eOrbOutputFile, "%s.h", basename);
                     } else {
-                        eOrbOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ + strlen(basename) + 2 /* ".h" */ + 1);
+                        eOrbOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ + 
+                                                   strlen(basename) + 2 /* ".h" */ + 1);
                         sprintf(eOrbOutputFile, "%s%c%s.h", idl_dirOutCur(), OS_FILESEPCHAR, basename);
                     }
                     addIncludeToEorbGeneratedFile(eOrbOutputFile);
@@ -1059,7 +1077,7 @@ main (
                         dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
                         sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
 
-                        if (idl_dllGetMacro() != NULL) {
+                        if (strcmp(idl_dllGetMacro(), "") != 0) {
                             idlcppArgs = os_malloc(strlen(cpp_command) +
                                              strlen(idlcppStdArgs) +
                                              + 16 + strlen(idl_dllGetMacro()) +
@@ -1081,7 +1099,7 @@ main (
                         }
                     } else {
                         dcpsIdlFileName = os_strdup(fname);
-                        if (idl_dllGetMacro() != NULL) {
+                        if (strcmp(idl_dllGetMacro(), "") != 0) {
                             idlcppArgs = os_malloc(strlen(cpp_command) +
                                              strlen(idlcppStdArgs) +
                                              16 + strlen(idl_dllGetMacro()) + 1 +
@@ -1174,7 +1192,8 @@ main (
                         eOrbOutputFile = os_malloc(strlen(basename) + 6 /* "Dcps.h" */ + 1);
                         sprintf(eOrbOutputFile, "%sDcps.h", basename);
                     } else {
-                        eOrbOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ + strlen(basename) + 6 /* "Dcps.h" */ + 1);
+                        eOrbOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ + 
+                                                   strlen(basename) + 6 /* "Dcps.h" */ + 1);
                         sprintf(eOrbOutputFile, "%s%c%sDcps.h", idl_dirOutCur(), OS_FILESEPCHAR, basename);
                     }
                     addIncludeToEorbGeneratedFile(eOrbOutputFile);
