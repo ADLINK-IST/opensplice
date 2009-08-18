@@ -12,7 +12,6 @@
 #include "gapi_kernel.h"
 #include "gapi_common.h"
 #include "gapi_structured.h"
-#include "gapi_instanceHandle.h"
 
 #include "v_entity.h"
 #include "v_status.h"

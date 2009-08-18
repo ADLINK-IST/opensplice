@@ -22,12 +22,10 @@ typedef void (*u_kernelAction)(u_kernel kernel, u_kernelActionArg arg);
 
 #define u_resultFromKernel(r) ((u_result)r)
 
-u_result u_userAdd          (u_kernel k);
-u_result u_userRemove       (u_kernel k);
+u_kernel u_userKernelNew    (const c_char *uri);
 u_kernel u_userKernelOpen   (const c_char *uri, c_long timeout);
 u_result u_userKernelClose  (u_kernel k);
 c_long   u_userProtectCount ();
-u_result u_userWalk         (u_kernelAction action, u_kernelActionArg arg);
 
 #endif /* U__USER_H */
 

@@ -119,7 +119,7 @@ v_statusInit(
         c_free(type);
         v_writerStatus(s)->publicationMatch.totalCount = 0;
         v_writerStatus(s)->publicationMatch.totalChanged = 0;
-        v_writerStatus(s)->publicationMatch.instanceHandle = NULL;
+        v_writerStatus(s)->publicationMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_READERSTATUS:
         v_readerStatus(s)->livelinessChanged.activeCount = 0;
@@ -144,7 +144,7 @@ v_statusInit(
         c_free(type);
         v_readerStatus(s)->subscriptionMatch.totalCount = 0;
         v_readerStatus(s)->subscriptionMatch.totalChanged = 0;
-        v_readerStatus(s)->subscriptionMatch.instanceHandle = NULL;
+        v_readerStatus(s)->subscriptionMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_PARTICIPANTSTATUS:
     case K_PUBLISHERSTATUS:

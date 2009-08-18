@@ -11,6 +11,7 @@
  */
 
 #include "u__writer.h"
+#include "u__handle.h"
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__topic.h"
@@ -480,7 +481,7 @@ u_writerRegisterInstance(
             c_free(message);
             wresult = u_resultFromKernelWriteResult(writeResult);
             if (wresult == U_RESULT_OK) {
-                *handle = v_publicHandle(v_public(instance));
+                *handle = u_instanceHandleNew(v_public(instance));
             }
             c_free(instance);
             result = u_writerRelease(_this);
@@ -524,7 +525,7 @@ u_writerRegisterInstanceTMP(
             writeResult = v_writerRegister(writer, message, timestamp, &instance);
             wresult = u_resultFromKernelWriteResult(writeResult);
             if (wresult == U_RESULT_OK) {
-                *handle = v_publicHandle(v_public(instance));
+                *handle = u_instanceHandleNew(v_public(instance));
             }
             c_free(instance);
             result = u_writerRelease(_this);
@@ -586,14 +587,9 @@ u_writerLookupInstance(
 
         if(copyResult){
             instance = v_writerLookupInstance(writer, message);
+            *handle = u_instanceHandleNew(v_public(instance));
             c_free(message);
-
-            if (instance) {
-                *handle = v_publicHandle(v_public(instance));
-                c_free(instance);
-            } else {
-                *handle = U_HANDLE_NIL;
-            }
+            c_free(instance);
             result = u_writerRelease(_this);
         } else {
             result = U_RESULT_ILL_PARAM;

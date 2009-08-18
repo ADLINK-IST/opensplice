@@ -28,7 +28,6 @@
 #include "gapi_genericCopyOut.h"
 #include "gapi_expression.h"
 #include "gapi_error.h"
-#include "gapi_instanceHandle.h"
 #include "gapi_loanRegistry.h"
 
 #include "os_heap.h"
@@ -910,7 +909,6 @@ copy_liveliness_changed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_livelinessChangedInfo *from;
     gapi_livelinessChangedStatus *to;
 
@@ -922,9 +920,7 @@ copy_liveliness_changed_status(
     to->alive_count_change = from->activeChanged;
     to->not_alive_count_change = from->inactiveChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-    to->last_publication_handle = gapi_instanceHandleFromHandle(handle);
+    to->last_publication_handle = u_instanceHandleFromGID(from->instanceHandle);
 
     return V_RESULT_OK;
 }
@@ -975,7 +971,6 @@ copy_deadline_missed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_deadlineMissedInfo *from;
     gapi_requestedDeadlineMissedStatus *to;
 
@@ -985,10 +980,7 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-
-    to->last_instance_handle = gapi_instanceHandleFromHandle(handle);
+    to->last_instance_handle = u_instanceHandleFromGID(from->instanceHandle);
 
     return V_RESULT_OK;
 }
@@ -1120,7 +1112,7 @@ copy_subscription_matched_status(
     to->total_count_change = from->totalChanged;
     to->current_count = from->totalCount;
     to->current_count_change = from->totalChanged;
-    to->last_publication_handle = gapi_instanceHandle_t(from->instanceHandle);
+    to->last_publication_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 }
 

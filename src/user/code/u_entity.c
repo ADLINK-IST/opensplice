@@ -10,6 +10,7 @@
  *
  */
 #include "u__entity.h"
+#include "u__handle.h"
 #include "u__types.h"
 #include "u__qos.h"
 #include "u_domain.h"
@@ -251,7 +252,7 @@ u_entityClaim(
         if (u_participantKernel(p) != NULL) {
             r = u_userProtect(u_entity(p));
             if (r == U_RESULT_OK) {
-                r = u_handleClaimUnsafe(e->handle,(v_object *)&ve);
+                r = u__handleClaimUnsafe(e->handle,(v_object *)&ve);
                 if (r != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_entityClaim", 0,
                               "Illegal handle detected");
@@ -281,7 +282,7 @@ u_entityRelease(
     u_result result = U_RESULT_OK;
 
     if (e != NULL) {
-        result = u_handleReleaseUnsafe(e->handle);
+        result = u__handleReleaseUnsafe(e->handle);
         if (result != U_RESULT_OK) {
             OS_REPORT(OS_ERROR, "u_entityRelease", 0,
                       "Illegal handle detected");
@@ -576,4 +577,27 @@ u_entityHandle (
     assert(_this != NULL);
 
     return _this->handle;
+}
+
+u_instanceHandle
+u_entityGetInstanceHandle(
+    u_entity _this)
+{
+    v_entity ke;
+    u_instanceHandle handle = U_INSTANCEHANDLE_NIL;
+
+    if (_this) {
+        ke = u_entityClaim(_this);
+        if (ke != NULL) {
+/* TODO : the handle retrieval is incorrect,
+ *        must be retrieved from build-in reader.
+ */
+            handle = u_instanceHandleFromGID(v_publicGid(v_public(ke)));
+            u_entityRelease(_this);
+        } else {
+            OS_REPORT(OS_ERROR, "u_entityGetInstanceHandle", 0,
+                      "Illegal handle detected");
+        }
+    }
+    return handle;
 }

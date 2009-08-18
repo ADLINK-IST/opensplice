@@ -16,18 +16,8 @@
 extern "C" {
 #endif
 
-#include "u_entity.h"
 #include "v_status.h"
 #include "os_if.h"
-
-#ifdef OSPL_BUILD_USER
-#define OS_API OS_API_EXPORT
-#else
-#define OS_API OS_API_IMPORT
-#endif
-/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-
-#define u_reader(o) ((u_reader)(o))
 
 typedef c_bool
 (*u_readerAction)(
@@ -39,6 +29,17 @@ typedef c_voidp
     v_collection c,
     c_iter list,
     c_voidp copyArg);
+
+#include "u_entity.h"
+
+#ifdef OSPL_BUILD_USER
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+#define u_reader(o) ((u_reader)(o))
 
 OS_API u_result
 u_readerInit (

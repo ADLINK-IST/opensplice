@@ -11,6 +11,7 @@
  */
 
 #include "u__dataReader.h"
+#include "u__handle.h"
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__dataView.h"
@@ -424,10 +425,10 @@ u_dataReaderReadInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_instanceHandleClaim(handle, &instance);
+    result = u_dataReaderClaim(_this,&reader);
     if (result == U_RESULT_OK) {
-        assert(instance != NULL);
-        result = u_dataReaderClaim(_this,&reader);
+        handle = u_instanceHandleFix(handle,v_reader(reader));
+        result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             if (v_dataReaderContainsInstance(reader,instance)) {
                 v_dataReaderReadInstance(reader,
@@ -437,9 +438,9 @@ u_dataReaderReadInstance(
             } else {
                 result = U_RESULT_PRECONDITION_NOT_MET;
             }
-            u_dataReaderRelease(_this);
+            u_instanceHandleRelease(handle);
         }
-        u_instanceHandleRelease(handle);
+        u_dataReaderRelease(_this);
     }
     return result;
 }
@@ -455,10 +456,10 @@ u_dataReaderTakeInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_instanceHandleClaim(handle, &instance);
+    result = u_dataReaderClaim(_this,&reader);
     if (result == U_RESULT_OK) {
-        assert(instance != NULL);
-        result = u_dataReaderClaim(_this,&reader);
+        handle = u_instanceHandleFix(handle,v_reader(reader));
+        result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             if (v_dataReaderContainsInstance(reader,instance)) {
                 v_dataReaderTakeInstance(reader,
@@ -468,9 +469,9 @@ u_dataReaderTakeInstance(
             } else {
                 result = U_RESULT_PRECONDITION_NOT_MET;
             }
-            u_dataReaderRelease(_this);
+            u_instanceHandleRelease(handle);
         }
-        u_instanceHandleRelease(handle);
+        u_dataReaderRelease(_this);
     }
     return result;
 }
@@ -494,6 +495,7 @@ u_dataReaderReadNextInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
         } else {
+            handle = u_instanceHandleFix(handle,v_reader(reader));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 assert(instance != NULL);
@@ -532,6 +534,7 @@ u_dataReaderTakeNextInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
         } else {
+            handle = u_instanceHandleFix(handle,v_reader(reader));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 assert(instance != NULL);
@@ -649,11 +652,7 @@ u_dataReaderLookupInstance(
         to = C_DISPLACE(message, v_topicDataOffset(topic));
         copyIn(v_topicDataType(topic), keyTemplate, to);
         instance = v_dataReaderLookupInstance(reader, message);
-        if (instance == NULL) {
-            u_instanceHandleSetNil(*handle);
-        } else {
-            *handle = v_publicHandle(v_public(instance));
-        }
+        *handle = u_instanceHandleNew(v_public(instance));
         c_free(instance);
         c_free(topic);
         c_free(message);
