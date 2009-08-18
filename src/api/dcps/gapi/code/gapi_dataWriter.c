@@ -985,7 +985,7 @@ onOfferedDeadlineMissed (
     if ( _this ) {
         result = _DataWriter_get_offered_deadline_missed_status (
                      _this, TRUE, &info);
-    
+
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
@@ -1043,7 +1043,7 @@ onOfferedIncompatibleQos (
 
         result = _DataWriter_get_offered_incompatible_qos_status (
                      _this, TRUE, &info);
-            
+
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
