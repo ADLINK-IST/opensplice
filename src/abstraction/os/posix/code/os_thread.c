@@ -32,6 +32,7 @@
 #ifndef INTEGRITY
 #include <signal.h>
 #endif
+#include <limits.h>
 
 typedef struct {
     char *threadName;
@@ -338,6 +339,9 @@ os_threadCreate (
     }
 
     if (rv == os_resultSuccess && tattr.stackSize != 0) {
+        if ( tattr.stackSize < PTHREAD_STACK_MIN ) {
+	    tattr.stackSize = PTHREAD_STACK_MIN;
+	}
 	if (pthread_attr_setstacksize (&attr, tattr.stackSize) != 0) {
 	    rv = os_resultFail;
 	}
