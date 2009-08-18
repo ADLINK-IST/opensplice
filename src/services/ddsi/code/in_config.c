@@ -2507,7 +2507,7 @@ in_configTraverseChannelElement(
         {
             IN_REPORT_WARNING_3(
                 IN_SPOT,
-                "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
+                "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%d'.",
                 INCF_ATTRIB_channel_priority,
                 INCF_ELEM_Channel,
                 INCF_ATTRIB_channel_priority_DEF);
@@ -2519,7 +2519,7 @@ in_configTraverseChannelElement(
                 "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
                 INCF_ATTRIB_channel_isDefault,
                 INCF_ELEM_Channel,
-                INCF_ATTRIB_channel_isDefault_DEF);
+                IN_STRINGIFY(INCF_ATTRIB_channel_isDefault_DEF));
         }
         if(!isEnabledDefined)
         {
@@ -2528,7 +2528,7 @@ in_configTraverseChannelElement(
                 "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
                 INCF_ATTRIB_channel_isEnabled,
                 INCF_ELEM_Channel,
-                INCF_ATTRIB_channel_isEnabled_DEF);
+                IN_STRINGIFY(INCF_ATTRIB_channel_isEnabled_DEF));
         }
         if(priority <= INCF_ATTRIB_channel_priority_MIN)
         {
