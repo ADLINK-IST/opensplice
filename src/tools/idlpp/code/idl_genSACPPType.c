@@ -208,7 +208,7 @@ idl_seqTypeDefs(
                 idl_typeSeqMaxSize(typeSeq), name);
         }
     } else {
-        subTypeName = idl_corbaCxxTypeFromTypeSpec(seqType);
+        subTypeName = idl_corbaCxxTypeScopeFromTypeSpec(seqType,FALSE);
         idl_printIndent(arg->indent_level);
         if (idl_typeSeqMaxSize(typeSeq) == 0) {
             idl_fileOutPrintf(idl_fileCur(),"typedef DDS_DCPSUFLSeq<%s, struct %s_uniq_> %s;\n",
@@ -510,7 +510,7 @@ idl_structureMemberOpenClose (
     case idl_ttypedef:
     case idl_tstruct:
     case idl_tunion:
-        snprintf(arg->buffer,MAX_BUFFER,"::%s %s;\n",
+        snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             memberName);
     break;

@@ -141,6 +141,7 @@ typedef struct {
 typedef struct {
     /* offset is always 0 */
     jmethodID		setterID;
+    jmethodID       setterWithDiscrID;
     jmethodID		getterID;
     jfieldID		caseID;
     /* case description follows */
@@ -165,15 +166,16 @@ typedef struct {
 typedef struct {
     sajCopyHeader	header;
     unsigned int	nrOfCases;
-    jclass		unionClass;
+    jclass	        unionClass;
     jmethodID		constrID;
     jfieldID		discrID;
     jmethodID		getDiscrMethodID;
-    c_type		discrType;
+    c_type	        discrType;
     unsigned int	casesOffset;
-    jclass		discrClass;	/* used for enumeration discriminant */
+    jclass	        discrClass;	/* used for enumeration discriminant */
     jmethodID		valueID;
     jmethodID		from_intID;
+    jmethodID       __defaultID;
     /* sequence of sajCopyUnionLabels follows */
 } sajCopyUnion;
 

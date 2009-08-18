@@ -354,14 +354,14 @@ saj_copyCacheFinalize (
     assert (copyCache);
 
     if (copyCache->iWrite < copyCache->length) {
-	exactCache = os_malloc (copyCache->iWrite);
-	/* If out of resources, keep cache */
-	if (exactCache) {
-	    memcpy (exactCache, copyCache->cache, copyCache->iWrite);
-	    os_free (copyCache->cache);
-	    copyCache->cache = exactCache;
-	    copyCache->length = copyCache->iWrite;
-	}
+        exactCache = os_malloc (copyCache->iWrite);
+        /* If out of resources, keep cache */
+        if (exactCache) {
+            memcpy (exactCache, copyCache->cache, copyCache->iWrite);
+            os_free (copyCache->cache);
+            copyCache->cache = exactCache;
+            copyCache->length = copyCache->iWrite;
+        }
     }
 }
 
@@ -446,135 +446,135 @@ saj_metaObject(
         break;
     case M_COLLECTION:
         if (c_collectionType(o)->kind == C_STRING) {
-	    if (c_collectionType(o)->maxSize > 0) {
+            if (c_collectionType(o)->maxSize > 0) {
                 /* bounded string */
-		saj_cacheBStringBuild (c_collectionType(o), context);
-	    } else {
-		saj_cacheStringBuild (c_collectionType(o), context);
-	    }
+                saj_cacheBStringBuild (c_collectionType(o), context);
+            } else {
+                saj_cacheStringBuild (c_collectionType(o), context);
+            }
         } else if (c_collectionType(o)->kind == C_SEQUENCE) {
             /* sequence */
-	    if (c_baseObject(c_typeActualType(c_collectionType(o)->subType))->kind == M_PRIMITIVE) {
-	        switch (c_primitive(c_typeActualType(c_collectionType(o)->subType))->kind) {
-		case P_BOOLEAN:
-		    /* boolean */
-		    saj_cacheSeqBooleanBuild (c_collectionType(o), context);
-		    break;
-		case P_SHORT:
-		    /* short */
-		    saj_cacheSeqShortBuild (c_collectionType(o), context);
-		    break;
-		case P_LONG:
-		    /* int */
-		    saj_cacheSeqIntBuild (c_collectionType(o), context);
-		    break;
-		case P_LONGLONG:
-		    /* long */
-		    saj_cacheSeqLongBuild (c_collectionType(o), context);
-		    break;
-		case P_USHORT:
-		    /* short */
-		    saj_cacheSeqShortBuild (c_collectionType(o), context);
-		    break;
-		case P_ULONG:
-		    /* int */
-		    saj_cacheSeqIntBuild (c_collectionType(o), context);
-		    break;
-		case P_ULONGLONG:
-		    /* long */
-		    saj_cacheSeqLongBuild (c_collectionType(o), context);
-		    break;
-		case P_CHAR:
-		    /* char */
-		    saj_cacheSeqCharBuild (c_collectionType(o), context);
-		    break;
-		case P_OCTET:
-		    /* byte */
-		    saj_cacheSeqByteBuild (c_collectionType(o), context);
-		    break;
-		case P_FLOAT:
-		    /* float */
-		    saj_cacheSeqFloatBuild (c_collectionType(o), context);
-		    break;
-		case P_DOUBLE:
-		    /* double */
-		    saj_cacheSeqDoubleBuild (c_collectionType(o), context);
-		    break;
-	        default:
-		    assert (FALSE);
-		}
-	    } else {
-		/** sequence of object */
-		saj_cacheSeqObjectBuild (c_collectionType(o), context);
-	    }
+            if (c_baseObject(c_typeActualType(c_collectionType(o)->subType))->kind == M_PRIMITIVE) {
+                switch (c_primitive(c_typeActualType(c_collectionType(o)->subType))->kind) {
+                case P_BOOLEAN:
+                    /* boolean */
+                    saj_cacheSeqBooleanBuild (c_collectionType(o), context);
+                    break;
+                case P_SHORT:
+                    /* short */
+                    saj_cacheSeqShortBuild (c_collectionType(o), context);
+                    break;
+                case P_LONG:
+                    /* int */
+                    saj_cacheSeqIntBuild (c_collectionType(o), context);
+                    break;
+                case P_LONGLONG:
+                    /* long */
+                    saj_cacheSeqLongBuild (c_collectionType(o), context);
+                    break;
+                case P_USHORT:
+                    /* short */
+                    saj_cacheSeqShortBuild (c_collectionType(o), context);
+                    break;
+                case P_ULONG:
+                    /* int */
+                    saj_cacheSeqIntBuild (c_collectionType(o), context);
+                    break;
+                case P_ULONGLONG:
+                    /* long */
+                    saj_cacheSeqLongBuild (c_collectionType(o), context);
+                    break;
+                case P_CHAR:
+                    /* char */
+                    saj_cacheSeqCharBuild (c_collectionType(o), context);
+                    break;
+                case P_OCTET:
+                    /* byte */
+                    saj_cacheSeqByteBuild (c_collectionType(o), context);
+                    break;
+                case P_FLOAT:
+                    /* float */
+                    saj_cacheSeqFloatBuild (c_collectionType(o), context);
+                    break;
+                case P_DOUBLE:
+                    /* double */
+                    saj_cacheSeqDoubleBuild (c_collectionType(o), context);
+                    break;
+                default:
+                    assert (FALSE);
+                }
+            } else {
+                /** sequence of object */
+                saj_cacheSeqObjectBuild (c_collectionType(o), context);
+            }
         } else if (c_collectionType(o)->kind == C_ARRAY) {
             /* array */
-	    if (c_baseObject(c_typeActualType(c_collectionType(o)->subType))->kind == M_PRIMITIVE) {
-	        switch (c_primitive(c_typeActualType(c_collectionType(o)->subType))->kind) {
-		case P_BOOLEAN:
-		    /* boolean */
-		    saj_cacheArrBooleanBuild (c_collectionType(o), context);
-		    break;
-		case P_SHORT:
-		    /* short */
-		    saj_cacheArrShortBuild (c_collectionType(o), context);
-		    break;
-		case P_LONG:
-		    /* int */
-		    saj_cacheArrIntBuild (c_collectionType(o), context);
-		    break;
-		case P_LONGLONG:
-		    /* long */
-		    saj_cacheArrLongBuild (c_collectionType(o), context);
-		    break;
-		case P_USHORT:
-		    /* short */
-		    saj_cacheArrShortBuild (c_collectionType(o), context);
-		    break;
-		case P_ULONG:
-		    /* int */
-		    saj_cacheArrIntBuild (c_collectionType(o), context);
-		    break;
-		case P_ULONGLONG:
-		    /* long */
-		    saj_cacheArrLongBuild (c_collectionType(o), context);
-		    break;
-		case P_CHAR:
-		    /* char */
-		    saj_cacheArrCharBuild (c_collectionType(o), context);
-		    break;
-		case P_OCTET:
-		    /* byte */
-		    saj_cacheArrByteBuild (c_collectionType(o), context);
-		    break;
-		case P_FLOAT:
-		    /* float */
-		    saj_cacheArrFloatBuild (c_collectionType(o), context);
-		    break;
-		case P_DOUBLE:
-		    /* double */
-		    saj_cacheArrDoubleBuild (c_collectionType(o), context);
-		    break;
-	        default:
-		    assert (FALSE);
-		}
-	    } else {
-		/** array of object */
-		saj_cacheArrObjectBuild (c_collectionType(o), context);
-	    }
+            if (c_baseObject(c_typeActualType(c_collectionType(o)->subType))->kind == M_PRIMITIVE) {
+                switch (c_primitive(c_typeActualType(c_collectionType(o)->subType))->kind) {
+                case P_BOOLEAN:
+                    /* boolean */
+                    saj_cacheArrBooleanBuild (c_collectionType(o), context);
+                    break;
+                case P_SHORT:
+                    /* short */
+                    saj_cacheArrShortBuild (c_collectionType(o), context);
+                    break;
+                case P_LONG:
+                    /* int */
+                    saj_cacheArrIntBuild (c_collectionType(o), context);
+                    break;
+                case P_LONGLONG:
+                    /* long */
+                    saj_cacheArrLongBuild (c_collectionType(o), context);
+                    break;
+                case P_USHORT:
+                    /* short */
+                    saj_cacheArrShortBuild (c_collectionType(o), context);
+                    break;
+                case P_ULONG:
+                    /* int */
+                    saj_cacheArrIntBuild (c_collectionType(o), context);
+                    break;
+                case P_ULONGLONG:
+                    /* long */
+                    saj_cacheArrLongBuild (c_collectionType(o), context);
+                    break;
+                case P_CHAR:
+                    /* char */
+                    saj_cacheArrCharBuild (c_collectionType(o), context);
+                    break;
+                case P_OCTET:
+                    /* byte */
+                    saj_cacheArrByteBuild (c_collectionType(o), context);
+                    break;
+                case P_FLOAT:
+                    /* float */
+                    saj_cacheArrFloatBuild (c_collectionType(o), context);
+                    break;
+                case P_DOUBLE:
+                    /* double */
+                    saj_cacheArrDoubleBuild (c_collectionType(o), context);
+                    break;
+                default:
+                    assert (FALSE);
+                }
+            } else {
+                /** array of object */
+                saj_cacheArrObjectBuild (c_collectionType(o), context);
+            }
         }
         break;
     case M_ENUMERATION:
-	saj_cacheEnumBuild (c_enumeration(o), context);
+        saj_cacheEnumBuild (c_enumeration(o), context);
         break;
     case M_STRUCTURE:
-	saj_cacheStructBuild (c_structure(o), context);
+        saj_cacheStructBuild (c_structure(o), context);
         break;
     case M_TYPEDEF:
         saj_metaObject (c_typeDef(o)->alias, context);
         break;
     case M_UNION:
-	saj_cacheUnionBuild (c_union(o), context);
+        saj_cacheUnionBuild (c_union(o), context);
         break;
     }
 }
@@ -726,6 +726,7 @@ saj_cacheUnionLabel (
 STATIC void
 saj_cacheUnionCaseField (
     c_unionCase o,
+    c_type switchType,
     saj_context ctx)
 {
     sajCopyUnionCase unionCase;
@@ -737,13 +738,16 @@ saj_cacheUnionCaseField (
     fieldDescriptor[0] = '\0';
     saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor));
 
+    /* Look for a setter that implicitly sets the discriminator to 1 of the appropriate cases. */
     snprintf (operatorDescr, sizeof (operatorDescr), "(%s)V", fieldDescriptor);
     unionCase.setterID = (*(ctx->javaEnv))->GetMethodID (ctx->javaEnv, ctx->javaClass,
-	saj_dekeyedId(c_specifier(o)->name), operatorDescr);
+            saj_dekeyedId(c_specifier(o)->name), operatorDescr);
     saj_exceptionCheck (ctx->javaEnv);
 #if JNI_TRACE
     printf ("JNI: GetMethodID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, saj_dekeyedId(c_specifier(o)->name), operatorDescr, unionCase.setterID);
 #endif
+
+    /* Look for the corresponding getter of that branch. */
     snprintf (operatorDescr, sizeof (operatorDescr), "()%s", fieldDescriptor);
     unionCase.getterID = (*(ctx->javaEnv))->GetMethodID (ctx->javaEnv, ctx->javaClass,
 	saj_dekeyedId(c_specifier(o)->name), operatorDescr);
@@ -751,6 +755,8 @@ saj_cacheUnionCaseField (
 #if JNI_TRACE
     printf ("JNI: GetMethodID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, c_specifier(o)->name, operatorDescr, unionCase.getterID);
 #endif
+
+    /* Look for the field that holds the branch value (Only applicable to the SAJ). */
     snprintf (attributeName, sizeof(attributeName), "__%s", saj_dekeyedId(c_specifier(o)->name));
     unionCase.caseID = (*(ctx->javaEnv))->GetFieldID (ctx->javaEnv, ctx->javaClass, attributeName, fieldDescriptor);
     jexception = (*(ctx->javaEnv))->ExceptionOccurred(ctx->javaEnv);
@@ -770,6 +776,19 @@ saj_cacheUnionCaseField (
     TRACE (printf ("        Java field descriptor = %s, Field name = %s, Java setterID = %x, Java getterID = %x\n",
 	fieldDescriptor, saj_dekeyedId(c_specifier(o)->name), (int)unionCase.setterID,  (int)unionCase.getterID));
 
+    /* Also look for a possible setter that includes the discriminator as 1st parameter. */
+    fieldDescriptor[0] = '\0';
+    saj_fieldDescriptor (switchType, fieldDescriptor, sizeof (fieldDescriptor));
+    saj_fieldDescriptor (c_specifier(o)->type, &fieldDescriptor[strlen(fieldDescriptor)], sizeof (fieldDescriptor) - strlen(fieldDescriptor));
+    snprintf (operatorDescr, sizeof (operatorDescr), "(%s)V", fieldDescriptor);
+    unionCase.setterWithDiscrID = (*(ctx->javaEnv))->GetMethodID (ctx->javaEnv, ctx->javaClass,
+            saj_dekeyedId(c_specifier(o)->name), operatorDescr);
+#if JNI_TRACE
+    printf ("JNI: GetMethodID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, c_specifier(o)->name, operatorDescr, unionCase.setterWithDiscrID);
+#endif
+    if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+        (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+
     saj_copyCacheWrite (ctx->copyCache, &unionCase, sizeof(unionCase));
     saj_metaObject (c_specifier(o)->type, ctx);
 }
@@ -777,6 +796,7 @@ saj_cacheUnionCaseField (
 STATIC void
 saj_cacheUnionCase (
     c_unionCase unionCase,
+    c_type switchType,
     saj_context ctx)
 {
     sajCopyUnionLabels labels;
@@ -790,7 +810,7 @@ saj_cacheUnionCase (
     for (l = 0; l < labels.labelCount; l++) {
         saj_cacheUnionLabel (c_literal(unionCase->labels[l]), ctx);
     }
-    saj_cacheUnionCaseField (unionCase, ctx);
+    saj_cacheUnionCaseField (unionCase, switchType, ctx);
 }
 
 STATIC void
@@ -882,68 +902,91 @@ saj_cacheUnionBuild (
 
     if (jexception)
     {
-        /*  clear the exception */
+        /*  clear the exception, must be CORBA-generated code. */
         (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
-        switch (c_baseObject(c_typeActualType(o->switchType))->kind) {
-        case M_ENUMERATION:
+    }
+
+    switch (c_baseObject(c_typeActualType(o->switchType))->kind) {
+    case M_ENUMERATION:
+        {
+            char discrClassDescriptor [512];
+
+            discrClassDescriptor[0] = '\0';
+            saj_classDescriptor (c_typeActualType(o->switchType), discrClassDescriptor, sizeof(discrClassDescriptor));
+            snprintf (methodSignature, sizeof(methodSignature), "()L%s;", discrClassDescriptor);
+
+            copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", methodSignature);
+            saj_exceptionCheck((ctx->javaEnv));
+
+            snprintf (methodSignature, sizeof(methodSignature), "(L%s;)V", discrClassDescriptor);
+            copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", methodSignature);
+            if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+        }
+        break;
+    case M_PRIMITIVE:
+        switch (c_primitive (c_typeActualType(o->switchType))->kind)
+        {
+        case P_BOOLEAN:
             {
-                char discrClassDescriptor [512];
-
-                discrClassDescriptor[0] = '\0';
-                saj_classDescriptor (c_typeActualType(o->switchType), discrClassDescriptor, sizeof(discrClassDescriptor));
-                snprintf (methodSignature, sizeof(methodSignature), "()L%s;", discrClassDescriptor);
-
-                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", methodSignature);
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()Z");
                 saj_exceptionCheck((ctx->javaEnv));
+
+                copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", "(Z)V");
+                if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                    (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
             }
             break;
-        case M_PRIMITIVE:
-            switch (c_primitive (c_typeActualType(o->switchType))->kind)
+        case P_CHAR:
             {
-            case P_BOOLEAN:
-                {
-                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()Z");
-                    saj_exceptionCheck((ctx->javaEnv));
-                }
-                break;
-            case P_CHAR:
-                {
-                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()C");
-                    saj_exceptionCheck((ctx->javaEnv));
-                }
-                break;
-            case P_SHORT:
-            case P_USHORT:
-                {
-                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()S");
-                    saj_exceptionCheck((ctx->javaEnv));
-                }
-                break;
-            case P_LONG:
-            case P_ULONG:
-                {
-                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()I");
-                    saj_exceptionCheck((ctx->javaEnv));
-                }
-                break;
-            case P_LONGLONG:
-            case P_ULONGLONG:
-                {
-                    copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()J");
-                    saj_exceptionCheck((ctx->javaEnv));
-                }
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()C");
+                saj_exceptionCheck((ctx->javaEnv));
 
-                break;
-            default:
-                assert (0);
+                copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", "(C)V");
+                if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                    (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
             }
+            break;
+        case P_SHORT:
+        case P_USHORT:
+            {
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()S");
+                saj_exceptionCheck((ctx->javaEnv));
+
+                copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", "(S)V");
+                if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                    (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+            }
+            break;
+        case P_LONG:
+        case P_ULONG:
+            {
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()I");
+                saj_exceptionCheck((ctx->javaEnv));
+
+                copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", "(I)V");
+                if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                    (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+            }
+            break;
+        case P_LONGLONG:
+        case P_ULONGLONG:
+            {
+                copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", "()J");
+                saj_exceptionCheck((ctx->javaEnv));
+
+                copyUnion.__defaultID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "__default", "(J)V");
+                if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+                    (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+            }
+
             break;
         default:
             assert (0);
         }
-    } else
-    {
-        copyUnion.getDiscrMethodID = NULL;
+        break;
+    default:
+        assert (0);
     }
 
 #if JNI_TRACE
@@ -964,7 +1007,7 @@ saj_cacheUnionBuild (
     TRACE (printf ("    Constructor ID = %x\n", (int)copyUnion.constrID));
 
     for (mi = 0; mi < c_arraySize(o->cases); mi++) {
-	saj_cacheUnionCase (o->cases[mi], &context);
+        saj_cacheUnionCase (o->cases[mi], o->switchType, &context);
     }
     saj_typeHistoryFree (c_iterTakeFirst (ctx->typeStack));
     saj_copyCacheUpdateSize (context.copyCache, headerIndex);

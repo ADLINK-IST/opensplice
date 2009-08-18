@@ -616,9 +616,8 @@ install_hde_target ()
     then
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
-        
-        # Copy the executables for the target 
-        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
+        # In the HDE we only need the other executables in case host and target are equal
+        if [ "${SPLICE_TARGET}" = "${SPLICE_HOST}" ]
         then
             install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
             install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
@@ -1288,7 +1287,7 @@ install_hde_target ()
         echo "OSPL_HOME=\"@@INSTALLDIR@@/HDE/${target}${target_env}\"" >> ${RELF}
         echo "OSPL_TARGET=${target}${target_env}" >> ${RELF}
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> ${RELF}
-        if [ "${target_os}" != "${host_os}" ]
+        if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
         then
             echo "LD_LIBRARY_PATH=\$OSPL_HOME/host/lib:\$LD_LIBRARY_PATH" >> ${RELF}
         else
