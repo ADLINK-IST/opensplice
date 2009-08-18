@@ -31,6 +31,12 @@ gapi_metaData_specifierName(gapi_specifier specBase)
 }
 
 gapi_long
+gapi_metaData_typeSize(gapi_type typeBase)
+{
+    return c_typeSize(typeBase);
+}
+
+gapi_long
 gapi_metaData_enumerationCount(gapi_enumeration enumBase)
 {
     return c_enumerationCount(enumBase);

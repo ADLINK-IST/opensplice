@@ -489,6 +489,10 @@ OS_API c_literal
 c_operandValue(
     c_operand operand);
 
+OS_API c_long
+c_typeSize(
+    c_type type);
+
 OS_API c_bool
 c_typeIsRef(
     c_type type);

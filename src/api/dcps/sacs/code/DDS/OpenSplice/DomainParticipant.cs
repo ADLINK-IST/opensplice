@@ -543,10 +543,9 @@ namespace DDS.OpenSplice
         }
 
 
-        public IMultiTopic CreateMultiTopic(string name, ITypeSupport typeSupport,
+        public IMultiTopic CreateMultiTopic(string name, string typeName,
             string subscriptionExpression, params string[] expressionParameters)
         {
-            TypeSupport typeSupportObj = (TypeSupport)typeSupport;
             IMultiTopic multiTopic = null;
 
             using (IMarshaler marshaler = new SequenceStringMarshaler(expressionParameters))
@@ -554,7 +553,7 @@ namespace DDS.OpenSplice
                 IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipant.create_multitopic(
                     GapiPeer,
                     name,
-                    typeSupport.TypeName,
+                    typeName,
                     subscriptionExpression,
                     marshaler.GapiPtr);
 

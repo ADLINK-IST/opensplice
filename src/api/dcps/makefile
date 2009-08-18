@@ -18,9 +18,6 @@ ifeq ($(INCLUDE_API_DCPS_SACPP),yes)
 SUBSYSTEMS 	+= sacpp
 endif # INCLUDE_API_DCPS_SACPP
 endif # INCLUDE_CXX
-ifeq ($(INCLUDE_API_DCPS_SACS),yes)
-SUBSYSTEMS      += sacs
-endif # INCLUDE_API_DCPS_SACS
 endif # INCLUDE_API_DCPS_GAPI
 
 ifeq ($(INCLUDE_JAVA),yes)

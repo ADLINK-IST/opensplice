@@ -43,6 +43,13 @@ namespace DDS.OpenSplice.Gapi {
         public static extern string specifierName(IntPtr specBase);
 
         /* gapi_long
+         *     gapi_metaData_typeSize(gapi_type typeBase);
+         */
+        [DllImport("dcpsgapi", EntryPoint = "gapi_metaData_typeSize")]
+        public static extern int typeSize(IntPtr typeBase);
+
+
+        /* gapi_long
          *     gapi_metaData_enumerationCount(gapi_enumeration enumBase);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_metaData_enumerationCount")]

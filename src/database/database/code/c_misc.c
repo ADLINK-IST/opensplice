@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -62,12 +62,12 @@ c_checkType (
 #ifndef NDEBUG
         if(o != NULL){
             str = c_metaObject(c__getType(o))->name;
-            OS_REPORT_2(OS_ERROR, "Database", 0, 
+            OS_REPORT_2(OS_ERROR, "Database", 0,
                     "Type mismatch: object type is %s but %s was expected\n",
                     str,name);
             assert(FALSE);
         }
-#endif        
+#endif
 
         return NULL;
     }
@@ -374,15 +374,12 @@ c_copyOut (
         return;
     }
     t = c_typeActualType(type);
-    size = c_typeSize(t,o);
+    size = c_typeSize(t);
     if (size == 0) {
         OS_REPORT(OS_WARNING,"Database misc",0,
                   "c_copyOut: zero sized type specified");
         *data = NULL;
         return;
-    }
-    if (*data == NULL) {
-        *data = (c_voidp)os_malloc(size);
     }
     if (c_baseObject(t)->kind == M_COLLECTION) {
         switch(c_collectionType(t)->kind) {
@@ -399,6 +396,7 @@ c_copyOut (
             assert(FALSE);
         break;
         case C_ARRAY:
+            *data = (c_voidp)os_malloc(size);
             size = c_collectionType(t)->maxSize;
             if (size > 0) {
                 subType = c_collectionType(t)->subType;
@@ -424,9 +422,11 @@ c_copyOut (
         break;
         }
     } else if (c_typeIsRef(t)) {
+        *data = (c_voidp)os_malloc(size);
         memcpy(*data,*(void**)o,size);
         extractReferences(t,*(void**)o,*data);
     } else {
+        *data = (c_voidp)os_malloc(size);
         memcpy(*data,o,size);
         extractReferences(t,o,*data);
     }

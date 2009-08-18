@@ -6513,6 +6513,9 @@ OS_API const gapi_char *
 gapi_metaData_specifierName(gapi_specifier specBase);
 
 OS_API gapi_long
+gapi_metaData_typeSize(gapi_type typeBase);
+
+OS_API gapi_long
 gapi_metaData_enumerationCount(gapi_enumeration enumBase);
 
 OS_API c_primKind
