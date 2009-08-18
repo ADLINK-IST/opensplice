@@ -587,29 +587,6 @@ jacorb_check ()
                 ;;
         esac
         export CLASSPATH
-        if [ ! -f $JACORB_HOME/lib/idl.jar ]
-        then
-            echo "Error - $JACORB_HOME/lib/idl.jar in CLASSPATH invalid"
-            return 1
-        fi
-        CLASSPATH=$JACORB_HOME/lib/idl.jar:$CLASSPATH
-        case `uname` in
-            CYGWIN_NT*)
-                export CLASSPATH
-                WIN_CPATH=`echo $CLASSPATH | tr ':' ' '`
-                CLASSPATH=""
-
-                for i in $WIN_CPATH
-                do
-                    CLASSPATH=`cygpath -d "$i"`\;$CLASSPATH
-                done
-
-                ;;
-            *)
-
-                ;;
-        esac
-        export CLASSPATH
     fi
     echo "OK"
     echo "  setting JACORB_HOME to $JACORB_HOME"
