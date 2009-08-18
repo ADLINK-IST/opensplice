@@ -145,7 +145,7 @@ os_locate(
          * in the PATH environment */
 
         if ((*name == '.') ||
-            (strncmp(name, fsep, strlen(name)) == 0)) {
+            (strncmp(name, fsep, strlen(fsep)) == 0)) {
             osr = os_access(name, permission);
             if (osr == os_resultSuccess) {
                 result = os_strdup(name);
