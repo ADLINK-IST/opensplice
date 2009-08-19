@@ -2351,7 +2351,7 @@ in_configTraverseDiscoveryChannelElement(
             "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
             INCF_ATTRIB_channel_isEnabled,
             INCF_ELEM_DiscoveryChannel,
-            INCF_ATTRIB_channel_isEnabled_DEF);
+            IN_STRINGIFY_BOOLEAN(INCF_ATTRIB_channel_isEnabled_DEF));
     }
     discoveryChannel = in_configDiscoveryChannelNew(isEnabled, ddsiService);
     if(!discoveryChannel)
@@ -2519,7 +2519,7 @@ in_configTraverseChannelElement(
                 "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
                 INCF_ATTRIB_channel_isDefault,
                 INCF_ELEM_Channel,
-                IN_STRINGIFY(INCF_ATTRIB_channel_isDefault_DEF));
+                IN_STRINGIFY_BOOLEAN(INCF_ATTRIB_channel_isDefault_DEF));
         }
         if(!isEnabledDefined)
         {
@@ -2528,7 +2528,7 @@ in_configTraverseChannelElement(
                 "Unable to locate the '%s' attribute within element '%s'! Reverting to the default value of '%s'.",
                 INCF_ATTRIB_channel_isEnabled,
                 INCF_ELEM_Channel,
-                IN_STRINGIFY(INCF_ATTRIB_channel_isEnabled_DEF));
+                IN_STRINGIFY_BOOLEAN(INCF_ATTRIB_channel_isEnabled_DEF));
         }
         if(priority <= INCF_ATTRIB_channel_priority_MIN)
         {

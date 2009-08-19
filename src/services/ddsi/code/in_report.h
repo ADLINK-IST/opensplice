@@ -15,6 +15,8 @@
 #define __IN_STRINGIFY2(X) IN_STRINGIFY(X)
 #define IN_SPOT __FILE__":"__IN_STRINGIFY2(__LINE__)
 
+#define IN_STRINGIFY_BOOLEAN(Y) ((Y) ? "true" : "false")
+
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
 #define IN_REPORT_ERROR_1(funcName, description, a1)                          \
