@@ -1487,6 +1487,7 @@ main (
                 os_free(metaDescription);
             } else {
                 printf("Specified type %s not found\n", typeName);
+                returnCode = -1;
             }
         }
         if (makeTypeInfo) {
@@ -1509,6 +1510,7 @@ main (
                 os_free(metaDescription);
             } else {
                 printf("Specified type %s not found\n", typeName);
+                returnCode = -1;
             }
         }
         if (makeRegisterType) {
