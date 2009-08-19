@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "s_configuration.h"
@@ -38,7 +38,7 @@ s_configurationSetTime(
     *timeOut = os_realToTime(seconds);
 }
 
-/* Configuration retrieve functions */ 
+/* Configuration retrieve functions */
 static void
 s_configurationAttrValueLong(
     s_configuration configuration,
@@ -331,7 +331,7 @@ s_configurationSetServiceTerminatePeriod(
     if (sec > S_CFG_SERVICETERMINATEPERIOD_MAXIMUM) {
         sec = S_CFG_SERVICETERMINATEPERIOD_MAXIMUM;
     }
-    
+
     s_configurationSetTime(&(config->serviceTerminatePeriod), sec);
 }
 
@@ -343,7 +343,7 @@ s_configurationSetLeasePeriod(
     if (sec < S_CFG_LEASEPERIOD_MINIMUM) {
         sec = S_CFG_LEASEPERIOD_MINIMUM;
     }
-    
+
     s_configurationSetDuration(&(config->leasePeriod), sec);
 }
 
@@ -356,12 +356,12 @@ s_configurationSetLeaseRenewalPeriod(
     if (frac < S_CFG_LEASERENEWALPERIOD_MINIMUM) {
         frac = S_CFG_LEASERENEWALPERIOD_MINIMUM;
     }
-    
+
     if (frac > S_CFG_LEASERENEWALPERIOD_MAXIMUM) {
         frac = S_CFG_LEASERENEWALPERIOD_MAXIMUM;
     }
-    
-    leasePeriod.tv_sec = config->leasePeriod.seconds; 
+
+    leasePeriod.tv_sec = config->leasePeriod.seconds;
     leasePeriod.tv_nsec = config->leasePeriod.nanoseconds;
     frac = frac*(c_float)os_timeToReal(leasePeriod);
     s_configurationSetDuration(&(config->leaseRenewalPeriod), frac);
@@ -468,7 +468,7 @@ s_configurationSetTracingOutputFile(
                 config->tracingOutputFileName = os_strdup("stderr");
                 config->tracingOutputFile = stderr;
             } else {
-                char * filename = os_fileNormalize(value); 
+                char * filename = os_fileNormalize(value);
                 config->tracingOutputFile = fopen(filename, "a");
                 config->tracingOutputFileName = os_strdup(value);
             }
@@ -561,22 +561,22 @@ s_configurationInit(
         s_configurationSetTime(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
         s_configurationSetDuration(&(config->leasePeriod), S_CFG_LEASEPERIOD_DEFAULT);
         s_configurationSetDuration(&(config->leaseRenewalPeriod), S_CFG_LEASERENEWALPERIOD_DEFAULT);
-        
+
         /* Apply defaults to rest of configuration */
         os_threadAttrInit(&config->kernelManagerScheduling);
         config->kernelManagerScheduling.stackSize = 512*1024; /* 512KB */
         s_configurationSetKernelManagerSchedulingClass(config, S_CFG_KERNELMANAGERSCHEDULING_CLASS_DEFAULT);
         s_configurationSetKernelManagerSchedulingPriority(config, S_CFG_KERNELMANAGERSCHEDULING_PRIORITY_DEFAULT);
-        
+
         os_threadAttrInit(&config->garbageCollectorScheduling);
         config->garbageCollectorScheduling.stackSize = 512*1024; /* 512KB */
         s_configurationSetGCSchedulingClass(config, S_CFG_GCSCHEDULING_CLASS_DEFAULT);
         s_configurationSetGCSchedulingPriority(config, S_CFG_GCSCHEDULING_PRIORITY_DEFAULT);
-        
+
         os_threadAttrInit(&config->resendManagerScheduling);
         config->resendManagerScheduling.stackSize = 512*1024; /* 512KB */
         s_configurationSetResendManagerSchedulingClass(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
-        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
+        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT);
     }
 }
 
@@ -702,7 +702,7 @@ s_configurationRead(
     u_cfNode node;
     c_iter iter;
     c_char *name;
-    
+
     root = u_participantGetConfiguration(u_participant(splicedGetService(daemon)));
     if (root) {
         iter = u_cfElementXPath(root, "Domain");
@@ -713,7 +713,7 @@ s_configurationRead(
             element = u_cfElement(c_iterTakeFirst(iter));
         }
         c_iterFree(iter);
-        
+
         iter = u_cfElementXPath(root, "Domain/Daemon");
         dcfg = u_cfElement(c_iterTakeFirst(iter));
         element = u_cfElement(c_iterTakeFirst(iter));
@@ -744,7 +744,7 @@ s_configurationRead(
                     u_cfAttributeFree(attribute);
                 }
             }
-            u_cfNodeFree(node);        
+            u_cfNodeFree(node);
             node = u_cfNode(c_iterTakeFirst(iter));
          }
          c_iterFree(iter);
@@ -752,18 +752,18 @@ s_configurationRead(
         s_configurationValueFloat(config, domain, "Lease/ExpiryTime/#text", s_configurationSetLeasePeriod);
         s_configurationAttrValueFloat(config, domain, "Lease/ExpiryTime", "update_factor", s_configurationSetLeaseRenewalPeriod);
     }
-    
+
     if (dcfg) {
         s_configurationAttrValueBoolean (config, dcfg, "Tracing", "synchronous", s_configurationSetTracingSynchronous);
         s_configurationValueString      (config, dcfg, "Tracing/Verbosity/#text", s_configurationSetTracingVerbosity);
         s_configurationValueString      (config, dcfg, "Tracing/OutputFile/#text", s_configurationSetTracingOutputFile);
         s_configurationValueBoolean     (config, dcfg, "Tracing/Timestamps/#text", s_configurationSetTracingTimestamps);
         s_configurationSetTracingRelativeTimestamps(config, dcfg, "Tracing/Timestamps", "absolute");
-        
+
         /* Kernelmanager */
         s_configurationValueString(config, dcfg, "KernelManager/Scheduling/Class/#text", s_configurationSetKernelManagerSchedulingClass);
         s_configurationValueLong(config, dcfg, "KernelManager/Scheduling/Priority/#text", s_configurationSetKernelManagerSchedulingPriority);
-         
+
          /* GarbageCollector */
          s_configurationValueString(config, dcfg, "GarbageCollector/Scheduling/Class/#text", s_configurationSetGCSchedulingClass);
          s_configurationValueLong(config, dcfg, "GarbageCollector/Scheduling/Priority/#text", s_configurationSetGCSchedulingPriority);
@@ -773,19 +773,19 @@ s_configurationRead(
          s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
 
     }
-    
-        
-    
+
+
+
     /* Finally report the configuration */
     s_configurationReport(config, daemon);
-    
+
     if (domain) {
         u_cfElementFree(domain);
     }
     if (dcfg) {
         u_cfElementFree(dcfg);
     }
-    
+
     if (root) {
         u_cfElementFree(root);
     }

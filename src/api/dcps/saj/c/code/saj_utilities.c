@@ -52,6 +52,8 @@ void
 saj_exceptionCheck (
     JNIEnv *javaEnv)
 {
+    if ((*javaEnv)->ExceptionOccurred(javaEnv))
+        assert(0);
 }
 
 PA_ADDRCAST
