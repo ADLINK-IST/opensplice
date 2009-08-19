@@ -267,7 +267,7 @@ set_envs ()
             
     if [ "${SOURCE_HOST_SHORT}" = "win" ]
     then
-        (cd ${OSPL_HOME}/install/service_installer; make)
+        #(cd ${OSPL_HOME}/install/service_installer; make)
         BUILDER_TARGET="windows"
         SCRIPT_NAME="release.bat"
         TXTFILE_CONVERTER="unix2dos"
@@ -517,6 +517,17 @@ install_hde_target ()
         printf "*       For SAC ... "
         mkdir ${HDE_dir}/etc/idlpp/SAC
         cp ${OSPL_HOME}/etc/idlpp/SAC/sac* ${HDE_dir}/etc/idlpp/SAC/
+        echo "Ready"
+    fi
+
+    #
+    # Copy IDL preprocessor configuration file for SACS
+    #
+    if [ "${INCLUDE_API_DCPS_SACS}" = "yes" ]
+    then
+        printf "*       For SACS ... "
+        mkdir ${HDE_dir}/etc/idlpp/SACS
+        cp ${OSPL_HOME}/etc/idlpp/SACS/* ${HDE_dir}/etc/idlpp/SACS/
         echo "Ready"
     fi
 
@@ -1405,12 +1416,12 @@ install_rts_target ()
     #
     # Copy Windows service installer and resources into place
     #
-    if [ "${target}" = "x86.win32" ]; then
-        echo "*     For Service Installer ... "
-        install_bin_file ${OSPL_HOME}/install/service_installer ${RTS_dir} bin ServiceUtil${suffix_exe}
-        install_ascii_file ${OSPL_HOME}/install/service_installer/service_info.txt ${RTS_dir}/etc
-        echo "*     Ready"
-    fi
+    #if [ "${target}" = "x86.win32" ]; then
+    #    echo "*     For Service Installer ... "
+    #    install_bin_file ${OSPL_HOME}/install/service_installer ${RTS_dir} bin ServiceUtil${suffix_exe}
+    #    install_ascii_file ${OSPL_HOME}/install/service_installer/service_info.txt ${RTS_dir}/etc
+    #    echo "*     Ready"
+    #fi
 
     #
     # Copy executable files
