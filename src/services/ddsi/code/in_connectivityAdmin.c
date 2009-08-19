@@ -241,6 +241,31 @@ findMatchedParticipantFacades(
     }
 }
 
+static in_connectivityParticipantFacade
+findParticipantFacadeByGuidUnsafe(
+		in_connectivityAdmin _this, 
+		in_ddsiGuidPrefixRef guidPrefixRef)
+{
+	Coll_Iter* iterator;
+	
+	in_connectivityParticipantFacade facade=NULL, result=NULL;
+	in_ddsiGuidPrefixRef facadesGuidRef = NULL;
+	
+	/* go over all facade's to find it */
+	iterator = Coll_Set_getFirstElement(&_this->Participants);
+	while(iterator && !result)
+	{
+		facade = in_connectivityParticipantFacade(Coll_Iter_getObject(iterator));
+		facadesGuidRef = in_connectivityParticipantFacadeGetGuidPrefix(facade);
+		
+		if ( in_ddsiGuidPrefixEqual(guidPrefixRef, facadesGuidRef)) {
+			result = facade;
+		}
+		iterator = Coll_Iter_getNext(iterator);
+	}	
+
+	return result; /* may be NULL */ 
+}
 
 /**
  * Determine wether a facade and a peer are compatible.
@@ -403,6 +428,27 @@ in_connectivityAdminGetInstance(void)
        theConnectivityAdmin = in_connectivityAdminNew();
     }
     return theConnectivityAdmin;
+}
+
+os_boolean 
+in_connectivityAdminIsLocalEntity(
+	in_connectivityAdmin _this,
+	in_ddsiGuidPrefixRef guidPrefixRef)
+{
+	os_boolean result = OS_FALSE;
+	in_connectivityParticipantFacade found = NULL;
+	
+	in_connectivityAdminLock(_this);
+	
+	found = findParticipantFacadeByGuidUnsafe(_this, guidPrefixRef);
+
+	result = found!=NULL;
+	
+	in_connectivityParticipantFacadeFree(found);
+	
+	in_connectivityAdminUnlock(_this);
+
+	return found!=NULL;
 }
 
 void

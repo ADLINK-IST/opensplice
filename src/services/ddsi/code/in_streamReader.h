@@ -95,6 +95,18 @@ typedef in_result (*in_streamReaderRequestNackFragFunc)(
         in_streamReaderCallbackArg _this,
         in_ddsiNackFragRequest request);
 
+/* to check incoming messages for relevance, 
+ * 
+ * The operation can be used for two purposes, first to detect incoming messages 
+ * as loopback messages the process is the originator itself, and second 
+ * to ignore messages whose destined entity is not a local one. 
+ * 
+ * \param guidPrefixRef refering the participant GuidPrefix 
+ */
+typedef os_boolean (*in_streamReaderIsLocalEntityFunc)(
+		in_streamReaderCallbackArg _this,
+        in_ddsiGuidPrefixRef guidPrefixRef);
+
 /** */
 OS_STRUCT(in_streamReaderCallbackTable)
 {
@@ -108,6 +120,7 @@ OS_STRUCT(in_streamReaderCallbackTable)
     in_streamReaderProcessNackFragFunc    processNackFrag;
     in_streamReaderProcessHeartbeatFunc   processHeartbeat;
     in_streamReaderRequestNackFragFunc    requestNackFrag;
+    in_streamReaderIsLocalEntityFunc      isLocalEntity;
 };
 
 
