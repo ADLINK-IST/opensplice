@@ -143,14 +143,11 @@ idl_scopeStackCxx(
 
 static c_char *
 standaloneTypeFromTypeSpec(
-    idl_typeBasic t,
-    c_bool global_scoped)
+    idl_typeBasic t)
 {
     c_char *typeName;
-    c_char *tempName;
 
     typeName = NULL;
-    tempName = NULL;
     switch (idl_typeBasicType(t)) {
     case idl_short:
         typeName = os_strdup("::DDS::Short");
@@ -191,13 +188,6 @@ standaloneTypeFromTypeSpec(
     default:
         /* No processing required, empty statement to satisfy QAC */
     break;
-    }
-    if (!global_scoped && idl_typeBasicType(t) != idl_string) 
-    {
-       tempName = os_strdup(typeName);
-       os_free(typeName);
-       typeName = os_strdup(tempName+2);
-       os_free(tempName);
     }
     return typeName;
 }
@@ -266,7 +256,7 @@ idl_corbaCxxTypeFromTypeSpec(
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* if the specified type is a basic type */
         if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-           typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec),TRUE);
+           typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec));
         } else {
             typeName = corbaTypeFromTypeSpec(idl_typeBasic(typeSpec));
         }
@@ -288,32 +278,6 @@ idl_corbaCxxTypeFromTypeSpec(
     }
     return typeName;
     /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
-}
-
-c_char *
-idl_corbaCxxTypeScopeFromTypeSpec(
-   idl_typeSpec typeSpec,
-   c_bool global_scoped
-)
-{
-    c_char *typeName;
-
-    if (!global_scoped) 
-    {
-       if (idl_getCorbaMode() == IDL_MODE_STANDALONE) 
-       {
-          typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec),global_scoped);
-       }
-       else
-       {
-          typeName = idl_corbaCxxTypeFromTypeSpec (typeSpec);
-       }
-    } 
-    else
-    {
-       typeName = idl_corbaCxxTypeFromTypeSpec (typeSpec);
-    }
-    return typeName;
 }
 
 c_char *
