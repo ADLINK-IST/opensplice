@@ -1,7 +1,7 @@
 #
 # Set subsystems to be processed
 #
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(findstring win32,$(SPLICE_TARGET))) # if windows
       SUBSYSTEMS := win32
 else
    ifeq (,$(findstring vxworks,$(SPLICE_TARGET)))

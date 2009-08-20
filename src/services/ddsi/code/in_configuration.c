@@ -1524,68 +1524,6 @@ LookupReportLevel(
     return result;
 }
 
-/* --------------------------------- Tracing -------------------------------- */
-
-/* implements in_report.h */
-
-#ifdef IN_TRACING
-
-void
-in_reportTrace(
-    in_traceClass traceClass,
-    c_ulong level,
-    const c_char *context,
-    const char *description, ...)
-{
-    va_list ap;
-    os_time useTime;
-#if 1
-    in_configuration configuration;
-
-    configuration = in_configurationGetConfiguration();
-
-    if (configuration) {
-        if (in_configurationInterested(configuration, traceClass, level) &&
-            configuration->traceConfig.outFile) {
-            if (configuration->traceConfig.timestamps) {
-                if (configuration->traceConfig.relTimestamps) {
-                    useTime = os_timeSub(os_timeGet(), configuration->traceConfig.startTime);
-                } else {
-                    useTime = os_timeGet();
-                }
-                fprintf(configuration->traceConfig.outFile, "%5d.%3.3d ",
-                        useTime.tv_sec, useTime.tv_nsec/1000000);
-            }
-            fprintf(configuration->traceConfig.outFile, "%-14s (%d) ",
-                    context, level);
-            va_start(ap, description);
-            vfprintf(configuration->traceConfig.outFile, description, ap);
-            va_end(ap);
-            fflush(configuration->traceConfig.outFile);
-        }
-
-    }
-#else
-
-    if(traceClass == TC(Receive))
-    {
-      if(!outputFile)
-      {
-          outputFile = fopen("ddsi.log", "w");
-      }
-        useTime = os_timeGet();
-        fprintf(outputFile, "%5d.%3.3d ",useTime.tv_sec, useTime.tv_nsec/1000000);
-        fprintf(outputFile, "%-14s (%d) ", context, level);
-        va_start(ap, description);
-        vfprintf(outputFile, description, ap);
-        va_end(ap);
-        fflush(outputFile);
-   }
-#endif
-}
-
-#endif /* IN_TRACING */
-
 /* ------------------------------- Profiling -------------------------------- */
 
 /* implements in_profiling.h */

@@ -587,10 +587,6 @@ nw_socketNew(
         } else {
             /* Set option to avoid receivebuffer */
             success = success && nw_socketSetReceiveBufferSize(result, 0);
-            /* Set option for avoiding routing to other interfaces */
-#if ! defined OS_VXWORKS_DEFS_H && ! defined INTEGRITY
-            success = success && nw_socketSetDontRouteOption(result, SK_TRUE);
-#endif
             /* Set option for custom TOS */
             TOSRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DiffServField);
             success = success && nw_socketSetTOS(result, (int)TOSRequested);
@@ -613,7 +609,7 @@ nw_socketNew(
         }
 
         switch (addressType) {
-            case SK_TYPE_BROADCAST: nw_socketBroadcastInitialize(result); break;
+            case SK_TYPE_BROADCAST: nw_socketBroadcastInitialize(result, receiving); break;
             case SK_TYPE_MULTICAST: nw_socketMulticastInitialize(result, receiving); break;
             default: break;
         }

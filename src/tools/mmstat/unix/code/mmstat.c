@@ -36,6 +36,16 @@
 #define DATABASE_NAME "c_base_a02"
 #define SHM_NAME "The default Domain"
 
+#ifdef INTEGRITY
+#include <netinet/in.h>
+static int conn;
+static int port=2323;
+static int orig_stdout;
+static const char *optflags="p:i:l:f:s:hertToOmM";
+#else
+static const char *optflags="i:l:f:s:hertToOmM";
+#endif
+
 typedef enum {
     memoryStats,
     typeRefCount,
@@ -57,6 +67,9 @@ print_usage (
             "               variable OSPL_URI will be searched for. When even the\n"
 	    "               the environment variable is unspecified, the default system\n"
 	    "               will be selected. The default display interval is 3 seconds\n\n");
+#ifdef INTEGRITY
+    printf ("      -p port  Set the portnumber of the telnet port (default %d)\n\n", port);
+#endif
     printf ("      -e       Extended mode, shows bar for allocated memory\n\n"
 	    "      -i interval\n"
 	    "               Show memory statistics every interval milli seconds\n\n"
@@ -76,7 +89,11 @@ print_usage (
 }
 
 int
+#ifdef INTEGRITY
+mmstat_main (
+#else
 main (
+#endif
     int argc,
     char *argv[]
     )
@@ -91,9 +108,11 @@ main (
     u_result ur;
     u_participant participant;
     v_participantQos pqos;
+#ifndef INTEGRITY
     struct termios old_termios;
     struct termios new_termios;
     sigset_t sigmask;
+#endif
     int count;
     int no_break = TRUE;
     char c;
@@ -109,7 +128,7 @@ main (
     c_long objectCountLimit = 0;
     char *filterExpression = NULL;
 
-    while ((opt = getopt (argc, argv, "i:l:f:s:hertToOmM")) != -1) 
+    while ((opt = getopt (argc, argv, optflags)) != -1)
     {
        switch (opt) 
        {
@@ -156,6 +175,11 @@ main (
              selectedAction = objectRefCount;
              delta = TRUE;
              break;
+#ifdef INTEGRITY
+          case 'p':
+             sscanf (optarg, "%d", &port);
+             break;
+#endif
           case '?':
              print_usage (argv[0]);
              exit (-1);
@@ -210,6 +234,34 @@ main (
           if( !raw ) 
           {
              printf("Connection established.\n\n");
+#ifdef INTEGRITY
+             {
+                int flag=1;
+                int res;
+                int alen;
+                int sock;
+                struct sockaddr_in sin;
+                printf("Please connect with telnet to port %d.\n\n", port);
+                memset( &sin, 0 , sizeof(struct sockaddr_in));
+                alen=sizeof(struct sockaddr_in);
+                sock = socket(PF_INET, SOCK_STREAM, 0);
+                assert(sock != -1 );
+                sin.sin_family=AF_INET;
+                sin.sin_addr.s_addr = INADDR_ANY;
+                sin.sin_port=htons(port);
+                res=bind(sock, (struct sockaddr *)&sin, alen);
+                assert(res != -1 );
+                res=listen(sock, 1);
+                assert(res != -1 );
+                conn = accept(sock, NULL, NULL);
+                assert(conn != -1 );
+                close(sock);
+                res=ioctl(conn, FIONBIO, &flag);
+                assert (res == 0);
+                orig_stdout = dup(fileno(stdout));
+                dup2(conn, fileno(stdout));
+             }
+#else
              if (isatty (fileno(stdin))) 
              {
                 sigemptyset (&sigmask);     /* empty signal mask */
@@ -227,6 +279,7 @@ main (
                 sigprocmask (SIG_BLOCK, &sigmask, NULL);    /* Igore input/output signals */
                 tcsetattr (fileno(stdin), TCSAFLUSH, &new_termios);
              }
+#endif
           }
           lost = 0;
           switch (selectedAction) 
@@ -271,6 +324,7 @@ main (
                 
              if(ur == U_RESULT_OK)
              {
+#ifndef INTEGRITY
                 if (isatty (fileno(stdin)) && !raw) 
                 {
                    count = read (fileno(stdin), &c, 1);
@@ -291,11 +345,18 @@ main (
                    }
                 } 
                 else 
+#endif
                 {
+#ifdef INTEGRITY
+                   count = read (conn, &c, 1);
+                   if( count != -1 || errno == EAGAIN  )
+                   {
+#else
                    if (ioctl (fileno(stdin), FIONREAD, &count) == 0) 
                    {
                       count = read (fileno(stdin), &c, 1);
-                      if (count) 
+#endif
+                      if (count > 0) 
                       {
                          if (c == 'q' || c == '\03' /* ^C */) 
                          {
@@ -309,6 +370,9 @@ main (
                    } 
                    else 
                    {
+#ifdef INTEGRITY
+                      dup2( orig_stdout, fileno(stdout));
+#endif
                       no_break = 0;
                    }
                 }
@@ -330,6 +394,7 @@ main (
                 no_break = 0;
              }
           }
+#ifndef INTEGRITY
           if (isatty (fileno(stdin)) && !raw) 
           {
              count = read (fileno(stdin), &c, 1);
@@ -339,6 +404,7 @@ main (
                 tcsetattr (fileno(stdin), TCSAFLUSH, &old_termios);
              }
           }
+#endif
           u_participantFree(participant);
             
           if(lost) 
@@ -374,6 +440,11 @@ main (
        OS_REPORT(OS_ERROR,"mmstat", 0, "Failed to initialise.");
     }
     printf("\nExiting now...\n");
+#ifdef INTEGRITY
+    fclose(stdout);
+    shutdown(conn, SHUT_RDWR);
+    close(conn);
+#endif
 
     return 0;
 }

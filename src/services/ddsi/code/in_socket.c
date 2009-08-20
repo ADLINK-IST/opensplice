@@ -814,7 +814,7 @@ in_socketDuplexNew(
 				in_addressInitFromStringWithDefault(&result->sockAddrMulti, defaultAddress, INCF_DEF(Address));
 
                 /* We can stop multicasting from looping back though */
-                result->loopsback = OS_FALSE;
+                result->loopsback = OS_TRUE;
                 IN_TRACE_1(Test, 4, "Using multicast address %s for default partition",
                                     in_addressToString(&result->sockAddrMulti, addressStringBuffer, sizeof(addressStringBuffer)));
             break;
@@ -1088,7 +1088,6 @@ in_socketReceive(
     os_int32 selectRes;
     struct sockaddr_in6 sockAddr; /* TODO sockaddr_storage */
     os_int fromLen = (os_int)sizeof(sockAddr);
-    os_boolean ownMessage;
     os_boolean readDone = OS_FALSE;
     os_time tmpTimeOut = *timeOut;
 #ifdef IN_DEBUGGING
@@ -1133,44 +1132,25 @@ in_socketReceive(
 
         /* IN_PROF_LAPSTOP(RecvFrom); */
         if (recvRes > 0) {
-            if (sock->loopsback) {
-#ifdef IN_LOOPBACK
-                if (in_configurationUseLoopback()) {
-                    /* Loopback always simulates that data comes from the network */
-                    ownMessage = OS_FALSE;
-                } else {
-                    ownMessage =
-                    	in_addressMatches(&sock->sockAddrPrimary,
-                    			(struct sockaddr*) &sockAddr);
-                }
-#else
-                ownMessage =
-                	in_addressMatches(&sock->sockAddrPrimary, &sockAddr);
-#endif
-            } else {
-                ownMessage = OS_FALSE;
-            }
-            if (!ownMessage) {
-                result = (in_long)recvRes;
-                in_locatorInitFromSockaddr(senderLocator,
-                		(struct sockaddr *)&sockAddr);
+			result = (in_long)recvRes;
+			in_locatorInitFromSockaddr(senderLocator,
+					(struct sockaddr *)&sockAddr);
 
 #ifdef IN_DEBUGGING
-                if (control) {
-                    IN_HEXDUMP("in_socketReceiveControl", 0, buffer, result);
-                } else {
-                    IN_HEXDUMP("in_socketReceiveData", 0, buffer, result);
-                }
+			if (control) {
+				IN_HEXDUMP("in_socketReceiveControl", 0, buffer, result);
+			} else {
+				IN_HEXDUMP("in_socketReceiveData", 0, buffer, result);
+			}
 #endif
 
-                /* Resume profiling because we have actually received something
-                 * relevant */
-                /* IN_PROF_LAPSTART(BridgeRead_2); */
-                /* IN_PROF_LAPSTART(PlugRead_2); */
+			/* Resume profiling because we have actually received something
+			 * relevant */
+			/* IN_PROF_LAPSTART(BridgeRead_2); */
+			/* IN_PROF_LAPSTART(PlugRead_2); */
 
-               IN_REPORT_SOCKFUNC(6, os_resultSuccess,
-                              "receiving data from socket", "recvfrom");
-            }
+		   IN_REPORT_SOCKFUNC(6, os_resultSuccess,
+						  "receiving data from socket", "recvfrom");
         } else {
            IN_REPORT_SOCKFUNC(6, os_resultFail,
                               "receiving data from socket", "recvfrom");

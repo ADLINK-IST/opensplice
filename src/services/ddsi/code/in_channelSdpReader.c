@@ -42,6 +42,10 @@ static in_result in_channelSdpReaderProcessHeartbeatFunc(
     in_ddsiHeartbeat event,
     in_ddsiReceiver receiver);
 
+static os_boolean in_channelSdpReaderIsLocalEntityFunc(
+        in_streamReaderCallbackArg _this,
+        in_ddsiGuidPrefixRef guidPrefixRef);
+
 OS_STRUCT(in_channelSdpReader)
 {
     OS_EXTENDS(in_channelReader);
@@ -83,6 +87,7 @@ in_channelSdpReaderCallbackTable =
         NULL, /* processNackFrag */
         in_channelSdpReaderProcessHeartbeatFunc, /* processHeartbeat */
         NULL, /* requestNackFrag */
+        in_channelSdpReaderIsLocalEntityFunc
 };
 
 os_boolean
@@ -299,4 +304,22 @@ in_channelSdpReaderProcessHeartbeatFunc(
     in_channelSdpWriterFree(sdpw);
     in_channelFree(channel);
     return result;
+}
+
+os_boolean 
+in_channelSdpReaderIsLocalEntityFunc(
+	in_streamReaderCallbackArg _this,
+	in_ddsiGuidPrefixRef guidPrefixRef)
+{
+	in_connectivityAdmin admin;
+	os_boolean result = OS_FALSE;
+	
+	admin = in_connectivityAdminGetInstance();
+	
+	assert(admin);
+    
+	/* TODO, optme - could be cached */ 
+	result = in_connectivityAdminIsLocalEntity(admin, guidPrefixRef);
+	
+	return result;
 }

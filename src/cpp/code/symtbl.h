@@ -43,7 +43,7 @@ extern int n_in_table;
 
 extern DEF * find_def (char *);
 extern void init_symtbl (void);
-OS_API extern void define (char *, int, unsigned char *, int);
+OS_API extern void define (const char *, int, unsigned char *, int);
 extern void undef (char *);
 extern void defd (char *, int);
 extern void undef_predefs (void);

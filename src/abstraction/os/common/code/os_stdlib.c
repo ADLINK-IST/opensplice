@@ -23,7 +23,7 @@
 
 char *
 os_getenv(
-    char *variable)
+    const char *variable)
 {
     return getenv(variable);
 }

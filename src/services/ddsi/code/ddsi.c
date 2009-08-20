@@ -135,6 +135,7 @@ in_serviceMain(
 		in_objectFree(in_object(admin));
     }
     /* Clean up */
+    in_configFree(config);
     u_serviceFree(service);
 }
 

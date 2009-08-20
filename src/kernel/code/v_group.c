@@ -11,6 +11,7 @@
  */
 #include "v__group.h"
 #include "v_kernel.h"
+#include "v_policy.h"
 #include "v__entry.h"
 #include "v_domain.h"
 #include "v__topic.h"
@@ -1246,6 +1247,27 @@ entryWrite(
     return TRUE;
 }
 
+
+static c_bool
+variantEntryResend(
+    v_groupEntry proxy,
+    c_voidp arg)
+{
+	c_bool success;
+
+	/* Variant entries cannot reject when they have no resource limits. To
+	 * prevent samples that are rejected by another entry to arrive multiple
+	 * times (because there is no administration about pending resends when
+	 * there is no instance cache), don't resend samples in this case.
+	 */
+	if(!v_resourcePolicyIsUnlimited(v_reader(proxy->entry->reader)->qos->resource)){
+		success = entryWrite(proxy, arg);
+	} else {
+		success = TRUE;
+	}
+	return success;
+}
+
 static c_bool
 instanceWrite(
     v_cacheNode node,
@@ -1812,7 +1834,7 @@ v_groupResend (
      * with own storage spectrum.
      */
     if (v_messageStateTest(msg,L_WRITE)) {
-        v_groupEntrySetWalk(&group->variantEntrySet,entryWrite,&writeArg);
+        v_groupEntrySetWalk(&group->variantEntrySet,variantEntryResend,&writeArg);
     }
     v_groupCacheWalk(instance->readerInstanceCache,
                      instanceResend,
@@ -2383,12 +2405,15 @@ walkMatchingSamples(
             }
 
             if(instancePass){ /* instance matches query*/
+                /* Since history is 'replayed' here, the oldest sample should be
+                 * processed first. We keep a reference to the first sample and
+                 * set the current sample to the tail of the instance (oldest). */
                 firstSample = v_groupInstanceHead(instance);
-                sample = firstSample;
+                sample = v_groupInstanceTail(instance);
 
                 while ((sample != NULL) && proceed) {
                     if (sample != firstSample) {
-                        v_groupInstanceSetHead(instance,sample);
+                        v_groupInstanceSetHeadNoRefCount(instance,sample);
                     }
                     if((condition->sampleQ[i])){
                         pass = c_queryEval(condition->sampleQ[i], instance);
@@ -2397,7 +2422,7 @@ walkMatchingSamples(
                     }
 
                     if (sample != firstSample) {
-                        v_groupInstanceSetHead(instance,firstSample);
+                        v_groupInstanceSetHeadNoRefCount(instance,firstSample);
                     }
                     if(pass){
                         sampleMatch = handleMatchingSample(sample, condition);
@@ -2411,12 +2436,12 @@ walkMatchingSamples(
                                     condition->insertedSamples - samplesBefore);
                         }
                     }
-                    sample = sample->older;
+                    sample = sample->newer;
                 }
             }
         }
     } else {
-        sample = v_groupInstanceHead(instance);
+        sample = v_groupInstanceTail(instance);
 
         while ((sample != NULL) && proceed) {
             sampleMatch = handleMatchingSample(sample, condition);
@@ -2430,7 +2455,7 @@ walkMatchingSamples(
                                     condition->insertedSamples,
                                     condition->insertedSamples - samplesBefore);
             }
-            sample = sample->older;
+            sample = sample->newer;
         }
     }
 
@@ -2522,4 +2547,18 @@ v_groupFlushActionWithCondition(
         result = c_walk(g->instances, walkMatchingSamples, &condition);
     }
     return;
+}
+
+void
+v_groupUpdatePurgeList(
+    v_group group)
+{
+    assert(group != NULL);
+    assert(C_TYPECHECK(group,v_group));
+
+    if(group){
+        c_mutexLock(&group->mutex);
+        updatePurgeList(group, v_timeGet());
+        c_mutexUnlock(&group->mutex);
+    }
 }

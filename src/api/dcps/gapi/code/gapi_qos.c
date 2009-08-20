@@ -1042,7 +1042,9 @@ validSchedulingClassQosPolicy (
 {
     gapi_boolean valid = TRUE;
 
-    if (policy->kind > GAPI_SCHEDULE_REALTIME) {
+    if (policy->kind != GAPI_SCHEDULE_REALTIME &&
+        policy->kind != GAPI_SCHEDULE_TIMESHARING &&
+        policy->kind != GAPI_SCHEDULE_DEFAULT) {
         valid = FALSE;
     }
 
@@ -1056,7 +1058,8 @@ validSchedulingPriorityQosPolicy (
 {
     gapi_boolean valid = TRUE;
 
-    if (policy->kind > GAPI_PRIORITY_ABSOLUTE) {
+    if (policy->kind != GAPI_PRIORITY_ABSOLUTE &&
+        policy->kind != GAPI_PRIORITY_RELATIVE) {
         valid = FALSE;
     }
 

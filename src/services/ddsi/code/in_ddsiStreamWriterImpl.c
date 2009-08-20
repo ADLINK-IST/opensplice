@@ -871,7 +871,7 @@ sendCurrentBufferToMultiple(
             in_locator destLocator = Coll_Iter_getObject(iter);
 
             assert(destLocator!=NULL);
-            IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer, cos i can %p", _this->transportSender);
+            IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer %p", _this->transportSender);
             osResult = in_transportSenderSendTo(
                     _this->transportSender,
                     destLocator,
@@ -881,7 +881,7 @@ sendCurrentBufferToMultiple(
                     &(_this->timeout));
             if(osResult == os_resultFail)
             {
-                IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer went oopsie %p", _this->transportSender);
+                IN_TRACE_1(Send, 2, ">>> sendCurrentBufferToMultiple - calling transport layer gave error %p", _this->transportSender);
                 result = IN_RESULT_ERROR;
             }
             iter = Coll_Iter_getNext(iter);
@@ -948,7 +948,7 @@ in_ddsiStreamWriterImplAppendData(
 		/* now we should turn to fragmentation, but
 		 * this is not implemented yet */
 	    result = IN_RESULT_ERROR;
-        IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - uh oh %p", facade);
+        IN_TRACE_1(Send, 2, ">>> in_ddsiStreamWriterImplAppendData - remaining capacity exceeded %p", facade);
 	} else {
         in_result  retState;
 
