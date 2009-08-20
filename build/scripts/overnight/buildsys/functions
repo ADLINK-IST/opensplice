@@ -199,7 +199,7 @@ mkdirOnStore()
 
 SetupRemoteLogDir()
 {
-   RLOGDIR=results/$RUNTYPE/$PRODUCT/$DATE/$REV/$OSNAME/$INDEX
+   RLOGDIR=results/$RUNTYPE/$PRODUCT/$DATE/$VER/$OSNAME/$INDEX
    Assert mkdirOnStore -p $RLOGDIR/logs
    export RLOGDIR
 }
