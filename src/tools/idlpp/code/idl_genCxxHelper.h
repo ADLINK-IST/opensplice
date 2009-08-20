@@ -23,8 +23,6 @@ c_char *idl_scopeStackCxx(idl_scope scope, const char *scopeSepp, const char *na
 
 c_char *idl_corbaCxxTypeFromTypeSpec(idl_typeSpec typeSpec);
 
-c_char *idl_corbaCxxTypeScopeFromTypeSpec(idl_typeSpec typeSpec, c_bool global_scoped);
-
 c_char *idl_genCxxConstantGetter(void);
 
 #endif /* IDL_GENCXXHELPER_H */
