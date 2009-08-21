@@ -12,6 +12,12 @@
 
 #include "gapi.h"
 
+gapi_type
+gapi_typeActualType(gapi_type typeBase)
+{
+    return c_typeActualType(typeBase);
+}
+
 c_metaKind
 gapi_metaData_baseObjectKind(gapi_baseObject objBase)
 {
