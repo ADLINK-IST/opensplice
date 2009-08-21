@@ -305,9 +305,7 @@ u_splicedFree(
             /* now close the kernel: should always be the last action of
                this routine!
             */
-            /* u_userKernelClose(kernel); in the future */
             u_userKernelClose(kernel);
-            // u_kernelFree(kernel);
         } else {
             r = u_entityFree(u_entity(spliced));
         }

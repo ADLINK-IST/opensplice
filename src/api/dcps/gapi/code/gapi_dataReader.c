@@ -973,6 +973,8 @@ copy_deadline_missed_status(
 {
     struct v_deadlineMissedInfo *from;
     gapi_requestedDeadlineMissedStatus *to;
+    v_handleResult result;
+    v_public instance;
 
     from = (struct v_deadlineMissedInfo *)info;
     to = (gapi_requestedDeadlineMissedStatus *)arg;
@@ -980,7 +982,11 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    to->last_instance_handle = u_instanceHandleFromGID(from->instanceHandle);
+    result = v_handleClaim(from->instanceHandle, &instance);
+    if (result == V_HANDLE_OK) {
+        to->last_instance_handle = u_instanceHandleNew(v_public(instance));
+        result = v_handleRelease(from->instanceHandle);
+    }
 
     return V_RESULT_OK;
 }

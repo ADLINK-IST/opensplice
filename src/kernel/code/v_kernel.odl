@@ -506,7 +506,7 @@ struct v_livelinessLostInfo {
 struct v_deadlineMissedInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
-    v_gid                          instanceHandle;
+    v_handle                       instanceHandle;
 };
 
 struct v_sampleRejectedInfo {

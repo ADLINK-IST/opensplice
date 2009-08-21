@@ -73,8 +73,6 @@ dataReaderLookupInstanceUnlocked(
     assert(C_TYPECHECK(_this,v_dataReader));
     assert(C_TYPECHECK(keyTemplate,v_message));
 
-    v_nodeState(keyTemplate) = L_REGISTER;
-
     instance = v_dataReaderInstanceNew(_this, keyTemplate);
 
     if (v_dataReaderQos(_this)->userKey.enable) {
@@ -1510,14 +1508,6 @@ v_dataReaderNotifyLivelinessChanged(
 {
     c_bool changed;
     C_STRUCT(v_event) event;
-    v_participant participant;
-    c_iter readers;
-    v_dataReader publicationReader;
-    v_dataReaderInstance instance;
-    v_gid instanceHandle;
-    v_topic topic;
-    v_message message;
-    v_subscriber subscriber;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
@@ -1527,52 +1517,6 @@ v_dataReaderNotifyLivelinessChanged(
     changed = FALSE;
     if (oldLivState != newLivState) {
         v_dataReaderLock(_this);
-        subscriber = v_subscriber(v_reader(_this)->subscriber);
-
-        if(subscriber){ /* subscriber may have become null when reader is freed */
-            participant = v_participant(subscriber->participant);
-
-            if(participant->builtinSubscriber && publicationInfo){
-                readers = v_subscriberLookupReadersByTopic(
-                            participant->builtinSubscriber,
-                            V_PUBLICATIONINFO_NAME);
-
-                assert(c_iterLength(readers) <= 1);
-                publicationReader = c_iterTakeFirst(readers);
-
-                if(publicationReader){
-                    topic = v_dataReaderGetTopic(publicationReader);
-                    message = v_topicMessageNew(topic);
-                    v_topicMessageCopyKeyValues(topic, message, publicationInfo);
-
-                    /* Splicedaemon receives its own notifications, so to prevent
-                     * deadlock use unlocked version here.
-                     */
-                    if(_this == publicationReader){
-                        instance = dataReaderLookupInstanceUnlocked(
-                                publicationReader, message);
-                    } else {
-                        instance = v_dataReaderLookupInstance(
-                            publicationReader, message);
-                    }
-
-                    instanceHandle = v_publicGid(v_public(instance));
-
-                    c_free(topic);
-                    c_free(message);
-                    c_free(instance);
-                    c_free(publicationReader);
-                } else {
-                    instanceHandle = v_publicGid(NULL);
-                }
-                c_iterFree(readers);
-
-            } else {
-                instanceHandle = v_publicGid(NULL);
-            }
-        } else {
-            instanceHandle = v_publicGid(NULL);
-        }
         /**
          * Transition table:
          *
@@ -1603,11 +1547,11 @@ v_dataReaderNotifyLivelinessChanged(
             switch(oldLivState) {
             case V_STATUSLIVELINESS_ALIVE:
                 changed = v_statusNotifyLivelinessChanged(
-                        v_entity(_this)->status, -1, 0, instanceHandle);
+                        v_entity(_this)->status, -1, 0, wGID);
             break;
             case V_STATUSLIVELINESS_NOTALIVE:
                 changed = v_statusNotifyLivelinessChanged(
-                        v_entity(_this)->status, 0, -1, instanceHandle);
+                        v_entity(_this)->status, 0, -1, wGID);
             break;
             default: /* no action! */
             break;
@@ -1618,11 +1562,11 @@ v_dataReaderNotifyLivelinessChanged(
                 switch(newLivState) {
                 case V_STATUSLIVELINESS_ALIVE:
                     changed = v_statusNotifyLivelinessChanged(
-                            v_entity(_this)->status, 1, 0, instanceHandle);
+                            v_entity(_this)->status, 1, 0, wGID);
                 break;
                 case V_STATUSLIVELINESS_NOTALIVE:
                     changed = v_statusNotifyLivelinessChanged(
-                            v_entity(_this)->status, 0, 1, instanceHandle);
+                            v_entity(_this)->status, 0, 1, wGID);
                 break;
                 default: /* no action! */
                 break;
@@ -1633,11 +1577,11 @@ v_dataReaderNotifyLivelinessChanged(
                            (newLivState == V_STATUSLIVELINESS_NOTALIVE));
                     if (newLivState == V_STATUSLIVELINESS_ALIVE) {
                         changed = v_statusNotifyLivelinessChanged(
-                                v_entity(_this)->status, 1, -1, instanceHandle);
+                                v_entity(_this)->status, 1, -1, wGID);
                     } else {
                         assert(newLivState == V_STATUSLIVELINESS_NOTALIVE);
                         changed = v_statusNotifyLivelinessChanged(
-                                v_entity(_this)->status, -1, 1, instanceHandle);
+                                v_entity(_this)->status, -1, 1, wGID);
                     }
                 }
             }
@@ -1912,7 +1856,9 @@ v_dataReaderCheckDeadlineMissed(
             v_gidSetNil(instance->owner.gid);
             instance->owner.strength = 0;
         }
-        if (v_statusNotifyDeadlineMissed(v_entity(_this)->status, instance)) {
+        if (v_statusNotifyDeadlineMissed(v_entity(_this)->status,
+                                         v_publicHandle(v_public(instance))))
+        {
             changed = TRUE;
         }
         instance = v_dataReaderInstance(c_iterTakeFirst(missed));

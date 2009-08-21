@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 #include "v_public.h"
-#include "v_reader.h"
+#include "v_collection.h"
 #include "os_if.h"
 
 typedef c_longlong u_instanceHandle;
@@ -69,7 +69,7 @@ u_instanceHandleIsEqual (
 OS_API u_instanceHandle
 u_instanceHandleFix(
     u_instanceHandle _this,
-    v_reader reader);
+    v_collection reader);
 
 /* Depricated : only for DLRL legacy. */
 

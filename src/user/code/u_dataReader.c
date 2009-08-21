@@ -427,7 +427,7 @@ u_dataReaderReadInstance(
 
     result = u_dataReaderClaim(_this,&reader);
     if (result == U_RESULT_OK) {
-        handle = u_instanceHandleFix(handle,v_reader(reader));
+        handle = u_instanceHandleFix(handle,v_collection(reader));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             if (v_dataReaderContainsInstance(reader,instance)) {
@@ -458,7 +458,7 @@ u_dataReaderTakeInstance(
 
     result = u_dataReaderClaim(_this,&reader);
     if (result == U_RESULT_OK) {
-        handle = u_instanceHandleFix(handle,v_reader(reader));
+        handle = u_instanceHandleFix(handle,v_collection(reader));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             if (v_dataReaderContainsInstance(reader,instance)) {
@@ -495,7 +495,7 @@ u_dataReaderReadNextInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
         } else {
-            handle = u_instanceHandleFix(handle,v_reader(reader));
+            handle = u_instanceHandleFix(handle,v_collection(reader));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 assert(instance != NULL);
@@ -534,7 +534,7 @@ u_dataReaderTakeNextInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
         } else {
-            handle = u_instanceHandleFix(handle,v_reader(reader));
+            handle = u_instanceHandleFix(handle,v_collection(reader));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 assert(instance != NULL);

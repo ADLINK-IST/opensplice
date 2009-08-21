@@ -91,7 +91,7 @@ u_dataViewInstanceAction(
 
     result = u_dataViewClaim(a->view,&view);
     if (result == U_RESULT_OK) {
-        handle = u_instanceHandleFix(handle,v_reader(view));
+        handle = u_instanceHandleFix(handle,v_collection(view));
         u_dataViewRelease(a->view);
         result = u_instanceHandleClaim(handle, &instance);
         if ((result == U_RESULT_OK) && (instance != NULL)) {

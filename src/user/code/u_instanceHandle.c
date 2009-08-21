@@ -16,6 +16,7 @@
 #include "v_dataView.h"
 #include "v_public.h"
 #include "v_dataReader.h"
+#include "v_reader.h"
 #include "v_query.h"
 #include "v_topic.h"
 #include "os_report.h"
@@ -107,7 +108,7 @@ u_instanceHandleClaim (
     if (instance == NULL) {
         result = U_RESULT_ILL_PARAM;
     } else if (_this == 0) {
-        result = U_RESULT_PRECONDITION_NOT_MET;
+        result = U_RESULT_ILL_PARAM;
     } else {
         translator.handle = _this;
 
@@ -130,13 +131,13 @@ u_instanceHandleRelease (
     u_instanceHandleTranslator translator;
 
     if (_this == 0) {
-        result = U_RESULT_PRECONDITION_NOT_MET;
+        result = U_RESULT_ILL_PARAM;
     } else {
         translator.handle = _this;
 
-        handle.serial = (translator.lid.lifecycleId & 0x00ffffff);
+        handle.serial = (translator.lid.lifecycleId & HANDLE_SERIAL_MASK);
         handle.index  = translator.lid.localId;
-        handle.server = u_userServer(translator.lid.lifecycleId & 0xff000000);
+        handle.server = u_userServer(translator.lid.lifecycleId & HANDLE_SERVER_MASK);
 
         result = u__handleResult(v_handleRelease(handle));
     }
@@ -176,7 +177,7 @@ copyBuiltinTopicKey(
 u_instanceHandle
 u_instanceHandleFix(
     u_instanceHandle _this,
-    v_reader reader)
+    v_collection reader)
 {
     u_instanceHandleTranslator translator;
     struct v_publicationInfo *data;
@@ -188,16 +189,17 @@ u_instanceHandleFix(
     if (translator.lid.lifecycleId & HANDLE_GLOBAL_MASK) {
         /* Is a GID therefore fix handle by lookup. */
         while (v_objectKind(v_entity(reader)) == K_QUERY) {
-            reader = v_reader(v_querySource(v_query(reader)));
+            reader = v_querySource(v_query(reader));
         }
         while (v_objectKind(v_entity(reader)) == K_DATAVIEW) {
-            reader = v_reader(v_dataViewGetReader(v_dataView(reader)));
+            reader = v_collection(v_dataViewGetReader(v_dataView(reader)));
         }
         topic = v_dataReaderGetTopic(v_dataReader(reader));
         message = v_topicMessageNew(topic);
         data = (c_voidp)C_DISPLACE(message, v_topicDataOffset(topic));
         data->key = u_instanceHandleToGID(_this);
-        instance = (v_public)v_dataReaderLookupInstance(v_dataReader(reader), message);
+        instance = (v_public)v_dataReaderLookupInstance(v_dataReader(reader),
+                                                        message);
         translator.handle = u_instanceHandleNew(instance);
         c_free(instance);
         c_free(topic);
@@ -216,7 +218,7 @@ u_instanceHandleServer(
 
     translator.handle = _this;
 
-    return (translator.lid.lifecycleId & 0x00ffffff);
+    return (translator.lid.lifecycleId & HANDLE_SERIAL_MASK);
 }
 
 u_long
@@ -238,6 +240,6 @@ u_instanceHandleSerial(
 
     translator.handle = _this;
 
-    return u_userServer(translator.lid.lifecycleId & 0xff000000);
+    return u_userServer(translator.lid.lifecycleId & HANDLE_SERVER_MASK);
 }
 

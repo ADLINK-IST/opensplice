@@ -170,7 +170,6 @@ v_proxyNotify(
     c_object proxy,
     c_voidp arg)
 {
-    v_kernel kernel;
     v_proxy p = v_proxy(proxy);
     struct proxyNotifyArg *a = (struct proxyNotifyArg *)arg;
     v_observer o;
