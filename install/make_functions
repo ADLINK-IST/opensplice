@@ -131,6 +131,69 @@ install_ascii_fileset()
 
 }
 
+doTar ()
+{
+    echo ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}
+    (   
+        cd $OSPL_HOME/install
+        ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}
+    )
+}
+
+doZip ()
+{
+    echo ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
+    (   
+        cd $OSPL_HOME/install
+        ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
+    ) 
+}
+
+doStandardPackage()
+{
+    PLATFORM=${SOURCE_TARGET}${TARGET_ENV}
+    OUT=${OUTPUTDIR}/OpenSpliceDDS${PACKAGE_VERSION}-${PLATFORM}-${INSTTYPE}
+    if [ -z "${OSPL_BUILDER}" ]
+    then
+        # If empty try zip or tar depending upon platform
+        if [ "${BUILDER_TARGET}" = "windows" ]
+        then
+            OSPL_BUILDER=`which zip`
+            if [ "$?" != "0" ]
+            then
+                echo "Error - No packager found please set OSPL_BUILDER"
+                return 1
+            else
+                doZip
+            fi
+        else
+            OSPL_BUILDER=`which tar`
+            if [ "$?" != "0" ]
+            then
+                echo "Error - No packager found please set OSPL_BUILDER"
+                return 1
+            else
+                doTar
+            fi
+        fi
+    else
+        # if tar or zip do with the commands/options we know
+        if [ "${OSPL_BUILDER_APP}" = "tar" ]
+        then
+            doTar
+        else
+            if [ "${OSPL_BUILDER_APP}" = "zip" ]
+            then
+                doZip
+            else
+                # Last resort just try the command given
+                echo ${OSPL_BUILDER} ${OUT} ${INSTTYPE}
+                ${OSPL_BUILDER} ${OUT} ${INSTTYPE}
+            fi
+        fi
+    fi
+}
+
 buildTarGZ ()
 {
    tar -cf $1.tar $2
@@ -616,9 +679,8 @@ install_hde_target ()
     then
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
-        
-        # Copy the executables for the target 
-        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
+        # In the HDE we only need the other executables in case host and target are equal
+        if [ "${SPLICE_TARGET}" = "${SPLICE_HOST}" ]
         then
             install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
             install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
@@ -856,9 +918,9 @@ install_hde_target ()
     mkdir ${HDE_dir}/examples/dcps
     mkdir ${HDE_dir}/examples/dcps/standalone
 
-    if [ "${INCLUDE_CXX}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
+    if [ "${INCLUDE_CXX}" = "yes" ]
     then
-        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
+        if [ "${SOURCE_TARGET_SHORT}" != "int" -o "${target}" != "PPC604.vxworks6.6" ]
         then
             echo "*         For CORBA C++ OpenFusion... "
             mkdir ${HDE_dir}/examples/dcps/CORBA
@@ -1034,51 +1096,53 @@ install_hde_target ()
         echo "*           Ready"
     fi
 
-    if [ "${INCLUDE_C}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
+    if [ "${INCLUDE_C}" = "yes" ]
     then
-        echo "*         For C++ on C... "
-        mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC
-        echo "*           For PingPong..."
-        mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-        if [ "${target}" != "x86.win32" ]
+        if [ "${target}" != "PPC604.vxworks6.6" ]
         then
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC/*.idl" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC/*.cpp" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/RUN \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/README.txt \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-
-            if [ -f ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT ]
+            echo "*         For C++ on C... "
+            mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC
+            echo "*           For PingPong..."
+            mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+            if [ "${target}" != "x86.win32" ]
             then
-                 install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong Makefile
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC/*.idl" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC/*.cpp" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/RUN \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC/README.txt \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                
+                if [ -f ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT ]
+                then
+                    install_ascii_file ${OSPL_HOME}/examples/dcps/C++/SAC/makefile_$PLATFORM_EXT \
+                        ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong Makefile
+                fi
+                
+            else
+                mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
+                mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Ping
+                mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Pong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.idl" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.cpp" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.bat" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/PingPong/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/Ping/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Ping
+                install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/Pong/*.vcproj" \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Pong
+                install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/PingPong/README.txt \
+                    ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
             fi
-
-        else
-            mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
-            mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Ping
-            mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Pong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.idl" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.cpp" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/*.bat" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/PingPong/*.vcproj" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/PingPong
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/Ping/*.vcproj" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Ping
-            install_ascii_fileset "${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/Pong/*.vcproj" \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong/Pong
-            install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/PingPong/README.txt \
-                ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
+            echo "*           Ready"
         fi
-        echo "*           Ready"
-
-        echo "*         C++ Ready"
+        echo "*         C++ On C Ready"
 
         echo "*         For standalone C... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C
@@ -1251,7 +1315,7 @@ install_hde_target ()
     TMP_PID=$!
     mkdir /tmp/$TMP_PID
     OSPL_SRC=/tmp/$TMP_PID/OpenSpliceDDS
-    git clone $OSPL_HOME $OSPL_SRC  > /dev/null 2>&1
+    (PATH=/bin:/usr/bin:/usr/local/bin:$PATH git clone $OSPL_HOME $OSPL_SRC  > /dev/null 2>&1)
     rm -rf $OSPL_SRC/.git
     rm -rf $OSPL_SRC/docs
     rm -f $OSPL_SRC/.gitignore
@@ -1288,7 +1352,7 @@ install_hde_target ()
         echo "OSPL_HOME=\"@@INSTALLDIR@@/HDE/${target}${target_env}\"" >> ${RELF}
         echo "OSPL_TARGET=${target}${target_env}" >> ${RELF}
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> ${RELF}
-        if [ "${target_os}" != "${host_os}" ]
+        if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
         then
             echo "LD_LIBRARY_PATH=\$OSPL_HOME/host/lib:\$LD_LIBRARY_PATH" >> ${RELF}
         else

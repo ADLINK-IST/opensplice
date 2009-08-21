@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -1511,7 +1511,7 @@ sd_deserXmlModule (
 
     if ( name ) {
         scope = sd_elementContextGetScope(parent);
-        o = c_metaResolve(scope, name);
+        o = c_metaResolveFixedScope(scope, name);
         if ( !o ) {
             o = c_metaDeclare(scope, name, M_MODULE);
             if ( !o ) {
@@ -1929,12 +1929,14 @@ sd_findTypeInScope (
     const c_char      *name)
 {
     c_metaObject       o;
+/*
     c_char            *str;
     c_char            *cur;
     sd_elementContext  root = NULL;
-
+*/
     o = c_metaResolve(scope->object, name);
     if ( !o ) {
+/*
         str = sd_stringDup(name);
         cur = strstr(str, "::");
         if ( cur ) {
@@ -1951,10 +1953,13 @@ sd_findTypeInScope (
                 }
             }
         } else {
+*/
             o = c_metaResolve(scope->info->base, name);
+/*
         }
 
         os_free(str);
+*/
     }
 
     return o;

@@ -986,7 +986,7 @@ onOfferedDeadlineMissed (
 
     if ( _this ) {
         result = _DataWriter_get_offered_deadline_missed_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1044,7 +1044,7 @@ onOfferedIncompatibleQos (
         info.policies._buffer  = policyCount;
 
         result = _DataWriter_get_offered_incompatible_qos_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1096,7 +1096,7 @@ onLivelinessLost (
 
     if ( _this ) {
         result = _DataWriter_get_liveliness_lost_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1148,7 +1148,7 @@ onPublicationMatch (
 
     if ( _this ) {
         result = _DataWriter_get_publication_matched_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;

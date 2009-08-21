@@ -58,59 +58,6 @@ in_streamReaderInit(
 void
 in_streamReaderDeinit(in_streamReader _this);
 
-/** */
-/** discovery related operations */
-in_result
-in_streamReaderProcessPeerEntity(
-        in_streamReader _this,
-        in_connectivityPeerEntity newEntity,
-        in_ddsiReceiver receiver);
-
-
-
-/* common data exchange operations */
-in_result
-in_streamReaderProcessData(
-        in_streamReader _this,
-        v_message message,
-        in_connectivityPeerWriter,
-        in_ddsiReceiver receiver);
-
-/** */
-in_result
-in_streamReaderProcessDataFrag(
-        in_streamReader _this,
-        in_ddsiDataFrag event,
-        in_ddsiReceiver receiver);
-
-/** */
-in_result
-in_streamReaderProcessHeartbeat(
-        in_streamReader _this,
-        in_ddsiHeartbeat event,
-        in_ddsiReceiver receiver);
-
-/** */
-in_result
-in_streamReaderProcessAckNack(
-        in_streamReader _this,
-        in_ddsiAckNack event,
-        in_ddsiReceiver receiver);
-
-/** */
-in_result
-in_streamReaderProcessNackFrag(
-        in_streamReader _this,
-        in_ddsiNackFrag event,
-        in_ddsiReceiver receiver);
-
-/** */
-in_result
-in_streamReaderRequestNackFrag(
-        in_streamReader _this,
-        in_ddsiNackFragRequest request);
-
-
 #if defined (__cplusplus)
 }
 #endif
