@@ -66,138 +66,144 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
 
     protected void init() {
         Object[] data = new Object[3];
-        
-        /*row 0*/
+        int row;
+
+        row = 0;
         data[0] = "DURABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(0));
+        nonEditRows.add(new Integer(row));
                 
-        /*row 1*/
+        row++;
         data[0] = "DEADLINE";
         data[1] = "period";
         this.addRow(data);
         
-        /*row 2*/
+        row++;
         data[0] = "LATENCY_BUDGET";
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 3*/
+        row++;
         data[0] = "LIVELINESS";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(3));
+        nonEditRows.add(new Integer(row));
         
-        /*row 4*/
+        row++;
         data[1] = "lease_duration";
         this.addRow(data);
-        nonEditRows.add(new Integer(4));
+        nonEditRows.add(new Integer(row));
         
-        /*row 5*/
+        row++;
         data[0] = "RELIABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(5));
+        nonEditRows.add(new Integer(row));
         
-        /*row 6*/
+        row++;
         data[1] = "max_blocking_time";
         this.addRow(data);
-        nonEditRows.add(new Integer(6));
+        nonEditRows.add(new Integer(row));
         
-        /*row 7*/
+        row++;
+        data[1] = "synchronous";
+        this.addRow(data);
+        nonEditRows.add(new Integer(row));
+        
+        row++;
         data[0] = "DESTINATION_ORDER";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(7));
+        nonEditRows.add(new Integer(row));
         
-        /*row 8*/
+        row++;
         data[0] = "HISTORY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(8));
+        nonEditRows.add(new Integer(row));
         
-        /*row 9*/
+        row++;
         data[1] = "depth";
         this.addRow(data);
-        nonEditRows.add(new Integer(9));
+        nonEditRows.add(new Integer(row));
         
-        /*row 10*/
+        row++;
         data[0] = "RESOURCE_LIMITS";
         data[1] = "max_samples";
         this.addRow(data);
-        nonEditRows.add(new Integer(10));
+        nonEditRows.add(new Integer(row));
         
-        /*row 11*/
+        row++;
         data[1] = "max_instances";
         this.addRow(data);
-        nonEditRows.add(new Integer(11));
+        nonEditRows.add(new Integer(row));
         
-        /*row 12*/
+        row++;
         data[1] = "max_samples_per_instance";
         this.addRow(data);
-        nonEditRows.add(new Integer(12));
+        nonEditRows.add(new Integer(row));
                 
-        /*row 13*/
+        row++;
         data[0] = "USER_DATA";
         data[1] = "value";
         this.addRow(data);
         
-        /*row 14*/
+        row++;
         data[0] = "OWNERSHIP";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(14));
+        nonEditRows.add(new Integer(row));
         
-        /*row 15*/
+        row++;
         data[0] = "TIME_BASED_FILTER";
         data[1] = "minimum_separation";
         this.addRow(data);
         
-        /*row 16*/
+        row++;
         data[0] = "READER_DATA_LIFECYCLE";
         data[1] = "autopurge_nowriter_samples_delay";
         this.addRow(data);
         
-        /*row 17*/
+        row++;
         data[1] = "autopurge_disposed_samples_delay";
         this.addRow(data);
         
-        /*row 18*/
+        row++;
         data[1] = "enable_invalid_samples";
         this.addRow(data);
-        nonEditRows.add(new Integer(18));
+        nonEditRows.add(new Integer(row));
         
-        /*row 19*/
+        row++;
         data[0] = "READER_DATA_LIFESPAN";
         data[1] = "used";
         this.addRow(data);
         
-        /*row 20*/
+        row++;
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 21*/
+        row++;
         data[0] = "SHARE";
         data[1] = "name";
         this.addRow(data);
-        nonEditRows.add(new Integer(20));
+        nonEditRows.add(new Integer(row));
         
-        /*row 22*/
+        row++;
         data[1] = "enable";
         this.addRow(data);
-        nonEditRows.add(new Integer(21));
+        nonEditRows.add(new Integer(row));
         
-        /*row 23*/
+        row++;
         data[0] = "USER_KEY";
         data[1] = "enable";
         this.addRow(data);
-        nonEditRows.add(new Integer(22));
+        nonEditRows.add(new Integer(row));
         
-        /*row 24*/
+        row++;
         data[1] = "expression";
         this.addRow(data);
-        nonEditRows.add(new Integer(23));
+        nonEditRows.add(new Integer(row));
     }
 
     public boolean update() {
@@ -253,7 +259,9 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
             if(rlp != null){
                 this.setValueAt(rlp.kind, row++, 2);
                 this.setValueAt(rlp.max_blocking_time, row++, 2);
+                this.setValueAt(rlp.synchronous, row++, 2);
             } else {
+                this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
             }

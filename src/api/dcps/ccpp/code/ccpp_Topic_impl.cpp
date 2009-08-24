@@ -12,8 +12,7 @@
 #include "ccpp_Topic_impl.h"
 #include "ccpp_ListenerUtils.h"
 
-DDS::Topic_impl::Topic_impl(gapi_topic handle) : DDS::Entity_impl(handle), 
-                                                 DDS::TopicDescription_impl(handle)
+DDS::Topic_impl::Topic_impl(gapi_topic handle) : DDS::TopicDescription_impl(handle)
 {
   os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
   if (os_mutexInit(&t_mutex, &mutexAttr) != os_resultSuccess)
@@ -162,3 +161,12 @@ DDS::StatusMask mask
     return result;
 }
 
+DDS::ReturnCode_t DDS::Topic_impl::dispose_all_data (
+) THROW_ORB_EXCEPTIONS
+{
+  DDS::ReturnCode_t result;
+  
+  result = gapi_topic_dispose_all_data(DDS::Entity_impl::_gapi_self);
+  
+  return result;
+}

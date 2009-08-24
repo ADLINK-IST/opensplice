@@ -105,7 +105,8 @@ gapi_topicQos                    gapi_topicQosDefault = {
         /* gapi_reliabilityQosPolicy reliability */
         {
             GAPI_BEST_EFFORT_RELIABILITY_QOS, /* gapi_reliabilityQosPolicyKind kind */
-            DEFAULT_MAX_BLOCKING_TIME /* gapi_duration_t max_blocking_time */
+            DEFAULT_MAX_BLOCKING_TIME, /* gapi_duration_t max_blocking_time */
+            FALSE                      /* gapi_boolean synchronous */
         },
         /* gapi_destinationOrderQosPolicy destination_order */
         {
@@ -230,7 +231,8 @@ gapi_dataReaderQos               gapi_dataReaderQosDefault = {
         /* gapi_reliabilityQosPolicy reliability */
         {
             GAPI_BEST_EFFORT_RELIABILITY_QOS, /* gapi_reliabilityQosPolicyKind kind */
-            DEFAULT_MAX_BLOCKING_TIME /* gapi_duration_t max_blocking_time */
+            DEFAULT_MAX_BLOCKING_TIME, /* gapi_duration_t max_blocking_time */
+            FALSE                      /* gapi_boolean synchronous */
         },
         /* gapi_destinationOrderQosPolicy destination_order */
         {
@@ -330,7 +332,8 @@ gapi_dataWriterQos               gapi_dataWriterQosDefault = {
         /* gapi_reliabilityQosPolicy reliability */
         {
             GAPI_BEST_EFFORT_RELIABILITY_QOS, /* gapi_reliabilityQosPolicyKind kind */
-            DEFAULT_MAX_BLOCKING_TIME /* gapi_duration_t max_blocking_time */
+            DEFAULT_MAX_BLOCKING_TIME, /* gapi_duration_t max_blocking_time */
+            FALSE                      /* gapi_boolean synchronous */
         },
         /* gapi_destinationOrderQosPolicy destination_order */
         {
@@ -1607,7 +1610,8 @@ immutableReliabilityQosPolicy (
 
     if ( (new_policy->kind                      != old_policy->kind)                     ||
          (new_policy->max_blocking_time.nanosec != old_policy->max_blocking_time.nanosec)||
-         (new_policy->max_blocking_time.sec     != old_policy->max_blocking_time.sec)) {
+         (new_policy->max_blocking_time.sec     != old_policy->max_blocking_time.sec) ||
+         (new_policy->synchronous               != old_policy->synchronous)) {
         gapi_errorImmutableQosPolicy(context, qosId,
                                    GAPI_RELIABILITY_QOS_POLICY_ID);
         unchanged = FALSE;

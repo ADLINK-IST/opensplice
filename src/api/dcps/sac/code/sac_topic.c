@@ -111,5 +111,17 @@ DDS_Topic_get_qos (
         (gapi_topic)this,
         (gapi_topicQos *)qos
     );
-    
 }
+
+/*     DDS_ReturnCode_t
+ *     dispose_all_data();
+ */
+DDS_ReturnCode_t
+DDS_Topic_dispose_all_data (
+    DDS_Topic _this)
+{
+    return (DDS_ReturnCode_t)
+    gapi_topic_dispose_all_data (
+        (gapi_topic)_this);
+}
+

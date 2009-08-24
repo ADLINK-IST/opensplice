@@ -137,7 +137,8 @@ in_controllerDeinit(
         in_objectFree(in_object(data->channel));
         in_objectFree(in_object(data->stream));
         in_objectFree(in_object(data->transport));
-        in_plugKernelFree(_this->discoveryChannel->plug);
+        in_plugKernelFree(data->plug);
+       
         os_free(data);
     }
     if(_this->discoveryChannel)
@@ -171,8 +172,10 @@ in_controllerStart(
     in_controllerCreateDiscoveryChannel(_this);
     in_controllerCreateDataChannels(_this);
 
-    /* start up the discovery channel */
-    in_channelActivate(_this->discoveryChannel->channel);
+    /* start up the discovery channel, verify the discovery has been "enabled" */
+    if (_this->discoveryChannel) {
+    	in_channelActivate(_this->discoveryChannel->channel);
+    }
 
     iterator = Coll_List_getFirstElement(&(_this->channels));
     while(iterator)
@@ -198,9 +201,11 @@ in_controllerStop(
 
     u_networkReaderRemoteActivityLost(_this->reader);
 
-    /* stop the discovery channel */
-    in_channelDeactivate(_this->discoveryChannel->channel);
-
+    /* stop the discovery channel, verify the discovery channel has been enabled */
+    if (_this->discoveryChannel) {
+    	in_channelDeactivate(_this->discoveryChannel->channel);
+    }
+    
     iterator = Coll_List_getFirstElement(&(_this->channels));
     while(iterator)
     {
@@ -420,7 +425,10 @@ in_controllerCreateDiscoveryChannel(
 
     discoveryChannelConfig = in_configChannel(in_configDdsiServiceGetDiscoveryChannel(ddsiService));
 
-    if (in_configChannelIsEnabled(discoveryChannelConfig)) {
+    if (!in_configChannelIsEnabled(discoveryChannelConfig)) {
+    	IN_REPORT_WARNING(IN_SPOT, "The discovery protocol has been disabled, "
+								   "no auto-discovery or peers provided.");
+    } else {
         IN_TRACE(Construction,2,"CREATE DISCOVERY channel");
 
         channelData = os_malloc(sizeof(OS_STRUCT(in_controllerChannelData)));

@@ -21,8 +21,9 @@
 
 namespace DDS {
 
-    class OS_DCPS_API TypeSupportFactory_impl : public virtual ::DDS::TypeSupportFactory,
-                                    public LOCAL_REFCOUNTED_OBJECT
+    class OS_DCPS_API TypeSupportFactory_impl : 
+            public virtual ::DDS::TypeSupportFactory,
+            public LOCAL_REFCOUNTED_OBJECT
     {
         friend class ::DDS::Subscriber_impl;
         friend class ::DDS::Publisher_impl;
@@ -42,8 +43,9 @@ namespace DDS {
 
     typedef TypeSupportFactory_impl *TypeSupportFactory_impl_ptr;
 
-    class OS_DCPS_API TypeSupport_impl : public virtual ::DDS::TypeSupport,
-                             public LOCAL_REFCOUNTED_OBJECT
+    class OS_DCPS_API TypeSupport_impl : 
+            public virtual ::DDS::TypeSupport,
+            public LOCAL_REFCOUNTED_OBJECT
     {
     private:
       gapi_typeSupport _gapi_self;

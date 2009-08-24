@@ -226,7 +226,7 @@ os_findKeyFile(
        fclose(key_file);
     }
     FindClose(fileHandle);
-    OS_REPORT_1(OS_ERROR, "os_findKeyFile", 0, "Could not find matching key file for uri: %s", name);
+    OS_REPORT_1(OS_INFO, "os_findKeyFile", 0, "Could not find matching key file for uri: %s", name);
     return NULL;
 }
 

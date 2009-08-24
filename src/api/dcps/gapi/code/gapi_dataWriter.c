@@ -66,6 +66,7 @@ copyWriterQosIn (
         dstQos->reliability.kind = srcQos->reliability.kind;
         kernelCopyInDuration(&srcQos->reliability.max_blocking_time,
                              &dstQos->reliability.max_blocking_time);
+        dstQos->reliability.synchronous = srcQos->reliability.synchronous;
         dstQos->resource.max_samples = srcQos->resource_limits.max_samples;
         dstQos->resource.max_instances = srcQos->resource_limits.max_instances;
         dstQos->resource.max_samples_per_instance =
@@ -116,6 +117,7 @@ copyWriterQosOut (
     dstQos->reliability.kind = srcQos->reliability.kind;
     kernelCopyOutDuration(&srcQos->reliability.max_blocking_time,
                           &dstQos->reliability.max_blocking_time);
+    dstQos->reliability.synchronous = srcQos->reliability.synchronous;
     dstQos->resource_limits.max_samples = srcQos->resource.max_samples;
     dstQos->resource_limits.max_instances = srcQos->resource.max_instances;
     dstQos->resource_limits.max_samples_per_instance = srcQos->resource.max_samples_per_instance;
