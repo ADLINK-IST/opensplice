@@ -367,12 +367,6 @@ u_entityAction(
         u_entityRelease(_this);
         result = U_RESULT_OK;
     } else {
-        /* This situation is not necessarily an error.
-         * For instance when multiple user entities for a single kernel entity
-         * exist (tooling). Therefore the error message is removed.
-         * OS_REPORT(OS_ERROR, "u_entityAction", 0,
-         *       "Illegal handle detected");
-         */
         result = U_RESULT_ILL_PARAM;
     }
     return result;
@@ -401,7 +395,7 @@ u_entityWalkEntities(
     } else {
         result = U_RESULT_ILL_PARAM;
         OS_REPORT(OS_ERROR, "u_entityWalkEntities", 0,
-                  "Illegal handle detected");
+                  "u_entityClaim failed");
     }
     return result;
 }
@@ -429,7 +423,7 @@ u_entityWalkDependantEntities(
     } else {
         result = U_RESULT_ILL_PARAM;
         OS_REPORT(OS_ERROR, "u_entityWalkDependantEntities", 0,
-                  "Illegal handle detected");
+                  "u_entityClaim failed");
     }
     return result;
 }
@@ -454,7 +448,7 @@ u_entityResolveType(
         u_entityRelease(_this);
     } else {
         OS_REPORT(OS_ERROR, "u_entityResolveType", 0,
-                  "Illegal handle detected");
+                  "u_entityClaim failed");
     }
     return type;
 }
@@ -511,7 +505,7 @@ u_entityQoS(
             result = U_RESULT_OK;
         } else {
             OS_REPORT(OS_ERROR, "u_entityQoS", 0,
-                      "Illegal handle detected");
+                     "u_entityClaim failed");
             result = U_RESULT_ILL_PARAM;
         }
     }
@@ -535,7 +529,7 @@ u_entitySetQoS(
             u_entityRelease(_this);
         } else {
             OS_REPORT(OS_ERROR, "u_entitySetQoS", 0,
-                      "Illegal handle detected");
+                      "u_entityClaim failed");
             result = U_RESULT_ILL_PARAM;
         }
     }

@@ -357,7 +357,7 @@ idl_sequenceIndexString (
         sequenceString = os_malloc(sequenceStringLen);
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
     } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tarray) {
-	sequenceStringPrev = idl_arrayIndexString(idl_typeArray(idl_typeSeqType (typeSeq)));
+	sequenceStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeSeqType (typeSeq)));
         sequenceStringLen = strlen(sequenceStringPrev) + 3;
         sequenceString = os_malloc(sequenceStringLen);
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
@@ -381,7 +381,7 @@ idl_sequenceIndexString (
 }
 
 c_char *
-idl_arrayIndexString (
+idl_arrayJavaIndexString (
     idl_typeArray typeArray)
 {
     c_char *arrayString;
@@ -389,7 +389,7 @@ idl_arrayIndexString (
     c_char *arrayStringPrev;
 
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
-        arrayStringPrev = idl_arrayIndexString(idl_typeArray(idl_typeArrayType(typeArray)));
+        arrayStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeArrayType(typeArray)));
         arrayStringLen = strlen(arrayStringPrev) + 3;
         arrayString = os_malloc(arrayStringLen);
         snprintf(arrayString, arrayStringLen, "[]%s", arrayStringPrev);
@@ -400,7 +400,7 @@ idl_arrayIndexString (
         snprintf(arrayString, arrayStringLen, "[]%s", arrayStringPrev);
     } else if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_ttypedef &&
 	idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeArrayType(typeArray)))) == idl_tarray) {
-        arrayStringPrev = idl_arrayIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(idl_typeArrayType(typeArray)))));
+        arrayStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(idl_typeArrayType(typeArray)))));
         arrayStringLen = strlen(arrayStringPrev) + 3;
         arrayString = os_malloc(arrayStringLen);
         snprintf(arrayString, arrayStringLen, "[]%s", arrayStringPrev);

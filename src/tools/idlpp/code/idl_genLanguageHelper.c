@@ -12,6 +12,7 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_genCHelper.h"
 #include "idl_genCxxHelper.h"
+#include "idl_genSACSHelper.h"
 #include "idl_genJavaHelper.h"
 
 #include "os_stdlib.h"
@@ -25,6 +26,7 @@ static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
   /* IDL_LANG_UNKNOWN */        {0, 0, 0},
   /* IDL_LANG_C       */        {0, 0, 1},
   /* IDL_LANG_CXX     */        {0, 1, 1},
+  /* IDL_LANG_CS      */        {0, 0, 1},
   /* IDL_LANG_JAVA    */        {0, 1, 1}
     };
 
@@ -52,6 +54,9 @@ idl_getLanguageStr(void)
     break;
     case IDL_LANG_CXX:
         str = os_strdup("C++");
+    break;
+    case IDL_LANG_CS:
+        str = os_strdup("C#");
     break;
     case IDL_LANG_JAVA:
         str = os_strdup("JAVA");
@@ -120,6 +125,9 @@ idl_languageId(
     break;
     case IDL_LANG_CXX:
         id = idl_cxxId (identifier);
+    break;
+    case IDL_LANG_CS:
+        id = idl_CsharpId (identifier);
     break;
     case IDL_LANG_JAVA:
         id = idl_javaId (identifier);

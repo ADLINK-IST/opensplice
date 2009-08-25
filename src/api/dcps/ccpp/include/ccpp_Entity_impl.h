@@ -20,7 +20,8 @@ namespace DDS
 {
   class OS_DCPS_API Entity_impl
     :
-      public virtual ::DDS::Entity
+      public virtual ::DDS::Entity,
+      public LOCAL_REFCOUNTED_OBJECT
   {
     protected:
       os_mutex e_mutex;
@@ -43,6 +44,13 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::InstanceHandle_t get_instance_handle (
+      ) THROW_ORB_EXCEPTIONS;
+
+      virtual char *get_name (
+      ) THROW_ORB_EXCEPTIONS;
+
+      virtual ::DDS::ReturnCode_t set_name (
+        const char *name
       ) THROW_ORB_EXCEPTIONS;
   };
 }

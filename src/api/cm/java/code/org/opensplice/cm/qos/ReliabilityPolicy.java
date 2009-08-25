@@ -31,8 +31,19 @@ public class ReliabilityPolicy {
      * Writer does not have space to store the value written.
      */
     public Time max_blocking_time;
-    
-    public static final ReliabilityPolicy DEFAULT = new ReliabilityPolicy(ReliabilityKind.BESTEFFORT, new Time(0, 100000000));
+
+    /**
+     * This setting applies only to the case where kind=RELIABLE.
+     * If the value of the synchronous is true for a DataWriter then it will
+     * wait until all data is acknoledged by all DataReaders for which the 
+     * synchronous value is also true.
+     */
+    public Boolean synchronous;
+
+    public static final ReliabilityPolicy DEFAULT =
+        new ReliabilityPolicy(ReliabilityKind.BESTEFFORT,
+                              new Time(0, 100000000),
+                              false);
     
     /**
      * Constructs a new ReliabilityPolicy.
@@ -40,12 +51,17 @@ public class ReliabilityPolicy {
      * @param _kind The reliability kind.
      * @param _max_blocking_time The maximum time to block a write.
      */
-    public ReliabilityPolicy(ReliabilityKind _kind, Time _max_blocking_time){
+    public ReliabilityPolicy(ReliabilityKind _kind,
+                             Time _max_blocking_time,
+                             Boolean _synchronous){
         kind = _kind;
         max_blocking_time = _max_blocking_time;
+        synchronous = _synchronous;
     }
     
     public ReliabilityPolicy copy(){
-        return new ReliabilityPolicy(this.kind, this.max_blocking_time.copy());
+        return new ReliabilityPolicy(this.kind,
+                                     this.max_blocking_time.copy(),
+                                     this.synchronous);
     }
 }
