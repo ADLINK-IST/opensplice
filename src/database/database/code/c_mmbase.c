@@ -885,7 +885,8 @@ c_mmListState (
 
 c_mmStatus
 c_mmState (
-    c_mm mm)
+    c_mm mm,
+    c_bool fillPreAlloc)
 {
     c_mmStatus s;
     c_mmCacheHeader ch;
@@ -894,34 +895,37 @@ c_mmState (
     s.size = mm->size;
 
     c_mutexLock(&mm->mapLock);
-    s.used    = mm->chunkMapStatus.used;
+    s.used = mm->chunkMapStatus.used;
     s.maxUsed = mm->chunkMapStatus.maxUsed;
     s.garbage = mm->chunkMapStatus.garbage;
-    s.count   = mm->chunkMapStatus.count;
+    s.count = mm->chunkMapStatus.count;
     c_mutexUnlock(&mm->mapLock);
 
     c_mutexLock(&mm->listLock);
-    s.used    += mm->chunkListStatus.used;
-    s.maxUsed  = s.maxUsed + mm->chunkListStatus.maxUsed;
+    s.used += mm->chunkListStatus.used;
+    s.maxUsed = s.maxUsed + mm->chunkListStatus.maxUsed;
     s.garbage += mm->chunkListStatus.garbage;
-    s.count   += mm->chunkListStatus.count;
+    s.count += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
 
-    /* Get the memory allocated for- and free in caches. */
-    c_mutexLock(&mm->cacheListLock);
-    ch = mm->cacheList;
     s.cached = 0;
     s.preallocated = 0;
-    while(ch){
-#ifndef NDEBUG
-        assert(ch->confidence == C_MM_CACHE_CONFIDENCE);
-#endif /* NDEBUG */
-        s.cached        += c_mmCacheGetAllocated(CacheAddress(ch));
-        s.preallocated  += c_mmCacheGetFree(CacheAddress(ch));
 
-        ch = ch->next;
+    if(fillPreAlloc){
+        /* Get the memory allocated for- and free in caches. */
+        c_mutexLock(&mm->cacheListLock);
+        ch = mm->cacheList;
+        while(ch){
+#ifndef NDEBUG
+            assert(ch->confidence == C_MM_CACHE_CONFIDENCE);
+#endif /* NDEBUG */
+            s.cached        += c_mmCacheGetAllocated(CacheAddress(ch));
+            s.preallocated  += c_mmCacheGetFree(CacheAddress(ch));
+
+            ch = ch->next;
+        }
+        c_mutexUnlock(&mm->cacheListLock);
     }
-    c_mutexUnlock(&mm->cacheListLock);
     return s;
 }
 
