@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -165,7 +165,7 @@ writeStringToPlugChannel(
 
     srcPtr = string;
     dstPtr = (char *)(*networkBuffer);
- 
+
     while (!done) {
         if (*networkBufferLength == 0) {
             *networkBuffer = (nw_data)dstPtr;
@@ -301,7 +301,7 @@ getStringFromPlugChannel(
     c_bool done = FALSE;
 
     copyPtr = (const char *)(*networkBuffer);
-    
+
     stringSegStart = copyPtr;
     saveString = NULL;
     saveLen = 0;
@@ -399,6 +399,12 @@ nw_bridgeRead(
                 nw_stream_readOpaq(stream,sizeof(hashValue),&hashValue);
                 nw_stream_readString(stream,NULL,&partitionName);
                 if (partitionName) {
+                    if(nw_configurationUseComplementPartitions()){
+                        /* Change first character case, will leave built-in par-
+                         * titions alone (start with _). */
+                        partitionName[0] = (toupper(partitionName[0]) == partitionName[0])
+                                            ? tolower(partitionName[0]) : toupper(partitionName[0]);
+                    }
                     nw_stream_readString(stream,NULL,&topicName);
                     if (topicName) {
                         type = typeLookupAction(hashValue,
@@ -408,6 +414,7 @@ nw_bridgeRead(
                         if (type) {
                             *message = nw_stream_read(stream, type);
                             v_messageSetAllocTime(*message);
+
                         } else {
                             /* Trash rest of message */
                             nw_stream_read(stream, type);

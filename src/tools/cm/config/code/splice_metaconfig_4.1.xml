@@ -348,6 +348,18 @@
                 <default>true</default>
             </attributeBoolean>
         </element>
+        <element name="PriorityInheritance" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+            This element specifies the usage on Priority Inheritance on Muexes in this domain.
+            ]]></comment>
+            <attributeBoolean name="enabled" required="true">
+                <comment><![CDATA[
+                This attribute enables or disables priority inheritance for mutexes,
+                if that is supported by the underlying Operating System. 
+                ]]></comment>
+                <default>true</default>
+            </attributeBoolean>
+        </element>
         <element name="Statistics" minOccurrences="0" maxOccurrences="1">
            <comment><![CDATA[
             This element specifies the policies regarding statistics. Various statistics
@@ -487,6 +499,48 @@
                         used by the GarbageCollector thread. The user may need the
                         appropriate privileges from the underlying operating system to
                         be able to assign some of the privileged scheduling classes.
+                    ]]></comment>
+                    <value>Timeshare</value>
+                    <value>Realtime</value>
+                    <value>Default</value>
+                    <default>Default</default>
+                </leafEnum>
+            </element>
+        </element>
+        <element name="ResendManager" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element controls the characteristics of the ResendManager thread.
+            ]]></comment>
+            <element name="Scheduling" minOccurrences="1" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the type of OS scheduling class will be
+                    used by the thread that does local resends for buildin participant.
+                ]]></comment>
+                <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread priority that will be used by the
+                        ResendManager thread. Only priorities that are supported by the
+                        underlying operating system can be assigned to this element.
+                        The user may need special privileges from the underlying operating
+                        system to be able to assign some of the privileged priorities.
+                    ]]></comment>
+                    <default>0</default>
+                    <attributeEnum name="priority_kind" required="false">
+                        <comment><![CDATA[
+                            This attribute specifies whether the specified
+                            Priority is a relative or absolute priority.
+                        ]]></comment>
+                        <value>Relative</value>
+                        <value>Absolute</value>
+                        <default>Relative</default>
+                    </attributeEnum>
+                </leafInt>
+                <leafEnum name="Class" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread scheduling class that will be used by
+                        the ResendManager thread. The user may need the appropriate privileges from
+                        the underlying operating system to be able to assign some of the
+                        privileged scheduling classes.
                     ]]></comment>
                     <value>Timeshare</value>
                     <value>Realtime</value>
@@ -1283,6 +1337,48 @@
             <maxLength>0</maxLength>
             <default>networking</default>
         </attributeString>
+        <element name="Watchdog" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element controls the characteristics of the Watchdog thread.
+            ]]></comment>
+            <element name="Scheduling" minOccurrences="1" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the type of OS scheduling class will be
+                    used by the thread that announces its liveliness periodically.
+                ]]></comment>
+                <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread priority that will be used by the
+                        watchdog thread. Only priorities that are supported by the
+                        underlying operating system can be assigned to this element.
+                        The user may need special privileges from the underlying operating
+                        system to be able to assign some of the privileged priorities.
+                    ]]></comment>
+                    <default>0</default>
+                    <attributeEnum name="priority_kind" required="false">
+                        <comment><![CDATA[
+                            This attribute specifies whether the specified
+                            Priority is a relative or absolute priority.
+                        ]]></comment>
+                        <value>Relative</value>
+                        <value>Absolute</value>
+                        <default>Relative</default>
+                    </attributeEnum>
+                </leafInt>
+                <leafEnum name="Class" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread scheduling class that will be used by
+                        the watchdog thread. The user may need the appropriate privileges from
+                        the underlying operating system to be able to assign some of the
+                        privileged scheduling classes.
+                    ]]></comment>
+                    <value>Timeshare</value>
+                    <value>Realtime</value>
+                    <value>Default</value>
+                    <default>Default</default>
+                </leafEnum>
+            </element>
+        </element>
         <element name="General" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
                 This element contains general parameters that concern the networking service
@@ -1557,8 +1653,11 @@
                 </leafInt>
                 <leafInt name="AdminQueueSize" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                        The Sending element describes all properties for the transmitting side
-                        of the Channel.
+                        <p>For reliable channels the receiving side needs to keep the sending
+                        side informed about the received data and the received control messages.</p>
+                        <p>This is done by means of an "AdminQueue". This setting determines the
+                        size of this queue, and it must be greater than the maximum number of reliable
+                        messages send or received during each "Resolution" milliseconds.</p>
                     ]]></comment>
                     <minimum>400</minimum>
                     <default>4000</default>
@@ -2273,6 +2372,48 @@
             <default>cmsoap</default>
             <maxLength>0</maxLength>
         </attributeString>
+        <element name="Watchdog" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element controls the characteristics of the Watchdog thread.
+            ]]></comment>
+            <element name="Scheduling" minOccurrences="1" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the type of OS scheduling class will be
+                    used by the thread that announces its liveliness periodically.
+                ]]></comment>
+                <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread priority that will be used by the
+                        watchdog thread. Only priorities that are supported by the
+                        underlying operating system can be assigned to this element.
+                        The user may need special privileges from the underlying operating
+                        system to be able to assign some of the privileged priorities.
+                    ]]></comment>
+                    <default>0</default>
+                    <attributeEnum name="priority_kind" required="false">
+                        <comment><![CDATA[
+                            This attribute specifies whether the specified
+                            Priority is a relative or absolute priority.
+                        ]]></comment>
+                        <value>Relative</value>
+                        <value>Absolute</value>
+                        <default>Relative</default>
+                    </attributeEnum>
+                </leafInt>
+                <leafEnum name="Class" minOccurrences="1" maxOccurrences="1">
+                    <comment><![CDATA[
+                        This element specifies the thread scheduling class that will be used by
+                        the watchdog thread. The user may need the appropriate privileges from
+                        the underlying operating system to be able to assign some of the
+                        privileged scheduling classes.
+                    ]]></comment>
+                    <value>Timeshare</value>
+                    <value>Realtime</value>
+                    <value>Default</value>
+                    <default>Default</default>
+                </leafEnum>
+            </element>
+        </element>
         <element name="Server" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
                 This element determines the serverside behaviour of the Tuner service.

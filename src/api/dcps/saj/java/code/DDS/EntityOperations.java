@@ -23,5 +23,7 @@ public interface EntityOperations
   DDS.StatusCondition get_statuscondition ();
   int get_status_changes ();
   long get_instance_handle ();
+  String get_name();
+  int set_name(String name);
   
 } // interface EntityOperations

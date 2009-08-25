@@ -30,8 +30,7 @@ namespace DDS
 {
   class OS_DCPS_API DomainParticipant_impl
     : public virtual ::DDS::DomainParticipant,
-      public ::DDS::Entity_impl,
-      public LOCAL_REFCOUNTED_OBJECT
+      public ::DDS::Entity_impl
   {
     friend class ::DDS::DomainParticipantFactory;
     friend class ::DDS::TypeSupport_impl;

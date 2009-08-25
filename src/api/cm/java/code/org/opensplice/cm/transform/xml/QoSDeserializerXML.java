@@ -584,14 +584,17 @@ public class QoSDeserializerXML implements QoSDeserializer {
         ReliabilityPolicy result = null;
         ReliabilityKind kind = null;
         Time t = null;
+        Boolean synchronous = false;
         Node child = this.getChildNode(e, "kind");
         
         if(child != null){
             Element el = (Element)child;
             kind = ReliabilityKind.from_string(el.getFirstChild().getNodeValue());
             t = this.parseTime("max_blocking_time", e);
+            child = this.getChildNode(e, "synchronous");
+            synchronous = new Boolean(child.getNodeValue()).booleanValue();
             
-            result = new ReliabilityPolicy(kind, t);
+            result = new ReliabilityPolicy(kind, t, synchronous);
         }
         return result;
     }

@@ -548,6 +548,15 @@ v_dataReaderNew (
         v_subscriberLockShares(subscriber);
         found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
         if (found != _this) {
+           /* Make sure to set the index and deadline list to NULL,
+            * because v_publicFree will cause a crash in the
+            * v_dataReaderDeinit otherwise.
+       	    */
+       	    _this->index = NULL;
+       	    _this->deadLineList = NULL;
+       	    /*v_publicFree to free reference held by the handle server.*/
+       	    v_publicFree(v_public(_this));
+       	    /*Now free the local reference as well.*/
             c_free(_this);
             pa_increment(&(found->shareCount));
             v_subscriberUnlockShares(subscriber);
@@ -685,7 +694,7 @@ v_dataReaderFree (
         if (subscriber != NULL) {
             found = v_dataReader(v_subscriberRemoveShare(subscriber,v_reader(_this)));
             assert(found == _this);
-
+            c_free(found);
         }
     }
     v_readerFree(v_reader(_this));
@@ -726,9 +735,14 @@ v_dataReaderDeinit (
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
     v_readerDeinit(v_reader(_this));
-    c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
-    c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
-    v_deadLineInstanceListFree(_this->deadLineList);
+
+    if(_this->index){
+    	c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
+    	c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
+    }
+    if(_this->deadLineList){
+    	v_deadLineInstanceListFree(_this->deadLineList);
+    }
 }
 
 /* Helpfunc for writing into the dataViews */
@@ -853,15 +867,23 @@ instanceReadSamples(
         count = oldCount - v_dataReaderInstanceSampleCount(instance);
         assert(count >= 0);
         v_dataReader(a->reader)->sampleCount -= count;
-        if (v_statisticsValid(a->reader)) {
-            *(v_statisticsGetRef(v_reader,
-                                 numberOfSamplesRead,
-                                 a->reader)) += count;
-        }
         assert(v_dataReader(a->reader)->sampleCount >= 0);
-		/*A read behaves like a take for invalid samples*/
+        /* Note that if the instance has become empty it is not
+         * removed fron the not empty list yet!
+         * An empty instance will be removed the next time the instance
+         * is accessed (see the following else branch).
+         * This is an optimization to avoid continuous inserting and
+         * removing instances in case samples are continuous written
+         * and taken.
+         */
     } else {
         if (v_dataReaderInstanceInNotEmptyList(instance)) {
+            /* Apparently the instance was already empty and as
+             * optimization described above left in the not empty list.
+             * And no data is inserted in the meanwhile meaning that
+             * the use case for optimization is not the case.
+             * So the instance can now be registered to be removed.
+             */
             a->emptyList = c_iterInsert(a->emptyList,instance);
         }
     }
@@ -1044,18 +1066,24 @@ instanceTakeSamples(
     count = oldCount - v_dataReaderInstanceSampleCount(instance);
     assert(count >= 0);
     v_dataReader(a->reader)->sampleCount -= count;
+    assert(v_dataReader(a->reader)->sampleCount >= 0);
+
     v_statisticsULongSetValue(v_reader,
                               numberOfSamples,
                               a->reader,
                               v_dataReader(a->reader)->sampleCount);
-    v_statisticsULongValueAdd(v_reader,
-                              numberOfSamplesTaken,
-                              a->reader,
-                              count);
-
-    assert(v_dataReader(a->reader)->sampleCount >= 0);
 
     return proceed;
+}
+
+static c_bool
+only_if_equal (
+    c_object found,
+    c_object requested,
+    c_voidp arg)
+{
+    *(c_bool *)arg = (found == requested);
+    return *(c_bool *)arg;
 }
 
 void
@@ -1064,34 +1092,78 @@ v_dataReaderRemoveInstance(
     v_dataReaderInstance instance)
 {
     v_dataReaderInstance found;
+    c_object instanceSet;
+    c_bool equal, doFree;
 
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(v_dataReaderInstanceEmpty(instance));
 
+    doFree = FALSE;
+
     if (v_dataReaderInstanceInNotEmptyList(instance)) {
-        found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
-                                              instance, NULL, NULL));
-        v_dataReaderInstanceInNotEmptyList(instance) = FALSE;
-        c_free(found);
+        instanceSet = v_dataReaderNotEmptyInstanceSet(_this);
+        equal = FALSE;
+        found = v_dataReaderInstance(c_remove(instanceSet,
+                                              instance,
+                                              only_if_equal,
+                                              &equal));
+        if (equal) {
+            v_dataReaderInstanceInNotEmptyList(found) = FALSE;
+            c_free(found);
+            /* A v_publicFree is needed here as well, but due to the
+             * fact that the instance actually might be free by that, do
+             * it in the end of the routine for subscriber defined keys
+             * readers only.
+             */
+            doFree = TRUE;
+        } else {
+            /* The instance apparently isn't a member of the
+             * NotEmptySet but there is another instance with equal
+             * key values.
+             * This is unexpected and should be analysed if this
+             * happens.
+             * For now the instance is not removed.
+             */
+            OS_REPORT(OS_WARNING,
+                      "v_dataReaderInstanceRemove",0,
+                      "try removed incorrect instance from NotEmptySet");
+        }
     }
 
     if (!v_reader(_this)->qos->userKey.enable) {
         if (v_dataReaderInstanceNoWriters(instance)) {
-            found = v_dataReaderInstance(c_remove(v_dataReaderAllInstanceSet(_this),
-                                                  instance, NULL, NULL));
-            v_deadLineInstanceListRemoveInstance(_this->deadLineList,
-                                                 v_instance(instance));
-            /* Remove the instance from the instance-statistics administration */
-            UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index, instance);
-            instance->purgeInsertionTime = C_TIME_ZERO;
-            v_publicFree(v_public(instance));
-            c_free(found);
+            instanceSet = v_dataReaderAllInstanceSet(_this);
+            equal = FALSE;
+            found = v_dataReaderInstance(c_remove(instanceSet,
+                                                  instance,
+                                                  only_if_equal,
+                                                  &equal));
+            if (equal) {
+                v_deadLineInstanceListRemoveInstance(_this->deadLineList,
+                                                     v_instance(instance));
+                /* Remove the instance from the instance-statistics
+                 * administration.
+                 */
+                UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index,
+                                                         instance);
+                instance->purgeInsertionTime = C_TIME_ZERO;
+                v_publicFree(v_public(instance));
+                c_free(found);
+            } else {
+                /* The instance apparently isn't a member of the
+                 * DataReader but there is another instance with equal
+                 * key values.
+                 * This is unexpected and should be analysed if this
+                 * happens.
+                 * For now the instance is not removed.
+                 */
+                OS_REPORT(OS_WARNING,
+                          "v_dataReaderInstanceRemove",0,
+                          "try removed incorrect instance");
+            }
         }
-    } else {
-        found = v_dataReaderInstance(c_remove(v_dataReaderNotEmptyInstanceSet(_this),
-                                              instance, NULL, NULL));
+    } else if(doFree){
         v_publicFree(v_public(instance));
-        c_free(found);
     }
 }
 
@@ -1181,10 +1253,6 @@ v_dataReaderTakeInstance(
                                       numberOfSamples,
                                       _this,
                                       _this->sampleCount);
-            v_statisticsULongValueAdd(v_reader,
-                                      numberOfSamplesTaken,
-                                      _this,
-                                      count);
             assert(_this->sampleCount >= 0);
             v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
         }
@@ -1235,11 +1303,6 @@ v_dataReaderTakeNextInstance(
         assert(count >= 0);
         if (count > 0) {
             _this->sampleCount -= count;
-            if (v_statisticsValid(_this)) {
-                *(v_statisticsGetRef(v_reader,
-                                     numberOfSamplesTaken,
-                                     _this)) += count;
-            }
             assert(_this->sampleCount >= 0);
             if (v_dataReaderInstanceEmpty(next)) {
                 v_dataReaderRemoveInstance(_this,next);
@@ -1312,7 +1375,7 @@ v_dataReaderNotifyDataAvailable(
 
     if (_this->triggerValue) {
         c_free(v_readerSample(_this->triggerValue)->instance);
-        c_free(_this->triggerValue);
+        v_dataReaderSampleFree(_this->triggerValue);
     }
     if (sample) {
         c_keep(v_readerSample(sample)->instance);
@@ -1323,7 +1386,9 @@ v_dataReaderNotifyDataAvailable(
     event.source   = V_HANDLE_NIL;
     event.userData = sample;
 
-    c_setWalk(v_collection(_this)->queries, queryNotifyDataAvailable, &event);
+    c_setWalk(v_collection(_this)->queries,
+              queryNotifyDataAvailable,
+              &event);
 
     /* Also notify myself, since the user reader might be waiting. */
     event.source = v_publicHandle(v_public(_this));

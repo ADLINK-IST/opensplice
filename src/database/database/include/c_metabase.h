@@ -431,6 +431,11 @@ c_metaResolve(
     const c_char *name);
 
 OS_API c_metaObject
+c_metaResolveFixedScope(
+    c_metaObject scope,
+    const c_char *name);
+
+OS_API c_metaObject
 c_metaResolveType(
     c_metaObject scope,
     const c_char *name);

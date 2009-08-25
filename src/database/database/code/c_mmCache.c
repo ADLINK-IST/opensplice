@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "c_mmCache.h"
@@ -27,6 +27,9 @@
 
 #define blockSize(count,size) \
         (C_MAXALIGNSIZE(C_SIZEOF(c_block)) + count * sampleSize(size))
+
+#define blockFreeSize(cache) \
+        (cache->size * cache->count)
 
 #define blockSample(block,size,count) \
         c_sample((c_address)block + blockSize(count,size))
@@ -51,7 +54,7 @@ struct c_mmCache_s {
     c_long  used;        /* NOT USED, SO MAY BE REMOVED. */
     c_long  free;        /* The number of free bytes available in the allocated blocks. */
 #ifndef NDEBUG
-    c_long  access;      /* The number of simultanious accesses, MUST ALWAYS BE < 2. */
+    c_long  access;      /* The number of simultaneous accesses, MUST ALWAYS BE < 2. */
 #endif
 };
 
@@ -83,7 +86,9 @@ c_mmCacheCreate (
     assert(size > 0);
     assert(count > 0);
 
-    _this = c_mmMalloc(mm,sizeof(struct c_mmCache_s));
+    /* Do not use c_mmMalloc here, because the created cache has to be enlisted
+     * in the memory manager for proper memory usage-statistics. */
+    _this = c_mmMallocCache(mm,sizeof(struct c_mmCache_s));
     _this->mm = mm;
     _this->size = size;
     _this->count = count;
@@ -125,7 +130,9 @@ c_mmCacheDestroy (
     _this->incomplete = NULL;
     _this->last = NULL;
 
-    c_mmFree(_this->mm,_this);
+    /* Do not use c_mmFree here, because the created cache has to be removed
+     * from the cache-list in the memory manager. */
+    c_mmFreeCache(_this->mm,_this);
 }
 
 void *
@@ -161,7 +168,7 @@ c_mmCacheMalloc (
         _this->last = block;
         if (block->count < _this->count) {
             /* In the rare situation that blocks are specified to
-               provide space for only one object _this->incomplete 
+               provide space for only one object _this->incomplete
                must NOT be set to the new block.
             */
             _this->incomplete = block;
@@ -182,7 +189,10 @@ c_mmCacheMalloc (
         /** Update the cache statistics.
         */
         _this->allocated += size;
-        _this->free += size;
+        /* While blockSize(_this->count,_this->size) memory has been allocated,
+         * only _this->size * _this->count is available (rest is headers), so
+         * add that amount to the free-memory. */
+        _this->free += blockFreeSize(_this);
     } else {
         block = _this->incomplete;
         if (block->firstFree == NULL) {
@@ -248,6 +258,7 @@ c_mmCacheMalloc (
             }
         }
     }
+    /* One extra slot has been malloc'd , so substract '1 * size' from free.*/
     _this->free -= _this->size;
 
 #ifndef NDEBUG
@@ -361,7 +372,7 @@ c_mmCacheFree (
         c_mmFree(_this->mm, block);
         size = blockSize(_this->count,_this->size);
         _this->allocated -= size;
-        _this->free -= size;
+        _this->free -= blockFreeSize(_this);;
     } else {
         sample->nextFree = block->firstFree;
         block->firstFree = sample;
@@ -408,6 +419,7 @@ c_mmCacheFree (
             _this->incomplete = block;
         }
     }
+    /* One slot has been freed , so add '1 * size' to free.*/
     _this->free += _this->size;
 
 #ifndef NDEBUG
@@ -466,5 +478,24 @@ c_mmCacheFree (
     _this->access--;
     assert(_this->access == 0);
 #endif
+}
+
+c_long
+c_mmCacheGetAllocated(
+    c_mmCache _this)
+{
+    assert(_this);
+
+    return _this->allocated;
+}
+
+
+c_long
+c_mmCacheGetFree(
+    c_mmCache _this)
+{
+    assert(_this);
+
+    return _this->free;
 }
 

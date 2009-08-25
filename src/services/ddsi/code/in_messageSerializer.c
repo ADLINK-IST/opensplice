@@ -8,6 +8,7 @@
 #include "in__messageSerializer.h"
 #include "in__endianness.h"
 #include "in_report.h"
+#include "in_align.h"
 
 /**
  * The following two function typedefs specify the function signature
@@ -159,14 +160,12 @@ in_messageSerializerWriteClass(
  * SIDE EFFECT: it will update the curCdrIndex parameter to it's new value!
  */
 #define in_messageSerializerAddCDRPaddingToStream(_this, size, result)         \
-    if((_this->curCdrIndex) != 0)                                              \
-    {                                                                          \
+    do {                                                                          \
         os_uint32 padding;                                                     \
                                                                                \
-        padding = _this->curCdrIndex % size;                                   \
+        padding = IN_ALIGN_UINT_PAD((_this->curCdrIndex),size);                                   \
         if(padding != 0)                                                       \
         {                                                                      \
-            padding = size - padding;                                          \
             result += padding;                                                 \
             if(padding <= in_messageTransformerGetAvailable(_this))            \
             {                                                                  \
@@ -188,11 +187,7 @@ in_messageSerializerWriteClass(
                 in_messageTransformerClaim(_this, remPadding);                 \
             }                                                                  \
         }                                                                      \
-        _this->curCdrIndex  += size + padding;                                 \
-    } else                                                                     \
-    {                                                                          \
-        _this->curCdrIndex  += size;                                           \
-    }
+    }  while(0)
 
 in_messageSerializer
 in_messageSerializerNew(
@@ -212,7 +207,7 @@ in_messageSerializerNew(
             in_messageSerializerDeinit,
             getBufferFunc,
             getBufferFuncArg);
-
+        
         if(!success)
         {
             os_free(_this);
@@ -284,6 +279,11 @@ in_messageSerializerBegin(
     assert(buffer);
     assert(in_messageSerializerIsValid(_this));
 
+    if (length != IN_ALIGN_UINT_CEIL(length, 8)) {
+    	IN_REPORT_ERROR_1(IN_SPOT, "write buffer length is expected to be multiple of 8 to "
+    			                 "fit CDR fragmentation constraints (%ud)", length);
+    }
+    
     transformer = in_messageTransformer(_this);
     in_messageTransformerBegin(transformer);
     in_messageTransformerSetBuffer(transformer, &buffer);

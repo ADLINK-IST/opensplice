@@ -18,7 +18,7 @@
 #define NW_EXTENDS(type) NW_STRUCT(type) _parent
 #define NW_CLASS(name)   typedef NW_STRUCT(name) *name
 
-typedef unsigned int    nw_seqNr;
+typedef os_uint32       nw_seqNr;
 typedef unsigned int    nw_address;
 typedef char           *nw_name;
 typedef unsigned char   nw_bool;

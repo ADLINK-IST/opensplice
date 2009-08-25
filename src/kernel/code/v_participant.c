@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__participant.h"
@@ -90,8 +90,7 @@ v_participantInit(
     c_type writerProxyType;
 
     assert(C_TYPECHECK(p,v_participant));
-    /* Do not use C_TYPECHECK on qos parameter,
-     * since it might be allocated on heap! */
+    assert(C_TYPECHECK(qos, v_participantQos));
 
     kernel = v_objectKernel(p);
     base = c_getBase(p);

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_POLICY_H
@@ -60,6 +60,7 @@ extern "C" {
 
 #define v_reliabilityPolicyEqual(p1,p2)\
     ((p1.kind == p2.kind) &&\
+     (p1.synchronous == p2.synchronous) && \
      ((p1.kind == V_RELIABILITY_BESTEFFORT) ||\
       (c_timeCompare(p1.max_blocking_time,p2.max_blocking_time) == C_EQ)))
 
@@ -199,6 +200,11 @@ extern "C" {
       (p.max_instances > 0)) &&\
      ((p.max_samples_per_instance == V_LENGTH_UNLIMITED) ||\
       (p.max_samples_per_instance > 0)))
+
+#define v_resourcePolicyIsUnlimited(p)\
+    ((p.max_samples == V_LENGTH_UNLIMITED) &&\
+     (p.max_instances == V_LENGTH_UNLIMITED) &&\
+     (p.max_samples_per_instance == V_LENGTH_UNLIMITED))
 
 #define v_transportPolicyEqual(p1,p2)\
     (p1.value == p2.value)

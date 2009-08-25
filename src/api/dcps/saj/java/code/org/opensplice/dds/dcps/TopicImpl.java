@@ -58,6 +58,10 @@ public class TopicImpl extends EntityImpl implements DDS.Topic {
         return jniGetParticipant();
     }
 
+    public int dispose_all_data () {
+        return jniDisposeAllData();
+    }
+
     private native int jniGetInconsistentTopicStatus(DDS.InconsistentTopicStatusHolder status);
     private native int jniGetQos(DDS.TopicQosHolder qos);
     private native int jniSetQos(DDS.TopicQos qos);
@@ -66,4 +70,5 @@ public class TopicImpl extends EntityImpl implements DDS.Topic {
     private native String jniGetTypeName();
     private native String jniGetName();
     private native DDS.DomainParticipant jniGetParticipant();
+    private native int jniDisposeAllData();
 }

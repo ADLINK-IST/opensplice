@@ -776,6 +776,7 @@ struct v_livelinessPolicy {
 struct v_reliabilityPolicy {
     v_reliabilityKind                 kind;
     v_duration                        max_blocking_time;
+    c_bool                            synchronous;
 };
 
 struct v_historyPolicy {
@@ -1715,6 +1716,7 @@ class v_index extends v_object {
 class v_purgeListItem {
     attribute v_dataReaderInstance           instance;
     attribute c_time                         insertionTime;
+    attribute c_long                         genCount; /* generation equal or older should be removed */
 };
 
 class v_dataReaderEntry extends v_entry {

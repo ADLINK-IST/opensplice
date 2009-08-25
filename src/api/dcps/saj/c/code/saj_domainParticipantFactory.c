@@ -188,10 +188,10 @@ SAJ_FUNCTION(jniLookupParticipant) (
     gapiDomainParticipant = gapi_domainParticipantFactory_lookup_participant(
 	                               factory, (const gapi_domainId_t) domainId);
 	
-	if (gapiDomainParticipant != NULL){
+    if (gapiDomainParticipant != NULL){
         javaDomainParticipant = saj_read_java_address(gapiDomainParticipant);
     }	
-	if(jDomainId != NULL){
+    if(jDomainId != NULL){
         (*env)->ReleaseStringUTFChars(env, jDomainId, domainId);
     }
 	return javaDomainParticipant;
@@ -328,6 +328,37 @@ SAJ_FUNCTION(jniSetQos) (
     gapi_free(gapiQos);
     
     return (jint)result;
+}
+
+JNIEXPORT jobject JNICALL
+SAJ_FUNCTION(jniLookupDomain) (
+    JNIEnv *env,
+    jobject this,
+    jstring jDomainId)
+{
+    gapi_domainParticipantFactory factory;
+    gapi_domain gapiDomain;
+    jobject javaDomain;
+    const gapi_char* domainId;
+    
+    domainId   = NULL;
+    javaDomain = NULL;
+    gapiDomain = GAPI_OBJECT_NIL;
+
+    if(jDomainId != NULL){
+        domainId = (*env)->GetStringUTFChars(env, jDomainId, 0);
+    } 
+    factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
+
+    gapiDomain = gapi_domainParticipantFactory_lookup_domain(factory, domainId);
+
+    if (gapiDomain != NULL){
+        javaDomain = saj_read_java_address(gapiDomain);
+    }	
+    if(jDomainId != NULL){
+        (*env)->ReleaseStringUTFChars(env, jDomainId, domainId);
+    }
+    return javaDomain;
 }
 
 #undef SAJ_FUNCTION

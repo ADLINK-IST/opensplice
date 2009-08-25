@@ -248,5 +248,24 @@ SAJ_FUNCTION(jniGetParticipant)(
     }
     return jparticipant;
 }  
+
+/*
+ * Class:     org_opensplice_dds_dcps_TopicImpl
+ * Method:    jniDisposeAllData
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniDisposeAllData)(
+    JNIEnv *env,
+    jobject jtopic)
+{
+    gapi_topic topic;
+    gapi_returnCode_t result;
+
+    topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
+    result = gapi_topic_dispose_all_data(topic);
+
+    return (jint)result;
+}
   
 #undef SAJ_FUNCTION

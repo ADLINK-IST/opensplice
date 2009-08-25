@@ -1,0 +1,4 @@
+export VS_HOME='/cygdrive/C/Program Files/Microsoft Visual Studio 9.0/'
+export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_14"
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/tao1.6.1
+export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.0.3
