@@ -9,12 +9,6 @@ M   ospli/fedora3/x86.linux2.6-dev-notest-inner 1 heads/master none
 M   ospli/fedora3/int509-pcx86-dev-inner 1 heads/master none
 E   ospli/fedora3/int509-mvme5100_750-dev-inner 1 heads/master none
 
-E   ospli/ultra8/solaris-dev-inner 1 heads/master none
-M   ospli/ultra8/solaris-dev-notest-inner 1 heads/master none
-E   ospli/ultra8/solaris-release-inner 1 heads/master none
-E   ospli/ultra8/solaris-release-notest-inner 1 heads/master none
-M   ospli/ultra8/solaris-release-lic-inner 1 heads/master none
-
 M   ospli/rhel4d/x86.linux2.6-dev 20 heads/master none
 M   ospli/rhel4d/x86.linux2.6-release 20 heads/master none
 E   ospli/rhel4d/x86.linux2.6-dev-inner 1 heads/master none
