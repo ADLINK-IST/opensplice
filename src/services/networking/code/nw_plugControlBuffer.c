@@ -17,7 +17,7 @@
 #include "nw_misc.h"
 #include "nw__confidence.h"
 
-#define UI(val) ((nw_length)(val))
+#define UI(val) ((os_address)(val))
 
 nw_plugControlMessage
 nw_plugControlBufferGetNextMessage(

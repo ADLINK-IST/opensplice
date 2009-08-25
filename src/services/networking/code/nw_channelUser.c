@@ -69,10 +69,10 @@ nw_adminMessageFree(
 /* --------------------------------- Ringbuffer ----------------------------- */
 
 NW_STRUCT(nw_ringBuffer) {
-    unsigned int nofEntries;
+    os_uint32 nofEntries;
     nw_adminMessage *entries /* [nofEntries] */;
-    unsigned int head;
-    unsigned int tail;
+    os_uint32 head;
+    os_uint32 tail;
 };
 
 
@@ -90,7 +90,7 @@ static void
 nw_ringBufferSetEntryByIndex(
     nw_ringBuffer ringBuffer,
     nw_adminMessage message,
-    unsigned int index)
+    os_uint32 index)
 {
     if (ringBuffer) {
         nw_adminMessageFree(NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, index));
@@ -101,10 +101,10 @@ nw_ringBufferSetEntryByIndex(
 
 static nw_ringBuffer
 nw_ringBufferNew(
-    unsigned int nofEntries)
+    os_uint32 nofEntries)
 {
     nw_ringBuffer result = NULL;
-    unsigned int i;
+    os_uint32 i;
     
     result = (nw_ringBuffer)os_malloc((os_uint32)sizeof(*result));
     
@@ -132,7 +132,7 @@ static void
 nw_ringBufferFree(
     nw_ringBuffer ringBuffer)
 {
-    unsigned int i;
+    os_uint32 i;
     
     if (ringBuffer) {
         if (ringBuffer->entries) {

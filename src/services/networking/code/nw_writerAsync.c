@@ -44,11 +44,11 @@ NW_STRUCT(nw_ringBufferEntry) {
 
 NW_CLASS(nw_ringBuffer);
 NW_STRUCT(nw_ringBuffer) {
-    unsigned int nofEntries;
+    os_uint32 nofEntries;
     nw_ringBufferEntry *entries;
-    unsigned int head;
-    unsigned int tail;
-    unsigned int currentSize;
+    os_uint32 head;
+    os_uint32 tail;
+    os_uint32 currentSize;
 };
 
 #define NW_RINGBUFFER_INDEX_IS_VALID(ringBuffer, index)             \
@@ -81,10 +81,10 @@ NW_STRUCT(nw_ringBuffer) {
 
 static nw_ringBuffer
 nw_ringBufferNew(
-    unsigned int nofEntries)
+    os_uint32 nofEntries)
 {
     nw_ringBuffer result;
-    unsigned int i;
+    os_uint32 i;
 
     result = (nw_ringBuffer)os_malloc(sizeof(*result));
     if (result) {
@@ -104,7 +104,7 @@ static void
 nw_ringBufferFree(
     nw_ringBuffer this)
 {
-    unsigned int i;
+    os_uint32 i;
 
     if (this) {
         if (this->entries) {

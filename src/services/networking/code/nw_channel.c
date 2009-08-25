@@ -170,7 +170,7 @@ static void
 nw_entryHashFree(
     nw_entryHash entryHash)
 {
-    unsigned int index;
+    os_uint32 index;
     nw_entryHashItem *itemPtr;
     
     NW_CONFIDENCE(entryHash != NULL);
@@ -196,7 +196,7 @@ nw_entryHashLookupByNamesOnly(
     v_networkReaderEntry result = NULL;
     nw_entryHashItem *itemPtr;
     nw_bool ready = FALSE;
-    unsigned int index = 0;
+    os_uint32 index = 0;
     int cmpRes;
     
     while ((index < entryHash->hashSize) && !ready) {

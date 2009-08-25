@@ -24,7 +24,7 @@
 #define NW_PLUGCONTROLBUFFER_ALIGNMENT      (4)
 #define NW_PLUGCONTROLBUFFER_DATA_ALIGNMENT (4)
 #define NW_PLUGCONTROLBUFFER_HEADERSIZE     (sizeof(NW_STRUCT(nw_plugControlBuffer)))
-#define UI(val) ((nw_length)(val))
+#define UI(val) ((os_address)(val))
 
 #define NW_PLUGCONTROLBUFFER_FIRSTMESSAGE(buffer) \
     ((nw_plugControlMessage)(UI(buffer) + NW_PLUGCONTROLBUFFER_HEADERSIZE))

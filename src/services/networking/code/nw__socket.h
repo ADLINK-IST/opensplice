@@ -21,15 +21,15 @@
 
 sk_bool           nw_socketGetDataSocket(
                       nw_socket sock,
-                      int *sockfd);
+                      os_int *sockfd);
                       
 sk_bool           nw_socketGetControlSocket(
                       nw_socket sock,
-                      int *sockfd);
+                      os_int *sockfd);
                       
-int               nw_socketSetBroadcastOption(
+os_int               nw_socketSetBroadcastOption(
                       nw_socket sock,
-                      int enableBroadcast);
+                      os_int enableBroadcast);
 
 #endif /* NW__SOCKET_H */
 

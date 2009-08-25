@@ -22,7 +22,7 @@
 #define SK_INTF_MAX_NAME_LEN 16
 typedef char sk_interfaceName[SK_INTF_MAX_NAME_LEN];
 
-#define SD_FLAG_IS_SET(flags, flag) ((((unsigned int)(flags) & (unsigned int)(flag))) != 0U)
+#define SD_FLAG_IS_SET(flags, flag) ((((os_uint32)(flags) & (os_uint32)(flag))) != 0U)
 
 #define SK_ADDRESS(ptr)         ((size_t)(ptr))
 #define SK_POINTER(address)     ((char *)(address))
@@ -104,7 +104,7 @@ sk_interfaceInfoNew(
         
         result->flags = flags;
         
-        if (primaryAddress && ((int)primaryAddress->sa_family == AF_INET)) {
+        if (primaryAddress && ((os_int)primaryAddress->sa_family == AF_INET)) {
             /* Only IPv4 for now */
             result->primaryAddress = (struct sockaddr *)os_malloc(
                                         (os_uint32)sizeof(struct sockaddr_in));
@@ -155,10 +155,10 @@ sk_interfaceInfoFree(
 static void
 sk_interfaceWalkCountBC(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
-    unsigned int *count = (unsigned int *)actionArg;
+    os_uint *count = (os_uint *)actionArg;
 
     (void)intf; 
     (void)sockfd;
@@ -173,7 +173,7 @@ sk_interfaceWalkCountBC(
 static void
 sk_interfaceWalkFillBC(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
     sk_interfaceInfo **interfaceInfo = (sk_interfaceInfo **)actionArg;
@@ -190,10 +190,10 @@ sk_interfaceWalkFillBC(
 static void
 sk_interfaceWalkCountMC(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
-    unsigned int *count = (unsigned int *)actionArg;
+    os_uint *count = (os_uint *)actionArg;
 
     (void)intf;
     (void)sockfd;
@@ -215,7 +215,7 @@ sk_interfaceWalkCountMC(
 static void
 sk_interfaceWalkFillMC(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
     sk_interfaceInfo **interfaceInfo = (sk_interfaceInfo **)actionArg;
@@ -239,10 +239,10 @@ sk_interfaceWalkFillMC(
 static void
 sk_interfaceWalkCountLoopback(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
-    unsigned int *count = (unsigned int *)actionArg;
+    os_uint *count = (os_uint *)actionArg;
 
     (void)sockfd;
     (void)intf;
@@ -257,7 +257,7 @@ sk_interfaceWalkCountLoopback(
 static void
 sk_interfaceWalkFillLoopback(
     os_ifAttributes *intf,
-    int sockfd,
+    os_int sockfd,
     void *actionArg)
 {
     sk_interfaceInfo **interfaceInfo = (sk_interfaceInfo **)actionArg;
@@ -281,14 +281,14 @@ sk_interfaceWalkFillLoopback(
 
 typedef void (*sk_interfaceWalkFunc)(
                  os_ifAttributes *intf,
-                 int sockfd,
+                 os_int sockfd,
                  void *actionArg);
 
 static void
 sk_interfaceIPv4Walk(
     os_ifAttributes *allInterfaces,
     os_uint32 nofInterfaces,
-    int sockfd,
+    os_int sockfd,
     const sk_interfaceWalkFunc action,
     void *actionArg)
 {
@@ -306,11 +306,11 @@ sk_interfaceIPv4Walk(
 
 #undef SK_MAX
                       
-int
+os_int
 sk_interfaceInfoRetrieveAllBC(
     sk_interfaceInfo **interfaceList /* [nofInterfaces */,
-    unsigned int *nofInterfaces,
-    int sockfd)
+    os_uint *nofInterfaces,
+    os_int sockfd)
 {
     os_result result;
     os_ifAttributes ifList[MAX_INTERFACES];
@@ -361,11 +361,11 @@ sk_interfaceInfoRetrieveAllBC(
     return nofIf;
 }
 
-int
+os_int
 sk_interfaceInfoRetrieveAllMC(
     sk_interfaceInfo **interfaceList /* [nofInterfaces */,
-    unsigned int *nofInterfaces,
-    int sockfd)
+    os_uint *nofInterfaces,
+    os_int sockfd)
 {
     os_result result;
     os_ifAttributes ifList[MAX_INTERFACES];
@@ -412,11 +412,11 @@ sk_interfaceInfoRetrieveAllMC(
     return nofIf;
 }
 
-int
+os_int
 sk_interfaceInfoRetrieveAllLoopback(
     sk_interfaceInfo **interfaceList /* [nofInterfaces */,
-    unsigned int *nofInterfaces,
-    int sockfd)
+    os_uint *nofInterfaces,
+    os_int sockfd)
 {
     os_result result;
     os_ifAttributes ifList[MAX_INTERFACES];
@@ -456,9 +456,9 @@ sk_interfaceInfoRetrieveAllLoopback(
 void
 sk_interfaceInfoFreeAll(                      
     sk_interfaceInfo *interfaceList /* [nofInterfaces */,
-    unsigned int nofInterfaces)
+    os_uint nofInterfaces)
 {
-    unsigned int i;
+    os_uint i;
     
     if (interfaceList) {
         for (i=0; i<nofInterfaces; i++) {
