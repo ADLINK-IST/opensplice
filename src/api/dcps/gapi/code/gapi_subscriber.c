@@ -30,22 +30,6 @@
 #include "os_heap.h"
 #include "u_user.h"
 
-static v_subscriberQos
-newSubscriberQos (
-    void)
-{
-    v_subscriberQos subscriberQos;
-
-    subscriberQos = u_subscriberQosNew(NULL);
-    if ( subscriberQos ) {
-        if ( subscriberQos->partition ) {
-            os_free(subscriberQos->partition);
-            subscriberQos->partition = NULL;
-        }
-    }
-    return subscriberQos;
-}
-
 static gapi_boolean
 copySubscriberQosIn (
     const gapi_subscriberQos *srcQos,
@@ -199,7 +183,7 @@ _SubscriberNew (
     }
 
     if  (newSubscriber != NULL ) {
-        subscriberQos = newSubscriberQos ();
+        subscriberQos = u_subscriberQosNew(NULL);
         if ( subscriberQos != NULL ) {
             if ( !copySubscriberQosIn(qos, subscriberQos) ) {
                 _DomainEntityDispose(_DomainEntity(newSubscriber));
@@ -720,7 +704,8 @@ gapi_subscriber_set_qos (
         gapi_subscriberQos * existing_qos = gapi_subscriberQos__alloc();
 
         result = gapi_subscriberQosCheckMutability(qos,
-                                                   _SubscriberGetQos(subscriber,existing_qos),
+                                                   _SubscriberGetQos(subscriber,
+                                                                     existing_qos),
                                                    &context);
         gapi_free(existing_qos);
     }
@@ -728,10 +713,11 @@ gapi_subscriber_set_qos (
 
 
     if ( result == GAPI_RETCODE_OK ) {
-        subscriberQos = newSubscriberQos();
+        subscriberQos = u_subscriberQosNew(NULL);
         if (subscriberQos) {
             if ( copySubscriberQosIn(qos, subscriberQos) ) {
-                uResult = u_entitySetQoS(_EntityUEntity(subscriber),(v_qos)(subscriberQos) );
+                uResult = u_entitySetQoS(_EntityUEntity(subscriber),
+                                         (v_qos)(subscriberQos) );
                 result = kernelResultToApiResult(uResult);
             } else {
                 result = GAPI_RETCODE_OUT_OF_RESOURCES;
