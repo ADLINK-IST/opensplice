@@ -553,10 +553,10 @@ nw_stream__writePrimArraySwapped(
                 for (j=0; j<rest; j++) {
                     dstPtr[j] = srcPtr[max-j];
                 }
-                srcPtr = C_DISPLACE(srcPtr,rest);
 
                 /* Get the next buffer. */
                 nw_stream_renew(stream);
+                dstPtr = nw_stream_head(stream);
 
                 /* Copy the last part of the element to the head of
                  * the new buffer.
@@ -565,6 +565,7 @@ nw_stream__writePrimArraySwapped(
                 for (j=rest;j<dataSize;j++) {
                     dstPtr[j-rest] = srcPtr[max-j];
                 }
+                srcPtr = C_DISPLACE(srcPtr,dataSize);
                 restElements--;
             } else {
                 nw_stream_renew(stream);
