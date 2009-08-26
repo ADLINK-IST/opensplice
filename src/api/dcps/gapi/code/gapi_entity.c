@@ -19,7 +19,6 @@
 #include "gapi_status.h"
 #include "gapi_kernel.h"
 #include "gapi_builtin.h"
-#include "gapi_instanceHandle.h"
 
 #include "u_types.h"
 
@@ -157,7 +156,7 @@ _EntitySetUserEntity (
     if ( uEntity ) {
         entity->kernelId = kernelGetKernelId(uEntity);
         u_entitySetUserData(uEntity, _EntityHandle(entity));
-        entity->handle = gapi_instanceHandleFromGID(u_entityGid(uEntity));
+        entity->handle = u_entityGetInstanceHandle(uEntity);
     } else {
         entity->handle = GAPI_HANDLE_NIL;
     }

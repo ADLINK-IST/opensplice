@@ -17,8 +17,15 @@
 extern "C" {
 #endif
 
-#include "u_handle.h"
+#include "v_public.h"
+#include "v_collection.h"
 #include "os_if.h"
+
+typedef c_longlong u_instanceHandle;
+
+#define U_INSTANCEHANDLE_NIL (0)
+
+#include "u_user.h"
 
 #ifdef OSPL_BUILD_USER
 #define OS_API OS_API_EXPORT
@@ -27,19 +34,55 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define u_instanceHandle               u_handle
-#define u_instanceHandleClaim(h,i)     u_handleClaim((h),(i))
-#define u_instanceHandleRelease(h)     u_handleRelease((h))
-#define u_instanceHandleIsEqual(h1,h2) u_handleIsEqual((h1),(h2))
-#define u_instanceHandleIsNil(h)       u_handleIsNil(h)
-#define u_instanceHandleSetNil(h)      u_handleSetNil(h)
+OS_API u_instanceHandle
+u_instanceHandleNew(
+    v_public object);
 
-OS_API c_long
-u_instanceHandleSampleCount(
+OS_API u_result
+u_instanceHandleClaim (
+    u_instanceHandle _this,
+    c_voidp instance);
+
+OS_API u_result
+u_instanceHandleRelease (
     u_instanceHandle _this);
 
-OS_API v_state
-u_instanceHandleState(
+OS_API u_instanceHandle
+u_instanceHandleFromGID (
+    v_gid gid);
+
+OS_API v_gid
+u_instanceHandleToGID (
+    u_instanceHandle _this);
+
+OS_API c_bool
+u_instanceHandleIsNil (
+    u_instanceHandle _this);
+
+OS_API c_bool
+u_instanceHandleIsEqual (
+    u_instanceHandle h1,
+    u_instanceHandle h2);
+
+/* Depricated : only for GID publication_handle legacy. */
+
+OS_API u_instanceHandle
+u_instanceHandleFix(
+    u_instanceHandle _this,
+    v_collection reader);
+
+/* Depricated : only for DLRL legacy. */
+
+OS_API u_long
+u_instanceHandleServer(
+    u_instanceHandle _this);
+
+OS_API u_long
+u_instanceHandleIndex(
+    u_instanceHandle _this);
+
+OS_API u_long
+u_instanceHandleSerial(
     u_instanceHandle _this);
 
 #undef OS_API

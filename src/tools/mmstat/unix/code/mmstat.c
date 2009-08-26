@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <os.h>
@@ -59,7 +59,7 @@ print_usage (
 {
     printf ("\nUsage:\n"
 	    "      mmstat -h\n"
-	    "      mmstat [-e] [-i interval] [-s sample_count] [URI]\n"
+	    "      mmstat [-e] [-a] [-i interval] [-s sample_count] [URI]\n"
             "      mmstat -t [-i interval] [-s sample_count] [-l limit] [-f filter_expression] [URI]\n\n");
     printf ("      -h       Show this help\n\n");
     printf ("               Show the memory statistics of the system identified by\n"
@@ -71,18 +71,19 @@ print_usage (
     printf ("      -p port  Set the portnumber of the telnet port (default %d)\n\n", port);
 #endif
     printf ("      -e       Extended mode, shows bar for allocated memory\n\n"
-	    "      -i interval\n"
+        "      -i interval\n"
 	    "               Show memory statistics every interval milli seconds\n\n"
 	    "      -s sample_count\n"
 	    "               Stop after sample_count samples\n\n");
+    printf ("      -a       Show pre-allocated memory as well.\n\n");
     printf ("      -t       Show meta object reference count of the system identified by\n"
 	    "               the specified URI. If no URI is specified, the environment\n"
             "               variable OSPL_URI will be searched for. When even the\n"
 	    "               the environment variable is unspecified, the default system\n"
 	    "               will be selected. The default display interval is 3 seconds\n\n"
 	    "      -l limit\n"
-            "               Show only extent count >= limit\n\n"
-            "      -f filter_expression\n"
+            "               Show only extent count >= limit\n\n");
+    printf( "      -f filter_expression\n"
             "               Show only meta objects which name passes the filter expression\n\n");
     printf ("      Use 'q' to terminate the monitor\n\n"
 	    "      Use 't' to immediately show statistics\n\n");
@@ -104,6 +105,7 @@ main (
     c_bool extended = FALSE;
     c_bool raw = FALSE;
     c_bool delta = FALSE;
+    c_bool preallocated = FALSE;
     char *uri = "";
     u_result ur;
     u_participant participant;
@@ -130,7 +132,7 @@ main (
 
     while ((opt = getopt (argc, argv, optflags)) != -1)
     {
-       switch (opt) 
+       switch (opt)
        {
           case 'i':
              sscanf (optarg, "%d", &interval);
@@ -150,6 +152,9 @@ main (
           case 'r':
              raw = TRUE;
              break;
+          case 'a':
+            preallocated = TRUE;
+            break;
           case 'h':
              print_usage (argv[0]);
              exit (0);
@@ -186,32 +191,32 @@ main (
              break;
        }
     }
-    if ((argc - optind) > 1) 
+    if ((argc - optind) > 1)
     {
        print_usage (argv[0]);
        exit (-1);
     }
-    if ((argc - optind) == 1) 
+    if ((argc - optind) == 1)
     {
        uri = argv[optind];
     }
-    
-    if( !raw) 
+
+    if( !raw)
     {
-       if(strlen(uri) > 0) 
+       if(strlen(uri) > 0)
        {
           sddsURI = os_strdup(uri);
-       } 
-       else 
+       }
+       else
        {
           sddsURI = os_getenv ("OSPL_URI");
-            
+
           if(!sddsURI)
           {
              sddsURI = (c_char*)os_malloc(19);
              sprintf(sddsURI, "%s", "The default Domain");
-          } 
-          else 
+          }
+          else
           {
              sddsURI = os_strdup(sddsURI);
           }
@@ -220,18 +225,18 @@ main (
               "'%s'...\n", sddsURI);
        os_free(sddsURI);
     }
-    
+
     ur = u_userInitialise();
-    
-    if(ur == U_RESULT_OK) 
+
+    if(ur == U_RESULT_OK)
     {
        pqos = u_participantQosNew(NULL);
        participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
        u_participantQosFree(pqos);
-        
-       if(participant) 
+
+       if(participant)
        {
-          if( !raw ) 
+          if( !raw )
           {
              printf("Connection established.\n\n");
 #ifdef INTEGRITY
@@ -282,10 +287,10 @@ main (
 #endif
           }
           lost = 0;
-          switch (selectedAction) 
+          switch (selectedAction)
           {
              case memoryStats:
-                msData = monitor_msNew (extended, raw, delta);
+                msData = monitor_msNew (extended, raw, delta, preallocated);
                 break;
              case typeRefCount:
                 trcData = monitor_trcNew (objectCountLimit, filterExpression, delta);
@@ -294,12 +299,12 @@ main (
                 orcData = monitor_orcNew (objectCountLimit, filterExpression, delta);
                 break;
           }
-            
-          while (no_break && !lost) 
+
+          while (no_break && !lost)
           {
-             if (delay <= 0 || trigger) 
+             if (delay <= 0 || trigger)
              {
-                switch (selectedAction) 
+                switch (selectedAction)
                 {
                    case memoryStats:
                       ur = u_entityAction(u_entity(participant), monitor_msAction, msData);
@@ -312,16 +317,16 @@ main (
                       break;
                 }
                 sample++;
-                if (trigger) 
+                if (trigger)
                 {
                    trigger = 0;
-                } 
-                else 
+                }
+                else
                 {
                    delay = interval;
                 }
              }
-                
+
              if(ur == U_RESULT_OK)
              {
 #ifndef INTEGRITY
@@ -331,13 +336,13 @@ main (
                    /* if count = -1, mmstat is started in background */
                    /* if count = 0, mmstat is started in foreground, */
                    /* but there is no input */
-                   while (count > 0) 
+                   while (count > 0)
                    {
-                      if (c == 'q' || c == '\03' /* ^C */) 
+                      if (c == 'q' || c == '\03' /* ^C */)
                       {
                          no_break = FALSE;
-                      } 
-                      else if (c == 't') 
+                      }
+                      else if (c == 't')
                       {
                          trigger = 1;
                       }
@@ -358,17 +363,17 @@ main (
 #endif
                       if (count > 0) 
                       {
-                         if (c == 'q' || c == '\03' /* ^C */) 
+                         if (c == 'q' || c == '\03' /* ^C */)
                          {
                             no_break = FALSE;
-                         } 
-                         else if (c == 't') 
+                         }
+                         else if (c == 't')
                          {
                             trigger = 1;
                          }
                       }
-                   } 
-                   else 
+                   }
+                   else
                    {
 #ifdef INTEGRITY
                       dup2( orig_stdout, fileno(stdout));
@@ -376,19 +381,19 @@ main (
                       no_break = 0;
                    }
                 }
-                if (no_break && interval) 
+                if (no_break && interval)
                 {
                    delay -= 100;
                    usleep (100 * 1000);
                 }
-             } 
-             else 
+             }
+             else
              {
                 /* Participant is no longer accessible, terminate now... */
                 no_break = 0;
                 lost = TRUE;
              }
-             if (sampleCount && (sample == sampleCount)) 
+             if (sampleCount && (sample == sampleCount))
              {
                 printf ("\nsample_count limit reached\n");
                 no_break = 0;
@@ -398,7 +403,7 @@ main (
           if (isatty (fileno(stdin)) && !raw) 
           {
              count = read (fileno(stdin), &c, 1);
-                
+
              if(count != -1)
              {
                 tcsetattr (fileno(stdin), TCSAFLUSH, &old_termios);
@@ -406,21 +411,21 @@ main (
           }
 #endif
           u_participantFree(participant);
-            
-          if(lost) 
+
+          if(lost)
           {
              printf("\nConnection with domain lost. The OpenSplice system has\n" \
                     "probably been shut down.\n");
           }
-       } 
-       else 
+       }
+       else
        {
           printf("Connection could NOT be established (creation of participant failed).\n");
           printf("Is the OpenSplice system running?\n");
           OS_REPORT(OS_ERROR,"mmstat", 0, "Creation of participant failed.");
        }
        u_userDetach();
-       switch (selectedAction) 
+       switch (selectedAction)
        {
           case memoryStats:
              monitor_msFree (msData);
@@ -432,8 +437,8 @@ main (
              monitor_orcFree (orcData);
              break;
        }
-    } 
-    else 
+    }
+    else
     {
        printf("Connection could NOT be established (could not initialise).\n");
        printf("Is the OpenSplice system running?\n");

@@ -33,6 +33,9 @@ u_result u_kernelFree    (u_kernel k);
 c_voidp  u_kernelGetCopy (u_kernel k, u_entityCopy copy, void* copyArg);
 const c_char *u_kernelUri(u_kernel kernel);
 
+c_long   u_kernelHandleServer(u_kernel kernel);
+c_voidp  u_kernelAddress(u_kernel kernel);
+
 #if defined (__cplusplus)
 }
 #endif

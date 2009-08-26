@@ -23,7 +23,6 @@
 #include "gapi_genericCopyIn.h"
 #include "gapi_genericCopyOut.h"
 #include "gapi_error.h"
-#include "gapi_instanceHandle.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -639,9 +638,10 @@ copy_deadline_missed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_deadlineMissedInfo *from;
     gapi_offeredDeadlineMissedStatus *to;
+    v_handleResult result;
+    v_public instance;
 
     from = (struct v_deadlineMissedInfo *)info;
     to = (gapi_offeredDeadlineMissedStatus *)arg;
@@ -649,11 +649,11 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-
-    to->last_instance_handle = gapi_instanceHandleFromHandle(handle);
-
+    result = v_handleClaim(from->instanceHandle, &instance);
+    if (result == U_RESULT_OK) {
+        to->last_instance_handle = u_instanceHandleNew(v_public(instance));
+        result = v_handleRelease(from->instanceHandle);
+    }
     return V_RESULT_OK;
 
 }
@@ -786,7 +786,7 @@ copy_publication_matched_status(
     to->total_count_change = from->totalChanged;
     to->current_count = from->totalCount;
     to->current_count_change = from->totalChanged;
-    to->last_subscription_handle = gapi_instanceHandle_t(from->instanceHandle);
+    to->last_subscription_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 
 }
@@ -909,7 +909,7 @@ _DataWriterRegisterInstance (
                                        &handle);
 
     if(uResult == U_RESULT_OK){
-        result = gapi_instanceHandleFromHandle(handle);
+        result = (gapi_instanceHandle_t)handle;
     }
     return result;
 }
@@ -922,23 +922,22 @@ _DataWriterUnregisterInstance (
     c_time timestamp)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
-    u_instanceHandle h;
     u_writer w;
     u_result uResult;
     writerInfo wData;
     writerInfo *pData = NULL;
 
     w = U_WRITER_GET(_this);
-    result = gapi_instanceHandleToHandle(handle,u_entity(w),&h);
-    if (result == GAPI_RETCODE_OK) {
-        if ( instanceData ) {
-            wData.writer = _this;
-            wData.data = (void *)instanceData;
-            pData = &wData;
-        }
-        uResult = u_writerUnregisterInstance(w, pData, timestamp, h);
-        result = kernelResultToApiResult(uResult);
+    if ( instanceData ) {
+        wData.writer = _this;
+        wData.data = (void *)instanceData;
+        pData = &wData;
     }
+    uResult = u_writerUnregisterInstance(w,
+                                         pData,
+                                         timestamp,
+                                         (u_instanceHandle)handle);
+    result = kernelResultToApiResult(uResult);
     return result;
 }
 
@@ -951,20 +950,17 @@ _DataWriterGetKeyValue (
     const gapi_instanceHandle_t handle)
 {
     gapi_returnCode_t result;
-    u_instanceHandle h;
     u_writer w;
     u_result          uResult;
 
     PREPEND_COPYOUTCACHE(_this->copy_cache,instance, NULL);
 
     w = U_WRITER_GET(_this);
-    result = gapi_instanceHandleToHandle(handle,u_entity(w),&h);
-    if (result == GAPI_RETCODE_OK) {
-        uResult = u_writerInstanceCopyKeys(w,h,
-                                           (u_writerAction)_this->copy_out,
-                                           instance);
-        result = kernelResultToApiResult(uResult);
-    }
+    uResult = u_writerInstanceCopyKeys(w,
+                                       (u_instanceHandle)handle,
+                                       (u_writerAction)_this->copy_out,
+                                       instance);
+    result = kernelResultToApiResult(uResult);
 
     REMOVE_COPYOUTCACHE(_this->copy_cache,instance);
 
