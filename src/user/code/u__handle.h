@@ -31,9 +31,6 @@
          (result == V_HANDLE_EXPIRED) ? U_RESULT_PRECONDITION_NOT_MET : \
                                         U_RESULT_ILL_PARAM)
 
-#define u__handleClaimUnsafe(h,i) u__handleResult(v_handleClaim((h),(i)))
-#define u__handleReleaseUnsafe(h) u__handleResult(v_handleRelease((h)))
-
 #define u__handleIsEqual(h1,h2) v_handleIsEqual((h1),(h2))
 #define u__handleIsNil(handle)  v_handleIsNil(handle)
 #define u__handleSetNil(handle) v_handleSetNil(handle)

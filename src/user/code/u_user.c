@@ -92,9 +92,10 @@ u_userDetach()
             for (i=1; (i<=u->kernelCount); i++) {
                 kernel = u->kernelList[i].kernel;
                 if (kernel) {
-                    u->kernelList[i].kernel = NULL;
                     os_mutexUnlock(&u->mutex);
+                    /* Bad locking strategy : design issue. */
                     u_kernelDetachParticipants(kernel);
+                    u->kernelList[i].kernel = NULL;
                     u_kernelClose(kernel);
                     os_mutexLock(&u->mutex);
                 }

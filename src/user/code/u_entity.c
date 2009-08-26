@@ -125,7 +125,7 @@ u_entityInit(
 
     e->magic = v_objectKernel(ke);
     e->gid = v_publicGid(v_public(ke));
-    e->handle = v_publicHandle(v_public(ke));
+    e->handle = u_handleNew(v_public(ke));
     e->participant = p;
     e->userData = NULL;
     
@@ -249,10 +249,10 @@ u_entityClaim(
         } else {
             p = e->participant;
         }
-        if (u_participantKernel(p) != NULL) {
+//        if (u_participantKernel(p) != NULL) {
             r = u_userProtect(u_entity(p));
             if (r == U_RESULT_OK) {
-                r = u__handleClaimUnsafe(e->handle,(v_object *)&ve);
+                r = u_handleClaim(e->handle,(v_object *)&ve);
                 if (r != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_entityClaim", 0,
                               "Illegal handle detected");
@@ -266,10 +266,10 @@ u_entityClaim(
                 OS_REPORT(OS_ERROR, "u_entityClaim", 0,
                           "Claim failed cannot protect kernel access.");
             }
-        } else {
-            OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-                      "Claim failed cannot  access kernel.");
-        }
+//        } else {
+//            OS_REPORT(OS_ERROR, "u_entityClaim", 0,
+//                      "Claim failed cannot  access kernel.");
+//        }
     }
     return ve;
 }
@@ -282,7 +282,7 @@ u_entityRelease(
     u_result result = U_RESULT_OK;
 
     if (e != NULL) {
-        result = u__handleReleaseUnsafe(e->handle);
+        result = u_handleRelease(e->handle);
         if (result != U_RESULT_OK) {
             OS_REPORT(OS_ERROR, "u_entityRelease", 0,
                       "Illegal handle detected");
@@ -543,15 +543,6 @@ u_entitySetQoS(
     return result;
 }
 
-c_long
-u_entitySystemId (
-    u_entity _this)
-{
-    assert(_this != NULL);
-
-    return _this->handle.server;
-}
-
 u_kind
 u_entityKind(
     u_entity _this)
@@ -570,7 +561,7 @@ u_entityGid (
     return _this->gid;
 }
 
-v_handle
+u_handle
 u_entityHandle (
     u_entity _this)
 {
@@ -600,4 +591,25 @@ u_entityGetInstanceHandle(
         }
     }
     return handle;
+}
+
+c_long
+u_entitySystemId(
+    u_entity _this)
+{
+    c_long id;
+    v_entity ke;
+    c_bool completeness;
+
+    ke = u_entityClaim(_this);
+
+    if(ke != NULL){
+        id = u_userServerId(v_public(ke));
+        u_entityRelease(_this);
+    } else {
+        id = 0;
+        OS_REPORT(OS_ERROR, "u_entitySystemId", 0,
+                  "Illegal handle detected");
+    }
+    return id;
 }
