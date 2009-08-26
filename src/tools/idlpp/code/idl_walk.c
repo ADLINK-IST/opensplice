@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <os.h>
@@ -1046,7 +1046,7 @@ idl_makeConstLiteral(
 	    break;
         case V_OCTET:
             val = os_malloc (40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 snprintf(val, 40, "%d", operand->value.is.Octet);
             } else {
                 snprintf(val, 40, "%x", operand->value.is.Octet);
@@ -1073,7 +1073,7 @@ idl_makeConstLiteral(
 	    break;
         case V_BOOLEAN:
             val = os_malloc(40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 if (operand->value.is.Boolean) {
             	    snprintf(val, 40, "true");
                 } else {
@@ -1089,7 +1089,7 @@ idl_makeConstLiteral(
 	    break;
         case V_LONGLONG:
             val = os_malloc(40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 switch (c_primitive(type)->kind) {
                 case P_SHORT:
                     snprintf(val, 40, "%hd", (c_short)operand->value.is.LongLong);
@@ -1181,7 +1181,7 @@ idl_makeConstLiteral(
 	    break;
         case V_LONG:
             val = os_malloc(40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 snprintf(val, sizeof(val), "%d", (c_long)operand->value.is.Long);
             } else {
                 snprintf(val, sizeof(val), "%dL", operand->value.is.Long);
@@ -1189,7 +1189,7 @@ idl_makeConstLiteral(
 	    break;
         case V_USHORT:
             val = os_malloc(40);
-    	    if (idl_getLanguage() == IDL_LANG_JAVA) {
+    	    if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 snprintf(val, sizeof(val), "%hd", (c_short)operand->value.is.UShort);
             } else {
                 snprintf(val, sizeof(val), "%huU", operand->value.is.UShort);
@@ -1197,7 +1197,7 @@ idl_makeConstLiteral(
 	    break;
         case V_ULONG:
             val = os_malloc(40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 snprintf(val, sizeof(val), "%d", (c_long)operand->value.is.ULong);
             } else {
                 snprintf(val, sizeof(val), "%uUL", operand->value.is.ULong);
@@ -1205,7 +1205,7 @@ idl_makeConstLiteral(
 	    break;
         case V_ULONGLONG:
             val = os_malloc(40);
-            if (idl_getLanguage() == IDL_LANG_JAVA) {
+            if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
                 snprintf(val, sizeof(val), "%lld", (c_longlong)operand->value.is.ULongLong);
             } else {
                 snprintf(val, sizeof(val), "%lluULL", operand->value.is.ULongLong);

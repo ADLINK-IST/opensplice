@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IDL_GENLANGUAGEHELPER_H
@@ -21,6 +21,7 @@ typedef enum {
     IDL_LANG_UNKNOWN,
     IDL_LANG_C,
     IDL_LANG_CXX,
+    IDL_LANG_CS,
     IDL_LANG_JAVA,
     IDL_LANG_COUNT /* should always be the last in the enumeration!!! */
 } IDL_LANGUAGE;

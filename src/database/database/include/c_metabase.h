@@ -198,7 +198,7 @@ C_STRUCT(c_metaObject) {
 
 C_STRUCT(c_property) {
     C_EXTENDS(c_metaObject);
-    c_address offset;      /* implementation memory mapping */
+    c_ulong offset;      /* implementation memory mapping */
     c_type type;
 };
 
@@ -516,6 +516,9 @@ c_typeActualType(
 #define c_specifierType(_this) \
         c_type(c_specifier(_this)->type)
 
+#define c_specifierName(_this) \
+        c_specifier(_this)->name
+
 #define c_enumerationCount(_this) \
         c_arraySize(c_enumeration(_this)->elements)
 
@@ -542,6 +545,9 @@ c_typeActualType(
 
 #define c_memberType(_this) \
         c_specifierType(_this)
+
+#define c_memberOffset(_this) \
+        c_member(_this)->offset
 
 #define c_unionUnionCaseCount(_this) \
         c_arraySize(c_union(_this)->cases)
