@@ -683,7 +683,7 @@ install_hde_target ()
     # Copy script files
     #
     echo "*     Copy script files"
-    release=${OSPL_HOME}/install/bin
+    release=${OSPL_HOME}/bin
     if [ -d "${release}" ]
     then
         mkdir -p ${HDE_dir}/bin
