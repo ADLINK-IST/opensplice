@@ -1317,9 +1317,6 @@ v_dataReaderInstanceUnregister (
             v_dataReaderRemoveInstance(v_dataReaderInstanceReader(_this),
                                        _this);
         }
-        if(doFree){
-        	v_publicFree(v_public(_this));
-        }
     }
 
     CHECK_COUNT(_this);
