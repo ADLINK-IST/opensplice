@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/win32/code/os_mutex.c
@@ -26,6 +26,7 @@
 #include <assert.h>
 
 #include <../common/code/os_mutex_attr.c>
+
 
 /*** Public functions *****/
 
@@ -54,7 +55,7 @@ os_mutexSetPriorityInheritanceMode(
  */
 os_result
 os_mutexInit (
-    os_mutex *mutex, 
+    os_mutex *mutex,
     const os_mutexAttr *mutexAttr)
 {
     const char *pipename;
@@ -62,8 +63,9 @@ os_mutexInit (
     struct os_servicemsg reply;
     BOOL result;
     DWORD nRead;
+    DWORD lastError;
     os_result osr;
-    
+
     assert(mutex != NULL);
 
     pipename = os_servicePipeName();
@@ -73,23 +75,33 @@ os_mutexInit (
         request.kind = OS_SRVMSG_CREATE_EVENT;
         reply.result = os_resultFail;
         reply.kind = OS_SRVMSG_UNDEFINED;
-        result = CallNamedPipe(
-                     TEXT(pipename),
-                     &request, sizeof(request), 
-                     &reply, sizeof(reply), 
-                     &nRead, 
-                     NMPWAIT_WAIT_FOREVER);
+
+        do{
+            result = CallNamedPipe(
+                         TEXT(pipename),
+                         &request, sizeof(request),
+                         &reply, sizeof(reply),
+                         &nRead,
+                         NMPWAIT_WAIT_FOREVER);
+
+            if(!result){
+                lastError = GetLastError();
+            } else {
+                lastError = ERROR_SUCCESS;
+            }
+        } while((!result) && (lastError == ERROR_PIPE_BUSY));
+
         if (!result || (nRead != sizeof(reply))) {
             OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
             osr = os_resultFail;
         } else {
             if ((reply.result == os_resultSuccess) &&
-                (reply.kind == OS_SRVMSG_CREATE_EVENT)) { 
+                (reply.kind == OS_SRVMSG_CREATE_EVENT)) {
                 mutex->id = reply._u.id;
                 osr = os_resultSuccess;
             } else {
                 osr = os_resultFail;
-            } 
+            }
         }
     } else { /* private so don't get one from pool */
         mutex->id = (long)CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -114,10 +126,10 @@ os_mutexDestroy (
     BOOL result;
     DWORD nRead;
     os_result osr;
-    
+
     assert(mutex != NULL);
     /* assert(mutex->lockCount == 0); */
-    
+
     pipename = os_servicePipeName();
     if (mutex->scope == OS_SCOPE_SHARED) {
         request.kind = OS_SRVMSG_DESTROY_EVENT;
@@ -126,9 +138,9 @@ os_mutexDestroy (
         reply.kind = OS_SRVMSG_UNDEFINED;
         result = CallNamedPipe(
                      TEXT(pipename),
-                     &request, sizeof(request), 
-                     &reply, sizeof(reply), 
-                     &nRead, 
+                     &request, sizeof(request),
+                     &reply, sizeof(reply),
+                     &nRead,
                      NMPWAIT_WAIT_FOREVER);
         if (!result  || (nRead != sizeof(reply))){
             OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
@@ -162,9 +174,9 @@ os_mutexLock(
     DWORD result;
     os_result r;
     long lc;
-    
+
     assert(mutex != NULL);
-    
+
     r = os_resultSuccess;
     lc = InterlockedIncrement(&mutex->lockCount);
     if (lc > 1) {
@@ -190,7 +202,7 @@ os_mutexLock(
         }
     }
 
-    return r; 
+    return r;
 }
 
 /** \brief Try to acquire the mutex, immediately return if the mutex
@@ -205,16 +217,16 @@ os_mutexTryLock (
 {
     os_result r;
     long lc;
-    
+
     assert(mutex != NULL);
-    
+
     r = os_resultSuccess;
     lc = InterlockedCompareExchange(&mutex->lockCount, 1, 0);
     if (lc > 0) {
         r = os_resultBusy;
     }
-    return r; 
-    
+    return r;
+
 }
 
 /** \brief Release the acquired mutex
@@ -231,9 +243,9 @@ os_mutexUnlock (
     char name[OS_SERVICE_ENTITY_NAME_MAX];
     BOOL r;
     os_result result;
-    
+
     assert(mutex != NULL);
-    
+
     result = os_resultSuccess;
     lc = InterlockedDecrement(&mutex->lockCount);
     if (lc > 0) {
@@ -258,6 +270,6 @@ os_mutexUnlock (
             result = os_resultFail;
         }
     }
-    
+
     return result;
 }
