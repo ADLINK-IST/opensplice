@@ -73,15 +73,15 @@ u_instanceHandleFix(
 
 /* Depricated : only for DLRL legacy. */
 
-OS_API u_long
+OS_API c_long
 u_instanceHandleServer(
     u_instanceHandle _this);
 
-OS_API u_long
+OS_API c_long
 u_instanceHandleIndex(
     u_instanceHandle _this);
 
-OS_API u_long
+OS_API c_long
 u_instanceHandleSerial(
     u_instanceHandle _this);
 
