@@ -613,7 +613,7 @@ install_hde_target ()
     echo "Ready"
     
     #
-    # Copy libray files
+    # Copy library files
     #
     echo "*     Copy library files"
     printf "*         For target ... "
@@ -678,6 +678,20 @@ install_hde_target ()
         fi
         echo "Ready"
     fi
+
+    #
+    # Copy script files
+    #
+    echo "*     Copy script files"
+    release=${OSPL_HOME}/install/bin
+    if [ -d "${release}" ]
+    then
+        mkdir -p ${HDE_dir}/bin
+        install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
+    else
+        echo "* ##    No script files detected"
+    fi
+    echo "*     Script files Ready"
 
     #
     # Copy executable files
@@ -1439,7 +1453,7 @@ install_rts_target ()
     # done with etc dir
 
     #
-    # Copy libray files
+    # Copy library files
     #
     printf "*     Copy library files ... "
     release=${OSPL_HOME}/lib/${target}${source_env}
@@ -1486,6 +1500,20 @@ install_rts_target ()
     #    install_ascii_file ${OSPL_HOME}/install/service_installer/service_info.txt ${RTS_dir}/etc
     #    echo "*     Ready"
     #fi
+
+    #
+    # Copy script files
+    #
+    echo "*     Copy script files"
+    release=${OSPL_HOME}/install/bin
+    if [ -d "${release}" ]
+    then
+        mkdir -p ${RTS_dir}/bin
+        install_bin_file $release ${RTS_dir} bin osplconf${suffix_script}
+    else
+        echo "* ##    No script files detected"
+    fi
+    echo "*     Script files Ready"
 
     #
     # Copy executable files
