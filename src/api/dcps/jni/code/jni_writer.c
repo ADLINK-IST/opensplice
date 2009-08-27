@@ -130,7 +130,7 @@ jni_writerWrite(
         r = jni_convertResult(u_writerWrite(wri->uwriter,
                                             copyArg,
                                             u_timeGet(),
-                                            U_HANDLE_NIL));
+                                            U_INSTANCEHANDLE_NIL));
         valResult = sd_serializerLastValidationResult(wri->deserializer);
         
         if(valResult != SD_VAL_SUCCESS){

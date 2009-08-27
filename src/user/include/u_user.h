@@ -132,6 +132,14 @@ OS_API u_result u_userProtect (u_entity e);
  */
 OS_API u_result u_userUnprotect (u_entity e);
 
+OS_API c_long
+u_userServerId(
+    v_public o);
+
+OS_API c_long
+u_userServer(
+    c_long id);
+
 #undef OS_API 
 
 #if defined (__cplusplus)

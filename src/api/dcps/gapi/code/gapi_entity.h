@@ -14,7 +14,6 @@
 
 #include "gapi_common.h"
 #include "gapi_object.h"
-#include "gapi_entityValidity.h"
 #include "gapi_condition.h"
 #include "gapi_status.h"
 

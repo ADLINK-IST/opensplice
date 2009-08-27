@@ -19,10 +19,10 @@
 #include "gapi_structured.h"
 #include "gapi_genericCopyOut.h"
 #include "gapi_genericCopyIn.h"
-#include "gapi_instanceHandle.h"
 
 #include "os_heap.h"
 #include "u_user.h"
+#include "u_handle.h"
 #include "u_instanceHandle.h"
 #include "u_dataView.h"
 #include "v_kernel.h"
@@ -136,9 +136,9 @@ copySampleInfoView (
     to->sample_rank                 = 0;
     to->generation_rank             = 0;
     to->absolute_generation_rank    = 0;
-    to->instance_handle             = gapi_instanceHandleFromHandle(v_publicHandle(v_public(viewInstance)));
+    to->instance_handle             = u_instanceHandleNew(v_public(viewInstance));
 
-    to->publication_handle          = gapi_instanceHandleFromGID(master->publicationHandle);
+    to->publication_handle          = u_instanceHandleFromGID(master->publicationHandle);
 
     to->arrival_timestamp.sec       = (gapi_long)(master->insertTime.seconds);
     to->arrival_timestamp.nanosec   = (gapi_unsigned_long)(master->insertTime.nanoseconds);
@@ -508,7 +508,6 @@ gapi_fooDataReaderView_read_instance (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
     
     assert(data_values);
@@ -529,55 +528,52 @@ gapi_fooDataReaderView_read_instance (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle, reader, &handle);
-        if (result == GAPI_RETCODE_OK) {
-            datareaderview->reader_mask.sampleStateMask = 0U;
-            datareaderview->reader_mask.viewStateMask = 0U;
-            datareaderview->reader_mask.instanceStateMask = 0U;
-            if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-                datareaderview->reader_mask.sampleStateMask = sample_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (view_states != GAPI_ANY_VIEW_STATE) {
-                datareaderview->reader_mask.viewStateMask = view_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-                datareaderview->reader_mask.instanceStateMask = instance_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-        
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
-
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
-
-            uResult = u_readerReadInstance(reader,handle,readerActionView,(c_voidp)&arg);
-            result = kernelResultToApiResult(uResult);
-
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        datareaderview->reader_mask.sampleStateMask = 0U;
+        datareaderview->reader_mask.viewStateMask = 0U;
+        datareaderview->reader_mask.instanceStateMask = 0U;
+        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
+            datareaderview->reader_mask.sampleStateMask = sample_states;
+            reader = u_reader(datareaderview->uQuery);
         }
+        if (view_states != GAPI_ANY_VIEW_STATE) {
+            datareaderview->reader_mask.viewStateMask = view_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
+            datareaderview->reader_mask.instanceStateMask = instance_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+    
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
+
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
+
+        uResult = u_readerReadInstance(reader,a_handle,readerActionView,(c_voidp)&arg);
+        result = kernelResultToApiResult(uResult);
+
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
+        }
+        v_readerSampleSeq_freebuf(&samples);
     }
     _EntityRelease(datareaderview);
     
@@ -602,7 +598,6 @@ gapi_fooDataReaderView_take_instance (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
     
     assert(data_values);
@@ -623,55 +618,52 @@ gapi_fooDataReaderView_take_instance (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle, reader, &handle);
-        if (result == GAPI_RETCODE_OK) {
-            datareaderview->reader_mask.sampleStateMask = 0U;
-            datareaderview->reader_mask.viewStateMask = 0U;
-            datareaderview->reader_mask.instanceStateMask = 0U;
-            if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-                datareaderview->reader_mask.sampleStateMask = sample_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (view_states != GAPI_ANY_VIEW_STATE) {
-                datareaderview->reader_mask.viewStateMask = view_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-                datareaderview->reader_mask.instanceStateMask = instance_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
-
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
-
-            uResult = u_readerTakeInstance(reader,handle,readerActionView,(c_voidp)&arg);
-            result = kernelResultToApiResult(uResult);
-
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        datareaderview->reader_mask.sampleStateMask = 0U;
+        datareaderview->reader_mask.viewStateMask = 0U;
+        datareaderview->reader_mask.instanceStateMask = 0U;
+        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
+            datareaderview->reader_mask.sampleStateMask = sample_states;
+            reader = u_reader(datareaderview->uQuery);
         }
+        if (view_states != GAPI_ANY_VIEW_STATE) {
+            datareaderview->reader_mask.viewStateMask = view_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
+            datareaderview->reader_mask.instanceStateMask = instance_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
+
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
+
+        uResult = u_readerTakeInstance(reader,a_handle,readerActionView,(c_voidp)&arg);
+        result = kernelResultToApiResult(uResult);
+
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
+        }
+        v_readerSampleSeq_freebuf(&samples);
     }
         
     _EntityRelease(datareaderview);
@@ -697,7 +689,6 @@ gapi_fooDataReaderView_read_next_instance (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
 
     assert(data_values);
@@ -716,55 +707,52 @@ gapi_fooDataReaderView_read_next_instance (
         result = GAPI_RETCODE_NO_DATA;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle, reader, &handle);
-        if (result == GAPI_RETCODE_OK) {
-            datareaderview->reader_mask.sampleStateMask = 0U;
-            datareaderview->reader_mask.viewStateMask = 0U;
-            datareaderview->reader_mask.instanceStateMask = 0U;
-            if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-                datareaderview->reader_mask.sampleStateMask = sample_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (view_states != GAPI_ANY_VIEW_STATE) {
-                datareaderview->reader_mask.viewStateMask = view_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-                datareaderview->reader_mask.instanceStateMask = instance_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
-
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
-
-            uResult = u_readerReadNextInstance(reader,handle,readerActionView,(c_voidp)&arg);
-            result = kernelResultToApiResult(uResult);
-
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        datareaderview->reader_mask.sampleStateMask = 0U;
+        datareaderview->reader_mask.viewStateMask = 0U;
+        datareaderview->reader_mask.instanceStateMask = 0U;
+        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
+            datareaderview->reader_mask.sampleStateMask = sample_states;
+            reader = u_reader(datareaderview->uQuery);
         }
+        if (view_states != GAPI_ANY_VIEW_STATE) {
+            datareaderview->reader_mask.viewStateMask = view_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
+            datareaderview->reader_mask.instanceStateMask = instance_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
+
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
+
+        uResult = u_readerReadNextInstance(reader,a_handle,readerActionView,(c_voidp)&arg);
+        result = kernelResultToApiResult(uResult);
+
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
+        }
+        v_readerSampleSeq_freebuf(&samples);
     }
     
     _EntityRelease(datareaderview);
@@ -790,7 +778,6 @@ gapi_fooDataReaderView_take_next_instance (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
 
     assert(data_values);
@@ -809,55 +796,52 @@ gapi_fooDataReaderView_take_next_instance (
         result = GAPI_RETCODE_NO_DATA;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle, reader, &handle);
-        if (result == GAPI_RETCODE_OK) {
-            datareaderview->reader_mask.sampleStateMask = 0U;
-            datareaderview->reader_mask.viewStateMask = 0U;
-            datareaderview->reader_mask.instanceStateMask = 0U;
-            if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-                datareaderview->reader_mask.sampleStateMask = sample_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (view_states != GAPI_ANY_VIEW_STATE) {
-                datareaderview->reader_mask.viewStateMask = view_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-            if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-                datareaderview->reader_mask.instanceStateMask = instance_states;
-                reader = u_reader(datareaderview->uQuery);
-            }
-
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
-
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
-
-            uResult = u_readerTakeNextInstance(reader,handle,readerActionView,(c_voidp)&arg);
-            result = kernelResultToApiResult(uResult);
-
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        datareaderview->reader_mask.sampleStateMask = 0U;
+        datareaderview->reader_mask.viewStateMask = 0U;
+        datareaderview->reader_mask.instanceStateMask = 0U;
+        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
+            datareaderview->reader_mask.sampleStateMask = sample_states;
+            reader = u_reader(datareaderview->uQuery);
         }
+        if (view_states != GAPI_ANY_VIEW_STATE) {
+            datareaderview->reader_mask.viewStateMask = view_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
+            datareaderview->reader_mask.instanceStateMask = instance_states;
+            reader = u_reader(datareaderview->uQuery);
+        }
+
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
+
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
+
+        uResult = u_readerTakeNextInstance(reader,a_handle,readerActionView,(c_voidp)&arg);
+        result = kernelResultToApiResult(uResult);
+
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
+        }
+        v_readerSampleSeq_freebuf(&samples);
     }
     
     _EntityRelease(datareaderview);
@@ -1054,7 +1038,6 @@ gapi_fooDataReaderView_read_next_instance_w_condition (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
 
     assert(data_values);
@@ -1072,38 +1055,35 @@ gapi_fooDataReaderView_read_next_instance_w_condition (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle, reader, &handle);
-        if (result == GAPI_RETCODE_OK) {
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
 
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
 
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
 
-            uResult = u_readerReadNextInstance(reader,handle,readerActionView,(c_voidp)&arg);
-            result = kernelResultToApiResult(uResult);
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        uResult = u_readerReadNextInstance(reader,a_handle,readerActionView,(c_voidp)&arg);
+        result = kernelResultToApiResult(uResult);
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
         }
+        v_readerSampleSeq_freebuf(&samples);
     } else {
         datareaderview->datareader->readerCopy(NULL, &readerInfo);
         result = GAPI_RETCODE_NO_DATA;
@@ -1131,7 +1111,6 @@ gapi_fooDataReaderView_take_next_instance_w_condition (
     v_readerSampleSeq   samples;
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
-    u_instanceHandle    handle;
     u_result            uResult;
 
     assert(data_values);
@@ -1149,45 +1128,40 @@ gapi_fooDataReaderView_take_next_instance_w_condition (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
-        result = gapi_instanceHandle_to_u_instanceHandle(a_handle,
-                                                         reader,
-                                                         &handle);
-        if (result == GAPI_RETCODE_OK) {
-            readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
-            readerInfo.num_samples    = 0U;
-            readerInfo.data_buffer    = data_values;
-            readerInfo.info_buffer    = info_data;
-            readerInfo.alloc_size     = datareaderview->datareader->allocSize;
-            readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
-            readerInfo.copy_out       = datareaderview->datareader->copy_out;
-            readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
-            readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
+        readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
+        readerInfo.num_samples    = 0U;
+        readerInfo.data_buffer    = data_values;
+        readerInfo.info_buffer    = info_data;
+        readerInfo.alloc_size     = datareaderview->datareader->allocSize;
+        readerInfo.alloc_buffer   = datareaderview->datareader->allocBuffer;
+        readerInfo.copy_out       = datareaderview->datareader->copy_out;
+        readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
+        readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
 
-            samples._length  = 0;
-            samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
-            samples._buffer  = buffer;
-            samples._release = FALSE;
+        samples._length  = 0;
+        samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
+        samples._buffer  = buffer;
+        samples._release = FALSE;
 
-            arg.samples        = &samples;
-            arg.max            = (gapi_unsigned_long)max_samples;
-            arg.messageOffset  = datareaderview->datareader->messageOffset;
-            arg.userdataOffset = datareaderview->datareader->userdataOffset;
-            arg.readerInfo     = &readerInfo;
-            arg.readerCopy     = datareaderview->datareader->readerCopy;
-            arg.result         = GAPI_RETCODE_OK;
+        arg.samples        = &samples;
+        arg.max            = (gapi_unsigned_long)max_samples;
+        arg.messageOffset  = datareaderview->datareader->messageOffset;
+        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.readerInfo     = &readerInfo;
+        arg.readerCopy     = datareaderview->datareader->readerCopy;
+        arg.result         = GAPI_RETCODE_OK;
 
-            uResult = u_readerTakeNextInstance(reader,
-                                               handle,
-                                               readerActionView,
-                                               (c_voidp)&arg);
+        uResult = u_readerTakeNextInstance(reader,
+                                           a_handle,
+                                           readerActionView,
+                                           (c_voidp)&arg);
 
-            result = kernelResultToApiResult(uResult);
+        result = kernelResultToApiResult(uResult);
 
-            if ( result == GAPI_RETCODE_OK ) {
-                result = arg.result;
-            }
-            v_readerSampleSeq_freebuf(&samples);
+        if ( result == GAPI_RETCODE_OK ) {
+            result = arg.result;
         }
+        v_readerSampleSeq_freebuf(&samples);
     } else {
         datareaderview->datareader->readerCopy(NULL, &readerInfo);
         result = GAPI_RETCODE_NO_DATA;
@@ -1271,17 +1245,16 @@ gapi_fooDataReaderView_lookup_instance (
     datareaderview = gapi_dataReaderViewClaim(_this, NULL);
     if ( datareaderview && instance_data ) {
         readerViewCopyInInfo rData;
-        u_instanceHandle uHandle;
         u_result uResult;
 
         rData.reader = datareaderview->datareader;
         rData.data = (void *)instance_data;
  
-        uResult = u_dataViewLookupInstance(U_DATAREADERVIEW_GET(datareaderview),
-                                           &rData, _DataReaderViewCopyIn, &uHandle);
-        if ( uResult == U_RESULT_OK ) {
-            handle = gapi_instanceHandleFromHandle(uHandle);
-        }
+        uResult = u_dataViewLookupInstance(
+                      U_DATAREADERVIEW_GET(datareaderview),
+                      &rData,
+                      _DataReaderViewCopyIn,
+                      &handle);
     }
     _EntityRelease(datareaderview);
      

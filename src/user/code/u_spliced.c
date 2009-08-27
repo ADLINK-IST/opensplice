@@ -240,8 +240,8 @@ u_splicedNew(
             printf("Other splicedaemon running!\n");
             u_userKernelClose(k);
         } else {
-            u_kernelFree(k);
-            k = u_kernelNew(uri);
+            u_userKernelClose(k);
+            k = u_userKernelNew(uri);
             if (k == NULL) {
                 printf("Creation of kernel failed!\n");
             } else {
@@ -253,7 +253,7 @@ u_splicedNew(
 #endif
     {
 	
-        k = u_kernelNew(uri);
+        k = u_userKernelNew(uri);
         if (k == NULL) {
             printf("Creation of kernel failed!\n");
         } else {
@@ -305,8 +305,7 @@ u_splicedFree(
             /* now close the kernel: should always be the last action of
                this routine!
             */
-            /* u_userKernelClose(kernel); in the future */
-            u_kernelFree(kernel);
+            u_userKernelClose(kernel);
         } else {
             r = u_entityFree(u_entity(spliced));
         }

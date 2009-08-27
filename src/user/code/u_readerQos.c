@@ -19,12 +19,12 @@
 /**************************************************************
  * constructor/destructor
  **************************************************************/
-v_readerQos
+u_readerQos
 u_readerQosNew(
-    v_readerQos tmpl)
+    u_readerQos tmpl)
 {
     u_result result;
-    v_readerQos q;
+    u_readerQos q;
 
     q = os_malloc(sizeof(C_STRUCT(v_readerQos)));
     if (q != NULL) {
@@ -62,7 +62,7 @@ u_readerQosNew(
 
 u_result
 u_readerQosInit(
-    v_readerQos q)
+    u_readerQos q)
 {
     u_result result;
 
@@ -105,7 +105,7 @@ u_readerQosInit(
 
 void
 u_readerQosDeinit(
-    v_readerQos q)
+    u_readerQos q)
 {
     if (q != NULL) {
         os_free(q->userData.value);
@@ -121,7 +121,7 @@ u_readerQosDeinit(
 
 void
 u_readerQosFree(
-    v_readerQos q)
+    u_readerQos q)
 {
     if (q != NULL) {
         u_readerQosDeinit(q);

@@ -114,7 +114,6 @@ v_dataViewInstanceNew(
     v_dataViewSample viewSample;
     v_dataReader reader;
     v_readerQos qos;
-    c_type subtype;
 
     assert(dataView);
     assert(sample);
@@ -127,9 +126,12 @@ v_dataViewInstanceNew(
 #ifdef _EXTENT_
     instance = v_dataViewInstance(c_extentCreate(dataView->instanceExtent));
 #else
-    subtype = c_subType(dataView->instances);
-    instance = v_dataViewInstance(c_new(subtype));
-    c_free(subtype);
+    {
+        c_type subtype;
+        subtype = c_subType(dataView->instances);
+        instance = v_dataViewInstance(c_new(subtype));
+        c_free(subtype);
+    }
 #endif
     v_object(instance)->kernel = v_objectKernel(dataView);
     v_objectKind(instance) = K_DATAVIEWINSTANCE;

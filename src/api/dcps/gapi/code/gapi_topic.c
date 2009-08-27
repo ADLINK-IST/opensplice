@@ -12,7 +12,7 @@
 #include "gapi_topicDescription.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_domainParticipant.h"
-#include "gapi_entityValidity.h"
+//#include "gapi_entityValidity.h"
 #include "gapi_structured.h"
 #include "gapi_objManag.h"
 #include "gapi_kernel.h"
