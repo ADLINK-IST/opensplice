@@ -650,12 +650,11 @@ copy_deadline_missed_status(
     to->total_count_change = from->totalChanged;
 
     result = v_handleClaim(from->instanceHandle, &instance);
-    if (result == U_RESULT_OK) {
+    if (result == V_HANDLE_OK) {
         to->last_instance_handle = u_instanceHandleNew(v_public(instance));
         result = v_handleRelease(from->instanceHandle);
     }
     return V_RESULT_OK;
-
 }
 
 gapi_returnCode_t

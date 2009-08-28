@@ -986,7 +986,7 @@ c_long
 u_kernelHandleServer(
     u_kernel kernel)
 {
-    return kernel->kernel->handleServer;
+    return (c_long)kernel->kernel->handleServer;
 }
 
 c_voidp
