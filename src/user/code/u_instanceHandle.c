@@ -210,7 +210,7 @@ u_instanceHandleFix(
 
 /* Depricated : only for DLRL legacy. */
 
-u_long
+c_long
 u_instanceHandleServer(
     u_instanceHandle _this)
 {
@@ -221,7 +221,7 @@ u_instanceHandleServer(
     return (translator.lid.lifecycleId & HANDLE_SERIAL_MASK);
 }
 
-u_long
+c_long
 u_instanceHandleIndex(
     u_instanceHandle _this)
 {
@@ -232,7 +232,7 @@ u_instanceHandleIndex(
     return translator.lid.localId;
 }
 
-u_long
+c_long
 u_instanceHandleSerial(
     u_instanceHandle _this)
 {
