@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_USER_H
@@ -31,8 +31,8 @@
  * - protecting processes against termination during access of shared resources.
  * - providing an event notification mechanism on shared objects.
  *
- * This file specifies the user class interface. The user class implements 
- * the singleton pattern. Before accessing the kernel processes need to 
+ * This file specifies the user class interface. The user class implements
+ * the singleton pattern. Before accessing the kernel processes need to
  * call the u_userInitialise method, this will create a process specific user
  * object. The user object provides the mechanism to handle process termination.
  * All other classes in the user component provide interfaces to access kernel
@@ -128,19 +128,11 @@ OS_API u_result u_userProtect (u_entity e);
 /** \brief Protect the user against interrupts.
  *
  * This method is used by all other classes within this component to release
- * the protection agains interrupts set by the method u_userProtect.
+ * the protection against interrupts set by the method u_userProtect.
  */
 OS_API u_result u_userUnprotect (u_entity e);
 
-OS_API c_long
-u_userServerId(
-    v_public o);
-
-OS_API c_long
-u_userServer(
-    c_long id);
-
-#undef OS_API 
+#undef OS_API
 
 #if defined (__cplusplus)
 }
