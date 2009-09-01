@@ -115,24 +115,6 @@ in_configurationGetConfiguration(
 
 #ifdef IN_TRACING
 
-static void
-in_configurationWaitIfRequested(
-    in_configuration configuration)
-{
-    const char * root = INCF_ROOT(Debugging);
-    c_ulong waitTime;
-    os_time delay = {1, 0};
-
-    if (configuration) {
-        waitTime = INCF_SIMPLE_PARAM(ULong, root, WaitForDebugger);
-        while (waitTime > 0) {
-            printf("Waiting for debugger to attach, %d seconds to go.\n", waitTime);
-            os_nanoSleep(delay);
-            waitTime--;
-        }
-    }
-}
-
 
 static void
 in_configurationInitializeTracing(
@@ -428,33 +410,6 @@ in_configurationFinalizeProfiling(
 }
 #endif /* IN_PROFILING */
 
-#ifdef IN_LOOPBACK
-static void
-in_configurationInitializeLoopback(
-    in_configuration configuration)
-{
-    const char *root;
-    if (configuration) {
-        root = INCF_ROOT(Debugging);
-        /* Loopback testing is supported conditionally */
-        configuration->useLoopback = INCF_SIMPLE_PARAM(Bool, root, UseLoopback);
-        if (configuration->useLoopback) {
-            /* Generate extra info because this option is for testing only */
-            IN_REPORT_INFO(0, "Using loopback interface, for testing "
-                              "purposes only");
-        }
-
-        configuration->useComplementPartitions =
-            INCF_SIMPLE_PARAM(Bool, root, UseComplementPartitions);
-        if (configuration->useComplementPartitions) {
-            /* Generate extra info, this is for testing only */
-            IN_REPORT_INFO(0, "Using complement partitions, for testing "
-                              "purposes only");
-        }
-    }
-
-}
-#endif /* IN_LOOPBACK */
 
 #ifdef IN_DEBUGGING
 
@@ -539,12 +494,9 @@ in_configurationInitializeConditionals(
     in_configuration configuration)
 {
 #ifdef IN_TRACING
-    in_configurationWaitIfRequested(configuration);
     in_configurationInitializeTracing(configuration);
 #endif /* IN_TRACING */
-#ifdef IN_LOOPBACK
-    in_configurationInitializeLoopback(configuration);
-#endif /* IN_LOOPBACK */
+
 #ifdef IN_DEBUGGING
     in_configurationInitializeLossiness(configuration);
     in_configurationInitializeNoPacking(configuration);

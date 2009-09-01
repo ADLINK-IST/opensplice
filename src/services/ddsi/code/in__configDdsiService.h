@@ -111,6 +111,11 @@ in_configDdsiServiceGetDebugging(
     in_configDdsiService _this);
 
 void
+in_configDdsiServiceSetDebugging(
+    in_configDdsiService _this,
+    in_configDebug config);
+
+void
 in_configDdsiServiceSetPartitioning(
     in_configDdsiService _this,
     in_configPartitioning partitioning);

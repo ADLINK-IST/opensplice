@@ -981,8 +981,7 @@ in_socketSendDataTo(
     os_int32 sendRes;
     os_boolean sendToSucceeded;
     struct sockaddr destAddr;
-    os_char* buf = (os_char*)os_malloc(50);
-
+   
     assert(sock != NULL);
     assert(receiver != NULL);
 
@@ -990,12 +989,15 @@ in_socketSendDataTo(
 
     /* First check if we have to slow down because of too quick sending */
     /* in_brakeSlowDown(sock->brake); */
-    IN_TRACE_2(Send,6,"in_socketSendDataTo ---  ip: %s port: %d",
-                      in_addressToString(in_locatorGetIp(receiver), buf, 50)
-                      ,in_locatorGetPort(receiver));
-    IN_HEXDUMP("in_socketSendDataTo", 0, buffer, length);
-    os_free(buf);
-    /* Then do the writing */
+    { 
+    	char buf[IN_ADDRESS_STRING_LEN+1]; /* stringified IPv6 address must fit into */
+   
+    	IN_TRACE_2(Send,6,"in_socketSendDataTo ---  ip: %s port: %d",
+    			in_addressToString(in_locatorGetIp(receiver), buf, IN_ADDRESS_STRING_LEN+1)
+    			,in_locatorGetPort(receiver));
+    	IN_HEXDUMP("in_socketSendDataTo", 0, buffer, length);
+    }
+	/* Then do the writing */
     IN_PROF_LAPSTART(SendTo);
     in_locatorToSockaddr(receiver, &destAddr);
     sendRes = os_sockSendto(sock->socketData, buffer, length,
