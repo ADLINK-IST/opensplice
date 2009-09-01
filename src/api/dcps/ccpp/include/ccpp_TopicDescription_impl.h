@@ -21,7 +21,7 @@ namespace DDS
 {
   class OS_DCPS_API TopicDescription_impl
    :  public virtual ::DDS::TopicDescription,
-      public LOCAL_REFCOUNTED_OBJECT
+      public ::DDS::Entity_impl
     {
     friend class ::DDS::DomainParticipant_impl;
     friend class ::DDS::Subscriber_impl;
@@ -34,8 +34,8 @@ namespace DDS
       virtual char * get_type_name (
       ) THROW_ORB_EXCEPTIONS;
 
-      virtual char * get_name (
-      ) THROW_ORB_EXCEPTIONS;
+//      virtual char * get_name (
+//      ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::DomainParticipant_ptr get_participant (
       ) THROW_ORB_EXCEPTIONS;

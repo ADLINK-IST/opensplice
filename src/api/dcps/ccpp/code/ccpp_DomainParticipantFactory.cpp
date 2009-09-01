@@ -14,6 +14,7 @@
 #include "ccpp_dds_dcps.h"
 #include "ccpp_DomainParticipantFactory.h"
 #include "ccpp_DomainParticipant_impl.h"
+#include "ccpp_Domain_impl.h"
 #include "ccpp_ListenerUtils.h"
 
 class LocalFactoryMutex
@@ -274,34 +275,23 @@ DDS::DomainParticipantFactory::lookup_participant (
      {
         ccpp_UserData_ptr myUD = NULL;
 
-        if (os_mutexLock(&(myParticipant->dp_mutex)) == os_resultSuccess)
+        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        if (myUD)
         {
-          myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
-          if (myUD)
+          myParticipant = dynamic_cast<DDS::DomainParticipant_impl_ptr>(myUD->ccpp_object);
+          if (myParticipant)
           {
-            myParticipant = dynamic_cast<DDS::DomainParticipant_impl_ptr>(myUD->ccpp_object);
-            if (myParticipant)
-            {
-              DDS::DomainParticipant::_duplicate(myParticipant);
-            }
-            else
-            {
-              OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Participant");
-            }
+            DDS::DomainParticipant::_duplicate(myParticipant);
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Participant");
           }
-          if (os_mutexUnlock(&(myParticipant->dp_mutex)) != os_resultSuccess)
-          {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
-          }
-       }
-       else
-       {
-         OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
-       }
+        }
+        else
+        {
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+        }
      }
      return myParticipant;
 }
@@ -355,6 +345,42 @@ DDS::DomainParticipantFactory::get_qos (
     return result;
 }
 
+DDS::Domain_ptr 
+DDS::DomainParticipantFactory::lookup_domain (
+  const char * domainId
+) THROW_ORB_EXCEPTIONS
+{
+    gapi_domainParticipant handle = NULL;
+    DDS::Domain_impl_ptr myDomain = NULL;    
+    
+    handle = gapi_domainParticipantFactory_lookup_domain ( 
+        _gapi_self,
+        (gapi_domainId_t)domainId 
+     );
+     if (handle)
+     {
+        ccpp_UserData_ptr myUD = NULL;
+
+        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        if (myUD)
+        {
+          myDomain = dynamic_cast<DDS::Domain_impl_ptr>(myUD->ccpp_object);
+          if (myDomain)
+          {
+            DDS::Domain::_duplicate(myDomain);
+          }
+          else
+          {
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Domain");
+          }
+        }
+        else
+        {
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+        }
+     }
+     return myDomain;
+}
 
 DDS::ReturnCode_t 
 DDS::DomainParticipantFactory::set_default_participant_qos (
@@ -448,5 +474,6 @@ DDS::DomainParticipantFactory::datawriter_qos_use_topic_qos (void)
 {
     return DDS::DefaultQos::DataWriterQosUseTopicQos;
 }
+
 
 gapi_domainParticipantFactory DDS::DomainParticipantFactory::_gapi_self = NULL;

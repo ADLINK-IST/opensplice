@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -33,11 +33,31 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-/** \brief OS layer initialization */
+/**
+ * OS layer initialization. This call initializes the process-, shared-
+ * memory-, mutex-, etc-administration for the os-abstraction. Its
+ * antagonist is os_osExit(), which should both occur in pairs within
+ * the context of a process. The first call actually performs the
+ * administration. Consecutive calls will only increment a counter and
+ * an info-log will be written to notify that the initialization has
+ * been called multiple times.
+ *
+ * @see os_osExit()
+ */
 OS_API void
 os_osInit(void);
 
-/** \brief OS layer deinitialization */
+/**
+ * OS layer de-initialization. This call de-initializes the process-,
+ * shared-memory-, mutex-, etc-administration for the os-abstraction. Its
+ * antagonist is os_osInit(), which should both occur in pairs. Every call
+ * will decrement the initialization counter. The last call actually
+ * performs the de-initialization. Any consecutive calls will generate a
+ * warning (and further do nothing). In a debugging environment the call
+ * will crash if called more often than os_osInit().
+ *
+ * @see os_osExit()
+ */
 OS_API void
 os_osExit(void);
 

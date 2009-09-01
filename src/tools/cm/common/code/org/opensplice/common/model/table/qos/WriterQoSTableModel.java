@@ -66,114 +66,120 @@ public class WriterQoSTableModel extends EntityQoSTableModel {
 
     protected void init() {
         Object[] data = new Object[3];
+        int row;
         
-        /*row 0*/
+        row = 0;
         data[0] = "DURABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(0));
+        nonEditRows.add(new Integer(row));
         
-        /*row 1*/
+        row++;
         data[0] = "DEADLINE";
         data[1] = "period";
         this.addRow(data);
         
-        /*row 2*/
+        row++;
         data[0] = "LATENCY_BUDGET";
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 3*/
+        row++;
         data[0] = "LIVELINESS";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(3));
+        nonEditRows.add(new Integer(row));
         
-        /*row 4*/
+        row++;
         data[1] = "lease_duration";
         this.addRow(data);
-        nonEditRows.add(new Integer(4));
+        nonEditRows.add(new Integer(row));
         
-        /*row 5*/
+        row++;
         data[0] = "RELIABILITY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(5));
+        nonEditRows.add(new Integer(row));
         
-        /*row 6*/
+        row++;
         data[1] = "max_blocking_time";
         this.addRow(data);
-        nonEditRows.add(new Integer(6));
+        nonEditRows.add(new Integer(row));
         
-        /*row 7*/
+        row++;
+        data[1] = "synchronous";
+        this.addRow(data);
+        nonEditRows.add(new Integer(row));
+        
+        row++;
         data[0] = "DESTINATION_ORDER";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(7));
+        nonEditRows.add(new Integer(row));
         
-        /*row 8*/
+        row++;
         data[0] = "HISTORY";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(8));
+        nonEditRows.add(new Integer(row));
         
-        /*row 9*/
+        row++;
         data[1] = "depth";
         this.addRow(data);
-        nonEditRows.add(new Integer(9));
+        nonEditRows.add(new Integer(row));
         
-        /*row 10*/
+        row++;
         data[0] = "RESOURCE_LIMITS";
         data[1] = "max_samples";
         this.addRow(data);
-        nonEditRows.add(new Integer(10));
+        nonEditRows.add(new Integer(row));
         
-        /*row 11*/
+        row++;
         data[1] = "max_instances";
         this.addRow(data);
-        nonEditRows.add(new Integer(11));
+        nonEditRows.add(new Integer(row));
         
-        /*row 12*/
+        row++;
         data[1] = "max_samples_per_instance";
         this.addRow(data);
-        nonEditRows.add(new Integer(12));
+        nonEditRows.add(new Integer(row));
         
-        /*row 13*/
+        row++;
         data[0] = "TRANSPORT_PRIORITY";
         data[1] = "value";
         this.addRow(data);
         
-        /*row 14*/
+        row++;
         data[0] = "LIFESPAN";
         data[1] = "duration";
         this.addRow(data);
         
-        /*row 15*/
+        row++;
         data[0] = "USER_DATA";
         data[1] = "value";
         this.addRow(data);
         
-        /*row 16*/
+        row++;
         data[0] = "OWNERSHIP";
         data[1] = "kind";
         this.addRow(data);
-        nonEditRows.add(new Integer(16));
+        nonEditRows.add(new Integer(row));
         
-        /*row 17*/
+        row++;
         data[0] = "OWNERSHIP_STRENGTH";
         data[1] = "value";
         this.addRow(data);
         
-        /*row 18*/
+        row++;
         data[0] = "WRITER_DATA_LIFECYCLE";
         data[1] = "autodispose_unregistered_instances";
         this.addRow(data);
         
-        /*row 19*/
+        row++;
         data[1] = "autopurge_suspended_samples_delay";
         this.addRow(data);
         
-        /*row 20*/
+        row++;
         data[1] = "autounregister_instance_delay";
         this.addRow(data);
     }
@@ -231,7 +237,9 @@ public class WriterQoSTableModel extends EntityQoSTableModel {
             if(rlp != null){
                 this.setValueAt(rlp.kind, row++, 2);
                 this.setValueAt(rlp.max_blocking_time, row++, 2);
+                this.setValueAt(rlp.synchronous, row++, 2);
             } else {
+                this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
                 this.setValueAt(nill, row++, 2);
             }

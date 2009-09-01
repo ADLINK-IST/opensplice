@@ -13,6 +13,7 @@
 #ifndef U__CFNODE_H
 #define U__CFNODE_H
 
+#include "u_handle.h"
 #include "u_cfNode.h"
 #include "u_participant.h"
 
@@ -24,7 +25,7 @@ extern "C" {
 
 C_STRUCT(u_cfNode) {
     u_participant participant;
-    v_handle      configuration;
+    u_handle      configuration;
     c_ulong       id;
     v_cfKind      kind;
 };

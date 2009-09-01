@@ -1085,7 +1085,7 @@ v_splicedInit(
     v_serviceInit(v_service(spliced), kernel->serviceManager,
                   V_SPLICED_NAME, NULL, q, NULL);
     c_free(q);
-    /* replace my leaseManager (created in v_participantInit())
+    /* replace my leaseManager (created in v_serviceInit())
      * with the kernel leaseManager */
     c_free(v_participant(spliced)->leaseManager);
     v_participant(spliced)->leaseManager = c_keep(kernel->livelinessLM);

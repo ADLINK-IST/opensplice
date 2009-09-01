@@ -16,7 +16,8 @@
 
 DDS::TopicDescription_impl::TopicDescription_impl(
     gapi_topicDescription handle
-)  : __gapi_self(handle)
+)  : DDS::Entity_impl (handle),
+     __gapi_self(handle)
 {
 }
 
@@ -29,14 +30,14 @@ char * DDS::TopicDescription_impl::get_type_name (
   return result;
 }
     
-char * DDS::TopicDescription_impl::get_name (
-) THROW_ORB_EXCEPTIONS 
-{ 
-  char * gapi_result = gapi_topicDescription_get_name(__gapi_self);
-  char * result = CORBA::string_dup(gapi_result);
-  gapi_free(gapi_result);
-  return result;
-}
+//char * DDS::TopicDescription_impl::get_name (
+//) THROW_ORB_EXCEPTIONS 
+//{ 
+//  char * gapi_result = gapi_topicDescription_get_name(__gapi_self);
+//  char * result = CORBA::string_dup(gapi_result);
+//  gapi_free(gapi_result);
+//  return result;
+//}
     
 DDS::DomainParticipant_ptr DDS::TopicDescription_impl::get_participant (
 ) THROW_ORB_EXCEPTIONS 

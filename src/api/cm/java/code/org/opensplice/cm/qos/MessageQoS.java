@@ -13,10 +13,7 @@ package org.opensplice.cm.qos;
 
 import org.opensplice.cm.Time;
 /**
- * Represents the set of policies that apply to a Message. It 
- * consists of:
- * - ReliabilityPolicy
- *  
+ * Represents the set of policies that apply to a Message.
  * @date Mar 29, 2005 
  */
 public class MessageQoS {

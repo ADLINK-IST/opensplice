@@ -12,6 +12,9 @@
 #ifndef GAPI_ERROR_H
 #define GAPI_ERROR_H
 
+#include "gapi.h"
+#include "gapi_common.h"
+
 #include "sd_errorReport.h"
 #include "os_report.h"
 

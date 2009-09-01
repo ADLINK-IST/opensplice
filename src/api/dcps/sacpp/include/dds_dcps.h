@@ -73,6 +73,12 @@ namespace DDS
    struct PublicationMatchedStatus;
    struct SubscriptionMatchedStatus;
 
+   class SACPP_API Domain;
+
+   typedef Domain * Domain_ptr;
+   typedef DDS_DCPSInterface_var <Domain> Domain_var;
+   typedef DDS_DCPSInterface_out <Domain> Domain_out;
+
    class SACPP_API Listener;
 
    typedef Listener * Listener_ptr;
@@ -526,6 +532,7 @@ namespace DDS
       TopicListener_ptr _this () { return this; }
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
+      virtual void on_all_data_disposed (Topic_ptr the_topic) = 0;
 
    protected:
       TopicListener () {};
@@ -970,6 +977,9 @@ namespace DDS
       virtual StatusMask get_status_changes () = 0;
       virtual InstanceHandle_t get_instance_handle () = 0;
 
+      virtual DDS::String get_name () = 0;
+      virtual ReturnCode_t set_name (const DDS::Char *name) = 0;
+
    protected:
       Entity () {};
       ~Entity () {};
@@ -1042,6 +1052,33 @@ namespace DDS
    };
 
 
+   class SACPP_API Domain
+   :
+      virtual public DDS::LocalObject
+   {
+   public:
+      typedef Domain_ptr _ptr_type;
+      typedef Domain_var _var_type;
+
+      static Domain_ptr _duplicate (Domain_ptr obj);
+      DDS::Boolean _local_is_a (const char * id);
+
+      static Domain_ptr _narrow (DDS::Object_ptr obj);
+      static Domain_ptr _unchecked_narrow (DDS::Object_ptr obj);
+      static Domain_ptr _nil () { return NULL; }
+      static const char * _local_id;
+      Domain_ptr _this () { return this; }
+
+      virtual ReturnCode_t create_persistent_snapshot (const DDS::Char* partition_expression, const DDS::Char* topic_expression, const DDS::Char* URI) = 0;
+
+   protected:
+      Domain () {};
+      ~Domain () {};
+   private:
+      Domain (const Domain &) {};
+      Domain & operator = (const Domain &);
+   };
+
    class SACPP_API DomainParticipantFactoryInterface
    :
       virtual public DDS::LocalObject
@@ -1066,6 +1103,7 @@ namespace DDS
       virtual ReturnCode_t get_qos (DomainParticipantFactoryQos& qos) = 0;
       virtual ReturnCode_t set_default_participant_qos (const DomainParticipantQos& qos) = 0;
       virtual ReturnCode_t get_default_participant_qos (DomainParticipantQos& qos) = 0;
+      virtual Domain_ptr lookup_domain (const DDS::Char* domain_id) = 0;
 
    protected:
       DomainParticipantFactoryInterface () {};
@@ -1134,7 +1172,7 @@ namespace DDS
 
    class SACPP_API TopicDescription
    :
-      virtual public DDS::LocalObject
+      virtual public DDS::Entity
    {
    public:
       typedef TopicDescription_ptr _ptr_type;
@@ -1150,7 +1188,7 @@ namespace DDS
       TopicDescription_ptr _this () { return this; }
 
       virtual DDS::String get_type_name () = 0;
-      virtual DDS::String get_name () = 0;
+//      virtual DDS::String get_name () = 0;
       virtual DomainParticipant_ptr get_participant () = 0;
 
    protected:
@@ -1164,7 +1202,6 @@ namespace DDS
 
    class SACPP_API Topic
    :
-      virtual public Entity,
       virtual public TopicDescription
    {
    public:
@@ -1185,6 +1222,7 @@ namespace DDS
       virtual ReturnCode_t set_qos (const TopicQos& qos) = 0;
       virtual TopicListener_ptr get_listener () = 0;
       virtual ReturnCode_t set_listener (TopicListener_ptr a_listener, StatusMask mask) = 0;
+      virtual ReturnCode_t dispose_all_data () = 0;
 
    protected:
       Topic () {};

@@ -513,9 +513,50 @@ jacorb_check ()
 {
     echo -n "JACORB: "
 
+    case `uname` in
+      CYGWIN_NT*)
+         WIN32CP=true
+    esac
+
+    # Segments of classpath on windows ( seperated by ; ) may only have one
+    # : character as either the first or second character.
+    if [ "$WIN32CP" = "true" ]
+    then
+        for i in `echo $CLASSPATH | tr ' ' '%' | tr ';' ' '`
+        {
+            CPS=`echo $i| tr '%' ' ' `
+            J=`echo $i | grep ':'`
+            if [ "$J" != "" ]
+            then
+                case $J in
+                   :*)
+                      echo $J | grep '^:' | grep -v '^:[^:]*$' > /dev/null
+                      RES=$?
+                      ;;
+                   *)
+                      echo $J | grep -v '^[^:]:[^:]*$' > /dev/null
+                      RES=$?
+                      ;;
+                esac
+                if [ $RES = 0 ]
+                then
+                    echo
+                    echo "ERROR: Invalid CLASSPATH segment \"$CPS\""
+                    return 1
+                fi
+            fi
+        }
+
+        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
+                               | sed 's@\(.\):@/cygdrive/\1@g'`
+        CLASSPATH=`echo $CLASSPATH | sed 's@\([^;]\):@/cygdrive/\1@g' | tr ';' ':' | tr '\\\' '/'`
+    else
+        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
+    fi
     FOUND_IN_CLASSPATH=false
-    for i in `echo $CLASSPATH | tr ':' ' '`
+    for i in PATHS
     do
+        i=`echo $i | tr '%' ' '`
         if [ `basename $i` = "jacorb.jar" -o `basename $i` = "avalon-framework.jar" -o `basename $i` = "logkit.jar" ]
         then
             FOUND_IN_CLASSPATH=true
@@ -570,22 +611,17 @@ jacorb_check ()
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/idl.jar:$CLASSPATH
-        case `uname` in
-            CYGWIN_NT*)
-                export CLASSPATH
-                WIN_CPATH=`echo $CLASSPATH | tr ':' ' '`
-                CLASSPATH=""
+        if [ "$WIN32CP" = "true" ]
+        then
+            WIN_CPATH=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
+            CLASSPATH=""
 
-                for i in $WIN_CPATH
-                do
-                    CLASSPATH=`cygpath -d "$i"`\;$CLASSPATH
-                done
-
-                ;;
-            *)
-
-                ;;
-        esac
+            for i in $WIN_CPATH
+            do
+                CP=`echo $i | tr '%' ' '`
+                CLASSPATH=`cygpath -w "$CP"`\;$CLASSPATH
+            done
+        fi
         export CLASSPATH
     fi
     echo "OK"

@@ -19,7 +19,6 @@
 #include "gapi_status.h"
 #include "gapi_kernel.h"
 #include "gapi_builtin.h"
-#include "gapi_instanceHandle.h"
 
 #include "u_types.h"
 
@@ -58,13 +57,21 @@ gapi_entity_enable (
     _Entity entity;
     gapi_returnCode_t result;
 
-    entity = gapi_entityClaim(_this, &result);
-    if ( entity != NULL && !entity->enabled) {
-        entity->enabled = TRUE;
-        u_entityEnable(entity->uEntity);
-        result = GAPI_RETCODE_OK;
+    if (_this) {
+        entity = gapi_entityClaim(_this, &result);
+        if ( entity != NULL ) {
+            if (!entity->enabled) {
+                entity->enabled = TRUE;
+                u_entityEnable(entity->uEntity);
+            }
+            _EntityRelease(entity);
+            result = GAPI_RETCODE_OK;
+        } else {
+            result = GAPI_RETCODE_ALREADY_DELETED;
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    _EntityRelease(entity);
 
     return result;
 }
@@ -149,7 +156,7 @@ _EntitySetUserEntity (
     if ( uEntity ) {
         entity->kernelId = kernelGetKernelId(uEntity);
         u_entitySetUserData(uEntity, _EntityHandle(entity));
-        entity->handle = gapi_instanceHandleFromGID(u_entityGid(uEntity));
+        entity->handle = u_entityGetInstanceHandle(uEntity);
     } else {
         entity->handle = GAPI_HANDLE_NIL;
     }
@@ -253,5 +260,93 @@ gapi_entityNotifyEvent (
         }
     }
     gapi_entityRelease(_this);
+}
+
+static void
+get_name(
+    v_entity e,
+    c_voidp arg)
+{
+    gapi_string *name = (gapi_string *)arg;
+    *name = gapi_string_dup(e->name);
+}
+
+/*
+ *     String
+ *     gapi_entity_get_name();
+ */
+gapi_string
+gapi_entity_get_name (
+    gapi_entity _this)
+{
+    _Entity entity;
+    u_result uresult;
+    gapi_returnCode_t result;
+    gapi_string name;
+
+    if (_this && name) {
+        entity = gapi_entityClaim(_this, &result);
+        if ( entity != NULL) {
+            uresult = u_entityAction(entity->uEntity,get_name,&name);
+            if (uresult == U_RESULT_OK) {
+                result = GAPI_RETCODE_OK;
+            } else {
+                result = GAPI_RETCODE_ALREADY_DELETED;
+            }
+            _EntityRelease(entity);
+        } else {
+            result = GAPI_RETCODE_ALREADY_DELETED;
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+
+    return name;
+}
+
+static void
+set_name(
+    v_entity e,
+    c_voidp arg)
+{
+    c_free(e->name);
+    e->name = c_stringNew(c_getBase(e),(c_char *)arg);
+}
+
+/*
+ *     ReturnCode_t
+ *     gapi_entity_set_name();
+ */
+gapi_returnCode_t
+gapi_entity_set_name (
+    gapi_entity _this,
+    gapi_string name)
+{
+    _Entity entity;
+    u_result uresult;
+    gapi_returnCode_t result;
+
+    if (_this) {
+        entity = gapi_entityClaim(_this, &result);
+        if ( entity != NULL ) {
+            if ( !entity->enabled) {
+                uresult = u_entityAction(entity->uEntity,set_name,name);
+                if (uresult == U_RESULT_OK) {
+                    result = GAPI_RETCODE_OK;
+                } else {
+                    result = GAPI_RETCODE_ALREADY_DELETED;
+                }
+            } else {
+                result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+            }
+            _EntityRelease(entity);
+        } else {
+            result = GAPI_RETCODE_ALREADY_DELETED;
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+
+    return result;
 }
 

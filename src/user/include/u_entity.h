@@ -48,6 +48,7 @@ extern "C" {
 #endif
 
 #include "u_types.h"
+#include "u_handle.h"
 #include "u_instanceHandle.h"
 #include "os_if.h"
 
@@ -269,7 +270,7 @@ OS_API u_kind
 u_entityKind(
     u_entity _this);
 
-OS_API v_handle
+OS_API u_handle
 u_entityHandle (
     u_entity _this);
 
@@ -278,7 +279,7 @@ u_entityGid (
     u_entity _this);
 
 OS_API c_long
-u_entitySystemId (
+u_entitySystemId(
     u_entity _this);
 
 #undef OS_API

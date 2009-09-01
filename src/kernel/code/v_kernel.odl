@@ -506,7 +506,7 @@ struct v_livelinessLostInfo {
 struct v_deadlineMissedInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
-    v_gid                          instanceHandle;
+    v_handle                       instanceHandle;
 };
 
 struct v_sampleRejectedInfo {
@@ -534,7 +534,7 @@ struct v_livelinessChangedInfo {
 struct v_topicMatchInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
-    c_object                       instanceHandle;
+    v_gid                          instanceHandle;
 };
 
 struct v_servicesChangedInfo {
@@ -776,6 +776,7 @@ struct v_livelinessPolicy {
 struct v_reliabilityPolicy {
     v_reliabilityKind                 kind;
     v_duration                        max_blocking_time;
+    c_bool                            synchronous;
 };
 
 struct v_historyPolicy {

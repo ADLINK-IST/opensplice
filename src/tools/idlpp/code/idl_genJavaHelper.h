@@ -32,7 +32,7 @@ c_char *idl_labelJavaEnumVal(const char *typeEnum, idl_labelEnum labelVal);
 
 c_char *idl_sequenceIndexString(idl_typeSeq typeSeq);
 
-c_char *idl_arrayIndexString(idl_typeArray typeArray);
+c_char *idl_arrayJavaIndexString(idl_typeArray typeArray);
 
 c_char *idl_genJavaConstantGetter(void);
 

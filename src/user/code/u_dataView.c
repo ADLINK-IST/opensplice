@@ -14,6 +14,7 @@
 #include "u__dataReader.h"
 #include "u__types.h"
 #include "u__entity.h"
+#include "u__handle.h"
 #include "u_user.h"
 #include "v_topic.h"
 #include "v_public.h"
@@ -68,6 +69,13 @@ u_dataViewRelease(
     return result;
 }
 
+
+struct instanceActionArg {
+    u_dataView view;
+    u_readerAction readerAction;
+    c_voidp readerActionArg;
+};
+
 typedef void (*u_dataViewInstanceActionFunc)(v_dataViewInstance i, c_voidp arg);
 
 static u_result
@@ -78,12 +86,19 @@ u_dataViewInstanceAction(
 {
     u_result result;
     v_public instance;
+    v_dataView view;
+    struct instanceActionArg *a = (struct instanceActionArg *)arg;
 
-    result = u_instanceHandleClaim(handle, &instance);
-    if ((result == U_RESULT_OK) && (instance != NULL)) {
-        assert(instance != NULL);
-        action(v_dataViewInstance(instance),arg);
-        u_instanceHandleRelease(handle);
+    result = u_dataViewClaim(a->view,&view);
+    if (result == U_RESULT_OK) {
+        handle = u_instanceHandleFix(handle,v_collection(view));
+        u_dataViewRelease(a->view);
+        result = u_instanceHandleClaim(handle, &instance);
+        if ((result == U_RESULT_OK) && (instance != NULL)) {
+            assert(instance != NULL);
+            action(v_dataViewInstance(instance),arg);
+            u_instanceHandleRelease(handle);
+        }
     }
     return result;
 }
@@ -245,13 +260,6 @@ u_dataViewTake(
     }
     return result;
 }
-
-
-struct instanceActionArg {
-    u_dataView view;
-    u_readerAction readerAction;
-    c_voidp readerActionArg;
-};
 
 static void
 u_readInstanceAction(
@@ -480,11 +488,7 @@ u_dataViewLookupInstance(
         to = C_DISPLACE(message, v_topicDataOffset(topic));
         copyIn(v_topicDataType(topic), keyTemplate, to);
         instance = v_dataViewLookupInstance(view, message);
-        if (instance == NULL) {
-            u_instanceHandleSetNil(*handle);
-        } else {
-            *handle = v_publicHandle(v_public(instance));
-        }
+        *handle = u_instanceHandleNew(v_public(instance));
         c_free(instance);
         c_free(topic);
         c_free(message);
