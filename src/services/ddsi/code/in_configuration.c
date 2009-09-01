@@ -115,24 +115,6 @@ in_configurationGetConfiguration(
 
 #ifdef IN_TRACING
 
-static void
-in_configurationWaitIfRequested(
-    in_configuration configuration)
-{
-    const char * root = INCF_ROOT(Debugging);
-    c_ulong waitTime;
-    os_time delay = {1, 0};
-
-    if (configuration) {
-        waitTime = INCF_SIMPLE_PARAM(ULong, root, WaitForDebugger);
-        while (waitTime > 0) {
-            printf("Waiting for debugger to attach, %d seconds to go.\n", waitTime);
-            os_nanoSleep(delay);
-            waitTime--;
-        }
-    }
-}
-
 
 static void
 in_configurationInitializeTracing(
@@ -428,33 +410,6 @@ in_configurationFinalizeProfiling(
 }
 #endif /* IN_PROFILING */
 
-#ifdef IN_LOOPBACK
-static void
-in_configurationInitializeLoopback(
-    in_configuration configuration)
-{
-    const char *root;
-    if (configuration) {
-        root = INCF_ROOT(Debugging);
-        /* Loopback testing is supported conditionally */
-        configuration->useLoopback = INCF_SIMPLE_PARAM(Bool, root, UseLoopback);
-        if (configuration->useLoopback) {
-            /* Generate extra info because this option is for testing only */
-            IN_REPORT_INFO(0, "Using loopback interface, for testing "
-                              "purposes only");
-        }
-
-        configuration->useComplementPartitions =
-            INCF_SIMPLE_PARAM(Bool, root, UseComplementPartitions);
-        if (configuration->useComplementPartitions) {
-            /* Generate extra info, this is for testing only */
-            IN_REPORT_INFO(0, "Using complement partitions, for testing "
-                              "purposes only");
-        }
-    }
-
-}
-#endif /* IN_LOOPBACK */
 
 #ifdef IN_DEBUGGING
 
@@ -539,12 +494,9 @@ in_configurationInitializeConditionals(
     in_configuration configuration)
 {
 #ifdef IN_TRACING
-    in_configurationWaitIfRequested(configuration);
     in_configurationInitializeTracing(configuration);
 #endif /* IN_TRACING */
-#ifdef IN_LOOPBACK
-    in_configurationInitializeLoopback(configuration);
-#endif /* IN_LOOPBACK */
+
 #ifdef IN_DEBUGGING
     in_configurationInitializeLossiness(configuration);
     in_configurationInitializeNoPacking(configuration);
@@ -1523,68 +1475,6 @@ LookupReportLevel(
     }
     return result;
 }
-
-/* --------------------------------- Tracing -------------------------------- */
-
-/* implements in_report.h */
-
-#ifdef IN_TRACING
-
-void
-in_reportTrace(
-    in_traceClass traceClass,
-    c_ulong level,
-    const c_char *context,
-    const char *description, ...)
-{
-    va_list ap;
-    os_time useTime;
-#if 1
-    in_configuration configuration;
-
-    configuration = in_configurationGetConfiguration();
-
-    if (configuration) {
-        if (in_configurationInterested(configuration, traceClass, level) &&
-            configuration->traceConfig.outFile) {
-            if (configuration->traceConfig.timestamps) {
-                if (configuration->traceConfig.relTimestamps) {
-                    useTime = os_timeSub(os_timeGet(), configuration->traceConfig.startTime);
-                } else {
-                    useTime = os_timeGet();
-                }
-                fprintf(configuration->traceConfig.outFile, "%5d.%3.3d ",
-                        useTime.tv_sec, useTime.tv_nsec/1000000);
-            }
-            fprintf(configuration->traceConfig.outFile, "%-14s (%d) ",
-                    context, level);
-            va_start(ap, description);
-            vfprintf(configuration->traceConfig.outFile, description, ap);
-            va_end(ap);
-            fflush(configuration->traceConfig.outFile);
-        }
-
-    }
-#else
-
-    if(traceClass == TC(Receive))
-    {
-      if(!outputFile)
-      {
-          outputFile = fopen("ddsi.log", "w");
-      }
-        useTime = os_timeGet();
-        fprintf(outputFile, "%5d.%3.3d ",useTime.tv_sec, useTime.tv_nsec/1000000);
-        fprintf(outputFile, "%-14s (%d) ", context, level);
-        va_start(ap, description);
-        vfprintf(outputFile, description, ap);
-        va_end(ap);
-        fflush(outputFile);
-   }
-#endif
-}
-
-#endif /* IN_TRACING */
 
 /* ------------------------------- Profiling -------------------------------- */
 

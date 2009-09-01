@@ -81,7 +81,7 @@ static void rehash_up (void)
    os_free((char *)otbl);
 }
 
-extern void define (char * name, int nargs, unsigned char * repl, int how)
+extern void define (const char * name, int nargs, unsigned char * repl, int how)
 {
    int h;
    DEF *d;

@@ -7,6 +7,7 @@
 /* DDSi includes */
 #include "in_locator.h"
 #include "in__messageDeserializer.h"
+#include "in_align.h"
 
 /**
  * The following four function typedefs specify the function signature
@@ -182,17 +183,14 @@ _requiresSwap(os_boolean bigEndianess)
  * value. This may involve updating the transformer head to the next buffer!
  * SIDE EFFECT: it will update the curCdrIndex parameter to it's new value!
  */
-#define in_messageDeserializerRemoveCDRPaddingFromStream(_this, size)          \
-    {                                                                          \
+#define in_messageDeserializerRemoveCDRPaddingFromStream(_this,size)          \
+    do {                                                                          \
     in_messageTransformer __str = in_messageTransformer(_this);                \
-    if((__str->curCdrIndex) == 0)                                              \
-    {                                                                          \
-        __str->curCdrIndex  = __str->curCdrIndex + size;                       \
-    } else                                                                     \
-    {                                                                          \
+    do {                                                                          \
         os_uint32 __padding;                                                   \
                                                                                \
-        __padding = __str->curCdrIndex % size;                                 \
+        __padding = IN_ALIGN_UINT_PAD(__str->curCdrIndex,size);                \
+		/* printf("index %d size %d padding %d\n", __str->curCdrIndex, size, __padding) ; */       \
         if(__padding != 0)                                                     \
         {                                                                      \
             if(__padding <= in_messageTransformerGetAvailable(__str))          \
@@ -211,9 +209,7 @@ _requiresSwap(os_boolean bigEndianess)
                 in_messageTransformerClaim(__str, __remPadding);               \
             }                                                                  \
         }                                                                      \
-        __str->curCdrIndex  += size + __padding;                               \
-    }                                                                          \
-    }
+    }while(0);  }while(0)
 
 /**
  * The following macro-method implements the functionality to read a type
@@ -719,7 +715,6 @@ in_messageDeserializerReadArray(
     {
         array = data;
         length = ctype->maxSize;
-        assert(length > 0);
         assert(array);
     } else
     {
@@ -827,6 +822,7 @@ in_messageDeserializer__readPrimArray(
         {
             dstPtr[i] = srcPtr[i];
         }
+
         if (rest > 0)
         {
             /* Not all elements are received, so get a new buffer and
@@ -887,19 +883,30 @@ in_messageDeserializer__readPrimArraySwapped(
         srcPtr = in_messageTransformerGetHead(_this);
         in_messageTransformerClaim(_this, (n*dataSize));
 
-        for (i = 0; i < n; i++)
+
+        for (i = 0; i < n; ++i)
         {
-            for (j = 0; j < dataSize; j++) {
+            for (j = 0; j < dataSize; ++j) {
                 dstPtr[max-j] = srcPtr[j];
             }
             dstPtr = C_DISPLACE(dstPtr, dataSize);
             srcPtr = C_DISPLACE(srcPtr, dataSize);
         }
+    
         if (restElements > 0)
         {
             rest = in_messageTransformerGetAvailable(_this);
             if (rest)
             {
+            	/* Following the philosophie: write as strict as possible 
+            	 * and read with as much goodwill as possible, we deal 
+            	 * with data not following the CDR fragmentation rules, 
+            	 * seperating fragments at 8-octet boundaries. 
+            	 * 
+            	 * With correct 8-octet boundary seperation,
+            	 * the following would not be necessary, 
+            	 * except the renewing! */
+            	
                 /* In this case not all elements are copied yet.
                  * Because there was not enough buffer space available.
                  * However there is still some buffer space available
@@ -917,11 +924,11 @@ in_messageDeserializer__readPrimArraySwapped(
                  */
                 assert(srcPtr == in_messageTransformerGetHead(_this));
                 in_messageTransformerClaim(_this, rest);
-                for (j = 0; j < rest; j++)
+                for (j = 0; j < rest; ++j)
                 {
                     dstPtr[max-j] = srcPtr[j];
                 }
-
+                
                 /* Get the next buffer. */
                 in_messageTransformerRenew(_this);
 
@@ -1008,7 +1015,7 @@ in_messageDeserializerReadString(
                 memcpy(str, stringStart, copyLength);
                 in_messageTransformerClaim(_this, copyLength);
                 stringLength -= copyLength;
-            }
+            } 
         }
     }
     *(c_string *)data = str;

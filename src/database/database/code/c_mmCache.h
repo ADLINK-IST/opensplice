@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -34,6 +34,24 @@ OS_API void     *c_mmCacheMalloc (c_mmCache _this);
 OS_API void      c_mmCacheFree (c_mmCache _this, void *memory);
 
 #undef OS_API
+
+/**
+ * Give the amount of memory allocated for the specified cache (including
+ * headers).
+ *
+ * @param _this a valid cache
+ * @return the number of bytes allocated for _this
+ */
+c_long          c_mmCacheGetAllocated(c_mmCache _this);
+
+/**
+ * Gives the amount of memory that is free (but preallocated) in the specified
+ * cache.
+ *
+ * @param _this a valid cache
+ * @return the number of free (but preallocated) bytes in _this
+ */
+c_long          c_mmCacheGetFree(c_mmCache _this);
 
 #if defined (__cplusplus)
 }

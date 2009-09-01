@@ -18,12 +18,12 @@
 /**************************************************************
  * constructor/destructor
  **************************************************************/
-v_writerQos
+u_writerQos
 u_writerQosNew(
-    v_writerQos tmpl)
+    u_writerQos tmpl)
 {
     u_result result;
-    v_writerQos q;
+    u_writerQos q;
 
     q = os_malloc(sizeof(C_STRUCT(v_writerQos)));
     if (q != NULL) {
@@ -50,7 +50,7 @@ u_writerQosNew(
 
 u_result
 u_writerQosInit(
-    v_writerQos q)
+    u_writerQos q)
 {
     u_result result;
 
@@ -63,6 +63,7 @@ u_writerQosInit(
         q->liveliness.lease_duration                    = C_TIME_ZERO;
         q->reliability.kind                             = V_RELIABILITY_BESTEFFORT;
         q->reliability.max_blocking_time                = C_TIME_ZERO;
+        q->reliability.synchronous                      = FALSE;
         q->orderby.kind                                 = V_ORDERBY_RECEPTIONTIME;
         q->history.kind                                 = V_HISTORY_KEEPLAST;
         q->history.depth                                = 1;
@@ -88,7 +89,7 @@ u_writerQosInit(
 
 void
 u_writerQosDeinit(
-    v_writerQos q)
+    u_writerQos q)
 {
     if (q != NULL) {
         os_free(q->userData.value);
@@ -98,7 +99,7 @@ u_writerQosDeinit(
 
 void
 u_writerQosFree(
-    v_writerQos q)
+    u_writerQos q)
 {
     if (q != NULL) {
         u_writerQosDeinit(q);

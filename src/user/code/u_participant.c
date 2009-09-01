@@ -395,8 +395,12 @@ u_participantInit (
                                            v_participantName(kp), &attr);
             break;
             case U_SERVICE_SPLICED:
-                participantGetWatchDogAttr(root, "ControlService",
-                                           v_participantName(kp), &attr);
+                /* 
+                 * There doesn't exist a proper "service" configuration for the splicedaemon
+                 * the Daemon config for example doesn't have a name attribute.
+                 * For now, we leave it at default
+                 */
+                os_threadAttrInit(&attr);
             break;
             case U_SERVICE_INCOGNITO:
                 os_threadAttrInit(&attr);

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -42,46 +42,68 @@
 
 static c_char*
 getPersistentPartitionExpression(
-    d_configuration config)
+    d_configuration config,
+    d_durability durability)
 {
     c_char *result, *expr;
     d_nameSpace ns;
     d_durabilityKind dkind;
     c_ulong length;
-    c_long i;
-    
+    c_long i, j;
+
     assert(config);
     result = NULL;
-    
+
     if(config){
         length = 0;
-        
+        j = 0;
+
         for(i=0; i<c_iterLength(config->nameSpaces); i++){
             ns    = d_nameSpace(c_iterObject(config->nameSpaces, i));
             dkind = d_nameSpaceGetDurabilityKind(ns);
-            
+
             if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
                 expr = d_nameSpaceGetPartitions(ns);
-                length += strlen(expr);
+                if(j==0){
+                    length += strlen(expr);
+                } else {
+                    length += strlen(expr) + 1; /*for the comma*/
+                }
                 os_free(expr);
+                j++;
             }
         }
-        
+
         if(length > 0){
             result = (c_char*)(os_malloc(length + 1));
             result[0] = '\0';
-            
+            j = 0;
+
             for(i=0; i<c_iterLength(config->nameSpaces); i++){
                 ns    = d_nameSpace(c_iterObject(config->nameSpaces, i));
                 dkind = d_nameSpaceGetDurabilityKind(ns);
-                
+
                 if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
                     expr = d_nameSpaceGetPartitions(ns);
+
+                    if(j != 0){
+                        strcat(result, ",");
+                    }
                     strcat(result, expr);
                     os_free(expr);
+                    j++;
                 }
             }
         }
+    }
+    if(result){
+        d_printTimedEvent(durability, D_LEVEL_FINE,
+            D_THREAD_PERISTENT_DATA_LISTENER,
+            "Persistent partition expression is: '%s'\n", result);
+    } else {
+        d_printTimedEvent(durability, D_LEVEL_FINE,
+            D_THREAD_PERISTENT_DATA_LISTENER,
+            "Persistent partition expression is empty.\n");
     }
     return result;
 }
@@ -100,22 +122,22 @@ d_subscriberNew(
     d_nameSpace     ns;
     d_storeResult   result;
     d_quality       quality;
-    
+
     subscriber = NULL;
-    
+
     if(admin){
         subscriber        = d_subscriber(os_malloc(C_SIZEOF(d_subscriber)));
         d_objectInit(d_object(subscriber), D_SUBSCRIBER, d_subscriberDeinit);
-        
+
         subscriber->admin = admin;
         durability        = d_adminGetDurability(admin);
         config            = d_durabilityGetConfiguration(durability);
         subscriberQos     = d_subscriberQosNew(config->partitionName);
-        partitionExpr     = getPersistentPartitionExpression(config);
+        partitionExpr     = getPersistentPartitionExpression(config, durability);
         psubscriberQos    = d_subscriberQosNew(partitionExpr);
-        
+
         os_free(partitionExpr);
-        
+
         subscriber->subscriber = u_subscriberNew (u_participant(d_durabilityGetService(durability)),
                                                   config->subscriberName,
                                                   subscriberQos,
@@ -123,35 +145,39 @@ d_subscriberNew(
 
         subscriber->waitset         = d_waitsetNew(subscriber, FALSE, FALSE);
         subscriber->persistentStore = d_storeOpen(config,D_STORE_TYPE_XML);
-        
+
         if(subscriber->persistentStore) {
-            subscriber->persistentSubscriber = u_subscriberNew(u_participant(d_durabilityGetService(durability)),
-                                                               config->subscriberName, 
-                                                               psubscriberQos,
-                                                               TRUE);
-                                
-            assert(subscriber->persistentSubscriber);
-            
+            if(psubscriberQos->partition){
+                subscriber->persistentSubscriber = u_subscriberNew(u_participant(d_durabilityGetService(durability)),
+                                                                   config->subscriberName,
+                                                                   psubscriberQos,
+                                                                   TRUE);
+
+                assert(subscriber->persistentSubscriber);
+            } else {
+                subscriber->persistentSubscriber = NULL;
+            }
+
             for(i=0; i<c_iterLength(config->nameSpaces); i++){
                 ns = d_nameSpace(c_iterObject(config->nameSpaces, i));
-                
+
                 if( (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_PERSISTENT) ||
                     (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_ALL))
                 {
                     result = d_storeGetQuality(subscriber->persistentStore, ns, &quality);
-                    
+
                     if(result == D_STORE_RESULT_OK){
                         d_nameSpaceSetInitialQuality(ns, quality);
-                        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, 
+                        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
                          "Initial quality for nameSpace %d is %d.%u.\n",
                          i, quality.seconds, quality.nanoseconds);
                     } else {
-                         d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, 
+                         d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
                          "Unable to get quality from persistent store for nameSpace %d.\n",
                          i);
                     }
                 } else {
-                    d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, 
+                    d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
                          "nameSpace %d does not hold persistent data.\n", i);
                 }
             }
@@ -159,7 +185,7 @@ d_subscriberNew(
             subscriber->persistentSubscriber = NULL;
         }
         assert(subscriber->subscriber);
-        
+
         if(subscriber->subscriber){
             subscriber->statusListener            = NULL;
             subscriber->groupLocalListener        = NULL;
@@ -174,7 +200,7 @@ d_subscriberNew(
             subscriber->deleteDataListener        = NULL;
         } else {
             d_subscriberFree(subscriber);
-        }                
+        }
         d_subscriberQosFree(subscriberQos);
         d_subscriberQosFree(psubscriberQos);
     }
@@ -187,13 +213,13 @@ d_subscriberDeinit(
 {
     d_subscriber subscriber;
     d_durability durability;
-        
+
     assert(d_objectIsValid(object, D_SUBSCRIBER) == TRUE);
-    
+
     if(object){
         subscriber = d_subscriber(object);
         durability = d_adminGetDurability(subscriber->admin);
-        
+
         if(subscriber->statusListener){
             d_statusListenerFree(subscriber->statusListener);
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "statusListener freed\n");
@@ -280,7 +306,7 @@ d_subscriberFree(
     d_subscriber subscriber)
 {
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         d_objectFree(d_object(subscriber), D_SUBSCRIBER);
     }
@@ -324,7 +350,7 @@ d_subscriberInitStatusListener(
     d_subscriber subscriber)
 {
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(!subscriber->statusListener){
             subscriber->statusListener = d_statusListenerNew(subscriber);
@@ -340,7 +366,7 @@ d_subscriberSetStatusListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_statusListenerStart(subscriber->statusListener);
@@ -356,7 +382,7 @@ d_subscriberInitGroupLocalListener(
     d_subscriber subscriber)
 {
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(!subscriber->groupLocalListener){
         assert(subscriber->sampleChainListener);
         subscriber->groupLocalListener = d_groupLocalListenerNew(subscriber,
@@ -372,7 +398,7 @@ d_subscriberSetGroupLocalListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_groupLocalListenerStart(subscriber->groupLocalListener);
@@ -388,7 +414,7 @@ d_subscriberInitGroupRemoteListener(
     d_subscriber subscriber)
 {
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(!subscriber->groupRemoteListener){
         subscriber->groupRemoteListener = d_groupRemoteListenerNew(subscriber);
         assert(subscriber->groupRemoteListener);
@@ -402,8 +428,8 @@ d_subscriberSetGroupRemoteListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
-    if(subscriber){   
+
+    if(subscriber){
         if(enable == TRUE){
             result = d_groupRemoteListenerStart(subscriber->groupRemoteListener);
         } else {
@@ -432,7 +458,7 @@ d_subscriberSetGroupsRequestListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_groupsRequestListenerStart(subscriber->groupsRequestListener);
@@ -448,7 +474,7 @@ d_subscriberInitStatusRequestListener(
     d_subscriber subscriber)
 {
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-     
+
     if(!subscriber->statusRequestListener){
         subscriber->statusRequestListener = d_statusRequestListenerNew(subscriber);
         assert(subscriber->statusRequestListener);
@@ -462,7 +488,7 @@ d_subscriberSetStatusRequestListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_statusRequestListenerStart(subscriber->statusRequestListener);
@@ -492,7 +518,7 @@ d_subscriberSetSampleRequestListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_sampleRequestListenerStart(subscriber->sampleRequestListener);
@@ -522,7 +548,7 @@ d_subscriberSetSampleChainListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_sampleChainListenerStart(subscriber->sampleChainListener);
@@ -552,7 +578,7 @@ d_subscriberSetNameSpacesRequestListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_nameSpacesRequestListenerStart(subscriber->nameSpacesRequestListener);
@@ -582,7 +608,7 @@ d_subscriberSetNameSpacesListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_nameSpacesListenerStart(subscriber->nameSpacesListener);
@@ -612,7 +638,7 @@ d_subscriberSetDeleteDataListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(enable == TRUE){
             result = d_deleteDataListenerStart(subscriber->deleteDataListener);
@@ -644,7 +670,7 @@ d_subscriberSetPersistentDataListenerEnabled(
 {
     c_bool result = FALSE;
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-    
+
     if(subscriber){
         if(subscriber->persistentDataListener) {
             if(enable == TRUE){
@@ -662,10 +688,10 @@ d_subscriberGetPersistentStore(
     d_subscriber subscriber)
 {
     d_store store;
-    
+
     assert(subscriber);
     store = NULL;
-    
+
     if(subscriber){
         store = subscriber->persistentStore;
     }
@@ -677,9 +703,9 @@ d_subscriberGetGroupLocalListener(
     d_subscriber subscriber)
 {
     d_groupLocalListener listener = NULL;
-    
+
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-     
+
     if(subscriber){
         listener = subscriber->groupLocalListener;
     }
@@ -691,9 +717,9 @@ d_subscriberGetSampleChainListener(
     d_subscriber subscriber)
 {
     d_sampleChainListener listener = NULL;
-    
+
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-     
+
     if(subscriber){
         listener = subscriber->sampleChainListener;
     }
@@ -705,9 +731,9 @@ d_subscriberGetNameSpacesRequestListener(
     d_subscriber subscriber)
 {
     d_nameSpacesRequestListener listener = NULL;
-    
+
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-     
+
     if(subscriber){
         listener = subscriber->nameSpacesRequestListener;
     }
@@ -719,9 +745,9 @@ d_subscriberAreRemoteGroupsHandled(
     d_subscriber subscriber)
 {
     c_bool result = FALSE;
-    
+
     assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-     
+
     if(subscriber){
         if(subscriber->groupRemoteListener) {
             result = d_groupRemoteListenerAreRemoteGroupsHandled(subscriber->groupRemoteListener);

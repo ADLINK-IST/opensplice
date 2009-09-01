@@ -27,10 +27,23 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-OS_API v_writerQos u_writerQosNew    (v_writerQos tmpl);
-OS_API u_result    u_writerQosInit   (v_writerQos q);
-OS_API void        u_writerQosDeinit (v_writerQos q);
-OS_API void        u_writerQosFree   (v_writerQos q);
+typedef v_writerQos u_writerQos;
+
+OS_API u_writerQos
+u_writerQosNew (
+    u_writerQos _template);
+
+OS_API u_result
+u_writerQosInit (
+    u_writerQos _this);
+
+OS_API void
+u_writerQosDeinit (
+    u_writerQos _this);
+
+OS_API void
+u_writerQosFree (
+    u_writerQos _this);
 
 #undef OS_API
 

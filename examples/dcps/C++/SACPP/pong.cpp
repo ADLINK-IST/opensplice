@@ -285,7 +285,7 @@ main (
                 result = PP_min_reader->take (PP_min_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_min_dataList->length ();
                 if (jmax != 0) {
-                    for (j = 0; j < jmax; j++) {
+                    for (j = 0; (int)j < jmax; j++) {
                         if (infoList[j].valid_data == TRUE) {
                             result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
                         }
@@ -299,7 +299,7 @@ main (
                 result = PP_seq_reader->take (PP_seq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_seq_dataList->length ();
                 if (jmax != 0) {
-                    for (j = 0; j < jmax; j++) {
+                    for (j = 0; (int)j < jmax; j++) {
                         if (infoList[j].valid_data == TRUE) {
                             result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
                         }
@@ -313,7 +313,7 @@ main (
                 result = PP_string_reader->take (PP_string_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_string_dataList->length ();
                 if (jmax != 0) {
-                    for (j = 0; j < jmax; j++) {
+                    for (j = 0; (int)j < jmax; j++) {
                         if (infoList[j].valid_data == TRUE) {
                             result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
                         }
@@ -328,7 +328,7 @@ main (
                 result = PP_fixed_reader->take (PP_fixed_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_fixed_dataList->length ();
                 if (jmax != 0) {
-                    for (j = 0; j < jmax; j++) {
+                    for (j = 0; (int)j < jmax; j++) {
                         if (infoList[j].valid_data == TRUE) {
                             result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
                         }
@@ -342,7 +342,7 @@ main (
                 result = PP_array_reader->take (PP_array_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
                 jmax = PP_array_dataList->length ();
                 if (jmax != 0) {
-                    for (j = 0; j < jmax; j++) {
+                    for (j = 0; (int)j < jmax; j++) {
                         if (infoList[j].valid_data == TRUE) {
                             result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
                         }

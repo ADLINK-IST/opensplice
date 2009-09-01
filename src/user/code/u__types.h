@@ -29,7 +29,7 @@
 C_STRUCT(u_entity) {
     u_participant participant;
     u_kind kind;
-    v_handle handle;
+    u_handle handle;
     /* only use magic for v_gidClaim and v_gidRelease. */
     v_kernel magic;
     v_gid gid;

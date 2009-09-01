@@ -1,16 +1,17 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 #include "u__writer.h"
+#include "u__handle.h"
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__topic.h"
@@ -163,6 +164,23 @@ u_writerNew(
 }
 
 u_result
+u_writerWaitForAcknowledgments(
+    u_writer _this,
+    c_time timeout)
+{
+    v_writer writer;
+    u_result result;
+
+    result = u_writerClaim(_this,&writer);
+
+    if (result == U_RESULT_OK) {
+        result = v_writerWaitForAcknowledgments(writer, timeout);
+        u_writerRelease(_this);
+    }
+    return result;
+}
+
+u_result
 u_writerInit(
     u_writer _this)
 {
@@ -232,7 +250,7 @@ u_writerDefaultCopy(
     void *to)
 {
     c_copyIn(type,data,to);
-    
+
     return TRUE;
 }
 
@@ -317,9 +335,9 @@ u_writeWithHandleAction(
                 copyResult = _this->copy(v_topicDataType(writer->topic), data, to);
                 V_MESSAGE_STAMP(message,writerAllocTime);
                 _STOP_LAPTIMER(_this->t3);
-                
+
                 if(!copyResult){
-                    OS_REPORT(OS_ERROR, 
+                    OS_REPORT(OS_ERROR,
                             "u_writeWithHandleAction", 0,
                             "Unable to copy data, because it is invalid.");
                     result = U_RESULT_ILL_PARAM;
@@ -457,13 +475,13 @@ u_writerRegisterInstance(
         message = v_topicMessageNew(writer->topic);
         to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
         copyResult = _this->copy(v_topicDataType(writer->topic), data, to);
-        
+
         if(copyResult){
             writeResult = v_writerRegister(writer, message, timestamp, &instance);
             c_free(message);
             wresult = u_resultFromKernelWriteResult(writeResult);
             if (wresult == U_RESULT_OK) {
-                *handle = v_publicHandle(v_public(instance));
+                *handle = u_instanceHandleNew(v_public(instance));
             }
             c_free(instance);
             result = u_writerRelease(_this);
@@ -472,8 +490,8 @@ u_writerRegisterInstance(
             }
         } else {
             result = U_RESULT_ILL_PARAM;
-            
-            OS_REPORT(OS_ERROR, 
+
+            OS_REPORT(OS_ERROR,
                 "u_writerRegisterInstance", 0,
                 "Unable to register instance, because the instance data is invalid.");
         }
@@ -502,12 +520,12 @@ u_writerRegisterInstanceTMP(
         message = v_topicMessageNew(writer->topic);
         to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
         copyResult = copyFunc(v_topicDataType(writer->topic), data, to);
-        
+
         if(copyResult){
             writeResult = v_writerRegister(writer, message, timestamp, &instance);
             wresult = u_resultFromKernelWriteResult(writeResult);
             if (wresult == U_RESULT_OK) {
-                *handle = v_publicHandle(v_public(instance));
+                *handle = u_instanceHandleNew(v_public(instance));
             }
             c_free(instance);
             result = u_writerRelease(_this);
@@ -516,8 +534,8 @@ u_writerRegisterInstanceTMP(
             }
         } else {
             result = U_RESULT_ILL_PARAM;
-            
-            OS_REPORT(OS_ERROR, 
+
+            OS_REPORT(OS_ERROR,
                 "u_writerRegisterInstanceTMP", 0,
                 "Unable to register instance, because the instance data is invalid.");
         }
@@ -554,34 +572,29 @@ u_writerLookupInstance(
     c_bool copyResult;
     u_result result;
     v_writerInstance instance;
-        
+
     if ((_this == NULL) ||
         (keyTemplate == NULL) ||
         (handle == NULL)) {
         return U_RESULT_ILL_PARAM;
     }
     result = u_writerClaim(_this, &writer);
-    
+
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         message = v_topicMessageNew(writer->topic);
         to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
         copyResult = _this->copy(v_topicDataType(writer->topic), keyTemplate, to);
-        
+
         if(copyResult){
             instance = v_writerLookupInstance(writer, message);
+            *handle = u_instanceHandleNew(v_public(instance));
             c_free(message);
-            
-            if (instance) {
-                *handle = v_publicHandle(v_public(instance));
-                c_free(instance);
-            } else {
-                *handle = U_HANDLE_NIL;
-            }
+            c_free(instance);
             result = u_writerRelease(_this);
         } else {
             result = U_RESULT_ILL_PARAM;
-            
-            OS_REPORT(OS_ERROR, 
+
+            OS_REPORT(OS_ERROR,
                 "u_writerLookupInstance", 0,
                 "Unable to lookup instance, because the instance data is invalid.");
         }
@@ -635,7 +648,7 @@ u_writerGetLivelinessLostStatus (
     u_result result;
 
     result = u_writerClaim(_this, &writer);
-    
+
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         result = u_resultFromKernel(
                      v_writerGetLivelinessLostStatus(writer,reset,action,arg));
@@ -655,7 +668,7 @@ u_writerGetDeadlineMissedStatus (
     u_result result;
 
     result = u_writerClaim(_this, &writer);
-    
+
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         result = u_resultFromKernel(
                      v_writerGetDeadlineMissedStatus(writer,reset,action,arg));
@@ -675,7 +688,7 @@ u_writerGetIncompatibleQosStatus (
     u_result result;
 
     result = u_writerClaim(_this, &writer);
-    
+
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         result = u_resultFromKernel(
                      v_writerGetIncompatibleQosStatus(writer,reset,action,arg));
@@ -695,7 +708,7 @@ u_writerGetPublicationMatchStatus (
     u_result result;
 
     result = u_writerClaim(_this, &writer);
-    
+
     if ((result == U_RESULT_OK) && (writer != NULL)) {
         result = u_resultFromKernel(
                      v_writerGetTopicMatchStatus(writer,reset,action,arg));

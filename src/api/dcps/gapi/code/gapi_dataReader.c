@@ -28,7 +28,6 @@
 #include "gapi_genericCopyOut.h"
 #include "gapi_expression.h"
 #include "gapi_error.h"
-#include "gapi_instanceHandle.h"
 #include "gapi_loanRegistry.h"
 
 #include "os_heap.h"
@@ -910,7 +909,6 @@ copy_liveliness_changed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_livelinessChangedInfo *from;
     gapi_livelinessChangedStatus *to;
 
@@ -922,9 +920,7 @@ copy_liveliness_changed_status(
     to->alive_count_change = from->activeChanged;
     to->not_alive_count_change = from->inactiveChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-    to->last_publication_handle = gapi_instanceHandleFromHandle(handle);
+    to->last_publication_handle = u_instanceHandleFromGID(from->instanceHandle);
 
     return V_RESULT_OK;
 }
@@ -975,9 +971,10 @@ copy_deadline_missed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_deadlineMissedInfo *from;
     gapi_requestedDeadlineMissedStatus *to;
+    v_handleResult result;
+    v_public instance;
 
     from = (struct v_deadlineMissedInfo *)info;
     to = (gapi_requestedDeadlineMissedStatus *)arg;
@@ -985,10 +982,11 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-
-    to->last_instance_handle = gapi_instanceHandleFromHandle(handle);
+    result = v_handleClaim(from->instanceHandle, &instance);
+    if (result == V_HANDLE_OK) {
+        to->last_instance_handle = u_instanceHandleNew(v_public(instance));
+        result = v_handleRelease(from->instanceHandle);
+    }
 
     return V_RESULT_OK;
 }
@@ -1120,7 +1118,7 @@ copy_subscription_matched_status(
     to->total_count_change = from->totalChanged;
     to->current_count = from->totalCount;
     to->current_count_change = from->totalChanged;
-    to->last_publication_handle = gapi_instanceHandle_t(from->instanceHandle);
+    to->last_publication_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 }
 
@@ -1475,7 +1473,23 @@ checkDataAvailability(
     } else {
         *dataAvailable = ((v_statusGetMask(e->status) &
                            V_EVENT_DATA_AVAILABLE) != 0);
+
+        /* A DDS 1.2 requirement is that once the status is accessed it should be reset.
+         * This status is reset in a different manner to the plain communication statuses
+         * which call "_DataReader_get_requested_deadline_missed_status", for example, with
+         * a TRUE parameter to reset the status.
+         */
+
+        v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
     }
+}
+
+static void
+resetDataAvailable(
+   v_entity e,
+   c_voidp arg)
+{
+    v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
 }
 
 static void
@@ -1525,7 +1539,7 @@ onRequestedDeadlineMissed (
 
     if ( _this ) {
         result = _DataReader_get_requested_deadline_missed_status(
-                     _this, FALSE, &info);            
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1582,7 +1596,7 @@ onRequestedIncompatibleQos (
         info.policies._buffer  = policyCount;
             
         result = _DataReader_get_requested_incompatible_qos_status(
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info);
             
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1634,7 +1648,7 @@ onSampleRejected (
    
     if ( _this ) {
         result = _DataReader_get_sample_rejected_status(
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1686,8 +1700,7 @@ onLivelinessChanged (
 
     if ( _this ) {
         result = _DataReader_get_liveliness_changed_status(
-                     _this, FALSE, &info); 
-
+                     _this, TRUE, &info);
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
@@ -1742,37 +1755,64 @@ onDataAvailable (
         status = _Entity(_this)->status;
         target = _StatusFindTarget(status,
                                    GAPI_DATA_ON_READERS_STATUS);
+
+        /* The behaviour for the triggering of data_on_readers and data_available is described
+         * in the DDS specification:
+         * first, the middleware tries to trigger the SubscriberListener operation on_data_on_readers
+         * with a parameter of the related Subscriber;  if this does not succeed (no listener or
+         * operation non-enabled), it tries to trigger on_data_available on all the related
+         * DataReaderListener objects, with as parameter the related DataReader.
+         * This is implemented by the following if else block.
+         */
+
         if ( target != NULL ) {
             notifyDataOnReaders(_this, target);
         } else {
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
                                        GAPI_DATA_AVAILABLE_STATUS);
+
             if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
+                u_result result;
+
+                /* No need to check the status again, control wouldn't be here unless the
+                 * data was available on this reader.  Just reset the status here before
+                 * the callback to the listener is made (a DDS 1.2 requirement)
+                 */
+
+                result = u_entityAction(U_ENTITY_GET(_this),
+                                        resetDataAvailable,
+                                        NULL);
+
+                assert(result == U_RESULT_OK);
+
+                if (result == U_RESULT_OK) {
+
+                    if ( target != source ) {
+                        entity = gapi_entityClaim(target, NULL);
+                        status = entity->status;
+                    } else {
+                        entity = NULL;
+                    }
+
+                    callback = status->callbackInfo.on_data_available;
+                    listenerData = status->callbackInfo.listenerData;
+
+                    _EntitySetBusy(_this);
+                    _EntityRelease(_this);
+
+                    if (entity) {
+                        _EntitySetBusy(entity);
+                        _EntityRelease(entity);
+                        callback(listenerData, source);
+                        gapi_objectClearBusy(target);
+                    } else {
+                        callback(listenerData, source);
+                    }
+
+                    gapi_objectClearBusy(source);
+                    gapi_entityClaim(source, NULL);
                 }
-
-                callback = status->callbackInfo.on_data_available; 
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source); 
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source); 
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
             }
         }
     }
@@ -1793,7 +1833,7 @@ onSubscriptionMatch (
    
     if ( _this ) {
         result = _DataReader_get_subscription_matched_status (
-                     _this, FALSE, &info); 
+                     _this, TRUE, &info);
     
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1845,7 +1885,7 @@ onSampleLost (
    
     if ( _this ) {
         result = _DataReader_get_sample_lost_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -163,7 +163,7 @@ d_sampleRequestListenerAddRequest(
                 timeToAct = os_timeAdd(os_timeGet(), config->initialRequestCombinePeriod);
             }
             found = d_sampleRequestHelperNew(listener, request, timeToAct);
-            listener->requests = c_iterInsert(listener->requests, found);
+            listener->requests = c_iterAppend(listener->requests, found);
             found = NULL;
         }
 
@@ -448,7 +448,7 @@ d_sampleRequestListenerInit(
     listener->mayProceed  = FALSE;
     listener->requests    = c_iterNew(NULL);
     sleepTime.tv_sec      = 0;
-    sleepTime.tv_nsec     = 100000000;
+    sleepTime.tv_nsec     = 50000000; /*50ms*/
     listener->actionQueue = d_actionQueueNew("sampleRequestHandler", sleepTime, config->alignerScheduling);
     listener->actor       = d_actionNew(os_timeGet(), sleepTime, sendAction, listener);
 

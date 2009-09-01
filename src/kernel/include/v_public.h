@@ -46,6 +46,9 @@ OS_API void     v_publicDispose   (v_public o);
 OS_API c_voidp  v_publicSetUserData (v_public o, c_voidp userData);
 OS_API c_voidp  v_publicGetUserData (v_public o);
 
+#define v_publicSystemId(o) \
+        (v_public(o)->GID.systemId)
+
 #define v_gidEqual(id1,id2) \
         ((id1.systemId==id2.systemId)&& \
          (id1.localId==id2.localId)&& \
@@ -74,7 +77,7 @@ OS_API v_public       v_gidClaim        (v_gid id, v_kernel k);
 OS_API void           v_gidRelease      (v_gid id, v_kernel k);
 OS_API c_equality     v_gidCompare      (v_gid id1, v_gid id2);
 
-OS_API v_handleResult v_gidClaimChecked  (v_gid id, v_kernel k, v_public *public);
+OS_API v_handleResult v_gidClaimChecked  (v_gid id, v_kernel k, v_public *p);
 OS_API v_handleResult v_gidReleaseChecked(v_gid id, v_kernel k);
 
 #undef OS_API

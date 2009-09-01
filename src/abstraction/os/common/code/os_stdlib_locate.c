@@ -1,4 +1,5 @@
 #include <os_stdlib.h>
+#include <assert.h>
 
 #define PATH_ENVVAR "PATH"
 
@@ -35,11 +36,13 @@ std_splitListNew(
         while (*ptr) {
             if (*ptr == separator) {
                 if (inString) {
-                    count++;
                     inString = 0;
                 }
                 *ptr = '\0';
             } else {
+            	if (!inString) {
+            		count++;
+            	}
                 inString = !0;
             }
             ptr = &ptr[1];
@@ -62,7 +65,10 @@ std_splitListNew(
                 i++;
                 while (*ptr != '\0') {
                     ptr = &ptr[1];
-                    assert(ptr != tail);
+
+                    if(i<count){
+                        assert(ptr != tail);
+                    }
                 }
             }
             assert(*ptr == '\0');
@@ -139,7 +145,7 @@ os_locate(
          * in the PATH environment */
 
         if ((*name == '.') ||
-            (strncmp(name, fsep, strlen(name)) == 0)) {
+            (strncmp(name, fsep, strlen(fsep)) == 0)) {
             osr = os_access(name, permission);
             if (osr == os_resultSuccess) {
                 result = os_strdup(name);

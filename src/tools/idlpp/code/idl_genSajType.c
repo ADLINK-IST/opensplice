@@ -250,7 +250,7 @@ idl_structureClose(
                 idl_fileCur(),
                 "        %s%s _%s",
                 idl_corbaJavaTypeFromTypeSpec(typeSpec),
-                idl_arrayIndexString(idl_typeArray(typeSpec)),
+                idl_arrayJavaIndexString(idl_typeArray(typeSpec)),
                 memberName);
         } else {
             if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
@@ -272,7 +272,7 @@ idl_structureClose(
                         idl_fileCur(),
                         "        %s%s _%s",
                         idl_corbaJavaTypeFromTypeSpec(typeSpec),
-                        idl_arrayIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(typeSpec)))),
+                        idl_arrayJavaIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(typeSpec)))),
                         memberName);
                 } else {
                     if ((idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tstruct) ||
@@ -396,7 +396,7 @@ idl_structureMemberOpenClose(
             idl_fileCur(),
             "    public %s%s %s = new %s",
             idl_corbaJavaTypeFromTypeSpec (typeSpec),
-            idl_arrayIndexString(idl_typeArray(typeSpec)),
+            idl_arrayJavaIndexString(idl_typeArray(typeSpec)),
             idl_javaId(name),
             idl_corbaJavaTypeFromTypeSpec (typeSpec));
         java_arrayDimensions(typeSpec);
@@ -619,7 +619,7 @@ idl_unionCaseTypeFromTypeSpec(
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
         snprintf(typeName, sizeof(typeName), "%s%s",
             idl_corbaJavaTypeFromTypeSpec(idl_typeArrayActual(idl_typeArray(typeSpec))),
-            idl_arrayIndexString(idl_typeArray(typeSpec)));
+            idl_arrayJavaIndexString(idl_typeArray(typeSpec)));
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         return idl_unionCaseTypeFromTypeSpec(idl_typeDefActual(idl_typeDef(typeSpec)));
     } else {
@@ -828,7 +828,7 @@ static c_char *
 idl_valueFromLabelVal (
     idl_labelVal labelVal)
 {
-    static c_char labelName[100];
+    static c_char labelName[1000];
 
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
         snprintf(labelName, (size_t)sizeof(labelName), "%s",

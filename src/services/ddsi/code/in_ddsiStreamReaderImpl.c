@@ -591,6 +591,7 @@ in_ddsiStreamReaderImplProcessAppdefData(
         		payloadResult = _this->callbackTable->processData(
         			_this->callbackArg, messageObject, peerWriter,
         			&(_this->receiver));
+                c_free(messageObject);
 
         		if(payloadResult != IN_RESULT_OK)
         		{
@@ -1396,7 +1397,18 @@ in_ddsiStreamReaderImplScan(
 			/* either timeout or criticial error, such as network down */
 			continueLoop = OS_FALSE;
 		} else {
-			result = in_ddsiStreamReaderImplScanBuffer(_this);
+			/* verify the originator of the message is not this process itself. 
+			 * This case might be caused by loopback routing of outbound messages. */
+			if (callbackTable->isLocalEntity && 
+					callbackTable->isLocalEntity(
+							callbackArg, 
+							_this->receiver.sourceGuidPrefix)) {
+				/* slow path */ 
+				continueLoop = OS_FALSE;
+			} else {
+				/* fast path */
+				result = in_ddsiStreamReaderImplScanBuffer(_this);
+			}
 
 			/* all messages have been parsed from the buffer */
 			in_ddsiStreamReaderImplReleaseBuffer(_this);

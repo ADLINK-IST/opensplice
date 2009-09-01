@@ -120,8 +120,6 @@ v_waitsetEventFree(
     v_waitset _this,
     v_waitsetEvent event)
 {
-//    v_waitsetLock(_this);
-
     if (event) {
         if (v_eventTest(event->kind,V_EVENT_HISTORY_DELETE)) {
             c_free(event);
@@ -132,7 +130,6 @@ v_waitsetEventFree(
             _this->eventCache = event;
         }
     }
-//    v_waitsetUnlock(_this);
 }
 
 void

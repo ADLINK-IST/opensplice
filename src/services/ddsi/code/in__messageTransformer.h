@@ -178,7 +178,8 @@ in_messageTransformerBegin(
     assert(in_messageTransformerGetAvailable(_this) >= size);                  \
     in_messageTransformerGetHead(_this) =                                      \
         C_DISPLACE(in_messageTransformerGetHead(_this), size);                 \
-    in_messageTransformerGetAvailable(_this) -= size
+    in_messageTransformerGetAvailable(_this) -= size;                          \
+	in_messageTransformer(_this)->curCdrIndex += size
 
 /**
  * This buffer handling macro 'renews' the current active network buffer.

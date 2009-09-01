@@ -386,7 +386,7 @@ v_dataViewGetReader(
 {
     assert(C_TYPECHECK(_this,v_dataView));
 
-    return NULL; /* Not yet implemented */
+    return _this->reader;
 }
 
 C_STRUCT(walkInstanceArg) {

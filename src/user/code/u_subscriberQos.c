@@ -74,12 +74,17 @@ u_subscriberQosInit(
         q->presentation.access_scope                 = V_PRESENTATION_INSTANCE;
         q->presentation.coherent_access              = FALSE;
         q->presentation.ordered_access               = FALSE;
+#if 1
+        q->partition                                 = NULL;
+#else
+/* this part is obsolete */
         q->partition                                 = os_malloc(1);
         if (q->partition != NULL) {
             q->partition[0]                          = '\0';
         } else {
             result = U_RESULT_OUT_OF_MEMORY;
-	    }
+        }
+#endif
         q->entityFactory.autoenable_created_entities = TRUE;
         q->share.name = NULL;
         q->share.enable = FALSE;
