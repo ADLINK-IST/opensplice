@@ -63,7 +63,7 @@ ifneq "$(CS_FILES)" ""
 TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 
 $(TARGET): $(CS_FILES)
-	$(CSC) $(CSFLAGS) /out:$(TARGET) $(CSTARGET_LIB) $(CSLIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_LIB) $(CSLIBS) $(CS_FILES)
 endif
 endif
 
@@ -76,7 +76,7 @@ ifneq "$(CS_FILES)" ""
 TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
 
 $(TARGET): $(CS_FILES)
-	$(CSC) $(CSFLAGS) /out:$(TARGET) $(CSTARGET_EXEC) $(CSLIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) $(CSLIBS) $(CS_FILES)
 endif
 endif
 
