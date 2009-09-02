@@ -136,7 +136,7 @@ msvs_check ()
   	    VS_HOME=`dirname $CL_EXE`
   	    VS_HOME=`dirname $VS_HOME`
   	    VS_HOME=`dirname $VS_HOME`
-       export VS_HOME
+        set_var VS_HOME "$VS_HOME"
     fi
     convert_windows_path "$VS_HOME"
     if [ $? != 0 ]
@@ -147,7 +147,7 @@ msvs_check ()
     PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
     PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
     PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
-    export PATH
+    set_var PATH "$PATH"
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
     if [ -z $COMPILER_VER ]
@@ -169,9 +169,9 @@ msvs_check ()
         LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
         LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
         FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v2.0"
-        export FrameworkSDKDir
-        export LIBPATH
-        export LIB
+        set_var FrameworkSDKDir "$FrameworkSDKDir"
+        set_var LIBPATH "$LIBPATH"
+        set_var LIB "$LIB"
 
     fi
 
@@ -182,15 +182,16 @@ msvs_check ()
         LIB="$DOS_CONV_PATH\VC\LIB;"
         SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
         FrameworkSDKDir=`cygpath -d "$SDK_DIR"`
-		  PATH="$FrameworkSDKDir/bin:$PATH"
-        export FrameworkSDKDir
-        export LIB
-        export PATH
+		PATH="$FrameworkSDKDir/bin:$PATH"
+        set_var FrameworkSDKDir "$FrameworkSDKDir"
+        set_var LIBPATH "$LIBPATH"
+        set_var LIB "$LIB"
     fi
 
     echo "OK - using $COMPILER_VER"
 
-    export VS_VER=$CL_MAJOR
+    VS_VER=$CL_MAJOR
+    set_var VS_VER "$VS_VER"
 
     return 0
 }
@@ -332,7 +333,7 @@ javac_check ()
             return 1
         fi
         PATH=$UNIX_CONV_PATH/bin:$PATH
-        export PATH
+        set_var PATH $PATh
     else
         # If not check the path for java
         pathcheck javac
@@ -359,7 +360,7 @@ javac_check ()
         if [ $JAVAC_VERSION -ge $REQUIRED_VERSION ]
         then
             JAVA_HOME=`echo $JAVAC_EXE | awk '{ print substr($1, 1, length($1)-9); }'`
-            export JAVA_HOME
+            set_var JAVA_HOME "$JAVA_HOME"
         else
             echo "Error - Only JAVA 1.5 and above is supported"
             return 1
@@ -392,7 +393,7 @@ javac_check ()
             PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT
             PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
             PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
-            export PATH
+            set_var PATH "$PATH"
             T_LD_PATH=no
             ;;
         *)
@@ -406,7 +407,7 @@ javac_check ()
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
-        export LD_LIBRARY_PATH
+        set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     fi
 
     echo "OK - using JAVAC version $REAL_VERSION"
@@ -414,8 +415,26 @@ javac_check ()
     return 0
 }
 
+tao_check()
+{
+   if [ "$STRICT_CHECKS" = "yes" ]
+   then
+       tao_check_fn "Error"
+       RES=$?
+   else
+       tao_check_fn "Warning"
+       if [ $? != 0 ]
+       then
+           echo "   TAO environment not set, disabling TAO related features."
+           . $OSPL_HOME/setup/environment/exclude_tao
+       fi
+       RES=0
+   fi
+   return $RES
+}
+
 # require TAO and check TAO_ROOT
-tao_check ()
+tao_check_fn ()
 {
     echo -n "TAO: "
     pathcheck tao_idl
@@ -423,28 +442,28 @@ tao_check ()
     then
         if [ -z "$TAO_ROOT" ]
         then
-            echo "Error - No TAO found"
+            echo "$1 - No TAO found"
             return 1
         fi
         if [ ! -d "$TAO_ROOT" ]
         then
-            echo "Error - $TAO_ROOT is not set to a directory"
+            echo "$1 - $TAO_ROOT is not set to a directory"
             return 1
         fi
     else
         TAOIDL_EXE=`which tao_idl`
         if [ "$?" != "0" ]
         then
-            echo "Error - Not TAO found"
+            echo "$1 - Not TAO found"
             return 1
         fi
   		TAO_ROOT=`dirname \`dirname $TAOIDL_EXE\``
-        export TAO_ROOT
+        set_var TAO_ROOT "$TAO_ROOT"
     fi
     LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
-    export LD_LIBRARY_PATH
+    set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     PATH=$TAO_ROOT/bin:$PATH
-    export PATH
+    set_var PATH "$PATH"
 
     TAO_VERSION=`tao_idl -V 2>&1 | grep "PrismTech Version"`
     if [ $? != 0 ]
@@ -459,7 +478,7 @@ tao_check ()
                 SPLICE_ORB=DDS_ACE_TAO_5_6_6
             fi
         else
-            echo "Error - Cannot setup TAO"
+            echo "$1 - Cannot setup TAO"
             tao_idl -V
             return 1
         fi
@@ -479,7 +498,7 @@ tao_check ()
                 then
                     SPLICE_ORB=DDS_OpenFusion_1_6_1
                 else
-                    echo "Error - Unsupported version of PrismTech TAO"
+                    echo "$1 - Unsupported version of PrismTech TAO"
                     tao_idl -V
                     return 1
                 fi
@@ -487,7 +506,7 @@ tao_check ()
         fi
     fi
 
-    export SPLICE_ORB
+    set_var SPLICE_ORB $SPLICE_ORB
     echo "OK - SPLICE_ORB is TAO $TAO_VERSION"
     echo "  setting TAO_ROOT to $TAO_ROOT"
     return 0
@@ -508,8 +527,26 @@ gawk_check ()
     return 0
 }
 
+jacorb_check()
+{
+   if [ "$STRICT_CHECKS" = "yes" ]
+   then
+       jacorb_check_fn "Error"
+       RES=$?
+   else
+       jacorb_check_fn "Warning"
+       if [ $? != 0 ]
+       then
+           echo "   JACORB environment not set, disabling JACORB related features."
+           . $OSPL_HOME/setup/environment/exclude_jacorb
+       fi
+       RES=0
+   fi
+   return $RES
+}
+
 # jacorb_check - should be on the CLASSPATH
-jacorb_check ()
+jacorb_check_fn ()
 {
     echo -n "JACORB: "
 
@@ -563,7 +600,7 @@ jacorb_check ()
             JACORB_HOME=`dirname $i`
             JACORB_HOME=`dirname $JACORB_HOME`
             JACORB_HOME=`dirname $JACORB_HOME`
-            export JACORB_HOME
+            set_var JACORB_HOME $JACORB_HOME
             break
         fi
     done
@@ -572,14 +609,14 @@ jacorb_check ()
     then
         if test ! -d $JACORB_HOME
         then
-            echo "Error - JACORB_HOME is not a directory"
+            echo "$1 - JACORB_HOME is not a directory"
             return 1
         fi
     fi
 
     if [ -z "$JACORB_HOME" ]
     then
-        echo "Error - JACORB_HOME not set and cannot find jacorb.jar in CLASSPATH"
+        echo "$1 - JACORB_HOME not set and cannot find jacorb.jar in CLASSPATH"
         return 1
     fi
 
@@ -587,27 +624,27 @@ jacorb_check ()
     then
         if [ ! -f $JACORB_HOME/lib/endorsed/jacorb.jar ]
         then
-            echo "Error - $JACORB_HOME/lib/endorsed/jacorb.jar in CLASSPATH invalid"
+            echo "$1 - $JACORB_HOME/lib/endorsed/jacorb.jar in CLASSPATH invalid"
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/endorsed/jacorb.jar:$CLASSPATH
 
         if [ ! -f $JACORB_HOME/lib/endorsed/logkit.jar ]
         then
-            echo "Error - $JACORB_HOME/lib/endorsed/logkit.jar in CLASSPATH invalid"
+            echo "$1 - $JACORB_HOME/lib/endorsed/logkit.jar in CLASSPATH invalid"
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH
 
         if [ ! -f $JACORB_HOME/lib/endorsed/avalon-framework.jar ]
         then
-            echo "Error - $JACORB_HOME/lib/endorsed/avalon-framework.jar in CLASSPATH invalid"
+            echo "$1 - $JACORB_HOME/lib/endorsed/avalon-framework.jar in CLASSPATH invalid"
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH
         if [ ! -f $JACORB_HOME/lib/idl.jar ]
         then
-            echo "Error - $JACORB_HOME/lib/idl.jar in CLASSPATH invalid"
+            echo "$1 - $JACORB_HOME/lib/idl.jar in CLASSPATH invalid"
             return 1
         fi
         CLASSPATH=$JACORB_HOME/lib/idl.jar:$CLASSPATH
@@ -622,7 +659,7 @@ jacorb_check ()
                 CLASSPATH=`cygpath -w "$CP"`\;$CLASSPATH
             done
         fi
-        export CLASSPATH
+        set_var CLASSPATH $CLASSPATH
     fi
     echo "OK"
     echo "  setting JACORB_HOME to $JACORB_HOME"
