@@ -169,7 +169,6 @@ main(
 
     argc = 3;
 #else
-    os_time delay = {1, 0};
 
 #ifdef NW_DEBUGGING
     /* Stop and wait for debugger */

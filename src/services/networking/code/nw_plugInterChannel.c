@@ -73,10 +73,10 @@ typedef void *nw_ringBufferEntry;
 
 NW_STRUCT(nw_ringBuffer) {
     nw_plugInterCommMessageKind kind;
-    unsigned int nofEntries;
+    os_uint32 nofEntries;
     nw_ringBufferEntry *entries /* [nofEntries] */;
-    unsigned int head;
-    unsigned int tail;
+    os_uint32 head;
+    os_uint32 tail;
 };
 NW_CLASS(nw_ringBuffer);
 
@@ -232,11 +232,11 @@ nw_ringBufferProcessAckEntry(
 static void
 nw_plugInterCommDataMessageNew(
     nw_ringBufferEntry ringBufEntries[],
-    unsigned int nofEntries
+    os_uint32 nofEntries
     )
 {
     nw_plugInterCommDataMessage array;
-    unsigned int i;
+    os_uint32 i;
 
     array = os_malloc(sizeof(NW_STRUCT(nw_plugInterCommDataMessage)) * nofEntries);
     if (array) {
@@ -260,11 +260,11 @@ nw_plugInterCommDataMessageFree(
 static void
 nw_plugInterCommAckMessageNew(
     nw_ringBufferEntry ringBufEntries[],
-    unsigned int nofEntries
+    os_uint32 nofEntries
     )
 {
     nw_plugInterCommAckMessage array;
-    unsigned int i;
+    os_uint32 i;
 
     array = os_malloc(sizeof(NW_STRUCT(nw_plugInterCommAckMessage)) * nofEntries);
     if (array) {
@@ -285,14 +285,14 @@ nw_plugInterCommAckMessageFree(
     os_free (ringBufEntries[0]);
 }
 
-typedef nw_ringBufferEntry (*nw_ringBufferEntryNewFunc)(nw_ringBufferEntry ringBufEntries[], unsigned int nofEntries);
+typedef nw_ringBufferEntry (*nw_ringBufferEntryNewFunc)(nw_ringBufferEntry ringBufEntries[], os_uint32 nofEntries);
 typedef void               (*nw_ringBufferEntryFreeFunc)(nw_ringBufferEntry ringBufEntries[]);
 
 
 static nw_ringBuffer
 nw_ringBufferNew(
     nw_plugInterCommMessageKind kind,
-    unsigned int nofEntries)
+    os_uint32 nofEntries)
 {
     nw_ringBuffer result = NULL;
     
@@ -357,12 +357,12 @@ nw_ringBufferFree(
 NW_STRUCT(nw_plugInterChannel) {
     nw_ringBuffer ringBufferDataReceived;
     nw_ringBuffer ringBufferAckReceived;
-    unsigned int refCount;
+    os_uint32 refCount;
 };
 
 static nw_plugInterChannel
 nw_plugInterChannelNew(
-    unsigned int queueSize)
+    os_uint32 queueSize)
 {
     nw_plugInterChannel result;
     

@@ -76,8 +76,8 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
     nw_seqNr usedCount;
 };
 
-#define UI(val)       ((nw_length)(val))
-#define UI_DEREF(ptr) (*(nw_length *)(ptr))
+#define UI(val)       ((os_address)(val))
+#define UI_DEREF(ptr) (*(os_address *)(ptr))
 
 #define DF_ADMIN_LENGTH (UI(sizeof(NW_STRUCT(nw_plugBufferDefragAdmin))))
 #define DF_ADMIN(ptr)   (((ptr) != NULL)?(nw_plugBufferDefragAdmin)(UI(ptr) - DF_ADMIN_LENGTH): NULL)
@@ -87,7 +87,7 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 
 #if 0
 #define PRINT_USEDCOUNT(admin)       \
-    printf("%s:%d (0x%x) usedCount = %d\n", __FILE__, __LINE__, (unsigned int)admin, admin->usedCount)
+    printf("%s:%d (0x%x) usedCount = %d\n", __FILE__, __LINE__, (os_address)admin, admin->usedCount)
 #else
 #define PRINT_USEDCOUNT(admin)
 #endif
@@ -989,7 +989,7 @@ nw_plugReceiveChannelFree(
     nw_plugBufferDefragAdmin admin;
     nw_msgHolderPtr msgHolderPtr;
     nw_plugSendingPartitionNode sendingPartitionNode;
-    unsigned int i;
+    os_uint32 i;
 
     /* own finalization */
     /* List with free buffers */

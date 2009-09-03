@@ -24,7 +24,7 @@ char *
 nw_stringDup(
     const char *string)
 {
-    unsigned int size;
+    os_uint32 size;
     char *result = NULL;
     
     if (string) {
@@ -44,7 +44,7 @@ nw_stringDup(
 c_char *
 nw_dumpToString(
     void *data,
-    unsigned int length)
+    os_uint32 length)
 {
 #define NW_ASCII_SPACE          (32U)  /* SP: Lowest printable character      */
 #define NW_ASCII_TILDE         (126U)  /* ~: Highest printable character      */
@@ -54,16 +54,16 @@ nw_dumpToString(
 #define NW_ASCII_A              (65U)  /* A: Base for hex-digits > 10         */
 #define NW_SEP_REPLACER         (c_octet)'\n'
 #define NW_ASCII(i)             (c_octet)(                 \
-                                  ((unsigned int)(i)<10U)?  \
-                                  ((unsigned int)(i)+NW_ASCII_ZERO):  \
-                                  ((unsigned int)(i)+ NW_ASCII_A - 10U))
-#define NW_ASCII_MSB(i)         (c_octet)(NW_ASCII(((unsigned int)(i)>>4)))
-#define NW_ASCII_LSB(i)         (c_octet)(NW_ASCII(((unsigned int)(i)&15U)))
+                                  ((os_uint32)(i)<10U)?  \
+                                  ((os_uint32)(i)+NW_ASCII_ZERO):  \
+                                  ((os_uint32)(i)+ NW_ASCII_A - 10U))
+#define NW_ASCII_MSB(i)         (c_octet)(NW_ASCII(((os_uint32)(i)>>4)))
+#define NW_ASCII_LSB(i)         (c_octet)(NW_ASCII(((os_uint32)(i)&15U)))
 #define NW_ASCII_PRINTABLE(i)   (c_octet)(                      \
-                                  ( ((unsigned int)(i)>= NW_ASCII_SPACE) && \
-                                    ((unsigned int)(i)<= NW_ASCII_TILDE) && \
-                                    ((unsigned int)(i)!= NW_ASCII_PERCENT) )? \
-                                  (unsigned int)(i):            \
+                                  ( ((os_uint32)(i)>= NW_ASCII_SPACE) && \
+                                    ((os_uint32)(i)<= NW_ASCII_TILDE) && \
+                                    ((os_uint32)(i)!= NW_ASCII_PERCENT) )? \
+                                  (os_uint32)(i):            \
                                   NW_ASCII_DOT)
 #define NW_LINE_WIDTH           (16U)
 #define NW_BUFSIZE              (32U)
