@@ -723,13 +723,6 @@ namespace DDS
     }
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct DataSample
-    {
-        public IntPtr data;
-        public SampleInfo sampleInfo;
-    }
-
-    [StructLayoutAttribute(LayoutKind.Sequential)]
     public class SampleInfo
     {
         public SampleStateKind SampleState;

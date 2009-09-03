@@ -6555,49 +6555,105 @@ GAPI_SUBCLASS(gapi_type, gapi_collectionType);
 GAPI_SUBCLASS(gapi_type, gapi_structure);
 GAPI_SUBCLASS(gapi_type, gapi_union);
 
+/**
+ * Return the actual type of a type: this is never a typedef.
+ */
+OS_API gapi_type
+gapi_typeActualType(gapi_type typeBase);
 
+/**
+ * Return the general kind of a type.
+ */
 OS_API c_metaKind
 gapi_metaData_baseObjectKind(gapi_baseObject objBase);
 
+/**
+ * Return the type of a specifier (i.e. a member or a union branch).
+ */
 OS_API gapi_type
 gapi_metaData_specifierType(gapi_specifier specBase);
 
+/**
+ * Return the name of a specifier (i.e. a member or a union branch).
+ */
 OS_API const gapi_char *
 gapi_metaData_specifierName(gapi_specifier specBase);
 
+/**
+ * Return the size of a type.
+ */
+OS_API gapi_long
+gapi_metaData_typeSize(gapi_type typeBase);
+
+/**
+ * Return the amount of labels from an enumeration.
+ */
 OS_API gapi_long
 gapi_metaData_enumerationCount(gapi_enumeration enumBase);
 
+/**
+ * Return the exact primitive kind of a primitive type.
+ */
 OS_API c_primKind
 gapi_metaData_primitiveKind(gapi_primitive primBase);
 
+/**
+ * Return the exact collection kind of a collection type.
+ */
 OS_API c_collKind
 gapi_metaData_collectionTypeKind(gapi_collectionType collBase);
 
+/**
+ * Return the maximum size of a collection type.
+ */
 OS_API gapi_long
 gapi_metaData_collectionTypeMaxSize(gapi_collectionType collBase);
 
+/**
+ * Return the element type of a collection type.
+ */
 OS_API gapi_type
 gapi_metaData_collectionTypeSubType(gapi_collectionType collBase);
 
+/**
+ * Return the amount of members of a structure.
+ */
 OS_API gapi_long
 gapi_metaData_structureMemberCount(gapi_structure structBase);
 
+/**
+ * Return the struct member that is specified by the index.
+ */
 OS_API gapi_member
 gapi_metaData_structureMember(gapi_structure structBase, c_long index);
 
+/**
+ * Return the type of a member.
+ */
 OS_API gapi_type
 gapi_metaData_memberType(gapi_member memberBase);
 
+/**
+ * Return the offset of a member.
+ */
 OS_API gapi_unsigned_long
 gapi_metaData_memberOffset(gapi_member memberBase);
 
+/**
+ * Return the amount of branches of a union.
+ */
 OS_API gapi_long
 gapi_metaData_unionUnionCaseCount(gapi_union unionBase);
 
+/**
+ * Return the union branch that is specified by the index.
+ */
 OS_API gapi_unionCase
 gapi_metaData_unionUnionCase(gapi_union unionBase, c_long index);
 
+/**
+ * Return the type of a union branch.
+ */
 OS_API gapi_type
 gapi_metaData_unionCaseType(gapi_unionCase caseBase);
 
