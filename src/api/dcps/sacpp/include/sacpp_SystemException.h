@@ -44,7 +44,5 @@ private:
    DDS::CompletionStatus m_status;
 };
 
-const DDS::ULong EORB_MINOR_TAG = (('X' << 24) | ('P' << 16));
-
 #undef SACPP_API
 #endif

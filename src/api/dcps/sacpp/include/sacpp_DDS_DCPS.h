@@ -157,11 +157,6 @@ namespace DDS
    class SACPP_API Counter;
 }
 
-#include "sacpp_UserException.h"
-#include "sacpp_SystemException.h"
-#include "sacpp_Exception.h"
-#include "sacpp_ExceptionInitializer.h"
-
 /* ************************************************************************** */
 /*                           Inline Implementations                           */
 /* ************************************************************************** */
