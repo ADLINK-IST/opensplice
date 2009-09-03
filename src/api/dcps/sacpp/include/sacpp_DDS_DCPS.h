@@ -210,34 +210,6 @@ SACPP_API inline DDS::Long DDS::string_cmp (const char* str1, const char* str2)
    return ret;
 }
 
-typedef os_uint32 DDS_unsigned_long;
-typedef os_int32 DDS_long;
-typedef os_uint64 DDS_unsigned_long_long;
-typedef os_int64 DDS_long_long;
-typedef os_char DDS_char;
-typedef os_short DDS_short;
-typedef os_ushort DDS_unsigned_short;
-typedef os_uchar DDS_octet;
-typedef os_uchar DDS_boolean;
-/* typedef wchar_t DDS_wchar; */
-
-/* Version 2 of the Bernstein djb2 hash function.            */
-/* Important that this generates the same hash values as the */
-/* Java IDL compiler.                                        */
-
-SACPP_API inline DDS_unsigned_long DDS_hash (const char * str)
-{
-   DDS_unsigned_long hash = 5381;
-   int c;
- 
-   while ((c = *str++))
-   {
-      hash = (hash * 33) ^ c;
-   }     
-
-   return hash & 0x7FFFFFFF;
-}
-
 #undef SACPP_API
 
 #endif  /* SACPP_DDS_DCPS_H */

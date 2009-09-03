@@ -19,7 +19,19 @@
 #include <xbe_type.h>
 #include <xbe_utils.h>
 #include "xbe_exception.h"
-// #include "DDSCI/ORB.h"
+
+os_ushort DDS_hash (const char * str)
+{
+   os_ushort hash = 5381;
+   int c;
+ 
+   while ((c = *str++))
+   {
+      hash = (hash * 33) ^ c;
+   }     
+
+   return hash & 0x7FFFFFFF;
+}
 
 // ------------------------------------------------------
 //  BE_STUB_GENERATOR IMPLEMENTATION
