@@ -26,6 +26,10 @@ v_dataReaderSampleFree(
     v_dataReaderSample _this);
 
 void
+v_dataReaderSampleRemoveFromLifespanAdmin(
+    v_dataReaderSample _this);
+
+void
 v_dataReaderSampleWipeViews(
     v_dataReaderSample _this);
 void

@@ -24,6 +24,10 @@ extern "C" {
 
 #define S_CFG_GCSCHEDULING_PRIORITY_DEFAULT (0)
 #define S_CFG_GCSCHEDULING_CLASS_DEFAULT    ""
+
+#define S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
+#define S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT     ""
+
     
 #define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (1.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_DEFAULT (10.0F)
@@ -50,6 +54,7 @@ C_STRUCT(s_configuration)
     v_duration    leaseRenewalPeriod;
     os_threadAttr kernelManagerScheduling;
     os_threadAttr garbageCollectorScheduling;
+    os_threadAttr resendManagerScheduling;
 };
 
 #define s_configuration(config) ((s_configuration)(config))

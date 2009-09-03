@@ -212,7 +212,7 @@ STATIC void gapi_cfooSequence   (gapiCopyHeader *ch, void * srcSeq, void *dstSeq
     /* reference to previous defined type */
 STATIC void gapi_cfooReference  (gapiCopyHeader *ch, void * src, void *dst, gapi_co_context *ctx);
 
-copyInFromStruct coFromStruct[] = {
+STATIC copyInFromStruct coFromStruct[] = {
     gapi_cfsoBlackBox,
     gapi_cfsoBoolean,
     gapi_cfsoByte,
@@ -248,7 +248,7 @@ copyInFromStruct coFromStruct[] = {
     gapi_cfsoReference
     };
 
-copyInFromUnion coFromUnion[] = {
+STATIC copyInFromUnion coFromUnion[] = {
     gapi_cfuoBlackBox,
     gapi_cfuoBoolean,
     gapi_cfuoByte,
@@ -284,7 +284,7 @@ copyInFromUnion coFromUnion[] = {
     gapi_cfuoReference
     };
 
-copyInFromUnion coUnionDiscr[] = {
+STATIC copyInFromUnion coUnionDiscr[] = {
     NULL, /*gapi_cfuoBlackBox*/
     gapi_cfuoBoolean,
     NULL, /*gapi_cfuoByte*/
@@ -321,7 +321,7 @@ copyInFromUnion coUnionDiscr[] = {
     };
 
 
-copyInFromArray coFromArray[] = {
+STATIC copyInFromArray coFromArray[] = {
     gapi_cfooBlackBox,
     NULL, /* gapi_cfooBoolean */
     NULL, /* gapi_cfooByte */

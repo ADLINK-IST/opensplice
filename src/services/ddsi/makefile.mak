@@ -13,6 +13,9 @@ LDLIBS += -l$(DDS_DATABASE)
 LDLIBS += -l$(DDS_KERNEL)
 LDLIBS += -l$(DDS_USER)
 LDLIBS += -l$(DDS_SERIALIZATION)
+LDLIBS += -l$(DDS_CONF)
+LDLIBS += -l$(DDS_CONFPARSER)
+LDLIBS += -l$(DDS_UTIL)
 LDLIBS += $(LDLIBS_NW)
 
 # Suppression of macro's (QAC)
@@ -31,9 +34,6 @@ CINCS += -I$(OSPL_HOME)/src/kernel/code
 CINCS += -I$(OSPL_HOME)/src/user/code
 
 LDLIBS  += -l$(DDS_OS_NET) 
-
-#LDLIBS  += -l$(DDS_OS) -l$(DDS_OS_NET) -l$(DDS_DATABASE) -l$(DDS_KERNEL) 
-#LDLIBS  += -l$(DDS_USER) -l$(DDS_SERIALIZATION) $(LDLIBS_NW)
 
 -include $(DEPENDENCIES)
 

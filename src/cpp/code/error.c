@@ -16,7 +16,7 @@ extern void err_head (void)
    fprintf(stderr, "\"%s\", line %d: ", curfile(), curline());
 }
 
-extern void Check_malloc (char * ptr)
+extern void Check_malloc (const char * ptr)
 {
    if (ptr == 0)
    {

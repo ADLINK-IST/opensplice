@@ -66,7 +66,7 @@ os_gethostname(
  */
 OS_API char *
 os_getenv(
-    char *variable);
+    const char *variable);
 
 /** \brief Set environment variable definition
  *

@@ -131,9 +131,10 @@ v_lifespanAdminRemove(
             assert(sample->prev);
             assert(c_refCount(sample) > 1);
             assert(sample->next == NULL);
+            c_free(admin->tail);
             admin->tail = c_keep(sample->prev);
             sample->prev = NULL;
-            c_free(sample);
+            c_free(admin->tail->next); /* admin->tail->next == sample */
             admin->tail->next = NULL;
             admin->sampleCount--;
         } else {

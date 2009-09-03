@@ -29,15 +29,15 @@ extern "C" {
 #endif
 
 /* Default settings */
-#define INCF_DEF_GLOBAL_PARTITION   "239.255.0.1"
-#define INCF_DEF_INTERFACE "first available"
-#define INCF_DEF_DATA_CHANNEL_PORT  (7412)
-#define INCF_DEF_FRAGMENT_SIZE  (2600U)/* TODO temp higher default */
-#define INCF_MIN_FRAGMENT_SIZE  (200U)
-#define INCF_DEF_DISCOVERY_CHANNEL_PORT (7400)
-#define INCF_DEF_RECEIVE_BUFFER_SIZE (1000000U)
+#define INCF_DEF_GLOBAL_PARTITION              "239.255.0.1"
+#define INCF_DEF_INTERFACE                     "first available"
+#define INCF_DEF_DATA_CHANNEL_PORT             (7412)
+#define INCF_DEF_FRAGMENT_SIZE                 (2600U)/* TODO temp higher default */
+#define INCF_MIN_FRAGMENT_SIZE                 (200U)
+#define INCF_DEF_DISCOVERY_CHANNEL_PORT        (7400)
+#define INCF_DEF_RECEIVE_BUFFER_SIZE           (1000000U)
 #define INCF_DEF_DIFFERENTIATED_SERVICES_FIELD (0)
-#define INCF_DEF_BROADCAST_EXPR       "broadcast"
+#define INCF_DEF_BROADCAST_EXPR                "broadcast"
 
 /**
  * Macro that allows the implementation of type checking when casting an
@@ -47,6 +47,18 @@ extern "C" {
 
 in_config
 in_configGetInstance(
+    );
+
+void
+in_configFree (
+    in_config _this);
+
+in_configTracing
+in_configGetConfigTracing (
+    );
+
+os_boolean
+in_configIsTracingEnabled (
     );
 
 in_result

@@ -306,7 +306,7 @@ d_publisherStatusWrite(
                 ur = u_writerWrite(publisher->statusWriter,
                                    message,
                                    v_timeGet(),
-                                   U_HANDLE_NIL);
+                                   U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -368,7 +368,7 @@ d_publisherNewGroupWrite(
                 ur = u_writerWrite(publisher->newGroupWriter,
                                    message,
                                    v_timeGet(),
-                                   U_HANDLE_NIL);
+                                   U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -428,7 +428,7 @@ d_publisherGroupsRequestWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->groupsRequestWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -488,7 +488,7 @@ d_publisherStatusRequestWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->statusRequestWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -548,7 +548,7 @@ d_publisherSampleRequestWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->sampleRequestWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -608,7 +608,7 @@ d_publisherSampleChainWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->sampleChainWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -668,7 +668,7 @@ d_publisherNameSpacesRequestWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->nameSpacesRequestWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -728,7 +728,7 @@ d_publisherNameSpacesWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->nameSpacesWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;
@@ -788,7 +788,7 @@ d_publisherDeleteDataWrite(
 
             while((!result) && (!terminate)){
                 ur = u_writerWrite(publisher->deleteDataWriter,
-                                   message, v_timeGet(), U_HANDLE_NIL);
+                                   message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
                     result = TRUE;

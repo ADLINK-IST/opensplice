@@ -13,7 +13,7 @@
 #include <os_report.h>
 
 /* cfg_curState is initialized when parser is called:
- * see cfg_parse() in cfg_parser.y
+ * see cfg_parse_ospl() in cfg_parser.y
  */
 static int cfg_curState = -1;
 static int cfg_lineno = 1;

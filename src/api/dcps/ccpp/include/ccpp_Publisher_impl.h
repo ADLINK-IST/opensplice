@@ -22,8 +22,7 @@ namespace DDS
 
   class OS_DCPS_API Publisher_impl
     : public virtual ::DDS::Publisher,
-      public ::DDS::Entity_impl,
-      public LOCAL_REFCOUNTED_OBJECT
+      public ::DDS::Entity_impl
   {
     friend class ::DDS::DomainParticipant_impl;
 

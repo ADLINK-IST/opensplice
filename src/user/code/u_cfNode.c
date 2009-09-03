@@ -18,6 +18,7 @@
 #include "u__cfElement.h"
 #include "u__cfAttribute.h"
 #include "u__cfData.h"
+#include "u__handle.h"
 #include "u__participant.h"
 #include "u_kernel.h"
 
@@ -37,7 +38,7 @@ u_cfNodeInit(
 
     if (_this != NULL) {
         config = v_cfNodeConfiguration(kNode);
-        _this->configuration = v_publicHandle(v_public(config));
+        _this->configuration = u_handleNew(v_public(config));
         _this->participant = participant;
         _this->kind = v_cfNodeKind(kNode);
         _this->id = kNode->id;

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -1679,7 +1679,9 @@ d_chainBeadCompare(
     result = d_networkAddressCompare(bead1->sender, bead2->sender);
 
     if(result == 0){
-        if(bead1->message && bead2->message){
+    	if(bead1->message == bead2->message){
+    		result = 0;
+    	} else if(bead1->message && bead2->message){
             eq = v_gidCompare(bead1->message->writerGID,bead2->message->writerGID);
             if (eq == C_EQ) {
                 eq = v_timeCompare(bead1->message->writeTime, bead2->message->writeTime);
@@ -1703,8 +1705,6 @@ d_chainBeadCompare(
                 assert(eq == C_LT);
                 result = -1;
             }
-        } else if(!bead1->message && !bead2->message){
-            result = 0;
         } else if(!bead1->message){
             result = -1;
         } else {

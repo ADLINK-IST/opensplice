@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -47,7 +47,7 @@ nw_channelInitialize(
     nw_seqNr channelId)
 {
     NW_CONFIDENCE(channel != NULL);
-    
+
     if (channel != NULL) {
         channel->channelId = channelId;
         channel->owningBridge = owningBridge;
@@ -60,11 +60,11 @@ nw_channelFinalize(
     nw_channel channel)
 {
     NW_CONFIDENCE(channel != NULL);
-    
+
     if (channel != NULL) {
         nw_bridgeFreeChannel(channel->owningBridge, channel->channelId);
     }
-}    
+}
 
 
 
@@ -90,7 +90,7 @@ nw_entryHashItemInsert(
     nw_entryHashItem *prevNextPtr)
 {
     nw_entryHashItem newItem;
-    
+
     NW_CONFIDENCE(prevNextPtr != NULL);
     newItem = (nw_entryHashItem)os_malloc(sizeof(*newItem));
     if (newItem != NULL) {
@@ -110,7 +110,7 @@ nw_entryHashItemRemove(
 {
     NW_CONFIDENCE(item != NULL);
     NW_CONFIDENCE(prevNext != NULL);
-    
+
     *prevNext = item->next;
     os_free((char *)item->partitionName);
     os_free((char *)item->topicName);
@@ -156,7 +156,7 @@ nw_entryHashNew(
 {
     nw_entryHash result;
     unsigned int totalSize;
-    
+
     totalSize = sizeof(*result) + (hashSize-1)*sizeof(result->hashItems[0]);
     result = (nw_entryHash)os_malloc(totalSize);
     if (result != NULL) {
@@ -172,9 +172,9 @@ nw_entryHashFree(
 {
     os_uint32 index;
     nw_entryHashItem *itemPtr;
-    
+
     NW_CONFIDENCE(entryHash != NULL);
-    
+
     if (entryHash != NULL) {
         for (index=0; index< entryHash->hashSize; index++) {
             itemPtr = &(entryHash->hashItems[index]);
@@ -198,7 +198,7 @@ nw_entryHashLookupByNamesOnly(
     nw_bool ready = FALSE;
     os_uint32 index = 0;
     int cmpRes;
-    
+
     while ((index < entryHash->hashSize) && !ready) {
         itemPtr = &NW_ITEM_FROM_INDEX(entryHash, index);
         while ((*itemPtr != NULL) && !ready) {
@@ -212,24 +212,27 @@ nw_entryHashLookupByNamesOnly(
                     itemPtr = &((*itemPtr)->next);
                 } else {
                     /* No entry found, leave inner loop */
-                    itemPtr = NULL;
+                    ready = TRUE;
                 }
             } else if (cmpRes < 0) {
                 itemPtr = &((*itemPtr)->next);
             } else {
                 /* No entry found, leave inner loop */
-                *itemPtr = NULL;
+                ready = TRUE;
             }
         }
-        if (!ready) {
+        if (result == NULL) {
+            /* We are walking over all hash-entries, so if no result, we need to
+             * check the other indices. */
             index++;
+            ready = FALSE;
         }
     }
-    
+
     return result;
 }
 #endif
- 
+
 
 static v_networkReaderEntry
 nw_entryHashLookup(
@@ -277,7 +280,7 @@ nw_entryHashInsert(
     int cmpRes;
     const c_char *partitionName;
     const c_char *topicName;
-    
+
     partitionName = v_partitionName(v_groupPartition(entry->group));
     topicName = v_topicName(v_groupTopic(entry->group));
     itemPtr = &NW_ITEM_FROM_HASHVALUE(entryHash, entry->hashValue);
@@ -304,7 +307,7 @@ nw_entryHashInsert(
             ready = TRUE;
         }
     }
-    
+
     if (!ready) {
         /* No proper place found, we are at the tail now */
         nw_entryHashItemInsert(entry->hashValue, partitionName, topicName,
@@ -312,7 +315,7 @@ nw_entryHashInsert(
     }
 }
 
-         
+
 /* ---------------------------- receiveChannel ------------------------------ */
 
 
@@ -332,14 +335,14 @@ nw_receiveChannelNew(
     nw_seqNr channelId)
 {
     nw_receiveChannel result = NULL;
-    
+
     result = (nw_receiveChannel)os_malloc(sizeof(*result));
-    
+
     if (result != NULL) {
         nw_channelInitialize((nw_channel)result, owningBridge, channelId);
         result->hash = nw_entryHashNew(NW_ENTRYHASH_SIZE);
     }
-    
+
     return result;
 }
 
@@ -351,7 +354,7 @@ nw_receiveChannelAddGroup(
     v_networkReaderEntry entry)
 {
     NW_CONFIDENCE(channel != NULL);
-    
+
     if (channel != NULL) {
     	/* Add entry to hashtable */
         nw_entryHashInsert(channel->hash, entry);
@@ -370,19 +373,19 @@ nw_receiveChannelTrigger(
     nw_bridgeTrigger(((nw_channel)channel)->owningBridge,
                      ((nw_channel)channel)->channelId);
 }
-         
+
 void
 nw_receiveChannelFree(
     nw_receiveChannel receiveChannel)
 {
     NW_CONFIDENCE(receiveChannel != NULL);
-    
+
     if (receiveChannel != NULL) {
         nw_entryHashFree(receiveChannel->hash);
         nw_channelFinalize((nw_channel)receiveChannel);
         os_free(receiveChannel);
     }
-}    
+}
 
 NW_CLASS(nw_lookupArg);
 NW_STRUCT(nw_lookupArg) {
@@ -403,7 +406,7 @@ onTypeLookup(
     nw_lookupArg lookupArg = (nw_lookupArg)arg;
     nw_receiveChannel receiveChannel = lookupArg->receiveChannel;
     v_networkReaderEntry entry;
-    
+
     NW_CONFIDENCE(receiveChannel != NULL);
 
 #ifdef NW_LOOPBACK
@@ -417,17 +420,17 @@ onTypeLookup(
 #else
     entry = nw_entryHashLookup(receiveChannel->hash, hashValue,
                                partitionName, topicName);
-#endif    
+#endif
     if ((entry == NULL) && (lookupArg->entryLookupAction != NULL)) {
         entry = lookupArg->entryLookupAction(hashValue, partitionName,
             topicName, lookupArg->entryLookupArg);
     }
     lookupArg->entryFound = entry;
-    
+
     if (entry != NULL) {
         result = v_topicMessageType(v_group(entry->group)->topic);
     }
- 
+
     return result;
 }
 
@@ -441,24 +444,24 @@ nw_receiveChannelRead(
 {
     nw_channel channel = (nw_channel)receiveChannel;
     NW_STRUCT(nw_lookupArg) lookupArg;
-    
+
     NW_CONFIDENCE(channel != NULL);
 
     lookupArg.receiveChannel = receiveChannel;
     lookupArg.entryLookupAction = entryLookupAction;
     lookupArg.entryLookupArg = entryLookupArg;
     lookupArg.entryFound = NULL;
-        
+
     nw_bridgeRead(channel->owningBridge, channel->channelId,
                   messagePtr, onTypeLookup, &lookupArg);
-    
+
     /* Retrieve entry, but only if we still have the previous message */
     if (*entryPtr == NULL ) {
       *entryPtr = lookupArg.entryFound;
     }
 }
 
-         
+
 /* ------------------------------- sendChannel ------------------------------ */
 
 
@@ -474,27 +477,27 @@ nw_sendChannelNew(
     nw_seqNr channelId)
 {
     nw_sendChannel result;
-    
+
     result = (nw_sendChannel)os_malloc(sizeof(*result));;
-    
+
     if (result != NULL) {
         nw_channelInitialize((nw_channel)result, owningBridge, channelId);
     }
-    
+
     return result;
-}    
+}
 
 void
 nw_sendChannelFree(
     nw_sendChannel sendChannel)
 {
     NW_CONFIDENCE(sendChannel != NULL);
-    
+
     if (sendChannel != NULL) {
         nw_channelFinalize((nw_channel)sendChannel);
         os_free(sendChannel);
     }
-}    
+}
 
 
 c_ulong
@@ -506,16 +509,16 @@ nw_sendChannelWrite(
 {
     c_ulong result = 0;
     nw_channel channel = (nw_channel)sendChannel;
-    
+
     NW_CONFIDENCE(channel);
-   
+
     result = nw_bridgeWrite(channel->owningBridge, channel->channelId,
                             entry->networkPartitionId, message, entry->hashValue,
                             v_partitionName(v_groupPartition(entry->group)),
                             v_topicName(v_groupTopic(entry->group)),maxBytes);
 
     return result;
-}    
+}
 
 nw_bool
 nw_sendChannelFlush(
@@ -527,8 +530,8 @@ nw_sendChannelFlush(
     nw_channel channel = (nw_channel)sendChannel;
 
     result = nw_bridgeFlush(channel->owningBridge, channel->channelId, all, maxBytes);
-    
-    return result;    
+
+    return result;
 }
 
 void
@@ -537,9 +540,9 @@ nw_sendChannelPeriodicAction(
     nw_signedLength *maxBytes)
 {
     nw_channel channel = (nw_channel)sendChannel;
-    
+
     NW_CONFIDENCE(channel);
-    
+
     if (channel) {
         nw_bridgePeriodicAction(channel->owningBridge, channel->channelId,maxBytes);
     }

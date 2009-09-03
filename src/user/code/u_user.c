@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__user.h"
@@ -16,14 +16,7 @@
 #include "os.h"
 #include "os_report.h"
 
-
-typedef enum u_userState {
-    U_USERSTATE_UNDEFINED,
-    U_USERSTATE_ACTIVE,
-    U_USERSTATE_DETACHING,
-    U_USERSTATE_TERMINATING,
-    U_USERSTATE_INACTIVE
-} u_userState;
+#define MAX_KERNEL (128)
 
 C_CLASS(u_kernelAdmin);
 C_STRUCT(u_kernelAdmin) { /* protected by global user lock */
@@ -35,86 +28,157 @@ C_STRUCT(u_kernelAdmin) { /* protected by global user lock */
 C_CLASS(u_user);
 C_STRUCT(u_user) {
     os_mutex                mutex;
-    c_iter                  kernelList;
-    c_long                  protectCount;
-    u_userState             state;
-    os_threadId             signalThread;
-    os_threadId             detachThreadId; /* set when state is detaching! */
+    C_STRUCT(u_kernelAdmin) kernelList[MAX_KERNEL];
+    c_long                  kernelCount;
+    /* Should only be modified by pa_(in/de)crement! */
+    os_uint32               protectCount;
+    /* The detachThreadId will have to be set by the detaching thread while
+     * holding the user->mutex and be re-set to NULL before releasing the
+     * lock. A lock-boundary should thus never be crossed with detachThreadId
+     * set to a different value than when the lock was acquired! */
+    os_threadId             detachThreadId;
 };
 
-void *user = NULL;
+/** \brief Detached the user-layer (optionally forced).
+ * Normally the detach will be call-counted paired with the user initialize.
+ * However, on process-exit, proper cleanup should always be performed. If force
+ * is set to TRUE, the detach will be executed, no matter what the reference-
+ * count is. Otherwise the detach will do proper call-counting.
+ */
+static u_result                 u__userDetach(c_bool force);
+
+/** \brief Counter that keeps track of number of times user-layer is initialized */
+static os_uint32                _ospl_userInitCount = 0;
+
+/** \brief Reference to heap user-layer admin object.  */
+void *                          user = NULL;
 
 
 static void
 u_userExit(void)
 {
-    u_result r;
+    os_uint32 initCount;
+
+    initCount = _ospl_userInitCount;
+
+    if(initCount > 0){
+        OS_REPORT_2(OS_WARNING, "u_userExit", 0,
+              "Forcing user-layer detach while still referenced %d time%s.",
+              initCount,
+              (initCount > 1) ? "s" : "");
+        u__userDetach(TRUE);
+    }
+}
+
+static u_user
+u__userLock(void)
+{
+    u_user u;
+    os_result r = os_resultFail;
+    c_bool detaching = FALSE;
+
+    u = u_user(user);
+    if (u) {
+        if(u->detachThreadId == 0){
+            r = os_mutexLock(&u->mutex);
+        } else if (u->detachThreadId == os_threadIdSelf()){
+            detaching = TRUE;
+        }
+        /* While waiting on the mutex, a detach can have invalidated the
+         * user-admin, so if the reference is still valid, then all went OK,
+         * otherwise the lock should be released again and FALSE returned. */
+        if(r == os_resultSuccess || detaching){
+            if (!user){
+                if(r == os_resultSuccess){
+                    /* Lock acquired, but user-layer object invalidated, release lock */
+                    os_mutexUnlock(&u->mutex);
+                }
+                /* User-layer object invalidated, return NULL */
+                u = NULL;
+            }
+        } else {
+            /* Could not acquire lock, or user-layer is detaching, return NULL */
+            u = NULL;
+        }
+
+    } /* Else the user-layer is not available, so return NULL */
+    return u;
+}
+
+static void
+u__userUnlock(void)
+{
     u_user u;
 
     u = u_user(user);
     if (u != NULL) {
-        os_mutexLock(&u->mutex);
-        switch (u_user(user)->state) {
-        case U_USERSTATE_ACTIVE:
-        case U_USERSTATE_DETACHING:
-        case U_USERSTATE_TERMINATING:
+        /* Following check is valid, because while locked, the detachThreadId
+         * may not be modified, so iff the condition passed in u__userLock() ,
+         * then it will pass too here.
+         * Of course the precondition is that the detachThreadId should never be
+         * modified across lock boundaries! */
+        if(u->detachThreadId == 0){
             os_mutexUnlock(&u->mutex);
-            r = u_userDetach();
-        break;
-        default:
-            os_mutexUnlock(&u->mutex);
-        break;
         }
-    } else {
-        OS_REPORT(OS_WARNING,"u_userDetach",0,
-                  "User layer not initialised.");
     }
+}
+
+static u_result
+u__userDetach(c_bool force)
+{
+    u_user u;
+    u_result r = U_RESULT_OK;
+    u_kernel kernel;
+    os_uint32 initCount;
+    c_long i;
+
+    initCount = pa_decrement(&_ospl_userInitCount);
+
+    if(initCount == 0 || force){
+        u = u__userLock();
+        if (u) {
+            /* Ever only one thread detaching the user-layer */
+            assert(u->detachThreadId == 0);
+            u->detachThreadId = os_threadIdSelf();
+            for (i = 1; (i <= u->kernelCount); i++) {
+                kernel = u->kernelList[i].kernel;
+                if (kernel) {
+                    u_kernelDetachParticipants(kernel);
+                    u->kernelList[i].kernel = NULL;
+                    u_kernelClose(kernel);
+                }
+            }
+            /* Disable access to user-layer. */
+            user = NULL;
+
+            u->detachThreadId = 0;
+            u__userUnlock();
+
+            /* De-init the OS-abstraction layer */
+            os_osExit();
+        } else {
+            OS_REPORT_2(OS_WARNING,"u_userDetach",0,
+                  "User-layer should be initialized (initCount was %d), but user == NULL%s.",
+                  initCount + 1,
+                  force ? " (forced detach)" : "");
+
+        }
+    } else if ((initCount + 1) < initCount){
+        /* The 0 boundary is passed, so u_userDetach() is called more often than
+         * u_userInitialise(). Therefore undo decrement as nothing happened and
+         * warn. */
+        initCount = pa_increment(&_ospl_userInitCount);
+        OS_REPORT(OS_WARNING, "u_userDetach", 1, "User layer not initialized");
+        r = U_RESULT_INTERNAL_ERROR;
+    }
+
+    return r;
 }
 
 u_result
 u_userDetach()
 {
-    u_user u;
-    u_kernelAdmin ka;
-    u_result r = U_RESULT_OK;
-    c_iter kernelList;
-
-    if (user != NULL) {
-        u = u_user(user);
-        os_mutexLock(&u->mutex);
-        switch (u->state) {
-        case U_USERSTATE_ACTIVE:
-            u->state = U_USERSTATE_DETACHING;
-            u->detachThreadId = os_threadIdSelf();
-            kernelList = u->kernelList;
-            u->kernelList = NULL;
-            os_mutexUnlock(&u->mutex);
-            while ((ka = c_iterTakeFirst(kernelList)) != NULL) {
-                u_kernelDetachParticipants(ka->kernel);
-                u_kernelClose(ka->kernel);
-                os_free(ka);
-            }
-            c_iterFree(kernelList);
-            os_mutexLock(&u->mutex);
-
-            u->state = U_USERSTATE_INACTIVE;
-            u->detachThreadId = 0;
-        break;
-        case U_USERSTATE_DETACHING:
-        case U_USERSTATE_TERMINATING:
-        break;
-        default:
-            OS_REPORT(OS_ERROR,"u_userDetach",0,
-                      "Internal error: Illegal User layer state detected.");
-            r = U_RESULT_INTERNAL_ERROR;
-        break;
-        }
-        os_mutexUnlock(&u->mutex);
-    } else {
-        OS_REPORT(OS_WARNING,"u_userDetach",0,
-                  "User layer not initialised.");
-    }
-    return r;
+    return u__userDetach(FALSE);
 }
 
 u_result
@@ -123,47 +187,63 @@ u_userInitialise()
     u_user u;
     u_result rm = U_RESULT_OK;
     os_mutexAttr mutexAttr;
+    os_uint32 initCount;
+    void* initUser;
 
-    if (user == NULL) {
+    initCount = pa_increment(&_ospl_userInitCount);
+    /* Iff 0 after increment, overflow has occurred. This can only realistically
+     * happen when u_userDetach() is called more often than u_userInitialize(). */
+    assert(initCount != 0);
+
+    if (initCount == 1) {
+
+        /* Will start allocating the object, so it should currently be empty. */
+        assert(user == NULL);
         os_osInit();
-        user = os_malloc(sizeof(C_STRUCT(u_user)));
-        if (user == NULL) {
+
+        /* Use indirection, as user != NULL is a precondition for user-layer
+         * functions, so make sure it only holds true when the user-layer is
+         * initialized. */
+        initUser = os_malloc(sizeof(C_STRUCT(u_user)));
+        if (initUser == NULL) {
+            /* Initialization failed, so decrement the initialization counter. */
+            pa_decrement(&_ospl_userInitCount);
+            os_osExit();
             OS_REPORT(OS_ERROR, "u_userInitialise", 0,
-                      "Allocation user admin failed: out of memory.");
+                      "Allocation of user admin failed: out of memory.");
             rm = U_RESULT_OUT_OF_MEMORY;
+        } else {
+            u = u_user(initUser);
+            os_mutexAttrInit(&mutexAttr);
+            mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
+            os_mutexInit(&u->mutex,&mutexAttr);
+            u->kernelCount = 0;
+            u->protectCount = 0;
+            u->detachThreadId = 0;
+            os_procAtExit(u_userExit);
+
+            /* This will mark the user-layer initialized */
+            user = initUser;
+        }
+    } else {
+        OS_REPORT_1(OS_INFO, "u_userInitialise", 1,
+                "User-layer initialization called %d times", initCount);
+        if(user == NULL){
+            os_time sleep = {0, 100000}; /* 100ms */
+            /* Another thread is currently initializing the user-layer. Since
+             * user != NULL is a precondition for calls after u_userInitialise(),
+             * a sleep is performed, to ensure that (if succeeded) successive
+             * user-layer calls will also actually pass.*/
+            os_nanoSleep(sleep);
         }
 
-        u = u_user(user);
-        os_mutexAttrInit(&mutexAttr);
-        mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
-        os_mutexInit(&u->mutex,&mutexAttr);
-        u->kernelList = c_iterNew(NULL);
-        u->protectCount = 0;
-        u->detachThreadId = 0;
-        u->state = U_USERSTATE_ACTIVE;
-        os_procAtExit(u_userExit);
-    } else {
-        u = u_user(user);
-    }
-    if (rm == U_RESULT_OK) {
-        os_mutexLock(&u->mutex);
-        switch (u->state) {
-        case U_USERSTATE_DETACHING:
-            rm = u_userInitialise();
-        break;
-        case U_USERSTATE_TERMINATING:
-            OS_REPORT(OS_ERROR,"u_userInitialise",0,
-                      "Internal error: Try to protect terminating process.");
+        if(user == NULL){
+            /* Initialization did not succeed, undo increment and return error */
+            initCount = pa_decrement(&_ospl_userInitCount);
+            OS_REPORT_1(OS_ERROR,"u_userInitialise",0,
+                      "Internal error: User-layer should be initialized (initCount = %d), but user == NULL (waited 100ms).", initCount);
             rm = U_RESULT_INTERNAL_ERROR;
-        break;
-        case U_USERSTATE_INACTIVE:
-            u->state = U_USERSTATE_ACTIVE;
-        case U_USERSTATE_ACTIVE:
-        break;
-        default:
-        break;
         }
-        os_mutexUnlock(&u->mutex);
     }
     return rm;
 }
@@ -176,49 +256,24 @@ u_userProtect(
     u_result r;
     os_result osr;
 
-    u = u_user(user);
-    if (u != NULL) {
-        os_mutexLock(&u->mutex);
-        switch (u->state) {
-        case U_USERSTATE_TERMINATING:
-            OS_REPORT(OS_ERROR,"u_userProtect",0,
-                      "Internal error: Try to protect terminating process.");
+    /* While theoretically not necessary to have a lock on the user-object for
+     * this call, it is an easy way to assure that the protect only succeeds
+     * if the user-layer is active. */
+    u = u__userLock();
+    if( u ){
+        osr = os_threadProtect();
+        if (osr == os_resultSuccess) {
+            pa_increment(&u->protectCount);
+            r = U_RESULT_OK;
+        } else {
             r = U_RESULT_INTERNAL_ERROR;
-        break;
-        case U_USERSTATE_ACTIVE:
-            osr = os_threadProtect();
-            if (osr == os_resultSuccess) {
-                u->protectCount++;
-                r = U_RESULT_OK;
-            } else {
-                r = U_RESULT_INTERNAL_ERROR;
-            }
-        break;
-        case U_USERSTATE_DETACHING:
-        case U_USERSTATE_INACTIVE:
-            if ((u->detachThreadId != 0) &&
-                (os_threadIdSelf() != u->detachThreadId)) {
-                r = U_RESULT_DETACHING;
-            } else {
-                osr = os_threadProtect();
-                if (osr == os_resultSuccess) {
-                    u->protectCount++;
-                    r = U_RESULT_OK;
-                } else {
-                    r = U_RESULT_INTERNAL_ERROR;
-                }
-            }
-        break;
-        default:
-            OS_REPORT(OS_ERROR,"u_userProtect",0,
-                      "Internal error: Illegal user layer state detected.");
-            r = U_RESULT_INTERNAL_ERROR;
-        break;
         }
-        os_mutexUnlock(&u->mutex);
+
+        u__userUnlock();
     } else {
-        OS_REPORT(OS_ERROR,"u_userProtect",0,
-                  "User layer not initialised.");
+        OS_REPORT(OS_ERROR,
+                "u_userProtect",0,
+                "User layer not initialized.");
         r = U_RESULT_NOT_INITIALISED;
     }
     return r;
@@ -231,34 +286,28 @@ u_userUnprotect(
     u_user u;
     u_result r;
     os_result osr;
+    os_uint32 newCount; /* Only used for checking 0-boundary */
 
-    u = u_user(user);
-    if (u != NULL) {
-        os_mutexLock(&u->mutex);
+    /* The unprotect is not locked on user->mutex on purpose. No unsafe concur-
+     * rent code is executed and this way, threads in user-protected space can
+     * always leave protected area, even when others are having a lock (i.e.
+     * in case of a u_userDetach()). */
+    if(user){
+        u = u_user(user);
         osr = os_threadUnprotect();
         if (osr == os_resultSuccess) {
-            u->protectCount--;
-            switch (u->state) {
-            case U_USERSTATE_TERMINATING:
-            case U_USERSTATE_ACTIVE:
-            case U_USERSTATE_DETACHING:
-            case U_USERSTATE_INACTIVE:
-                r = U_RESULT_OK;
-            break;
-            default:
-                OS_REPORT(OS_ERROR,"u_userUnprotect",0,
-                          "Internal error: Illegal user layer state detected.");
-                r = U_RESULT_INTERNAL_ERROR;
-            break;
-            }
+            newCount = pa_decrement(&u->protectCount);
+            /* Detect passing of 0 boundary (more likely here than with increment) */
+            assert(newCount + 1 > newCount);
+            r = U_RESULT_OK;
         } else {
             assert(osr == os_resultSuccess);
             r = U_RESULT_INTERNAL_ERROR;
         }
-        os_mutexUnlock(&u->mutex);
     } else {
-        OS_REPORT(OS_ERROR,"u_userUnprotect",0,
-                  "User layer not initialised.");
+        OS_REPORT(OS_ERROR,
+                  "u_userUnprotect",0,
+                  "User layer not initialized.");
         r = U_RESULT_NOT_INITIALISED;
     }
     return r;
@@ -270,140 +319,31 @@ u_userProtectCount()
     u_user u;
     c_long count;
 
-    u = u_user(user);
-    if (u == NULL) {
-        count = 0;
-    } else {
-        os_mutexLock(&u->mutex);
+    u = u__userLock();
+    if ( u ){
         count = u->protectCount;
-        os_mutexUnlock(&u->mutex);
+
+        u__userUnlock();
+    } else {
+        count = 0;
     }
+
     return count;
 }
 
-
-u_result
-u_userAdd(
-    u_kernel kernel)
-{
-    u_user u;
-    u_kernelAdmin ka;
-    u_result r = U_RESULT_OK;
-
-    u = u_user(user);
-    if (u != NULL) {
-        ka = (u_kernelAdmin)os_malloc(sizeof(C_STRUCT(u_kernelAdmin)));
-        if (ka == NULL) {
-            OS_REPORT(OS_ERROR,"u_userAdd",0,
-                      "Allocation of Kernel admin failed.");
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-        ka->kernel = kernel;
-        ka->refCount = 1;
-        os_mutexLock(&u->mutex);
-        u->kernelList = c_iterInsert(u->kernelList,ka);
-        os_mutexUnlock(&u->mutex);
-    } else {
-        OS_REPORT(OS_ERROR,"u_userAdd",0,
-                  "User layer not initialised");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
-
-C_CLASS(getAdminKernelArg);
-C_STRUCT(getAdminKernelArg) {
-    u_kernelAction action;
-    u_kernelActionArg arg;
-};
-
-static void
-getAdminKernel(
-    c_voidp arg1,
-    c_voidp arg2)
-{
-    u_kernelAdmin ka = (u_kernelAdmin)arg1;
-    getAdminKernelArg a = (getAdminKernelArg)arg2;
-
-    a->action(ka->kernel,a->arg);
-}
-
-u_result
-u_userWalk(
-    u_kernelAction action,
-    u_kernelActionArg arg)
-{
-    C_STRUCT(getAdminKernelArg) a;
-    u_user u;
-    u_result r = U_RESULT_OK;
-
-    u = u_user(user);
-    if (u != NULL) {
-        a.action = action;
-        a.arg = arg;
-        os_mutexLock(&u->mutex);
-        c_iterWalk(u->kernelList,getAdminKernel,&a);
-        os_mutexUnlock(&u->mutex);
-    } else {
-        OS_REPORT(OS_ERROR,"u_userWalk",0,
-                  "User layer not initialised");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
-
-static c_bool
-compareKernel(
-    c_object o,
-    c_iterActionArg arg)
-{
-    u_kernelAdmin ka = (u_kernelAdmin)o;
-    u_kernel kernel = (u_kernel)arg;
-
-    return (c_bool)(ka->kernel == kernel);
-}
-
-u_result
-u_userRemove(
-    u_kernel kernel)
-{
-    u_user u;
-    u_kernelAdmin ka;
-    u_result r;
-
-    u = u_user(user);
-    if (u != NULL) {
-        os_mutexLock(&u->mutex);
-        ka = c_iterTakeAction(u->kernelList,compareKernel,kernel);
-        if (ka == NULL) {
-            OS_REPORT(OS_ERROR,"u_userRemove",0,
-                      "Internal error: Specified Kernel not found in admin.");
-            r = U_RESULT_ILL_PARAM;
-        } else {
-            os_free(ka);
-            r = U_RESULT_OK;
-        }
-        os_mutexUnlock(&u->mutex);
-    } else {
-        OS_REPORT(OS_ERROR,"u_userRemove",0,
-                  "User layer not initialised");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
 
 static c_bool
 compareAdminUri(
     c_object o,
     c_iterActionArg arg)
 {
-    u_kernelAdmin ka = (u_kernelAdmin)o;
+    u_kernel kernel = (u_kernel)o;
     const c_char *uri = (const c_char *)arg;
     const c_char *kernelUri;
     u_result result;
 
-    if (ka != NULL) {
-        kernelUri = u_kernelUri(ka->kernel);
+    if (kernel != NULL) {
+        kernelUri = u_kernelUri(kernel);
         if (uri == NULL) {
             if (kernelUri != NULL) {
                 uri = "";
@@ -423,6 +363,39 @@ compareAdminUri(
     return result;
 }
 
+u_kernel
+u_userKernelNew(
+    const c_char *uri)
+{
+    u_kernel _this = NULL;
+    u_kernelAdmin ka;
+    u_user u;
+
+    u = u_user(user);
+
+    if(u){
+        if (u->kernelCount + 1 < MAX_KERNEL) {
+            _this = u_kernelNew(uri);
+            if (_this != NULL) {
+                u->kernelCount++;
+                ka = &u->kernelList[u->kernelCount];
+                ka->kernel = _this;
+                ka->refCount = 1;
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR,
+                    "u_userKernelNew",0,
+                    "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userKernelNew",0,
+                "User layer not initialized");
+    }
+
+    return _this;
+}
+
 /* timeout -1 identifies probe where no error
  * report is expected during normal flow
  */
@@ -433,8 +406,8 @@ u_userKernelOpen(
 {
     u_user u;
     u_kernel result;
-    u_result r;
     u_kernelAdmin ka;
+    c_long i;
 
     result = NULL;
 
@@ -442,144 +415,138 @@ u_userKernelOpen(
         uri = os_getenv ("OSPL_URI");
     }
 
-    u = u_user(user);
-    if (u != NULL) {
+    u = u__userLock();
+    if (u) {
         /* If the kernel is already opened by the process,
            return the kernel object.
            Otherwise open the kernel and add to the administration */
-        os_mutexLock(&u->mutex);
-        ka = (u_kernelAdmin)c_iterReadAction(u->kernelList,
-                                             compareAdminUri,
-                                             (void *)uri);
-        if (ka != NULL) {
-            ka->refCount++;
-            result = ka->kernel;
-        } else {
-            result = u_kernelOpen(uri, timeout);
-            if (result != NULL) {
-                ka = (u_kernelAdmin)os_malloc(sizeof(C_STRUCT(u_kernelAdmin)));
-                if (ka != NULL) {
+        ka = NULL;
+        for (i=1; i<=u->kernelCount; i++) {
+            if (compareAdminUri(u->kernelList[i].kernel,(void *)uri)) {
+                ka = &u->kernelList[i];
+                ka->refCount++;
+                result = ka->kernel;
+            }
+        }
+        if (ka == NULL) {
+            if (u->kernelCount + 1 < MAX_KERNEL) {
+                result = u_kernelOpen(uri, timeout);
+                if (result != NULL) {
+                    u->kernelCount++;
+                    ka = &u->kernelList[u->kernelCount];
                     ka->kernel = result;
                     ka->refCount = 1;
-                    u->kernelList = c_iterInsert(u->kernelList,ka);
-                }
-            } else {
-                ka = (u_kernelAdmin)c_iterReadAction(u->kernelList,
-                                                     compareAdminUri,
-                                                     (void *)uri);
-                if (ka != NULL) {
-                    ka->refCount++;
-                    result = ka->kernel;
                 } else {
                     /* If timeout = -1, don't report */
                     if (timeout >= 0) {
                         if (uri == NULL) {
-                            OS_REPORT(OS_ERROR,"u_userKernelOpen",0,
+                            OS_REPORT(OS_ERROR,
+                                      "u_userKernelOpen",0,
                                       "Failed to open: The default domain");
                         } else {
-                            OS_REPORT_1(OS_ERROR,"u_userKernelOpen",0,
+                            OS_REPORT_1(OS_ERROR,
+                                        "u_userKernelOpen",0,
                                         "Failed to open: %s",uri);
                         }
                     }
                 }
+            } else {
+                OS_REPORT_1(OS_ERROR,
+                          "u_userKernelOpen",0,
+                          "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
             }
         }
-        os_mutexUnlock(&u->mutex);
+
+        u__userUnlock();
     } else {
-        OS_REPORT(OS_ERROR,"u_userKernelOpen",0,
-                  "User layer not initialised");
-        r = U_RESULT_NOT_INITIALISED;
+        OS_REPORT(OS_ERROR,
+                "u_userKernelOpen",0,
+                "User layer not initialized");
     }
 
     return result;
-}
-
-static c_bool
-compareAdminKernel(
-    c_object o,
-    c_iterActionArg arg)
-{
-    u_kernelAdmin ka = (u_kernelAdmin)o;
-    u_kernel kernel = (u_kernel)arg;
-
-    return ((ka != NULL) && (ka->kernel == kernel));
 }
 
 u_result
 u_userKernelClose(
     u_kernel kernel)
 {
+    u_kernelAdmin ka;
     u_user u;
     u_result r;
-    u_kernelAdmin ka;
+    c_long i;
+    c_bool detach = FALSE;
 
-    if (kernel == NULL) {
-        OS_REPORT(OS_WARNING,"u_userKernelClose",0,
-                  "No Kernel specified");
-        return U_RESULT_OK;
-    }
-    u = u_user(user);
-    if (u != NULL) {
-        os_mutexLock(&u->mutex);
-
-        ka = (u_kernelAdmin)c_iterReadAction(u->kernelList,
-                                             compareAdminKernel,
-                                             kernel);
-        os_mutexUnlock(&u->mutex);
-        if (ka != NULL) {
-            assert(ka->refCount>0);
-            ka->refCount--;
-            if (ka->refCount == 0) {
-                ka = (u_kernelAdmin)c_iterTakeAction(u->kernelList,
-                                                     compareAdminKernel,
-                                                     kernel);
-                u_kernelClose(ka->kernel);
-                os_free(ka);
+    u = u__userLock();
+    if ( u ){
+        r = U_RESULT_ILL_PARAM;
+        for (i=1; (i<=u->kernelCount) && (r != U_RESULT_OK); i++) {
+            ka = &u->kernelList[i];
+            if (ka->kernel == kernel) {
+                ka->refCount--;
+                if (ka->refCount == 0) {
+                    u->kernelList[i].kernel = NULL;
+                    detach = TRUE;
+                }
+                r = U_RESULT_OK;
             }
-            r = U_RESULT_OK;
-        } else {
-            OS_REPORT(OS_ERROR,"u_userKernelClose",0,
-                      "Internal Error: Specified Kernel not found in admin");
-            r = U_RESULT_INTERNAL_ERROR;
+        }
+        u__userUnlock();
+
+        if (detach) {
+            u_kernelClose(kernel);
         }
     } else {
-        OS_REPORT(OS_ERROR,"u_userKernelClose",0,
-                  "User layer not initialised");
+        OS_REPORT(OS_ERROR,
+                "u_userKernelClose",0,
+                "User layer not initialized");
         r = U_RESULT_NOT_INITIALISED;
     }
     return r;
 }
 
-#ifdef WIN32
-/* We need this on windows to make sure the main thread of MFC applications
- * calls os_osInit(). Therefore we execute u_userInitialize();
- */
-BOOL WINAPI DllMain(
-    HINSTANCE hinstDLL,  /* handle to DLL module */
-    DWORD fdwReason,     /* reason for calling function */
-    LPVOID lpReserved )  /* reserved */
+c_long
+u_userServerId(
+    v_public o)
 {
-    /* Perform actions based on the reason for calling.*/
-    switch( fdwReason ) {
-    case DLL_PROCESS_ATTACH:
-         /* Initialize once for each new process.
-            Return FALSE to fail DLL load.
-          */
-        u_userInitialise();
-    break;
-    case DLL_THREAD_ATTACH:
-         /* Do thread-specific initialization.
-          */
-    break;
-    case DLL_THREAD_DETACH:
-         /* Do thread-specific cleanup.
-          */
-    break;
-    case DLL_PROCESS_DETACH:
-         /* Perform any necessary cleanup.
-          */
-    break;
+    v_kernel kernel;
+    c_long i, id;
+    u_user u;
+
+    u = u_user(user);
+    if (u != NULL) {
+        kernel = v_objectKernel(o);
+        id = 0;
+        for (i=1; i<=u->kernelCount; i++) {
+            if (u_kernelAddress(u->kernelList[i].kernel) == kernel) {
+                id = i << 24;
+            }
+        }
     }
-    return TRUE;  /* Successful DLL_PROCESS_ATTACH.*/
+    return id;
 }
-#endif
+
+c_long
+u_userServer(
+    c_long id)
+{
+    u_kernel kernel;
+    c_long idx;
+    c_long server;
+    u_user u;
+
+    u = u_user(user);
+    kernel = NULL;
+    server = 0;
+    if (u != NULL) {
+        idx = id >> 24;
+        if ((idx > 0) && (idx <= u->kernelCount)) {
+            kernel = u->kernelList[idx].kernel;
+        }
+    }
+    if (kernel) {
+        server = u_kernelHandleServer(kernel);
+    }
+    return server;
+}
+

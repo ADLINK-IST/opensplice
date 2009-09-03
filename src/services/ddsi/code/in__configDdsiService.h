@@ -42,6 +42,10 @@ in_configDdsiService
 in_configDdsiServiceNew(
     os_char* name);
 
+void
+in_configDdsiServiceFree(
+    in_configDdsiService _this);
+
 /* takes ownership of the discoverychannel */
 void
 in_configDdsiServiceSetDiscoveryChannel(
@@ -105,6 +109,11 @@ in_configDdsiServiceGetPartitioning(
 in_configDebug
 in_configDdsiServiceGetDebugging(
     in_configDdsiService _this);
+
+void
+in_configDdsiServiceSetDebugging(
+    in_configDdsiService _this,
+    in_configDebug config);
 
 void
 in_configDdsiServiceSetPartitioning(

@@ -50,7 +50,7 @@ v_statusNotifyLivelinessLost (
 OS_API c_bool
 v_statusNotifyDeadlineMissed (
     v_status _this,
-    c_object h);
+    v_handle instanceHandle);
 
 OS_API c_bool
 v_statusNotifyIncompatibleQos (
@@ -62,13 +62,13 @@ v_statusNotifyLivelinessChanged (
     v_status _this,
     c_long activeInc,
     c_long inactiveInc,
-    v_gid instanceHandle);
+    v_gid instanceGID);
 
 OS_API c_bool
 v_statusNotifySampleRejected (
     v_status _this,
     v_sampleRejectedKind r,
-    v_gid instanceHandle);
+    v_gid instanceGID);
 
 #undef OS_API
 

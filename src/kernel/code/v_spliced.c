@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -66,6 +66,7 @@
 #include "v_state.h"
 #include "v_time.h"
 #include "v__group.h"
+#include "v_group.h"
 #include "v_groupSet.h"
 #include "v_statistics.h"
 #include "v__waitset.h"
@@ -1013,11 +1014,11 @@ v_splicedManageKernel(
 
     if (kernel->qos->builtin.enabled) {
 
-    	
-    	
+
+
         spliced->builtinData[V_PARTICIPANTINFO_ID] = NULL;
 
-        
+
         _INIT_BUILTIN_DATA_(V_SUBSCRIPTIONINFO_ID, V_SUBSCRIPTIONINFO_NAME);
         _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
     }
@@ -1084,7 +1085,7 @@ v_splicedInit(
     v_serviceInit(v_service(spliced), kernel->serviceManager,
                   V_SPLICED_NAME, NULL, q, NULL);
     c_free(q);
-    /* replace my leaseManager (created in v_participantInit())
+    /* replace my leaseManager (created in v_serviceInit())
      * with the kernel leaseManager */
     c_free(v_participant(spliced)->leaseManager);
     v_participant(spliced)->leaseManager = c_keep(kernel->livelinessLM);
@@ -1390,6 +1391,7 @@ v_spliced spliced)
     v_message missedHBMsg;
     struct v_heartbeatInfo *missedHB; /* list of missed heartbeats */
     v_kernel kernel;
+    c_long length;
     v_group g;
     os_time delay = {GC_DELAY_SEC, GC_DELAY_NSEC};
     c_iter deadWriters; /* list of register messages of died writers */
@@ -1402,27 +1404,71 @@ v_spliced spliced)
     while (!spliced->missedHB) {
         os_nanoSleep(delay);
     }
+    /*Continue for as long as the spliced doesn't need to terminate*/
     while (!spliced->quit) {
-        os_nanoSleep(delay);
+        /*Check if a heartbeat has been missed*/
         c_mutexLock(&spliced->mtx);
         missedHBMsg = c_take(spliced->missedHB);
         c_mutexUnlock(&spliced->mtx);
+
+        groups = v_groupSetSelectAll(kernel->groupSet);
+        g = v_group(c_iterTakeFirst(groups));
+
+        /* If a heartbeat has been missed, walk over all groups and clean up
+         * data from writers on the removed node.
+         */
         if (missedHBMsg) {
             missedHB = v_builtinHeartbeatInfoData(kernel->builtin,missedHBMsg);
             OS_REPORT_1(OS_WARNING, "v_spliced", 0,
                 "Missed heartbeat for node %d", v_gidSystemId(missedHB->id));
-            groups = v_groupSetSelectAll(kernel->groupSet);
-            g = v_group(c_iterTakeFirst(groups));
-            while (g != NULL) {
+
+            while ((g != NULL) && (!spliced->quit)) {
                 os_nanoSleep(delay);
                 deadWriters = v_groupGetRegisterMessages(g, v_gidSystemId(missedHB->id));
                 cleanupWriters(deadWriters, g, &missedHB->period /* effectively cleanup time */);
+                v_groupUpdatePurgeList(g);
                 c_free(g);
                 g = v_group(c_iterTakeFirst(groups));
             }
-            c_iterFree(groups);
             c_free(missedHBMsg);
+        } else {
+            /*If no heartbeat is missed, do some garbage collection.*/
+            while ((g != NULL) && (!spliced->quit)) {
+                v_groupUpdatePurgeList(g);
+                c_free(g);
+
+                /* Missed heartbeat handling takes precedence over the updating
+                 * of purgeLists. If a heartbeat has been missed, stop
+                 * updating purgeLists.
+                 */
+                c_mutexLock(&spliced->mtx);
+                length = c_setCount(spliced->missedHB);
+                c_mutexUnlock(&spliced->mtx);
+
+                /* A heartbeat has been missed, stop updating purgeLists now
+                 * but don't forget to free the iter of groups.
+                 */
+                if(length != 0){
+                    g = NULL;
+                } else {
+                    os_nanoSleep(delay);
+                    g = v_group(c_iterTakeFirst(groups));
+                }
+            }
         }
+        /* Make sure each group is freed if the while loops above are
+         * interrupted.
+         */
+        if(g != NULL){
+            c_free(g);
+        }
+        g = v_group(c_iterTakeFirst(groups));
+
+        while(g != NULL){
+            c_free(g);
+            g = v_group(c_iterTakeFirst(groups));
+        }
+        c_iterFree(groups);
     }
 }
 

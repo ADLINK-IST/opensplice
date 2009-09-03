@@ -499,7 +499,6 @@ struct DDS_SubscriptionMatchedStatus_s {
     DDS_InstanceHandle_t last_publication_handle;
 };
 
-
 /*
  * // ----------------------------------------------------------------------
  * // Listeners
@@ -581,9 +580,14 @@ typedef void (*DDS_TopicListener_InconsistentTopicListener)
      DDS_Topic topic,
      const DDS_InconsistentTopicStatus *status);
 
+typedef void (*DDS_TopicListener_AllDataDisposedListener)
+    (void *listener_data,
+     DDS_Topic topic);
+
 struct DDS_TopicListener {
     void *listener_data;
     DDS_TopicListener_InconsistentTopicListener on_inconsistent_topic;
+    DDS_TopicListener_AllDataDisposedListener on_all_data_disposed;
 };
 OS_API struct DDS_TopicListener *DDS_TopicListener__alloc (void);
 
@@ -1548,6 +1552,7 @@ typedef struct DDS_ReliabilityQosPolicy_s DDS_ReliabilityQosPolicy;
 struct DDS_ReliabilityQosPolicy_s {
     DDS_ReliabilityQosPolicyKind kind;
     DDS_Duration_t max_blocking_time;
+    DDS_boolean synchronous;
 };
 
 /* enum DestinationOrderQosPolicyKind {
@@ -2183,6 +2188,23 @@ DDS_Entity_get_instance_handle (
     DDS_Entity _this);
 
 /*
+ *     String
+ *     get_name();
+ */
+OS_API DDS_string
+DDS_Entity_get_name (
+    DDS_Entity _this);
+
+/*
+ *     ReturnCode_t
+ *     set_name();
+ */
+OS_API DDS_ReturnCode_t
+DDS_Entity_set_name (
+    DDS_Entity _this,
+    const DDS_char *name);
+
+/*
  * interface TypeSupport
  */
 typedef DDS_Object DDS_TypeSupport;
@@ -2583,6 +2605,24 @@ DDS_DomainParticipant_delete_historical_data (
     const DDS_string topic_expression);
 
 /*
+ * interface Domain
+ */
+typedef DDS_Object DDS_Domain;
+
+/*     DDS_ReturnCode_t
+ *     create_persistent_snapshot(
+ *         in String partition_expression,
+ *         in String topic_expression,
+ *         in String URI);
+ */
+OS_API DDS_ReturnCode_t
+DDS_Domain_create_persistent_snapshot (
+    DDS_DomainParticipant _this,
+    const DDS_char *partition_expression,
+    const DDS_char *topic_expression,
+    const DDS_char *URI);
+
+/*
  * interface DomainParticipantFactory
  */
 typedef DDS_Object DDS_DomainParticipantFactory;
@@ -2665,7 +2705,18 @@ DDS_DomainParticipantFactory_get_default_participant_qos (
     DDS_DomainParticipantFactory _this,
     DDS_DomainParticipantQos *qos);
 
+/*     Domain
+ *     lookup_domain(
+ *         in DomainId domain_id);
+ */
+OS_API DDS_Domain
+DDS_DomainParticipantFactory_lookup_domain (
+    DDS_DomainParticipantFactory _this,
+    DDS_DomainId_t domain_id);
 
+/*
+ * interface TypeSupport
+ */
 OS_API DDS_TypeSupport
 DDS_TypeSupport__alloc (
     const DDS_char *type_name,
@@ -2826,6 +2877,13 @@ OS_API DDS_ReturnCode_t
 DDS_Topic_get_qos (
     DDS_Topic _this,
     DDS_TopicQos *qos);
+
+/*     DDS_ReturnCode_t
+ *     dispose_all_data();
+ */
+OS_API DDS_ReturnCode_t
+DDS_Topic_dispose_all_data (
+    DDS_Topic _this);
 
 /*
  * interface ContentFilteredTopic : TopicDescription

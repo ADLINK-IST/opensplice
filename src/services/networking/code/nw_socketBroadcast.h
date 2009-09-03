@@ -25,7 +25,8 @@ nw_socketGetDefaultBroadcastInterface(
 
 void
 nw_socketBroadcastInitialize(
-    nw_socket socket);
+    nw_socket socket,
+    sk_bool receiving);
 
                       
 #endif /* NW_SOCKETBROADCAST_H */

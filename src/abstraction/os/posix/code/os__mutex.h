@@ -9,4 +9,12 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "gapi_entityValidity.h"
+#ifndef OS__MUTEX_H
+#define OS__MUTEX_H
+
+#include "os_mutex.h"
+
+void os_mutexModuleInit(void);
+void os_mutexModuleExit(void);
+
+#endif /* OS__MUTEX_H */

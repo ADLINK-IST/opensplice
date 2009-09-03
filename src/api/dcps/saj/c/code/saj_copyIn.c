@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define STATIC
+#define STATIC static
 
 typedef struct {
     void *dst;
@@ -153,7 +153,7 @@ STATIC saj_copyResult saj_cfoiSequence   (sajCopyHeader *ch, jobject objectSeque
     /* reference to previous defined type */
 STATIC saj_copyResult saj_cfoiReference  (sajCopyHeader *ch, jobject objectSequence, void *dstSeq, saj_context *ctx);
 
-copyInFromStruct ciFromStruct[] = {
+STATIC copyInFromStruct ciFromStruct[] = {
     saj_cfsiBoolean,
     saj_cfsiByte,
     saj_cfsiChar,
@@ -188,7 +188,7 @@ copyInFromStruct ciFromStruct[] = {
     saj_cfsiReference
     };
 
-copyInFromUnion ciFromUnion[] = {
+STATIC copyInFromUnion ciFromUnion[] = {
     saj_cfuiBoolean,
     saj_cfuiByte,
     saj_cfuiChar,
@@ -223,7 +223,7 @@ copyInFromUnion ciFromUnion[] = {
     saj_cfuiReference
     };
 
-copyInFromArray ciFromArray[] = {
+STATIC copyInFromArray ciFromArray[] = {
     NULL, /* saj_cfoiBoolean */
     NULL, /* saj_cfoiByte */
     NULL, /* saj_cfoiChar */

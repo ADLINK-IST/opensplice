@@ -23,7 +23,6 @@ namespace DDS
 {
   class OS_DCPS_API Topic_impl
     : public virtual ::DDS::Topic,
-      public ::DDS::Entity_impl,
       public ::DDS::TopicDescription_impl
   {
     friend class ::DDS::DomainParticipant_impl;
@@ -52,6 +51,9 @@ namespace DDS
     virtual ::DDS::ReturnCode_t set_listener (
         ::DDS::TopicListener_ptr a_listener,
         ::DDS::StatusMask mask
+      ) THROW_ORB_EXCEPTIONS;
+
+    virtual ::DDS::ReturnCode_t dispose_all_data (
       ) THROW_ORB_EXCEPTIONS;
 
   };

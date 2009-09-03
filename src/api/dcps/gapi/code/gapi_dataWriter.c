@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_dataWriter.h"
@@ -23,7 +23,6 @@
 #include "gapi_genericCopyIn.h"
 #include "gapi_genericCopyOut.h"
 #include "gapi_error.h"
-#include "gapi_instanceHandle.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -66,6 +65,7 @@ copyWriterQosIn (
         dstQos->reliability.kind = srcQos->reliability.kind;
         kernelCopyInDuration(&srcQos->reliability.max_blocking_time,
                              &dstQos->reliability.max_blocking_time);
+        dstQos->reliability.synchronous = srcQos->reliability.synchronous;
         dstQos->resource.max_samples = srcQos->resource_limits.max_samples;
         dstQos->resource.max_instances = srcQos->resource_limits.max_instances;
         dstQos->resource.max_samples_per_instance =
@@ -99,10 +99,10 @@ copyWriterQosOut (
 {
     assert(srcQos);
     assert(dstQos);
-    
+
     kernelCopyOutDuration(&srcQos->deadline.period, &dstQos->deadline.period);
     dstQos->durability.kind = srcQos->durability.kind;
-    
+
     dstQos->history.kind = srcQos->history.kind;
     dstQos->history.depth = srcQos->history.depth;
     kernelCopyOutDuration(&srcQos->latency.duration,
@@ -116,6 +116,7 @@ copyWriterQosOut (
     dstQos->reliability.kind = srcQos->reliability.kind;
     kernelCopyOutDuration(&srcQos->reliability.max_blocking_time,
                           &dstQos->reliability.max_blocking_time);
+    dstQos->reliability.synchronous = srcQos->reliability.synchronous;
     dstQos->resource_limits.max_samples = srcQos->resource.max_samples;
     dstQos->resource_limits.max_instances = srcQos->resource.max_instances;
     dstQos->resource_limits.max_samples_per_instance = srcQos->resource.max_samples_per_instance;
@@ -127,7 +128,7 @@ copyWriterQosOut (
                           &dstQos->writer_data_lifecycle.autopurge_suspended_samples_delay);
     kernelCopyOutDuration(&srcQos->lifecycle.autounregister_instance_delay,
                           &dstQos->writer_data_lifecycle.autounregister_instance_delay);
-    
+
     if ( dstQos->user_data.value._maximum > 0 ) {
         if ( dstQos->user_data.value._release ) {
             gapi_free(dstQos->user_data.value._buffer);
@@ -149,8 +150,8 @@ copyWriterQosOut (
             dstQos->user_data.value._length  = 0;
             dstQos->user_data.value._release = FALSE;
             dstQos->user_data.value._buffer = NULL;
-    }   
-        
+    }
+
     return TRUE;
 }
 static c_bool
@@ -252,7 +253,7 @@ _DataWriterNew (
         } else {
             _DomainEntityDispose(_DomainEntity(newDataWriter));
             newDataWriter = NULL;
-        }    
+        }
         u_writerQosFree(writerQos);
     }
 
@@ -279,15 +280,15 @@ _DataWriterFree (
     assert(_this);
 
     _TopicDescriptionDecUse(_TopicDescription(_this->topic));
-   
+
     _DataWriterStatusSetListener(_DataWriterStatus(_Entity(_this)->status), NULL, 0);
 
     _DataWriterStatusFree(_DataWriterStatus(_Entity(_this)->status));
 
     _EntityFreeStatusCondition(_Entity(_this));
-    
+
     u_writerFree(U_WRITER_GET(_this));
-   
+
     if ( _this->registry ) {
         gapi_hashTableFree(_this->registry);
     }
@@ -309,11 +310,11 @@ _DataWriterGetQos (
 {
     v_writerQos dataWriterQos;
     u_writer uWriter;
-    
+
     assert(dataWriter);
 
     uWriter = U_WRITER_GET(dataWriter);
-        
+
     if ( u_entityQoS(u_entity(uWriter), (v_qos*)&dataWriterQos) == U_RESULT_OK ) {
         copyWriterQosOut(dataWriterQos,  qos);
         u_writerQosFree(dataWriterQos);
@@ -340,7 +341,7 @@ gapi_dataWriter_set_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     dataWriter = gapi_dataWriterClaim(_this, &result);
 
     if ( dataWriter != NULL ) {
@@ -348,7 +349,7 @@ gapi_dataWriter_set_qos (
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    
+
     if (( result == GAPI_RETCODE_OK ) && (_Entity(dataWriter)->enabled)) {
         gapi_dataWriterQos *existing_qos = gapi_dataWriterQos__alloc();
 
@@ -358,8 +359,8 @@ gapi_dataWriter_set_qos (
                                                    &context);
         gapi_free(existing_qos);
     }
-    
-    
+
+
     if ( result == GAPI_RETCODE_OK ) {
         dataWriterQos = u_writerQosNew(NULL);
         if (dataWriterQos) {
@@ -437,7 +438,7 @@ gapi_dataWriter_set_listener (
     }
 
     _EntityRelease(datawriter);
-        
+
     return result;
 }
 
@@ -453,7 +454,7 @@ gapi_dataWriter_get_listener (
 {
     _DataWriter datawriter;
     struct gapi_dataWriterListener listener;
-    
+
     datawriter = gapi_dataWriterClaim(_this, NULL);
 
     if ( datawriter != NULL ) {
@@ -461,9 +462,9 @@ gapi_dataWriter_get_listener (
     } else {
         memset(&listener, 0, sizeof(listener));
     }
-    
+
    _EntityRelease(datawriter);
- 
+
     return listener;
 }
 
@@ -479,13 +480,13 @@ gapi_dataWriter_get_topic (
 
     datawriter = gapi_dataWriterClaim(_this, NULL);
 
-    if ( datawriter != NULL ) {    
+    if ( datawriter != NULL ) {
         topic = (_Topic)datawriter->topic;
         _EntityClaim(topic);
     }
-    
+
     _EntityRelease(datawriter);
-    
+
     return (gapi_topic)_EntityRelease(topic);
 }
 
@@ -511,15 +512,15 @@ gapi_dataWriter_get_publisher (
 
     datawriter = gapi_dataWriterClaim(_this, NULL);
 
-    if ( datawriter != NULL ) {    
+    if ( datawriter != NULL ) {
         u_entityAction(U_ENTITY_GET(datawriter),
                        _DataWriterGetPublisherAction,
                        (c_voidp)&publisher);
         _EntityClaim(publisher);
     }
-    
+
     _EntityRelease(datawriter);
-    
+
     return (gapi_publisher)_EntityRelease(publisher);
 }
 #else
@@ -535,24 +536,42 @@ gapi_dataWriter_get_publisher (
 
     datawriter = gapi_dataWriterClaim(_this, NULL);
 
-    if ( datawriter != NULL ) {    
+    if ( datawriter != NULL ) {
         publisher = (_Publisher)datawriter->publisher;
         _EntityClaim(publisher);
     }
-    
+
     _EntityRelease(datawriter);
-    
+
     return (gapi_publisher)_EntityRelease(publisher);
 }
 #endif
 
 gapi_returnCode_t
 gapi_dataWriter_wait_for_acknowledgments (
-    gapi_publisher _this,
+	gapi_dataWriter _this,
     const gapi_duration_t *max_wait
     )
-{    
-    return GAPI_RETCODE_UNSUPPORTED;
+{
+	_DataWriter datawriter;
+	u_result uResult;
+	gapi_returnCode_t result;
+	c_time timeout;
+
+	datawriter = gapi_dataWriterClaim(_this, NULL);
+
+	if ( datawriter != NULL ) {
+		kernelCopyInDuration(max_wait, &timeout);
+		uResult = u_writerWaitForAcknowledgments(
+					u_writer(_EntityUEntity(datawriter)),
+					timeout);
+		result = kernelResultToApiResult(uResult);
+	} else {
+		result = GAPI_RETCODE_BAD_PARAMETER;
+	}
+	_EntityRelease(datawriter);
+
+	return result;
 }
 
 static v_result
@@ -597,7 +616,7 @@ gapi_dataWriter_get_liveliness_lost_status (
     _DataWriter datawriter;
 
     datawriter = gapi_dataWriterClaim(_this, &result);
-    
+
     if (datawriter != NULL) {
         if (_Entity(datawriter)->enabled ) {
             result = _DataWriter_get_liveliness_lost_status(
@@ -610,7 +629,7 @@ gapi_dataWriter_get_liveliness_lost_status (
     }
 
     _EntityRelease(datawriter);
-    
+
     return result;
 }
 
@@ -619,9 +638,10 @@ copy_deadline_missed_status(
     c_voidp info,
     c_voidp arg)
 {
-    v_handle handle;
     struct v_deadlineMissedInfo *from;
     gapi_offeredDeadlineMissedStatus *to;
+    v_handleResult result;
+    v_public instance;
 
     from = (struct v_deadlineMissedInfo *)info;
     to = (gapi_offeredDeadlineMissedStatus *)arg;
@@ -629,13 +649,12 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    handle.index  = from->instanceHandle.localId;
-    handle.serial = from->instanceHandle.serial;
-
-    to->last_instance_handle = gapi_instanceHandleFromHandle(handle);
-
+    result = v_handleClaim(from->instanceHandle, &instance);
+    if (result == V_HANDLE_OK) {
+        to->last_instance_handle = u_instanceHandleNew(v_public(instance));
+        result = v_handleRelease(from->instanceHandle);
+    }
     return V_RESULT_OK;
-
 }
 
 gapi_returnCode_t
@@ -662,7 +681,7 @@ gapi_dataWriter_get_offered_deadline_missed_status (
     gapi_returnCode_t result;
     _DataWriter datawriter;
 
-    
+
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
         if (_Entity(datawriter)->enabled ) {
@@ -676,7 +695,7 @@ gapi_dataWriter_get_offered_deadline_missed_status (
     }
 
     _EntityRelease(datawriter);
-    
+
     return result;
 }
 
@@ -733,7 +752,7 @@ gapi_dataWriter_get_offered_incompatible_qos_status (
 {
     gapi_returnCode_t result;
     _DataWriter datawriter;
-    
+
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
         if (_Entity(datawriter)->enabled ) {
@@ -747,7 +766,7 @@ gapi_dataWriter_get_offered_incompatible_qos_status (
     }
 
     _EntityRelease(datawriter);
-    
+
     return result;
 }
 
@@ -766,7 +785,7 @@ copy_publication_matched_status(
     to->total_count_change = from->totalChanged;
     to->current_count = from->totalCount;
     to->current_count_change = from->totalChanged;
-    to->last_subscription_handle = gapi_instanceHandle_t(from->instanceHandle);
+    to->last_subscription_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 
 }
@@ -793,7 +812,7 @@ gapi_dataWriter_get_publication_matched_status (
 {
     gapi_returnCode_t result;
     _DataWriter datawriter;
-    
+
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
         if (_Entity(datawriter)->enabled ) {
@@ -807,7 +826,7 @@ gapi_dataWriter_get_publication_matched_status (
     }
 
     _EntityRelease(datawriter);
-    
+
     return result;
 }
 
@@ -822,7 +841,7 @@ gapi_dataWriter_assert_liveliness (
     gapi_returnCode_t result;
     u_result uResult;
     _DataWriter datawriter;
-    
+
     datawriter = gapi_dataWriterClaim(_this, &result);
 
     if (datawriter != NULL) {
@@ -833,7 +852,7 @@ gapi_dataWriter_assert_liveliness (
             result=GAPI_RETCODE_NOT_ENABLED;
         }
     }
-    
+
     _EntityRelease(datawriter);
 
     return result;
@@ -847,7 +866,7 @@ gapi_returnCode_t
 gapi_dataWriter_get_matched_subscriptions (
     gapi_dataWriter _this,
     gapi_instanceHandleSeq *subscription_handles)
-{    
+{
     return GAPI_RETCODE_UNSUPPORTED;
 }
 
@@ -861,7 +880,7 @@ gapi_dataWriter_get_matched_subscription_data (
     gapi_dataWriter _this,
     gapi_subscriptionBuiltinTopicData *subscription_data,
     const gapi_instanceHandle_t subscription_handle)
-{    
+{
     return GAPI_RETCODE_UNSUPPORTED;
 }
 
@@ -882,14 +901,14 @@ _DataWriterRegisterInstance (
         wData.data = (void *)instanceData;
         pData = &wData;
     }
-    
+
     uResult = u_writerRegisterInstance(U_WRITER_GET(_this),
                                        (void *)pData,
                                        timestamp,
                                        &handle);
-    
-    if(uResult == U_RESULT_OK){    
-        result = gapi_instanceHandleFromHandle(handle);
+
+    if(uResult == U_RESULT_OK){
+        result = (gapi_instanceHandle_t)handle;
     }
     return result;
 }
@@ -902,26 +921,25 @@ _DataWriterUnregisterInstance (
     c_time timestamp)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
-    u_instanceHandle h;
     u_writer w;
     u_result uResult;
     writerInfo wData;
     writerInfo *pData = NULL;
 
     w = U_WRITER_GET(_this);
-    result = gapi_instanceHandleToHandle(handle,u_entity(w),&h);
-    if (result == GAPI_RETCODE_OK) {
-        if ( instanceData ) {
-            wData.writer = _this;
-            wData.data = (void *)instanceData;
-            pData = &wData;
-        }
-        uResult = u_writerUnregisterInstance(w, pData, timestamp, h);
-        result = kernelResultToApiResult(uResult);
+    if ( instanceData ) {
+        wData.writer = _this;
+        wData.data = (void *)instanceData;
+        pData = &wData;
     }
+    uResult = u_writerUnregisterInstance(w,
+                                         pData,
+                                         timestamp,
+                                         (u_instanceHandle)handle);
+    result = kernelResultToApiResult(uResult);
     return result;
 }
- 
+
 
 
 gapi_returnCode_t
@@ -931,23 +949,20 @@ _DataWriterGetKeyValue (
     const gapi_instanceHandle_t handle)
 {
     gapi_returnCode_t result;
-    u_instanceHandle h;
     u_writer w;
     u_result          uResult;
 
     PREPEND_COPYOUTCACHE(_this->copy_cache,instance, NULL);
-  
+
     w = U_WRITER_GET(_this);
-    result = gapi_instanceHandleToHandle(handle,u_entity(w),&h);
-    if (result == GAPI_RETCODE_OK) {
-        uResult = u_writerInstanceCopyKeys(w,h,
-                                           (u_writerAction)_this->copy_out,
-                                           instance);
-        result = kernelResultToApiResult(uResult);
-    }
+    uResult = u_writerInstanceCopyKeys(w,
+                                       (u_instanceHandle)handle,
+                                       (u_writerAction)_this->copy_out,
+                                       instance);
+    result = kernelResultToApiResult(uResult);
 
     REMOVE_COPYOUTCACHE(_this->copy_cache,instance);
- 
+
     return result;
 }
 
@@ -963,11 +978,11 @@ onOfferedDeadlineMissed (
     _Status status;
     _Entity entity;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataWriter_get_offered_deadline_missed_status (
-                     _this, FALSE, &info);
-    
+                     _this, TRUE, &info);
+
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
@@ -981,7 +996,7 @@ onOfferedDeadlineMissed (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_offered_deadline_missed; 
+                callback = status->callbackInfo.on_offered_deadline_missed;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1024,8 +1039,8 @@ onOfferedIncompatibleQos (
         info.policies._buffer  = policyCount;
 
         result = _DataWriter_get_offered_incompatible_qos_status (
-                     _this, FALSE, &info);
-            
+                     _this, TRUE, &info);
+
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
@@ -1039,7 +1054,7 @@ onOfferedIncompatibleQos (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_offered_incompatible_qos; 
+                callback = status->callbackInfo.on_offered_incompatible_qos;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1073,10 +1088,10 @@ onLivelinessLost (
     _Entity entity;
     _Status status;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataWriter_get_liveliness_lost_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1091,7 +1106,7 @@ onLivelinessLost (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_liveliness_lost; 
+                callback = status->callbackInfo.on_liveliness_lost;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1125,10 +1140,10 @@ onPublicationMatch (
     gapi_object source;
     _Entity entity;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataWriter_get_publication_matched_status (
-                     _this, FALSE, &info);
+                     _this, TRUE, &info);
 
         if (result == GAPI_RETCODE_OK) {
             status = _Entity(_this)->status;
@@ -1143,7 +1158,7 @@ onPublicationMatch (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_publication_match; 
+                callback = status->callbackInfo.on_publication_match;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
