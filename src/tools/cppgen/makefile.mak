@@ -6,6 +6,7 @@ TARGET_EXEC	:= cppgen
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 LDLIBS += -l$(DDS_CPP) -l$(DDS_OS)
+CXXFLAGS += -DYY_NEVER_INTERACTIVE
 
 CXXINCS += -I$(OSPL_HOME)/src/cpp/include
 CXXINCS += -I$(OSPL_HOME)/src/cpp/code

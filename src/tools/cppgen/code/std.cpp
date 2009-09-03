@@ -3,6 +3,16 @@
 #include "StdList.h"
 #include "StdString.h"
 
+char * string_a (DDS::ULong len)
+{
+   return new char [len + 1];
+}
+
+void string_f (char * str)
+{
+   delete [] str;
+}
+ 
 // -----------------------------------------
 // DDS::StdList implementation
 // -----------------------------------------
@@ -45,7 +55,7 @@ DDS_StdString::DDS_StdString (const char * str)
 {
    if (str)
    {
-      m_rep->m_string = DDS::string_alloc (strlen (str));
+      m_rep->m_string = string_a (strlen (str));
       strcpy (m_rep->m_string, str);
    }
    else
@@ -77,7 +87,7 @@ DDS_StdString& DDS_StdString::operator=(const char * str)
 {
    if (m_rep->m_refs-- == 0)
    {
-      DDS::string_free (m_rep->m_string);
+      string_f (m_rep->m_string);
    }
    else
    {
@@ -86,7 +96,7 @@ DDS_StdString& DDS_StdString::operator=(const char * str)
 
    if (str)
    {
-      m_rep->m_string = DDS::string_alloc (strlen (str));
+      m_rep->m_string = string_a (strlen (str));
       strcpy (m_rep->m_string, str);
    }
    else
@@ -106,7 +116,7 @@ DDS_StdString& DDS_StdString::operator=(const DDS_StdString & str)
    {
       if (m_rep->m_refs-- == 0)
       {
-         DDS::string_free (m_rep->m_string);
+         string_f (m_rep->m_string);
          delete m_rep;
       }
 
@@ -126,7 +136,7 @@ DDS_StdString& DDS_StdString::operator+=(const DDS_StdString & str)
 
       if (m_rep->m_refs-- == 0)
       {
-         DDS::string_free (m_rep->m_string);
+         string_f (m_rep->m_string);
          delete m_rep;
       }
 
@@ -144,14 +154,14 @@ DDS_StdString& DDS_StdString::operator+=(const DDS_StdString & str)
 
       newlen = length() + str.length();
       newrep = new stringrep;
-      newrep->m_string = DDS::string_alloc (newlen);
+      newrep->m_string = string_a (newlen);
       strcpy(newrep->m_string, m_rep->m_string);
       strcat(newrep->m_string, str.m_rep->m_string);
       newrep->m_refs = 1;
 
       if (m_rep->m_refs-- == 0)
       {
-         DDS::string_free (m_rep->m_string);
+         string_f (m_rep->m_string);
          delete m_rep;
       }
 
@@ -188,7 +198,7 @@ DDS_StdString operator+(const DDS_StdString & str1, const char * str2)
 
       if (len)
       {
-         rep->m_string = DDS::string_alloc (len);
+         rep->m_string = string_a (len);
          strcpy (rep->m_string, str1.m_rep->m_string);
          strcat(rep->m_string, str2);
       }
@@ -226,7 +236,7 @@ DDS_StdString operator+(const DDS_StdString& str1, const DDS_StdString & str2)
 
       if (len)
       {
-         rep->m_string = DDS::string_alloc (len);
+         rep->m_string = string_a (len);
          strcpy (rep->m_string, str1.m_rep->m_string);
          strcat (rep->m_string, str2.m_rep->m_string);
       }
@@ -256,7 +266,7 @@ DDS_StdString::~DDS_StdString()
 {
    if (--m_rep->m_refs == 0)
    {
-      DDS::string_free (m_rep->m_string);
+      string_f (m_rep->m_string);
       delete m_rep;
    }
 }

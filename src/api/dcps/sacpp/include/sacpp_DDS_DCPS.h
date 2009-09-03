@@ -161,17 +161,17 @@ namespace DDS
 /*                           Inline Implementations                           */
 /* ************************************************************************** */
 
-inline char * DDS::string_alloc (DDS::ULong len)
+SACPP_API inline char * DDS::string_alloc (DDS::ULong len)
 {
    return new char [len + 1];
 }
 
-inline void DDS::string_free (char * str)
+SACPP_API inline void DDS::string_free (char * str)
 {
    delete [] str;
 }
  
-inline char * DDS::string_dup (const char * s)
+SACPP_API inline char * DDS::string_dup (const char * s)
 {
    char * ret = 0;
 
@@ -184,7 +184,7 @@ inline char * DDS::string_dup (const char * s)
    return ret;
 }
 
-inline DDS::Long DDS::string_cmp (const char* str1, const char* str2)
+SACPP_API inline DDS::Long DDS::string_cmp (const char* str1, const char* str2)
 {
    DDS::Long ret = 0;
 
@@ -225,7 +225,7 @@ typedef os_uchar DDS_boolean;
 /* Important that this generates the same hash values as the */
 /* Java IDL compiler.                                        */
 
-inline DDS_unsigned_long DDS_hash (const char * str)
+SACPP_API inline DDS_unsigned_long DDS_hash (const char * str)
 {
    DDS_unsigned_long hash = 5381;
    int c;

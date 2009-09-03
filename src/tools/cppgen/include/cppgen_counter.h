@@ -7,28 +7,28 @@ class Counter
 {
    public:
 
-      Counter (uint32_t val = 0) { m_value = val; };
+      Counter (os_uint32 val = 0) { m_value = val; };
 
-      operator uint32_t () { return m_value; };
+      operator os_uint32 () { return m_value; };
 
-      Counter & operator = (uint32_t val) 
+      Counter & operator = (os_uint32 val) 
       { 
          m_value = val;
          return *this;
       };
 
-      uint32_t operator ++ (); // prefix (++a)
-      uint32_t operator -- (); // prefix (--a)
+      os_uint32 operator ++ (); // prefix (++a)
+      os_uint32 operator -- (); // prefix (--a)
 
-      uint32_t operator ++ (int); // postfix (a++)
-      uint32_t operator -- (int); // postfix (a--)
+      os_uint32 operator ++ (int); // postfix (a++)
+      os_uint32 operator -- (int); // postfix (a--)
 
    private:
 
       Counter (const Counter&);
       Counter &operator= (const Counter&);
 
-      uint32_t m_value;
+      os_uint32 m_value;
 };
 
 
@@ -36,26 +36,26 @@ class Counter
 /*                               Inline Methods                               */
 /******************************************************************************/
 
-inline uint32_t Counter::operator ++ (int)
+inline os_uint32 Counter::operator ++ (int)
 {
-   uint32_t result = m_value;
+   os_uint32 result = m_value;
    pa_increment ((os_uint32*)&m_value);
    return result;
 }
 
-inline uint32_t Counter::operator -- (int)
+inline os_uint32 Counter::operator -- (int)
 {
-   uint32_t result = m_value;
+   os_uint32 result = m_value;
    pa_decrement ((os_uint32*)&m_value);
    return result;
 }
 
-inline uint32_t Counter::operator ++ ()
+inline os_uint32 Counter::operator ++ ()
 {
    return (pa_increment ((os_uint32*)&m_value));
 }
 
-inline uint32_t Counter::operator -- ()
+inline os_uint32 Counter::operator -- ()
 {
    return (pa_decrement ((os_uint32*)&m_value));
 }
