@@ -983,7 +983,11 @@ onOfferedDeadlineMissed (
         result = _DataWriter_get_offered_deadline_missed_status (
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1041,7 +1045,11 @@ onOfferedIncompatibleQos (
         result = _DataWriter_get_offered_incompatible_qos_status (
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1093,7 +1101,11 @@ onLivelinessLost (
         result = _DataWriter_get_liveliness_lost_status (
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1145,7 +1157,11 @@ onPublicationMatch (
         result = _DataWriter_get_publication_matched_status (
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,

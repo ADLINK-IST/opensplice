@@ -1541,7 +1541,11 @@ onRequestedDeadlineMissed (
         result = _DataReader_get_requested_deadline_missed_status(
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1598,7 +1602,11 @@ onRequestedIncompatibleQos (
         result = _DataReader_get_requested_incompatible_qos_status(
                      _this, TRUE, &info);
             
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1650,7 +1658,11 @@ onSampleRejected (
         result = _DataReader_get_sample_rejected_status(
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1701,7 +1713,15 @@ onLivelinessChanged (
     if ( _this ) {
         result = _DataReader_get_liveliness_changed_status(
                      _this, TRUE, &info);
-        if (result == GAPI_RETCODE_OK) {
+
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if either alive_count_change or not_alive_count_change
+         * are non zero
+         */
+
+        if (result == GAPI_RETCODE_OK &&
+            (info.alive_count_change != 0 || info.not_alive_count_change != 0)) {
+
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1835,7 +1855,11 @@ onSubscriptionMatch (
         result = _DataReader_get_subscription_matched_status (
                      _this, TRUE, &info);
     
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
@@ -1887,7 +1911,11 @@ onSampleLost (
         result = _DataReader_get_sample_lost_status (
                      _this, TRUE, &info);
 
-        if (result == GAPI_RETCODE_OK) {
+        /* Only allow the callback if there is a change since the last
+         * callback, i.e if total_count_change is non zero
+         */
+
+        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
             status = _Entity(_this)->status;
             source = _EntityHandle(_this);
             target = _StatusFindTarget(status,
