@@ -1581,6 +1581,7 @@ typedef enum
 /* struct ReliabilityQosPolicy {
  *     ReliabilityQosPolicyKind kind;
  *     Duration_t max_blocking_time;
+ *     boolean synchronous;
  * };
  */
 typedef C_STRUCT(gapi_reliabilityQosPolicy) {
@@ -1901,6 +1902,9 @@ gapi_publisherQos__alloc (void);
  *     OwnershipQosPolicy ownership;
  *     TimeBasedFilterQosPolicy time_based_filter;
  *     ReaderDataLifecycleQosPolicy reader_data_lifecycle;
+ *     SubscriptionKeyQosPolicy subscription_keys;
+ *     ReaderLifespanQosPolicy reader_lifespan;
+ *     ShareQosPolicy share;
  * };
  */
 typedef C_STRUCT(gapi_dataReaderQos) {
@@ -1942,6 +1946,7 @@ gapi_dataReaderViewQos__alloc (void);
  *     PartitionQosPolicy partition;
  *     GroupDataQosPolicy group_data;
  *     EntityFactoryQosPolicy entity_factory;
+ *     ShareQosPolicy share;
  * };
  */
 typedef C_STRUCT(gapi_subscriberQos) {

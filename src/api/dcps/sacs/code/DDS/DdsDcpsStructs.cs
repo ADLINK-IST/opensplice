@@ -491,6 +491,7 @@ namespace DDS
     {
         public ReliabilityQosPolicyKind Kind;
         public Duration MaxBlockingTime;
+        public bool synchronous;
     }
 
     public struct DestinationOrderQosPolicy
@@ -527,6 +528,9 @@ namespace DDS
     {
         [MarshalAs(UnmanagedType.U1)]
         public bool AutoDisposeUnregisteredInstances;
+        public Duration AutopurgeSuspendedSamplesDelay;
+        public Duration AutounregisterInstanceDelay;
+        
     }
 
     public struct ReaderDataLifecycleQosPolicy

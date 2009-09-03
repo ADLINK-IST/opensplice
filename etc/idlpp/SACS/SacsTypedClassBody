@@ -673,7 +673,7 @@ $sp($(spaces))                generator)
 $sp($(spaces))    { }
 
 $sp($(spaces))    public $(typename)TypeSupport(
-$sp($(spaces))            BaseMarshaler marshaler)
+$sp($(spaces))            DatabaseMarshaler marshaler)
 $sp($(spaces))        : base(typeof($(typename)),
 $sp($(spaces))                marshaler)
 $sp($(spaces))    { }
