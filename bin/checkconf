@@ -408,6 +408,7 @@ javac_check ()
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
         LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
         set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH
     fi
 
     echo "OK - using JAVAC version $REAL_VERSION"
@@ -462,6 +463,8 @@ tao_check_fn ()
     fi
     LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
     set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+
     PATH=$TAO_ROOT/bin:$PATH
     set_var PATH "$PATH"
 
