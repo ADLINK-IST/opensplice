@@ -14,12 +14,6 @@ namespace DDS.OpenSplice
 {
     public class MarshalerTypeGenerator : IMarshalerTypeGenerator
     {
-        public enum InitPhase {
-            NothingDefined      = 0x0000,
-            CursorDefined       = 0x0001 << 0,
-            MemberObjDefined    = 0x0001 << 1
-        } 
-        
         public MarshalerTypeGenerator()
         { }
 
@@ -176,35 +170,110 @@ namespace DDS.OpenSplice
             implClass.Members.Add(sampleReaderAllocMethod);
         }
 
-        private string CreateArrayIndex(
+        private string CreateArrayIterationIndex(
                 IntPtr collStartType,
                 int dimension)
         {
-            IntPtr actualType;
+            IntPtr nextType;
+            IntPtr currentType = Gapi.MetaData.typeActualType(collStartType);
             
             // If no dimension specified, return an empty string.
-            if (dimension < 0) return string.Empty;
+            if (dimension < 1) return string.Empty;
             
             // Assert that startType is always a collection type and has at least 
             // the specified number of dimensions.
             string result = "[i0";
             for (int i = 1; i < dimension; i++)
             {
-                actualType = Gapi.MetaData.typeActualType(collStartType);
-                
-                // Assert actualType is a collection type.
-                switch (Gapi.MetaData.collectionTypeKind(actualType))
+                // Iterate to the subtype.
+                nextType = Gapi.MetaData.typeActualType(
+                        Gapi.MetaData.collectionTypeSubType(currentType));
+
+                // Assert currentType and nextType are collection types.
+                switch (Gapi.MetaData.collectionTypeKind(currentType))
                 {
                 case c_collKind.C_SEQUENCE:
                     result += string.Format("][i{0}", i);
                     break;
                 case c_collKind.C_ARRAY:
-                    result += string.Format(",i{0}", i);
+                    if (Gapi.MetaData.collectionTypeKind(nextType) == c_collKind.C_ARRAY)
+                    {
+                        result += string.Format(",i{0}", i);
+                    }
+                    else
+                    {
+                        result += string.Format("][i{0}", i);
+                    }
                     break;
                 default:
                     throw new Exception("Unsupported Collection type");
                 }
-                collStartType = Gapi.MetaData.collectionTypeSubType(actualType);
+                currentType = nextType;
+            }
+            result += "]";
+
+            return result;
+        }
+        
+        private string CreateArrayDefinition(
+                IntPtr collType,
+                Type arrayType,
+                string seqLength,
+                bool showIndex)
+        {
+            IntPtr nextType;
+            IntPtr currentType = Gapi.MetaData.typeActualType(collType);
+            string typeName = arrayType.FullName;
+            int splitPos = typeName.IndexOf('[');            
+            string result = splitPos == -1 ? typeName : typeName.Substring(0, splitPos);
+            result += "[";
+            
+            if (showIndex)
+            {
+                if (Gapi.MetaData.collectionTypeKind(currentType) == c_collKind.C_SEQUENCE)
+                {
+                    result += seqLength;
+                    showIndex = false;
+                }
+                else if (Gapi.MetaData.collectionTypeKind(currentType) == c_collKind.C_ARRAY)
+                {
+                    result += string.Format("{0}", Gapi.MetaData.collectionTypeMaxSize(currentType));
+                }
+            }
+            
+            // Assert that startType is always a collection type.
+            nextType = Gapi.MetaData.typeActualType(
+                    Gapi.MetaData.collectionTypeSubType(currentType));
+            while (Gapi.MetaData.baseObjectKind(nextType) == c_metaKind.M_COLLECTION &&
+                    Gapi.MetaData.collectionTypeKind(nextType) != c_collKind.C_STRING)
+            {
+                // Assert currentType and nextType are collection types.
+                switch (Gapi.MetaData.collectionTypeKind(nextType))
+                {
+                case c_collKind.C_SEQUENCE:
+                    result += "][";
+                    showIndex = false;
+                    break;
+                case c_collKind.C_ARRAY:
+                    if (Gapi.MetaData.collectionTypeKind(currentType) == c_collKind.C_ARRAY)
+                    {
+                        result += showIndex ? string.Format(",{0}", 
+                                Gapi.MetaData.collectionTypeMaxSize(nextType)) : ",";
+                    }
+                    else
+                    {
+                        result += showIndex ? string.Format("][{0}", 
+                                Gapi.MetaData.collectionTypeMaxSize(nextType)) : "][";
+                        showIndex = false;
+                    }
+                    break;
+                default:
+                    throw new Exception("Unsupported Collection type");
+                }
+                // Iterate to the subtype.
+                currentType = nextType;
+                nextType = Gapi.MetaData.typeActualType(
+                        Gapi.MetaData.collectionTypeSubType(currentType));
             }
             result += "]";
 
@@ -231,36 +300,28 @@ namespace DDS.OpenSplice
             copyOutMethod.Parameters.Add(toObj);
             copyOutMethod.Parameters.Add(offset);
 
-            CodeSnippetExpression checkInit = new CodeSnippetExpression("if (!initDone) { /* Assert */}");
-            copyOutMethod.Statements.Add(checkInit);
+            copyOutMethod.Statements.Add(
+                    new CodeSnippetExpression("if (!initDone) { /* Assert */}"));
 
-            CodeSnippetExpression assignSnippet = new CodeSnippetExpression(
-                    string.Format("{0} dataTo = to as {0}", dataType.FullName));
-            CodeConditionStatement condition = new CodeConditionStatement(
+            copyOutMethod.Statements.Add(new CodeSnippetExpression(
+                    string.Format("{0} dataTo = to as {0}", dataType.FullName)));
+            copyOutMethod.Statements.Add(new CodeConditionStatement(
                     new CodeSnippetExpression("dataTo == null"), 
                     new CodeStatement[] {
                             new CodeExpressionStatement(new CodeSnippetExpression(
                                     string.Format("dataTo = new {0}()", dataType.FullName))),
                             new CodeExpressionStatement(new CodeSnippetExpression("to = dataTo"))
-                    } );
-            copyOutMethod.Statements.Add(assignSnippet);
-            copyOutMethod.Statements.Add(condition);
+                    } ));
 
             if (Gapi.MetaData.baseObjectKind(metaData) == c_metaKind.M_STRUCTURE)
             {
-                InitPhase initState = InitPhase.NothingDefined;
                 int nrMembers = Gapi.MetaData.structureMemberCount(metaData);
                 for (int i = 0; i < nrMembers; i++)
                 {
                     IntPtr member = Gapi.MetaData.structureMember(metaData, i);
                     string fieldName = Gapi.MetaData.specifierName(member);
                     FieldInfo field = dataType.GetField(fieldName);
-                    CreateStructMemberRead(
-                            copyOutMethod, 
-                            field.FieldType, 
-                            fieldName, member, 
-                            i, 
-                            ref initState);
+                    CreateStructMemberRead(copyOutMethod, field.FieldType, fieldName, member, i);
                 }
             }
             else
@@ -276,33 +337,28 @@ namespace DDS.OpenSplice
                 Type fieldType,
                 string fieldName,
                 IntPtr member, 
-                int index,
-                ref InitPhase initState)
+                int index)
         {
-            string snippet = string.Empty;
+            string cursorName;
             IntPtr memberType = Gapi.MetaData.memberType(member);
+            IntPtr actualType = Gapi.MetaData.typeActualType(memberType);
             uint offset = Gapi.MetaData.memberOffset(member);
 
-            switch(Gapi.MetaData.baseObjectKind(memberType))
+            switch(Gapi.MetaData.baseObjectKind(actualType))
             {
             case c_metaKind.M_STRUCTURE:
                 // Handle embedded struct.
-                if ((initState & InitPhase.MemberObjDefined) == InitPhase.NothingDefined)
-                {
-                    snippet = "object ";
-                    initState |= InitPhase.MemberObjDefined;
-                }
                 copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                        string.Format("{0}memberVal = dataTo.{1}", snippet, fieldName)));
+                        string.Format("object attr{0}Val = dataTo.{1}", index, fieldName)));
                 copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                        string.Format("attr{0}Marshaler.CopyOut(from, ref memberVal, offset + {1})", 
+                        string.Format("attr{0}Marshaler.CopyOut(from, ref attr{0}Val, offset + {1})", 
                                 index, offset)));
                 copyOutMethod.Statements.Add(new CodeConditionStatement(
                         new CodeSnippetExpression(
                                 string.Format("dataTo.{0} == null", fieldName)),
                         new CodeExpressionStatement(new CodeSnippetExpression(
-                                string.Format("dataTo.{0} = memberVal as {1}", 
-                                        fieldName, fieldType.FullName)))));
+                                string.Format("dataTo.{0} = attr{1}Val as {2}", 
+                                        fieldName, index, fieldType.FullName)))));
                 break;
             case c_metaKind.M_ENUMERATION:
                 // Handle enum.
@@ -312,7 +368,7 @@ namespace DDS.OpenSplice
                 break;
             case c_metaKind.M_PRIMITIVE: 
                 // Handle primitive.
-                switch (Gapi.MetaData.primitiveKind(memberType))
+                switch (Gapi.MetaData.primitiveKind(actualType))
                 {
                 case c_primKind.P_BOOLEAN:
                 case c_primKind.P_CHAR:         case c_primKind.P_OCTET:
@@ -334,7 +390,7 @@ namespace DDS.OpenSplice
                 break; 
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
-                switch (Gapi.MetaData.collectionTypeKind(memberType))
+                switch (Gapi.MetaData.collectionTypeKind(actualType))
                 {
                 case c_collKind.C_STRING:
                     copyOutMethod.Statements.Add(new CodeSnippetExpression(
@@ -342,22 +398,14 @@ namespace DDS.OpenSplice
                                     fieldName, fieldType.Name, offset)));
                     break;
                 case c_collKind.C_SEQUENCE:
-                    // Handle sequences.
-                    copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                            string.Format("//int length{0} = from.{1}.Length", 
-                                    index, fieldName)));
-                    break;
                 case c_collKind.C_ARRAY:
                     // Handle arrays.
-                    if ((initState & InitPhase.CursorDefined) == InitPhase.NothingDefined)
-                    {
-                        snippet = "int ";
-                        initState |= InitPhase.CursorDefined;
-                    }
+                    cursorName = string.Format("attr{0}Cursor0", index);
                     copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                            string.Format("{0}cursor = {1}", snippet, offset)));
+                            string.Format("int {0} = offset + {1}", cursorName, offset)));
                     copyOutMethod.Statements.AddRange(
-                            CreateArrayMemberRead(memberType, fieldType, index, 0, fieldName));
+                            CreateArrayMemberRead(actualType, actualType, fieldType, index, 
+                                    0, fieldName, "from", cursorName));
                     break;
                 default:
                     throw new Exception("Unsupported Collection type");
@@ -368,50 +416,184 @@ namespace DDS.OpenSplice
             }
         }
         
-        private CodeStatement[] CreateArrayMemberRead(
-                IntPtr type,
-                Type elementType,
-                int index,
-                int dimension,
-                string fieldName)
+        private CodeStatement[] CreateArrayInitialization(
+                IntPtr currentType,
+                Type fieldType,
+                string fieldName,
+                string seqLengthName,
+                string arrayBrackets)
         {
             CodeStatement[] result;
-            c_metaKind memberKind = Gapi.MetaData.baseObjectKind(type);
-            switch(memberKind)
+            IntPtr subType = Gapi.MetaData.typeActualType(
+                    Gapi.MetaData.collectionTypeSubType(currentType));
+            
+            switch (Gapi.MetaData.baseObjectKind(subType))
+            {
+            // Primitive kind, no need to recycle elements.
+            case c_metaKind.M_ENUMERATION:
+            case c_metaKind.M_PRIMITIVE:
+                result = new CodeStatement[1];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
+                        string.Format("dataTo.{0}{1} = new {2}", fieldName, arrayBrackets, 
+                                CreateArrayDefinition(currentType, fieldType, seqLengthName, true))));
+                break;
+            // Object kind, try to recycle elements as much as possible.
+            case c_metaKind.M_STRUCTURE:
+            case c_metaKind.M_COLLECTION:
+                result = new CodeStatement[3];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
+                        string.Format("{0} target = new {1}", 
+                                CreateArrayDefinition(currentType, fieldType, seqLengthName, false),
+                                CreateArrayDefinition(currentType, fieldType, seqLengthName, true))));
+                if (Gapi.MetaData.collectionTypeKind(currentType) == c_collKind.C_ARRAY &&
+                        Gapi.MetaData.baseObjectKind(subType) == c_metaKind.M_COLLECTION &&
+                        Gapi.MetaData.collectionTypeKind(subType) == c_collKind.C_ARRAY)
+                {
+                    result[1] = new CodeCommentStatement("Rectangular array: recycling not yet possible...");
+                }
+                else
+                {
+                    result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("initObjectSeq(dataTo.{0}{1}, target)", 
+                                    fieldName, arrayBrackets)));
+                }
+                result[2] = new CodeExpressionStatement(new CodeSnippetExpression(
+                        string.Format("dataTo.{0}{1} = target as {2}", fieldName, arrayBrackets,
+                                CreateArrayDefinition(currentType, fieldType, string.Empty, false))));
+                break;
+            default:
+                throw new Exception("Unsupported sequence type.");
+            }
+            return result;
+        }
+        
+        private CodeStatement[] CreateArrayMemberRead(
+                IntPtr collStartType,
+                IntPtr collType,
+                Type fieldType,
+                int index,
+                int dimension,
+                string fieldName,
+                string bufName,
+                string cursorName)
+        {
+            CodeStatement[] result;
+            int arrLength;
+            string seqLengthName, seqBufName, seqTypeName, nextCursorName, arrayBrackets;
+            string dimensionCheck;
+            IntPtr subType, actualType, parentType;
+            CodeStatement[] forBody;
+             
+            c_metaKind collKind = Gapi.MetaData.baseObjectKind(collType);
+            switch(collKind)
             {
             case c_metaKind.M_STRUCTURE:
             case c_metaKind.M_ENUMERATION:
             case c_metaKind.M_PRIMITIVE: 
-                result = CreateArrayMemberReadInnerLoopBody(type, elementType, index, dimension, fieldName, memberKind);
+                result = CreateArrayMemberReadInnerLoopBody(collStartType, collType, collKind, 
+                        fieldType, index, dimension, fieldName, bufName, cursorName);
                 break;
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
-                switch (Gapi.MetaData.collectionTypeKind(type))
+                switch (Gapi.MetaData.collectionTypeKind(collType))
                 {
                 case c_collKind.C_STRING:
                     // Handle strings.
-                    result = CreateArrayMemberReadInnerLoopBody(type, elementType, index, dimension, fieldName, memberKind);
+                    result = CreateArrayMemberReadInnerLoopBody(collStartType, collType, collKind, 
+                            fieldType, index, dimension, fieldName, bufName, cursorName);
                     break;
                 case c_collKind.C_ARRAY:
                     // Handle arrays.
-                    int arrLength = Gapi.MetaData.collectionTypeMaxSize(type);
-                    if (elementType.IsArray) 
-                        elementType = elementType.GetElementType();
-                    IntPtr subType = Gapi.MetaData.collectionTypeSubType(type);
-                    CodeStatement[] forBody = CreateArrayMemberRead(
-                            subType, 
-                            elementType,
-                            index,
-                            dimension + 1, 
-                            fieldName);
-                    result = new CodeStatement[1];
-                    result[0] = new CodeIterationStatement(
-                        //string.Format("int i{0} = 0", dimension)
+                    arrLength = Gapi.MetaData.collectionTypeMaxSize(collType);
+                    subType = Gapi.MetaData.collectionTypeSubType(collType);
+                    actualType = Gapi.MetaData.typeActualType(subType);
+                    arrayBrackets = CreateArrayIterationIndex(collStartType, dimension);
+                    if (Gapi.MetaData.baseObjectKind(actualType) != c_metaKind.M_COLLECTION ||
+                            Gapi.MetaData.collectionTypeKind(actualType) != c_collKind.C_ARRAY)
+                    {
+                        fieldType = fieldType.GetElementType();
+                    }
+                    forBody = CreateArrayMemberRead(collStartType, actualType, fieldType, index, 
+                            dimension + 1, fieldName, bufName, cursorName);
+                    result = new CodeStatement[2];
+                    // Check if this dimension is part of a prior rectangular array by checking
+                    // whether its parent is also an array.
+                    parentType = collStartType;
+                    for (int i = 0; i < dimension; i++)
+                    {
+                        parentType = Gapi.MetaData.typeActualType(
+                                Gapi.MetaData.collectionTypeSubType(parentType));
+                    }
+                    if (parentType == collStartType ||
+                            (Gapi.MetaData.baseObjectKind(parentType) != c_metaKind.M_COLLECTION &&
+                            Gapi.MetaData.collectionTypeKind(parentType) != c_collKind.C_ARRAY))
+                    {
+                        // If no prior rectangular dimensions, then check the current dimensions.
+                        int curDim;
+                        subType = Gapi.MetaData.typeActualType(collType);
+                        dimensionCheck = string.Format("dataTo.{0}{1} == null", fieldName, arrayBrackets);
+                        for (int i = 0; Gapi.MetaData.baseObjectKind(subType) == c_metaKind.M_COLLECTION &&
+                                Gapi.MetaData.collectionTypeKind(subType) == c_collKind.C_ARRAY; i++)
+                        {
+                            curDim = Gapi.MetaData.collectionTypeMaxSize(subType);
+                            dimensionCheck += string.Format(" || dataTo.{0}{1}.GetLength({2}) != {3}",
+                                    fieldName, arrayBrackets, i, curDim);
+                            subType = Gapi.MetaData.typeActualType(Gapi.MetaData.collectionTypeSubType(subType));
+                        }
+                        result[0] = new CodeConditionStatement(
+                                new CodeSnippetExpression(dimensionCheck), 
+                                CreateArrayInitialization(collType, fieldType, fieldName, 
+                                        string.Empty, arrayBrackets));
+                    }
+                    else
+                    {
+                        result[0] = new CodeCommentStatement(
+                                "Not the start of a rectangular array: initialization not required...");
+                    }
+                    result[1] = new CodeIterationStatement(
                             new CodeExpressionStatement(
                                     new CodeSnippetExpression(string.Format("int i{0} = 0", dimension))), 
                             new CodeSnippetExpression(string.Format("i{0} < {1}", dimension, arrLength)),
                             new CodeExpressionStatement(
                                     new CodeSnippetExpression(string.Format("i{0}++", dimension))),
+                            forBody);
+                    break;
+                case c_collKind.C_SEQUENCE:
+                    // Handle sequences.
+                    subType = Gapi.MetaData.collectionTypeSubType(collType);
+                    actualType = Gapi.MetaData.typeActualType(subType);
+                    seqLengthName = string.Format("attr{0}Seq{1}Length", index, dimension);
+                    seqBufName = string.Format("attr{0}Seq{1}Buf", index, dimension);
+                    seqTypeName = string.Format("attr{0}Seq{1}Type", index, dimension);
+                    nextCursorName = string.Format("attr{0}Cursor{1}", index, dimension + 1);
+                    arrayBrackets = CreateArrayIterationIndex(collStartType, dimension);
+                    
+                    forBody = CreateArrayMemberRead(collStartType, actualType, fieldType.GetElementType(), 
+                            index, dimension + 1, fieldName, seqBufName, nextCursorName);
+                    result = new CodeStatement[6];
+                    result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("IntPtr {0} = ReadIntPtr({1}, {2})", 
+                                    seqBufName, bufName, cursorName)));
+                    result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("int {0} = DDS.OpenSplice.Database.c.arraySize({1})", 
+                                    seqLengthName, seqBufName)));
+                    result[2] = new CodeConditionStatement(
+                            new CodeSnippetExpression(
+                                    string.Format("dataTo.{0}{1} == null || dataTo.{0}{1}.Length != {2}", 
+                                            fieldName, arrayBrackets, seqLengthName)),
+                            CreateArrayInitialization(collType, fieldType, fieldName, 
+                                    seqLengthName, arrayBrackets));
+                    result[3] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType))));
+                    result[4] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("int {0} = 0", nextCursorName)));
+                    result[5] = new CodeIterationStatement(
+                            new CodeExpressionStatement(new CodeSnippetExpression(
+                                    string.Format("int i{0} = 0", dimension))), 
+                            new CodeSnippetExpression(
+                                    string.Format("i{0} < {1}", dimension, seqLengthName)),
+                            new CodeExpressionStatement(new CodeSnippetExpression(
+                                    string.Format("i{0}++", dimension))), 
                             forBody);
                     break;
                 default:
@@ -426,55 +608,52 @@ namespace DDS.OpenSplice
         }
         
         private CodeStatement[] CreateArrayMemberReadInnerLoopBody(
-                IntPtr type,
-                Type elementType,
+                IntPtr collStartType,
+                IntPtr collType,
+                c_metaKind collKind,
+                Type fieldType,
                 int index,
                 int dimension,
                 string fieldName,
-                c_metaKind memberKind)
+                string bufName,
+                string cursorName)
         {
             CodeStatement[] result;
-            string arrayBrackets = "[i0";            
-            for (int currDim = 1; currDim < dimension; currDim++)
-            {
-                arrayBrackets += string.Format(",i{0}", currDim);
-            }
-            arrayBrackets += "]";
-            
-            switch(memberKind)
+            string arrayBrackets = CreateArrayIterationIndex(collStartType, dimension);
+            switch(collKind)
             {
             case c_metaKind.M_STRUCTURE:
                 result = new CodeStatement[4];
                 result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
                         string.Format("object elementObj = dataTo.{0}{1}", fieldName, arrayBrackets)));
                 result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
-                        string.Format("attr{0}Marshaler.CopyOut(from, ref elementObj, offset + cursor)",
-                                index)));
+                        string.Format("attr{0}Marshaler.CopyOut({1}, ref elementObj, {2})",
+                                index, bufName, cursorName)));
                 result[2] = new CodeConditionStatement(
                         new CodeSnippetExpression(
                                 string.Format("dataTo.{0}{1} == null", fieldName, arrayBrackets)),
                         new CodeExpressionStatement(new CodeSnippetExpression(
                                 string.Format("dataTo.{0}{1} = elementObj as {2}", 
-                                        fieldName, arrayBrackets, elementType.FullName)))); 
+                                        fieldName, arrayBrackets, fieldType.FullName)))); 
                 break;
             case c_metaKind.M_ENUMERATION:
                 result = new CodeStatement[2];
                 result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
-                        string.Format("dataTo.{0}{1} = ({2}) ReadUInt32(from, offset + cursor)", 
-                                fieldName, arrayBrackets, elementType.FullName))); 
+                        string.Format("dataTo.{0}{1} = ({2}) ReadUInt32({3}, {4})", 
+                                fieldName, arrayBrackets, fieldType.FullName, bufName, cursorName))); 
                 break;
             case c_metaKind.M_PRIMITIVE:
             case c_metaKind.M_COLLECTION: // Assert that this collection is always of type string!!
                 result = new CodeStatement[2];
                 result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
-                        string.Format("dataTo.{0}{1} = Read{2}(from, offset + cursor)", 
-                                fieldName, arrayBrackets, elementType.Name))); 
+                        string.Format("dataTo.{0}{1} = Read{2}({3}, {4})", 
+                                fieldName, arrayBrackets, fieldType.Name, bufName, cursorName))); 
                 break;
             default:
                 throw new Exception("Unsupported Array type");
             }
             result[result.Length -1] = new CodeExpressionStatement(new CodeSnippetExpression(
-                    string.Format("cursor += {0}", Gapi.MetaData.typeSize(type)))); 
+                    string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType)))); 
             return result;
         }
         
@@ -531,11 +710,10 @@ namespace DDS.OpenSplice
             if (Gapi.MetaData.baseObjectKind(metaData) == c_metaKind.M_STRUCTURE)
             {
                 int nrMembers = Gapi.MetaData.structureMemberCount(metaData);
-                InitPhase initState = InitPhase.NothingDefined;
                 for (int i = 0; i < nrMembers; i++)
                 {
                 	IntPtr member = Gapi.MetaData.structureMember(metaData, i);
-                    CreateStructMemberWrite(copyInMethod, member, i, ref initState);
+                    CreateStructMemberWrite(copyInMethod, member, i);
                 }
             }
             else
@@ -553,9 +731,9 @@ namespace DDS.OpenSplice
         private void CreateStructMemberWrite(
                 CodeMemberMethod copyInMethod,
                 IntPtr member, 
-                int index,
-                ref InitPhase initState)
+                int index)
         {
+            string cursorName;
             IntPtr memberType = Gapi.MetaData.memberType(member);
             IntPtr actualType = Gapi.MetaData.typeActualType(memberType);
             string fieldName = Gapi.MetaData.specifierName(member);
@@ -577,7 +755,7 @@ namespace DDS.OpenSplice
                 break;
             case c_metaKind.M_PRIMITIVE: 
                 // Handle primitive.
-                switch (Gapi.MetaData.primitiveKind(memberType))
+                switch (Gapi.MetaData.primitiveKind(actualType))
                 {
                 case c_primKind.P_BOOLEAN:
                 case c_primKind.P_CHAR:         case c_primKind.P_OCTET:
@@ -598,7 +776,7 @@ namespace DDS.OpenSplice
                 break;
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
-                switch (Gapi.MetaData.collectionTypeKind(memberType))
+                switch (Gapi.MetaData.collectionTypeKind(actualType))
                 {
                 case c_collKind.C_STRING:
                     // Handle strings.
@@ -611,17 +789,12 @@ namespace DDS.OpenSplice
                 case c_collKind.C_SEQUENCE:
                 case c_collKind.C_ARRAY:
                     // Handle arrays.
-                    string snippet = string.Empty;
-                    if ((initState & InitPhase.CursorDefined) == InitPhase.NothingDefined)
-                    {
-                        snippet = "int ";
-                        initState |= InitPhase.CursorDefined;
-                    }
+                    cursorName = string.Format("attr{0}Cursor0", index);
                     copyInMethod.Statements.Add(new CodeSnippetExpression(
-                            string.Format("{0}cursor0 = offset + {1}", snippet, offset)));
+                            string.Format("int {0} = offset + {1}", cursorName, offset)));
                     copyInMethod.Statements.AddRange(
                             CreateArrayMemberWrite(actualType, actualType, index, 0, 
-                                    fieldName, "to", "cursor0"));
+                                    fieldName, "to", cursorName));
                     break;
                 default:
                     throw new Exception("Unsupported Collection type");
@@ -634,7 +807,7 @@ namespace DDS.OpenSplice
         
         private CodeStatement[] CreateArrayMemberWrite(
                 IntPtr collStartType,
-                IntPtr arrayType,
+                IntPtr collType,
                 int index,
                 int dimension,
                 string fieldName,
@@ -648,30 +821,30 @@ namespace DDS.OpenSplice
             IntPtr actualType;
             CodeStatement[] forBody;
             
-            c_metaKind memberKind = Gapi.MetaData.baseObjectKind(arrayType);
-            switch(memberKind)
+            c_metaKind collKind = Gapi.MetaData.baseObjectKind(collType);
+            switch(collKind)
             {
             case c_metaKind.M_STRUCTURE:
             case c_metaKind.M_ENUMERATION:
             case c_metaKind.M_PRIMITIVE: 
                 result = CreateArrayMemberWriteInnerLoopBody(
-                        collStartType, arrayType, memberKind, index, dimension, 
+                        collStartType, collType, collKind, index, dimension, 
                                 fieldName, bufName, cursorName);
                 break;
             case c_metaKind.M_COLLECTION:
                 // Handle Collection type.
-                switch (Gapi.MetaData.collectionTypeKind(arrayType))
+                switch (Gapi.MetaData.collectionTypeKind(collType))
                 {
                 case c_collKind.C_STRING:
                     // Handle strings.
                     result = CreateArrayMemberWriteInnerLoopBody(
-                            collStartType, arrayType, memberKind, index, dimension, 
+                            collStartType, collType, collKind, index, dimension, 
                                     fieldName, bufName, cursorName);
                     break;
                 case c_collKind.C_ARRAY:
                     // Handle arrays.
-                    arrLength = Gapi.MetaData.collectionTypeMaxSize(arrayType);
-                    subType = Gapi.MetaData.collectionTypeSubType(arrayType);
+                    arrLength = Gapi.MetaData.collectionTypeMaxSize(collType);
+                    subType = Gapi.MetaData.collectionTypeSubType(collType);
                     actualType = Gapi.MetaData.typeActualType(subType);
                     forBody = CreateArrayMemberWrite(collStartType, actualType, index, 
                             dimension + 1, fieldName, bufName, cursorName);
@@ -687,20 +860,20 @@ namespace DDS.OpenSplice
                     break;
                 case c_collKind.C_SEQUENCE:
                     // Handle sequences.
-                    subType = Gapi.MetaData.collectionTypeSubType(arrayType);
+                    subType = Gapi.MetaData.collectionTypeSubType(collType);
                     actualType = Gapi.MetaData.typeActualType(subType);
                     seqLengthName = string.Format("attr{0}Seq{1}Length", index, dimension);
                     seqBufName = string.Format("attr{0}Seq{1}Buf", index, dimension);
                     seqTypeName = string.Format("attr{0}Seq{1}Type", index, dimension);
-                    nextCursorName = string.Format("cursor{0}", dimension + 1);
-                    seqMaxLength = Gapi.MetaData.collectionTypeMaxSize(arrayType);
+                    nextCursorName = string.Format("attr{0}Cursor{1}", index, dimension + 1);
+                    seqMaxLength = Gapi.MetaData.collectionTypeMaxSize(collType);
                     
                     forBody = CreateArrayMemberWrite(collStartType, actualType, index, 
                             dimension + 1, fieldName, seqBufName, nextCursorName);
-                    result = new CodeStatement[6];
+                    result = new CodeStatement[7];
                     result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("int {0} = from.{1}{2}.Length", seqLengthName, fieldName, 
-                                    CreateArrayIndex(collStartType, dimension - 1))));
+                                    CreateArrayIterationIndex(collStartType, dimension))));
                     if (seqMaxLength == 0)
                     {
                         result[1] = new CodeCommentStatement("Unbounded sequence: bounds check not required...");
@@ -708,7 +881,7 @@ namespace DDS.OpenSplice
                     else
                     {
                         result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
-                                string.Format("if ({0} >= {1}) return false", seqLengthName, seqMaxLength)));
+                                string.Format("if ({0} > {1}) return false", seqLengthName, seqMaxLength)));
                     }
                     result[2] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("IntPtr {0} = DDS.OpenSplice.Database.c.newArray({1}, {2})", 
@@ -716,8 +889,10 @@ namespace DDS.OpenSplice
                     result[3] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("Write({0}, {1}, {2})", bufName, cursorName, seqBufName)));
                     result[4] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType))));
+                    result[5] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("int {0} = 0", nextCursorName)));
-                    result[5] = new CodeIterationStatement(
+                    result[6] = new CodeIterationStatement(
                             new CodeExpressionStatement(new CodeSnippetExpression(
                                     string.Format("int i{0} = 0", dimension))), 
                             new CodeSnippetExpression(
@@ -739,8 +914,8 @@ namespace DDS.OpenSplice
 
         private CodeStatement[] CreateArrayMemberWriteInnerLoopBody(
                 IntPtr collStartType,
-                IntPtr memberType,
-                c_metaKind memberKind,
+                IntPtr collType,
+                c_metaKind collKind,
                 int index,
                 int dimension,
                 string fieldName,
@@ -748,8 +923,9 @@ namespace DDS.OpenSplice
                 string cursorName)
         {
             string snippet;
-            string arrayBrackets = CreateArrayIndex(collStartType, dimension);
-            switch(memberKind)
+            CodeStatement[] result = new CodeStatement[2];
+            string arrayBrackets = CreateArrayIterationIndex(collStartType, dimension);
+            switch(collKind)
             {
             case c_metaKind.M_STRUCTURE:
                 snippet = string.Format(
@@ -775,9 +951,8 @@ namespace DDS.OpenSplice
                 throw new Exception("Unsupported Array type");
             }
              
-            CodeStatement[] result = new CodeStatement[2];
             result[0] = new CodeExpressionStatement(new CodeSnippetExpression(snippet));
-            snippet = string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(memberType)); 
+            snippet = string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType)); 
             result[1] = new CodeExpressionStatement(new CodeSnippetExpression(snippet));
             
             return result;

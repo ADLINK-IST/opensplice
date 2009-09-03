@@ -635,7 +635,6 @@ c_typeSize(
     if (c_baseObjectKind(type) == M_COLLECTION) {
         switch(c_collectionTypeKind(type)) {
         case C_ARRAY:
-        case C_SEQUENCE:
             subType = c_collectionTypeSubType(type);
             switch(c_baseObjectKind(subType)) {
             case M_INTERFACE:
@@ -670,6 +669,9 @@ c_typeSize(
         break;
         case C_STRING:
             size = sizeof(c_char *);
+        break;
+        case C_SEQUENCE:
+            size = sizeof(c_address);
         break;
         default:
             OS_REPORT(OS_ERROR,
