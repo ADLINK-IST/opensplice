@@ -41,9 +41,9 @@
 static int conn;
 static int port=2323;
 static int orig_stdout;
-static const char *optflags="p:i:l:f:s:hertToOmM";
+static const char *optflags="p:i:l:f:s:hertToOmMa";
 #else
-static const char *optflags="i:l:f:s:hertToOmM";
+static const char *optflags="i:l:f:s:hertToOmMa";
 #endif
 
 typedef enum {
