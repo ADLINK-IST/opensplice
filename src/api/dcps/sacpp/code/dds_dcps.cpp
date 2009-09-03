@@ -12,32 +12,32 @@
 
 #include "dds_dcps.h"
 
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 #error "this is not working!"
 template class DDS_DCPSUFLSeq <DDS::SampleInfo, struct SampleInfoSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::InstanceStateKind, struct InstanceStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::ViewStateKind, struct ViewStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::SampleStateKind, struct SampleStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::Condition, struct ConditionSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::DataReader, struct DataReaderSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::Topic, struct TopicSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::QosPolicyCount, struct QosPolicyCountSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::InstanceHandle_t, struct InstanceHandleSeq_uniq_>;
 #endif
 

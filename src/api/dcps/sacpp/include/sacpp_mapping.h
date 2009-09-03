@@ -22,5 +22,6 @@
 #include "mapping/UFL.h"
 #include "mapping/BFL.h"
 #include "mapping/UOBJ.h"
+#include "mapping/UVL.h"
 
 #endif /* SACPP_MAPPING_H */
