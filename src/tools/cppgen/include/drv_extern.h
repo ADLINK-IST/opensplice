@@ -64,17 +64,6 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #ifndef _DRV_EXTERN_DRV_EXTERN_HH
 #define _DRV_EXTERN_DRV_EXTERN_HH
 
-#undef EXPORT
-#ifdef _WIN32
-   #if defined OSPL_BUILD_DCPSDDS
-      #define EXPORT __declspec (dllexport)
-   #else
-      #define EXPORT __declspec (dllimport)
-   #endif
-#else
-   #define EXPORT
-#endif
-
 #if defined (__cplusplus)
 extern "C" {
 #endif
@@ -84,7 +73,7 @@ extern "C" {
 
 /* Functions */
 
-extern EXPORT int driver_main(int argc, char **argv);
+int driver_main(int argc, char **argv);
 
 int DRV_drive(char *); /* Compiler driver for single file */
 char * DRV_param_copy(long, char **);
@@ -96,8 +85,6 @@ void DRV_cpp_init();
 void DRV_cpp_putarg(const char *arg);
 void DRV_cpp_new_location(char *new_loc);
 void DRV_fork();
-
-#undef EXPORT
 
 #if defined (__cplusplus)
 }

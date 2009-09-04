@@ -17,6 +17,7 @@
 #include "xbe_incl.h"
 #include "Std.h"
 #include "cppgen_iostream.h"
+#include "xbe_time.h"
 
 // ----------------------------------------------------------
 //  DDSSource_Time IMPLEMENTATION
