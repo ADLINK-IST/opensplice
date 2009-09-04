@@ -17,6 +17,11 @@ E   ospli/rhel4d/x86.linux2.6-release-inner 1 heads/master none
 E   ospli/rhel4d/x86.linux2.6-release-notest-inner 1 heads/master none
 M   ospli/rhel4d/x86.linux2.6-release-lic-inner 1 heads/master none
 
+M   ospli/rhel4e/x86.linux2.6-dev-notest-inner 1 heads/master none
+M   ospli/rhel4e/x86.linux2.6-release-notest-inner 1 heads/master none
+M   ospli/rhel4f/x86.linux2.6-dev-notest-inner 1 heads/master none
+M   ospli/rhel4f/x86.linux2.6-release-notest-inner 1 heads/master none
+
 M   ospli/rhel4/PPC604.vxworks6.6-dev-inner 1 heads/master none
 M   ospli/rhel4/PPC604.vxworks6.6-release-inner 1 heads/master none
 
