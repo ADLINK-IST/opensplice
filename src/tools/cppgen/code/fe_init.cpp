@@ -101,8 +101,8 @@ fe_populate(AST_Module *m)
    UTL_Pragmas pragmas;
 
    pdt = idl_global->gen()->create_predefined_type(AST_PredefinedType::PT_long,
-         create_scoped_name("long"),
-         pragmas);
+						   create_scoped_name("long"),
+						   pragmas);
    m->fe_add_predefined_type(pdt);
 
    pdt =

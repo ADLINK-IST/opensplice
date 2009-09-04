@@ -137,7 +137,7 @@ int DRV_drive (char *s)
    idl_global->set_compilation_stage (IDL_GlobalData::CS_InitStage2);
 
    (*DRV_FE_init_stage2) ();
-
+ 
    // Parse
    if (idl_global->compile_flags () & IDL_CF_INFORMATIVE)
       cerr << idl_global->prog_name ()

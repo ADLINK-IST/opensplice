@@ -1,11 +1,3 @@
-#ifdef SCCSID
-static char SCCSid[] = "@(#)drv_link.C 1.1   10/26/94";
-#endif
-
-#ifdef SCCSID
-static char SCCSid[] = "@(#)drv_link.C 1.1   9/20/94";
-#endif
-
 /*
  
 COPYRIGHT

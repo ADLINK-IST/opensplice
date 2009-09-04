@@ -5,6 +5,9 @@ TARGET_EXEC	:= cppgen
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
+#Reset to remove the -O2 which does not work
+CFLAGS_OPT = -DNDEBUG -MD
+
 LDLIBS += -l$(DDS_CPP) -l$(DDS_OS)
 CXXFLAGS += -DYY_NEVER_INTERACTIVE
 
