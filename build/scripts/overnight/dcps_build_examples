@@ -65,9 +65,8 @@ else
     then
 	INSTALLERDIR=$WORKDIR/$PRODUCT/install
     else
-	DEPD=`echo $DEP | awk -F/ '{ print $1 }'`
-	BASE=$DEPWORKDIR/$DEPD/build/scripts/overnight
-	INSTALLERDIR=$DEPWORKDIR/$DEPD/install
+	BASE=$DEPWORKDIR/build/scripts/overnight
+	INSTALLERDIR=$DEPWORKDIR/install
     fi
 
     echo "Installing..."
