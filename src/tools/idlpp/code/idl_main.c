@@ -405,6 +405,7 @@ main (
     c_iter typeNames = NULL;
     os_result osr;
     char* ccppOrbPath;
+    char* dcpsIdlFileName;
     int returnCode = 0;
 
     /* Use a unique name, so pass NULL as parameter */
