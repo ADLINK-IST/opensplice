@@ -85,6 +85,11 @@ else
     echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
     ArchiveLogs
 
+    if [ "$DEP" != "none" ]
+    then
+	BASE=$DEPWORKDIR/build/scripts/overnight
+    fi
+
     cd $WORKDIR/../installed/HDE/$SETUP_TYPE/
     . ./release.com
     cd examples
