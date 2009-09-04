@@ -23,8 +23,7 @@ namespace DDS
 {
   class OS_DCPS_API DataWriter_impl
     : public virtual ::DDS::DataWriter,
-      public ::DDS::Entity_impl,
-      public LOCAL_REFCOUNTED_OBJECT
+      public ::DDS::Entity_impl
   {
     friend class ::DDS::Publisher_impl;
 

@@ -513,7 +513,7 @@ nw_plugSendChannelNew(
     c_voidp onFatalUsrData)
 {
     nw_plugSendChannel result;
-    unsigned int i;
+    os_uint32 i;
     c_char * tmpPath;
 
     result = (nw_plugSendChannel)os_malloc(sizeof(*result));
@@ -928,13 +928,13 @@ nw_plugSendChannelInitializeControlBuffer(
 
 /* Do a flush of data messages to the network
  * The function returns true if all bytes were sent, false otherwise */
-c_bool
+nw_bool
 nw_plugSendChannelMessagesFlush(
     nw_plugChannel channel,
     nw_bool all,
     nw_signedLength *bytesLeft /* in/out */)
 {
-    c_bool result = FALSE;
+    nw_bool result = FALSE;
     c_ulong bytesSent;
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_bool reliable;
@@ -968,7 +968,7 @@ nw_plugSendChannelMessagesFlush(
             bytesSent = nw_plugBufferGetLength(nw_plugBuffer(buffer));
             /* Valid Partition so Send data to network */
 #ifdef NW_DEBUGGING
-            if (!(int)nw_configurationLoseSentMessage()) {
+            if (!(os_int)nw_configurationLoseSentMessage()) {
 #endif
                 if (nw_plugDataBufferGetPartitionId(buffer) !=
                     partition->partitionId)
@@ -2425,7 +2425,7 @@ nw_periodicSendAcks( nw_plugChannel channel,
         if (partitionNode->pendingAckCount > 0) {
             do {
 #ifdef NW_DEBUGGING
-                unsigned int pendingAckCount = partitionNode->pendingAckCount;
+                os_uint32 pendingAckCount = partitionNode->pendingAckCount;
 #endif
                 nw_plugPartitionNodeSerializeAndReleaseAcks(partitionNode,
                     &firstMessage, maxNofMessages,
@@ -2510,7 +2510,7 @@ nw_periodicResend( nw_plugChannel channel,
                         if ( *credits > 0 ){
                              *credits -= length;
 #ifdef NW_DEBUGGING
-                            if (!(int)nw_configurationLoseSentMessage()) {
+                            if (!(os_int)nw_configurationLoseSentMessage()) {
 #endif
                                 /* Send data to network */
                                 NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));

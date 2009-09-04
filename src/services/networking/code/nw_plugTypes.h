@@ -14,19 +14,19 @@
 
 #include "nw_commonTypes.h"
 
-typedef unsigned char  *nw_userData;
-typedef unsigned int    nw_networkId;
-typedef unsigned int    nw_partitionId;
-typedef char *          nw_partitionAddress;
-typedef unsigned int    nw_latencyBudget;
-typedef unsigned int    nw_flags;
-typedef unsigned char  *nw_data;
-typedef os_address      nw_length;
-typedef int             nw_signedLength;
+typedef os_uchar  *nw_userData;
+typedef os_uint32  nw_networkId;
+typedef os_uint32  nw_partitionId;
+typedef os_char   *nw_partitionAddress;
+typedef os_uint32  nw_latencyBudget;
+typedef os_uint32  nw_flags;
+typedef os_uchar  *nw_data;
+typedef os_uint32  nw_length;
+typedef os_int32   nw_signedLength;
 typedef struct nw_globalId_s {
-    unsigned int nodeId;
-    unsigned int localId1;
-    unsigned int localId2;
+    os_uint32 nodeId;
+    os_uint32 localId1;
+    os_uint32 localId2;
 } nw_globalId;
 
 

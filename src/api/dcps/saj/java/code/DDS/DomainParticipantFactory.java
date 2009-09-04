@@ -115,6 +115,9 @@ public class DomainParticipantFactory
 		return jniGetQos(qos);
     	}
 	
+    public DDS.Domain lookup_domain (String domain_id) {
+        return jniLookupDomain(domain_id);
+    }
 
     private native static DomainParticipantFactory jniGetInstance();
     private native DDS.DomainParticipant jniCreateParticipant(String domainId, DDS.DomainParticipantQos qos, DDS.DomainParticipantListener a_listener,int mask);
@@ -125,6 +128,7 @@ public class DomainParticipantFactory
 
     private native int jniSetQos(DDS.DomainParticipantFactoryQos qos);
     private native int jniGetQos(DDS.DomainParticipantFactoryQosHolder qos);
-	
+
+    private native DDS.Domain jniLookupDomain(String domain_id);
     
 } // DomainParticipantFactory

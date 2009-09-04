@@ -1,0 +1,3 @@
+# Unset variables for when TAO is not availible
+
+unset_var INCLUDE_API_DCPS_CCPP

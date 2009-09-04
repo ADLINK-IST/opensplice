@@ -367,11 +367,6 @@ in_ddsiSubmessageDataInitFromBuffer(
 		if (nofOctets<0) break;
 		total += nofOctets;
 
-/*
-		printf("ddsiSubMessage.header.kind = %x\n", OS_SUPER(_this)->header.kind);
-		printf("ddsiSubMessage.header.flags = %x\n", OS_SUPER(_this)->header.flags);
-		printf("ddsiSubMessage.header.octetsToNextHeader = %x\n", OS_SUPER(_this)->header.octetsToNextHeader);
-*/
 		if (in_ddsiSubmessageHasFlagQ(OS_SUPER(_this))) {
 			/* take inlineQos */
 			nofOctets =

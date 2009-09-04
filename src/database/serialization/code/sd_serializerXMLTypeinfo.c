@@ -1854,10 +1854,10 @@ sd_findScopeRoot (
 static c_metaObject
 sd_findScopeInContext (
     sd_elementContext  context,
-    c_char            *name);
+    const c_char       *name);
 
 typedef struct sd_findScopeArg_s {
-    c_char       *name;
+    const c_char  *name;
     c_metaObject  scope;
 } sd_findScopeArg;
 
@@ -1868,11 +1868,9 @@ sd_findScopeInChild (
 {
     sd_elementContext context = (sd_elementContext) obj;
     sd_findScopeArg  *info    = (sd_findScopeArg  *)arg;
-    c_char           *str     = info->name;
+    c_char           *str     = sd_stringDup(info->name);
     c_char           *cur;
     c_bool            proceed = TRUE;
-
-    str = sd_stringDup(info->name);
 
     cur = strstr(str, "::");
     if ( cur ) {
@@ -1908,7 +1906,7 @@ sd_findScopeInChild (
 static c_metaObject
 sd_findScopeInContext (
     sd_elementContext  context,
-    c_char            *name)
+    const c_char       *name)
 {
     sd_findScopeArg argument;
 
@@ -1929,37 +1927,22 @@ sd_findTypeInScope (
     const c_char      *name)
 {
     c_metaObject       o;
-/*
-    c_char            *str;
-    c_char            *cur;
-    sd_elementContext  root = NULL;
-*/
+
+    /* First, lookup the name in the current scope in the database. */
     o = c_metaResolve(scope->object, name);
     if ( !o ) {
-/*
-        str = sd_stringDup(name);
-        cur = strstr(str, "::");
-        if ( cur ) {
-            *cur = '\0';
-            cur += 2;
-        }
-        if ( *str ) {
-            root = sd_findScopeRoot(scope, str);
-            if ( root ) {
-                if ( cur ) {
-                    o = sd_findScopeInContext(root, cur);
-                } else {
-                    o = root->object;
-                }
+        /* If not found, look it up in the root scope of the database. */
+        o = c_metaResolve(scope->info->base, name);
+        if ( !o ) {
+            /* If still not found, look it up in the root of the serializer scope. */
+            /* This is appropriate in case of recursive references to self, where  */
+            /* self is not yet inserted into the database.                         */
+            sd_elementContext root = scope;
+            while (root->parent != NULL) {
+                root = root->parent;
             }
-        } else {
-*/
-            o = c_metaResolve(scope->info->base, name);
-/*
+            o = sd_findScopeInContext(root, name);
         }
-
-        os_free(str);
-*/
     }
 
     return o;

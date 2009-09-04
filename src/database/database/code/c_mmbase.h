@@ -50,7 +50,7 @@ struct c_mmStatus_s {
 };
 
 OS_API c_mm c_mmCreate (void *address, c_long size);
-OS_API c_mmStatus c_mmState (c_mm mm);
+OS_API c_mmStatus c_mmState (c_mm mm, c_bool fillPreAlloc);
 OS_API c_mmStatus c_mmMapState (c_mm mm);
 OS_API c_mmStatus c_mmListState (c_mm mm);
 

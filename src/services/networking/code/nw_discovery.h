@@ -31,7 +31,7 @@ typedef void (*nw_discoveryAction)(
                  v_networkId networkId,
                  nw_address adress,
                  c_time detectedTime,
-                 unsigned int aliveCount,
+                 os_uint32 aliveCount,
                  nw_discoveryMsgArg arg);
 
 NW_CLASS(nw_discoveryReader);

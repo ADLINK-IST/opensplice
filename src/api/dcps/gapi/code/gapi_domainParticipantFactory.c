@@ -615,7 +615,17 @@ gapi_domainParticipantFactory_get_default_participant_qos(
     return result;
 }
 
-
+/*     Domain
+ *     lookup_domain(
+ *         in DomainId domain_id);
+ */
+gapi_domain
+gapi_domainParticipantFactory_lookup_domain (
+    gapi_domainParticipantFactory _this,
+    gapi_domainId_t domain_id)
+{
+    return (gapi_domain) NULL;
+}
 
 static c_equality
 gapi_compareTypesupport(

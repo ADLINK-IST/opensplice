@@ -643,6 +643,43 @@ DDS::Entity_ptr DDS::Entity::_unchecked_narrow (DDS::Object_ptr p)
    return result;
 }
 
+const char * DDS::Domain::_local_id = "IDL:DDS/Domain:1.0";
+
+DDS::Domain_ptr DDS::Domain::_duplicate (DDS::Domain_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::Domain::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::Domain::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::Domain_ptr DDS::Domain::_narrow (DDS::Object_ptr p)
+{
+   DDS::Domain_ptr result = NULL;
+   if (p && p->_is_a (DDS::Domain::_local_id))
+   {
+      result = dynamic_cast<DDS::Domain_ptr> (p);
+      result->m_count++;
+   }
+   return result;
+}
+
+DDS::Domain_ptr DDS::Domain::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::Domain_ptr result;
+   result = dynamic_cast<DDS::Domain_ptr> (p);
+   result->m_count++;
+   return result;
+}
+
 const char * DDS::DomainParticipant::_local_id = "IDL:DDS/DomainParticipant:1.0";
 
 DDS::DomainParticipant_ptr DDS::DomainParticipant::_duplicate (DDS::DomainParticipant_ptr p)

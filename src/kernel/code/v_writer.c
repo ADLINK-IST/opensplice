@@ -2530,7 +2530,9 @@ v_writerCheckDeadlineMissed(
             writerUnregister(w, message, now, instance);
             c_free(message);
         } else {
-            if (v_statusNotifyDeadlineMissed(v_entity(w)->status, instance)) {
+            if (v_statusNotifyDeadlineMissed(v_entity(w)->status,
+                                             v_publicHandle(v_public(instance))))
+            {
                 changed = TRUE;
             }
             /* do not use deadlineUpdate(w, instance);

@@ -24,21 +24,21 @@
 
 #define NW_FULL_IP_ADDRESS            "255.255.255.255"
 
-static int
+static os_int
 nw_socketRetrieveMCInterface(
     const char *addressLookingFor,
-    int sockfd,
+    os_int sockfd,
     struct sockaddr_in *sockAddrPrimaryFound,
     struct sockaddr_in *sockAddrBroadcastFound)
 {
-    int result = SK_FALSE;
-    int success;
+    os_int result = SK_FALSE;
+    os_int success;
     sk_interfaceInfo *interfaceList;
-    unsigned int usedInterface = 0;
-    unsigned int nofInterfaces;
-    unsigned int i;
+    os_uint usedInterface = 0;
+    os_uint nofInterfaces;
+    os_uint i;
     char *addressDefault;
-    int found = SK_FALSE;
+    os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
 
     success = sk_interfaceInfoRetrieveAllMC(&interfaceList, &nofInterfaces,
@@ -47,7 +47,7 @@ nw_socketRetrieveMCInterface(
     if (success && (nofInterfaces > 0U)) {
         /* Retrieve interface from custom settings */
         if (strncmp(addressLookingFor, NWCF_DEF(Interface),
-                    (unsigned int)sizeof(NWCF_DEF(Interface))) == 0) {
+                    (os_uint)sizeof(NWCF_DEF(Interface))) == 0) {
             usedInterface = 0;
         } else {
              i = 0;
@@ -59,7 +59,7 @@ nw_socketRetrieveMCInterface(
                 }
                 if (strncmp(addressLookingFor,
                             inet_ntoa(testAddr->sin_addr),
-                            (unsigned int)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
+                            (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
                     usedInterface = i;
                     found = SK_TRUE;
                 } else {
@@ -103,13 +103,13 @@ nw_socketRetrieveMCInterface(
 
 
 
-static int
+static os_int
 nw_socketMulticastJoinGroup(
     nw_socket socket,
     struct sockaddr_in sockAddrInterface,
     struct sockaddr_in sockAddrMulticast)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     struct ip_mreq mreq;
     os_result retVal;
     sk_bool res;
@@ -135,12 +135,12 @@ nw_socketMulticastJoinGroup(
     return result;
 }
 
-static int
+static os_int
 nw_socketMulticastSetInterface(
     nw_socket socket,
     struct sockaddr_in sockAddrInterface)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     os_result retVal;
     sk_bool res;
     os_socket dataSock;
@@ -161,13 +161,13 @@ nw_socketMulticastSetInterface(
 }
 
 
-static int
+static os_int
 nw_socketMulticastSetOptions(
     nw_socket socket,
-    int loopsback,
-    unsigned int timeToLive)
+    os_int loopsback,
+    os_uint timeToLive)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     os_result retVal = os_resultFail;
     unsigned char flag;
     sk_bool hasDataSocket;
@@ -178,7 +178,7 @@ nw_socketMulticastSetOptions(
     hasDataSocket = nw_socketGetDataSocket(socket, &dataSocket);
     NW_CONFIDENCE(hasDataSocket);
     if (hasDataSocket) {
-        flag = (unsigned int)loopsback;
+        flag = (os_uint)loopsback;
         retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
             &flag, sizeof(flag));
         SK_REPORT_SOCKFUNC(2, retVal,
@@ -195,7 +195,7 @@ nw_socketMulticastSetOptions(
 
     hasControlSocket = nw_socketGetControlSocket(socket, &controlSocket);
     if ((retVal == os_resultSuccess) && hasControlSocket) {
-        flag = (unsigned int)loopsback;
+        flag = (os_uint)loopsback;
         retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
             &flag, sizeof(flag));
         SK_REPORT_SOCKFUNC(2, retVal,
@@ -220,7 +220,7 @@ nw_socketMulticastSetOptions(
 
 /* ------------------------------- public ----------------------------------- */
 
-int
+os_int
 nw_socketGetDefaultMulticastInterface(
     const char *addressLookingFor,
     os_socket socket,
@@ -228,7 +228,7 @@ nw_socketGetDefaultMulticastInterface(
     struct sockaddr_in *sockAddrBroadcast)
 {
     /* Evaluate the interfaces only once, after this use previous result */
-    static int hadSuccessBefore = SK_FALSE;
+    static os_int hadSuccessBefore = SK_FALSE;
     static struct sockaddr_in sockAddrPrimaryFound;
     static struct sockaddr_in sockAddrBroadcastFound;
 

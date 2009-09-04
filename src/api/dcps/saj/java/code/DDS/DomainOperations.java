@@ -9,4 +9,12 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "gapi_entityValidity.h"
+
+package DDS;
+
+
+public interface DomainOperations
+{
+
+  int create_persistent_snapshot (String partition_expression, String topic_expression, String URI);
+} // interface DomainOperations

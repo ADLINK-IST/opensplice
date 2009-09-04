@@ -160,6 +160,11 @@ in_configFinalizeDdsiService(
     in_configDdsiService _this);
 
 static void
+in_configTraverseDebuggingElement(
+    u_cfElement element,
+    in_configDdsiService ddsiService);
+
+static void
 in_configFinalizeTracing(
     in_configTracing tracing);
 
@@ -272,9 +277,9 @@ in_configFree (
     in_config _this)
 {
     Coll_List* ddsiServices;
-    Coll_Iter* iterator;
     in_configDdsiService ddsiService;
-
+    void * obj = NULL;
+    
     assert(_this);
 
     /* free pathName */
@@ -282,15 +287,14 @@ in_configFree (
 
     /* free the resources allocated for the ddsiServices Coll_List */
     ddsiServices = in_configGetDdsiServices(_this);
-    iterator = Coll_List_getFirstElement(ddsiServices);
-    while (iterator)
+    while ((obj = Coll_List_popBack(ddsiServices)) != NULL)
     {
-       ddsiService = in_configDdsiService(Coll_Iter_getObject(iterator));
+       ddsiService = in_configDdsiService(obj);
+       /* paranoid check */ 
        if (ddsiService)
        {
           in_configDdsiServiceFree (ddsiService);
        }
-       iterator = Coll_Iter_getNext(iterator);
     }
 }
 
@@ -547,6 +551,9 @@ in_configTraverseDdsiServiceElement(
                     } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Partitioning))
                     {
                         in_configTraversePartitioningElement(u_cfElement(childNode), ddsiService);
+                    } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Debugging))
+                    {
+                        in_configTraverseDebuggingElement(u_cfElement(childNode), ddsiService);                      
                     } else if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_Tracing))
                     {
                         in_configTraverseTracingElement(u_cfElement(childNode), ddsiService);
@@ -572,6 +579,7 @@ in_configTraverseDdsiServiceElement(
             }
         }
         os_free(serviceName);
+        /* finalize the configuration, set default values if not defined in config file */
         in_configFinalizeDdsiService(ddsiService);
     }
 }
@@ -857,6 +865,83 @@ in_configTraverseGlobalPartitionElement(
 
 }
 
+
+void
+in_configTraverseWaitForDebuggerElement(
+    u_cfElement element,
+    in_configDebug debug)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    os_boolean success;
+    c_iter children;
+    u_cfNode childNode;
+
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+                name,
+                INCF_ELEM_GlobalPartition);
+        }
+        os_free(name);
+        u_cfAttributeFree(attribute);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child elements, shouldnt be any, report warning if
+     * any were found anyway.
+     */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+    	os_uint32  waitTime = 0;
+        v_cfKind nodeKind;
+
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+        
+        if(nodeKind == V_CFDATA)
+        {
+          
+		  success = u_cfDataULongValue(u_cfData(childNode), &waitTime);
+
+		  if(!success)
+		  {
+			  IN_REPORT_WARNING_2(
+				  IN_SPOT,
+				  "Failed to retrieve the value for attribute '%s' within element '%s'.",
+				  name,
+				  INCF_ELEM_WaitForDebugger);
+		  } else 
+		  {
+			  in_configDebugSetWaitTime(debug, waitTime);
+		  }
+        } else
+        {
+			IN_REPORT_WARNING_2(
+				IN_SPOT,
+				"Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+				name,
+				INCF_ELEM_GlobalPartition);
+        }
+        os_free(name);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+
+}
 void
 in_configTraverseNetworkPartitionElement(
     u_cfElement element,
@@ -2234,6 +2319,74 @@ in_configTraverseGeneralElement(
 }
 
 void
+in_configTraverseDebuggingElement(
+    u_cfElement element,
+    in_configDdsiService ddsiService)
+{
+    c_iter attributes;
+    u_cfAttribute attribute;
+    os_char* name;
+    c_iter children;
+    u_cfNode childNode;
+    v_cfKind nodeKind;
+    in_configDebug ddsiDebug = NULL;
+    
+    assert(element);
+    assert(ddsiService);
+    
+    /* allocate the configDebug object */
+    ddsiDebug = in_configDebugNew();
+    if (!ddsiDebug) {
+    	IN_REPORT_ERROR(IN_SPOT, "out of memory");
+    	return;
+    }
+    in_configDdsiServiceSetDebugging(ddsiService, ddsiDebug);
+        
+    /* Step 1: read attributes if there are any, report warning that they are
+     * ignored.
+     */
+    attributes = u_cfElementGetAttributes(element);
+    attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    while(attribute)
+    {
+        name = u_cfNodeName(u_cfNode(attribute));
+        IN_REPORT_WARNING_2(
+            IN_SPOT,
+            "Unrecognized attribute '%s' within element '%s'! This attribute will be ignored.",
+            name,
+            INCF_ELEM_General);
+        os_free(name);
+        attribute = u_cfAttribute(c_iterTakeFirst(attributes));
+    }
+    c_iterFree(attributes);
+
+    /* Step 2: traverse child elements */
+    children = u_cfElementGetChildren(element);
+    childNode = u_cfNode(c_iterTakeFirst(children));
+    while(childNode)
+    {
+        name = u_cfNodeName(childNode);
+        nodeKind = u_cfNodeKind(childNode);
+      
+        /* Fro now just parse the WaitForDebugger */ 
+        if(nodeKind == V_CFELEMENT && 0 == strcmp(name, INCF_ELEM_WaitForDebugger))
+        {
+            in_configTraverseWaitForDebuggerElement(u_cfElement(childNode), ddsiDebug);
+        } else 
+        {
+            IN_REPORT_WARNING_2(
+                IN_SPOT,
+                "Unrecognized child element '%s' within element '%s'! This element will be ignored.",
+                name,
+                INCF_ELEM_General);
+        }
+        os_free(name);
+        u_cfNodeFree(childNode);
+        childNode = u_cfNode(c_iterTakeFirst(children));
+    }
+    c_iterFree(children);
+}
+void
 in_configTraverseChannelsElement(
     u_cfElement element,
     in_configDdsiService ddsiService)
@@ -3069,7 +3222,6 @@ in_configFinalizeDdsiService(
 
 /* TODO define if finalization is needed for the following:
     Coll_List channels;
-    in_configDebug debugging;
 */
 }
 
@@ -3084,7 +3236,7 @@ in_configFinalizePartitioning(
     globalPartitionAddress = in_configPartitioningGetGlobalPartitionAddress(partitioning);
     if(!globalPartitionAddress)
     {
-        globalPartitionAddress = os_malloc(strlen(INCF_ATTRIB_GlobalPartition_address_DEF));
+        globalPartitionAddress = os_malloc(strlen(INCF_ATTRIB_GlobalPartition_address_DEF)+1);
         if(!globalPartitionAddress)
         {
              IN_REPORT_ERROR("in_configFinalizePartitioning", "Out of memory.");

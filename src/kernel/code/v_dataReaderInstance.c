@@ -522,7 +522,7 @@ v_dataReaderInstanceInsert(
                 s = v_dataReaderInstanceHead(_this);
                 assert(s);
                 assert(s == v_dataReaderInstanceTail(_this));
-                v_dataReaderSampleRemoveFromLifespanAdmin(s); // Maybe not needed here, but shouldn't harm.
+                v_dataReaderSampleRemoveFromLifespanAdmin(s); /* Maybe not needed here, but shouldn't harm. */
                 v_dataReaderSampleFree(s);
             }
             sample = v_dataReaderSampleNew(_this,message);
@@ -1223,7 +1223,6 @@ v_dataReaderInstancePurge(
             v_dataReader(r)->updateCnt++;
 
             if (r->triggerValue) {
-//                c_free(v_readerSample(r->triggerValue)->instance);
                 v_dataReaderSampleFree(r->triggerValue);
                 r->triggerValue = NULL;
             }
@@ -1279,9 +1278,6 @@ v_dataReaderInstanceUnregister (
     v_dataReaderInstance _this,
     c_long count)
 {
-    v_dataReaderInstance found;
-    c_bool doFree = FALSE;
-
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
     CHECK_COUNT(_this);
@@ -1320,9 +1316,6 @@ v_dataReaderInstanceUnregister (
             }
             v_dataReaderRemoveInstance(v_dataReaderInstanceReader(_this),
                                        _this);
-        }
-        if(doFree){
-        	v_publicFree(v_public(_this));
         }
     }
 

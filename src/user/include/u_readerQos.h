@@ -27,10 +27,33 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-OS_API v_readerQos u_readerQosNew    (v_readerQos tmpl);
-OS_API u_result    u_readerQosInit   (v_readerQos q);
-OS_API void        u_readerQosDeinit (v_readerQos q);
-OS_API void        u_readerQosFree   (v_readerQos q);
+OS_API typedef v_readerQos u_readerQos;
+
+/*
+ * creates a copy of the given qos.
+ * if no qos is passed (NULL) then the default value is applied.
+ */
+OS_API u_readerQos
+u_readerQosNew (
+    u_readerQos qos);
+
+/*
+ * initializes the given qos to the default value.
+ */
+OS_API u_result
+u_readerQosInit (
+    u_readerQos _this);
+
+OS_API void
+u_readerQosDeinit (
+    u_readerQos _this);
+
+/*
+ * Frees all resources claimed by the given object.
+ */
+OS_API void
+u_readerQosFree (
+    u_readerQos _this);
 
 #undef OS_API 
 

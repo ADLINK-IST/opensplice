@@ -115,6 +115,7 @@ v_writerQosNew(
                 q->liveliness.lease_duration                    = C_TIME_ZERO;
                 q->reliability.kind                             = V_RELIABILITY_BESTEFFORT;
                 q->reliability.max_blocking_time                = C_TIME_ZERO;
+                q->reliability.synchronous                      = FALSE;
                 q->orderby.kind                                 = V_ORDERBY_RECEPTIONTIME;
                 q->history.kind                                 = V_HISTORY_KEEPLAST;
                 q->history.depth                                = 1;

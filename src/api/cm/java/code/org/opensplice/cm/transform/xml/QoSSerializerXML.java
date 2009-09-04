@@ -281,8 +281,13 @@ public class QoSSerializerXML implements QoSSerializer{
     }
     
     private void writeReliability(ReliabilityPolicy policy, String name){
-        writer.write("<" + name + "><kind>" + policy.kind.toKernelString() + "</kind>");
+        writer.write("<" + name + "><kind>" +
+                        policy.kind.toKernelString() +
+                     "</kind>");
         this.writeTime(policy.max_blocking_time, "max_blocking_time");
+        writer.write("<synchronous>" +
+                        this.getBoolean(policy.synchronous) +
+                     "</synchronous>");
         writer.write("</" + name + ">");
     }
     

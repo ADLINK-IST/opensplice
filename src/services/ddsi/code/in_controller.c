@@ -27,6 +27,12 @@ static void
 in_controllerCreateDiscoveryChannel(
     in_controller _this);
 
+/* Will block execution of the controller-thread for a specific amount of time defined in the 
+ * config. */
+static void
+in_controllerWaitForDebugger(
+    in_controller _this);
+
 static os_boolean
 in_controllerAddTransportToDiscoveryData(
     in_endpointDiscoveryData discoveryData,
@@ -169,6 +175,9 @@ in_controllerStart(
 
     assert(_this);
 
+    /* wait for the debugger to attach to this process */
+    in_controllerWaitForDebugger(_this);
+    
     in_controllerCreateDiscoveryChannel(_this);
     in_controllerCreateDataChannels(_this);
 
@@ -496,3 +505,41 @@ in_controllerCreateDiscoveryChannel(
     }
     _this->discoveryChannel = channelData;
 }
+
+void
+in_controllerWaitForDebugger(
+    in_controller _this)
+{
+	in_config config = NULL;                 /* referencing singleton */
+	in_configDdsiService ddsiService = NULL; /* referencing singleton */
+	in_configDebug ddsiDebug = NULL;         /* referencing singleton */
+	os_char* serviceName = NULL;
+	os_uint32 waitTime = 0; /* seconds */
+	os_time secondSleep = {1L,0L};
+
+	assert(_this);
+
+	config = in_configGetInstance();
+	serviceName = u_serviceGetName(_this->service);
+	assert(serviceName);
+	
+	ddsiService = in_configGetDdsiServiceByName(config, serviceName);
+	assert(ddsiService);
+	
+	ddsiDebug = in_configDdsiServiceGetDebugging(ddsiService);
+	
+	if (!ddsiDebug) {
+		IN_REPORT_INFO(3, "No debug settings");
+	} else {
+		waitTime = in_configDebugGetWaitTime(ddsiDebug);
+		
+		IN_REPORT_INFO_1(3, "WaitForDebugger defined as %d seconds", waitTime);
+		while(waitTime-- > 0) {
+			IN_REPORT_INFO_1(3, "WaitForDebugger remaining %d seconds", waitTime);
+			os_nanoSleep(secondSleep);
+		}
+	}
+ 	os_free(serviceName);
+}
+
+

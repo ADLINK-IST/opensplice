@@ -70,6 +70,7 @@ create_impl_header_file saj_statusCondition.h StatusConditionImpl
 create_impl_header_file saj_subscriber.h SubscriberImpl
 create_impl_header_file saj_topicDescription.h TopicDescriptionImpl
 create_impl_header_file saj_topic.h TopicImpl
+create_impl_header_file saj_domain.h DomainImpl
 create_impl_header_file saj_typeSupport.h TypeSupportImpl
 create_impl_header_file saj_fooTypeSupport.h FooTypeSupportImpl
 printf "Implementation header files generaration done.\n"
