@@ -1557,12 +1557,12 @@ nw_nameListFree(
     }
 }
 
-static unsigned int
+static os_uint32
 LookupReportLevel(
     const c_char * report_level)
 {
-    unsigned int result = 0;
-    unsigned int i;
+    os_uint32 result = 0;
+    os_uint32 i;
 
     for (i=0; i<(sizeof(ReportLevelMap)/sizeof(c_char*)); i++)
     {
