@@ -333,7 +333,7 @@ javac_check ()
             return 1
         fi
         PATH=$UNIX_CONV_PATH/bin:$PATH
-        set_var PATH $PATh
+        set_var PATH "$PATH"
     else
         # If not check the path for java
         pathcheck javac
@@ -603,7 +603,7 @@ jacorb_check_fn ()
             JACORB_HOME=`dirname $i`
             JACORB_HOME=`dirname $JACORB_HOME`
             JACORB_HOME=`dirname $JACORB_HOME`
-            set_var JACORB_HOME $JACORB_HOME
+            set_var JACORB_HOME "$JACORB_HOME"
             break
         fi
     done
@@ -662,7 +662,7 @@ jacorb_check_fn ()
                 CLASSPATH=`cygpath -w "$CP"`\;$CLASSPATH
             done
         fi
-        set_var CLASSPATH $CLASSPATH
+        set_var CLASSPATH "$CLASSPATH"
     fi
     echo "OK"
     echo "  setting JACORB_HOME to $JACORB_HOME"

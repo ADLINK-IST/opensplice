@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASECMD=`basename $0`
+BASECMD=`basename -- $0`
 if [ "$BASECMD" = "configure" ]
 then
    cd `dirname $0`
@@ -52,12 +52,12 @@ fi
 export_vars
 
 ENVFILE=envs-${SPLICE_TARGET}
-TARGET_DIR=$OSPL_HOME
+TARGET_DIR="$OSPL_HOME"
 if [ -f $OSPL_OUTER_HOME/setup/environment/${SPLICE_TARGET} ]
 then
-    TARGET_DIR=$OSPL_OUTER_HOME
+    TARGET_DIR="$OSPL_OUTER_HOME"
 fi
-set_var TARGET_DIR $TARGET_DIR
+set_var TARGET_DIR "$TARGET_DIR"
 . setup/configuration/setup_components $OSPL_HOME
 
 . setup/environment/${SPLICE_TARGET}
