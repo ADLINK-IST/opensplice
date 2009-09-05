@@ -1,6 +1,19 @@
 *** y_tab.cpp	Wed Sep 10 11:19:19 2008
 --- y_tab.cpp.new	Wed Sep 10 11:22:05 2008
 ***************
+*** 9,14 ****
+--- 9,18 ----
+  
+  #include <stdio.h>
+  
++ #ifdef VERSION
++ #undef VERSION
++ #endif
++ 
+  void yyunput(int c);
+  
+  #if (defined(apollo) || defined(HPUX) || defined(SGI)) && defined(__cplusplus)
+***************
 *** 118,125 ****
   # define PRAGMA_VERSION 319
   # define PRAGMA_END 320

@@ -9,6 +9,10 @@
 
 #include <stdio.h>
 
+#ifdef VERSION
+#undef VERSION
+#endif
+
 void yyunput(int c);
 
 #if (defined(apollo) || defined(HPUX) || defined(SGI)) && defined(__cplusplus)
