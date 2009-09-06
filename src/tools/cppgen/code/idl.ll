@@ -1,7 +1,3 @@
-
-%p 5000
-%option noyywrap
-%{
 /*
 
 COPYRIGHT
@@ -76,6 +72,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include <utl_incl.hh>
 
 #include <fe_private.hh>
+
+#ifdef VERSION
+#undef VERSION
+#endif
 
 #include <y_tab.hh>
 #include <string.h>

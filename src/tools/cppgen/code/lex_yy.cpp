@@ -750,6 +750,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 #include <fe_private.h>
 
+#ifdef VERSION
+#undef VERSION
+#endif
+
 #include <y_tab.h>
 #include <string.h>
 

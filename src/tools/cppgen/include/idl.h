@@ -71,10 +71,12 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #define TYPENAME
 #endif
 
-// idl.hh
+// idl.h
 //
 // Main include file for IDL compiler. Includes the rest of the
 // files defining the different units of the compiler
+
+#include <os.h>
 
 #include <intlmacros.h>  // Define macros for intl'ion
 
