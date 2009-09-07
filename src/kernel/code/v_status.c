@@ -110,7 +110,7 @@ v_statusInit(
         v_writerStatus(s)->livelinessLost.totalChanged = 0;
         v_writerStatus(s)->deadlineMissed.totalCount = 0;
         v_writerStatus(s)->deadlineMissed.totalChanged = 0;
-        v_gidSetNil(v_writerStatus(s)->deadlineMissed.instanceHandle);
+        v_handleSetNil(v_writerStatus(s)->deadlineMissed.instanceHandle);
         v_writerStatus(s)->incompatibleQos.totalCount = 0;
         v_writerStatus(s)->incompatibleQos.totalChanged = 0;
         v_writerStatus(s)->incompatibleQos.lastPolicyId = V_UNKNOWN_POLICY_ID;
@@ -119,7 +119,7 @@ v_statusInit(
         c_free(type);
         v_writerStatus(s)->publicationMatch.totalCount = 0;
         v_writerStatus(s)->publicationMatch.totalChanged = 0;
-        v_writerStatus(s)->publicationMatch.instanceHandle = NULL;
+        v_writerStatus(s)->publicationMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_READERSTATUS:
         v_readerStatus(s)->livelinessChanged.activeCount = 0;
@@ -135,7 +135,7 @@ v_statusInit(
         v_readerStatus(s)->sampleLost.totalChanged = 0;
         v_readerStatus(s)->deadlineMissed.totalCount = 0;
         v_readerStatus(s)->deadlineMissed.totalChanged = 0;
-        v_gidSetNil(v_readerStatus(s)->deadlineMissed.instanceHandle);
+        v_handleSetNil(v_readerStatus(s)->deadlineMissed.instanceHandle);
         v_readerStatus(s)->incompatibleQos.totalCount = 0;
         v_readerStatus(s)->incompatibleQos.totalChanged = 0;
         v_readerStatus(s)->incompatibleQos.lastPolicyId = V_UNKNOWN_POLICY_ID;
@@ -144,7 +144,7 @@ v_statusInit(
         c_free(type);
         v_readerStatus(s)->subscriptionMatch.totalCount = 0;
         v_readerStatus(s)->subscriptionMatch.totalChanged = 0;
-        v_readerStatus(s)->subscriptionMatch.instanceHandle = NULL;
+        v_readerStatus(s)->subscriptionMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_PARTICIPANTSTATUS:
     case K_PUBLISHERSTATUS:
@@ -257,7 +257,7 @@ v_statusNotifyLivelinessLost(
 c_bool
 v_statusNotifyDeadlineMissed(
     v_status s,
-    c_object h)
+    v_handle instanceHandle)
 {
     c_bool changed;
 
@@ -275,12 +275,12 @@ v_statusNotifyDeadlineMissed(
     case K_WRITERSTATUS:
         v_writerStatus(s)->deadlineMissed.totalCount++;
         v_writerStatus(s)->deadlineMissed.totalChanged++;
-        v_writerStatus(s)->deadlineMissed.instanceHandle = v_publicGid(v_public(h));
+        v_writerStatus(s)->deadlineMissed.instanceHandle = instanceHandle;
     break;
     case K_READERSTATUS:
         v_readerStatus(s)->deadlineMissed.totalCount++;
         v_readerStatus(s)->deadlineMissed.totalChanged++;
-        v_readerStatus(s)->deadlineMissed.instanceHandle = v_publicGid(v_public(h));
+        v_readerStatus(s)->deadlineMissed.instanceHandle = instanceHandle;
     break;
     default:
         assert(FALSE);

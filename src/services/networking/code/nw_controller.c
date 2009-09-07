@@ -57,9 +57,9 @@ C_STRUCT(nw_controller) {
   
     /* Channels for writing and reading data */
     nw_bridge bridge;
-    unsigned int nofChannelUsers;
+    os_uint32 nofChannelUsers;
     nw_channelUser *channelUsers /* [nofChannelUsers] */;
-    unsigned int nofEntryReaders;
+    os_uint32 nofEntryReaders;
     v_networkId networkId;
 
     /* Class for administration and lookup of networking partitions */
@@ -84,7 +84,7 @@ onNewGroupReaderAction(
     v_group group;
     nw_controller controller;
     v_networkReaderEntry entry;   
-    unsigned int i;
+    os_uint32 i;
     v_networkPartitionId networkPartitionId;
 
     reader = v_networkReader(e);
@@ -222,7 +222,7 @@ onNodeStarted(
     v_networkId networkId,
     nw_address address,
     c_time detectedTime,
-    unsigned int aliveCount,
+    os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
 {
     nw_controller controller = (nw_controller)arg;
@@ -252,7 +252,7 @@ onNodeStopped(
     v_networkId networkId,
     nw_address address,
     c_time detectedTime,
-    unsigned int aliveCount,
+    os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
 {
     nw_controller controller = (nw_controller)arg;
@@ -277,7 +277,7 @@ onNodeDied(
     v_networkId networkId,
     nw_address address,
     c_time detectedTime,
-    unsigned int aliveCount,
+    os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
 {
     nw_controller controller = (nw_controller)arg;
@@ -310,12 +310,12 @@ nw_controllerInitializeChannels(
     nw_onFatalCallBack onFatal,
     c_voidp onFatalUsrData)
 {
-    unsigned int nofChannelUsers = 0;
-    unsigned int nofEntryReaders = 0;
+    os_uint32 nofChannelUsers = 0;
+    os_uint32 nofEntryReaders = 0;
     nw_sendChannel sendChannel;
     nw_receiveChannel receiveChannel;
-    int nofChannels = 0;
-    int iChannel;
+    os_int32 nofChannels = 0;
+    os_int32 iChannel;
     c_char *channelName;
     nw_bool useDiscovery = FALSE;
 
@@ -450,7 +450,7 @@ nw_controllerSplitPartitionTopic(
     os_address partitionLen;
     char *dotPos;
     const char *topicPos;
-    unsigned int topicLen;
+    os_uint32 topicLen;
     char *wildcardPos;
     
     if (expression != NULL) {
@@ -505,8 +505,8 @@ nw_controllerInitializePartitions(
 {
     c_iter partitionList;
     c_iter mappingList;
-    int nofPartitions;
-    int iPartition;
+    os_int32 nofPartitions;
+    os_int32 iPartition;
     u_cfElement partition;
     u_cfAttribute attrAddress;
     char *partitionAddress;
@@ -515,8 +515,8 @@ nw_controllerInitializePartitions(
     u_cfAttribute attrConnected;
     c_bool connected;
 
-    int nofMappings;
-    int iMapping;
+    os_int32 nofMappings;
+    os_int32 iMapping;
     u_cfElement mapping;
     u_cfAttribute attrExpression;
     char *mappingExpression;
@@ -677,7 +677,7 @@ static void
 nw_controllerFinalize(
     nw_controller controller)
 {
-    unsigned int i;
+    os_uint32 i;
     
     if (controller) {
       
@@ -738,7 +738,7 @@ void
 nw_controllerStart(
     nw_controller controller)
 {
-    unsigned int i;
+    os_uint32 i;
     c_ulong mask;
     
     if (controller) {
@@ -772,7 +772,7 @@ void
 nw_controllerStop(
     nw_controller controller)
 {
-    unsigned int i;
+    os_uint32 i;
     c_ulong mask;
 
     if (controller) {

@@ -47,7 +47,6 @@ template <class T> class DDS_DCPS_mgr;
 namespace DDS
 {
    // Primitive types
-
    typedef os_uchar Boolean;
    typedef Boolean& Boolean_out;
    typedef Boolean* Boolean_ptr;
@@ -107,6 +106,18 @@ namespace DDS
 
    typedef String ObjectId;
 
+   enum TCKind
+   {
+      tk_null, tk_void, tk_short, tk_long,
+      tk_ushort, tk_ulong, tk_float, tk_double,
+      tk_boolean, tk_char, tk_octet, tk_any,
+      tk_TypeCode, tk_Principal, tk_objref, tk_struct,
+      tk_union, tk_enum, tk_string, tk_sequence,
+      tk_array, tk_alias, tk_except, tk_longlong,
+      tk_ulonglong, tk_longdouble, tk_wchar, tk_wstring,
+      tk_fixed, tk_local_interface, _TCKind = enum32
+   };
+
    class SACPP_API Object;
    typedef Object* Object_ptr;
    typedef DDS_DCPSInterface_var<Object> Object_var;
@@ -119,16 +130,22 @@ namespace DDS
    typedef DDS_DCPSInterface_out<LocalObject> LocalObject_out;
    typedef DDS_DCPSInterface_mgr<LocalObject> LocalObject_mgr;
 
-   typedef DDS_DCPSUFLSeq<Octet> Octet_seq;
-   typedef Octet_seq* Octet_seq_ptr;
-
    class SACPP_API Exception;
+   typedef Exception* Exception_ptr;
+
    class SACPP_API UserException;
+   typedef UserException* UserException_ptr;
+
+   class SACPP_API SystemException;
+   typedef SystemException* SystemException_ptr;
+
+   class SACPP_API ExceptionInitializer;
 
    // Standard string functions
-   SACPP_API char* string_alloc(ULong len);
-   SACPP_API char* string_dup(const char* str);
-   SACPP_API void  string_free(char * str);
+   SACPP_API char * string_alloc (ULong len);
+   SACPP_API char * string_dup   (const char* str);
+   SACPP_API void string_free  (char * str);
+   SACPP_API Long string_cmp (const char * str1, const char * str2);
 
    SACPP_API void release(LocalObject_ptr p);
    SACPP_API void release(Object_ptr p);
@@ -144,26 +161,50 @@ namespace DDS
 /*                           Inline Implementations                           */
 /* ************************************************************************** */
 
-inline char*
-DDS::string_alloc(DDS::ULong len)
+SACPP_API inline char * DDS::string_alloc (DDS::ULong len)
 {
    return new char [len + 1];
 }
 
-inline void
-DDS::string_free(char * str)
+SACPP_API inline void DDS::string_free (char * str)
 {
    delete [] str;
 }
-
-inline char *
-DDS::string_dup(const char * s)
+ 
+SACPP_API inline char * DDS::string_dup (const char * s)
 {
-   char *ret = NULL;
+   char * ret = 0;
 
-   if (s) {
-      ret = DDS::string_alloc(strlen(s));
-      strcpy(ret, s);
+   if (s)
+   {
+      ret = DDS::string_alloc (strlen (s));
+      strcpy (ret, s);
+   }
+
+   return ret;
+}
+
+SACPP_API inline DDS::Long DDS::string_cmp (const char* str1, const char* str2)
+{
+   DDS::Long ret = 0;
+
+   if ((str1 != 0) || (str2 != 0))
+   {
+      if ((str1 == 0) && (str2 != 0))
+      {
+         ret = 1;
+      }
+      else
+      {
+         if ((str1 != 0) && (str2 == 0))
+         {
+            ret = -1;
+         }
+         else
+         {
+            ret = strcmp (str1, str2);
+         }
+      }
    }
 
    return ret;
@@ -171,4 +212,4 @@ DDS::string_dup(const char * s)
 
 #undef SACPP_API
 
-#endif /* SACPP_DDS_DCPS_H */
+#endif  /* SACPP_DDS_DCPS_H */

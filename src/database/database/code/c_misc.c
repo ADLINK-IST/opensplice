@@ -374,7 +374,7 @@ c_copyOut (
         return;
     }
     t = c_typeActualType(type);
-    size = c_typeSize(t,o);
+    size = c_typeSize(t);
     if (size == 0) {
         OS_REPORT(OS_WARNING,"Database misc",0,
                   "c_copyOut: zero sized type specified");

@@ -440,11 +440,11 @@ in_connectivityAdminIsLocalEntity(
 	
 	in_connectivityAdminLock(_this);
 	
+	/* this operation does not increment the refcounter, so you 
+	 * must not free the object afterwards */ 
 	found = findParticipantFacadeByGuidUnsafe(_this, guidPrefixRef);
 
 	result = found!=NULL;
-	
-	in_connectivityParticipantFacadeFree(found);
 	
 	in_connectivityAdminUnlock(_this);
 

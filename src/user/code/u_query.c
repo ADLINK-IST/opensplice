@@ -512,6 +512,7 @@ u_queryReadInstance(
 
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
+        handle = u_instanceHandleFix(handle,v_collection(query));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             assert(instance != NULL);
@@ -543,6 +544,7 @@ u_queryTakeInstance(
 
     result = u_queryClaim(_this,&query);
     if ((result == U_RESULT_OK) && (query != NULL)) {
+        handle = u_instanceHandleFix(handle,v_collection(query));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
             assert(instance != NULL);
@@ -579,6 +581,7 @@ u_queryReadNextInstance(
         if ( u_instanceHandleIsNil(handle) ) {
             v_queryReadNextInstance(query, NULL, action, actionArg);
         } else {
+            handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {
@@ -615,6 +618,7 @@ u_queryTakeNextInstance(
         if ( u_instanceHandleIsNil(handle) ) {
             v_queryTakeNextInstance(query, NULL, action, actionArg);
         } else {
+            handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
             if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {

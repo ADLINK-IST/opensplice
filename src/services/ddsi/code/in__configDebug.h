@@ -22,13 +22,24 @@
 extern "C" {
 #endif
 
+/* constructor */
+in_configDebug 
+in_configDebugNew(void);
 
+/* destructor */
+void
+in_configDebugFree(in_configDebug _this);
 
 /**
  * Macro that allows the implementation of type checking when casting an
  * object. The signature of the 'casting macro' must look like this:
  */
 #define in_configDebug(_this) ((in_configDebug)_this)
+
+void
+in_configDebugSetWaitTime(
+    in_configDebug _this, 
+    os_uint32 waitTime);
 
 os_uint32
 in_configDebugGetWaitTime(

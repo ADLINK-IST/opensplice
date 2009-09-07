@@ -18,6 +18,8 @@ extern "C" {
 #endif
 
 #include <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 typedef pid_t os_os_procId;
 

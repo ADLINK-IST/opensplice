@@ -1,3 +1,22 @@
+#!/bin/bash
+
+BASECMD=`basename -- $0`
+if [ "$BASECMD" = "configure" ]
+then
+   cd `dirname $0`
+fi
+
+if [ "$1" = "-full" -o "$2" = "-full" ]
+then 
+   STRICT_CHECKS=yes
+   if [ "$1" = "-full" ]
+   then
+      shift
+   fi
+else
+   STRICT_CHECKS=no
+fi
+
 if [ ! -f "./bin/configure_functions" ]
 then
     echo "ERROR: Cannot execute in directories other than that of the Splice root directory"
@@ -32,22 +51,27 @@ fi
 
 export_vars
 
-TARGET_DIR=$OSPL_HOME
+ENVFILE=envs-${SPLICE_TARGET}
+TARGET_DIR="$OSPL_HOME"
 if [ -f $OSPL_OUTER_HOME/setup/environment/${SPLICE_TARGET} ]
 then
-    TARGET_DIR=$OSPL_OUTER_HOME
+    TARGET_DIR="$OSPL_OUTER_HOME"
 fi
-export TARGET_DIR
+set_var TARGET_DIR "$TARGET_DIR"
+. setup/configuration/setup_components $OSPL_HOME
+
 . setup/environment/${SPLICE_TARGET}
 if [ "$CONFIGURATION" != "OK" ]
 then
     cleanup
     return 1
 fi
-
-. setup/configuration/setup_components $OSPL_HOME
+set_var SPLICE_TARGET $SPLICE_TARGET
+set_var SPLICE_HOST $SPLICE_HOST
 
 setup_pathed_vars
+dump_vars > "$ENVFILE.sh"
+. "./$ENVFILE.sh"
 print_setup
 
 cleanup

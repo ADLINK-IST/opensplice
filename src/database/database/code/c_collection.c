@@ -3133,7 +3133,6 @@ c_queryNew(
 
         if (found == NULL) {
             o = c_metaDefine(c_metaObject(base),M_COLLECTION);
-            //c_metaObject(o)->name = name;
             c_metaObject(o)->name = NULL;
             c_collectionType(o)->kind = C_QUERY;
             c_collectionType(o)->subType = c_keep(subType);

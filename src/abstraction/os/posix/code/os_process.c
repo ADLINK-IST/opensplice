@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/posix/code/os_process.c
@@ -117,7 +117,7 @@ signalHandlerThread(
         }
     break;
     case SIGQUIT:
-        if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) && 
+        if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) &&
             (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
             _SIGNALVECTOR_(SIGQUIT).sa_handler(SIGQUIT);
         }
@@ -154,7 +154,7 @@ os_processModuleInit(void)
 #if !defined INTEGRITY && !defined VXWORKS_RTP
     struct sigaction action;
     pthread_attr_t      thrAttr;
-    int result; 
+    int result;
 
      result = pipe(_ospl_signalpipe);
 
@@ -205,7 +205,7 @@ os_processModuleExit(void)
     if (pthread_self() != _ospl_signalHandlerThreadId) {
         write(_ospl_signalpipe[1], &sig, sizeof(sig));
         pthread_join(_ospl_signalHandlerThreadId, &thread_result);
-    } 
+    }
 #endif
 }
 #undef _SIGACTION_
@@ -226,7 +226,7 @@ os_procSetTerminationHandler(
  *
  * \b os_procAtExit registers an process exit
  * handler by calling \b atexit passing the \b function
- * to be called when the process exists.
+ * to be called when the process exits.
  * The standard POSIX implementation guarantees the
  * required order of execution of the exit handlers.
  */
@@ -295,7 +295,7 @@ os_procCreate(
     char *argin;
     struct sched_param sched_param;
     int sched_policy;
-    
+
     char environment[512];
 
     assert(executable_file != NULL);
@@ -569,7 +569,7 @@ os_procAttrGetClass(void)
     int policy;
 
     policy = sched_getscheduler(getpid());
-    switch (policy) 
+    switch (policy)
     {
        case SCHED_FIFO:
        case SCHED_RR:
@@ -579,12 +579,12 @@ os_procAttrGetClass(void)
           class = OS_SCHED_TIMESHARE;
           break;
        case -1:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1, 
+          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
                       "sched_getscheduler failed with error %d", errno);
           class = OS_SCHED_DEFAULT;
-          break;          
+          break;
        default:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1, 
+          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
                       "sched_getscheduler unexpected return value %d", policy);
           class = OS_SCHED_DEFAULT;
           break;
@@ -604,9 +604,9 @@ os_procAttrGetPriority(void)
     struct sched_param param;
 
     param.sched_priority = 0;
-    if (sched_getparam(getpid(), &param) == -1) 
+    if (sched_getparam(getpid(), &param) == -1)
     {
-       OS_REPORT_1 (OS_WARNING, "os_procAttrGetPriority", 1, 
+       OS_REPORT_1 (OS_WARNING, "os_procAttrGetPriority", 1,
                     "sched_getparam failed with error %d", errno);
     }
     return param.sched_priority;

@@ -27,7 +27,7 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define     u_query(o)      ((u_query)(o))
+#define u_query(o) ((u_query)(o))
 
 OS_API u_query
 u_queryNew(

@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+#if 0
 typedef short int                               gapi_short;
 typedef int                                     gapi_long;
 typedef long long int                           gapi_long_long;
@@ -46,6 +47,20 @@ typedef char                                    gapi_char;
 typedef unsigned char                           gapi_octet;
 typedef unsigned char                           gapi_boolean;
 typedef gapi_char *                             gapi_string;
+#else
+typedef c_short     gapi_short;
+typedef c_long      gapi_long;
+typedef c_longlong  gapi_long_long;
+typedef c_ushort    gapi_unsigned_short;
+typedef c_ulong     gapi_unsigned_long;
+typedef c_ulonglong gapi_unsigned_long_long;
+typedef c_float     gapi_float;
+typedef c_double    gapi_double;
+typedef c_char      gapi_char;
+typedef c_octet     gapi_octet;
+typedef c_bool      gapi_boolean;
+typedef c_string    gapi_string;
+#endif
 
 typedef void (*_dealloactorType)(void *object);
 typedef void *(*_bufferAllocatorType)(gapi_unsigned_long len);
@@ -269,7 +284,6 @@ typedef C_STRUCT(gapi_duration_t) {
 
 OS_API gapi_duration_t *
 gapi_duration_t__alloc (void);
-
 /*
  * struct Time_t {
  *     long sec;
@@ -380,7 +394,6 @@ typedef gapi_unsigned_long gapi_statusMask;
 #define GAPI_SUBSCRIPTION_MATCH_STATUS              16384U
 
 #define GAPI_ANY_STATUS              0xFFFF
-
 
 /*
  * struct InconsistentTopicStatus {
@@ -696,14 +709,12 @@ typedef void (*gapi_listener_InconsistentTopicListener)
     (
     void *listener_data,
     gapi_topic topic,
-    const gapi_inconsistentTopicStatus *status
-    );
+    const gapi_inconsistentTopicStatus *status);
 
 typedef void (*gapi_listener_AllDataDisposedListener)
     (
     void *listener_data,
-    gapi_topic topic
-    );
+    gapi_topic topic);
 
 struct gapi_topicListener {
     void *listener_data;
@@ -720,29 +731,25 @@ typedef void (*gapi_listener_OfferedDeadlineMissedListener)
     (
     void *listener_data,
     gapi_dataWriter writer,
-    const gapi_offeredDeadlineMissedStatus *status
-    );
+    const gapi_offeredDeadlineMissedStatus *status);
 
 typedef void (*gapi_listener_LivelinessLostListener)
     (
     void *listener_data,
     gapi_dataWriter writer,
-    const gapi_livelinessLostStatus *status
-    );
+    const gapi_livelinessLostStatus *status);
 
 typedef void (*gapi_listener_OfferedIncompatibleQosListener)
     (
     void *listener_data,
     gapi_dataWriter writer,
-    const gapi_offeredIncompatibleQosStatus *status
-    );
+    const gapi_offeredIncompatibleQosStatus *status);
 
 typedef void (*gapi_listener_PublicationMatchedListener)
     (
     void *listener_data,
     gapi_dataWriter writer,
-    const gapi_publicationMatchedStatus *status
-    );
+    const gapi_publicationMatchedStatus *status);
 
 struct gapi_dataWriterListener {
     void *listener_data;
@@ -772,49 +779,42 @@ typedef void (*gapi_listener_RequestedDeadlineMissedListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_requestedDeadlineMissedStatus *status
-    );
+    const gapi_requestedDeadlineMissedStatus *status);
 
 typedef void (*gapi_listener_LivelinessChangedListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_livelinessChangedStatus *status
-    );
+    const gapi_livelinessChangedStatus *status);
 
 typedef void (*gapi_listener_RequestedIncompatibleQosListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_requestedIncompatibleQosStatus *status
-    );
+    const gapi_requestedIncompatibleQosStatus *status);
 
 typedef void (*gapi_listener_SampleRejectedListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_sampleRejectedStatus *status
-    );
+    const gapi_sampleRejectedStatus *status);
 
 typedef void (*gapi_listener_DataAvailableListener)
     (
     void *listener_data,
-    gapi_dataReader reader
-    );
+    gapi_dataReader reader);
 
 typedef void (*gapi_listener_SubscriptionMatchedListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_subscriptionMatchedStatus *status
-    );
+    const gapi_subscriptionMatchedStatus *status);
 
 typedef void (*gapi_listener_SampleLostListener)
     (
     void *listener_data,
     gapi_dataReader reader,
-    const gapi_sampleLostStatus *status
-    );
+    const gapi_sampleLostStatus *status);
 
 struct gapi_dataReaderListener {
     void *listener_data;
@@ -835,8 +835,7 @@ OS_API struct gapi_dataReaderListener *gapi_dataReaderListener__alloc (void);
 typedef void (*gapi_listener_DataOnReadersListener)
     (
     void *listener_data,
-    gapi_subscriber sub
-    );
+    gapi_subscriber sub);
 
 struct gapi_subscriberListener {
     void *listener_data;
@@ -1237,8 +1236,7 @@ gapi_queryCondition_get_query_expression (
 OS_API gapi_returnCode_t
 gapi_queryCondition_get_query_parameters (
     gapi_queryCondition _this,
-    gapi_stringSeq * query_parameters
-    );
+    gapi_stringSeq * query_parameters);
 
 /*     ReturnCode_t
  *     set_query_parameters(
@@ -1247,8 +1245,7 @@ gapi_queryCondition_get_query_parameters (
 OS_API gapi_returnCode_t
 gapi_queryCondition_set_query_parameters (
     gapi_queryCondition _this,
-    const gapi_stringSeq *query_parameters
-    );
+    const gapi_stringSeq *query_parameters);
 
 /*
  * // ----------------------------------------------------------------------
@@ -2344,8 +2341,7 @@ gapi_domainParticipant_create_publisher (
     gapi_domainParticipant _this,
     const gapi_publisherQos *qos,
     const struct gapi_publisherListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     ReturnCode_t
  *     delete_publisher(
@@ -2366,8 +2362,7 @@ gapi_domainParticipant_create_subscriber (
     gapi_domainParticipant _this,
     const gapi_subscriberQos *qos,
     const struct gapi_subscriberListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     ReturnCode_t
  *     delete_subscriber(
@@ -2399,8 +2394,7 @@ gapi_domainParticipant_create_topic (
     const gapi_char *type_name,
     const gapi_topicQos *qos,
     const struct gapi_topicListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     ReturnCode_t
  *     delete_topic(
@@ -2519,8 +2513,7 @@ OS_API gapi_returnCode_t
 gapi_domainParticipant_set_listener (
     gapi_domainParticipant _this,
     const struct gapi_domainParticipantListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     DomainParticipantListener
  *     get_listener();
@@ -2812,8 +2805,7 @@ gapi_domainParticipantFactory_lookup_participant (
 OS_API gapi_returnCode_t
 gapi_domainParticipantFactory_set_qos (
     gapi_domainParticipantFactory _this,
-    const gapi_domainParticipantFactoryQos *qos
-    );
+    const gapi_domainParticipantFactoryQos *qos);
 
 /*     ReturnCode_t
  *     get_qos(
@@ -2822,8 +2814,7 @@ gapi_domainParticipantFactory_set_qos (
 OS_API gapi_returnCode_t
 gapi_domainParticipantFactory_get_qos (
     gapi_domainParticipantFactory _this,
-    gapi_domainParticipantFactoryQos *qos
-    );
+    gapi_domainParticipantFactoryQos *qos);
 
 
 /*     ReturnCode_t
@@ -3004,8 +2995,7 @@ gapi_topicDescription_get_participant (
 OS_API gapi_returnCode_t
 gapi_topic_get_inconsistent_topic_status (
     gapi_topic _this,
-    gapi_inconsistentTopicStatus *status
-    );
+    gapi_inconsistentTopicStatus *status);
 
 /*     ReturnCode_t
  *     set_listener(
@@ -3016,8 +3006,7 @@ OS_API gapi_returnCode_t
 gapi_topic_set_listener (
     gapi_topic _this,
     const struct gapi_topicListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     TopicListener
  *     get_listener();
@@ -3099,8 +3088,7 @@ gapi_contentFilteredTopic_get_filter_expression (
 OS_API gapi_returnCode_t
 gapi_contentFilteredTopic_get_expression_parameters (
     gapi_contentFilteredTopic _this,
-    gapi_stringSeq *expression_parameters
-    );
+    gapi_stringSeq *expression_parameters);
 
 /*     ReturnCode_t
  *     set_expression_parameters(
@@ -3166,8 +3154,7 @@ gapi_multiTopic_get_subscription_expression (
 OS_API gapi_returnCode_t
 gapi_multiTopic_get_expression_parameters (
     gapi_multiTopic _this,
-    gapi_stringSeq *expression_parameters
-    );
+    gapi_stringSeq *expression_parameters);
 
 /*     ReturnCode_t
  *     set_expression_parameters(
@@ -3230,8 +3217,7 @@ gapi_publisher_create_datawriter (
     const gapi_topic a_topic,
     const gapi_dataWriterQos *qos,
     const struct gapi_dataWriterListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     ReturnCode_t
  *     delete_datawriter(
@@ -3287,8 +3273,7 @@ OS_API gapi_returnCode_t
 gapi_publisher_set_listener (
     gapi_publisher _this,
     const struct gapi_publisherListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     PublisherListener
  *     get_listener();
@@ -3332,8 +3317,7 @@ gapi_publisher_end_coherent_changes (
 OS_API gapi_returnCode_t
 gapi_publisher_wait_for_acknowledgments (
     gapi_publisher _this,
-    const gapi_duration_t *max_wait
-    );
+    const gapi_duration_t *max_wait);
 
 /*     DomainParticipant
  *     get_participant();
@@ -3489,8 +3473,7 @@ OS_API gapi_returnCode_t
 gapi_dataWriter_set_listener (
     gapi_dataWriter _this,
     const struct gapi_dataWriterListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     DataWriterListener
  *     get_listener();
@@ -3520,8 +3503,7 @@ gapi_dataWriter_get_publisher (
 OS_API gapi_returnCode_t
 gapi_dataWriter_wait_for_acknowledgments (
     gapi_dataWriter _this,
-    const gapi_duration_t *max_wait
-    );
+    const gapi_duration_t *max_wait);
 
 
 /*     // Access the status
@@ -3531,8 +3513,7 @@ gapi_dataWriter_wait_for_acknowledgments (
 OS_API gapi_returnCode_t
 gapi_dataWriter_get_liveliness_lost_status (
     gapi_dataWriter _this,
-    gapi_livelinessLostStatus * status
-    );
+    gapi_livelinessLostStatus * status);
 
 /*     OfferedDeadlineMissedStatus
  *     get_offered_deadline_missed_status();
@@ -3540,8 +3521,7 @@ gapi_dataWriter_get_liveliness_lost_status (
 OS_API gapi_returnCode_t
 gapi_dataWriter_get_offered_deadline_missed_status (
     gapi_dataWriter _this,
-    gapi_offeredDeadlineMissedStatus * status
-    );
+    gapi_offeredDeadlineMissedStatus * status);
 
 /*     OfferedIncompatibleQosStatus
  *     get_offered_incompatible_qos_status();
@@ -3549,8 +3529,7 @@ gapi_dataWriter_get_offered_deadline_missed_status (
 OS_API gapi_returnCode_t
 gapi_dataWriter_get_offered_incompatible_qos_status (
     gapi_dataWriter _this,
-    gapi_offeredIncompatibleQosStatus * status
-    );
+    gapi_offeredIncompatibleQosStatus * status);
 
 /*     PublicationMatchedStatus
  *     get_publication_matched_status();
@@ -3558,8 +3537,7 @@ gapi_dataWriter_get_offered_incompatible_qos_status (
 OS_API gapi_returnCode_t
 gapi_dataWriter_get_publication_matched_status (
     gapi_dataWriter _this,
-    gapi_publicationMatchedStatus * status
-    );
+    gapi_publicationMatchedStatus * status);
 
 /*     ReturnCode_t
  *     assert_liveliness();
@@ -3640,8 +3618,7 @@ gapi_subscriber_create_datareader (
     const gapi_topicDescription a_topic,
     const gapi_dataReaderQos *qos,
     const struct gapi_dataReaderListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     ReturnCode_t
  *     delete_datareader(
@@ -3719,8 +3696,7 @@ OS_API gapi_returnCode_t
 gapi_subscriber_set_listener (
     gapi_subscriber _this,
     const struct gapi_subscriberListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     SubscriberListener
  *     get_listener();
@@ -4042,8 +4018,7 @@ OS_API gapi_returnCode_t
 gapi_dataReader_set_listener (
     gapi_dataReader _this,
     const struct gapi_dataReaderListener *a_listener,
-    const gapi_statusMask mask
-    );
+    const gapi_statusMask mask);
 
 /*     DataReaderListener
  *     get_listener();
@@ -4072,8 +4047,7 @@ gapi_dataReader_get_subscriber (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_sample_rejected_status (
     gapi_dataReader _this,
-    gapi_sampleRejectedStatus * status
-    );
+    gapi_sampleRejectedStatus * status);
 
 /*     LivelinessChangedStatus
  *     get_liveliness_changed_status();
@@ -4081,8 +4055,7 @@ gapi_dataReader_get_sample_rejected_status (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_liveliness_changed_status (
     gapi_dataReader _this,
-    gapi_livelinessChangedStatus * status
-    );
+    gapi_livelinessChangedStatus * status);
 
 /*     RequestedDeadlineMissedStatus
  *     get_requested_deadline_missed_status();
@@ -4090,8 +4063,7 @@ gapi_dataReader_get_liveliness_changed_status (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_requested_deadline_missed_status (
     gapi_dataReader _this,
-    gapi_requestedDeadlineMissedStatus * status
-    );
+    gapi_requestedDeadlineMissedStatus * status);
 
 /*     RequestedIncompatibleQosStatus
  *     get_requested_incompatible_qos_status();
@@ -4099,8 +4071,7 @@ gapi_dataReader_get_requested_deadline_missed_status (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_requested_incompatible_qos_status (
     gapi_dataReader _this,
-    gapi_requestedIncompatibleQosStatus * status
-    );
+    gapi_requestedIncompatibleQosStatus * status);
 
 /*     SubscriptionMatchedStatus
  *     get_subscription_match_status();
@@ -4108,8 +4079,7 @@ gapi_dataReader_get_requested_incompatible_qos_status (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_subscription_matched_status (
     gapi_dataReader _this,
-    gapi_subscriptionMatchedStatus * status
-    );
+    gapi_subscriptionMatchedStatus * status);
 
 /*     SampleLostStatus
  *     get_sample_lost_status();
@@ -4117,8 +4087,7 @@ gapi_dataReader_get_subscription_matched_status (
 OS_API gapi_returnCode_t
 gapi_dataReader_get_sample_lost_status (
     gapi_dataReader _this,
-    gapi_sampleLostStatus * status
-    );
+    gapi_sampleLostStatus * status);
 
 /*     ReturnCode_t
  *     wait_for_historical_data(
@@ -4803,8 +4772,7 @@ gapi_fooDataWriter_get_key_value (
 OS_API gapi_instanceHandle_t
 gapi_fooDataWriter_lookup_instance(
     gapi_dataWriter _this,
-    const gapi_foo* instance_data
-    );
+    const gapi_foo* instance_data);
 
 /*
  * The following FooDataReader operations are not for
@@ -5039,8 +5007,7 @@ OS_API gapi_returnCode_t
 gapi_fooDataReader_read_next_sample (
     gapi_fooDataReader _this,
     gapi_foo * data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 /* ReturnCode_t
  * take_next_sample(
@@ -5051,8 +5018,7 @@ OS_API gapi_returnCode_t
 gapi_fooDataReader_take_next_sample (
     gapi_fooDataReader _this,
     gapi_foo * data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 /* ReturnCode_t
  * read_instance(
@@ -5323,8 +5289,7 @@ OS_API gapi_returnCode_t
 gapi_fooDataReaderView_read_next_sample (
     gapi_fooDataReaderView _this,
     gapi_foo * data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 /* ReturnCode_t
  * take_next_sample(
@@ -5335,8 +5300,7 @@ OS_API gapi_returnCode_t
 gapi_fooDataReaderView_take_next_sample (
     gapi_fooDataReaderView _this,
     gapi_foo * data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 /* ReturnCode_t
  * read_instance(
@@ -5647,15 +5611,13 @@ OS_API gapi_returnCode_t
 gapi_participantBuiltinTopicDataDataReader_read_next_sample (
     gapi_fooDataReader _this,
     gapi_participantBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_participantBuiltinTopicDataDataReader_take_next_sample (
     gapi_fooDataReader _this,
     gapi_participantBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_participantBuiltinTopicDataDataReader_read_instance (
@@ -5723,8 +5685,7 @@ OS_API gapi_returnCode_t
 gapi_participantBuiltinTopicDataDataReader_return_loan (
     gapi_fooDataReader _this,
     gapi_participantBuiltinTopicDataSeq *data_values,
-    gapi_sampleInfoSeq *info_seq
-    );
+    gapi_sampleInfoSeq *info_seq);
 
 OS_API gapi_returnCode_t
 gapi_participantBuiltinTopicDataDataReader_get_key_value (
@@ -5846,15 +5807,13 @@ OS_API gapi_returnCode_t
 gapi_topicBuiltinTopicDataDataReader_read_next_sample (
     gapi_fooDataReader _this,
     gapi_topicBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_topicBuiltinTopicDataDataReader_take_next_sample (
     gapi_fooDataReader _this,
     gapi_topicBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_topicBuiltinTopicDataDataReader_read_instance (
@@ -5922,8 +5881,7 @@ OS_API gapi_returnCode_t
 gapi_topicBuiltinTopicDataDataReader_return_loan (
     gapi_fooDataReader _this,
     gapi_topicBuiltinTopicDataSeq *data_values,
-    gapi_sampleInfoSeq *info_seq
-    );
+    gapi_sampleInfoSeq *info_seq);
 
 OS_API gapi_returnCode_t
 gapi_topicBuiltinTopicDataDataReader_get_key_value (
@@ -6045,15 +6003,13 @@ OS_API gapi_returnCode_t
 gapi_publicationBuiltinTopicDataDataReader_read_next_sample (
     gapi_fooDataReader _this,
     gapi_publicationBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_publicationBuiltinTopicDataDataReader_take_next_sample (
     gapi_fooDataReader _this,
     gapi_publicationBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_publicationBuiltinTopicDataDataReader_read_instance (
@@ -6121,8 +6077,7 @@ OS_API gapi_returnCode_t
 gapi_publicationBuiltinTopicDataDataReader_return_loan (
     gapi_fooDataReader _this,
     gapi_publicationBuiltinTopicDataSeq *data_values,
-    gapi_sampleInfoSeq *info_seq
-    );
+    gapi_sampleInfoSeq *info_seq);
 
 OS_API gapi_returnCode_t
 gapi_publicationBuiltinTopicDataDataReader_get_key_value (
@@ -6244,15 +6199,13 @@ OS_API gapi_returnCode_t
 gapi_subscriptionBuiltinTopicDataDataReader_read_next_sample (
     gapi_fooDataReader _this,
     gapi_subscriptionBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_subscriptionBuiltinTopicDataDataReader_take_next_sample (
     gapi_fooDataReader _this,
     gapi_subscriptionBuiltinTopicData *data_values,
-    gapi_sampleInfo *sample_info
-    );
+    gapi_sampleInfo *sample_info);
 
 OS_API gapi_returnCode_t
 gapi_subscriptionBuiltinTopicDataDataReader_read_instance (
@@ -6320,8 +6273,7 @@ OS_API gapi_returnCode_t
 gapi_subscriptionBuiltinTopicDataDataReader_return_loan (
     gapi_fooDataReader _this,
     gapi_subscriptionBuiltinTopicDataSeq *data_values,
-    gapi_sampleInfoSeq *info_seq
-    );
+    gapi_sampleInfoSeq *info_seq);
 
 OS_API gapi_returnCode_t
 gapi_subscriptionBuiltinTopicDataDataReader_get_key_value (

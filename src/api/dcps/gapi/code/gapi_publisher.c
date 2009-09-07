@@ -38,22 +38,6 @@ C_STRUCT(_Publisher) {
     gapi_set                       dataWriterSet;
 };
 
-static v_publisherQos
-newPublisherQos (
-    void)
-{
-    v_publisherQos publisherQos;
-
-    publisherQos = u_publisherQosNew(NULL);
-    if ( publisherQos ) {
-        if ( publisherQos->partition ) {
-            os_free(publisherQos->partition);
-            publisherQos->partition = NULL;
-        }
-    }
-    return publisherQos;
-}
-
 static gapi_boolean
 copyPublisherQosIn (
     const gapi_publisherQos *srcQos,
@@ -193,7 +177,7 @@ _PublisherNew (
     }
 
     if ( newPublisher ) {
-        publisherQos = newPublisherQos ();
+        publisherQos = u_publisherQosNew(NULL);
         if ( publisherQos ) {
             if ( !copyPublisherQosIn(qos, publisherQos)) {
                 _DomainEntityDispose(_DomainEntity(newPublisher));
@@ -224,12 +208,15 @@ _PublisherNew (
     }
 
     if ( newPublisher ) {        
-        _EntityStatus(newPublisher) = _Status(_PublisherStatusNew(newPublisher, a_listener,mask));
+        _EntityStatus(newPublisher) = _Status(_PublisherStatusNew(newPublisher,
+                                              a_listener,
+                                             mask));
         if ( _EntityStatus(newPublisher) ) {
             if ( qos->partition.name._length == 0 ) {
                 /* 
-                 * behaviour of the kernel in case of an empty sequence is that it is related no
-                 * none of the partitions, while DCPS expects it to be conected to all partitions.
+                 * behaviour of the kernel in case of an empty sequence is that
+                 * it is related no none of the partitions, while DCPS expects
+                 * it to be conected to all partitions.
                  * Therefore this has to be done seperately.
                  */
                 u_publisherPublish (U_PUBLISHER_GET(newPublisher), "");
@@ -372,9 +359,18 @@ gapi_publisher_create_datawriter (
             typeSupport = _DomainParticipantFindType(participant, typeName);
             /* if create function is NULL, take default from data writer */
             if ( _TypeSupportGetDataWriter(typeSupport) == NULL ) {
-                datawriter = _DataWriterNew(topic, typeSupport, writerQos, a_listener, mask, publisher);
+                datawriter = _DataWriterNew(topic,
+                                            typeSupport,
+                                            writerQos,
+                                            a_listener,
+                                            mask,
+                                            publisher);
             } else {
-                result = _TypeSupportGetDataWriter(typeSupport)(a_topic, writerQos, a_listener, mask, _this);
+                result = _TypeSupportGetDataWriter(typeSupport)(a_topic,
+                                                                writerQos,
+                                                                a_listener,
+                                                                mask,
+                                                                _this);
                 datawriter = gapi_dataWriterClaim(_this, &rc);
             }
             if ( datawriter ) {
@@ -551,7 +547,7 @@ gapi_publisher_set_qos (
     }
     
     if ( result == GAPI_RETCODE_OK ) {
-        publisherQos = newPublisherQos();
+        publisherQos = u_publisherQosNew(NULL);
         if (publisherQos) {
             if ( copyPublisherQosIn(qos, publisherQos) ) {
                 uResult = u_entitySetQoS(_EntityUEntity(publisher),

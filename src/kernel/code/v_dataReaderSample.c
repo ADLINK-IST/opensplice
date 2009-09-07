@@ -41,7 +41,10 @@ v_dataReaderSampleNew(
     readerQos = v_reader(dataReader)->qos;
     if (dataReader->cachedSample != NULL) {
         sample = dataReader->cachedSample;
-//#define _SL_
+
+/* Unfinished proto for cache size control
+ * #define _SL_
+ */
 #ifdef _SL_
         dataReader->cachedSample = sample->prev;
         sample->prev = NULL;
@@ -104,7 +107,6 @@ v_dataReaderSampleFree(
         assert(C_TYPECHECK(sample, v_dataReaderSample));
         if (c_refCount(sample) == 1) {
             /* Free the slave-samples as well */
-//            v_dataReaderSampleWipeViews(sample);
             instance = v_readerSample(sample)->instance;
             index = v_index(instance->index);
             dataReader = v_dataReader(index->reader);

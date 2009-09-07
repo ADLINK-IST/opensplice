@@ -7,3 +7,4 @@ RUN_RBT=no
 RUN_EXAMPLES=no
 
 . configs/`hostname`/common
+. configs/`hostname`/dev_build

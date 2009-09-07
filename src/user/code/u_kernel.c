@@ -617,7 +617,6 @@ u_kernelNew(
     if (processConfig != NULL) {
         cf_elementFree(processConfig);
     }
-    u_userAdd(uKernel);
     r = u_userUnprotect(NULL);
 
     os_free(domainCfg.name);
@@ -760,7 +759,7 @@ u_kernelClose (
             v_kernelDetach(k->kernel);
             result = os_sharedMemoryDetach(k->shm);
             if (result != os_resultSuccess) {
-                OS_REPORT(OS_ERROR,"u_kernelFree", 0,
+                OS_REPORT(OS_ERROR,"u_kernelClose", 0,
                           "Destroy shared memory failed.");
                 r = U_RESULT_INTERNAL_ERROR;
             } else {
@@ -811,7 +810,9 @@ u_kernelFree (
             }
             /* All participants of this kernel must be disabled! */
             r = kernelDisable(k);
-            u_userRemove(k);
+            if (result != os_resultSuccess) {
+                r = U_RESULT_INTERNAL_ERROR;
+            }
             if (k->shm != NULL) {
 #ifndef INTEGRITY
                 if (unlockSharedMemory(k) != 0) {
@@ -843,10 +844,8 @@ u_kernelFree (
             k->uri = NULL;
             os_free(k);
             r = u_userUnprotect(NULL);
-            if (result != os_resultSuccess) {
-                r = U_RESULT_INTERNAL_ERROR;
-            }
         }
+
     } else {
         OS_REPORT(OS_WARNING,"u_kernelFree", 0,
                   "The specified Kernel = NIL.");
@@ -981,4 +980,25 @@ u_kernelCheckHandleServer(
                   "Illegal parameter.");
     }
     return result;
+}
+
+c_long
+u_kernelHandleServer(
+    u_kernel kernel)
+{
+    return (c_long)kernel->kernel->handleServer;
+}
+
+c_voidp
+u_kernelAddress(
+    u_kernel kernel)
+{
+    c_voidp address;
+
+    if (kernel) {
+        address =  kernel->kernel;
+    } else {
+        address =  NULL;
+    }
+    return address;
 }

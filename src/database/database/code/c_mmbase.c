@@ -22,6 +22,10 @@
 
 #define C_MM_INITIALIZED          (0xdeadbeef)
 
+#ifndef NDEBUG
+#define C_MM_CACHE_CONFIDENCE     (0xfeebdaed)
+#endif /* NDEBUG */
+
 #define ALIGNMENT                 (OS_ALIGNMENT)
 #define ALIGN_COUNT(value)        (((value) + ALIGNMENT - 1) / ALIGNMENT)
 #define ALIGN_SIZE(size)          (ALIGN_COUNT(size) * ALIGNMENT)
@@ -42,6 +46,11 @@
 #define ChunkAddress(chunk)       ((void *)(C_ADDRESS(chunk)+ChunkHeaderSize))
 #define ChunkSize(size)           (ChunkHeaderSize + size)
 
+#define CacheHeaderSize           (ALIGN_SIZE(sizeof(struct c_mmCacheHeader)))
+#define CacheAddress(cacheHeader) ((void *)(C_ADDRESS(cacheHeader) + CacheHeaderSize))
+#define CacheHeaderAddress(cache) ((void *)(C_ADDRESS(cache) - CacheHeaderSize))
+#define CacheSize(size)           (CacheHeaderSize + size)
+
 #define CoreSize(mm)              ((mm)->listEnd - (mm)->mapEnd)
 
 #define SizeToMapIndex(size)      (size/ALIGNMENT)
@@ -49,7 +58,7 @@
 
 typedef struct c_mmChunk   *c_mmChunk;
 typedef struct c_mmBinding *c_mmBinding;
-typedef struct c_mmCacheListItem *c_mmCacheListItem;
+typedef struct c_mmCacheHeader *c_mmCacheHeader;
 
 struct mmStatus_s {
     c_long used;
@@ -71,7 +80,7 @@ struct c_mm_s {
     c_address    end;
     c_ulong      size;
     c_ulong      fails;
-    c_mmCacheListItem cacheList; /* protect with cacheListLock */
+    c_mmCacheHeader cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
     c_mutex      listLock;
     c_mutex      cacheListLock;
@@ -102,9 +111,12 @@ struct c_mmBinding {
     c_long       refCount;
 };
 
-struct c_mmCacheListItem {
-    c_mmCache           cache;
-    c_mmCacheListItem   next;
+struct c_mmCacheHeader {
+    c_mmCacheHeader next;
+    c_mmCacheHeader prev;
+#ifndef NDEBUG
+    c_ulong         confidence;
+#endif /* NDEBUG */
 };
 
 static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
@@ -360,31 +372,34 @@ c_mmMallocCache(
     c_mm mm,
     c_long size)
 {
-    c_mmCache cache;
-    c_mmCacheListItem li;
+    c_mmCacheHeader cache;
 
     /* Allocate the cache */
-    cache = (c_mmCache)c_mmMalloc(mm, size);
+    cache = (c_mmCacheHeader)c_mmMalloc(mm, CacheSize(size));
 
     if(cache){
-        li = (c_mmCacheListItem)c_mmMalloc(mm, ALIGN_SIZE(sizeof(struct c_mmCacheListItem)));
-        li->cache = cache;
+#ifndef NDEBUG
+        cache->confidence = C_MM_CACHE_CONFIDENCE;
+#endif /* NDEBUG */
+        /* Will be prepended, so prev is always NULL */
+        cache->prev = NULL;
 
         c_mutexLock( &mm->cacheListLock );
 
         if(mm->cacheList){
             /* Prepend */
-            li->next = mm->cacheList;
+            cache->next = mm->cacheList;
+            mm->cacheList->prev = cache;
         } else {
             /* Linkedlist was empty, so no next */
-            li->next = NULL;
+            cache->next = NULL;
         }
-        mm->cacheList = li;
+        mm->cacheList = cache;
 
         c_mutexUnlock( &mm->cacheListLock );
     }
 
-    return (void*) cache;
+    return CacheAddress(cache);
 }
 
 /**
@@ -398,50 +413,35 @@ c_mmFreeCache(
     c_mm mm,
     void *memory)
 {
-    c_mmCache cache;
-    c_mmCacheListItem current, prev;
-    c_bool found;
+    c_mmCacheHeader cache;
 
     if(memory){
+        cache = (c_mmCacheHeader)CacheHeaderAddress(memory);
+#ifndef NDEBUG
+        assert(cache->confidence == C_MM_CACHE_CONFIDENCE);
+#endif /* NDEBUG */
+
         /* We are freeing a cache, so the list may not be empty */
         assert(mm->cacheList);
 
         c_mutexLock( &mm->cacheListLock );
-
-        cache = (c_mmCache)memory;
-        prev = mm->cacheList;
-
-        if(prev->cache == cache){
-            /* The cache is the first item, replace cacheList with next */
-            mm->cacheList = prev->next;
-            current = prev; /* current will be freed */
+        if(cache->prev){
+            cache->prev->next = cache->next;
         } else {
-            current = prev->next;
-            found = FALSE;
-
-            while(!found && current->next){
-                found = (current->cache == cache);
-                if(!found){
-                    prev = current;
-                    current = current->next;
-                }
-            }
-
-            /* The cache HAS to be in the list and should be stored in current->cache */
-            assert(found && current->cache == cache);
-
-            /* Cut the item out */
-            prev->next = current->next;
+            /* Only the first element in doubly-linked list may have prev == NULL */
+            assert(mm->cacheList == cache);
+            /* First element, so change the mm pointer to the list to the
+             * next element in line. */
+            mm->cacheList = cache->next;
         }
-
+        if(cache->next){
+            cache->next->prev = cache->prev;
+        }
         c_mutexUnlock( &mm->cacheListLock );
 
-        /* Now free the listitem */
-        c_mmFree(mm, current);
+        /* Now actually free the cache */
+        c_mmFree(mm, cache);
     }
-
-    /* Now actually free the cache */
-    c_mmFree(mm, memory);
 }
 
 #ifdef MM_CLUSTER
@@ -885,42 +885,47 @@ c_mmListState (
 
 c_mmStatus
 c_mmState (
-    c_mm mm)
+    c_mm mm,
+    c_bool fillPreAlloc)
 {
     c_mmStatus s;
-    c_mmCacheListItem cli;
+    c_mmCacheHeader ch;
 
     s.fails = mm->fails;
     s.size = mm->size;
 
     c_mutexLock(&mm->mapLock);
-    s.used    = mm->chunkMapStatus.used;
+    s.used = mm->chunkMapStatus.used;
     s.maxUsed = mm->chunkMapStatus.maxUsed;
     s.garbage = mm->chunkMapStatus.garbage;
-    s.count   = mm->chunkMapStatus.count;
+    s.count = mm->chunkMapStatus.count;
     c_mutexUnlock(&mm->mapLock);
 
     c_mutexLock(&mm->listLock);
-    s.used    += mm->chunkListStatus.used;
-    s.maxUsed  = s.maxUsed + mm->chunkListStatus.maxUsed;
+    s.used += mm->chunkListStatus.used;
+    s.maxUsed = s.maxUsed + mm->chunkListStatus.maxUsed;
     s.garbage += mm->chunkListStatus.garbage;
-    s.count   += mm->chunkListStatus.count;
+    s.count += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
 
-    /* Get the memory allocated for- and free in caches. */
-    c_mutexLock(&mm->cacheListLock);
-    cli = mm->cacheList;
     s.cached = 0;
     s.preallocated = 0;
-    while(cli){
-        /* All elements in the list MUST have a cache */
-        assert(cli->cache);
-        s.cached        += c_mmCacheGetAllocated(cli->cache);
-        s.preallocated  += c_mmCacheGetFree(cli->cache);
 
-        cli = cli->next;
+    if(fillPreAlloc){
+        /* Get the memory allocated for- and free in caches. */
+        c_mutexLock(&mm->cacheListLock);
+        ch = mm->cacheList;
+        while(ch){
+#ifndef NDEBUG
+            assert(ch->confidence == C_MM_CACHE_CONFIDENCE);
+#endif /* NDEBUG */
+            s.cached        += c_mmCacheGetAllocated(CacheAddress(ch));
+            s.preallocated  += c_mmCacheGetFree(CacheAddress(ch));
+
+            ch = ch->next;
+        }
+        c_mutexUnlock(&mm->cacheListLock);
     }
-    c_mutexUnlock(&mm->cacheListLock);
     return s;
 }
 

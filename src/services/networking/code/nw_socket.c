@@ -61,9 +61,9 @@ NW_STRUCT(nw_socket) {
     os_socket socketControl;
     /* Caching for select statement */
     fd_set sockSet;
-    int maxSockfd;
+    os_int maxSockfd;
     /* Socket state and settings */
-    int loopsback;
+    os_int loopsback;
     /* List of alternative addresses for sending data */
     nw_socketPartitions partitions;
 };
@@ -131,12 +131,12 @@ nw_socketDataAddress(
     return result;
 }
 
-int
+os_int
 nw_socketSetSendBufferSize(
     nw_socket sock,
-    int bufSize)
+    os_int bufSize)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     socklen_t optLen;
     os_result retVal;
 
@@ -168,14 +168,14 @@ nw_socketSetSendBufferSize(
 }
 
 
-int
+os_int
 nw_socketSetReceiveBufferSize(
     nw_socket sock,
-    int bufSize)
+    os_int bufSize)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     socklen_t optLen;
-    int actualSize;
+    os_int actualSize;
     os_result retVal;
 
     if (sock != NULL) {
@@ -216,12 +216,12 @@ nw_socketSetReceiveBufferSize(
 }
 
 
-int
+os_int
 nw_socketSetBroadcastOption(
     nw_socket sock,
-    int enableBroadcast)
+    os_int enableBroadcast)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     socklen_t optLen;
     os_result retVal;
 
@@ -250,12 +250,12 @@ nw_socketSetBroadcastOption(
     return result;
 }
 
-int
+os_int
 nw_socketSetTOS(
     nw_socket sock,
-    int tos)
+    os_int tos)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     socklen_t optLen;
     os_result retVal;
 
@@ -285,12 +285,12 @@ nw_socketSetTOS(
 }
 
 
-int
+os_int
 nw_socketSetDontRouteOption(
     nw_socket sock,
-    int disableRouting)
+    os_int disableRouting)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     socklen_t optLen;
     os_result retVal;
 
@@ -357,13 +357,13 @@ nw_socketGetControlSocket(
     return result;
 }
 
-int
+os_int
 nw_socketBind(
     nw_socket sock)
 {
-    int result = SK_TRUE;
+    os_int result = SK_TRUE;
     os_result retVal = os_resultSuccess;
-    int optVal;
+    os_int optVal;
     socklen_t optLen;
     struct sockaddr_in bindAddress;
 
@@ -449,13 +449,13 @@ nw_socketAddPartition(
 }
 
 
-int
+os_int
 nw_socketPrimaryAddressCompare(
     nw_socket sock,
     sk_address toCompare)
 {
     static sk_address zeroAddress = 0;
-    int result = 0;
+    os_int result = 0;
 
     NW_CONFIDENCE(sizeof(sock->sockAddrPrimary.sin_addr) == sizeof(sk_address));
 
@@ -485,7 +485,7 @@ nw_socketNew(
     const char *name)
 {
     nw_socket result = NULL;
-    int success = SK_TRUE;
+    os_int success = SK_TRUE;
     char *addressLookingFor;
     sk_addressType addressType;
     sk_portNr portNrControl = SK_CONTROLPORT(portNr);
@@ -562,7 +562,7 @@ nw_socketNew(
             success = success && nw_socketSetSendBufferSize(result, 0);
             /* Set option for custom receive buffer size */
             bufSizeRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Rx, ReceiveBufferSize);
-            success = success && nw_socketSetReceiveBufferSize(result, (int)bufSizeRequested);
+            success = success && nw_socketSetReceiveBufferSize(result, (os_int)bufSizeRequested);
 
             /* Bind to socket */
             success = success && nw_socketBind(result);
@@ -589,7 +589,7 @@ nw_socketNew(
             success = success && nw_socketSetReceiveBufferSize(result, 0);
             /* Set option for custom TOS */
             TOSRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DiffServField);
-            success = success && nw_socketSetTOS(result, (int)TOSRequested);
+            success = success && nw_socketSetTOS(result, (os_int)TOSRequested);
 
 
             if (success) {
@@ -683,7 +683,7 @@ nw_socketSendData(
 {
     sk_length result = 0;
     os_int32 sendRes;
-    int sendToSucceeded;
+    os_int sendToSucceeded;
 
     NW_CONFIDENCE(sock != NULL);
 
@@ -723,7 +723,7 @@ nw_socketSendDataTo(
 {
     sk_length result = 0;
     os_int32 sendRes;
-    int sendToSucceeded;
+    os_int sendToSucceeded;
     struct sockaddr_in sockAddrP2P;
 
     NW_CONFIDENCE(sock != NULL);
@@ -766,7 +766,7 @@ nw_socketSendDataToPartition(
 {
     sk_length result = 0;
     os_int32 sendRes;
-    int sendToSucceeded;
+    os_int sendToSucceeded;
     sk_address partitionAddress;
     struct sockaddr_in sockAddrForPartition;
     nw_bool found;
@@ -818,7 +818,7 @@ nw_socketSendControl(
 {
     sk_length result = 0;
     os_int32 sendRes;
-    int sendToSucceeded;
+    os_int sendToSucceeded;
 
     NW_CONFIDENCE(sock != NULL);
 
@@ -855,7 +855,7 @@ nw_socketSendControlTo(
 {
     sk_length result = 0;
     os_int32 sendRes;
-    int sendToSucceeded;
+    os_int sendToSucceeded;
     struct sockaddr_in sockAddrP2P;
 
     NW_CONFIDENCE(sock != NULL);
@@ -901,8 +901,8 @@ nw_socketReceive(
     os_int32 recvRes = 0;
     os_int32 selectRes;
     struct sockaddr_in sockAddr;
-    int fromLen = (int)sizeof(sockAddr);
-    int ownMessage;
+    os_int fromLen = (os_int)sizeof(sockAddr);
+    os_int ownMessage;
     nw_bool readDone = FALSE;
     os_time tmpTimeOut = *timeOut;
 #ifdef NW_DEBUGGING

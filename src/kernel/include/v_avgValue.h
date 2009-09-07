@@ -42,8 +42,6 @@ OS_API void
 v_avgValueReset (
     v_avgValue *_this);
 
-//OS_API c_time  v_avgValueGetTime    (v_avgValue *_this);
-
 OS_API c_float
 v_avgValueGetValue (
     v_avgValue *_this);
@@ -52,6 +50,10 @@ OS_API void
 v_avgValueSetValue (
     v_avgValue *_this,
     c_ulong value);
+
+/* Option: 
+ * OS_API c_time  v_avgValueGetTime    (v_avgValue *_this);
+ */
 
 #undef OS_API
 

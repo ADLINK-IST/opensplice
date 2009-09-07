@@ -27,7 +27,7 @@
 #define NW_PLUGDATABUFFER_HEADERSIZE \
         (sizeof(NW_STRUCT(nw_plugDataBuffer)))
 
-#define UI(val) ((nw_length)(val))
+#define UI(val) ((os_address)(val))
 
 #define NW_PLUGDATABUFFER_FIRSTMESSAGE(buffer) \
         ((nw_messageHolder)(UI(buffer) + NW_PLUGDATABUFFER_HEADERSIZE))
