@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** @file c__base.h
@@ -53,7 +53,6 @@ OS_API c_type   c_getMetaType (c_base base, c_metaKind kind);
     @brief Lookup the memory management object of the given database.
 */
 OS_API c_mm     c_baseMM      (c_base base);
-OS_API c_long   c_typeSize    (c_type type, c_voidp data);
 
 OS_API void     c__free(c_object object);
 
