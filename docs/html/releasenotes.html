@@ -18,8 +18,8 @@
         <ul>
           <li><a href="#platforms">Supported Platforms</a></li>
           <li><a href="#Prerequisites">Prerequisites</a></li>
-          <li><a href="#customccpp">Building your own Corba C++ API library</a></li>
-          <li><a href="#customjava">The Java API jar</a></li>
+          <li><a href="#customccpp">Building your own Corba C++ API</a></li>
+          <li><a href="#customjava">The Corba Java API</a></li>
           <li><a href="#versionswitch">Switching to the next OpenSplice DDS version</a></li>
           <li><a href="#fixedbugs">Changes and Fixed Bugs</a></li>
           <li><a href="knownissues.html">Known Issues</a></li>
@@ -51,15 +51,15 @@
         used for executing the OpenSplice DDS application programs on the target
         environment. It excludes the tooling for generation of the OpenSplice DDS
         application programs.
-        <table cols=6>
+        <table cols=9>
           <caption>
             DCPS HDE/RTS Qualified Platforms
           </caption>
             <tr>
               <th rowspan=2>Host Platform</th>
               <th rowspan=2>Target Platform</th>
-              <th colspan=5>DCPS API Language Binding</th>
-              <th colspan=1>Availability</th>
+              <th colspan=6>DCPS API Language Binding</th>
+              <th rowspan=2>Availability</th>
             </tr>
             <tr>
               <th>C (SAC)<br><i>compiler</i></th>
@@ -67,7 +67,7 @@
               <th>Corba C++ (CCPP)<br><i>compiler/ORB</i></th>
               <th>Custom Corba C++</th>
               <th>Java (SAJ)<br><i>JDK</i></th>
-              <th></th>
+              <th>Corba Java (CJ)<br><i>JDK</i></th>
             </tr>
             <tr>
               <td>SPARC/Solaris 10 (32-bit)</td>
@@ -76,6 +76,7 @@
               <td>Sun Studio 12</td>
               <td>Sun Studio 12 / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
+              <td>SUN JDK 1.5</td>
               <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
@@ -87,6 +88,7 @@
               <td>gcc 3.4 / OpenFusion TAO 1.5.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
             <tr>
@@ -97,6 +99,7 @@
               <td>gcc 4.2 / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
             <tr>
@@ -106,6 +109,7 @@
               <td>gcc 4.2</td>
               <td>gcc 4.2 / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
+              <td>SUN JDK 1.5</td>
               <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
@@ -117,6 +121,7 @@
               <td>Visual Studio 2005 Standard/ OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
             <tr>
@@ -127,12 +132,14 @@
               <td>Visual Studio 2008 Standard / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>SUN JDK 1.5</td>
               <td>GA</td>
             </tr>
             <tr>
               <td>SPARC/Solaris 8 (32-bit)</td>
               <td>PowerPC604 / VxWorks 5.5.1 (32-bit)</td>
               <td>Tornado 2.2/gcc-2.96</td>
+              <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
@@ -147,6 +154,7 @@
               <td>No default build</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>IBM JDK 1.5</td>
+              <td>IBM JDK 1.5</td>
               <td>beta</td>
             </tr>
             <tr>
@@ -157,6 +165,7 @@
               <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
+              <td>unsupported</td>
               <td>beta</td>
             </tr>
             <tr>
@@ -164,6 +173,7 @@
               <td>MVME5100/ Integrity 5.0.9 </td>
               <td>Multi 4.2.3 </td>
               <td>Multi 4.2.3 </td>
+              <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
@@ -189,15 +199,21 @@
               <th>Java (SAJ)<br><i>JDK</i></th>
             </tr>
             <tr>
-              <td>SPARC/Solaris 8 (32-bit)</td>
-              <td>SPARC/Solaris 8 (32-bit)</td>
-              <td>gcc 3.2.3 (see <a href="knownissues.html#dlrl">DLRL Known Issues)</a></td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>Sun Studio 12 (see <a href="knownissues.html#dlrl">DLRL Known Issues)</a></td>
               <td>SUN JDK 1.5</td>
             </tr>
             <tr>
               <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
               <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
-              <td>gcc 3.2.3 (see <a href="knownissues.html">DLRL Known Issues)</td>
+              <td>gcc 3.4 (see <a href="knownissues.html">DLRL Known Issues)</td>
+              <td>SUN JDK 1.5</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>gcc 4.2 (see <a href="knownissues.html">DLRL Known Issues)</td>
               <td>SUN JDK 1.5</td>
             </tr>
             <tr>
@@ -239,7 +255,7 @@
         The OpenSplice DDS DCG requires the Java Runtime Environment: SUN JRE 1.5
       </p>
 
-    <h2><a name="customccpp">Building your own Corba C++ API library</a></h2>
+    <h2><a name="customccpp">Building your own Corba C++ API</a></h2>
       <p>
         <ul>
           <li>
@@ -276,7 +292,7 @@
         library.
       </p>
 
-    <h2><a name="customjava">The Java API jar</a></h2>
+    <h2><a name="customjava">The Corba Java API</a></h2>
       <p>
         <ul>
             The OpenSplice DDS DCPS API for the Java language
@@ -285,7 +301,8 @@
             <a href= "http://www.prismtech.com" target="web">
               www.prismtech.com
             </a>).<br>
-            This can be used with any other CORBA compliant Java ORB.
+            The OpenSplice DDS Corba Java API can also be used with any other 
+            CORBA compliant Java ORB as is.
         </ul>
       </p>
 
