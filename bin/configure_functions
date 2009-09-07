@@ -16,6 +16,8 @@ function set_var
         varkeys[$i]="$1"
         varvals[$i]="$2"
     fi
+    # Set value in this shell for later comparisons.
+    declare $1="$2"
 }
 
 function unset_var                  
@@ -30,6 +32,8 @@ function unset_var
         fi
         (( i=i+1 )) 
     done
+    # unset value in this shell for later comparisons.
+    unset $1
 }
 
 function dump_vars
@@ -315,4 +319,6 @@ cleanup ()
     unset set_target_alternate
     unset export_vars
     unset cleanup
+    unset varkeys
+    unset varvals
 }
