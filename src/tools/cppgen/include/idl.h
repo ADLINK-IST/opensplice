@@ -76,7 +76,9 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // Main include file for IDL compiler. Includes the rest of the
 // files defining the different units of the compiler
 
+#ifndef WIN32
 #include <os.h>
+#endif
 
 #include <intlmacros.h>  // Define macros for intl'ion
 
