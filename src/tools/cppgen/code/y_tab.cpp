@@ -13,6 +13,14 @@
 #undef VERSION
 #endif
 
+#ifdef WIN32
+#undef CONST
+#undef VOID
+#undef IN
+#undef OUT
+#undef OPAQUE
+#endif
+
 void yyunput(int c);
 
 #if (defined(apollo) || defined(HPUX) || defined(SGI)) && defined(__cplusplus)

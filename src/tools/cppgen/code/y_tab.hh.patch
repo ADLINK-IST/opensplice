@@ -7,7 +7,7 @@
     UTL_IdList            *idlist;        /* Identifier list      */
   } YYSTYPE;
 + 
-+ #ifdef _WIN32
++ #ifdef WIN32
 + #undef CONST
 + #undef VOID
 + #undef IN
