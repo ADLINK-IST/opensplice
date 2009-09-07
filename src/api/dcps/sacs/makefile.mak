@@ -8,4 +8,4 @@ all link: csc
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-CSLIBS       += /r:System.dll /r:System.Data.dll /r:System.Xml.dll
+CSLIBS       += -lSystem -lSystem.Data -lSystem.Xml
