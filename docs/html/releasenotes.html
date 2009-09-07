@@ -19,6 +19,7 @@
           <li><a href="#platforms">Supported Platforms</a></li>
           <li><a href="#Prerequisites">Prerequisites</a></li>
           <li><a href="#customccpp">Building your own Corba C++ API library</a></li>
+          <li><a href="#customjava">The Java API jar</a></li>
           <li><a href="#versionswitch">Switching to the next OpenSplice DDS version</a></li>
           <li><a href="#fixedbugs">Changes and Fixed Bugs</a></li>
           <li><a href="knownissues.html">Known Issues</a></li>
@@ -58,6 +59,7 @@
               <th rowspan=2>Host Platform</th>
               <th rowspan=2>Target Platform</th>
               <th colspan=5>DCPS API Language Binding</th>
+              <th colspan=1>Availability</th>
             </tr>
             <tr>
               <th>C (SAC)<br><i>compiler</i></th>
@@ -65,42 +67,67 @@
               <th>Corba C++ (CCPP)<br><i>compiler/ORB</i></th>
               <th>Custom Corba C++</th>
               <th>Java (SAJ)<br><i>JDK</i></th>
+              <th></th>
             </tr>
             <tr>
-              <td>SPARC/Solaris 8 (32-bit)</td>
-              <td>SPARC/Solaris 8 (32-bit)</td>
-              <td>gcc 3.2.3</td>
-              <td>gcc 3.2.3</td>
-              <td>gcc 3.2.3 / OpenFusion 1.4.1</td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>Sun Studio 12</td>
+              <td>Sun Studio 12</td>
+              <td>Sun Studio 12 / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>GA</td>
             </tr>
             <tr>
               <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
               <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
-              <td>gcc 3.2.3</td>
-              <td>gcc 3.2.3</td>
-              <td>gcc 3.2.3 / OpenFusion 1.6.1</td>
+              <td>gcc 3.4</td>
+              <td>gcc 3.4</td>
+              <td>gcc 3.4 / OpenFusion TAO 1.5.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2 / OpenFusion TAO 1.6.1</td>
+              <td>see <a href="#customccpp">custom c++</a></td>
+              <td>SUN JDK 1.5</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2 / OpenFusion TAO 1.6.1</td>
+              <td>see <a href="#customccpp">custom c++</a></td>
+              <td>SUN JDK 1.5</td>
+              <td>GA</td>
             </tr>
             <tr>
               <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
               <td>x86 / Microsoft Windows 2003i Server/XP (32-bit)</td>
-              <td>Visual Studio 2005</td>
-              <td>Visual Studio 2005</td>
-              <td>Visual Studio 2005 / OpenFusion 1.5.1</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard/ OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
               <td>SUN JDK 1.5</td>
+              <td>GA</td>
             </tr>
             <tr>
-              <td>POWER5+ / AIX 5.3 (32-bit)</td>
-              <td>POWER5+ / AIX 5.3 (32-bit)</td>
-              <td>IBM xlC V8.0</td>
-              <td>IBM xlC++ V8.0</td>
-              <td>No default build</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>x86 / Microsoft Windows 2003i Server/XP (32-bit)</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard / OpenFusion TAO 1.6.1</td>
               <td>see <a href="#customccpp">custom c++</a></td>
-              <td>IBM JDK 1.5</td>
+              <td>SUN JDK 1.5</td>
+              <td>GA</td>
             </tr>
             <tr>
               <td>SPARC/Solaris 8 (32-bit)</td>
@@ -110,8 +137,43 @@
               <td>unsupported</td>
               <td>unsupported</td>
               <td>unsupported</td>
+              <td>GA</td>
             </tr>
-        </table>
+            <tr>
+              <td>POWER5+ / AIX 5.3 (32-bit)</td>
+              <td>POWER5+ / AIX 5.3 (32-bit)</td>
+              <td>IBM xlC V8.0</td>
+              <td>IBM xlC++ V8.0</td>
+              <td>No default build</td>
+              <td>see <a href="#customccpp">custom c++</a></td>
+              <td>IBM JDK 1.5</td>
+              <td>beta</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PowerPC604 / VxWorks 6.6 RTP (32-bit)</td>
+              <td>Workbench 3.0</td>
+              <td>Workbench 3.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>beta</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>MVME5100/ Integrity 5.0.9 </td>
+              <td>Multi 4.2.3 </td>
+              <td>Multi 4.2.3 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>beta</td>
+            </tr>
+         </table>
+      
+      <i>A beta level supported platform indicates that PrismTech has not yet consolidated all its test
+      infrastructure as per the GA platforms. PrismTech ensures that beta level platforms are still
+      robust, but they will be marked as beta until they meet the GA level test criteria.</i>
         
         <table cols=6>
           <caption>
@@ -156,7 +218,8 @@
               <td>unsupported</td>
               <td>unsupported</td>
             </tr>
-        </table>        
+        </table>      
+          
       </p>
 
     <h2><a name="Prerequisites">Prerequisites</a></h2>
@@ -183,7 +246,7 @@
             <b>Corba C++ (CCPP)</b>: The OpenSplice DDS DCPS API for the C++ language
             binding with Corba cohabitation is delivered using a specific compiler
             and ORB as shown in the table above.<br>
-            The ORB 'OpenFusion' can be obtained from PrismTech (
+            The ORB 'OpenFusion TAO' can be obtained from PrismTech (
             <a href= "http://www.prismtech.com" target="web">
               www.prismtech.com
             </a>).<br>
@@ -212,14 +275,29 @@
         Again a <b>README</b> file is delivered, describing how to generate the custom
         library.
       </p>
+
+    <h2><a name="customjava">The Java API jar</a></h2>
+      <p>
+        <ul>
+            The OpenSplice DDS DCPS API for the Java language
+            binding with Corba cohabitation is built with OpenFusion JacORB.<br>
+            The ORB 'OpenFusion JacORB' can be obtained from PrismTech (
+            <a href= "http://www.prismtech.com" target="web">
+              www.prismtech.com
+            </a>).<br>
+            This can be used with any other CORBA compliant Java ORB.
+        </ul>
+      </p>
+
       
     <h2><a name="versionswitch">Switching to the next OpenSplice DDS version</a></h2>
       <p>
         OpenSplice DDS uses a versioning policy, which reflects the severity of the changes
-        applied. The OpenSplice DDS version consists of 3 digits: major, minor and patch
-        (in that order). The changes that can be expected per digit change:
+        applied. The OpenSplice DDS version consists of 3 digits: major, minor and maintenance
+        (in that order). Additionally, there may be patch releases made available for customers with 
+        appropriate support contracts. The changes that can be expected are:
         <ul>
-          <li>
+           <li>
             <b>Major:</b> typically contains changes and/or additions to the DDS API either syntactic
             and/or behavioral. These releases are always accompanied with a migration guide
             detailing the DDS API changes and in case of behavioral changes it contains 
@@ -244,7 +322,7 @@
             </ul>
           </li>
           <li>
-            <b>Minor:</b> contains changes in generated code and/or the wireprotocol and requires
+           <b>Minor:</b> contains changes in generated code and/or the wireprotocol and requires
             the following actions:
             <ul>
               <li>
@@ -261,14 +339,23 @@
             </ul>
           </li>
           <li>
-            <b>Patch:</b> contains bugfixes only and is compatible with any previous version of
-            OpenSplice DDS with the same major and minor version number.
+            <b>Maintenance:</b> contains bugfixes only and is made available on standard platforms. 
+            It is compatible with any previous version of OpenSplice DDS with the same major and 
+            minor version number.
+          </li>
+          <li>
+            <b>Patch:</b> contains specific bugfixes for specific platforms only and is compatible
+            with any previous version of OpenSplice DDS with the same major, minor and maintenance
+            version number. A patch release is identified by a "pxx" version where xx is an 
+            incremental patch number after the maintenance release digit.
           </li>
         </ul>
 	  </p>
+
     
-    <h2><a name="fixedbugs">Changes Fixed Bugs per release</a></h2>
+    <h2><a name="fixedbugs">Changes and Fixed Bugs per release</a></h2>
       <ul>
+        <li><a href="fixedV4_2_0.html">Changes and Fixed bugs for V4.2.0</a></li>
         <li><a href="fixedV4_1_1.html">Changes and Fixed bugs for V4.1.1</a></li>
         <li><a href="fixedV4_1.html">Changes and Fixed bugs for V4.1</a></li>
         <li><a href="fixedV3_4_5.html">Changes and Fixed bugs for V3.4.5</a></li>
