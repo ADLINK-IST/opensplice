@@ -407,6 +407,8 @@ main (
     char* ccppOrbPath;
     char* dcpsIdlFileName;
     int returnCode = 0;
+    const char *templ_path;
+    char fnameA[1024];
 
     /* Use a unique name, so pass NULL as parameter */
     osr = os_serviceStart(NULL);
@@ -881,8 +883,6 @@ main (
                     cpp_command[0] = '\0';
 
                     /* Put the path to the dcps.idl in the -I's for cppgen */
-                    const char *templ_path;
-                    char fnameA[1024];
                     templ_path = os_getenv ("OSPL_TMPL_PATH");
                     if (templ_path == NULL) 
                     {
