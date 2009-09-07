@@ -99,7 +99,9 @@ v_dataReaderInstanceWalkSamples(
 
 void             
 v_dataReaderInstancePurge(
-    v_dataReaderInstance _this);
+    v_dataReaderInstance _this,
+    c_long disposedCount,
+    c_long noWritersCount);
 
 c_bool           
 v_dataReaderInstanceTest(

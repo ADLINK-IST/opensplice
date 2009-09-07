@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #define MM_CLUSTER
@@ -18,8 +18,13 @@
 #include "os_abstract.h"
 #include "c_sync.h"
 #include "c_mmbase.h"
+#include "c_mmCache.h"
 
 #define C_MM_INITIALIZED          (0xdeadbeef)
+
+#ifndef NDEBUG
+#define C_MM_CACHE_CONFIDENCE     (0xfeebdaed)
+#endif /* NDEBUG */
 
 #define ALIGNMENT                 (OS_ALIGNMENT)
 #define ALIGN_COUNT(value)        (((value) + ALIGNMENT - 1) / ALIGNMENT)
@@ -41,6 +46,11 @@
 #define ChunkAddress(chunk)       ((void *)(C_ADDRESS(chunk)+ChunkHeaderSize))
 #define ChunkSize(size)           (ChunkHeaderSize + size)
 
+#define CacheHeaderSize           (ALIGN_SIZE(sizeof(struct c_mmCacheHeader)))
+#define CacheAddress(cacheHeader) ((void *)(C_ADDRESS(cacheHeader) + CacheHeaderSize))
+#define CacheHeaderAddress(cache) ((void *)(C_ADDRESS(cache) - CacheHeaderSize))
+#define CacheSize(size)           (CacheHeaderSize + size)
+
 #define CoreSize(mm)              ((mm)->listEnd - (mm)->mapEnd)
 
 #define SizeToMapIndex(size)      (size/ALIGNMENT)
@@ -48,6 +58,7 @@
 
 typedef struct c_mmChunk   *c_mmChunk;
 typedef struct c_mmBinding *c_mmBinding;
+typedef struct c_mmCacheHeader *c_mmCacheHeader;
 
 struct mmStatus_s {
     c_long used;
@@ -69,8 +80,10 @@ struct c_mm_s {
     c_address    end;
     c_ulong      size;
     c_ulong      fails;
+    c_mmCacheHeader cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
     c_mutex      listLock;
+    c_mutex      cacheListLock;
     c_mutex      bindLock;
     struct mmStatus_s chunkMapStatus; /* protect with mapLock */
     struct mmStatus_s chunkListStatus; /* protect with listLock */
@@ -96,6 +109,14 @@ struct c_mmBinding {
     c_char      *name;
     void        *start;
     c_long       refCount;
+};
+
+struct c_mmCacheHeader {
+    c_mmCacheHeader next;
+    c_mmCacheHeader prev;
+#ifndef NDEBUG
+    c_ulong         confidence;
+#endif /* NDEBUG */
 };
 
 static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
@@ -274,7 +295,7 @@ c_mmMalloc(
                     if (CoreSize(mm) < chunkSize) {
                         /* No resources left in core memory.
                          * But have found a significant bigger freed block so will split the block.
-			 * Unlocking and re-locking is not efficient but at this point 
+			 * Unlocking and re-locking is not efficient but at this point
 			 * the operational state must be considered degraded.
 			 */
                         remnant = c_mmSplitChunk(mm,chunk,size);
@@ -334,6 +355,93 @@ c_mmMalloc(
     chunk->freed = FALSE;
 #endif
     return ChunkAddress(chunk);
+}
+
+/**
+ * Allocate a piece of memory for a cache. This enlists the cache in cacheList
+ * of the mm. With this list, proper memory-statistics can be generated. The
+ * returned memory should ALWAYS be freed by a call to c_mmFreeCache().
+ *
+ * @param mm a pointer to a memory manager
+ * @param size the size of the piece of memory to claim
+ *
+ * @return a pointer to the claimed piece of memory.
+ */
+void *
+c_mmMallocCache(
+    c_mm mm,
+    c_long size)
+{
+    c_mmCacheHeader cache;
+
+    /* Allocate the cache */
+    cache = (c_mmCacheHeader)c_mmMalloc(mm, CacheSize(size));
+
+    if(cache){
+#ifndef NDEBUG
+        cache->confidence = C_MM_CACHE_CONFIDENCE;
+#endif /* NDEBUG */
+        /* Will be prepended, so prev is always NULL */
+        cache->prev = NULL;
+
+        c_mutexLock( &mm->cacheListLock );
+
+        if(mm->cacheList){
+            /* Prepend */
+            cache->next = mm->cacheList;
+            mm->cacheList->prev = cache;
+        } else {
+            /* Linkedlist was empty, so no next */
+            cache->next = NULL;
+        }
+        mm->cacheList = cache;
+
+        c_mutexUnlock( &mm->cacheListLock );
+    }
+
+    return CacheAddress(cache);
+}
+
+/**
+ * Free a piece of memory malloc'd for a cache by a call to c_mmMallocCache().
+ *
+ * @param mm a pointer to a memory manager
+ * @param memory a pointer to the piece of memory malloc'd for a cache
+ */
+void
+c_mmFreeCache(
+    c_mm mm,
+    void *memory)
+{
+    c_mmCacheHeader cache;
+
+    if(memory){
+        cache = (c_mmCacheHeader)CacheHeaderAddress(memory);
+#ifndef NDEBUG
+        assert(cache->confidence == C_MM_CACHE_CONFIDENCE);
+#endif /* NDEBUG */
+
+        /* We are freeing a cache, so the list may not be empty */
+        assert(mm->cacheList);
+
+        c_mutexLock( &mm->cacheListLock );
+        if(cache->prev){
+            cache->prev->next = cache->next;
+        } else {
+            /* Only the first element in doubly-linked list may have prev == NULL */
+            assert(mm->cacheList == cache);
+            /* First element, so change the mm pointer to the list to the
+             * next element in line. */
+            mm->cacheList = cache->next;
+        }
+        if(cache->next){
+            cache->next->prev = cache->prev;
+        }
+        c_mutexUnlock( &mm->cacheListLock );
+
+        /* Now actually free the cache */
+        c_mmFree(mm, cache);
+    }
 }
 
 #ifdef MM_CLUSTER
@@ -519,6 +627,7 @@ c_mmDestroy (
         c_mutexUnlock( &mm->bindLock );
         c_mutexUnlock( &mm->mapLock );
         c_mutexUnlock( &mm->listLock );
+        c_mutexUnlock( &mm->cacheListLock );
 
         while ( mm->bindings ) {
             temp = mm->bindings;
@@ -563,6 +672,8 @@ c_mmAdminInit (
         mm->chunkList[listIndex] = NULL;
     }
 
+    mm->cacheList = NULL;
+
     mm->mapEnd   = mm->start;
     mm->listEnd  = mm->end;
     mm->bindings = NULL;
@@ -580,6 +691,7 @@ c_mmAdminInit (
     mm->chunkListStatus.garbage = 0;
     mm->chunkListStatus.count   = 0;
 
+    c_mutexInit(&mm->cacheListLock, SHARED_MUTEX);
     c_mutexInit(&mm->listLock,SHARED_MUTEX);
     c_mutexInit(&mm->mapLock,SHARED_MUTEX);
     c_mutexInit(&mm->bindLock,SHARED_MUTEX);
@@ -773,27 +885,47 @@ c_mmListState (
 
 c_mmStatus
 c_mmState (
-    c_mm mm)
+    c_mm mm,
+    c_bool fillPreAlloc)
 {
     c_mmStatus s;
+    c_mmCacheHeader ch;
 
     s.fails = mm->fails;
     s.size = mm->size;
 
     c_mutexLock(&mm->mapLock);
-    s.used    = mm->chunkMapStatus.used;
+    s.used = mm->chunkMapStatus.used;
     s.maxUsed = mm->chunkMapStatus.maxUsed;
     s.garbage = mm->chunkMapStatus.garbage;
-    s.count   = mm->chunkMapStatus.count;
+    s.count = mm->chunkMapStatus.count;
     c_mutexUnlock(&mm->mapLock);
 
     c_mutexLock(&mm->listLock);
-    s.used    += mm->chunkListStatus.used;
-    s.maxUsed  = s.maxUsed + mm->chunkListStatus.maxUsed;
+    s.used += mm->chunkListStatus.used;
+    s.maxUsed = s.maxUsed + mm->chunkListStatus.maxUsed;
     s.garbage += mm->chunkListStatus.garbage;
-    s.count   += mm->chunkListStatus.count;
+    s.count += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
 
+    s.cached = 0;
+    s.preallocated = 0;
+
+    if(fillPreAlloc){
+        /* Get the memory allocated for- and free in caches. */
+        c_mutexLock(&mm->cacheListLock);
+        ch = mm->cacheList;
+        while(ch){
+#ifndef NDEBUG
+            assert(ch->confidence == C_MM_CACHE_CONFIDENCE);
+#endif /* NDEBUG */
+            s.cached        += c_mmCacheGetAllocated(CacheAddress(ch));
+            s.preallocated  += c_mmCacheGetFree(CacheAddress(ch));
+
+            ch = ch->next;
+        }
+        c_mutexUnlock(&mm->cacheListLock);
+    }
     return s;
 }
 

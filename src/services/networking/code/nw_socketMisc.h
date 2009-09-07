@@ -54,24 +54,24 @@ extern os_sockErrno skLastSockError;
         NW_REPORT_INFO_2(level, "%s: %s succeeded", context, function);    \
     }
 
-int               sk_interfaceInfoRetrieveAllBC(
+os_int               sk_interfaceInfoRetrieveAllBC(
                       sk_interfaceInfo **interfaceList /* [nofInterfaces] */,
-                      unsigned int *nofInterfaces,
-                      int sockfd);
+                      os_uint *nofInterfaces,
+                      os_int sockfd);
                       
-int               sk_interfaceInfoRetrieveAllMC(
+os_int               sk_interfaceInfoRetrieveAllMC(
                       sk_interfaceInfo **interfaceList /* [nofInterfaces] */,
-                      unsigned int *nofInterfaces,
-                      int sockfd);
+                      os_uint *nofInterfaces,
+                      os_int sockfd);
                       
-int               sk_interfaceInfoRetrieveAllLoopback(
+os_int               sk_interfaceInfoRetrieveAllLoopback(
                       sk_interfaceInfo **interfaceList /* [nofInterfaces] */,
-                      unsigned int *nofInterfaces,
-                      int sockfd);
+                      os_uint *nofInterfaces,
+                      os_int sockfd);
                       
 void              sk_interfaceInfoFreeAll(                      
                       sk_interfaceInfo *interfaceList /* [nofInterfaces] */,
-                      unsigned int nofInterfaces);
+                      os_uint nofInterfaces);
 
 char *            sk_interfaceInfoGetName(
                       const sk_interfaceInfo interfaceInfo);

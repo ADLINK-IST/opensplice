@@ -28,9 +28,6 @@
 
 #include <stdio.h>
 
-        /** Base variable for array dimension */
-#define IDL_ARRAY_VAR           'j'
-
 	/** Text indentation level (4 spaces per indent) */
 static c_long loopIndent;
 	/** Index for array loop variables, incremented for each array dimension */
@@ -505,7 +502,7 @@ idl_arrayLoopVariables(
 {
     loopIndent++;
     idl_printIndent(indent);
-    idl_fileOutPrintf(idl_fileCur(), "    int %c;\n", IDL_ARRAY_VAR+loopIndent);
+    idl_fileOutPrintf(idl_fileCur(), "    int i%d;\n", loopIndent);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -540,15 +537,15 @@ idl_arrayLoopCopyOpen(
 {
     loopIndent++;
     idl_printIndent(loopIndent + indent);
-    idl_fileOutPrintf(idl_fileCur(), "for (%c = 0; %c < %d; %c++) {\n",
-        IDL_ARRAY_VAR+loopIndent,
-        IDL_ARRAY_VAR+loopIndent,
+    idl_fileOutPrintf(idl_fileCur(), "for (i%d = 0; (i%d < %d); i%d++) {\n",
+        loopIndent,
+        loopIndent,
         idl_typeArraySize(typeArray),
-        IDL_ARRAY_VAR+loopIndent);
+        loopIndent);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
-        idl_arrayLoopCopyOpen (idl_typeArray(idl_typeArrayType(typeArray)), indent);
+        idl_arrayLoopCopyOpen(idl_typeArray(idl_typeArrayType(typeArray)), indent);
     }
 }
 
@@ -569,7 +566,7 @@ idl_arrayLoopCopyIndex(
     idl_typeArray typeArray)
 {
     varIndex++;
-    idl_fileOutPrintf(idl_fileCur(), "[%c]", IDL_ARRAY_VAR+varIndex);
+    idl_fileOutPrintf(idl_fileCur(), "[i%d]", varIndex);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -598,7 +595,7 @@ idl_arrayLoopCopyIndexString(
     c_char arrIndex[16];
 
     varIndex++;
-    snprintf(arrIndex, (size_t)sizeof(arrIndex), "[%c]", IDL_ARRAY_VAR+varIndex);
+    snprintf(arrIndex, (size_t)sizeof(arrIndex), "[i%d]", varIndex);
     strncat(indexString, arrIndex, (size_t)sizeof(arrIndex));
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
@@ -676,20 +673,16 @@ idl_arrayLoopCopyBody(
     case idl_tunion:
         idl_printIndent(loopIndent + indent);
         varIndex = 0;
-        idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_fileOutPrintf(idl_fileCur(), "    extern void __%s__copyOut(void *, void *);\n",
-            idl_scopedTypeName(typeSpec),
-            idl_scopedTypeName(typeSpec),
-            idl_corbaCxxTypeFromTypeSpec(typeSpec));
-        idl_fileOutPrintf(idl_fileCur(), "    __%s__copyOut((void *)&(*%s)",
+        idl_fileOutPrintf(idl_fileCur(), "extern void __%s__copyOut(void *, void *);\n",
+            idl_scopedTypeName(typeSpec));
+        idl_fileOutPrintf(idl_fileCur(), "__%s__copyOut((void *)&(*%s)",
             idl_scopedTypeName(typeSpec),
             from);
         idl_arrayLoopCopyIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ", (void *)&(%s)", to);
         idl_arrayLoopCopyIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
-        idl_fileOutPrintf(idl_fileCur(), "}\n");
-	break;
+    break;
     case idl_ttypedef:
         idl_printIndent(loopIndent + indent);
         switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec)))) {
@@ -697,29 +690,29 @@ idl_arrayLoopCopyBody(
         case idl_tunion:
         case idl_tarray:
         case idl_tseq:
-            idl_fileOutPrintf(idl_fileCur(), "{\n");
-            idl_fileOutPrintf(idl_fileCur(), "    extern void __%s__copyOut(void *, void *);\n",
-                idl_scopedTypeName(typeSpec),
-                idl_scopedTypeName(typeSpec),
-                idl_corbaCxxTypeFromTypeSpec(typeSpec));
-            idl_fileOutPrintf(idl_fileCur(), "    __%s__copyOut((void *)&(*%s)",
+            idl_fileOutPrintf(idl_fileCur(), "extern void __%s__copyOut(void *, void *);\n",
+                idl_scopedTypeName(typeSpec));
+            idl_fileOutPrintf(idl_fileCur(), "__%s__copyOut((void *)&(*%s)",
                 idl_scopedTypeName(typeSpec), from);
             idl_arrayLoopCopyIndex(typeArray);
     	    idl_fileOutPrintf(idl_fileCur(), ", (void *)&(%s)", to);
             idl_arrayLoopCopyIndex(typeArray);
             idl_fileOutPrintf(idl_fileCur(), ");\n");
-            idl_fileOutPrintf(idl_fileCur(), "}\n");
         break;
         case idl_tbasic:
             /* QAC EXPECT 3416; No side effect here */
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
-                idl_fileOutPrintf(idl_fileCur(), "    %s = CORBA::string_dup(%s);\n", to, from);
+                idl_fileOutPrintf(idl_fileCur(), "(%s)", to);
+                idl_arrayLoopCopyIndex(typeArray);
+                idl_fileOutPrintf(idl_fileCur(), " = CORBA::string_dup((%s)", from);
+                idl_arrayLoopCopyIndex(typeArray);
+                idl_fileOutPrintf(idl_fileCur(), ");\n");
             } else {
-                idl_fileOutPrintf(idl_fileCur(), "    %s = %s;\n", to, from);
+                idl_fileOutPrintf(idl_fileCur(), "%s = %s;\n", to, from);
             }
         break;
         case idl_tenum:
-            idl_fileOutPrintf(idl_fileCur(), "    %s = %s;\n", to, from);
+            idl_fileOutPrintf(idl_fileCur(), "%s = %s;\n", to, from);
         break;
         default:
             printf("idl_arrayLoopCopyBody: Unexpected type\n");
@@ -890,6 +883,8 @@ idl_arrayElements(
     const char *to,
     c_long indent)
 {
+    char *buf;
+
     switch (idl_typeSpecType(idl_typeArrayActual(typeArray))) {
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
@@ -916,7 +911,10 @@ idl_arrayElements(
             /* QAC EXPECT 3416; No side effect here */
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray))))) == idl_string) {
                 loopIndent = 0;
-                idl_arrayLoopCopy(typeArray, from, to, indent);
+                buf = os_malloc(strlen(from)+4);
+                sprintf(buf, "(*%s)", from);
+                idl_arrayLoopCopy(typeArray, buf, to, indent);
+                os_free(buf);
             } else {
             	idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);

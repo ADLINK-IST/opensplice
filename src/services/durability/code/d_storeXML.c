@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -1059,7 +1059,7 @@ readTopicMetadata(
     ret           = os_stat(fileStorePath, &statBuf);
 
     if (ret == os_resultSuccess) {
-        char * filename = os_fileNormalize(fileStorePath); 
+        char * filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "r");
 
         if (fdes != NULL) {
@@ -1209,7 +1209,7 @@ storeTopicMetadata(
     }
     if(topicName && partitionName){
         char * filename;
-       
+
         serializer = sd_serializerXMLNewTyped(c_getType(v_topicQosRef(topic)));
         data = sd_serializerSerialize(serializer, v_topicQosRef(topic));
         qos = sd_serializerToString(serializer, data);
@@ -1221,8 +1221,8 @@ storeTopicMetadata(
                                         partitionName,
                                         topicName);
 
-        
-        filename = os_fileNormalize(fileStorePath); 
+
+        filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "w+");
 
         if (fdes == NULL) {
@@ -1246,12 +1246,12 @@ storeTopicMetadata(
                 fprintf(fdes, "<type>%s</type>\n", str);
                 fprintf(fdes, "</METADATA>\n");
                 os_fsync(fdes);
-                fclose(fdes);
                 os_free(str);
                 result = TRUE;
             } else {
                 result = FALSE;
             }
+            fclose(fdes);
         }
         if(qos){
             os_free(qos);
@@ -1295,7 +1295,7 @@ metaDataIsCorrect(
     ret           = os_stat(fileStorePath, &statBuf);
 
     if (ret == 0) {
-        char * filename = os_fileNormalize(fileStorePath); 
+        char * filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "r");
 
         if (fdes != NULL) {
@@ -1673,7 +1673,7 @@ processTopic(
 
     /* QAC EXPECT 1253,1277; */
     if (OS_ISREG(status->stat_mode)) {
-        char * filename = os_fileNormalize(path); 
+        char * filename = os_fileNormalize(path);
         fDes = fopen(filename, "r");
         if (fDes == NULL) {
             /* (INACCESSABLE */
@@ -2219,7 +2219,7 @@ getStoreFile(
     if(result){
         fdes = result->fdes;
     } else {
-       char * filename = os_fileNormalize(path); 
+       char * filename = os_fileNormalize(path);
         fdes = fopen(filename, mode);
 
         if(fdes && (persistentStore->sessionAlive == TRUE)){
@@ -2406,7 +2406,7 @@ setOptimizeTime(
     optfname = getOptimizeFileName(persistentStore, partition, topic);
 
     if(optfname){
-        char * filename = os_fileNormalize(optfname); 
+        char * filename = os_fileNormalize(optfname);
         fdes = fopen(filename, "w");
 
         if(fdes){
@@ -2441,7 +2441,7 @@ isOptimized(
     optfname = getOptimizeFileName(persistentStore, partition, topic);
 
     if(optfname && optfname){
-        char * filename = os_fileNormalize(optfname); 
+        char * filename = os_fileNormalize(optfname);
         fdes = fopen(filename, "r");
 
         if(fdes){
@@ -2704,7 +2704,7 @@ persistentInstanceRead(
                         }
                     }
                 }
-                sd_serializerFree(serializer);   
+                sd_serializerFree(serializer);
             }
         }
         closeFile(persistentStore, fdes);
@@ -3245,13 +3245,13 @@ d_storeXMLOptimizeGroup(
                                     }
 
                                 } else if(!reported) {
-                                    OS_REPORT_2(OS_ERROR, D_CONTEXT, 0, 
+                                    OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
                                             "Data for group '%s.%s' on disk is mutilated. "
                                             "Some data might be lost.",
                                             partition, topic);
-                                    d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, 
+                                    d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
                                             "Data for group '%s.%s' on disk is mutilated. "
-                                            "Some data might be lost.\n", 
+                                            "Some data might be lost.\n",
                                             partition, topic);
                                     reported = TRUE;
                                 }
@@ -3719,7 +3719,7 @@ d_storeOpenXML(
 
             storeXML->diskStorePath = (c_char *)os_malloc((os_uint32)
                                         ((c_long)strlen(store->config->persistentStoreDirectory) + 1));
-            strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory, 
+            strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory,
                         (os_uint32)((c_long)strlen(store->config->persistentStoreDirectory)+1));
             d_storeXMLInitGroups(storeXML);
 

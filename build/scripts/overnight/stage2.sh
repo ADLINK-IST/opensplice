@@ -23,10 +23,15 @@ BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
 BUILD_EXAMPLES=examples/build
-RUN_EXAMPLES=examples/run/summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=archive-dist.txt
 EOF
+if [ "$SETUP_TYPE" = "pcx86.int509-dev" -o "$SETUP_TYPE" = "pcx86.int509-release" ]
+then
+   echo "RUN_EXAMPLES=examples/run/summary.html" >> $LOGDIR/LOGFILES
+else
+   echo "RUN_EXAMPLES=examples/run/overview.log" >> $LOGDIR/LOGFILES
+fi
 
 #Logs to use when pass
 cat > $LOGDIR/LOGFILES_PASSED <<EOF
@@ -36,10 +41,15 @@ BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
 BUILD_EXAMPLES=examples/build
-RUN_EXAMPLES=examples/run/summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=../distro
 EOF
+if [ "$SETUP_TYPE" = "pcx86.int509-dev" -o "$SETUP_TYPE" = "pcx86.int509-release" ]
+then
+   echo "RUN_EXAMPLES=examples/run/summary.html" >> $LOGDIR/LOGFILES_PASSED
+else
+   echo "RUN_EXAMPLES=examples/run/overview.log" >> $LOGDIR/LOGFILES_PASSED
+fi
 
 cat > $RESFILE <<EOF
 BUILD=TODO

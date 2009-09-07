@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -83,20 +83,31 @@ v_serviceNew(
 {
     v_kernel k;
     v_service s;
-
+    v_participantQos q;
 
     assert(C_TYPECHECK(manager, v_serviceManager));
+    /* Do not C_TYPECHECK qos parameter, since it might be allocated on heap! */
     assert(name != NULL);
 
     k = v_objectKernel(manager);
-    s = v_service(v_objectNew(k, K_SERVICE));
-    v_serviceInit(s, manager, name, extStateName, qos, stats);
-    /* always add, even when s->state==NULL, since v_participantFree always
-       removes the participant.*/
-    v_addParticipant(k, v_participant(s));
-    if (s->state == NULL) {
-        v_serviceFree(s);
+    /* do no use cast method on qos parameter,
+     * it is most likely allocated on heap! */
+    q = v_participantQosNew(k, (v_participantQos)qos);
+    if (q == NULL) {
+        OS_REPORT(OS_ERROR, "v_serviceNew", 0,
+                  "Service not created: inconsistent qos");
         s = NULL;
+    } else {
+        s = v_service(v_objectNew(k, K_SERVICE));
+        v_serviceInit(s, manager, name, extStateName, q, stats);
+        c_free(q);
+        /* always add, even when s->state==NULL, since v_participantFree always
+           removes the participant.*/
+        v_addParticipant(k, v_participant(s));
+        if (s->state == NULL) {
+            v_serviceFree(s);
+            s = NULL;
+        }
     }
 
     return s;
@@ -117,6 +128,7 @@ v_serviceInit(
 
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
+    assert(C_TYPECHECK(qos, v_participantQos));
     assert(name != NULL);
 
     kernel = v_objectKernel(service);

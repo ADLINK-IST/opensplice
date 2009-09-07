@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -36,18 +36,32 @@ struct c_mmStatus_s {
     c_long garbage;
     c_long count;
     c_long fails;
+    /* The cached field will be filled with the amount of memory allocated for
+     * caches (including all headers). */
+    c_long cached;
+    /* The preallocated field will be filled with the amount of memory that is
+     * preallocated in caches, but is not in use. So in order to retain the
+     * total amount of memory in use:
+     *      totalInUse = used - preallocated;
+     * And in order to get all free memory (including allocated, but available
+     * in caches):
+     *      totalFree = size - totalInUse */
+    c_long preallocated;
 };
 
 OS_API c_mm c_mmCreate (void *address, c_long size);
-OS_API c_mmStatus c_mmState (c_mm mm);
+OS_API c_mmStatus c_mmState (c_mm mm, c_bool fillPreAlloc);
 OS_API c_mmStatus c_mmMapState (c_mm mm);
 OS_API c_mmStatus c_mmListState (c_mm mm);
-   
+
 void  c_mmDestroy (c_mm mm);
 void *c_mmAddress (c_mm mm);
 
 void *c_mmMalloc  (c_mm mm, c_long   size);
 void  c_mmFree    (c_mm mm, void *memory);
+
+void *c_mmMallocCache  (c_mm mm, c_long   size);
+void  c_mmFreeCache    (c_mm mm, void *memory);
 
 void *c_mmBind    (c_mm mm, const c_char *name, void *memory);
 void  c_mmUnbind  (c_mm mm, const c_char *name);

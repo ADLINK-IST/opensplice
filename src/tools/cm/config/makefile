@@ -2,7 +2,7 @@ JAR_MODULE	 =osplconf.jar
 JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
 JAVA_MAIN_CLASS  =org.opensplice.config.SpliceConfig
-ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+ifeq (,$(findstring win32,$(SPLICE_HOST)))
    JAVA_INC	=$(JAR_INC_DIR)/tooling_common.jar
 else
    JAVA_INC	=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)/tooling_common.jar)

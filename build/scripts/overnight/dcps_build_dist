@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . buildsys/functions
 
@@ -26,7 +26,7 @@ fi
 
 SPLICE_PLATFORM=$SETUP_TYPE
 export SPLICE_PLATFORM
-. ./configure
+. ./configure -full
 if [ "$CONFIGURATION" != "OK" ]
 then
    echo  "ERROR: configuration - dcps_build_dist"

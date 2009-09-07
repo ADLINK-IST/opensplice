@@ -4,12 +4,18 @@
 
 #include "os_report.h"
 #include "in_configuration.h"
+#include "in__configTracing.h"
+#include "in__config.h"
 
-/* Errors, warnins and info for everybody who is interested */
+/* Errors, warnings and info for everybody who is interested */
 
 #define IN_SERVICENAME "ddsi"
-#define IN_STRINGIFY(X) #X
-#define IN_SPOT __FILE__":"IN_STRINGIFY(__LINE__)
+/* conversion of __LINE__ to number-string requires two macro invocations */
+#define IN_STRINGIFY(Y) #Y
+#define __IN_STRINGIFY2(X) IN_STRINGIFY(X)
+#define IN_SPOT __FILE__":"__IN_STRINGIFY2(__LINE__)
+
+#define IN_STRINGIFY_BOOLEAN(Y) ((Y) ? "true" : "false")
 
 #define IN_REPORT_ERROR(funcName, description)                                \
     OS_REPORT(OS_ERROR, IN_SERVICENAME ": " funcName, 0, description)
@@ -46,72 +52,53 @@
 		} \
 	} while(0)
 
-#define IN_REPORT_INFO(level, description)                                     \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description); \
+
+/* Currently the IN_REPORT_INFO macros do not check whether the log level is of
+ * interest or not.  These used to call onto the deprecated in_configurationLevelIsInteresting
+ * functions (the configuration is now handled by the in_config code).
+ * Also the info logging should be disabled when tracing is switched off to prevent
+ * the performance penalty for writing all this info to the ospl-info.log, hence the
+ * in_configIsTracingEnabled checks below
+ */
+
+#define IN_REPORT_INFO(level, description)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                    \
+        OS_REPORT(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description);\
     }\
 
-#define IN_REPORT_INFO_1(level, description, a1)                               \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_1(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1); \
+#define IN_REPORT_INFO_1(level, description, a1)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                          \
+        OS_REPORT_1(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1);\
     }\
 
-#define IN_REPORT_INFO_2(level, description, a1, a2)                           \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_2(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2); \
-    }
+#define IN_REPORT_INFO_2(level, description, a1, a2)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                              \
+        OS_REPORT_2(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2);\
+    }\
 
-#define IN_REPORT_INFO_3(level, description, a1, a2, a3)                       \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_3(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3); \
-    }
+#define IN_REPORT_INFO_3(level, description, a1, a2, a3)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                                  \
+        OS_REPORT_3(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3);\
+    }\
 
-#define IN_REPORT_INFO_4(level, description, a1, a2, a3, a4)                       \
-    if (in_configurationLevelIsInteresting(level)) {                            \
-        OS_REPORT_4(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3, a4); \
-    }
-
+#define IN_REPORT_INFO_4(level, description, a1, a2, a3, a4)                                                 \
+    if (in_configIsTracingEnabled ()) {                                                                      \
+        OS_REPORT_4(OS_INFO, IN_SERVICENAME " level " #level " information", 0, description, a1, a2, a3, a4);\
+    }\
 
 
 /* Tracing for non-release versions only */
 
 #ifdef IN_TRACING
 
-#define TC(name) TC_##name
-
-typedef enum in_traceClass_e {
-  TC(Undefined),
-  TC(Configuration),
-  TC(Construction),
-  TC(Destruction),
-  TC(Mainloop),
-  TC(Groups),
-  TC(Send),
-  TC(Receive),
-  TC(Discovery),
-  TC(Test),
-  TC(Connectivity),
-  TC(Count)/* Last element, keep this at the end */
-} in_traceClass;
-
-/* You can use this function as is, but using the macro's below is preferred
- * Note: this function is implemented in in_configuration in order to speed
- * up the testing etc. */
-void in_reportTrace(
-         in_traceClass traceClass,
-         c_ulong level,
-         const c_char *context,
-         const char *description, ...);
-
-
 #define IN_TRACE(traceClass, level, description)                           \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n")
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n")
 #define IN_TRACE_1(traceClass, level, description, a1)                 \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1)
 #define IN_TRACE_2(traceClass, level, description, a1, a2)             \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1, a2)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1, a2)
 #define IN_TRACE_3(traceClass, level, description, a1, a2, a3)             \
-    in_reportTrace(TC(traceClass), level, #traceClass, description "\n", a1, a2, a3)
+    in_configTracingReport(TC(traceClass), level, #traceClass, description "\n", a1, a2, a3)
 
 #else /* IN_TRACING */
 

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -99,10 +99,17 @@ onNewGroupAction (
 
 	NW_CONFIDENCE(newEntryArg != NULL);
 
-	if ((entry->hashValue.h1 == newEntryArg->hashValue.h1) &&
-	    (entry->hashValue.h2 == newEntryArg->hashValue.h2) &&
-	    (entry->hashValue.h3 == newEntryArg->hashValue.h3) &&
-	    (entry->hashValue.h4 == newEntryArg->hashValue.h4) &&
+	if ( (  /* Either the hash matches, or complement partitions are
+             * enabled. */
+	        ((entry->hashValue.h1 == newEntryArg->hashValue.h1) &&
+             (entry->hashValue.h2 == newEntryArg->hashValue.h2) &&
+             (entry->hashValue.h3 == newEntryArg->hashValue.h3) &&
+             (entry->hashValue.h4 == newEntryArg->hashValue.h4) )
+             ||
+             /* If not checked here, first package will be dropped if enabled */
+             nw_configurationUseComplementPartitions()
+	     )
+	     &&
 	    (strcmp(v_partitionName(v_groupPartition(entry->group)),
 	           newEntryArg->partitionName) == 0) &&
 	    (strcmp(v_topicName(v_groupTopic(entry->group)),

@@ -79,7 +79,7 @@ os_gethostname(
 
 char *
 os_getenv(
-    char *variable)
+    const char *variable)
 {
 	return getenv(variable);
 }

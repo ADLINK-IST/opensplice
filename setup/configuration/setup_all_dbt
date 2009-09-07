@@ -1,163 +1,143 @@
 #
 # Test environment setup
 #
-INCLUDE_DBT_ABSTRACTION=yes;			export INCLUDE_DBT_ABSTRACTION
-INCLUDE_DBT_CONSISTENCY=yes;			export INCLUDE_DBT_CONSISTENCY
-INCLUDE_DBT_CONFIGURATION=yes;			export INCLUDE_DBT_CONFIGURATION
-INCLUDE_DBT_USER=yes;				export INCLUDE_DBT_USER
-INCLUDE_DBT_KERNEL=yes;				export INCLUDE_DBT_KERNEL
-INCLUDE_DBT_DATABASE=yes;			export INCLUDE_DBT_DATABASE
-INCLUDE_DBT_UTILITIES=yes;			export INCLUDE_DBT_UTILITIES
-INCLUDE_DBT_DLRL=yes;				export INCLUDE_DBT_DLRL
-INCLUDE_DBT_INSTALLER=yes;			export INCLUDE_DBT_INSTALLER
+set_var INCLUDE_DBT_ABSTRACTION yes
+set_var INCLUDE_DBT_CONSISTENCY yes
+set_var INCLUDE_DBT_CONFIGURATION yes
+set_var INCLUDE_DBT_USER yes
+set_var INCLUDE_DBT_KERNEL yes
+set_var INCLUDE_DBT_DATABASE yes
+set_var INCLUDE_DBT_UTILITIES yes
+set_var INCLUDE_DBT_DLRL yes
+set_var INCLUDE_DBT_INSTALLER yes
 
 if [ -n "$INCLUDE_SERVICES" ]
 then
-    INCLUDE_DBT_SERVICES=yes
-    export INCLUDE_DBT_SERVICES
-    INCLUDE_DBT_SERVICES_SERIALIZATION=yes
-    export INCLUDE_DBT_SERVICES_SERIALIZATION
+    set_var INCLUDE_DBT_SERVICES yes
+    set_var     INCLUDE_DBT_SERVICES_SERIALIZATION yes
     if [ -n "$INCLUDE_SERVICES_NETWORKING" ]; then
-        INCLUDE_DBT_SERVICES_NETWORKING=yes
-    export INCLUDE_DBT_SERVICES_NETWORKING
+        set_var INCLUDE_DBT_SERVICES_NETWORKING yes
     else
-    unset INCLUDE_DBT_SERVICES_NETWORKING
+    unset_var INCLUDE_DBT_SERVICES_NETWORKING
     fi
     if [ -n "$INCLUDE_SERVICES_DDSI" ]; then
-        INCLUDE_DBT_SERVICES_DDSI=yes
-    export INCLUDE_DBT_SERVICES_DDSI
+        set_var INCLUDE_DBT_SERVICES_DDSI yes
     else
-    unset INCLUDE_DBT_SERVICES_NETWORKING
+    unset_var INCLUDE_DBT_SERVICES_NETWORKING
     fi
     if [ -n "$INCLUDE_SERVICES_COMMON" ]; then
-        INCLUDE_DBT_SERVICES_COMMON=yes
-	export INCLUDE_DBT_SERVICES_COMMON
+        set_var INCLUDE_DBT_SERVICES_COMMON yes
     else
-	unset INCLUDE_DBT_SERVICES_COMMON
+	unset_var INCLUDE_DBT_SERVICES_COMMON
     fi
     if [ -n "$INCLUDE_SERVICES_SPLICED" ]; then
-        INCLUDE_DBT_SERVICES_SPLICED=yes
-	export INCLUDE_DBT_SERVICES_SPLICED
+        set_var INCLUDE_DBT_SERVICES_SPLICED yes
     else
-	unset INCLUDE_DBT_SERVICES_SPLICED
+	unset_var INCLUDE_DBT_SERVICES_SPLICED
     fi
     if [ -n "$INCLUDE_SERVICES_DURABILITY" ]; then
-        INCLUDE_DBT_SERVICES_DURABILITY=yes
-	export INCLUDE_DBT_SERVICES_DURABILITY
+        set_var INCLUDE_DBT_SERVICES_DURABILITY yes
     else
-	unset INCLUDE_DBT_SERVICES_DURABILITY
+	unset_var INCLUDE_DBT_SERVICES_DURABILITY
     fi
     if [ -n "$INCLUDE_SERVICES_DBMS" ]; then
-        INCLUDE_DBT_SERVICES_DBMS=yes
-	export INCLUDE_DBT_SERVICES_DBMS
+        set_var INCLUDE_DBT_SERVICES_DBMS yes
     else
-	unset INCLUDE_DBT_SERVICES_DBMS
+	unset_var INCLUDE_DBT_SERVICES_DBMS
     fi
 else
-    unset INCLUDE_DBT_SERVICES
+    unset_var INCLUDE_DBT_SERVICES
 fi
 
 if [ -n "$INCLUDE_TOOLS" ]
 then
-    INCLUDE_DBT_TOOLS=yes
-    export INCLUDE_DBT_TOOLS
+set_var INCLUDE_DBT_TOOLS yes
     if [ -n "$INCLUDE_TOOLS_TUNER" ]; then
-        INCLUDE_DBT_TOOLS_TUNER=yes
-	export INCLUDE_DBT_TOOLS_TUNER
+        set_var INCLUDE_DBT_TOOLS_TUNER yes
     else
-	unset INCLUDE_DBT_TOOLS_TUNER
+	unset_var INCLUDE_DBT_TOOLS_TUNER
     fi
     if [ -n "$INCLUDE_TOOLS_IDLPP" ]; then
-        INCLUDE_DBT_TOOLS_IDLPP=yes
-	export INCLUDE_DBT_TOOLS_IDLPP
+        set_var INCLUDE_DBT_TOOLS_IDLPP yes
     else
-	unset INCLUDE_DBT_TOOLS_IDLPP
+	unset_var INCLUDE_DBT_TOOLS_IDLPP
     fi
     if [ -n "$INCLUDE_TOOLS_SHMDUMP" ]; then
-        INCLUDE_DBT_TOOLS_SHMDUMP=yes
-	export INCLUDE_DBT_TOOLS_SHMDUMP
+        set_var INCLUDE_DBT_TOOLS_SHMDUMP yes
     else
-	unset INCLUDE_DBT_TOOLS_SHMDUMP
+	unset_var INCLUDE_DBT_TOOLS_SHMDUMP
     fi
 else
-    unset INCLUDE_DBT_TOOLS
+    unset_var INCLUDE_DBT_TOOLS
 fi
 
 if [ -n "$INCLUDE_API" ]
 then
-    INCLUDE_DBT_API=yes
-    export INCLUDE_DBT_API
+    set_var INCLUDE_DBT_API yes
     if [ -n "$INCLUDE_API_DCPS" ]; then
-        INCLUDE_DBT_API_DCPS=yes
-	export INCLUDE_DBT_API_DCPS
+        set_var INCLUDE_DBT_API_DCPS yes
 	if  [ -n "$INCLUDE_API_DCPS_GAPI" ]; then
-            INCLUDE_DBT_API_DCPS_GAPI=yes
-	    export INCLUDE_DBT_API_DCPS_GAPI
+        set_var INCLUDE_DBT_API_DCPS_GAPI yes
 	    if  [ -n "$INCLUDE_API_DCPS_SAC" ]; then
-                INCLUDE_DBT_API_DCPS_SAC=yes
-	        export INCLUDE_DBT_API_DCPS_SAC
+            set_var INCLUDE_DBT_API_DCPS_SAC yes
 	    else
-		unset INCLUDE_DBT_API_DCPS_SAC
+		unset_var INCLUDE_DBT_API_DCPS_SAC
 	    fi
 	    if  [ -n "$INCLUDE_API_DCPS_SAJ" ]; then
-                INCLUDE_DBT_API_DCPS_SAJ=yes
-	        export INCLUDE_DBT_API_DCPS_SAJ
+            set_var INCLUDE_DBT_API_DCPS_SAJ yes
 	    else
-		unset INCLUDE_DBT_API_DCPS_SAJ
+		unset_var INCLUDE_DBT_API_DCPS_SAJ
+	    fi
+	    if  [ -n "$INCLUDE_API_DCPS_CJ" ]; then
+            set_var INCLUDE_DBT_API_DCPS_CJ yes
+	    else
+		unset_var INCLUDE_DBT_API_DCPS_CJ
 	    fi
 	    if  [ -n "$INCLUDE_API_DCPS_CCPP" ]; then
-                INCLUDE_DBT_API_DCPS_CCPP=yes
-	        export INCLUDE_DBT_API_DCPS_CCPP
+            set_var INCLUDE_DBT_API_DCPS_CCPP yes
 	    else
-		unset INCLUDE_DBT_API_DCPS_CCPP
+		unset_var INCLUDE_DBT_API_DCPS_CCPP
 	    fi
 	else
-	    unset INCLUDE_DBT_API_DCPS_SAC
+	    unset_var INCLUDE_DBT_API_DCPS_SAC
 	fi
 	if  [ -n "$INCLUDE_API_DCPS_JAVA" ]; then
-            INCLUDE_DBT_API_DCPS_JAVA=yes
-	    export INCLUDE_DBT_API_DCPS_JAVA
+        set_var INCLUDE_DBT_API_DCPS_JAVA yes
 	else
-	    unset INCLUDE_DBT_API_DCPS_JAVA
+	    unset_var INCLUDE_DBT_API_DCPS_JAVA
 	fi
 	if  [ -n "$INCLUDE_API_DCPS_JNI" ]; then
-            INCLUDE_DBT_API_DCPS_JNI=yes
-	    export INCLUDE_DBT_API_DCPS_JNI
+        set_var INCLUDE_DBT_API_DCPS_JNI yes
 	else
-	    unset INCLUDE_DBT_API_DCPS_JNI
+	    unset_var INCLUDE_DBT_API_DCPS_JNI
 	fi
     else
-	unset INCLUDE_DBT_API_DCPS_JNI
+	unset_var INCLUDE_DBT_API_DCPS_JNI
     fi
     if  [ -n "$INCLUDE_API_CM" ]; then
-        INCLUDE_DBT_API_CM=yes
-	export INCLUDE_DBT_API_CM
+        set_var INCLUDE_DBT_API_CM yes
     else
-	unset INCLUDE_DBT_API_CM
+	unset_var INCLUDE_DBT_API_CM
     fi
     if  [ -n "$INCLUDE_DLRL" ]; then
-	INCLUDE_DBT_LOC=yes
-	export INCLUDE_DBT_LOC
+        set_var INCLUDE_DBT_LOC yes
         if  [ -n "$INCLUDE_API_DLRL" ]; then
-            INCLUDE_DBT_API_DLRL=yes
-      	    export INCLUDE_DBT_API_DLRL
+            set_var INCLUDE_DBT_API_DLRL yes
             if  [ -n "$INCLUDE_API_DLRL_SAJ" ]; then
-                INCLUDE_DBT_API_DLRL_SAJ=yes
-                export INCLUDE_DBT_API_DLRL_SAJ
+                set_var INCLUDE_DBT_API_DLRL_SAJ yes
             else
-                unset INCLUDE_DBT_API_DLRL_SAJ
+                unset_var INCLUDE_DBT_API_DLRL_SAJ
             fi
             if  [ -n "$INCLUDE_API_DLRL_SACPP" ]; then
-                INCLUDE_DBT_API_DLRL_SACPP=yes
-                export INCLUDE_DBT_API_DLRL_SACPP
+                set_var INCLUDE_DBT_API_DLRL_SACPP yes
             else
-                unset INCLUDE_DBT_API_DLRL_SACPP
+                unset_var INCLUDE_DBT_API_DLRL_SACPP
             fi
         else
-            unset INCLUDE_DBT_LOC
-            unset INCLUDE_DBT_API_DLRL
+            unset_var INCLUDE_DBT_LOC
+            unset_var INCLUDE_DBT_API_DLRL
         fi
     fi
 else
-    unset INCLUDE_DBT_API
+    unset_var INCLUDE_DBT_API
 fi

@@ -35,7 +35,6 @@
 #endif
 
 #define IN_ATTACH_TIMEOUT (30)
-
 void in_configurationInitialize(
     u_service service,
     const char *serviceName,
@@ -143,8 +142,8 @@ const c_char *in_nameListGetName(
 
 void in_nameListFree(
            in_nameList nameList);
-
 #endif
+
 
 /* Domain parameters */
 c_float in_configurationGetDomainLeaseExpiryTime();

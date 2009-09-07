@@ -150,7 +150,7 @@ NW_STRUCT(nw_discoveryMessage) {
 NW_CLASS(nw_discoveryMessage);
 
 #define NW_DISCOVERY_MESSAGE_SIZE \
-        ((unsigned int)sizeof(NW_STRUCT(nw_discoveryMessage)))
+        ((os_uint)sizeof(NW_STRUCT(nw_discoveryMessage)))
 
 #define NW_HEARTBEATINTERVAL_TO_SLEEPTIME(time, interval, factor) \
         time.seconds = (c_long)((factor) * (interval)) / 1000U;                \
@@ -163,15 +163,15 @@ nw_discoveryWriterMain(
 {
     nw_discoveryWriter discoveryWriter = (nw_discoveryWriter)runnable;
     c_bool terminationRequested;
-    unsigned int heartbeatInterval;
+    os_uint32 heartbeatInterval;
     float safetyFactor;
-    unsigned int salvoSize;
-    unsigned int respondCount;
+    os_uint32 salvoSize;
+    os_uint32 respondCount;
     static c_time regularSleepTime;
     static c_time startStopSleepTime;
     static c_time heartbeatTime;
     NW_STRUCT(nw_discoveryMessage) discoveryMessage;
-    unsigned int i;
+    os_uint32 i;
 
     c_char* path;
 
@@ -229,13 +229,13 @@ nw_discoveryWriterMain(
         "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
-    terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+    terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     for (i=0; (i<salvoSize) && (!terminationRequested); i++) {
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
             (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE);
         c_condTimedWait(&discoveryWriter->condition, &discoveryWriter->mutex,
             startStopSleepTime);
-        terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+        terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     }
 
     /* Now go into regular state */
@@ -265,7 +265,7 @@ nw_discoveryWriterMain(
                 startStopSleepTime);
         }
         /* Check if we have to stop */
-        terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+        terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     }
 
     /* Send a salvo of stopping messages so everybody can react quickly */
@@ -281,7 +281,7 @@ nw_discoveryWriterMain(
             (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE);
         c_condTimedWait(&discoveryWriter->condition, &discoveryWriter->mutex,
             startStopSleepTime);
-        terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+        terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     }
 
     nw_runnableSetRunState(runnable, rsTerminated);
@@ -505,7 +505,7 @@ nw_discoveryReaderReceivedHeartbeat(
     c_equality eq;
     nw_aliveNodesHashItem itemFound;
     nw_bool wasCreated;
-    unsigned int i;
+    os_uint32 i;
 
     NW_CONFIDENCE(messageBuffer != NULL);
     NW_CONFIDENCE(bufferLength == NW_DISCOVERY_MESSAGE_SIZE);
@@ -658,7 +658,7 @@ nw_discoveryReaderMain(
 
     nw_runnableSetRunState(runnable, rsRunning);
 
-    terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+    terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     while (!terminationRequested) {
     	/* First retrieve a buffer to write in */
         nw_plugReceiveChannelMessageStart(discoveryReader->receiveChannel,
@@ -668,7 +668,7 @@ nw_discoveryReaderMain(
         }
 
         /* Check if we have to stop */
-        terminationRequested = (int)nw_runnableTerminationRequested(runnable);
+        terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
         if (!terminationRequested) {
             now = v_timeGet();
             if (messageBuffer != NULL) {

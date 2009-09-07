@@ -13,6 +13,7 @@
 #define CCPP_ORB_ABSTRACTION_H
 
 #include "sacpp_LocalObject.h"
+#include "sacpp_UserException.h"
 #include "sacpp_DefaultValueRefCountBase.h"
 
   namespace DDS

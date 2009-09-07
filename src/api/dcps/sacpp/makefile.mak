@@ -20,7 +20,7 @@ CPP_FILES 	:= $(notdir $(wildcard $(CODE_DIR)/*.cpp)) $(SACPP_CODE)
 IDLPP       := idlpp 
 IDL_INC_FLAGS= -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cpp -S
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(findstring win32,$(SPLICE_HOST)))
 IDLPPFLAGS  += -P$(DECL_PREFIX),$(DECL_INCLUDE)
 endif
 
@@ -62,6 +62,7 @@ $(addprefix $(IDL_DIR)/,$(TOPIC_IDL)): make_idl_preprocessor
 
 make_idl_preprocessor:
 	cd $(OSPL_HOME)/src/cpp; make
+	cd $(OSPL_HOME)/src/tools/cppgen; make
 	cd $(OSPL_HOME)/src/tools/idlpp; make
 
 $(SACPP_CODE):

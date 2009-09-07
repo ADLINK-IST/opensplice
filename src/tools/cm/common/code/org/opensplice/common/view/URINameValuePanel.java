@@ -71,8 +71,8 @@ public class URINameValuePanel extends FileNameValuePanel {
                     if((System.getProperty("os.name").indexOf("Windows")) == -1){
                         value = value.replaceFirst("file:", "file://");
                     } else {
-                        value = value.replaceAll("/", "\\");
-                        value = value.replaceFirst("file:\\", "file://");
+                        value = value.replaceAll("/", "\\\\");
+                        value = value.replaceFirst("file:\\\\", "file://");
                     }
                 }
                 value = value.replaceAll("%20", " ");

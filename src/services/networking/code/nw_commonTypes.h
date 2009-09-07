@@ -18,10 +18,10 @@
 #define NW_EXTENDS(type) NW_STRUCT(type) _parent
 #define NW_CLASS(name)   typedef NW_STRUCT(name) *name
 
-typedef unsigned int    nw_seqNr;
-typedef unsigned int    nw_address;
-typedef char           *nw_name;
-typedef unsigned char   nw_bool;
+typedef os_uint32     nw_seqNr;
+typedef os_uint32     nw_address;
+typedef os_char      *nw_name;
+typedef os_boolean    nw_bool;
 
 typedef void (*nw_onFatalCallBack)(c_voidp usrData);
 

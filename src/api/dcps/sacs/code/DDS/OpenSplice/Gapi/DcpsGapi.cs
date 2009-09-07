@@ -441,6 +441,15 @@ namespace DDS.OpenSplice.Gapi
         gapi_entityFactoryQosPolicy entity_factory;
     }
 
+    /*
+     * struct SubscriberQos {
+     *     PresentationQosPolicy presentation;
+     *     PartitionQosPolicy partition;
+     *     GroupDataQosPolicy group_data;
+     *     EntityFactoryQosPolicy entity_factory;
+     *     ShareQosPolicy share;
+     * };
+     */
     [StructLayoutAttribute(LayoutKind.Sequential)]
     internal struct gapi_subscriberQos
     {
@@ -529,6 +538,7 @@ namespace DDS.OpenSplice.Gapi
     /* struct ReliabilityQosPolicy {
      *     ReliabilityQosPolicyKind kind;
      *     Duration_t max_blocking_time;
+     *     boolean synchronous;
      * };
      */
     [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -536,6 +546,8 @@ namespace DDS.OpenSplice.Gapi
     {
         ReliabilityQosPolicyKind kind;
         Duration max_blocking_time;
+        [MarshalAs(UnmanagedType.U1)]
+        bool synchronous;
     }
 
     /* struct DestinationOrderQosPolicy {
@@ -702,6 +714,9 @@ namespace DDS.OpenSplice.Gapi
      *     OwnershipQosPolicy ownership;
      *     TimeBasedFilterQosPolicy time_based_filter;
      *     ReaderDataLifecycleQosPolicy reader_data_lifecycle;
+     *     SubscriptionKeyQosPolicy subscription_keys;
+     *     ReaderLifespanQosPolicy reader_lifespan;
+     *     ShareQosPolicy share;
      * };
      */
     [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -736,6 +751,8 @@ namespace DDS.OpenSplice.Gapi
 
     /* struct WriterDataLifecycleQosPolicy {
      *     boolean autodispose_unregistered_instances;
+     *     Duration_t autopurge_suspended_samples_delay;
+     *     Duration_t autounregister_instance_delay;
      * };
      */
     [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -743,6 +760,8 @@ namespace DDS.OpenSplice.Gapi
     {
         [MarshalAs(UnmanagedType.U1)]
         bool autodispose_unregistered_instances;
+        Duration autopurge_suspended_samples_delay;
+        Duration autounregister_instance_delay;
     }
 
     /*

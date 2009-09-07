@@ -3,12 +3,14 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
+CSC      = csc
+
     # Binary used for filtering
 FILTER           = filter_gcc
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
-LD_EXE           = $(CC)
+LD_EXE           = $(CXX)
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
@@ -102,3 +104,10 @@ EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
 INLINESRC_POSTFIX = .i
 
+# Identify linker options for building shared C# libraries and or executables.
+CSTARGET_LIB = -target:library
+CSTARGET_EXEC = -target:exe
+CSLIB_PREFIX =
+CSLIB_POSTFIX = .dll
+CSEXEC_PREFIX =
+CSEXEC_POSTFIX = .exe

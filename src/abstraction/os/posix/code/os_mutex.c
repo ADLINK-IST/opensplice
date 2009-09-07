@@ -16,10 +16,42 @@
  * Implements mutual exclusion semaphores for POSIX
  */
 
-#include <os_mutex.h>
+#include <../posix/code/os__mutex.h>
 #include <os_signature.h>
 #include <assert.h>
 #include <errno.h>
+
+static os_boolean ospl_mtx_prio_inherit = OS_FALSE;
+
+#if defined __GLIBC_PREREQ
+#if __GLIBC_PREREQ(2,5)
+#define OSPL_PRIO_INHERIT_SUPPORTED
+#endif
+#endif
+
+void
+os_mutexModuleInit()
+{
+    ospl_mtx_prio_inherit = 0;
+}
+
+void
+os_mutexModuleExit()
+{
+}
+
+/** \brief Sets the priority inheritance mode for mutexes
+ *   that are created after this call.
+ *
+ * Store the setting in the Static variable to be used when MutexInit is called.
+ */
+os_result
+os_mutexSetPriorityInheritanceMode(
+    os_boolean enabled)
+{
+    ospl_mtx_prio_inherit = enabled;
+    return os_resultSuccess;
+}
 
 /** \brief Initialize the mutex taking the mutex attributes
  *         into account
@@ -52,6 +84,12 @@ os_mutexInit (
     } else {
         result = pthread_mutexattr_setpshared (&mattr, PTHREAD_PROCESS_PRIVATE);
     }
+#ifdef OSPL_PRIO_INHERIT_SUPPORTED
+/* only if priority inheritance is supported in the pthread lib */
+    if ((result == 0) && ospl_mtx_prio_inherit) {
+        result = pthread_mutexattr_setprotocol(&mattr, PTHREAD_PRIO_INHERIT);
+    }
+#endif
     if (result == 0) {
 #ifdef OSPL_STRICT_MEM
         result = pthread_mutex_init (&mutex->mutex, &mattr);

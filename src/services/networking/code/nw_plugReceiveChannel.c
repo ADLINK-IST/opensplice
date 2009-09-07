@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -76,8 +76,8 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
     nw_seqNr usedCount;
 };
 
-#define UI(val)       ((nw_length)(val))
-#define UI_DEREF(ptr) (*(nw_length *)(ptr))
+#define UI(val)       ((os_address)(val))
+#define UI_DEREF(ptr) (*(os_address *)(ptr))
 
 #define DF_ADMIN_LENGTH (UI(sizeof(NW_STRUCT(nw_plugBufferDefragAdmin))))
 #define DF_ADMIN(ptr)   (((ptr) != NULL)?(nw_plugBufferDefragAdmin)(UI(ptr) - DF_ADMIN_LENGTH): NULL)
@@ -87,14 +87,14 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 
 #if 0
 #define PRINT_USEDCOUNT(admin)       \
-    printf("%s:%d (0x%x) usedCount = %d\n", __FILE__, __LINE__, (unsigned int)admin, admin->usedCount)
+    printf("%s:%d (0x%x) usedCount = %d\n", __FILE__, __LINE__, (os_address)admin, admin->usedCount)
 #else
 #define PRINT_USEDCOUNT(admin)
 #endif
 
 #define SET_USEDCOUNT(admin, value) admin->usedCount = value; PRINT_USEDCOUNT(admin)
-#define INC_USEDCOUNT(admin)        admin->usedCount++;       PRINT_USEDCOUNT(admin)
-#define DEC_USEDCOUNT(admin)        admin->usedCount--;       PRINT_USEDCOUNT(admin)
+#define INC_USEDCOUNT(admin)        pa_increment(&admin->usedCount);       PRINT_USEDCOUNT(admin)
+#define DEC_USEDCOUNT(admin)        pa_decrement(&admin->usedCount);       PRINT_USEDCOUNT(admin)
 
 static nw_plugBufferDefragAdmin
 nw_plugBufferDefragAdminCreate(
@@ -628,7 +628,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
                 result = admin;
                 if (orderPreservation) {
 		  /* Now find the first missing packetnumber.*/
-             
+
                     packetNrPrevious = nw_plugDataBufferGetPacketNr(DF_DATA(admin));
                     currentAdmin = admin->next;
                     holeFound = FALSE;
@@ -657,14 +657,13 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             NW_REPORT_WARNING_1("reliable protocol",
                "Node 0x%x did not resend a missing packet in time, removing that node from the reliable protocol.",
                sendingPartitionNode->nodeId);
-            
+
             sendingPartitionNode->active = FALSE;
-          
-            //release all admins for this PartitionNode
+            
+            /*release all admins for this PartitionNode*/
             nw_plugSendingPartitionNodeFree(sendingPartitionNode);          
         } 
         
-
         /* Todo: recheck this assert NW_CONFIDENCE((result == NULL) == isOutOfOrder); */
     } else {
         /* Do not insert anywhere, but prepare for correct release */
@@ -744,7 +743,7 @@ nw_plugSendingPartitionNodeInsertAdmin(
         receiveChannel->fragmentsOutOfOrderDropped++;
         NW_TRACE_1(Receive, 3, "Channel %s: reliable fragment dropped because it "
             "has been received twice or it is too old",
-            nw__plugChannelGetName(nw_plugChannel(receiveChannel)));        
+            nw__plugChannelGetName(nw_plugChannel(receiveChannel)));
     }
     /* Execute the following action only if the admin is directly available */
     if (insertedAdmin == admin) {
@@ -990,7 +989,7 @@ nw_plugReceiveChannelFree(
     nw_plugBufferDefragAdmin admin;
     nw_msgHolderPtr msgHolderPtr;
     nw_plugSendingPartitionNode sendingPartitionNode;
-    unsigned int i;
+    os_uint32 i;
 
     /* own finalization */
     /* List with free buffers */
@@ -1422,7 +1421,7 @@ nw_plugReceiveChannelInsertDataReceived(
     }
     NW_CONFIDENCE(currentNode != NULL);
 
-    
+
     if ( nw_plugSendingPartitionNodeIsActive(currentNode) ) {
         /* Insert the admin into the defrag of out of order list */
         admin = DF_ADMIN(buffer);
@@ -1491,7 +1490,6 @@ nw_plugReceiveChannelReadSocket(
                     dataLength = nw_plugBufferGetLength(buffer);
                     if (dataLength > 0) {
                         NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
-                        sendingNodeId = nw_plugBufferGetSendingNodeId(buffer);
                         sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
                         connected = FALSE;
                         nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &connected);
@@ -1583,6 +1581,50 @@ nw_plugReceiveChannelTakeWaitingDataBuffer(
 }
 
 /*
+ * This operation checks the messageBox and frees the 
+ * administration and buffers for node that have stopped or died.
+ */
+static void
+nw_CheckMessageBox( nw_plugChannel channel )
+{
+    nw_plugReceiveChannel ReceiveChannel = nw_plugReceiveChannel(channel);
+    nw_messageBoxMessageType messageType;
+    nw_bool messageReceived;
+    nw_address sendingAddress;
+    nw_seqNr sendingNodeId;
+    nw_plugSendingPartitionNode currentNode;
+
+    /* Walk over all messages in the messageBox */
+    messageReceived = nw_plugChannelProcessMessageBox(channel,
+        &sendingNodeId, &sendingAddress, &messageType);
+    while (messageReceived) {
+        switch (messageType) {
+            case NW_MBOX_NODE_STARTED:
+            break;
+            case NW_MBOX_NODE_STOPPED:
+            case NW_MBOX_NODE_DIED:
+                /* Now walk over all partitionNodes to find the once that match this NodeId*/
+                currentNode = ReceiveChannel->sendingPartitionNodes;
+                while ((currentNode != NULL)) {
+                    if (currentNode->nodeId == sendingNodeId) {
+                        /* mark as inactive and release all admins for this PartitionNode */
+                        currentNode->active = FALSE;                       
+                        nw_plugSendingPartitionNodeFree(currentNode);          
+                    }
+                    currentNode = currentNode->next;
+                }
+            break;
+            case NW_MBOX_UNDEFINED:
+                NW_CONFIDENCE(messageType != NW_MBOX_UNDEFINED);
+            break;
+        }
+        messageReceived = nw_plugChannelProcessMessageBox(channel,
+            &sendingNodeId, &sendingAddress, &messageType);
+    }
+}
+
+
+/*
  * Read data from the socket as long as there is something to read
  * and communicate incoming data and control messages to the send-thread
  */
@@ -1593,6 +1635,7 @@ nw_plugReceiveChannelProcessIncoming(nw_plugChannel channel)
     nw_bool dataRead = TRUE;
     nw_bool result = TRUE;
 
+    nw_CheckMessageBox(channel);
     while (result && dataRead ) {
         result = nw_plugReceiveChannelReadSocket(nw_plugReceiveChannel(channel), &zeroTime, &dataRead);
     }

@@ -2,7 +2,7 @@ JAR_MODULE	 = tooling_common.jar
 JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 = $(OSPL_HOME)/jar/$(SPLICE_TARGET)
 
-ifeq (,$(findstring win32,$(SPLICE_TARGET))) 
+ifeq (,$(findstring win32,$(SPLICE_HOST))) 
 JAVA_INC	=$(JAR_INC_DIR)/cmapi.jar
 else
 TMP_JAVA_INC	=$(JAR_INC_DIR)/cmapi.jar

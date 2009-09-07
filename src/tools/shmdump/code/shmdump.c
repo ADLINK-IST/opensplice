@@ -206,7 +206,11 @@ shmFromFile(
 }
 
 int
-main(
+#ifdef INTEGRITY
+shmdump_main (
+#else
+main (
+#endif
     int argc,
     char *argv[])
 {

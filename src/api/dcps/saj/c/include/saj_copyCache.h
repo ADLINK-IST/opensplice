@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef SAJ_COPYCACHE_H
@@ -141,6 +141,7 @@ typedef struct {
 typedef struct {
     /* offset is always 0 */
     jmethodID		setterID;
+    jmethodID       setterWithDiscrID;
     jmethodID		getterID;
     jfieldID		caseID;
     /* case description follows */
@@ -165,14 +166,16 @@ typedef struct {
 typedef struct {
     sajCopyHeader	header;
     unsigned int	nrOfCases;
-    jclass		unionClass;
+    jclass	        unionClass;
     jmethodID		constrID;
     jfieldID		discrID;
-    c_type		discrType;
+    jmethodID		getDiscrMethodID;
+    c_type	        discrType;
     unsigned int	casesOffset;
-    jclass		discrClass;	/* used for enumeration discriminant */
+    jclass	        discrClass;	/* used for enumeration discriminant */
     jmethodID		valueID;
     jmethodID		from_intID;
+    jmethodID       __defaultID;
     /* sequence of sajCopyUnionLabels follows */
 } sajCopyUnion;
 
