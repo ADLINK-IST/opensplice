@@ -476,10 +476,7 @@ tao_check_fn ()
         if [ $? = 0 ]
         then
             T_VAR="`echo $TAO_VERSION | awk '{ print $2\" \"$3 }'`"
-            if [ $? != 0 ]
-            then
-                SPLICE_ORB=DDS_ACE_TAO_5_6_6
-            fi
+            SPLICE_ORB=DDS_ACE_TAO_5_6_6
         else
             echo "$1 - Cannot setup TAO"
             tao_idl -V
