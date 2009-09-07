@@ -58,7 +58,7 @@ sk_address  nw_socketBrodcastAddress(
 sk_address  nw_socketDataAddress(
                 nw_socket sock);
 
-int         nw_socketPrimaryAddressCompare(
+os_int      nw_socketPrimaryAddressCompare(
                 nw_socket sock,
                 sk_address toCompare);
                 
@@ -100,7 +100,7 @@ sk_length   nw_socketReceive(
                 void *buffer,
                 sk_length length,
                 os_time *timeOut);
-int         nw_socketBind(
+os_int      nw_socketBind(
                 nw_socket sock);
                        
 #endif /* NW_SOCKET_H */

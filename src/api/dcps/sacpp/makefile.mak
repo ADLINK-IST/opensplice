@@ -62,6 +62,7 @@ $(addprefix $(IDL_DIR)/,$(TOPIC_IDL)): make_idl_preprocessor
 
 make_idl_preprocessor:
 	cd $(OSPL_HOME)/src/cpp; make
+	cd $(OSPL_HOME)/src/tools/cppgen; make
 	cd $(OSPL_HOME)/src/tools/idlpp; make
 
 $(SACPP_CODE):

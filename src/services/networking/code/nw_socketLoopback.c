@@ -22,18 +22,18 @@
 #include "nw_socketMisc.h"
 #include "nw_report.h"
 
-int
+os_int
 nw_socketGetDefaultLoopbackAddress(
-    int sockfd,
+    os_int sockfd,
     struct sockaddr_in *sockAddr)
 {
     /* Statics for storing the result */
     static struct sockaddr_in sockAddrFound;
-    static int hadSuccessBefore = SK_FALSE;
+    static os_int hadSuccessBefore = SK_FALSE;
     /* Normal variables for retrieving the result */
-    int success;
+    os_int success;
     sk_interfaceInfo *interfaceList;
-    unsigned int nofInterfaces;
+    os_uint nofInterfaces;
     
     if (!hadSuccessBefore) {
          success = sk_interfaceInfoRetrieveAllLoopback(&interfaceList, &nofInterfaces, 

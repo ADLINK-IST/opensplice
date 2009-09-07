@@ -83,7 +83,9 @@ in_configDdsiServiceFree(
         {
             in_configTracingFree (_this->tracing);
         }
-
+        if (_this->debugging) {
+			in_configDebugFree(_this->debugging);
+        }
         /* TODO : free rest of resources here */
     }
 }
@@ -271,6 +273,17 @@ in_configDdsiServiceGetDebugging(
     assert(_this);
 
     return _this->debugging;
+}
+
+void
+in_configDdsiServiceSetDebugging(
+    in_configDdsiService _this,
+    in_configDebug config)
+{
+    assert(_this);
+    assert(config);
+
+    _this->debugging = config;
 }
 
 void

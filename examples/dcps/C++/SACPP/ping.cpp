@@ -88,6 +88,7 @@ static PP_seq_msgDataWriter_ptr          PP_seq_writer      = NULL;
 static PP_string_msgDataWriter_ptr       PP_string_writer   = NULL;
 static PP_fixed_msgDataWriter_ptr        PP_fixed_writer    = NULL;
 static PP_array_msgDataWriter_ptr        PP_array_writer    = NULL;
+static PP_bseq_msgDataWriter_ptr         PP_bseq_writer     = NULL;
 static PP_quit_msgDataWriter_ptr         PP_quit_writer     = NULL;
 
 static PP_min_msgDataReader_ptr          PP_min_reader      = NULL;
@@ -95,32 +96,37 @@ static PP_seq_msgDataReader_ptr          PP_seq_reader      = NULL;
 static PP_string_msgDataReader_ptr       PP_string_reader   = NULL;
 static PP_fixed_msgDataReader_ptr        PP_fixed_reader    = NULL;
 static PP_array_msgDataReader_ptr        PP_array_reader    = NULL;
+static PP_bseq_msgDataReader_ptr         PP_bseq_reader     = NULL;
 
 static PP_min_msgTypeSupport             PP_min_dt;
 static PP_seq_msgTypeSupport             PP_seq_dt;
 static PP_string_msgTypeSupport          PP_string_dt;
 static PP_fixed_msgTypeSupport           PP_fixed_dt;
 static PP_array_msgTypeSupport           PP_array_dt;
+static PP_bseq_msgTypeSupport            PP_bseq_dt;
 static PP_quit_msgTypeSupport            PP_quit_dt;
 
-static PP_min_msgSeq_var                 PP_min_dataList    = new PP_min_msgSeq;
-static PP_seq_msgSeq_var                 PP_seq_dataList    = new PP_seq_msgSeq;
-static PP_string_msgSeq_var              PP_string_dataList = new PP_string_msgSeq;
-static PP_fixed_msgSeq_var               PP_fixed_dataList  = new PP_fixed_msgSeq;
-static PP_array_msgSeq_var               PP_array_dataList  = new PP_array_msgSeq;
-static PP_quit_msgSeq_var                PP_quit_dataList   = new PP_quit_msgSeq;
+static PP_min_msgSeq_var                 PP_min_dataList      = new PP_min_msgSeq;
+static PP_seq_msgSeq_var                 PP_seq_dataList      = new PP_seq_msgSeq;
+static PP_string_msgSeq_var              PP_string_dataList   = new PP_string_msgSeq;
+static PP_fixed_msgSeq_var               PP_fixed_dataList    = new PP_fixed_msgSeq;
+static PP_array_msgSeq_var               PP_array_dataList    = new PP_array_msgSeq;
+static PP_bseq_msgSeq_var                PP_bseq_dataList     = new PP_bseq_msgSeq;
+static PP_quit_msgSeq_var                PP_quit_dataList     = new PP_quit_msgSeq;
 
 static StatusCondition_ptr               PP_min_sc          = NULL;
 static StatusCondition_ptr               PP_seq_sc          = NULL;
 static StatusCondition_ptr               PP_string_sc       = NULL;
 static StatusCondition_ptr               PP_fixed_sc        = NULL;
 static StatusCondition_ptr               PP_array_sc        = NULL;
+static StatusCondition_ptr               PP_bseq_sc         = NULL;
 
 static Topic_ptr                         PP_min_topic       = NULL;
 static Topic_ptr                         PP_seq_topic       = NULL;
 static Topic_ptr                         PP_string_topic    = NULL;
 static Topic_ptr                         PP_fixed_topic     = NULL;
 static Topic_ptr                         PP_array_topic     = NULL;
+static Topic_ptr                         PP_bseq_topic      = NULL;
 static Topic_ptr                         PP_quit_topic      = NULL;
 
 static struct timeval                    roundTripTime;
@@ -405,6 +411,45 @@ DDS::Boolean PP_array_handler (
     return result;
 }
 
+static
+DDS::Boolean PP_bseq_handler (
+    unsigned int nof_cycles
+    )
+{
+    SampleInfoSeq_var infoList = new SampleInfoSeq;
+    int               amount;
+    DDS::Boolean           result = false;
+   
+    // cout << "PING: PING_bseq arrived" << endl;
+    
+    preTakeTime = timeGet ();
+    PP_bseq_reader->take (PP_bseq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+    postTakeTime = timeGet ();
+    
+    amount = PP_bseq_dataList->length ();
+    if (amount != 0) {
+        if (amount > 1) {
+            cout << "PING: Ignore excess messages : " << PP_bseq_dataList->length () << " msg received" << endl;
+        }
+        PP_bseq_dataList[0].count++;
+        if (PP_bseq_dataList[0].count < nof_cycles) {
+            preWriteTime = timeGet ();
+            PP_bseq_writer->write (PP_bseq_dataList[0], HANDLE_NIL);
+            postWriteTime = timeGet ();
+            add_stats (write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
+        } else {
+            result = true;
+        }
+        add_stats (read_access, 1E6 * timeToReal (timeSub (postTakeTime, preTakeTime)));
+        add_stats (roundtrip,   1E6 * timeToReal (timeSub (postTakeTime, roundTripTime)));
+        roundTripTime = preWriteTime;
+        PP_bseq_reader->return_loan (PP_bseq_dataList, infoList);
+    } else {
+        cout << "PING: PING_bseq triggered, but no data available" << endl;
+    }
+    return result;
+}
+
 //
 // M A I N
 //
@@ -617,6 +662,28 @@ main (
         PP_array_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
         w.attach_condition (PP_array_sc);
     break;
+    case 'b': 
+        //
+        // PP_bounded_seq_msg
+        //
+    
+        //  Create Topic
+        PP_bseq_dt.register_type (dp, "pingpong::PP_bounded_seq_msg");
+        PP_bseq_topic = dp->create_topic ("PP_bseq_topic", "pingpong::PP_bounded_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+
+        // Create datawriter
+        dw = p->create_datawriter (PP_bseq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_bseq_writer = dynamic_cast<PP_bseq_msgDataWriter_ptr> (dw);
+
+        // Create datareader
+        dr = s->create_datareader (PP_bseq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_bseq_reader = dynamic_cast<PP_bseq_msgDataReader_ptr> (dr);
+    
+        // Add datareader statuscondition to waitset
+        PP_bseq_sc = PP_bseq_reader->get_statuscondition ();
+        PP_bseq_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
+        w.attach_condition (PP_bseq_sc);
+    break;
     case 't': 
         //
         // PP_quit_msg
@@ -708,6 +775,19 @@ main (
                         postWriteTime = timeGet ();
                     }
                     break;
+                case 'b':
+                    {
+                        // cout << "PING: sending initial ping_bseq" << endl;
+                        PP_bseq_msg PPdata;
+                        exp_condition = PP_bseq_sc;
+                        active_handler = &PP_bseq_handler;
+                        PPdata.count = 0;
+                        PPdata.block = block;
+                        preWriteTime = timeGet ();
+                        PP_bseq_writer->write (PPdata, HANDLE_NIL);
+                        postWriteTime = timeGet ();
+                    }
+                    break;
                 case 't':
                     {
                         // cout << "PING: sending initial ping_quit" << endl;
@@ -788,6 +868,8 @@ main (
     p->delete_datawriter (PP_fixed_writer);
     s->delete_datareader (PP_array_reader);
     p->delete_datawriter (PP_array_writer);
+    s->delete_datareader (PP_bseq_reader);
+    p->delete_datawriter (PP_bseq_writer);
     p->delete_datawriter (PP_quit_writer);
     dp->delete_subscriber (s);
     dp->delete_publisher (p);
@@ -796,6 +878,7 @@ main (
     dp->delete_topic (PP_string_topic);
     dp->delete_topic (PP_fixed_topic);
     dp->delete_topic (PP_array_topic);
+    dp->delete_topic (PP_bseq_topic);
     dp->delete_topic (PP_quit_topic);
     dpf->delete_participant (dp);
 

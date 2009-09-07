@@ -12,6 +12,7 @@ CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
 CINCS += -I$(OSPL_HOME)/src/utilities/include
 CINCS += -I$(OSPL_HOME)/src/cpp/include
+CINCS += -I$(OSPL_HOME)/src/cppgen/include
 
 include	$(OSPL_HOME)/src/tools/idlpp/makefile_templates.mak
 
