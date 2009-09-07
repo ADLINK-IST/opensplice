@@ -24,6 +24,12 @@ using DDS.OpenSplice.Database;
 namespace DDS.OpenSplice.Gapi {
 
     static internal class MetaData {
+        /* gapi_type
+         *     gapi_typeActualType(gapi_type typeBase);
+         */
+        [DllImport("dcpsgapi", EntryPoint = "gapi_typeActualType")]
+        public static extern IntPtr typeActualType(IntPtr typeBase);
+
         /* c_metaKind
          *     gapi_metaData_baseObjectKind(gapi_baseObject objBase);
          */
@@ -41,6 +47,13 @@ namespace DDS.OpenSplice.Gapi {
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_metaData_specifierName")]
         public static extern string specifierName(IntPtr specBase);
+
+        /* gapi_long
+         *     gapi_metaData_typeSize(gapi_type typeBase);
+         */
+        [DllImport("dcpsgapi", EntryPoint = "gapi_metaData_typeSize")]
+        public static extern int typeSize(IntPtr typeBase);
+
 
         /* gapi_long
          *     gapi_metaData_enumerationCount(gapi_enumeration enumBase);

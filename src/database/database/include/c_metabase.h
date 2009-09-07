@@ -502,6 +502,11 @@ OS_API c_bool
 c_typeHasRef(
     c_type type);
 
+OS_API c_long
+c_typeSize(
+    c_type type);
+
+
 /** \brief This method will return a non typedef.
  *  It will test if the type is a typedef and if that is the case then it will
  *  return the actual type.
