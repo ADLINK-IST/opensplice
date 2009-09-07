@@ -114,6 +114,15 @@ else
        dlrl/standalone/C++/Tutorial
        services/dbmsconnect/SQL/C++/ODBC"
 
+
+    echo "Updating XML:"
+    sleep 7200 &
+    UNIQID=$!
+    XMLFILE=`echo $OSPL_URI | sed 's@file://@@'`
+    NEWXMLFILE=`echo $XMLFILE | sed 's/.xml/_no_network_uniq.xml/'`
+    sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
+    OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml'`
+
     echo "Running Examples:"
 
     if check_platform
