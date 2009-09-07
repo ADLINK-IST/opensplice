@@ -10,7 +10,7 @@ Assert SetupResFile
 BASE=$PWD
 cd ../../..
 
-function check_platform()
+check_platform()
 {
    CURRENT_PL_LINUX=`uname | grep Linux`
    CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
