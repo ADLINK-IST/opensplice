@@ -319,4 +319,6 @@ cleanup ()
     unset set_target_alternate
     unset export_vars
     unset cleanup
+    unset varkeys
+    unset varvals
 }
