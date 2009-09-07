@@ -70,8 +70,8 @@ else
     fi
 
     echo "Installing..."
-
-    $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SETUP_TYPE-HDE-installer.bin --mode unattended --prefix $WORKDIR/../installed/
+    SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
+    $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/../installed/
 #--providedLicenseFile licfile
     if [ $? = 0 ]
 	then
