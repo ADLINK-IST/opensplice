@@ -879,6 +879,22 @@ main (
                      */
                     char cpp_command[MAX_CPP_COMMAND];
                     cpp_command[0] = '\0';
+
+                    /* Put the path to the dcps.idl in the -I's for cppgen */
+                    const char *templ_path;
+                    char fnameA[1024];
+                    templ_path = os_getenv ("OSPL_TMPL_PATH");
+                    if (templ_path == NULL) 
+                    {
+                       printf ("Variable OSPL_TMPL_PATH not defined\n");
+                       exit (1);
+                    }
+                    snprintf(fnameA, sizeof(fnameA), "%s%c", templ_path, OS_FILESEPCHAR);
+                    strncat (cpp_command, "-I", (size_t)2);
+                    strncat (cpp_command, QUOTE, strlen(QUOTE));
+                    strncat (cpp_command, fnameA, strlen(fnameA));
+                    strncat (cpp_command, QUOTE, strlen(QUOTE));
+                   
                     for (i = 0; i < c_iterLength(includeDefinitions); i++) 
                     {
                         /* Extend command line with all include path options */
