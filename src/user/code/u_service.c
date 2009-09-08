@@ -294,10 +294,8 @@ u_serviceFree(
 
     if (service != NULL) {
         if (u_entity(service)->flags & U_ECREATE_INITIALISED) {
-            kernel = u_participant(service)->kernel;
             r = u_serviceDeinit(service);
             os_free(service);
-            u_userKernelClose(kernel);
         } else {
             r = u_entityFree(u_entity(service));
 	}

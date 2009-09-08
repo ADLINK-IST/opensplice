@@ -594,6 +594,7 @@ u_kernelNew(
                 uKernel->kernel = kernel;
                 uKernel->shm = shm;
                 uKernel->participants = NULL;
+                uKernel->lockPolicy = domainCfg.lockPolicy;
                 if (uri == NULL) {
                     uKernel->uri = NULL;
                 } else {

@@ -519,6 +519,50 @@ u_userKernelClose(
     return r;
 }
 
+u_result
+u_userKernelFree(
+    u_kernel kernel)
+{
+    u_kernelAdmin ka;
+    u_user u;
+    u_result r;
+    c_long i;
+    c_bool free = FALSE;
+
+    u = u__userLock();
+    if ( u ){
+        r = U_RESULT_ILL_PARAM;
+        for (i=1; (i<=u->kernelCount) && (r != U_RESULT_OK); i++) {
+            ka = &u->kernelList[i];
+            if (ka->kernel == kernel) {
+                u->kernelList[i].kernel = NULL;
+                ka->refCount--;
+                assert(ka->refCount == 0);
+                if (ka->refCount != 0) {
+                    OS_REPORT_1(OS_ERROR,
+                        "u_userKernelFree",0,
+                        "Kernel being freed is still referenced %d time(s) in user-layer, should be 0",
+                        ka->refCount);
+                }
+                /* Always free if found */
+                free = TRUE;
+                r = U_RESULT_OK;
+            }
+        }
+        u__userUnlock();
+
+        if (free) {
+            u_kernelFree(kernel);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userKernelFree",0,
+                "User layer not initialized");
+        r = U_RESULT_NOT_INITIALISED;
+    }
+    return r;
+}
+
 c_long
 u_userServerId(
     v_public o)

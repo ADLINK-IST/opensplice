@@ -457,16 +457,13 @@ u_participantFree (
     u_participant p)
 {
     u_result r = U_RESULT_OK;
-    u_kernel kernel;
 
     if (p != NULL) {
         if (p->kernel != NULL) {
             if (u_entity(p)->flags & U_ECREATE_INITIALISED) {
-                kernel = p->kernel;
                 r = u_participantDeinit(p);
                 if (r == U_RESULT_OK) {
                     os_free(p);
-                    u_userKernelClose(kernel);
                 }
             } else {
                 r = u_entityFree(u_entity(p));
@@ -520,6 +517,7 @@ u_participantDeinit (
             r = u_kernelRemove(p->kernel,p);
             if (r == U_RESULT_OK) {
                 u_dispatcherDeinit(u_dispatcher(p));
+                u_userKernelClose(p->kernel);
                 /* Disable the participant to avoid multiple Free's */
                 p->kernel = NULL;
             } else {
