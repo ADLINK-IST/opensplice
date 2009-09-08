@@ -1391,6 +1391,10 @@ install_hde_target ()
         then
             echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> ${RELF}
         fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
+        fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI CLASSPATH" >> $RELF
         echo "Ready"
     else
@@ -1407,6 +1411,10 @@ install_hde_target ()
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
         fi
         echo "Ready"
     fi
@@ -1593,6 +1601,10 @@ install_rts_target ()
         then
             echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> $RELF
         fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
+        fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI CLASSPATH" >> $RELF
         echo "Ready"
     else
@@ -1608,6 +1620,10 @@ install_rts_target ()
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
         fi
         echo "Ready"
     fi
