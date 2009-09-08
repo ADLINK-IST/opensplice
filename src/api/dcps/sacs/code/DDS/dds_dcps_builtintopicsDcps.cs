@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using DDS;
 using DDS.OpenSplice;
+using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS
 {
@@ -672,7 +673,7 @@ namespace DDS
         { }
 
         public ParticipantBuiltinTopicDataTypeSupport(
-                BaseMarshaler marshaler)
+                DatabaseMarshaler marshaler)
             : base(typeof(ParticipantBuiltinTopicData), marshaler)
         { }
 
@@ -1377,7 +1378,7 @@ namespace DDS
         { }
 
         public TopicBuiltinTopicDataTypeSupport(
-                BaseMarshaler marshaler)
+                DatabaseMarshaler marshaler)
             : base(typeof(TopicBuiltinTopicData), marshaler)
         { }
 
@@ -2082,7 +2083,7 @@ namespace DDS
         { }
 
         public PublicationBuiltinTopicDataTypeSupport(
-                BaseMarshaler marshaler)
+                DatabaseMarshaler marshaler)
             : base(typeof(PublicationBuiltinTopicData), marshaler)
         { }
 
@@ -2787,7 +2788,7 @@ namespace DDS
         { }
 
         public SubscriptionBuiltinTopicDataTypeSupport(
-                BaseMarshaler marshaler)
+                DatabaseMarshaler marshaler)
             : base(typeof(SubscriptionBuiltinTopicData), marshaler)
         { }
 

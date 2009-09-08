@@ -2,12 +2,20 @@
 --- y_tab.cpp.new	Wed Sep 10 11:22:05 2008
 ***************
 *** 9,14 ****
---- 9,18 ----
+--- 9,26 ----
   
   #include <stdio.h>
   
 + #ifdef VERSION
 + #undef VERSION
++ #endif
++ 
++ #ifdef WIN32
++ #undef CONST
++ #undef VOID
++ #undef IN
++ #undef OUT
++ #undef OPAQUE
 + #endif
 + 
   void yyunput(int c);

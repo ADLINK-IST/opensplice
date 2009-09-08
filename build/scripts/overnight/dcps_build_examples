@@ -7,30 +7,114 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
+BASE=$PWD
 cd ../../..
+
 
 SetState BuildingExamples
 echo "BUILD/EXAMPLES=RUNNING" >> $RESFILE
 ArchiveLogs
-if [ "$DEP" != "none" ]
+
+check_platform()
+{
+   CURRENT_PL_LINUX=`uname | grep Linux`
+   CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
+
+  if [ "$CURRENT_PL_LINUX" != "" ] ;then
+    return 0
+  elif [ "$CURRENT_PL_CYGWIN" != "" ];then
+    return 1
+  else 
+   echo UNKNOWN Platform:
+   echo Current platform: `uname`
+   exit
+  fi
+}
+
+if [ "$SETUP_TYPE" = "pcx86.int509-dev" -o "$SETUP_TYPE" = "pcx86.int509-release" ]
 then
-   OSPL_HOME=$DEPWORKDIR
-   export OSPL_HOME
+   if [ "$DEP" != "none" ]
+   then
+      OSPL_HOME=$DEPWORKDIR
+      export OSPL_HOME
+   fi
+
+   SPLICE_PLATFORM=$SETUP_TYPE
+   export SPLICE_PLATFORM
+   . ./configure -full
+   SPLICE_ORB=DDS_OpenFusion_1_6_1
+   export SPLICE_ORB
+
+   if [ "$CONFIGURATION" != "OK" ]
+   then
+      echo  "ERROR: configuration - dcps_build_examples"
+      exit 1
+   fi
+
+   ArchiveLogs
+
+    . $CONFIGFILE
+   cd $LOGDIR/examples/build
+
+   $OSPL_OUTER_HOME/testsuite/bin/build_examples_pcx86_integrity509
+   exit $?
+else
+
+    # Install a copy
+    if [ "$DEP" = "none" ]
+    then
+	INSTALLERDIR=$WORKDIR/$PRODUCT/install
+    else
+	BASE=$DEPWORKDIR/build/scripts/overnight
+	INSTALLERDIR=$DEPWORKDIR/install
+    fi
+
+    echo "Installing..."
+    SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
+    $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/../installed/
+#--providedLicenseFile licfile
+    if [ $? = 0 ]
+	then
+	echo "Install completed"
+    else
+	echo "ERROR: Install failed"
+	exit 1
+    fi
+    cd $WORKDIR/../installed/HDE/$SETUP_TYPE/
+    . ./release.com
+    cd examples
+    if [ $? != 0 ]
+    then
+	echo "ERROR: Couldn't locate examples direcctory in installed HDE."
+	exit 1
+    fi
+
+    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong 
+       dcps/CORBA/C++/OpenFusion/Tutorial 
+       dcps/standalone/C/PingPong 
+       dcps/standalone/C/Tutorial 
+       dcps/standalone/C++/PingPong 
+       dcps/standalone/C++/Tutorial 
+       dcps/standalone/C++OnC/PingPong 
+       dcps/standalone/Java/PingPong 
+       dcps/standalone/Java/Tutorial
+       dlrl/standalone/Java/Tutorial
+       dlrl/standalone/C++/Tutorial
+       services/dbmsconnect/SQL/C++/ODBC"
+	
+    #These examples have special files for build: BUILD(or BUILD.bat for Windows)
+    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong 
+       dcps/standalone/Java/Tutorial
+       dlrl/standalone/Java/Tutorial
+       dlrl/standalone/C++/Tutorial
+       services/dbmsconnect/SQL/C++/ODBC"
+    
+    echo "Build Examples:"
+    if check_platform
+    then
+	sh $BASE/build_examples.sh
+    else
+	$BASE/build_examples.bat
+    fi
+    exit $?
 fi
-
-SPLICE_PLATFORM=$SETUP_TYPE
-export SPLICE_PLATFORM
-. ./configure -full
-
-if [ "$CONFIGURATION" != "OK" ]
-then
-   echo  "ERROR: configuration - dcps_build_examples"
-   exit 1
-fi
-
-ArchiveLogs
-
-cd $LOGDIR/examples/build
-
-$OSPL_OUTER_HOME/testsuite/bin/build_examples_pcx86_integrity509
-exit $?

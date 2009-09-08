@@ -20,7 +20,7 @@
 #include "c_avltree.h"
 #include "c_iterator.h"
 #include "c_stringSupport.h"
-#include "c_collection.h"
+#include "c__collection.h"
 #include "c_metafactory.h"
 #include "ctype.h"
 #include "c_module.h"
@@ -623,6 +623,69 @@ c_typeIsRef (
     }
 
     return result;
+}
+
+c_long
+c_typeSize(
+    c_type type)
+{
+    c_type subType;
+    c_long size;
+
+    if (c_baseObjectKind(type) == M_COLLECTION) {
+        switch(c_collectionTypeKind(type)) {
+        case C_ARRAY:
+            subType = c_collectionTypeSubType(type);
+            switch(c_baseObjectKind(subType)) {
+            case M_INTERFACE:
+            case M_CLASS:
+                size = c_collectionTypeMaxSize(type)*sizeof(void *);
+            break;
+            default:
+                if (subType->size == 0) {
+                    subType->size = sizeof(void *);
+                }
+                size = c_collectionTypeMaxSize(type)*subType->size;
+            break;
+            }
+        break;
+        case C_LIST:
+            size = c_listSize;
+        break;
+        case C_BAG:
+            size = c_bagSize;
+        break;
+        case C_SET:
+            size = c_setSize;
+        break;
+        case C_DICTIONARY:
+            size = c_tableSize;
+        break;
+        case C_QUERY:
+            size = c_querySize;
+        break;
+        case C_SCOPE:
+            size = C_SIZEOF(c_scope);
+        break;
+        case C_STRING:
+            size = sizeof(c_char *);
+        break;
+        case C_SEQUENCE:
+            size = sizeof(c_address);
+        break;
+        default:
+            OS_REPORT(OS_ERROR,
+                      "c_typeSize failed",0,
+                      "illegal type specified");
+            assert(FALSE);
+            size = -1;
+        break;
+        }
+    } else {
+        size = type->size;
+    }
+
+    return size;
 }
 
 c_bool

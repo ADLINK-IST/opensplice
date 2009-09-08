@@ -34,18 +34,10 @@ while [ $# -gt 0 ]; do
     if [ "${arg:0:1}" = "-" ]; then
       # option without a path
       opt=${arg:1:1};
-      if [ "$opt" = "l" ]; then
-        # skip -l option
-        arg="-R:${arg:2}.dll"
-      fi
       if [ "$opt" = "o" ]; then
         # skip -o option
         filename=$1
-        if [ ${filename##*.} != "obj" ]; then
-		  	  	  arg=-OUT:$1
-        else
-           arg="-Fo$1";
-        fi
+        arg="$1";
         shift
       fi
       if [ "$arg" != "" ]; then

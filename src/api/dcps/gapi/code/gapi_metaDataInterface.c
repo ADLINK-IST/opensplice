@@ -12,6 +12,12 @@
 
 #include "gapi.h"
 
+gapi_type
+gapi_typeActualType(gapi_type typeBase)
+{
+    return c_typeActualType(typeBase);
+}
+
 c_metaKind
 gapi_metaData_baseObjectKind(gapi_baseObject objBase)
 {
@@ -28,6 +34,12 @@ const gapi_char *
 gapi_metaData_specifierName(gapi_specifier specBase)
 {
     return c_specifierName(specBase);
+}
+
+gapi_long
+gapi_metaData_typeSize(gapi_type typeBase)
+{
+    return c_typeSize(typeBase);
 }
 
 gapi_long
