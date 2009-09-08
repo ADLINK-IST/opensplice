@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/win32/code/os_cond.c
@@ -33,7 +33,7 @@
 
 #define NOTIFIED_BY_BROADCAST(state) ((state&BROADCAST_BIT_MASK)==BROADCAST_BIT_MASK)
 #define WAITCOUNT(state) (state&WAITCOUNT_MASK)
-    
+
 
 /************ PRIVATE ****************/
 static LONG
@@ -76,23 +76,34 @@ getSem(
     BOOL result;
     DWORD nRead;
     os_result osr;
+    DWORD lastError;
+
     assert(semId != NULL);
-    
+
     pipename = os_servicePipeName();
     request.kind = OS_SRVMSG_CREATE_SEMAPHORE;
     reply.result = os_resultFail;
     reply.kind = OS_SRVMSG_UNDEFINED;
-    result = CallNamedPipe(
+
+    do{
+        result = CallNamedPipe(
                  pipename,
-                 &request, sizeof(request), 
-                 &reply, sizeof(reply), 
-                 &nRead, 
+                 &request, sizeof(request),
+                 &reply, sizeof(reply),
+                 &nRead,
                  NMPWAIT_WAIT_FOREVER);
+        if(!result){
+           lastError = GetLastError();
+        } else {
+            lastError = ERROR_SUCCESS;
+        }
+    } while((!result) && (lastError == ERROR_PIPE_BUSY));
+
     if (!result || (nRead != sizeof(reply))) {
         OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
         osr = os_resultFail;
     } else {
-        if ((reply.result == os_resultSuccess) && 
+        if ((reply.result == os_resultSuccess) &&
             (reply.kind == OS_SRVMSG_CREATE_SEMAPHORE)) {
             *semId = reply._u.id;
             osr = os_resultSuccess;
@@ -113,7 +124,7 @@ returnSem(
     BOOL result;
     DWORD nRead;
     os_result osr;
-    
+
     pipename = os_servicePipeName();
     request.kind = OS_SRVMSG_DESTROY_SEMAPHORE;
     request._u.id = semId;
@@ -132,7 +143,7 @@ returnSem(
         OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
         osr = os_resultFail;
     }
-    
+
     return osr;
 }
 
@@ -150,7 +161,7 @@ condTimedWait(
     LONG lockCount;
     os_result osr;
     os_result result;
-    
+
     assert(cond != NULL);
     assert(mutex != NULL);
 
@@ -177,7 +188,7 @@ condTimedWait(
         hQueue  = (HANDLE)cond->qId;
         hMtx  = (HANDLE)mutex->id;
     }
-    
+
     InterlockedIncrement(&cond->state);
     lockCount = InterlockedDecrement(&mutex->lockCount);
     if (lockCount > 0) {
@@ -219,7 +230,7 @@ condSignal(
     assert(cond != NULL);
 
     osr = os_resultSuccess;
-    
+
     if (cond->scope == OS_SCOPE_SHARED) {
         _snprintf(name, sizeof(name), "%s%d",
             OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
@@ -232,13 +243,13 @@ condSignal(
     } else {
         hQueue       = (HANDLE)cond->qId;
     }
-    
+
     oldState = InterlockedOr(&cond->state, mask);
     if (oldState == 0) { /* no waiters */
         InterlockedAnd(&cond->state, ~mask);
         return osr;
     }
-    
+
     if (mask == BROADCAST_BIT_MASK) {
         result = ReleaseSemaphore(hQueue, oldState, 0);
     } else {
@@ -249,7 +260,7 @@ condSignal(
     if (cond->scope == OS_SCOPE_SHARED) {
         CloseHandle(hQueue);
     }
-    
+
     return osr;
 }
 
@@ -267,7 +278,7 @@ condSignal(
  */
 os_result
 os_condInit (
-    os_cond *cond, 
+    os_cond *cond,
     os_mutex *dummymtx,
     const os_condAttr *condAttr)
 {
@@ -275,7 +286,7 @@ os_condInit (
 
     assert (cond != NULL);
     assert (condAttr != NULL);
-    
+
     cond->scope = condAttr->scopeAttr;
     cond->state = 0;
     if (cond->scope == OS_SCOPE_SHARED) {
@@ -302,10 +313,10 @@ os_condDestroy(
     os_cond *cond)
 {
     os_result result;
-    
+
     assert (cond != NULL);
-    
-    if (cond->scope == OS_SCOPE_SHARED) { 
+
+    if (cond->scope == OS_SCOPE_SHARED) {
         result = returnSem(cond->qId);
         return result;
     } else {
@@ -355,9 +366,9 @@ os_condTimedWait (
     assert (cond != NULL);
     assert (mutex != NULL);
     assert (time != NULL);
-    
+
     wait_time = time->tv_sec * 1000 + time->tv_nsec / 1000000;
-    
+
     return condTimedWait(cond, mutex, wait_time);
 }
 

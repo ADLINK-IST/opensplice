@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "c_base.h"
@@ -105,6 +105,7 @@ v_kernelAttach(
     const c_char *name)
 {
     v_kernel kernel;
+    os_uint32 attachCount;
 
     kernel = c_lookup(base,name);
     if (kernel == NULL) {
@@ -113,7 +114,17 @@ v_kernelAttach(
     if (c_checkType(kernel,"v_kernel") != kernel) {
         return NULL;
     }
-    kernel->userCount++;
+
+    attachCount = pa_increment(&kernel->userCount);
+    if(attachCount == 1){
+        /* Result of the attach may NEVER be 1, as that would mean that an
+         * attach to an unreferenced kernel succeeded. If it happens, undo
+         * increment and free reference to returned kernel. */
+        pa_decrement(&kernel->userCount);
+        c_free(kernel);
+        kernel = NULL;
+    }
+
     return kernel;
 }
 
@@ -121,8 +132,13 @@ void
 v_kernelDetach(
     v_kernel k)
 {
+    os_uint32 attachCount;
+
     assert(C_TYPECHECK(k,v_kernel));
-    k->userCount--;
+
+    attachCount = pa_decrement(&k->userCount);
+    /* Assert on zero-boundary crossing */
+    assert(attachCount + 1 > attachCount);
 }
 
 c_long

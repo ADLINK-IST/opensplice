@@ -719,7 +719,9 @@ typedef void (*gapi_listener_AllDataDisposedListener)
 struct gapi_topicListener {
     void *listener_data;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
+#ifdef _CoflightAPI_
     gapi_listener_AllDataDisposedListener on_all_data_disposed;
+#endif
 };
 OS_API struct gapi_topicListener *
 gapi_topicListener__alloc (void);
