@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__user.h"
@@ -71,7 +71,7 @@ u_splicedRelease(
 }
 
 #ifndef INTEGRITY
-#define DAEMON_PATH "Domain/Daemon" 
+#define DAEMON_PATH "Domain/Daemon"
 static int
 lockPages(
     v_spliced kSpliced)
@@ -191,7 +191,7 @@ u_splicedDeinit(
 /**************************************************************
  * constructor/destructor
  **************************************************************/
- 
+
 #define SPLICED_NAME "spliced"
 
 u_spliced
@@ -220,7 +220,7 @@ u_splicedNew(
         r = u_kernelClaim(k,&kk);
         if ((r == U_RESULT_OK) && (kk != NULL)) {
             sm = v_getServiceManager(kk);
-        
+
             nrSec = 0;
             do {
                 sdState = v_serviceManagerGetServiceStateKind(sm, V_SPLICED_NAME);
@@ -252,7 +252,7 @@ u_splicedNew(
     } else
 #endif
     {
-	
+
         k = u_userKernelNew(uri);
         if (k == NULL) {
             printf("Creation of kernel failed!\n");
@@ -264,11 +264,14 @@ u_splicedNew(
 
     if (kSpliced != NULL) {
         spliced = u_entityAlloc(NULL,u_spliced,kSpliced,TRUE);
+        /* The splicedaemon creates a regular participant, so in order to
+         * keep the reference count ok, the kernel has to be opened here. */
+        k = u_userKernelOpen(uri, -1);
         r = u_splicedInit(spliced, k);
         if (r != U_RESULT_OK) {
             u_serviceFree(u_service(spliced));
             OS_REPORT(OS_ERROR,"u_splicedNew",0,
-                      "Failed to initialise spliced.");
+                      "Failed to initialize spliced.");
             spliced = NULL;
         } else {
 #ifndef INTEGRITY
@@ -301,11 +304,12 @@ u_splicedFree(
             kernel = u_participant(spliced)->kernel;
             r = u_splicedDeinit(spliced);
             os_free(spliced);
-    
+
             /* now close the kernel: should always be the last action of
                this routine!
             */
-            u_userKernelClose(kernel);
+            //u_userKernelClose(kernel);
+            u_kernelFree(kernel);
         } else {
             r = u_entityFree(u_entity(spliced));
         }
@@ -336,7 +340,7 @@ u_splicedKernelManager(
         v_splicedKernelManager(s);
         r = u_splicedRelease(spliced);
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0, 
+        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -372,7 +376,7 @@ u_splicedGarbageCollector(
         v_splicedGarbageCollector(s);
         r = u_splicedRelease(spliced);
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedGarbageCollector", 0, 
+        OS_REPORT(OS_WARNING, "u_splicedGarbageCollector", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -390,7 +394,7 @@ u_splicedPrepareTermination(
         v_splicedPrepareTermination(s);
         r = u_splicedRelease(spliced);
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedPrepareTermination", 0, 
+        OS_REPORT(OS_WARNING, "u_splicedPrepareTermination", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -416,7 +420,7 @@ u_splicedStartHeartbeat(
             r = u_splicedRelease(spliced);
         }
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedStartHeartbeat", 0, 
+        OS_REPORT(OS_WARNING, "u_splicedStartHeartbeat", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -440,7 +444,7 @@ u_splicedStopHeartbeat(
             r = u_splicedRelease(spliced);
         }
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedStopHeartbeat", 0, 
+        OS_REPORT(OS_WARNING, "u_splicedStopHeartbeat", 0,
                   "Could not claim spliced.");
     }
     return r;

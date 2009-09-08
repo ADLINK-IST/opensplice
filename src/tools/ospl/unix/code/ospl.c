@@ -402,6 +402,8 @@ main(
     os_time serviceTerminatePeriod;
 
     os_osInit();
+    os_procAtExit(os_osExit);
+
     uri = os_getenv ("OSPL_URI");
 
     while ((opt = getopt (argc, argv, "had:")) != -1) {
