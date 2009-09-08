@@ -409,6 +409,8 @@ main (
     int returnCode = 0;
     const char *templ_path;
     char fnameA[1024];
+    struct stat stFileInfo;
+    int intStat;
 
     /* Use a unique name, so pass NULL as parameter */
     osr = os_serviceStart(NULL);
@@ -882,19 +884,42 @@ main (
                     char cpp_command[MAX_CPP_COMMAND];
                     cpp_command[0] = '\0';
 
-                    /* Put the path to the dcps.idl in the -I's for cppgen */
-                    templ_path = os_getenv ("OSPL_TMPL_PATH");
+                    /* Put the path to the dds_dcps.idl in the -I's for cppgen */
+                    templ_path = os_getenv ("OSPL_HOME");
                     if (templ_path == NULL) 
                     {
-                       printf ("Variable OSPL_TMPL_PATH not defined\n");
+                       printf ("Variable OSPL_HOME not defined\n");
                        exit (1);
                     }
-                    snprintf(fnameA, sizeof(fnameA), "%s%c", templ_path, OS_FILESEPCHAR);
+                    snprintf(fnameA, sizeof(fnameA), "%s%cinclude%cdcps%cC++%cSACPP%c", templ_path, 
+                             OS_FILESEPCHAR,
+                             OS_FILESEPCHAR,
+                             OS_FILESEPCHAR,
+                             OS_FILESEPCHAR,
+                             OS_FILESEPCHAR);
+                    intStat = stat(fnameA,&stFileInfo);
+                    if(intStat != 0) 
+                    {
+                       snprintf(fnameA, sizeof(fnameA), "%s%csrc%capi%cdcps%cccpp%cidl%c", templ_path, 
+                                OS_FILESEPCHAR,
+                                OS_FILESEPCHAR,
+                                OS_FILESEPCHAR,
+                                OS_FILESEPCHAR,
+                                OS_FILESEPCHAR,
+                                OS_FILESEPCHAR);
+                       intStat = stat(fnameA,&stFileInfo);
+                       if(intStat != 0) 
+                       {
+                          printf ("No path to the dds_dcps.idl found\n");
+                          exit (1);
+                       }
+                     } 
                     strncat (cpp_command, "-I", (size_t)2);
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
                     strncat (cpp_command, fnameA, strlen(fnameA));
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
                    
+
                     for (i = 0; i < c_iterLength(includeDefinitions); i++) 
                     {
                         /* Extend command line with all include path options */
