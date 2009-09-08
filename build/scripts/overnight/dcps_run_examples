@@ -90,7 +90,7 @@ else
 	BASE=$DEPWORKDIR/build/scripts/overnight
     fi
 
-    cd $WORKDIR/../installed/HDE/$SETUP_TYPE/
+    cd $WORKDIR/installed/HDE/$SETUP_TYPE/
     . ./release.com
     cd examples
  
