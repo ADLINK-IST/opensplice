@@ -73,20 +73,20 @@ else
     SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
     if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE-installer.bin ]
     then
-       $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/../installed/
+       $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/installed/
 #--providedLicenseFile licfile
     else
         if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE.tar ]
         then
-            mkdir $WORKDIR/../installed
+            mkdir $WORKDIR/installed
             (
-              cd $WORKDIR/../installed/ && \
+              cd $WORKDIR/installed/ && \
               tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE.tar
               mv HDE/$SHORTSETUP/release.com \
                   HDE/$SHORTSETUP/release.com.orig \
               sed < HDE/$SHORTSETUP/release.com.orig \
                   > HDE/$SHORTSETUP/release.com \
-                  "s%@@INSTALLDIR@@%$WORKDIR/../installed/%"
+                  "s%@@INSTALLDIR@@%$WORKDIR/installed/%"
             )
         fi
     fi
@@ -97,7 +97,7 @@ else
 	echo "ERROR: Install failed"
 	exit 1
     fi
-    cd $WORKDIR/../installed/HDE/$SHORTSETUP/
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/
     . ./release.com
     cd examples
     if [ $? != 0 ]
@@ -106,25 +106,10 @@ else
 	exit 1
     fi
 
-    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong 
-       dcps/CORBA/C++/OpenFusion/Tutorial 
-       dcps/standalone/C/PingPong 
-       dcps/standalone/C/Tutorial 
-       dcps/standalone/C++/PingPong 
-       dcps/standalone/C++/Tutorial 
-       dcps/standalone/C++OnC/PingPong 
-       dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
+    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
 	
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
+    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
     
     echo "Build Examples:"
     if check_platform
