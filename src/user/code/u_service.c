@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -148,7 +148,6 @@ lockPages(
                 iterLength = c_iterLength(iter);
                 if (iterLength == 1) {
                     data = v_cfData(c_iterTakeFirst(iter));
-                    c_iterFree(iter);
                     if (u_cfValueScan(v_cfDataValue(data), V_BOOLEAN, &value)) {
                         if (value.is.Boolean) {
                             lock = 1;
@@ -172,6 +171,7 @@ lockPages(
                     "Could not get configuration for service '%s' (non-existent): MemoryLocking disabled",
                     name);
             }
+            c_iterFree(iter);
             c_free(root);
         }
     }
@@ -294,10 +294,8 @@ u_serviceFree(
 
     if (service != NULL) {
         if (u_entity(service)->flags & U_ECREATE_INITIALISED) {
-            kernel = u_participant(service)->kernel;
             r = u_serviceDeinit(service);
             os_free(service);
-            u_userKernelClose(kernel);
         } else {
             r = u_entityFree(u_entity(service));
 	}
@@ -332,7 +330,7 @@ u_serviceInit(
                 u_entity(service)->flags |= U_ECREATE_INITIALISED;
             } else {
                 OS_REPORT(OS_ERROR,"u_serviceInit",0,
-                          "Initialisation of the Participant failed.");
+                          "Initialization of the Participant failed.");
             }
         } else {
             service->privateData = NULL;

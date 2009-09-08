@@ -35,6 +35,10 @@ u_result
 u_userKernelClose (
     u_kernel kernel);
 
+u_result
+u_userKernelFree (
+    u_kernel kernel);
+
 c_address
 u_userServer (
     c_long id);
