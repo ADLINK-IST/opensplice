@@ -219,9 +219,11 @@ module DDS {
 	    in Topic the_topic,
 	    in InconsistentTopicStatus status);
 
+#ifdef _CoflightAPI_
 	void
 	on_all_data_disposed(
 	    in Topic the_topic);
+#endif
     };
 
     local interface DataWriterListener : Listener {
