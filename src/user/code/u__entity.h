@@ -80,6 +80,14 @@ OS_API u_result
 u_entityRelease(
     u_entity _this);
 
+u_result
+u_entityLock(
+    u_entity e);
+
+u_result
+u_entityUnlock(
+    u_entity e);
+
 #undef OS_API
 
 #endif

@@ -38,6 +38,7 @@ C_STRUCT(u_entity) {
     /* flags indicates how entity is created....
       see U_ECREATE_* in u__entity.h */
     c_ulong flags;
+    os_mutex mutex;
 };
 
 C_STRUCT(u_dispatcher)
