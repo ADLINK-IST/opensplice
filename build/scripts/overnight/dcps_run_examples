@@ -94,25 +94,10 @@ else
     . ./release.com
     cd examples
  
-    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong 
-       dcps/CORBA/C++/OpenFusion/Tutorial 
-       dcps/standalone/C/PingPong 
-       dcps/standalone/C/Tutorial 
-       dcps/standalone/C++/PingPong 
-       dcps/standalone/C++/Tutorial 
-       dcps/standalone/C++OnC/PingPong 
-       dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
+    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
 	
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
+    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
 
 
     echo "Updating XML:"
