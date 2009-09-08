@@ -526,13 +526,13 @@ u_userServerId(
     return id;
 }
 
-c_long
+c_address
 u_userServer(
     c_long id)
 {
     u_kernel kernel;
     c_long idx;
-    c_long server;
+    c_address server;
     u_user u;
 
     u = u_user(user);

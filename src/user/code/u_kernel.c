@@ -982,7 +982,7 @@ u_kernelCheckHandleServer(
     return result;
 }
 
-c_long
+c_address
 u_kernelHandleServer(
     u_kernel kernel)
 {

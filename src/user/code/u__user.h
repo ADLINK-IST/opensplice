@@ -22,12 +22,29 @@ typedef void (*u_kernelAction)(u_kernel kernel, u_kernelActionArg arg);
 
 #define u_resultFromKernel(r) ((u_result)r)
 
-u_kernel u_userKernelNew    (const c_char *uri);
-u_kernel u_userKernelOpen   (const c_char *uri, c_long timeout);
-u_result u_userKernelClose  (u_kernel k);
-c_long   u_userServer       (c_long id);
-c_long   u_userServerId     (v_public o);
-c_long   u_userProtectCount ();
+u_kernel
+u_userKernelNew (
+    const c_char *uri);
 
-#endif /* U__USER_H */
+u_kernel
+u_userKernelOpen (
+    const c_char *uri,
+    c_long timeout);
+
+u_result
+u_userKernelClose (
+    u_kernel kernel);
+
+c_address
+u_userServer (
+    c_long id);
+
+c_long
+u_userServerId (
+    v_public o);
+
+c_long
+u_userProtectCount ();
+
+#endif
 

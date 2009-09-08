@@ -375,14 +375,19 @@ u_writerWrite(
     u_instanceHandle handle)
 {
     u_result result;
-    if (data != NULL) {
-        result = u_writeWithHandleAction(_this,
-                                         data,
-                                         timestamp,
-                                         handle,
-                                         v_writerWrite);
+
+    if (u_entityEnabled(u_entity(_this))) {
+        if (data != NULL) {
+            result = u_writeWithHandleAction(_this,
+                                             data,
+                                             timestamp,
+                                             handle,
+                                             v_writerWrite);
+        } else {
+            result = U_RESULT_ILL_PARAM;
+        }
     } else {
-        result = U_RESULT_ILL_PARAM;
+        result = U_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
 }
@@ -396,11 +401,18 @@ u_writerDispose(
     c_time timestamp,
     u_instanceHandle handle)
 {
-    return u_writeWithHandleAction(_this,
-                                   data,
-                                   timestamp,
-                                   handle,
-                                   v_writerDispose);
+    u_result result;
+
+    if (u_entityEnabled(u_entity(_this))) {
+        result = u_writeWithHandleAction(_this,
+                                         data,
+                                         timestamp,
+                                         handle,
+                                         v_writerDispose);
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
+    }
+    return result;
 }
 
 /* -------------------------------- u_writerWriteDispose ------------------------- */
@@ -412,11 +424,18 @@ u_writerWriteDispose(
     c_time timestamp,
     u_instanceHandle handle)
 {
-    return u_writeWithHandleAction(_this,
-                                   data,
-                                   timestamp,
-                                   handle,
-                                   v_writerWriteDispose);
+    u_result result;
+
+    if (u_entityEnabled(u_entity(_this))) {
+       result = u_writeWithHandleAction(_this,
+                                        data,
+                                        timestamp,
+                                        handle,
+                                        v_writerWriteDispose);
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
+    }
+    return result;
 }
 
 void
@@ -470,31 +489,39 @@ u_writerRegisterInstance(
     v_writeResult writeResult;
     v_writerInstance instance;
 
-    result = u_writerClaim(_this, &writer);
-    if ((result == U_RESULT_OK) && (writer != NULL)) {
-        message = v_topicMessageNew(writer->topic);
-        to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
-        copyResult = _this->copy(v_topicDataType(writer->topic), data, to);
+    if (u_entityEnabled(u_entity(_this))) {
+        result = u_writerClaim(_this, &writer);
+        if ((result == U_RESULT_OK) && (writer != NULL)) {
+            message = v_topicMessageNew(writer->topic);
+            to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
+            copyResult = _this->copy(v_topicDataType(writer->topic), data, to);
 
-        if(copyResult){
-            writeResult = v_writerRegister(writer, message, timestamp, &instance);
-            c_free(message);
-            wresult = u_resultFromKernelWriteResult(writeResult);
-            if (wresult == U_RESULT_OK) {
-                *handle = u_instanceHandleNew(v_public(instance));
-            }
-            c_free(instance);
-            result = u_writerRelease(_this);
-            if (result == U_RESULT_OK) {
-                result = wresult;
-            }
-        } else {
-            result = U_RESULT_ILL_PARAM;
+            if(copyResult){
+                writeResult = v_writerRegister(writer,
+                                               message,
+                                               timestamp,
+                                               &instance);
+                c_free(message);
+                wresult = u_resultFromKernelWriteResult(writeResult);
+                if (wresult == U_RESULT_OK) {
+                    *handle = u_instanceHandleNew(v_public(instance));
+                }
+                c_free(instance);
+                result = u_writerRelease(_this);
+                if (result == U_RESULT_OK) {
+                    result = wresult;
+                }
+            } else {
+                result = U_RESULT_ILL_PARAM;
 
-            OS_REPORT(OS_ERROR,
-                "u_writerRegisterInstance", 0,
-                "Unable to register instance, because the instance data is invalid.");
+                OS_REPORT(OS_ERROR,
+                    "u_writerRegisterInstance", 0,
+                    "Unable to register instance, "
+                    "because the instance data is invalid.");
+            }
         }
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
 }
@@ -515,31 +542,36 @@ u_writerRegisterInstanceTMP(
     v_writeResult writeResult;
     v_writerInstance instance;
 
-    result = u_writerClaim(_this, &writer);
-    if ((result == U_RESULT_OK) && (writer != NULL)) {
-        message = v_topicMessageNew(writer->topic);
-        to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
-        copyResult = copyFunc(v_topicDataType(writer->topic), data, to);
+    if (u_entityEnabled(u_entity(_this))) {
+        result = u_writerClaim(_this, &writer);
+        if ((result == U_RESULT_OK) && (writer != NULL)) {
+            message = v_topicMessageNew(writer->topic);
+            to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
+            copyResult = copyFunc(v_topicDataType(writer->topic), data, to);
 
-        if(copyResult){
-            writeResult = v_writerRegister(writer, message, timestamp, &instance);
-            wresult = u_resultFromKernelWriteResult(writeResult);
-            if (wresult == U_RESULT_OK) {
-                *handle = u_instanceHandleNew(v_public(instance));
-            }
-            c_free(instance);
-            result = u_writerRelease(_this);
-            if (result == U_RESULT_OK) {
-                result = wresult;
-            }
-        } else {
-            result = U_RESULT_ILL_PARAM;
+            if(copyResult){
+                writeResult = v_writerRegister(writer, message, timestamp, &instance);
+                wresult = u_resultFromKernelWriteResult(writeResult);
+                if (wresult == U_RESULT_OK) {
+                    *handle = u_instanceHandleNew(v_public(instance));
+                }
+                c_free(instance);
+                result = u_writerRelease(_this);
+                if (result == U_RESULT_OK) {
+                    result = wresult;
+                }
+            } else {
+                result = U_RESULT_ILL_PARAM;
 
-            OS_REPORT(OS_ERROR,
-                "u_writerRegisterInstanceTMP", 0,
-                "Unable to register instance, because the instance data is invalid.");
+                OS_REPORT(OS_ERROR,
+                    "u_writerRegisterInstanceTMP", 0,
+                    "Unable to register instance, "
+                    "because the instance data is invalid.");
+            }
+            c_free(message);
         }
-        c_free(message);
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
 }
@@ -553,11 +585,18 @@ u_writerUnregisterInstance(
     c_time timestamp,
     u_instanceHandle handle)
 {
-    return u_writeWithHandleAction(_this,
-                                   data,
-                                   timestamp,
-                                   handle,
-                                   v_writerUnregister);
+    u_result result;
+
+    if (u_entityEnabled(u_entity(_this))) {
+        result = u_writeWithHandleAction(_this,
+                                         data,
+                                         timestamp,
+                                         handle,
+                                         v_writerUnregister);
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
+    }
+    return result;
 }
 
 u_result
@@ -578,26 +617,31 @@ u_writerLookupInstance(
         (handle == NULL)) {
         return U_RESULT_ILL_PARAM;
     }
-    result = u_writerClaim(_this, &writer);
+    if (u_entityEnabled(u_entity(_this))) {
+        result = u_writerClaim(_this, &writer);
 
-    if ((result == U_RESULT_OK) && (writer != NULL)) {
-        message = v_topicMessageNew(writer->topic);
-        to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
-        copyResult = _this->copy(v_topicDataType(writer->topic), keyTemplate, to);
+        if ((result == U_RESULT_OK) && (writer != NULL)) {
+            message = v_topicMessageNew(writer->topic);
+            to = C_DISPLACE(message, v_topicDataOffset(writer->topic));
+            copyResult = _this->copy(v_topicDataType(writer->topic), keyTemplate, to);
 
-        if(copyResult){
-            instance = v_writerLookupInstance(writer, message);
-            *handle = u_instanceHandleNew(v_public(instance));
-            c_free(message);
-            c_free(instance);
-            result = u_writerRelease(_this);
-        } else {
-            result = U_RESULT_ILL_PARAM;
+            if(copyResult){
+                instance = v_writerLookupInstance(writer, message);
+                *handle = u_instanceHandleNew(v_public(instance));
+                c_free(message);
+                c_free(instance);
+                result = u_writerRelease(_this);
+            } else {
+                result = U_RESULT_ILL_PARAM;
 
-            OS_REPORT(OS_ERROR,
-                "u_writerLookupInstance", 0,
-                "Unable to lookup instance, because the instance data is invalid.");
+                OS_REPORT(OS_ERROR,
+                    "u_writerLookupInstance", 0,
+                    "Unable to lookup instance, "
+                    "because the instance data is invalid.");
+            }
         }
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
 }
