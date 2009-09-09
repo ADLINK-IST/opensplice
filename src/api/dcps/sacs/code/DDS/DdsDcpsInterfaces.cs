@@ -98,6 +98,7 @@ namespace DDS
         ReturnCode Enable();
         IStatusCondition GetStatusCondition();
         StatusKind GetStatusChanges();
+        InstanceHandle GetInstanceHandle();
     }
 
     public interface IDomainParticipant : IEntity
