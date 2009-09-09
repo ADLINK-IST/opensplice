@@ -83,7 +83,7 @@ else
               cd $WORKDIR/installed/ && \
               tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE.tar
               mv HDE/$SHORTSETUP/release.com \
-                  HDE/$SHORTSETUP/release.com.orig \
+                  HDE/$SHORTSETUP/release.com.orig
               sed < HDE/$SHORTSETUP/release.com.orig \
                   > HDE/$SHORTSETUP/release.com \
                   "s%@@INSTALLDIR@@%$WORKDIR/installed/%"
