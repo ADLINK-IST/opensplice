@@ -65,6 +65,7 @@ else
     then
         INSTALLERDIR=$WORKDIR/$PRODUCT/install
     else
+        OUTER_BASE=$BASE
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
     fi
@@ -90,6 +91,13 @@ else
             )
         fi
     fi
+
+    cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    if [ "$DEP" != "none" ]
+    then
+        cp -rp $OUTER_BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    fi
+
     if [ $? = 0 ]
     then
         echo "Install completed"
