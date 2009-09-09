@@ -1,0 +1,224 @@
+module testDefConstr {
+	// ToDO: scdds539 - Replace symmetrical with asymetrical test-case.
+	//const long DIM_NUMS_1 = 3;
+	//const long DIM_NUMS_2 = 2;
+	const long DIM_NUMS_1 = 3;
+	const long DIM_NUMS_2 = 3;
+	
+	// ToDO: scdds539 - Replace symmetrical with asymetrical test-case.
+    const long DIM_LONGARRAY10_1 = 10;
+    const long DIM_LA2DIM_1 = 10;
+    
+    const long DIM_ARRAYA_1 = 10;
+
+	// ToDO: scdds539 - Replace symmetrical with asymetrical test-case.
+    //const long DIM_THREEDIMA_1 = 5;
+    //const long DIM_THREEDIMA_2 = 3;
+    const long DIM_THREEDIMA_1 = 10;
+    const long DIM_THREEDIMA_2 = 10;
+    
+    const long DIM_TWODIMLONG_1 = 10;
+    
+    const long DIM_LONG1ARR_1 = 1;
+    
+    const long DIM_AAPSEQARR12_1 = 12;
+    
+	// ToDO: scdds539 - Replace symmetrical with asymetrical test-case.
+    //const long DIM_BIGUNIONSEQSEQARR1ARR2_1 = 1;
+    //const long DIM_BIGUNIONSEQSEQARR1ARR2_2 = 2;
+    const long DIM_BIGUNIONSEQSEQARR1ARR2_1 = 2;
+    const long DIM_BIGUNIONSEQSEQARR1ARR2_2 = 2;
+    
+    const long DIM_LONG1ARR43ARR2ARR_1 = 1;
+    
+	// ToDO: scdds539 - Replace symmetrical with asymetrical test-case.
+    //const long DIM_ERIK_1 = 5;
+    //const long DIM_ERIK_2 = 3;
+    const long DIM_ERIK_1 = 10;
+    const long DIM_ERIK_2 = 10;
+    
+
+    enum Color{Red, Yellow, Blue};
+
+    struct B {
+	    long x, y, z;
+    };
+
+    typedef sequence<long> longSeq;
+    typedef long longArray10[DIM_LONGARRAY10_1];
+
+
+    struct A {
+        long id;
+        string name;
+        B embedded;
+        Color c;
+        long nums[DIM_NUMS_1][DIM_NUMS_2];
+        sequence<longSeq, 3> nums2;
+        sequence<sequence<float, 10> > floatList;
+        longArray10 la2Dim[DIM_LA2DIM_1];   
+    };
+#pragma keylist A id
+
+    enum Size {
+        LARGE,
+        MEDIUM,
+        SMALL
+    };
+
+ 
+
+    union UnionNoDefaultGenerated switch (boolean){
+        case TRUE:
+            long someBranch;
+        case FALSE:
+            long someBranch2;
+    };
+
+ 
+    typedef A arrayA[DIM_ARRAYA_1];
+    typedef sequence<long, 1> long1Seq;
+    typedef sequence<long1Seq > aap[2];
+    typedef sequence<aap> aapSeqArr12[DIM_AAPSEQARR12_1];
+    typedef sequence<Size> sizeSeq;
+    typedef sequence<string, 7> string7Seq;
+    typedef string7Seq string7SeqArrs[2][3][4];
+    typedef long long1Arr[DIM_LONG1ARR_1];
+    typedef long long1Arr43Arr2Arr[DIM_LONG1ARR43ARR2ARR_1];
+
+    union UnionBigTest switch (long){
+        case 0:
+            char case1;
+        case 6:
+            UnionNoDefaultGenerated someUnion;
+        case 7:
+            string7SeqArrs someString2;
+        case 4:
+            string7Seq someString;
+        case 5:
+            Size mySize;
+        case 3:
+            long1Arr x;
+        case -2147483648:
+            string case2;
+        case 2:
+            octet case3;
+        case 8:
+            sizeSeq mySize2;
+        case 9:
+            octet someVal;
+        case 10:
+            aapSeqArr12 someSeq;
+        case 11:
+            string val;
+        case 12:
+        case 15:
+            long1Seq seqTest;
+        case 13:
+        case 14:
+            long long xx;
+        case 16:
+            arrayA erik[5][3];
+        case -2147483647:
+            string emiel;
+        default:
+            string zz;
+    };
+    
+    union UnionStartString switch (Size){
+        case LARGE:
+            string name;
+        case MEDIUM:
+            long1Arr someLongArr;
+        default:
+            A myA;
+    };
+
+    union UnionStartMultiDimArrayStruct switch (Size){
+        case MEDIUM:
+            arrayA threeDimA[DIM_THREEDIMA_1][DIM_THREEDIMA_2];
+        case LARGE:
+            UnionBigTest toughOne;
+        default:
+            A myA;
+    };
+
+    union UnionStartMultiDimArrayPrimitve switch (Size){
+        case MEDIUM:
+            longArray10 twoDimLong[DIM_TWODIMLONG_1];
+        case LARGE:
+            UnionBigTest toughOne;
+        default:
+            A myA;
+    };
+
+    union UnionStartEnum switch (Color){
+        case Red:
+            Size mySize;
+        default:
+            A myA;
+    };
+
+    union UnionStartStruct switch (Color){
+        case Red:
+            B myB;
+        default:
+            A myA;
+    };
+    
+    union UnionStartSequence switch (Color){
+        case Red:
+            string7Seq noInitRequired;
+        default:
+            A myA;
+    };
+    
+    union UnionStartPrimitiveDouble switch (Color){
+        case Red:
+            double d;
+        default:
+            A myA;
+    };
+    
+    union UnionStartPrimitiveChar switch (Color){
+        case Red:
+            char c;
+        case Yellow:
+            string name;
+        default:
+            A myA;
+    };
+    
+	struct TestUnionStarts {
+	    long id;
+	    UnionStartString usstring;
+	    UnionStartMultiDimArrayStruct usmds;
+	    UnionStartMultiDimArrayPrimitve usmdp;
+	    UnionStartEnum use;
+	    UnionStartStruct usstruct;
+	    UnionStartSequence usseq;
+	    UnionStartPrimitiveDouble uspd;
+	    UnionStartPrimitiveChar uspc;
+	};
+#pragma keylist TestUnionStarts id
+
+    typedef sequence<UnionBigTest> bigUnionSeq;
+    typedef sequence<bigUnionSeq > bigUnionSeqSeqArr1Arr2[DIM_BIGUNIONSEQSEQARR1ARR2_1][DIM_BIGUNIONSEQSEQARR1ARR2_2];
+
+    struct StructBigTest{
+        long id;
+        long1Arr someLongArr;
+        unsigned long someLong;
+        string val;
+        octet SomeOctet;
+        Size mySize;
+        aapSeqArr12 someSeq;
+        UnionBigTest someUnion;
+        long1Seq someSeq2;
+        sizeSeq mySize2;
+        bigUnionSeqSeqArr1Arr2 someUnion3;
+        long1Arr43Arr2Arr arrTest;
+        arrayA erik[DIM_ERIK_1][DIM_ERIK_2];
+    };
+#pragma keylist StructBigTest id
+};

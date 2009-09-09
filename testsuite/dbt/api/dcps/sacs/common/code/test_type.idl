@@ -1,0 +1,23 @@
+
+module mod {
+    struct tst{
+        long long_1;
+        long long_2;
+        long long_3;
+    };
+#pragma keylist tst long_1
+    
+    struct otherType{
+        long long_1;
+        sequence<string> value;
+    };
+#pragma keylist otherType long_1
+    
+    struct boundsType{
+        long long_1;
+        string name;
+        string<5> name5;
+        sequence<string, 2> strSeq2;
+    };
+#pragma keylist boundsType long_1
+};
