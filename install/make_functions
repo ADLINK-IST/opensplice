@@ -705,8 +705,8 @@ install_hde_target ()
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
         install_bin_file ${host_release} ${HDE_dir} bin cppgen${suffix_exe}
-        # In the HDE we only need the other executables in case host and target are equal
-        if [ "${SPLICE_TARGET}" = "${SPLICE_HOST}" ]
+        # Copy the executables for the target
+        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
             install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
             install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
