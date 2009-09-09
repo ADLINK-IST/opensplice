@@ -264,9 +264,6 @@ u_splicedNew(
 
     if (kSpliced != NULL) {
         spliced = u_entityAlloc(NULL,u_spliced,kSpliced,TRUE);
-        /* The splicedaemon creates a regular participant, so in order to
-         * keep the reference count ok, the kernel has to be opened here. */
-        k = u_userKernelOpen(uri, -1);
         r = u_splicedInit(spliced, k);
         if (r != U_RESULT_OK) {
             u_serviceFree(u_service(spliced));

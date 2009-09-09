@@ -775,6 +775,7 @@ install_hde_target ()
     #
     printf "*     Copy documentation... "
     cp -r ${OSPL_HOME}/docs ${HDE_dir}
+    install_ascii_file "${OSPL_HOME}/index.html" "${HDE_dir}"
     # remove documentation for components that are not installed
     if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes" ]
     then
@@ -1569,6 +1570,7 @@ install_rts_target ()
     #
     echo "*     Copy documentation"
     cp -r ${OSPL_HOME}/docs ${RTS_dir}
+    install_ascii_file "${OSPL_HOME}/index.html" "${RTS_dir}"
     # remove documentation that does not apply to RTS
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_PreProcessor_usermanual.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_refman*.pdf

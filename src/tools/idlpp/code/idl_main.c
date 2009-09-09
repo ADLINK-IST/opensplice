@@ -893,7 +893,7 @@ main (
                                  (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
-
+		    printf("HERE\n");
                     /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
                     templ_path = os_getenv ("OSPL_TMPL_PATH");
                     if (templ_path == NULL) 
@@ -901,11 +901,12 @@ main (
                        printf ("Variable OSPL_TMPL_PATH not defined\n");
                        exit (1);
                     }
-                    snprintf(fnameA, sizeof(fnameA), "%s%c", templ_path, OS_FILESEPCHAR);
+                    snprintf(fnameA, sizeof(fnameA), "%s", templ_path);
                     strncat (cpp_command, " -I", (size_t)3);
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
                     strncat (cpp_command, fnameA, strlen(fnameA));
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
+		    printf("HERE1\n");
 
                     for (i = 0; i < c_iterLength(macroDefinitions); i++) 
                     {
@@ -1471,7 +1472,7 @@ int runCppGen (
                  QUOTE, filename, QUOTE);
       }
    }
-/*    printf("Running: %s%s\n", extIdlpp, cppgenArgs); */
+   printf("Running: %s%s\n", extIdlpp, cppgenArgs);
    osr = os_procCreate(extIdlpp, "cppgen",  cppgenArgs,
                        &cppgenProcAttr, &cppgenProcId);
    os_free(cppgenArgs);   
