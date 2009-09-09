@@ -1470,7 +1470,7 @@ int runCppGen (
                  QUOTE, filename, QUOTE);
       }
    }
-   printf("Running: %s%s\n", extIdlpp, cppgenArgs);
+/*    printf("Running: %s%s\n", extIdlpp, cppgenArgs); */
    osr = os_procCreate(extIdlpp, "cppgen",  cppgenArgs,
                        &cppgenProcAttr, &cppgenProcId);
    os_free(cppgenArgs);   
