@@ -202,7 +202,6 @@ v__observerTimedWait(
     const c_time time)
 {
     os_result result = os_resultSuccess;
-    c_time elapsedTime, currentTime, waitTime;
     c_ulong flags;
 
     assert(o != NULL);

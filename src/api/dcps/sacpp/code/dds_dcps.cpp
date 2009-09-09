@@ -12,32 +12,32 @@
 
 #include "dds_dcps.h"
 
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 #error "this is not working!"
 template class DDS_DCPSUFLSeq <DDS::SampleInfo, struct SampleInfoSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::InstanceStateKind, struct InstanceStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::ViewStateKind, struct ViewStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::SampleStateKind, struct SampleStateSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::Condition, struct ConditionSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::DataReader, struct DataReaderSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUObjSeq <DDS::Topic, struct TopicSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::QosPolicyCount, struct QosPolicyCountSeq_uniq_>;
 #endif
-#if EORB_USE_EXPLICIT_TEMPLATES
+#if DDS_USE_EXPLICIT_TEMPLATES
 template class DDS_DCPSUFLSeq <DDS::InstanceHandle_t, struct InstanceHandleSeq_uniq_>;
 #endif
 
@@ -639,6 +639,43 @@ DDS::Entity_ptr DDS::Entity::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Entity_ptr result;
    result = dynamic_cast<DDS::Entity_ptr> (p);
+   result->m_count++;
+   return result;
+}
+
+const char * DDS::Domain::_local_id = "IDL:DDS/Domain:1.0";
+
+DDS::Domain_ptr DDS::Domain::_duplicate (DDS::Domain_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::Domain::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::Domain::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::Domain_ptr DDS::Domain::_narrow (DDS::Object_ptr p)
+{
+   DDS::Domain_ptr result = NULL;
+   if (p && p->_is_a (DDS::Domain::_local_id))
+   {
+      result = dynamic_cast<DDS::Domain_ptr> (p);
+      result->m_count++;
+   }
+   return result;
+}
+
+DDS::Domain_ptr DDS::Domain::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::Domain_ptr result;
+   result = dynamic_cast<DDS::Domain_ptr> (p);
    result->m_count++;
    return result;
 }

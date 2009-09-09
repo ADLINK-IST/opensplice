@@ -44,7 +44,7 @@ static c_char* ReportLevelMap[] = { "None",
                                     "Full"
                                   };
 
-static unsigned int
+static os_uint32
 LookupReportLevel(
     const c_char * report_level);
 
@@ -154,7 +154,7 @@ nw_configurationWaitIfRequested(
 static FILE * open_socket (short port)
 {
    FILE * file = NULL;
-   int sock;
+   os_int sock;
    struct sockaddr_in sa;
 
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -190,7 +190,7 @@ nw_configurationInitializeTracing(
     c_char *outFileName = NULL;
     const c_char *root;
     c_bool tracingEnabled;
-    unsigned int index;
+    os_uint32 index;
 
     if (configuration) {
         traceConfig = &configuration->traceConfig;
@@ -203,7 +203,7 @@ nw_configurationInitializeTracing(
 
             outFileName = NWCF_SIMPLE_PARAM(String, root, OutputFile);
 
-            if (strncmp(outFileName, NW_STDOUT, (unsigned int)sizeof(NW_STDOUT)) == 0) {
+            if (strncmp(outFileName, NW_STDOUT, (os_uint)sizeof(NW_STDOUT)) == 0) {
                 traceConfig->outFile = stdout;
             } else {
                 char * filename = os_fileNormalize(outFileName); 
@@ -353,7 +353,7 @@ nw_configurationInitializeProfiling(
         profDefaultDo = NWCF_SIMPLE_PARAM(Bool, root, DoProfiling);
         profDefaultEvery = NWCF_SIMPLE_PARAM(ULong, root, ReportLaps);
 
-        memset(&lapAdmin, 0, (unsigned int)sizeof(lapAdmin));
+        memset(&lapAdmin, 0, (os_uint)sizeof(lapAdmin));
 
         root = NWCF_ROOT(Bridge);
         lapAdmin.doProfiling = NWCF_DEFAULTED_PARAM( Bool, root, DoProfiling, profDefaultDo );
@@ -413,7 +413,7 @@ nw_configurationInitializeProfiling(
         if (profConfig->doProfiling) {
             root = NWCF_ROOT(Profiling);
             outFileName = NWCF_SIMPLE_PARAM(String, root, ProfOutFile);
-            if (strncmp(outFileName, NW_STDOUT, (unsigned int)sizeof(NW_STDOUT)) == 0) {
+            if (strncmp(outFileName, NW_STDOUT, (os_uint)sizeof(NW_STDOUT)) == 0) {
                 profConfig->outFile = stdout;
             } else {
                 char * filename = os_fileNormalize(outFileName); 
@@ -713,7 +713,7 @@ nw_configurationGetElementInternal(
 {
     u_cfElement helperElement;
     c_iter elementList;
-    int fullNameSize;
+    os_uint fullNameSize;
     c_char *elementFullName;
 
     *resultElement = NULL;
@@ -930,7 +930,7 @@ nw_configurationUseLoopback()
 
     configuration = nw_configurationGetConfiguration();
     if (configuration) {
-        result = (c_bool)((int)configuration->useLoopback == TRUE);
+        result = (c_bool)((os_int)configuration->useLoopback == TRUE);
     }
 
     return result;
@@ -945,7 +945,7 @@ nw_configurationUseComplementPartitions()
 
     configuration = nw_configurationGetConfiguration();
     if (configuration) {
-        result = (c_bool)((int)configuration->useComplementPartitions == TRUE);
+        result = (c_bool)((os_int)configuration->useComplementPartitions == TRUE);
     }
 
     return result;
@@ -1557,12 +1557,12 @@ nw_nameListFree(
     }
 }
 
-static unsigned int
+static os_uint32
 LookupReportLevel(
     const c_char * report_level)
 {
-    unsigned int result = 0;
-    unsigned int i;
+    os_uint32 result = 0;
+    os_uint32 i;
 
     for (i=0; i<(sizeof(ReportLevelMap)/sizeof(c_char*)); i++)
     {

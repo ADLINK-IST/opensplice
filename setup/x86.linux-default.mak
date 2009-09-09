@@ -3,14 +3,14 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
-CSC		 = csc
+CSC      = csc
 
     # Binary used for filtering
 FILTER           = filter_gcc
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
-LD_EXE           = $(CC)
+LD_EXE           = $(CXX)
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
@@ -98,9 +98,7 @@ OBJ_POSTFIX = .o
 SLIB_PREFIX = lib
 SLIB_POSTFIX = .a
 DLIB_PREFIX = lib
-DLIB_POSTFIX = .soCSC		 = csc
-
-
+DLIB_POSTFIX = .so
 EXEC_PREFIX = 
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
@@ -113,4 +111,3 @@ CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
 CSEXEC_PREFIX =
 CSEXEC_POSTFIX = .exe
-

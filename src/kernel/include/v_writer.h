@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_WRITER_H
@@ -60,7 +60,7 @@ v_writerNew(
     v_topic topic,
     v_writerQos qos,
     c_bool enable);
-    
+
 OS_API void
 v_writerInit(
     v_writer w,
@@ -69,11 +69,11 @@ v_writerInit(
     v_topic topic,
     v_writerQos qos,
     c_bool enable);
-    
+
 OS_API void
 v_writerFree(
     v_writer w);
-    
+
 OS_API void
 v_writerDeinit(
     v_writer w);
@@ -88,29 +88,29 @@ v_writerWrite(
     v_message o,
     c_time timestamp,
     v_writerInstance instance);
-    
+
 OS_API v_writeResult
 v_writerDispose(
     v_writer w,
     v_message o,
     c_time timestamp,
     v_writerInstance instance);
-    
+
 OS_API v_writeResult
 v_writerWriteDispose(
     v_writer w,
     v_message o,
     c_time timestamp,
     v_writerInstance instance);
-    
+
 OS_API v_writeResult
 v_writerRegister(
     v_writer w,
     v_message o,
     c_time timestamp,
     v_writerInstance *instance);
-    
-OS_API v_writeResult 
+
+OS_API v_writeResult
 v_writerUnregister(
     v_writer w,
     v_message o,
@@ -143,7 +143,7 @@ OS_API c_bool
 v_writerPublish(
     v_writer w,
     v_domain d);
-    
+
 OS_API c_bool
 v_writerUnPublish(
     v_writer w,
@@ -185,6 +185,10 @@ v_writerGetTopicMatchStatus(
     v_statusAction action,
     c_voidp arg);
 
+OS_API v_result
+v_writerWaitForAcknowledgments(
+	v_writer w,
+	v_duration timeout);
 
 #undef OS_API
 

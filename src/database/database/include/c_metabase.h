@@ -431,6 +431,11 @@ c_metaResolve(
     const c_char *name);
 
 OS_API c_metaObject
+c_metaResolveFixedScope(
+    c_metaObject scope,
+    const c_char *name);
+
+OS_API c_metaObject
 c_metaResolveType(
     c_metaObject scope,
     const c_char *name);
@@ -496,6 +501,11 @@ c_typeIsRef(
 OS_API c_bool
 c_typeHasRef(
     c_type type);
+
+OS_API c_long
+c_typeSize(
+    c_type type);
+
 
 /** \brief This method will return a non typedef.
  *  It will test if the type is a typedef and if that is the case then it will

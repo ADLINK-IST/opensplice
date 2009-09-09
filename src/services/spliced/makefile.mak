@@ -28,6 +28,7 @@ $(IDL_FILES): make_idl_preprocessor
 
 make_idl_preprocessor:
 	cd $(OSPL_HOME)/src/cpp; make
+	cd $(OSPL_HOME)/src/tools/cppgen; make
 	cd $(OSPL_HOME)/src/tools/idlpp; make
 
 -include $(DEPENDENCIES)

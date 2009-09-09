@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -324,8 +324,23 @@ struct nsNewMaster{
     d_nameSpace myNameSpace;
     d_networkAddress bestFellow;
     d_quality fellowQuality;
+    d_serviceState bestFellowState;
 };
 
+/**
+ * Find a new master for a specific namespace.
+ * 1. Check if fellow is an aligner for the namespace. This is an absolute
+ *    precondition to become a master at all. No alignment takes place for as
+ *    long as there is no durability service in the system that has been
+ *    configured to allow aligning others.
+ * 2. If the fellow is an aligner, check if its state is already beyond the
+ *    current selected one, but not terminat(ing)(ed). In case it is, that one
+ *    becomes the master.
+ * 3. If states are equal, compare the 'quality' of the data in the namespace.
+ *    The one with the best quality becomes master.
+ * 4. If the quality is equal, select the one with the highest id.
+ *
+ */
 static c_bool
 findNewMaster(
     d_fellow fellow,
@@ -335,6 +350,7 @@ findNewMaster(
     d_nameSpace fellowNameSpace;
     d_networkAddress fellowAddress;
     c_bool isAligner, replace;
+    d_serviceState state;
     d_quality quality;
 
     nsm = (struct nsNewMaster*)userData;
@@ -347,6 +363,11 @@ findNewMaster(
 
         if(isAligner){
             if(!(nsm->bestFellow)){
+                replace = TRUE;
+            } else if((state > nsm->bestFellowState) &&
+                      (state != D_STATE_TERMINATING) &&
+                      (state != D_STATE_TERMINATED))
+            {
                 replace = TRUE;
             } else if(quality.seconds > nsm->fellowQuality.seconds){
                 replace = TRUE;
@@ -372,6 +393,7 @@ findNewMaster(
         nsm->bestFellow                = d_fellowGetAddress(fellow);
         nsm->fellowQuality.seconds     = quality.seconds;
         nsm->fellowQuality.nanoseconds = quality.nanoseconds;
+        nsm->bestFellowState           = state;
     }
     return TRUE;
 }
@@ -416,10 +438,12 @@ findMaster(
             nsnm.bestFellow                = d_adminGetMyAddress(admin);
             nsnm.fellowQuality.seconds     = myQuality.seconds;
             nsnm.fellowQuality.nanoseconds = myQuality.nanoseconds;
+            nsnm.bestFellowState           = d_durabilityGetState(durability);
         } else {
             nsnm.bestFellow                = NULL;
             nsnm.fellowQuality.seconds     = 0;
             nsnm.fellowQuality.nanoseconds = 0;
+            nsnm.bestFellowState           = D_STATE_INIT;
         }
         d_adminFellowWalk(admin, findNewMaster, &nsnm);
 

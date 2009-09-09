@@ -12,7 +12,7 @@
 #include "gapi_topicDescription.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_domainParticipant.h"
-#include "gapi_entityValidity.h"
+//#include "gapi_entityValidity.h"
 #include "gapi_structured.h"
 #include "gapi_objManag.h"
 #include "gapi_kernel.h"
@@ -410,7 +410,6 @@ gapi_topic_set_qos (
 }
 
 gapi_returnCode_t
-
 gapi_topic_get_qos (
     gapi_topic _this,
     gapi_topicQos *qos)
@@ -423,6 +422,17 @@ gapi_topic_get_qos (
         _TopicGetQos(topic,qos);
     }
     _EntityRelease(topic);
+    return result;
+}
+
+gapi_returnCode_t
+gapi_topic_dispose_all_data (
+    gapi_topic _this)
+{
+    gapi_returnCode_t result;
+
+    result = GAPI_RETCODE_UNSUPPORTED;
+
     return result;
 }
 
@@ -647,6 +657,9 @@ copyTopicQosIn (
         kernelCopyInDuration(&srcQos->reliability.max_blocking_time,
                              &dstQos->reliability.max_blocking_time);
 
+        dstQos->reliability.synchronous =
+                srcQos->reliability.synchronous;
+
         dstQos->resource.max_samples =
                 srcQos->resource_limits.max_samples;
         dstQos->resource.max_instances =
@@ -720,6 +733,9 @@ copyTopicQosOut (
 
     kernelCopyOutDuration(&srcQos->reliability.max_blocking_time,
                           &dstQos->reliability.max_blocking_time);
+
+    dstQos->reliability.synchronous =
+            srcQos->reliability.synchronous;
 
     dstQos->resource_limits.max_samples =
             srcQos->resource.max_samples;

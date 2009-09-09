@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice.CustomMarshalers
 {
-    public class DDSTopicBuiltinTopicMarshaler : BaseMarshaler
+    public class DDSTopicBuiltinTopicMarshaler : DatabaseMarshaler
     {
         private static Type type = typeof(DDS.OpenSplice.Gapi.gapi_topicBuiltinTopicData);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -29,7 +29,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_meta_data = (int)Marshal.OffsetOf(type, "meta_data");
         private static int offset_key_list = (int)Marshal.OffsetOf(type, "key_list");
 
-        override public object[] SampleReaderAlloc(int length)
+        public override object[] SampleReaderAlloc(int length)
         {
             return new DDS.TopicBuiltinTopicData[length];
         }
@@ -51,8 +51,8 @@ namespace DDS.OpenSplice.CustomMarshalers
                 toSample = toObject as DDS.TopicBuiltinTopicData;
 
             BuiltinTopicKeyMarshaler.CopyOut(from, out toSample.Key, offset + offset_key);
-            toSample.Name = BaseMarshaler.ReadString(from, offset + offset_name);
-            toSample.TypeName = BaseMarshaler.ReadString(from, offset + offset_typename);
+            toSample.Name = ReadString(from, offset + offset_name);
+            toSample.TypeName = ReadString(from, offset + offset_typename);
             DurabilityQosPolicyMarshaler.CopyOut(from, out toSample.Durability, offset + offset_durability);
             DurabilityServiceQosPolicyMarshaler.CopyOut(from, out toSample.DurabilityService, offset + offset_durability_servie);
             DeadlineQosPolicyMarshaler.CopyOut(from, out toSample.Deadline, offset + offset_deadline);
@@ -73,8 +73,8 @@ namespace DDS.OpenSplice.CustomMarshalers
             DDS.OpenSplice.TopicBuiltinTopicData toOsplSample = toSample as DDS.OpenSplice.TopicBuiltinTopicData;
             if (toOsplSample != null)
             {
-                toOsplSample.meta_data = BaseMarshaler.ReadString(from, offset + offset_meta_data);
-                toOsplSample.key_list = BaseMarshaler.ReadString(from, offset + offset_key_list);
+                toOsplSample.meta_data = ReadString(from, offset + offset_meta_data);
+                toOsplSample.key_list = ReadString(from, offset + offset_key_list);
             }
         }
 
@@ -86,6 +86,6 @@ namespace DDS.OpenSplice.CustomMarshalers
         public override bool CopyIn(System.IntPtr basePtr, object from, System.IntPtr to, int offset)
         {
             throw new NotImplementedException();
-        }
+        }        
     }
 }

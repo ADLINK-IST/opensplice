@@ -23,21 +23,21 @@
 
 #define NW_FULL_IP_ADDRESS            "255.255.255.255"
 
-static int
+static os_int
 nw_socketRetrieveBCInterface(
     const char *addressLookingFor,
-    int sockfd,
+    os_int sockfd,
     struct sockaddr_in *sockAddrPrimaryFound,
     struct sockaddr_in *sockAddrBroadcastFound)
 {
-    int result = SK_FALSE;
-    int success;
+    os_int result = SK_FALSE;
+    os_int success;
     sk_interfaceInfo *interfaceList;
-    unsigned int usedInterface = 0;
-    unsigned int nofInterfaces;
-    unsigned int i;
+    os_uint usedInterface = 0;
+    os_uint nofInterfaces;
+    os_uint i;
     char *addressDefault;
-    int found = SK_FALSE;
+    os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
 
     success = sk_interfaceInfoRetrieveAllBC(&interfaceList, &nofInterfaces,
@@ -46,7 +46,7 @@ nw_socketRetrieveBCInterface(
     if (success && (nofInterfaces > 0U)) {
         /* Retrieve interface from custom settings */
         if (strncmp(addressLookingFor, NWCF_DEF(Interface),
-                    (unsigned int)sizeof(NWCF_DEF(Interface))) == 0) {
+                    (os_uint)sizeof(NWCF_DEF(Interface))) == 0) {
             usedInterface = 0;
         } else {
              i = 0;
@@ -58,7 +58,7 @@ nw_socketRetrieveBCInterface(
                 }
                 if (strncmp(addressLookingFor,
                             inet_ntoa(testAddr->sin_addr),
-                            (unsigned int)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
+                            (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
                     usedInterface = i;
                     found = SK_TRUE;
                 } else {
@@ -107,15 +107,15 @@ nw_socketRetrieveBCInterface(
 #undef NW_FULL_IP_ADDRESS
 
 
-int
+os_int
 nw_socketGetDefaultBroadcastInterface(
     const char *addressLookingFor,
-    int sockfd,
+    os_int sockfd,
     struct sockaddr_in *sockAddrPrimary,
     struct sockaddr_in *sockAddrBroadcast)
 {
     /* Evaluate the interfaces only once, after this use previous result */
-    static int hadSuccessBefore = SK_FALSE;
+    static os_int hadSuccessBefore = SK_FALSE;
     static struct sockaddr_in sockAddrPrimaryFound;
     static struct sockaddr_in sockAddrBroadcastFound;
 
@@ -134,8 +134,17 @@ nw_socketGetDefaultBroadcastInterface(
 
 void
 nw_socketBroadcastInitialize(
-    nw_socket socket)
+    nw_socket socket,
+    sk_bool receiving)
 {
+    
+    if (! receiving) {
+#if ! defined OS_VXWORKS_DEFS_H && ! defined INTEGRITY
+       /* Set option for avoiding routing to other interfaces */
+       nw_socketSetDontRouteOption(socket, SK_TRUE);
+#endif
+       
+    }
     nw_socketSetBroadcastOption(socket, SK_TRUE);
 }
 

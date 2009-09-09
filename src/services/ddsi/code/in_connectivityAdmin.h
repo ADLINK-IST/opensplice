@@ -207,6 +207,11 @@ in_connectivityAdminRemoveListener(
     in_connectivityAdmin _this,
     in_connectivityListener listener);
 
+os_boolean 
+in_connectivityAdminIsLocalEntity(
+	in_connectivityAdmin _this,
+	in_ddsiGuidPrefixRef guidPrefixRef);
+
 
 #if defined (__cplusplus)
 }

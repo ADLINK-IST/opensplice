@@ -16,16 +16,17 @@
 #include "os_socket.h"
 #include "nw_socket.h"
 
-int
+os_int
 nw_socketGetDefaultBroadcastInterface(
     const char *addressLookingFor,
-    int sockfd,
+    os_int sockfd,
     struct sockaddr_in *sockAddrPrimary,
     struct sockaddr_in *sockAddrBroadcast);
 
 void
 nw_socketBroadcastInitialize(
-    nw_socket socket);
+    nw_socket socket,
+    sk_bool receiving);
 
                       
 #endif /* NW_SOCKETBROADCAST_H */

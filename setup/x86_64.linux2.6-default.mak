@@ -3,14 +3,14 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
-CSC		 = csc
+CSC      = csc
 
     # Binary used for filtering
 FILTER           = filter_gcc
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
-LD_EXE           = $(CC)
+LD_EXE           = $(CXX)
 	# GNU yacc
 YACC		 = bison
 	# GNU lex

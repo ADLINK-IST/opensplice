@@ -27,7 +27,7 @@ static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
   /* IDL_LANG_C       */        {0, 0, 1},
   /* IDL_LANG_CXX     */        {0, 1, 1},
   /* IDL_LANG_CS      */        {0, 0, 1},
-  /* IDL_LANG_JAVA    */        {0, 0, 1}
+  /* IDL_LANG_JAVA    */        {0, 1, 1}
     };
 
 

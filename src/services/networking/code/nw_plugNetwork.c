@@ -57,7 +57,7 @@ NW_STRUCT(nw_plugNetwork) {
 
 /* Global variable to implemente singleton mechanism */
 static nw_plugNetwork G_nw_plugIncarnation = NULL;
-static unsigned int   G_nw_nofPlugIncarnations = 0;
+static os_uint32   G_nw_nofPlugIncarnations = 0;
 
 /* NetworkPlug class operations */
 
@@ -148,7 +148,7 @@ nw_plugNetworkNew(
 {
     nw_plugNetwork result;
     nw_seqNr nofChannels = NW_MAX_CHANNEL_ID;
-    unsigned int i;
+    os_uint32 i;
     
     result = (nw_plugNetwork)os_malloc((os_uint32)sizeof(*result));
     

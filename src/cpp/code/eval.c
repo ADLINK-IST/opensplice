@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
+#include "cpp_malloc.h"
 #include "io.h"
 #include "if.h"
 #include "expr.h"

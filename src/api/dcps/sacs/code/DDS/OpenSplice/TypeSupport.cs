@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using DDS;
+using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
@@ -28,8 +29,13 @@ namespace DDS.OpenSplice
         public abstract string TypeName     { get; }
         public abstract string KeyList      { get; }
         public abstract string Description  { get; }
+        
+        public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
+
+        public abstract DataReader CreateDataReader(IntPtr gapiPtr);
+    
         protected Type dataType = null;
-        protected BaseMarshaler marshaler = null;
+        protected DatabaseMarshaler marshaler = null;
         protected IMarshalerTypeGenerator generator = null;
         
         protected delegate void DummyOperationDelegate();
@@ -48,7 +54,7 @@ namespace DDS.OpenSplice
          */
         public TypeSupport(
             Type dataType,
-            BaseMarshaler marshaler)
+            DatabaseMarshaler marshaler)
         {
             this.dataType = dataType;
             this.marshaler = marshaler;
@@ -127,7 +133,7 @@ namespace DDS.OpenSplice
                 IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, typeName);
                  
                 // Generate a new marshaller using the available generator.
-                marshaler = BaseMarshaler.Create(domainObj, metaData, dataType, generator);
+                marshaler = DatabaseMarshaler.Create(domainObj, metaData, dataType, generator);
                 
                 // Attach the functions in the generated marshaler to the current TypeSupport.
                 result = AttachMarshalerDelegates(this.GapiPeer, marshaler);
@@ -147,7 +153,7 @@ namespace DDS.OpenSplice
             return result;
         }
         
-        private ReturnCode AttachMarshalerDelegates(IntPtr ts, BaseMarshaler marshaler)
+        private ReturnCode AttachMarshalerDelegates(IntPtr ts, DatabaseMarshaler marshaler)
         {
             Gapi._TypeSupport typeSupport = null;
             IntPtr tsPtr = IntPtr.Zero;
@@ -167,9 +173,5 @@ namespace DDS.OpenSplice
             Gapi.TypeSupport.Release(typeSupport, tsPtr);
             return result;
         }
-        
-        public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
-
-        public abstract DataReader CreateDataReader(IntPtr gapiPtr);
     }
 }

@@ -72,6 +72,24 @@ in_configDdsiServiceInit(
     return success;
 }
 
+void
+in_configDdsiServiceFree(
+    in_configDdsiService _this)
+{
+    if (_this)
+    {
+        /* Free all resources for the in_configDdsiService */
+        if (_this->tracing)
+        {
+            in_configTracingFree (_this->tracing);
+        }
+        if (_this->debugging) {
+			in_configDebugFree(_this->debugging);
+        }
+        /* TODO : free rest of resources here */
+    }
+}
+
 /* takes ownership of the discoverychannel */
 void
 in_configDdsiServiceSetDiscoveryChannel(
@@ -255,6 +273,17 @@ in_configDdsiServiceGetDebugging(
     assert(_this);
 
     return _this->debugging;
+}
+
+void
+in_configDdsiServiceSetDebugging(
+    in_configDdsiService _this,
+    in_configDebug config)
+{
+    assert(_this);
+    assert(config);
+
+    _this->debugging = config;
 }
 
 void

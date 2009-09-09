@@ -430,7 +430,7 @@ cfg_processInstruction(
 }
 
 cfgprs_status
-cfg_parse (
+cfg_parse_ospl (
     const char *uri,
     cf_element *spliceElement)
 {

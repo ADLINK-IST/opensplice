@@ -59,7 +59,7 @@ static char* CHECK_REF_FILE = NULL;
     FILE* stream; \
     \
     if(!CHECK_REF_FILE){ \
-        CHECK_REF_FILE = os_malloc(16); \
+        CHECK_REF_FILE = os_malloc(24); \
         sprintf(CHECK_REF_FILE, "mem.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
@@ -1305,76 +1305,10 @@ c_resolve (
 }
 
 c_long
-c_typeSize(
-    c_type type,
-    c_voidp data)
-{
-    c_type subType;
-    c_long size;
-
-    if (c_baseObjectKind(type) == M_COLLECTION) {
-        switch(c_collectionTypeKind(type)) {
-        case C_ARRAY:
-        case C_SEQUENCE:
-            subType = c_collectionTypeSubType(type);
-            switch(c_baseObjectKind(subType)) {
-            case M_INTERFACE:
-            case M_CLASS:
-                size = c_collectionTypeMaxSize(type)*sizeof(void *);
-            break;
-            default:
-                if (subType->size == 0) {
-                    subType->size = sizeof(void *);
-                }
-                size = c_collectionTypeMaxSize(type)*subType->size;
-            break;
-            }
-        break;
-        case C_LIST:
-            size = c_listSize;
-        break;
-        case C_BAG:
-            size = c_bagSize;
-        break;
-        case C_SET:
-            size = c_setSize;
-        break;
-        case C_DICTIONARY:
-            size = c_tableSize;
-        break;
-        case C_QUERY:
-            size = c_querySize;
-        break;
-        case C_SCOPE:
-            size = C_SIZEOF(c_scope);
-        break;
-        case C_STRING:
-            if (data == NULL) {
-                size = 0;
-            } else {
-                size = strlen((c_char *)data)+1;
-            }
-        break;
-        default:
-            OS_REPORT(OS_ERROR,
-                      "c_typeSize failed",0,
-                      "illegal type specified");
-            assert(FALSE);
-            size = -1;
-        break;
-        }
-    } else {
-        size = type->size;
-    }
-
-    return size;
-}
-
-c_long
 c_memsize (
     c_type type)
 {
-    return MEMSIZE(c_typeSize(type,NULL));
+    return MEMSIZE(c_typeSize(type));
 }
 
 c_object
@@ -1385,7 +1319,7 @@ c_new (
     c_object o;
     c_long size;
 
-    size = c_typeSize(type, NULL);
+    size = c_typeSize(type);
 
     if (size <= 0) {
         OS_REPORT_1(OS_ERROR,
@@ -1423,15 +1357,23 @@ c_new (
         memset(o,0,size);
     }
 #if CHECK_REF
-        if (type && c_metaObject(type)->name) {
-            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-                    UT_TRACE("\n\n============ New(0x%x) =============\n", o);
-                }
-            }
-        }
+	if ((c_baseObject(header->type)->kind == M_EXTENT) ||
+		(c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
+		c_type t;
+		t = c_extentType(c_extent(header->type));
+		ACTUALTYPE(type,t);
+		c_free(t);
+	} else {
+		ACTUALTYPE(type,header->type);
+	}
+	if (type && c_metaObject(type)->name) {
+		if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+			if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+				UT_TRACE("\n\n============ New(0x%x) =============\n", o);
+			}
+		}
+	}
 #endif
-
     return o;
 }
 
@@ -1603,7 +1545,7 @@ c_mem2object(
 
     o = c_oid(header);
     ACTUALTYPE(t, type);
-    memset(o,0,c_typeSize(t,NULL));
+    memset(o,0,c_typeSize(t));
 
 #ifndef NDEBUG
     header->confidence = CONFIDENCE;
@@ -1958,13 +1900,11 @@ c_free (
     }
 
 #if CHECK_REF
-    if (type) {
-        if (type && c_metaObject(type)->name) {
-            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-                    UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
-                            object, safeCount+1, safeCount);
-                }
+    if (type && c_metaObject(type)->name) {
+        if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+            if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+                UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
+                        object, safeCount+1, safeCount);
             }
         }
     }
@@ -1994,7 +1934,7 @@ c_free (
             *nextPrev = header->prevObject;
 #endif
 
-            size = c_typeSize(type,object);
+            size = c_typeSize(type);
             if (size < 0) {
                 OS_REPORT(OS_ERROR,"c_free",0,"illegal object size ( size <= 0 )");
                 assert(FALSE);
@@ -2014,7 +1954,7 @@ c_free (
 #ifndef NDEBUG
                 {
                     c_long size;
-                    size = c_typeSize(type,object);
+                    size = c_typeSize(type);
                     memset(hdr,0,ARRAYMEMSIZE(size));
     }
 #endif
@@ -2063,7 +2003,7 @@ c__free(
 #ifndef NDEBUG
         {
             c_long size;
-            size = c_typeSize(type,object);
+            size = c_typeSize(type);
             memset(hdr,0,ARRAYMEMSIZE(size));
         }
 #endif
@@ -2084,10 +2024,6 @@ c__free(
     }
 }
 
-#if CHECK_REF
-static c_object _check_ref_cache_ = NULL;
-#endif
-
 c_object
 c_keep (
     c_object object)
@@ -2104,30 +2040,22 @@ c_keep (
 #if CHECK_REF
     if (header->type) {
         c_type type;
-
         if ((c_baseObject(header->type)->kind == M_EXTENT) ||
-			(c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
-			c_type t;
-			t = c_extentType(c_extent(header->type));
-			ACTUALTYPE(type,t);
-			c_free(t);
-		} else {
-			ACTUALTYPE(type,header->type);
-		}
-
-		if (type && c_metaObject(type)->name) {
-			if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-				if (strncmp(c_metaObject(type)->name,
-						   CHECK_REF_TYPE,
-						   CHECK_REF_TYPE_LEN) == 0) {
-					_check_ref_cache_ = type;
-				}
-			}
-		}
-
-        if (type == _check_ref_cache_) {
-            UT_TRACE("\n\n============ Keep(0x%x): %d -> %d =============\n",
-                    object, header->refCount, header->refCount+1);
+            (c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
+            c_type t;
+            t = c_extentType(c_extent(header->type));
+            ACTUALTYPE(type,t);
+            c_free(t);
+        } else {
+            ACTUALTYPE(type,header->type);
+        }
+        if (type && c_metaObject(type)->name) {
+            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+                if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, CHECK_REF_TYPE_LEN) == 0) {
+                    UT_TRACE("\n\n============ Keep(0x%x): %d -> %d =============\n",
+                        object, header->refCount, header->refCount+1);
+                }
+            }
         }
     }
 #endif

@@ -9,6 +9,8 @@
  *   for full copyright notice and license terms. 
  *
  */
+#include <string.h>
+
 os_result
 os_gethostname(
     char *hostname,

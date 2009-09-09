@@ -39,7 +39,8 @@ extern "C" {
 #define IN_ALIGN_UINT_CEIL(_val,_boundary) \
 	( (P2UI(_val) + (UI(_boundary)-1)) & (~(UI(_boundary)-1)) )
 
-
+#define IN_ALIGN_UINT_PAD(_val,_boundary) \
+	(IN_ALIGN_UINT_CEIL(_val,_boundary)-(_val))
 
 /* Close the brace that allows the usage of this code in C++. */
 #if defined (__cplusplus)

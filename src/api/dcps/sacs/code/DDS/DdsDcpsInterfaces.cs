@@ -135,7 +135,7 @@ namespace DDS
         ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic aContentFilteredTopic);
         IMultiTopic CreateMultiTopic(
             string name,
-            ITypeSupport typeSupport,
+            string typeName,
             string subscriptionExpression,
             params string[] expressionParameters);
         ReturnCode DeleteMultiTopic(IMultiTopic multiTopic);

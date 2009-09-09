@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -27,15 +27,41 @@
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
+#include "idl_dll.h"
 
 #include <ctype.h>
-
+#include <os_stdlib.h>
 #include <c_typebase.h>
 
 	/** indentation level */
 static c_long indent_level = 0;
 	/** enumeration element index */
 static c_long enum_element = 0;
+/* test_mode ensures no dependencies to other idlpp generated files are generated */
+c_bool test_mode = FALSE;
+os_char* includeFile = NULL;
+c_bool useVoidPtrs = FALSE;
+
+void
+idl_genSpliceTypeSetTestMode (
+    c_bool val)
+{
+    test_mode = val;
+}
+
+void
+idl_genSpliceTypeSetIncludeFileName (
+    os_char* val)
+{
+    includeFile = os_strdup(val);
+}
+
+void
+idl_genSpliceTypeUseVoidPtrs (
+    c_bool val)
+{
+    useVoidPtrs = val;
+}
 
 static void idl_arrayDimensions(idl_typeArray typeArray);
 
@@ -98,6 +124,14 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
+    if(!test_mode)
+    {
+        idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", includeFile);
+        if(idl_dllGetHeader() != NULL)
+        {
+            idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
+        }
+    }
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
@@ -210,13 +244,48 @@ idl_structureOpen(
     if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
 	/* define the prototype of the function for metadata load */
         idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
-	    idl_scopeStack(scope, "_", name));
+	        idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying the keys */
         idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__keys (void);\n",
-	    idl_scopeStack(scope, "_", name));
+	        idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying scoped structure name */
         idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__name (void);\n",
-	    idl_scopeStack(scope, "_", name));
+	        idl_scopeStack(scope, "_", name));
+        if(!test_mode)
+        {
+            /* define the prototype of the function for performing copyIn/copyOut. This needs to be
+             * exported as well to ensure it can be access by other (ussually also OpenSplice
+             * generated) packages
+             */
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "struct _%s ;\n",
+                idl_scopeStack(scope, "_", name));
+
+            if(useVoidPtrs)
+            {
+                idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "extern %s c_bool __%s__copyIn(c_base base, void *from, void *to);\n",
+                    idl_dllGetMacro(),
+                    idl_scopeStack(scope, "_", name));
+            } else
+            {
+                idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "extern %s c_bool __%s__copyIn(c_base base, struct %s *from, struct _%s *to);\n",
+                    idl_dllGetMacro(),
+                    idl_scopeStack(scope, "_", name),
+                    idl_scopeStack(scope, "::", name),
+                    idl_scopeStack(scope, "_", name));
+            }
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "extern %s void __%s__copyOut(void *_from, void *_to);\n",
+                idl_dllGetMacro(),
+                idl_scopeStack(scope, "_", name));
+        }
+
     }
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
@@ -317,7 +386,7 @@ idl_structureMemberOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
-    if (idl_typeSpecType(typeSpec) == idl_ttypedef|| 
+    if (idl_typeSpecType(typeSpec) == idl_ttypedef||
         idl_typeSpecType(typeSpec) == idl_tenum ||
         idl_typeSpecType(typeSpec) == idl_tstruct ||
         idl_typeSpecType(typeSpec) == idl_tunion ||
@@ -454,7 +523,7 @@ idl_unionOpen(
         idl_printIndent(indent_level);
         idl_fileOutPrintf (idl_fileCur(), "%s _d;\n", idl_scopedTypeName(idl_typeUnionSwitchKind(unionSpec)));
     } else if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tenum) {
-        idl_printIndent(indent_level); 
+        idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "%s _d;\n", idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
     } else if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_ttypedef) {
         switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeUnionSwitchKind(unionSpec))))) {
@@ -755,7 +824,7 @@ idl_arrayDimensions (
     idl_typeArray typeArray)
 {
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {	
+    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         idl_arrayDimensions (idl_typeArray(idl_typeArrayType(typeArray)));
     }
 }
@@ -789,13 +858,13 @@ idl_arrayDimensions (
  * If the type specification is idl_tarray then generate a scoped name
  * with the array specifiers:
  * @verbatim
-        <other-usertype-name> <name>[n1]..[nn]; => 
+        <other-usertype-name> <name>[n1]..[nn]; =>
             typedef <scope-elements>_<other-usertype-name> <scope-elements>_<name>[n1]..[nn];
-        <basic-type> <name>[n1]..[nn];          => 
+        <basic-type> <name>[n1]..[nn];          =>
             typedef <basic-type-mapping> <scope-elements>_<name>[n1]..[nn];
-        sequence<spec> <name>[n1]..[nn];        => 
+        sequence<spec> <name>[n1]..[nn];        =>
             typedef c_array <scope-elements>_<name>[n1]..[nn];
-        sequence<spec,length> <name>[n1]..[nn]; => 
+        sequence<spec,length> <name>[n1]..[nn]; =>
             typedef c_array <scope-elements>_<name>[n1]..[nn];
    @endverbatim
  * If the type specification is idl_tseq then generate a mapping on c_array:
