@@ -63,10 +63,10 @@ else
     # Install a copy
     if [ "$DEP" = "none" ]
     then
-	INSTALLERDIR=$WORKDIR/$PRODUCT/install
+        INSTALLERDIR=$WORKDIR/$PRODUCT/install
     else
-	BASE=$DEPWORKDIR/build/scripts/overnight
-	INSTALLERDIR=$DEPWORKDIR/install
+        BASE=$DEPWORKDIR/build/scripts/overnight
+        INSTALLERDIR=$DEPWORKDIR/install
     fi
 
     echo "Installing..."
@@ -83,7 +83,7 @@ else
               cd $WORKDIR/installed/ && \
               tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2.0-$SHORTSETUP-HDE.tar
               mv HDE/$SHORTSETUP/release.com \
-                  HDE/$SHORTSETUP/release.com.orig \
+                  HDE/$SHORTSETUP/release.com.orig
               sed < HDE/$SHORTSETUP/release.com.orig \
                   > HDE/$SHORTSETUP/release.com \
                   "s%@@INSTALLDIR@@%$WORKDIR/installed/%"
@@ -91,32 +91,34 @@ else
         fi
     fi
     if [ $? = 0 ]
-	then
-	echo "Install completed"
+    then
+        echo "Install completed"
     else
-	echo "ERROR: Install failed"
-	exit 1
+        echo "ERROR: Install failed"
+        exit 1
     fi
     cd $WORKDIR/installed/HDE/$SHORTSETUP/
     . ./release.com
     cd examples
     if [ $? != 0 ]
     then
-	echo "ERROR: Couldn't locate examples direcctory in installed HDE."
-	exit 1
+        echo "ERROR: Couldn't locate examples direcctory in installed HDE."
+        exit 1
     fi
 
-    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
-	
+    EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    export EXAMPLES
+
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    export SPECIAL_BUILD_FILES
     
     echo "Build Examples:"
     if check_platform
     then
-	sh $BASE/build_examples.sh
+        sh $BASE/build_examples.sh
     else
-	$BASE/build_examples.bat
+        $BASE/build_examples.bat
     fi
     exit $?
 fi
