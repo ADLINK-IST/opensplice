@@ -893,7 +893,6 @@ main (
                                  (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
-		    printf("HERE\n");
                     /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
                     templ_path = os_getenv ("OSPL_TMPL_PATH");
                     if (templ_path == NULL) 
@@ -906,7 +905,6 @@ main (
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
                     strncat (cpp_command, fnameA, strlen(fnameA));
                     strncat (cpp_command, QUOTE, strlen(QUOTE));
-		    printf("HERE1\n");
 
                     for (i = 0; i < c_iterLength(macroDefinitions); i++) 
                     {
