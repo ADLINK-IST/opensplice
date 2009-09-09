@@ -1656,6 +1656,22 @@ d_groupLocalListenerHandleAlignment(
                     zeroTime.seconds     = 0;
                     zeroTime.nanoseconds = 0;
 
+
+                    if((dkind == D_DURABILITY_PERSISTENT) && store){
+                        result = d_storeGroupStore(store, localGroup);
+
+                        if(result == D_STORE_RESULT_OK){
+                            d_printTimedEvent(durability, D_LEVEL_FINE,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Persistent group %s.%s stored on disk.\n",
+                                partition, topic);
+                        } else {
+                            d_printTimedEvent(durability, D_LEVEL_FINE,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Storing persistent group %s.%s on disk failed (error code: %d).\n",
+                                partition, topic, result);
+                        }
+                    }
                     request = d_sampleRequestNew(admin, partition, topic,
                             dkind, stamp, timeRangeActive, zeroTime, networkAttachTime);
                     chain   = d_chainNew(admin, request);
