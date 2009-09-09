@@ -110,7 +110,10 @@ else
     OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml'`
 
     echo "Running Examples:"
-
+    
+    PATH=$PATH:$JAVA_HOME/bin
+    PATH=$PATH:$TAO_ROOT/bin
+    export PATH
     if check_platform
     then
         sh $BASE/run_examples.sh

@@ -113,6 +113,10 @@ else
     SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
     export SPECIAL_BUILD_FILES
     
+    PATH=$PATH:$JAVA_HOME/bin
+    PATH=$PATH:$TAO_ROOT/bin
+    export PATH
+    
     echo "Build Examples:"
     if check_platform
     then
