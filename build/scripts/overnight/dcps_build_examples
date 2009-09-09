@@ -65,6 +65,7 @@ else
     then
         INSTALLERDIR=$WORKDIR/$PRODUCT/install
     else
+        OUTER_BASE=$BASE
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
     fi
@@ -90,6 +91,13 @@ else
             )
         fi
     fi
+
+    cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    if [ "$DEP" != "none" ]
+    then
+        cp -rp $OUTER_BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    fi
+
     if [ $? = 0 ]
     then
         echo "Install completed"
@@ -112,6 +120,10 @@ else
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
     SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
     export SPECIAL_BUILD_FILES
+    
+    PATH=$PATH:$JAVA_HOME/bin
+    PATH=$PATH:$TAO_ROOT/bin
+    export PATH
     
     echo "Build Examples:"
     if check_platform
