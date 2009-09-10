@@ -132,6 +132,7 @@ u_kernelGetDomainConfig(
                         }
                     }
                     locked = cf_element(cf_elementChild(child, CFG_LOCKING));
+                    domainConfig->lockPolicy = OS_LOCK_DEFAULT;
                     if (locked != NULL) {
                         elementData = cf_data(cf_elementChild(locked, "#text"));
                         if (elementData != NULL) {
@@ -593,6 +594,7 @@ u_kernelNew(
                 uKernel->kernel = kernel;
                 uKernel->shm = shm;
                 uKernel->participants = NULL;
+                uKernel->lockPolicy = domainCfg.lockPolicy;
                 if (uri == NULL) {
                     uKernel->uri = NULL;
                 } else {
@@ -805,12 +807,12 @@ u_kernelFree (
             if (count > 1) {
                 OS_REPORT(OS_WARNING,
                           "u_kernelFree", 0,
-                          "Some blocking applications are not reponding, "
+                          "Some blocking applications are not responding, "
                           "DDS will terminate anyway.");
             }
             /* All participants of this kernel must be disabled! */
             r = kernelDisable(k);
-            if (result != os_resultSuccess) {
+            if (r != os_resultSuccess) {
                 r = U_RESULT_INTERNAL_ERROR;
             }
             if (k->shm != NULL) {
@@ -838,9 +840,10 @@ u_kernelFree (
             } else {
                 result = os_resultSuccess;
             }
+            assert(c_iterLength(k->participants) == 0);
             c_iterFree(k->participants);
-            os_free(k->uri);
             k->participants = NULL;
+            os_free(k->uri);
             k->uri = NULL;
             os_free(k);
             r = u_userUnprotect(NULL);
@@ -982,7 +985,7 @@ u_kernelCheckHandleServer(
     return result;
 }
 
-c_long
+c_address
 u_kernelHandleServer(
     u_kernel kernel)
 {

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u_participant.h"
@@ -141,7 +141,7 @@ u_participantNew(
                         os_free(p);
                         p = NULL;
                         OS_REPORT(OS_ERROR,"u_participantNew",0,
-                                  "Initialisation Participant failed.");
+                                  "Initialization Participant failed.");
                     }
                 } else {
                     OS_REPORT(OS_ERROR,"u_participantNew",0,
@@ -179,7 +179,7 @@ u_configurationResolveAttribute(
     if (e != NULL) {
         nodes = u_cfElementXPath(e, xpathExpr);
         tmp = u_cfNode(c_iterTakeFirst(nodes));
-        
+
         if (tmp != NULL) {
             if (u_cfNodeKind(tmp) == V_CFELEMENT) {
                 result = u_cfElementAttribute(u_cfElement(tmp), attrName);
@@ -202,13 +202,13 @@ u_configurationResolveParameter(
     u_cfData result;
     c_iter nodes;
     u_cfNode tmp;
-    
+
     result = NULL;
-    
+
     if(e != NULL){
         nodes = u_cfElementXPath(e, xpathExpr);
         tmp = u_cfNode(c_iterTakeFirst(nodes));
-        
+
         if(tmp != NULL){
             if(u_cfNodeKind(tmp) == V_CFDATA){
                 result = u_cfData(tmp);
@@ -217,12 +217,12 @@ u_configurationResolveParameter(
             }
             tmp = u_cfNode(c_iterTakeFirst(nodes));
         }
-        
+
         while(tmp != NULL){
             u_cfNodeFree(tmp);
             tmp = u_cfNode(c_iterTakeFirst(nodes));
         }
-        c_iterFree(nodes);        
+        c_iterFree(nodes);
     }
     return result;
 }
@@ -234,7 +234,7 @@ u_configurationResolveParameter(
 
 static void
 participantGetWatchDogAttr(
-    u_cfElement root, 
+    u_cfElement root,
     const c_char* element,
     const c_char* name,
     os_threadAttr * attr)
@@ -264,13 +264,13 @@ participantGetWatchDogAttr(
                     } else if (strcmp(schedClass, "Timeshare")==0) {
                         qos.kind = V_SCHED_TIMESHARING;
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0, 
+                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
                                     "Illegal 'Scheduling/Class' for %s", name);
                         success = FALSE;
                     }
                     os_free(schedClass);
                 } else {
-                    OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0, 
+                    OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
                     "Illegal 'Scheduling/Class' for %s. Applying default.",
                     name);
                 }
@@ -295,8 +295,8 @@ participantGetWatchDogAttr(
                     if (success) {
                         qos.priority = prio;
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0, 
-                        "%s Configuration: value of 'Scheduling/Prority' not "
+                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
+                        "%s Configuration: value of 'Scheduling/Priority' not "
                         "valid.  Applying default.", name);
                     }
                     u_cfDataFree(data);
@@ -325,14 +325,14 @@ participantGetWatchDogAttr(
                             qos.priorityKind = V_SCHED_PRIO_ABSOLUTE;
                         } else {
                             OS_REPORT_1(OS_ERROR,
-                                        "Splicedaemon initialization", 0, 
+                                        "Splicedaemon initialization", 0,
                                         "Invalid 'priority_kind' in "
                                         "'Scheduling/Priority'. "
                                         "Applying default for %s.", name);
                             success = FALSE;
                         }
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0, 
+                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
                         "Invalid 'priority_kind' in 'Scheduling/Priority'. "
                         "Applying default for %s.", name);
                     }
@@ -345,13 +345,13 @@ participantGetWatchDogAttr(
             }
         }
         os_threadAttrInit(attr);
-        
+
         if (success) {
             u_threadAttrInit (&qos, attr);
         }
     } else {
         OS_REPORT_1(OS_INFO,
-                    "Splicedaemon initialization", 0, 
+                    "Splicedaemon initialization", 0,
                     "No watchdog configuration information specified\n"
                     "              for process \"%s\".\n"
                     "              The service will not be able to detect "
@@ -395,7 +395,7 @@ u_participantInit (
                                            v_participantName(kp), &attr);
             break;
             case U_SERVICE_SPLICED:
-                /* 
+                /*
                  * There doesn't exist a proper "service" configuration for the splicedaemon
                  * the Daemon config for example doesn't have a name attribute.
                  * For now, we leave it at default
@@ -419,23 +419,23 @@ u_participantInit (
         if (r == U_RESULT_OK) {
             r = u_kernelAdd(kernel,p);
             u_entity(p)->flags |= U_ECREATE_INITIALISED;
-            
+
             osr = os_threadCreate(&p->threadId, "watchdog", &attr,
                 (void *(*)(void *))leaseManagerMain,(void *)p);
-                
+
             if(osr != os_resultSuccess){
                 OS_REPORT(OS_ERROR, "u_participantInit", 0,
                           "Watchdog thread could not be started.\n");
             }
-            
+
             osr = os_threadCreate(&p->threadIdResend, "resendManager", &attr,
                             (void *(*)(void *))resendManagerMain,(void *)p);
-                            
+
             if(osr != os_resultSuccess){
                 OS_REPORT(OS_ERROR, "u_participantInit", 0,
                           "Watchdog thread could not be started.\n");
             }
-            
+
             r = u_participantRelease(p);
             if (r != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_participantInit", 0,
@@ -443,7 +443,7 @@ u_participantInit (
             }
         } else {
             OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                      "Dispatcher Initialisation failed.");
+                      "Dispatcher Initialization failed.");
         }
     } else {
         OS_REPORT(OS_WARNING, "u_participantInit", 0,
@@ -497,7 +497,7 @@ u_participantDeinit (
             r = u_participantClaim(p,&kp);
             if ((r == U_RESULT_OK) && (kp != NULL)) {
                 lm = v_participantGetLeaseManager(kp);
-                
+
                 if (lm != NULL) {
                     v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
                 }
@@ -511,7 +511,7 @@ u_participantDeinit (
                               "Access to lease manager failed.");
                 }
                 os_threadWaitExit(p->threadIdResend, NULL);
-                
+
                 u_participantRelease(p);
             } else {
                 OS_REPORT(OS_WARNING, "u_participantDeinit", 0,
@@ -581,12 +581,12 @@ u_participantGetConfiguration(
             u_kernelRelease(_this->kernel);
         } else {
             OS_REPORT(OS_ERROR,
-                      "u_participantGetConfiguration", 0, 
+                      "u_participantGetConfiguration", 0,
                       "Failed to claim participant.");
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "u_participantGetConfiguration", 0, 
+                  "u_participantGetConfiguration", 0,
                   "Illegal parameter.");
     }
     return cfg;
@@ -609,7 +609,7 @@ u_participantRenewLease(
             r = u_participantRelease(participant);
         } else {
             OS_REPORT(OS_WARNING,
-                      "u_participantRenewLease", 0, 
+                      "u_participantRenewLease", 0,
                       "Failed to claim Participant.");
         }
     }
@@ -708,7 +708,7 @@ u_participantAssertLiveliness(
             v_participantAssertLiveliness(kp);
             r = u_participantRelease(p);
         } else {
-            OS_REPORT(OS_WARNING, "u_participantAssertLiveliness", 0, 
+            OS_REPORT(OS_WARNING, "u_participantAssertLiveliness", 0,
                       "Failed to claim Participant.");
         }
     } else {
@@ -717,7 +717,7 @@ u_participantAssertLiveliness(
         r = U_RESULT_ILL_PARAM;
     }
     return r;
-}    
+}
 
 u_result
 u_participantDetach(
@@ -747,7 +747,7 @@ u_participantDetach(
             v_participantFree(kp);
             r = u_participantRelease(p);
         } else {
-            OS_REPORT(OS_WARNING,"u_participantDetach", 0, 
+            OS_REPORT(OS_WARNING,"u_participantDetach", 0,
                       "Failed to claim Participant.");
         }
     } else {
@@ -780,7 +780,7 @@ u_participantDeleteHistoricalData(
             }
             r = u_participantRelease(p);
         } else {
-            OS_REPORT(OS_WARNING, "u_participantDeleteHistoricalData", 0, 
+            OS_REPORT(OS_WARNING, "u_participantDeleteHistoricalData", 0,
                       "Failed to claim Participant.");
         }
     } else {

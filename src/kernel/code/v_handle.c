@@ -347,10 +347,10 @@ v_handleClaim (
         info->count++;
 
 #if CHECK_REF
-		if (v_object(info->object)->kind == CHECK_REF_TYPE) {
-			UT_TRACE("\n\n============ Claim (0x%x): %d -> %d =============\n",
-					info->object, info->count -1, info->count);
-		}
+        if (v_object(info->object)->kind == CHECK_REF_TYPE) {
+                UT_TRACE("\n\n============ Claim (0x%x): %d -> %d =============\n",
+                                info->object, info->count -1, info->count);
+        }
 #endif
         *o = (v_object)info->object;
     }
@@ -373,10 +373,10 @@ v_handleRelease (
         info->count--;
 
 #if CHECK_REF
-		if (v_object(info->object)->kind == CHECK_REF_TYPE) {
-			UT_TRACE("\n\n=========== Release (0x%x): %d -> %d ============\n",
-					info->object, info->count+1, info->count);
-		}
+        if (v_object(info->object)->kind == CHECK_REF_TYPE) {
+                UT_TRACE("\n\n=========== Release (0x%x): %d -> %d ============\n",
+                                info->object, info->count+1, info->count);
+        }
 #endif
         if (info->count == 0) {
             if (info->freed) {

@@ -44,12 +44,14 @@ main (
     PP_string_msgDataWriter_ptr       PP_string_writer   = NULL;
     PP_fixed_msgDataWriter_ptr        PP_fixed_writer    = NULL;
     PP_array_msgDataWriter_ptr        PP_array_writer    = NULL;
+    PP_bseq_msgDataWriter_ptr         PP_bseq_writer     = NULL;
 
     PP_min_msgDataReader_ptr          PP_min_reader      = NULL;
     PP_seq_msgDataReader_ptr          PP_seq_reader      = NULL;
     PP_string_msgDataReader_ptr       PP_string_reader   = NULL;
     PP_fixed_msgDataReader_ptr        PP_fixed_reader    = NULL;
     PP_array_msgDataReader_ptr        PP_array_reader    = NULL;
+    PP_bseq_msgDataReader_ptr         PP_bseq_reader     = NULL;
     PP_quit_msgDataReader_ptr         PP_quit_reader     = NULL;
 
     PP_min_msgTypeSupport             PP_min_dt;
@@ -57,6 +59,7 @@ main (
     PP_string_msgTypeSupport          PP_string_dt;
     PP_fixed_msgTypeSupport           PP_fixed_dt;
     PP_array_msgTypeSupport           PP_array_dt;
+    PP_bseq_msgTypeSupport            PP_bseq_dt;
     PP_quit_msgTypeSupport            PP_quit_dt;
 
     PP_min_msgSeq_var                 PP_min_dataList    = new PP_min_msgSeq;
@@ -64,6 +67,7 @@ main (
     PP_string_msgSeq_var              PP_string_dataList = new PP_string_msgSeq;
     PP_fixed_msgSeq_var               PP_fixed_dataList  = new PP_fixed_msgSeq;
     PP_array_msgSeq_var               PP_array_dataList  = new PP_array_msgSeq;
+    PP_bseq_msgSeq_var                PP_bseq_dataList   = new PP_bseq_msgSeq;
     PP_quit_msgSeq_var                PP_quit_dataList   = new PP_quit_msgSeq;
 
     StatusCondition_ptr               PP_min_sc;
@@ -71,6 +75,7 @@ main (
     StatusCondition_ptr               PP_string_sc;
     StatusCondition_ptr               PP_fixed_sc;
     StatusCondition_ptr               PP_array_sc;
+    StatusCondition_ptr               PP_bseq_sc;
     StatusCondition_ptr               PP_quit_sc;
 
     Topic_ptr                         PP_min_topic       = NULL;
@@ -78,6 +83,7 @@ main (
     Topic_ptr                         PP_string_topic    = NULL;
     Topic_ptr                         PP_fixed_topic     = NULL;
     Topic_ptr                         PP_array_topic     = NULL;
+    Topic_ptr                         PP_bseq_topic     = NULL;
     Topic_ptr                         PP_quit_topic      = NULL;
 
     ConditionSeq_var                  conditionList      = new ConditionSeq;
@@ -254,6 +260,27 @@ main (
     result = w.attach_condition (PP_array_sc);
 
     //
+    // PP_bseq_msg
+    //
+    
+    //  Create Topic
+    PP_bseq_dt.register_type (dp, "pingpong::PP_bseq_msg");
+    PP_bseq_topic = dp->create_topic ("PP_bseq_topic", "pingpong::PP_bseq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+
+    // Create datawriter
+    dw = p->create_datawriter (PP_bseq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+    PP_bseq_writer = dynamic_cast<PP_bseq_msgDataWriter_ptr> (dw);
+
+    // Create datareader
+    dr = s->create_datareader (PP_bseq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+    PP_bseq_reader = dynamic_cast<PP_bseq_msgDataReader_ptr> (dr);
+
+    // Add datareader statuscondition to waitset
+    PP_bseq_sc = PP_bseq_reader->get_statuscondition ();
+    PP_bseq_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
+    result = w.attach_condition (PP_bseq_sc);
+
+    //
     // PP_quit_msg
     //
     
@@ -351,6 +378,20 @@ main (
                 } else {
                     cout << "PONG: PING_array triggered, but no data available" << endl;
                 }
+            } else if (conditionList[i].in() == PP_bseq_sc) {
+                // cout << "PONG: PING_bseq arrived" << endl;
+                result = PP_bseq_reader->take (PP_bseq_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
+                jmax = PP_bseq_dataList->length ();
+                if (jmax != 0) {
+                    for (j = 0; (int)j < jmax; j++) {
+                        if (infoList[j].valid_data == TRUE) {
+                            result = PP_bseq_writer->write (PP_bseq_dataList[j], HANDLE_NIL);
+                        }
+                    }
+                    result = PP_bseq_reader->return_loan (PP_bseq_dataList, infoList);
+                } else {
+                    cout << "PONG: PING_bseq triggered, but no data available" << endl;
+                }
             } else if (conditionList[i].in() == PP_quit_sc) {
                 // cout << "PONG: PING_quit arrived" << endl;
                 result = PP_quit_reader->take (PP_quit_dataList, infoList, LENGTH_UNLIMITED, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
@@ -379,6 +420,8 @@ main (
     result = p->delete_datawriter (PP_fixed_writer);
     result = s->delete_datareader (PP_array_reader);
     result = p->delete_datawriter (PP_array_writer);
+    result = s->delete_datareader (PP_bseq_reader);
+    result = p->delete_datawriter (PP_bseq_writer);
     result = s->delete_datareader (PP_quit_reader);
     result = dp->delete_subscriber (s);
     result = dp->delete_publisher (p);
@@ -386,7 +429,8 @@ main (
     result = dp->delete_topic (PP_seq_topic);
     result = dp->delete_topic (PP_string_topic);
     result = dp->delete_topic (PP_fixed_topic);
-    result = dp->delete_topic (PP_array_topic);
+    result = dp->delete_topic (PP_array_topic);    
+    result = dp->delete_topic (PP_bseq_topic);
     result = dp->delete_topic (PP_quit_topic);
     result = dpf->delete_participant (dp);
     

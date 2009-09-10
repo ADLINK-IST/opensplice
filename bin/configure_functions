@@ -1,43 +1,53 @@
 function set_var                  
 {
     found=0
-    for (( i=0; i<${#varkeys[@]}; i++ ))
-    {
-        if [ "$1" = "${varkeys[$i]}" ]
-        then
-            varvals[$i]="$2"
-            found=1
-        fi
-    }
+    i=0
+    while [ "$i" -lt "${#varkeys[@]}" ]
+    do
+       if [ "$1" = "${varkeys[$i]}" ]
+       then
+          varvals[$i]="$2"
+          found=1
+       fi
+       (( i=i+1 )) 
+    done
     if [ "$found" != 1 ]
     then
         varkeys[$i]="$1"
         varvals[$i]="$2"
     fi
+    # Set value in this shell for later comparisons.
+    export $1="$2"
 }
 
 function unset_var                  
 {
-    for (( i=0; i<${#varkeys[@]}; i++ ))
-    {
+    i=0
+    while [ "$i" -lt "${#varkeys[@]}" ]
+    do
         if [ "$1" = "${varkeys[$i]}" ]
         then
             varvals[$i]=""
             varkeys[$i]=""
         fi
-    }
+        (( i=i+1 )) 
+    done
+    # unset value in this shell for later comparisons.
+    unset $1
 }
 
 function dump_vars
 {
-    for (( i=0; i<${#varkeys[@]}; i++ ))
-    {
+    i=0
+    while [ "$i" -lt "${#varkeys[@]}" ]
+    do
         if [ "${varkeys[$i]}" != "" ]
         then
             echo "${varkeys[$i]}=\"${varvals[$i]}\""
             echo "export ${varkeys[$i]}"
         fi
-    }
+        (( i=i+1 )) 
+    done
 }
 
 print_usage () 
@@ -221,7 +231,7 @@ setup_pathed_vars ()
             sed "s#${OLD_SPLICE_BIN_PATH}:##"`
     fi
     PATH=${SPLICE_BIN_PATH}:${PATH}
-    set_var SPLICE_BIN_PATH $SPLICE_BIN_PATH
+    set_var SPLICE_BIN_PATH "$SPLICE_BIN_PATH"
     
     SPLICE_EXEC_PATH=${OSPL_HOME}/exec/${SPLICE_TARGET}
     if [ -n "${OLD_SPLICE_EXEC_PATH}" ]
@@ -230,7 +240,7 @@ setup_pathed_vars ()
             sed "s#${OLD_SPLICE_EXEC_PATH}:##"`
     fi
     PATH=${SPLICE_EXEC_PATH}:${PATH}
-    set_var SPLICE_EXEC_PATH $SPLICE_EXEC_PATH
+    set_var SPLICE_EXEC_PATH "$SPLICE_EXEC_PATH"
     
     SPLICE_LIBRARY_PATH=${OSPL_HOME}/lib/${SPLICE_TARGET}
     if [ -n "${OLD_SPLICE_LIBRARY_PATH}" ]
@@ -239,7 +249,7 @@ setup_pathed_vars ()
             sed "s#${OLD_SPLICE_LIBRARY_PATH}:##"`
     fi
     LD_LIBRARY_PATH=${SPLICE_LIBRARY_PATH}:${LD_LIBRARY_PATH}
-    set_var SPLICE_LIBRARY_PATH $SPLICE_LIBRARY_PATH
+    set_var SPLICE_LIBRARY_PATH "$SPLICE_LIBRARY_PATH"
     
     if [ -n "$OSPL_OUTER_HOME" ]
     then 
@@ -250,7 +260,7 @@ setup_pathed_vars ()
                 sed "s#${OLD_SPLICE_LIBRARY_TEST_PATH}:##"`
         fi
         LD_LIBRARY_PATH=${SPLICE_LIBRARY_TEST_PATH}:${LD_LIBRARY_PATH}
-        set_var SPLICE_LIBRARY_TEST_PATH $SPLICE_LIBRARY_TEST_PATH
+        set_var SPLICE_LIBRARY_TEST_PATH "$SPLICE_LIBRARY_TEST_PATH"
     fi
     
     if [ "_${SPLICE_HOST}" != "_${SPLICE_TARGET}" ]
@@ -281,10 +291,10 @@ export_vars ()
             OSPL_TMPL_PATH=`cygpath -d $OSPL_HOME/etc/idlpp`
             ;;
     esac
-    set_var CYGWIN_INSTALL_DRIVE $CYGWIN_INSTALL_DRIVE
-    set_var OSPL_HOME $OSPL_HOME
-    set_var SPLICE_TARGET $SPLICE_TARGET
-    set_var OSPL_TMPL_PATH $OSPL_TMPL_PATH
+    set_var CYGWIN_INSTALL_DRIVE "$CYGWIN_INSTALL_DRIVE"
+    set_var OSPL_HOME "$OSPL_HOME"
+    set_var SPLICE_TARGET "$SPLICE_TARGET"
+    set_var OSPL_TMPL_PATH "$OSPL_TMPL_PATH"
 }
 
 cleanup ()
@@ -309,4 +319,6 @@ cleanup ()
     unset set_target_alternate
     unset export_vars
     unset cleanup
+    unset varkeys
+    unset varvals
 }

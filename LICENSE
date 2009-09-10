@@ -41,6 +41,11 @@ SPECIAL OR PUNITIVE DAMAGES WHATSOEVER, WHETHER IN CONTRACT, TORT, (INCLUDING
 NEGLIGENCE, STRICT LIABILITY AND ALL OTHERS), WARRANTY, INDEMNITY OR UNDER
 STATUTE, EVEN IF LICENSOR HAS BEEN ADVISED OF THE LIKELIHOOD OF SAME.
 
+OpenSplice DDS Community Edition also includes software from Sun Microsystems. 
+This software is related to the IDL compiler. The Sun Microsystems software may 
+also be freely distributed without fees and is subject to the respective license 
+terms set forth within the Software. 
+
                    GNU LESSER GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 

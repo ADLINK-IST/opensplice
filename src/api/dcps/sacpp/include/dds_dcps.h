@@ -532,7 +532,9 @@ namespace DDS
       TopicListener_ptr _this () { return this; }
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
+#ifdef _CoflightAPI_
       virtual void on_all_data_disposed (Topic_ptr the_topic) = 0;
+#endif
 
    protected:
       TopicListener () {};
@@ -976,9 +978,6 @@ namespace DDS
       virtual StatusCondition_ptr get_statuscondition () = 0;
       virtual StatusMask get_status_changes () = 0;
       virtual InstanceHandle_t get_instance_handle () = 0;
-
-      virtual DDS::String get_name () = 0;
-      virtual ReturnCode_t set_name (const DDS::Char *name) = 0;
 
    protected:
       Entity () {};

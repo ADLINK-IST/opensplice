@@ -242,8 +242,9 @@ namespace testNamespace
             Console.WriteLine("Press enter to write data");
             Console.ReadLine();
 
-			detectionData.SequenceTest = new System.Collections.Generic.List<int>();
-			detectionData.SequenceTest.Add(4);
+            detectionData.SequenceTest = new int[1];// new System.Collections.Generic.List<int>();
+			//detectionData.SequenceTest.Add(4);
+            detectionData.SequenceTest[0] = 4;
 
             // Write detection data
             result = dataWriter.Write(detectionData);

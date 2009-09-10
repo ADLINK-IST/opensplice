@@ -498,48 +498,6 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class SequenceDataSampleMarshaler
-    {
-        private static readonly Type dataSampleType = typeof(Gapi.gapi_dataSample);
-        public static readonly int Size = Marshal.SizeOf(dataSampleType);
-
-        private static readonly int offset_data = (int)Marshal.OffsetOf(dataSampleType, "data");
-        private static readonly int offset_sampleInfo = (int)Marshal.OffsetOf(dataSampleType, "sampleInfo");
-
-        private static readonly Type seqType = typeof(OpenSplice.Gapi.gapi_Seq);
-        public static readonly int StructSize = Marshal.SizeOf(seqType);
-        public static readonly int PtrSize = Marshal.SizeOf(typeof(IntPtr));
-
-        private static readonly int offset__maximum = (int)Marshal.OffsetOf(seqType, "_maximum");
-        private static readonly int offset__length = (int)Marshal.OffsetOf(seqType, "_length");
-        private static readonly int offset__buffer = (int)Marshal.OffsetOf(seqType, "_buffer");
-        private static readonly int offset__release = (int)Marshal.OffsetOf(seqType, "_release");
-
-        internal static void CopyOut(IntPtr from, out DataSample[] to, int offset)
-        {
-            // Get _length field
-            int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
-
-            // Initialize managed array to the correct size.
-            to = new DataSample[length];
-
-            if (length > 0)
-            {
-                // Read the buffer pointer containing the sequence content
-                IntPtr arrayPtr = BaseMarshaler.ReadIntPtr(from, offset + offset__buffer);
-
-                for (int index = 0; index < length; index++)
-                {
-                    int elementOffset = Size * index;
-                    to[index].data = BaseMarshaler.ReadIntPtr(arrayPtr, elementOffset + offset_data);
-
-                    IntPtr structLocation = new IntPtr(arrayPtr.ToInt64() + elementOffset + offset_sampleInfo);
-                    OpenSplice.CustomMarshalers.SampleInfoMarshaler.CopyOut(structLocation, out to[index].sampleInfo, 0);
-                }
-            }
-        }
-    }
-
     internal class SequenceMarshaler<TInterface, T> : IMarshaler
         where T : SacsSuperClass, TInterface
     //where TInterface : IEntity

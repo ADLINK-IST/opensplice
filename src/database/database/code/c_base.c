@@ -1305,76 +1305,10 @@ c_resolve (
 }
 
 c_long
-c_typeSize(
-    c_type type,
-    c_voidp data)
-{
-    c_type subType;
-    c_long size;
-
-    if (c_baseObjectKind(type) == M_COLLECTION) {
-        switch(c_collectionTypeKind(type)) {
-        case C_ARRAY:
-        case C_SEQUENCE:
-            subType = c_collectionTypeSubType(type);
-            switch(c_baseObjectKind(subType)) {
-            case M_INTERFACE:
-            case M_CLASS:
-                size = c_collectionTypeMaxSize(type)*sizeof(void *);
-            break;
-            default:
-                if (subType->size == 0) {
-                    subType->size = sizeof(void *);
-                }
-                size = c_collectionTypeMaxSize(type)*subType->size;
-            break;
-            }
-        break;
-        case C_LIST:
-            size = c_listSize;
-        break;
-        case C_BAG:
-            size = c_bagSize;
-        break;
-        case C_SET:
-            size = c_setSize;
-        break;
-        case C_DICTIONARY:
-            size = c_tableSize;
-        break;
-        case C_QUERY:
-            size = c_querySize;
-        break;
-        case C_SCOPE:
-            size = C_SIZEOF(c_scope);
-        break;
-        case C_STRING:
-            if (data == NULL) {
-                size = 0;
-            } else {
-                size = strlen((c_char *)data)+1;
-            }
-        break;
-        default:
-            OS_REPORT(OS_ERROR,
-                      "c_typeSize failed",0,
-                      "illegal type specified");
-            assert(FALSE);
-            size = -1;
-        break;
-        }
-    } else {
-        size = type->size;
-    }
-
-    return size;
-}
-
-c_long
 c_memsize (
     c_type type)
 {
-    return MEMSIZE(c_typeSize(type,NULL));
+    return MEMSIZE(c_typeSize(type));
 }
 
 c_object
@@ -1385,7 +1319,7 @@ c_new (
     c_object o;
     c_long size;
 
-    size = c_typeSize(type, NULL);
+    size = c_typeSize(type);
 
     if (size <= 0) {
         OS_REPORT_1(OS_ERROR,
@@ -1611,7 +1545,7 @@ c_mem2object(
 
     o = c_oid(header);
     ACTUALTYPE(t, type);
-    memset(o,0,c_typeSize(t,NULL));
+    memset(o,0,c_typeSize(t));
 
 #ifndef NDEBUG
     header->confidence = CONFIDENCE;
@@ -2000,7 +1934,7 @@ c_free (
             *nextPrev = header->prevObject;
 #endif
 
-            size = c_typeSize(type,object);
+            size = c_typeSize(type);
             if (size < 0) {
                 OS_REPORT(OS_ERROR,"c_free",0,"illegal object size ( size <= 0 )");
                 assert(FALSE);
@@ -2020,7 +1954,7 @@ c_free (
 #ifndef NDEBUG
                 {
                     c_long size;
-                    size = c_typeSize(type,object);
+                    size = c_typeSize(type);
                     memset(hdr,0,ARRAYMEMSIZE(size));
     }
 #endif
@@ -2069,7 +2003,7 @@ c__free(
 #ifndef NDEBUG
         {
             c_long size;
-            size = c_typeSize(type,object);
+            size = c_typeSize(type);
             memset(hdr,0,ARRAYMEMSIZE(size));
         }
 #endif

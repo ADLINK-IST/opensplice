@@ -15,7 +15,7 @@ module pingpong
 
     struct PP_min_msg
     {
-	unsigned long       block;
+        unsigned long       block;
         unsigned long       count;
     };
 #pragma keylist PP_min_msg block     
@@ -24,7 +24,7 @@ module pingpong
 
     struct PP_seq_msg
     {
-	unsigned long       block;
+        unsigned long       block;
         unsigned long       count;
         seq_char            payload;
     };
@@ -32,7 +32,7 @@ module pingpong
     
     struct PP_string_msg
     {
-	unsigned long       block;
+        unsigned long       block;
         unsigned long       count;
         string              a_string;
     };
@@ -42,7 +42,7 @@ module pingpong
     
     struct PP_fixed_msg
     {
-	unsigned long       block;
+        unsigned long       block;
         unsigned long       count;
         
         char                a_char;
@@ -62,7 +62,7 @@ module pingpong
 
     struct PP_array_msg
     {
-	unsigned long       block;
+        unsigned long       block;
         unsigned long       count;
         
         char                str_arr_char[10];
@@ -77,7 +77,28 @@ module pingpong
         double              str_arr_double[10];
         boolean             str_arr_boolean[11];
     };
+
 #pragma keylist PP_array_msg block
+
+    struct PP_bseq_msg
+    {
+       unsigned long       block;
+       unsigned long       count;
+       
+       sequence<char, 10>               seq_char;
+       sequence<octet, 10>              seq_octets;
+       sequence<short, 10>              seq_short;
+       sequence<unsigned short, 10>     seq_ushort;
+       sequence<long, 10>               seq_long;
+       sequence<unsigned long, 10>      seq_ulong;
+       sequence<long long, 10>          seq_longlong;
+       sequence<unsigned long long, 10> seq_ulonglong;
+       sequence<float, 10>              seq_float;
+       sequence<double, 10>             seq_double;
+       sequence<boolean, 10>            seq_boolean;
+    };
+
+#pragma keylist PP_bseq_msg block
 
     struct PP_quit_msg
     {

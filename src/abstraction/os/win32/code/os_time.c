@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/mingw3.2.0/code/os_time.c
@@ -93,6 +93,7 @@ os_timeModuleInit(void)
     struct os_servicemsg reply;
     BOOL result;
     DWORD nRead;
+    DWORD lastError;
     LARGE_INTEGER hpt;
     struct __timeb64 timebuffer;
 
@@ -105,12 +106,21 @@ os_timeModuleInit(void)
         request.kind = OS_SRVMSG_GET_TIME;
         reply.result = os_resultFail;
         reply.kind = OS_SRVMSG_UNDEFINED;
-        result = CallNamedPipe(
-                     TEXT(pipename),
-                     &request, sizeof(request),
-                     &reply, sizeof(reply),
-                     &nRead,
-                     NMPWAIT_WAIT_FOREVER);
+
+        do{
+            result = CallNamedPipe(
+                         TEXT(pipename),
+                         &request, sizeof(request),
+                         &reply, sizeof(reply),
+                         &nRead,
+                         NMPWAIT_WAIT_FOREVER);
+            if(!result){
+                lastError = GetLastError();
+            } else {
+                lastError = ERROR_SUCCESS;
+            }
+        } while((!result) && (lastError == ERROR_PIPE_BUSY));
+
         if (!result || (nRead != sizeof(reply))) {
             _ftime64(&timebuffer);
             QueryPerformanceCounter(&hpt);

@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+   <title>OpenSplice DDS DCPS Known Issues</title>
+      <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+      <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+   </head>
+   <body>
+      <p class="back">
+         <a href="knownissues.html">
+         Back to Known Issues Page<img src="../images/back.gif" align="middle" 
+         height="25" width="30" alt="Back">
+         </a>
+      </p><p>
+      
+      <h1><a name="dcps">DCPS Known Issues</a></h1>
+      </p>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds124
+          </td>
+          <td>
+            <b>IDL Preprocessor does not warn for illegal keyfields</b><br/>
+            <i>
+              When assigning an array as keyfield for a datatype (using the
+              #pragma keylist statement in the IDL), the IDL preprocessor does not
+              give an error message stating that arrays are not supported as key field
+              defintions. Instead, code generation finishes successfully, but at run-time
+              the generated code doesn't work.<br/>
+              The pre-processor should therefore generate an error message when a type
+              is selected as keyfield that semantically cannot function as a key.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds184
+          </td>
+          <td>
+            <b>Query parser doesn't support escape characters</b><br/>
+            <i>
+              The internal OpenSplice DDS query parser does not support escape characters. This 
+              implicates that specific tokens cannot be used in query expressions (like 
+              for instance SQL keywords 'select', 'where', etc).<br/>
+              Impact at API level:
+              <ul>
+                <li>Topics with a SQL keyword as name cannot be created</li>
+                <li>
+                  QueryCondition expressions cannot refer to datafields with SQL keyword as name
+                </li>
+                <li>
+                  ContentFilteredTopic expressions cannot refer to datafields with SQL keyword as name
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4508<br/>
+            dds206
+          </td>
+          <td>
+            <b>typeSupport with invalid type name causes crash during register_type</b><br/>
+            <i>
+              When a type support object is created with an type name which is not known in
+              the meta database, the following register_type function crashes.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds492
+          </td>
+          <td>
+            <b>idlpp cannot handle same struct in a struct or forward declarations to structs</b><br/>
+            <i>
+            The following (faulty) idl code generates a 'floating point exception', instead idlpp should
+            not allow such constructs.
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct{
+                long x;
+                TestStruct someEnum;
+                string val;
+            };
+            </code></pre>
+            The following idl also fails (the forward declaration to the TestStruct is not correctly
+            processed):
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                long x;
+            };
+            </code></pre>
+            with the error: <code>***DDS parse error TestStruct undefined at line: 4</code>. The
+            following idl construct is not allowed, however the IDL preprocessor does not give 
+            a clear error:
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                TestStruct1 x;
+            };
+            </code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4821<br/>
+            dds494
+          </td>
+          <td>
+            <b>SQL RelOp like not supported</b><br/>
+            <i>
+              Using the SQL relational operator like is not supported.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds540
+          </td>
+          <td>
+            <b>
+              idlpp generates invalid Java code when a union does not mention its default case
+              as the last branch
+            </b><br/>
+            <i>
+              Idlpp assumes that when used, the default case in a union is always mentioned last. If
+              that is not the case, idlpp will choose the wrong discriminator value for the
+              default case. As a result the generated code is incorrect, causing unexpected failures
+              or incorrect data.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds747
+          </td>
+          <td>
+            <b>Ownership policy interface incorrect in DCPS API</b><br/>
+            <i>
+              As of OMG DDS specification 1.0 the OwnershipQosPolicy is defined for the TopicQos,
+              DataReaderQos and DataWriterQos. The TopicQos specifies the default and the 
+              DataWriterQos and DataReaderQos can override this value. The policy is RxO, which states
+              that the value between reader and writer must be equal in order to have writer to be connected
+              to the reader.<br/>
+              OpenSplice DDS only supports the OwnershipQosPolicy for the TopicQos, so the DataWriter
+              and DataReader take the value specified by the Topic. This is not according to the OMG DDS
+              specification.<br/>
+              As this change would involve an API change, this change will be incorporated in the next
+              major release.
+            </i>
+          </td>
+        </tr>
+      </table>
+
+      
+      <br/>
+      <hr>
+      <p>
+         <a target="_top" href="http://www.prismtech.com">
+         <img src="../images/logo_prismtech2.jpg" align="right"
+         width="112" height="29" border="0" alt="PrismTech"></a> 
+         <a href="#top" target="_self">
+         <img src="../images/top.gif" width="32" 
+         height="32" border="0" alt="TOP"></a><br/>
+         <a href="#top" target="_self">Top</a>
+      </p>
+   </body>
+</html>

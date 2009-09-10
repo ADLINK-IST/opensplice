@@ -10,6 +10,7 @@ endif
 endif
 
 ifeq ($(INCLUDE_TOOLS_IDLPP),yes)
+SUBSYSTEMS	+= cppgen
 SUBSYSTEMS	+= idlpp
 endif
 

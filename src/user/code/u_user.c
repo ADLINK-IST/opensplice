@@ -25,6 +25,9 @@ C_STRUCT(u_kernelAdmin) { /* protected by global user lock */
 };
 
 #define u_user(u) ((C_STRUCT(u_user) *)(u))
+
+#define u__userUnlock()     u__unlock(u_user(user))
+
 C_CLASS(u_user);
 C_STRUCT(u_user) {
     os_mutex                mutex;
@@ -106,11 +109,8 @@ u__userLock(void)
 }
 
 static void
-u__userUnlock(void)
+u__unlock(u_user u)
 {
-    u_user u;
-
-    u = u_user(user);
     if (u != NULL) {
         /* Following check is valid, because while locked, the detachThreadId
          * may not be modified, so iff the condition passed in u__userLock() ,
@@ -128,6 +128,7 @@ u__userDetach(c_bool force)
 {
     u_user u;
     u_result r = U_RESULT_OK;
+    os_result mr = os_resultFail;
     u_kernel kernel;
     os_uint32 initCount;
     c_long i;
@@ -144,15 +145,28 @@ u__userDetach(c_bool force)
                 kernel = u->kernelList[i].kernel;
                 if (kernel) {
                     u_kernelDetachParticipants(kernel);
-                    u->kernelList[i].kernel = NULL;
-                    u_kernelClose(kernel);
+                    u_userKernelClose(kernel);
                 }
             }
+
             /* Disable access to user-layer. */
             user = NULL;
 
             u->detachThreadId = 0;
-            u__userUnlock();
+
+            /* Unlock the user-layer */
+            u__unlock(u);
+
+            /* Destroy the user-layer mutex */
+            mr = os_mutexDestroy(&u->mutex);
+            if(mr != os_resultSuccess){
+                OS_REPORT_1(OS_WARNING,"u_userDetach",0,
+                        "User-layer mutex destroy failed: os_result == %d.",
+                        mr);
+            }
+
+            /* Free the user-object */
+            os_free(u);
 
             /* De-init the OS-abstraction layer */
             os_osExit();
@@ -505,6 +519,50 @@ u_userKernelClose(
     return r;
 }
 
+u_result
+u_userKernelFree(
+    u_kernel kernel)
+{
+    u_kernelAdmin ka;
+    u_user u;
+    u_result r;
+    c_long i;
+    c_bool free = FALSE;
+
+    u = u__userLock();
+    if ( u ){
+        r = U_RESULT_ILL_PARAM;
+        for (i=1; (i<=u->kernelCount) && (r != U_RESULT_OK); i++) {
+            ka = &u->kernelList[i];
+            if (ka->kernel == kernel) {
+                u->kernelList[i].kernel = NULL;
+                ka->refCount--;
+                assert(ka->refCount == 0);
+                if (ka->refCount != 0) {
+                    OS_REPORT_1(OS_ERROR,
+                        "u_userKernelFree",0,
+                        "Kernel being freed is still referenced %d time(s) in user-layer, should be 0",
+                        ka->refCount);
+                }
+                /* Always free if found */
+                free = TRUE;
+                r = U_RESULT_OK;
+            }
+        }
+        u__userUnlock();
+
+        if (free) {
+            u_kernelFree(kernel);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userKernelFree",0,
+                "User layer not initialized");
+        r = U_RESULT_NOT_INITIALISED;
+    }
+    return r;
+}
+
 c_long
 u_userServerId(
     v_public o)
@@ -526,13 +584,13 @@ u_userServerId(
     return id;
 }
 
-c_long
+c_address
 u_userServer(
     c_long id)
 {
     u_kernel kernel;
     c_long idx;
-    c_long server;
+    c_address server;
     u_user u;
 
     u = u_user(user);

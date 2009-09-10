@@ -1,0 +1,20 @@
+*** y_tab.hh	Wed Sep 12 14:19:41 2007
+--- y_tab.hh.new	Wed Sep 12 14:21:06 2007
+***************
+*** 31,36 ****
+--- 31,45 ----
+    Identifier            *idval;         /* Identifier           */
+    UTL_IdList            *idlist;        /* Identifier list      */
+  } YYSTYPE;
++ 
++ #ifdef WIN32
++ #undef CONST
++ #undef VOID
++ #undef IN
++ #undef OUT
++ #undef OPAQUE
++ #endif
++ 
+  extern YYSTYPE yylval;
+  # define IDENTIFIER 257
+  # define CONST 258
