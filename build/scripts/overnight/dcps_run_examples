@@ -89,8 +89,8 @@ else
     then
         BASE=$DEPWORKDIR/build/scripts/overnight
     fi
-
-    cd $WORKDIR/installed/HDE/$SETUP_TYPE/
+    SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/
     . ./release.com
     cd examples
  
