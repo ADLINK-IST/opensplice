@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef WIN32_LEAN_AND_MEAN
@@ -22,27 +22,27 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define _PIPE_STATE_CONNECTING 0 
-#define _PIPE_STATE_READING    1 
+#define _PIPE_STATE_CONNECTING 0
+#define _PIPE_STATE_READING    1
 #define _PIPE_STATE_WRITING    2
-#define _PIPE_MAX_INSTANCES    4
+#define _PIPE_MAX_INSTANCES    8
 
 #define _PIPE_DEFAULT_TIMEOUT  200 /* milliseconds */
 
 #define _POOL_BLOCKSIZE 128
 #define OS_SERVICE_PIPE_PREFIX "\\\\.\\pipe\\"
 #define OS_SERVICE_DEFAULT_NAME "osplOSService"
-#define OS_SERVICE_DEFAULT_PIPE_NAME OS_SERVICE_PIPE_PREFIX OS_SERVICE_DEFAULT_NAME 
+#define OS_SERVICE_DEFAULT_PIPE_NAME OS_SERVICE_PIPE_PREFIX OS_SERVICE_DEFAULT_NAME
 
-struct _pipe_instance 
-{ 
-   OVERLAPPED oOverlap; 
-   HANDLE hPipeInst; 
+struct _pipe_instance
+{
+   OVERLAPPED oOverlap;
+   HANDLE hPipeInst;
    struct os_servicemsg request;
    DWORD reqRead;
    struct os_servicemsg reply;
-   DWORD dwState; 
-   BOOL fPendingIO; 
+   DWORD dwState;
+   BOOL fPendingIO;
 };
 
 struct pool_entity {
@@ -93,7 +93,7 @@ poolDeinit(
     int i;
     struct pool_block *block;
     struct pool_block *freeBlock;
-    
+
     block = pool->tail;
     while (block != NULL) {
         for (i = 0; i < _POOL_BLOCKSIZE; i++) {
@@ -139,7 +139,7 @@ poolClaim(
     int i;
     long max;
     int result;
-    
+
     block = pool->tail;
     max = pool->blockCount*_POOL_BLOCKSIZE;
     if (max == pool->inuse) {
@@ -150,8 +150,8 @@ poolClaim(
         }
         newBlock->prev = NULL;
         for (i = 0; i < _POOL_BLOCKSIZE; i++) {
-            newBlock->entity[i].id = max + i + 1; /* at least one */            
-            newBlock->entity[i].h = create(newBlock->entity[i].id, 
+            newBlock->entity[i].id = max + i + 1; /* at least one */
+            newBlock->entity[i].h = create(newBlock->entity[i].id,
                                            newBlock->entity[i].name);
         }
         newBlock->prev = pool->tail;
@@ -191,7 +191,7 @@ poolRelease(
     long idxInBlock;
     long i;
     int result;
-    
+
     block = pool->tail;
     blockNr = (pool->blockCount - 1) - ((id - 1) / _POOL_BLOCKSIZE); /* reverse order */
     idxInBlock = (id - 1) % _POOL_BLOCKSIZE;
@@ -207,76 +207,76 @@ poolRelease(
         OS_DEBUG_1("osService: Trying to destroy incorrect mutex %d", id);
         result = 1;
     }
-    
+
     return result;
 }
 
 /* Event Service functions */
 
-/* ConnectToNewClient(HANDLE, LPOVERLAPPED) 
- * 
+/* ConnectToNewClient(HANDLE, LPOVERLAPPED)
+ *
  * This function is called to start an overlapped connect operation.
  * It returns TRUE if an operation is pending or FALSE if the
  * connection has been completed.
  */
-static BOOL 
+static BOOL
 ConnectToNewClient(
     HANDLE hPipe,
-    LPOVERLAPPED lpo) 
-{ 
+    LPOVERLAPPED lpo)
+{
     BOOL fConnected;
-    BOOL fPendingIO = FALSE; 
- 
-    /* Start an overlapped connection for this pipe instance. */ 
-    fConnected = ConnectNamedPipe(hPipe, lpo); 
- 
-    /* Overlapped ConnectNamedPipe should return zero.*/ 
+    BOOL fPendingIO = FALSE;
+
+    /* Start an overlapped connection for this pipe instance. */
+    fConnected = ConnectNamedPipe(hPipe, lpo);
+
+    /* Overlapped ConnectNamedPipe should return zero.*/
     if (fConnected) {
-        OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError()); 
+        OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
         return 0;
     }
 
-    switch (GetLastError()) { 
-    /* The overlapped connection in progress. */ 
-    case ERROR_IO_PENDING: 
-        fPendingIO = TRUE; 
-    break; 
+    switch (GetLastError()) {
+    /* The overlapped connection in progress. */
+    case ERROR_IO_PENDING:
+        fPendingIO = TRUE;
+    break;
     case ERROR_PIPE_CONNECTED: /* Client is already connected, so signal an event. */
         if (!SetEvent(lpo->hEvent)) {
             OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
             fPendingIO = FALSE;
         }
-    break; 
+    break;
     default: /* If an error occurs during the connect operation... */
         OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
         fPendingIO = FALSE;
     break;
-    } 
- 
-   return fPendingIO; 
+    }
+
+   return fPendingIO;
 }
 
 /* DisconnectAndReconnect(DWORD)
  * This function is called when an error occurs or when the client
  * closes its handle to the pipe. Disconnect from this client, then
  * call ConnectNamedPipe to wait for another client to connect.
- */ 
-static VOID 
+ */
+static VOID
 DisconnectAndReconnect(
     struct _pipe_instance *pipe)
-{ 
-    
-    /* Disconnect the pipe instance. */ 
+{
+
+    /* Disconnect the pipe instance. */
     if (!DisconnectNamedPipe(pipe->hPipeInst) ) {
-        OS_DEBUG_1("mutexManager: DisconnectNamedPipe failed with %d.\n", GetLastError()); 
+        OS_DEBUG_1("mutexManager: DisconnectNamedPipe failed with %d.\n", GetLastError());
     }
-    /* connect to new client */ 
-    pipe->fPendingIO = ConnectToNewClient( 
-                           pipe->hPipeInst, 
-                           &pipe->oOverlap); 
+    /* connect to new client */
+    pipe->fPendingIO = ConnectToNewClient(
+                           pipe->hPipeInst,
+                           &pipe->oOverlap);
 
     pipe->dwState = (pipe->fPendingIO?_PIPE_STATE_CONNECTING:_PIPE_STATE_READING);
-} 
+}
 
 static void
 handleRequest(
@@ -285,7 +285,7 @@ handleRequest(
     int *terminate)
 {
     struct pool *pool;
-    
+
     /* read request */
     pipe->reply.kind = pipe->request.kind;
     switch (pipe->request.kind) {
@@ -335,12 +335,12 @@ handleRequest(
     default:
         pipe->reply.result = os_resultFail;
         OS_DEBUG_1("osService: Incorrect msg kind in request %d", pipe->request.kind);
-    } 
+    }
 }
 
-static void * 
+static void *
 osServiceThread(
-    void *arg) 
+    void *arg)
 {
     struct _pipe_instance pipe[_PIPE_MAX_INSTANCES];
     HANDLE hEvents[_PIPE_MAX_INSTANCES];
@@ -350,34 +350,34 @@ osServiceThread(
     DWORD cbRet;
     struct eventService es;
     int terminate;
-    /* only use 'ready' to indicate initialisation is done. Then 
+    /* only use 'ready' to indicate initialisation is done. Then
      * never use this variable again as it is a stack variable of
-     *  the os_serviceStart() routine 
+     *  the os_serviceStart() routine
      */
-    HANDLE *initializedEvent = (HANDLE *)arg; 
-        
+    HANDLE *initializedEvent = (HANDLE *)arg;
+
     terminate = 0;
     poolInit(&es.eventPool);
     poolInit(&es.semPool);
-    
+
     for (i = 0; i < _PIPE_MAX_INSTANCES; i++) {
-        hEvents[i] = CreateEvent( 
-                         NULL,    // default security attribute 
-                         TRUE,    // manual-reset event 
-                         TRUE,    // initial state = signaled 
+        hEvents[i] = CreateEvent(
+                         NULL,    // default security attribute
+                         TRUE,    // manual-reset event
+                         TRUE,    // initial state = signaled
                          NULL);   // unnamed event object
 
         pipe[i].hPipeInst = CreateNamedPipe(
-                                _ospl_servicePipeName,     // pipe name 
-                                PIPE_ACCESS_DUPLEX |     // read/write access 
-                                FILE_FLAG_OVERLAPPED,    // overlapped mode 
-                                PIPE_TYPE_MESSAGE |      // message-type pipe 
-                                PIPE_READMODE_MESSAGE |  // message-read mode 
-                                PIPE_WAIT,               // blocking mode 
-                                _PIPE_MAX_INSTANCES,     // number of instances 
-                                sizeof(pipe[i].reply),   // output buffer size 
-                                sizeof(pipe[i].request), // input buffer size 
-                                _PIPE_DEFAULT_TIMEOUT,   // client time-out 
+                                _ospl_servicePipeName,     // pipe name
+                                PIPE_ACCESS_DUPLEX |     // read/write access
+                                FILE_FLAG_OVERLAPPED,    // overlapped mode
+                                PIPE_TYPE_MESSAGE |      // message-type pipe
+                                PIPE_READMODE_MESSAGE |  // message-read mode
+                                PIPE_WAIT,               // blocking mode
+                                _PIPE_MAX_INSTANCES,     // number of instances
+                                sizeof(pipe[i].reply),   // output buffer size
+                                sizeof(pipe[i].request), // input buffer size
+                                _PIPE_DEFAULT_TIMEOUT,   // client time-out
                                 NULL);                   // default security attributes
         if (pipe[i].hPipeInst == INVALID_HANDLE_VALUE) {
             OS_DEBUG_2("Failed to create named pipe %s %d", _ospl_servicePipeName, GetLastError());
@@ -385,58 +385,58 @@ osServiceThread(
         // Call the subroutine to connect to the new client
         memset(&pipe[i].oOverlap, 0, sizeof(OVERLAPPED));
         pipe[i].oOverlap.hEvent = hEvents[i];
-        pipe[i].fPendingIO = ConnectToNewClient( 
-            pipe[i].hPipeInst, 
-            &pipe[i].oOverlap); 
+        pipe[i].fPendingIO = ConnectToNewClient(
+            pipe[i].hPipeInst,
+            &pipe[i].oOverlap);
 
         pipe[i].dwState = (pipe[i].fPendingIO?_PIPE_STATE_CONNECTING:_PIPE_STATE_READING);
 
         pipe[i].reply.result = os_resultFail;
         pipe[i].reply.kind = OS_SRVMSG_UNDEFINED;
         pipe[i].reply._u.id = -1;
-        
+
         pipe[i].reqRead = 0;
         pipe[i].request.result = os_resultFail;
         pipe[i].request.kind = OS_SRVMSG_UNDEFINED;
         pipe[i].request._u.id = -1;
     }
-    
+
     /* We are done initialising, notify thread that started this service and then never use this
-     * handle again! 
+     * handle again!
      */
     SetEvent(*initializedEvent);
-    initializedEvent = NULL; 
+    initializedEvent = NULL;
     while (!terminate) {
         /* Wait for the event object to be signaled, indicating
-         * completion of an overlapped read, write, or connect 
+         * completion of an overlapped read, write, or connect
          * operation.
          */
-        dwWait = WaitForMultipleObjects( 
-                     _PIPE_MAX_INSTANCES,    // number of event objects 
-                     hEvents,                // array of event objects 
-                     FALSE,                  // do not wait for all 
+        dwWait = WaitForMultipleObjects(
+                     _PIPE_MAX_INSTANCES,    // number of event objects
+                     hEvents,                // array of event objects
+                     FALSE,                  // do not wait for all
                      INFINITE);              // wait for ever
-                     
-        /* dwWait shows which pipe completed the operation. */ 
-        i = dwWait - WAIT_OBJECT_0;  // determines which pipe 
-        assert(i >= 0 || i < _PIPE_MAX_INSTANCES); 
+
+        /* dwWait shows which pipe completed the operation. */
+        i = dwWait - WAIT_OBJECT_0;  // determines which pipe
+        assert(i >= 0 || i < _PIPE_MAX_INSTANCES);
         /* Get the result if the operation was pending. */
         if (pipe[i].fPendingIO) {
-            fSuccess = GetOverlappedResult( 
-                           pipe[i].hPipeInst, // handle to pipe 
-                           &pipe[i].oOverlap, // OVERLAPPED structure 
-                           &cbRet,            // bytes transferred 
-                           FALSE);            // do not wait 
-            switch (pipe[i].dwState) { 
-                /* Pending connect operation */ 
-            case _PIPE_STATE_CONNECTING: 
+            fSuccess = GetOverlappedResult(
+                           pipe[i].hPipeInst, // handle to pipe
+                           &pipe[i].oOverlap, // OVERLAPPED structure
+                           &cbRet,            // bytes transferred
+                           FALSE);            // do not wait
+            switch (pipe[i].dwState) {
+                /* Pending connect operation */
+            case _PIPE_STATE_CONNECTING:
                 if (fSuccess) {
                     pipe[i].dwState = _PIPE_STATE_READING; /* next state */
                 } else {
                     DisconnectAndReconnect(&pipe[i]);
                 }
-            break;  
-                /* Pending read operation */ 
+            break;
+                /* Pending read operation */
             case _PIPE_STATE_READING:
                 if (!fSuccess && (GetLastError() == ERROR_IO_PENDING)) {
                     pipe[i].fPendingIO = TRUE;
@@ -446,27 +446,27 @@ osServiceThread(
                     OS_DEBUG_4("[%d] pending READ: failure %d %d %d", i, fSuccess, cbRet, GetLastError());
                     assert(0);
                     DisconnectAndReconnect(&pipe[i]);
-                    continue; 
+                    continue;
                 }
-                pipe[i].dwState = _PIPE_STATE_WRITING; 
+                pipe[i].dwState = _PIPE_STATE_WRITING;
             break;
-            /* Pending write operation */ 
-            case _PIPE_STATE_WRITING: 
+            /* Pending write operation */
+            case _PIPE_STATE_WRITING:
                 if (!fSuccess || (cbRet != sizeof(pipe[i].reply))) {
                     OS_DEBUG_2("[%d] pending WRITE: failure %d", i, GetLastError());
-                    DisconnectAndReconnect(&pipe[i]); 
+                    DisconnectAndReconnect(&pipe[i]);
                     continue;
                 }
                 pipe[i].dwState = _PIPE_STATE_READING;
-            break; 
-            default: 
-                OS_DEBUG("osService: Invalid pipe state."); 
-            }  
+            break;
+            default:
+                OS_DEBUG("osService: Invalid pipe state.");
+            }
         }
- 
-        /* The pipe state determines which operation to do next. */ 
-        switch (pipe[i].dwState) { 
-        /* _PIPE_STATE_READING: 
+
+        /* The pipe state determines which operation to do next. */
+        switch (pipe[i].dwState) {
+        /* _PIPE_STATE_READING:
          * The pipe instance is connected to the client
          * and is ready to read a request from the client.
          */
@@ -474,59 +474,59 @@ osServiceThread(
             //memset(&pipe[i].oOverlap, 0, sizeof(OVERLAPPED));
             //pipe[i].oOverlap.hEvent = hEvents[i];
             fSuccess = ReadFile(
-                           pipe[i].hPipeInst, 
+                           pipe[i].hPipeInst,
                            &pipe[i].request,
-                           sizeof(pipe[i].request), 
+                           sizeof(pipe[i].request),
                            &pipe[i].reqRead,
                            &pipe[i].oOverlap);
-            /* The read operation completed successfully. */ 
+            /* The read operation completed successfully. */
             if (fSuccess && (pipe[i].reqRead != 0)) {
-                pipe[i].fPendingIO = FALSE; 
-                pipe[i].dwState = _PIPE_STATE_WRITING; 
+                pipe[i].fPendingIO = FALSE;
+                pipe[i].dwState = _PIPE_STATE_WRITING;
                 continue;
             }
             /* The read operation is still pending. */
             if (!fSuccess && (GetLastError() == ERROR_IO_PENDING)) {
                 pipe[i].fPendingIO = TRUE;
-                continue; 
-            } 
+                continue;
+            }
             OS_DEBUG_2("[%d] READ: failure %d", i, GetLastError());
             /* An error occurred; disconnect from the client. */
             assert(0);
             DisconnectAndReconnect(&pipe[i]);
         break;
-        /* _PIPE_STATE_WRITING: 
+        /* _PIPE_STATE_WRITING:
          * The request was successfully read from the client.
          * Get the reply data and write it to the client.
-         */ 
+         */
         case _PIPE_STATE_WRITING:
             handleRequest(&es, &pipe[i], &terminate);
-            fSuccess = WriteFile( 
-                           pipe[i].hPipeInst, 
-                           &pipe[i].reply, 
-                           sizeof(pipe[i].reply), 
-                           &cbRet, 
+            fSuccess = WriteFile(
+                           pipe[i].hPipeInst,
+                           &pipe[i].reply,
+                           sizeof(pipe[i].reply),
+                           &cbRet,
                            &pipe[i].oOverlap);
-            if (fSuccess && (cbRet == sizeof(pipe[i].reply))) { 
-                pipe[i].fPendingIO = FALSE; 
+            if (fSuccess && (cbRet == sizeof(pipe[i].reply))) {
+                pipe[i].fPendingIO = FALSE;
                 pipe[i].dwState = _PIPE_STATE_READING;
                 DisconnectAndReconnect(&pipe[i]);
                 continue;
-            } 
+            }
             /* The write operation is still pending. */
             if (!fSuccess && (GetLastError() == ERROR_IO_PENDING)) {
                 pipe[i].fPendingIO = TRUE;
-                continue; 
+                continue;
             }
             /* Whether an error occurred on not, just disconnect from the client */
             OS_DEBUG_2("[%d] WRITE: failure %d", i, GetLastError());
             assert(0);
             DisconnectAndReconnect(&pipe[i]);
-        break; 
+        break;
         default:
         break;
-        } 
-    } 
+        }
+    }
 
     for (i = 0; i < _PIPE_MAX_INSTANCES; i++) {
         CloseHandle(hEvents[i]);
@@ -536,9 +536,9 @@ osServiceThread(
     poolDeinit(&es.semPool);
     free(_ospl_servicePipeName); /* allocated by os_serviceStart! */
     _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
-    
-    return NULL; 
-} 
+
+    return NULL;
+}
 
 
 static char *
@@ -546,7 +546,7 @@ createPipeName(void)
 {
     char *n;
     int i, len;
-    
+
     n = malloc(strlen(_ospl_serviceName) + strlen(OS_SERVICE_PIPE_PREFIX) + 1);
     strcpy(n, OS_SERVICE_PIPE_PREFIX);
     strcat(n, _ospl_serviceName);
@@ -587,7 +587,7 @@ os_serviceStart(
         _ospl_clock_starttime.tv_nsec = timebuffer.millitm * 1000000;
     } /*else {  no high performance timer available!
                 so we fall back to a millisecond clock.
-              
+
     }*/
 
     if (name == NULL) {
@@ -606,7 +606,7 @@ os_serviceStart(
             (SIZE_T)128*1024,
             (LPTHREAD_START_ROUTINE)osServiceThread,
             (LPVOID)&initializedEvent,
-            (DWORD)0, &threadIdent); 
+            (DWORD)0, &threadIdent);
         if (_ospl_serviceThreadId == 0) {
             r = os_resultFail;
             free(_ospl_servicePipeName);
@@ -622,7 +622,7 @@ os_serviceStart(
     } else {
         r = os_resultFail;
     }
-    return r;    
+    return r;
 }
 #undef UNIQUE_PREFIX
 
@@ -634,15 +634,15 @@ os_serviceStop(void)
     BOOL result;
     DWORD nRead;
     os_result osr;
-    
+
     osr = os_resultSuccess;
     request.kind = OS_SRVMSG_TERMINATE;
     reply.result = os_resultFail;
     result = CallNamedPipe(
                  _ospl_servicePipeName,
-                 &request, sizeof(request), 
-                 &reply, sizeof(reply), 
-                 &nRead, 
+                 &request, sizeof(request),
+                 &reply, sizeof(reply),
+                 &nRead,
                  NMPWAIT_WAIT_FOREVER);
     if (!result || (nRead == 0)) {
         osr = os_resultFail;

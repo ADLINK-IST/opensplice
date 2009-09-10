@@ -20,21 +20,46 @@ extern "C" {
 #include "u_types.h"
 #include "u_entity.h"
 
-#define  u_kernel(p)     ((u_kernel)(p))
+#define u_kernel(p) ((u_kernel)(p))
  
-u_kernel u_kernelNew     (const c_char *uri);
-u_kernel u_kernelOpen    (const c_char *uri, c_long timeout); /* timeout in seconds */
+u_kernel
+u_kernelNew (
+    const c_char *uri);
 
-v_kernel u_kernelSource  (u_kernel k);
+u_kernel
+u_kernelOpen (
+    const c_char *uri, 
+    c_long timeout); /* timeout in seconds */
 
-u_result u_kernelClose   (u_kernel k);
-u_result u_kernelFree    (u_kernel k);
+v_kernel
+u_kernelSource (
+    u_kernel _this);
 
-c_voidp  u_kernelGetCopy (u_kernel k, u_entityCopy copy, void* copyArg);
-const c_char *u_kernelUri(u_kernel kernel);
+u_result
+u_kernelClose (
+    u_kernel _this);
 
-c_long   u_kernelHandleServer(u_kernel kernel);
-c_voidp  u_kernelAddress(u_kernel kernel);
+u_result
+u_kernelFree (
+    u_kernel _this);
+
+c_voidp
+u_kernelGetCopy (
+    u_kernel _this, 
+    u_entityCopy copy, 
+    void* copyArg);
+
+const c_char *
+u_kernelUri(
+    u_kernel _this);
+
+c_address
+u_kernelHandleServer(
+    u_kernel _this);
+
+c_voidp
+u_kernelAddress(
+    u_kernel _this);
 
 #if defined (__cplusplus)
 }

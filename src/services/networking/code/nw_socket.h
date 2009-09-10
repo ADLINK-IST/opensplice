@@ -15,11 +15,11 @@
 #include "os_time.h"
 
 typedef struct nw_socket_s *nw_socket;
-typedef unsigned char  sk_bool;
-typedef unsigned short sk_portNr;     /* Internally converted into n_port_t */
-typedef unsigned long  sk_length;     /* Internally converted into size_t */
-typedef unsigned long  sk_address;    /* Networking address */
-typedef unsigned long  sk_partitionId; /* Networking partition */
+typedef os_uchar   sk_bool;
+typedef os_ushort  sk_portNr;     /* Internally converted into n_port_t */
+typedef os_uint32  sk_length;     /* Internally converted into size_t */
+typedef os_uint32  sk_address;    /* Networking address */
+typedef os_uint32  sk_partitionId; /* Networking partition */
 
 typedef enum sk_addressType_e {
     SK_TYPE_UNKNOWN,

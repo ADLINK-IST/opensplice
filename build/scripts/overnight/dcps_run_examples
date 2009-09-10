@@ -10,7 +10,7 @@ Assert SetupResFile
 BASE=$PWD
 cd ../../..
 
-function check_platform()
+check_platform()
 {
    CURRENT_PL_LINUX=`uname | grep Linux`
    CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
@@ -32,8 +32,8 @@ if [ "$SETUP_TYPE" = "pcx86.int509-dev" -o "$SETUP_TYPE" = "pcx86.int509-release
 then
     if [ "$DEP" != "none" ]
     then
-	OSPL_HOME=$DEPWORKDIR
-	export OSPL_HOME
+       OSPL_HOME=$DEPWORKDIR
+       export OSPL_HOME
     fi
 
     SPLICE_PLATFORM=$SETUP_TYPE
@@ -42,8 +42,8 @@ then
 
     if [ "$CONFIGURATION" != "OK" ]
     then
-	echo  "ERROR: configuration - dcps_run_examples"
-	exit 1
+        echo  "ERROR: configuration - dcps_run_examples"
+        exit 1
     fi
 
     echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
@@ -76,10 +76,10 @@ EOF
 
     grep -v PASS summary.txt
     if [ $? = 0 ]
-	then
-	exit 1
+    then
+        exit 1
     else
-	exit 0
+        exit 0
     fi
 else
     echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
@@ -87,49 +87,38 @@ else
 
     if [ "$DEP" != "none" ]
     then
-	BASE=$DEPWORKDIR/build/scripts/overnight
+        BASE=$DEPWORKDIR/build/scripts/overnight
     fi
-
-    cd $WORKDIR/../installed/HDE/$SETUP_TYPE/
+    SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/
     . ./release.com
     cd examples
  
-    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong 
-       dcps/CORBA/C++/OpenFusion/Tutorial 
-       dcps/standalone/C/PingPong 
-       dcps/standalone/C/Tutorial 
-       dcps/standalone/C++/PingPong 
-       dcps/standalone/C++/Tutorial 
-       dcps/standalone/C++OnC/PingPong 
-       dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
-	
-    #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    export SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong 
-       dcps/standalone/Java/Tutorial
-       dlrl/standalone/Java/Tutorial
-       dlrl/standalone/C++/Tutorial
-       services/dbmsconnect/SQL/C++/ODBC"
+    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    export EXAMPLES
 
+    #These examples have special files for build: BUILD(or BUILD.bat for Windows)
+    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    export SPECIAL_BUILD_FILES
 
     echo "Updating XML:"
     sleep 7200 &
     UNIQID=$!
-    XMLFILE=`echo $OSPL_URI | sed 's@file://@@'`
-    NEWXMLFILE=`echo $XMLFILE | sed 's/.xml/_no_network_uniq.xml/'`
+    XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml'`
+    NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
     sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
-    OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml'`
+    OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml/'`
 
     echo "Running Examples:"
-
+    
+    PATH=$PATH:$JAVA_HOME/bin
+    PATH=$PATH:$TAO_ROOT/bin
+    export PATH
     if check_platform
     then
-	sh $BASE/run_examples.sh
+        sh $BASE/run_examples.sh
     else
-	$BASE/run_examples.bat
+        $BASE/run_examples.bat
     fi
     exit $?
 fi

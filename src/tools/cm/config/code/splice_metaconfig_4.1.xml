@@ -166,7 +166,7 @@
                 <default>64000</default>
             </leafLong>
         </element>
-        <element name="Service" minOccurrences="1" maxOccurrences="0">
+        <element name="Service" minOccurrences="0" maxOccurrences="0">
             <comment><![CDATA[
                 The Domain service is responsible for starting, monitoring and stopping the pluggable services.
                 One Service element must be specified for every service that needs to be started by the Domain service.
@@ -389,7 +389,153 @@
                 </attributeEnum>
             </element>
         </element>
+        <element name="ReportPlugin" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+            This Tag specifies user defined report functionality to be used by
+            the domain. All services and applications will load a user provides 
+            report library that will implement the report plugin interface. 
+            The report interface consists of three operations; 
+            initialize, report and finalize.
+        ]]></comment>
+        <element name="Library" minOccurrences="1" maxOccurrences="1">
+            <comment><![CDATA[
+                This tag specifies the library to be loaded.
+            ]]></comment>
+            <attributeString name="file_name" required="true">
+                <comment><![CDATA[
+                    This attribute specifies the library to be loaded.
+                ]]></comment>
+                <default>my_reporter.so</default>
+                <maxLength>0</maxLength>
+            </attributeString>
+        </element>
+        <element name="Initialize" minOccurrences="1" maxOccurrences="1">
+            <comment><![CDATA[
+                This tag specifies the library symbol that will be assigned to the 
+                report Initialize operation. This operation will be invoked 
+                initially after loading the library to perform initialization of 
+                the report facility if needed.
+            ]]></comment>
+            <attributeString name="symbol_name" required="true">
+                <comment><![CDATA[
+                    This attribute specifies the library symbol that will be 
+                    assigned to the report Initialize operation. This operation 
+                    will be invoked initially after loading the library to 
+                    perform initialization of the report facility if needed.
+                ]]></comment>
+                <default>my_reporter.so</default>
+                <maxLength>0</maxLength>
+            </attributeString>
+        </element>
+        <element name="Report" minOccurrences="1" maxOccurrences="1">
+            <comment><![CDATA[
+                This tag specifies the library symbol that will be assigned to 
+                the report Report operation. This operation will be invoked 
+                on all reports performed by the DDS service.
+            ]]></comment>
+            <attributeString name="symbol_name" required="true">
+                <comment><![CDATA[
+                    This attribute specifies the library symbol that will be 
+                    assigned to the report Report operation. This operation will 
+                    be invoked on all reports performed by the DDS service.
+                ]]></comment>
+                <default>my_reporter.so</default>
+                <maxLength>0</maxLength>
+            </attributeString>
+        </element>
+        <element name="Finalize" minOccurrences="1" maxOccurrences="1">
+            <comment><![CDATA[
+                This tag specifies the library symbol that will be assigned 
+                to the report Finalize operation. This operation will be 
+                invoked upon process termination to perform de-initialization 
+                of the report facility if needed.
+            ]]></comment>
+            <attributeString name="symbol_name" required="true">
+                <comment><![CDATA[
+                    This attribute specifies the library symbol that will be assigned 
+                    to the report Finalize operation. This operation will be 
+                    invoked upon process termination to perform de-initialization 
+                    of the report facility if needed.
+                ]]></comment>
+                <default>my_reporter.so</default>
+                <maxLength>0</maxLength>
+            </attributeString>
+        </element>
     </element>
+    <element name="PartitionAccess" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+            This configuration tag specifies the access rights for a 
+            selection of partitions.
+        ]]></comment>
+        <attributeString name="partition_expression" required="true">
+            <comment><![CDATA[
+                This attribute specifies the partitions by name. 
+                The wildcards ‘*’ and ‘?’ are allowed and the specified 
+                access rights will be applied to all matching partitions. 
+                In case partitions match multiple rules the rules will be 
+                applied in sequence of declaration.
+            ]]></comment>
+            <default>*</default>
+            <maxLength>0</maxLength>
+        </attributeString>
+        <attributeEnum name="access_mode" required="true">
+            <comment><![CDATA[
+                This attribute specifies the access rights that will be 
+                applied to the specified partitions. The following values 
+                are applicable:
+                <ul>
+                    <li>none</li>
+                    <li>read</li>
+                    <li>write</li>
+                    <li>readwrite</li>
+                </ul>
+            ]]></comment>
+            <value>none</value>
+            <value>read</value>
+            <value>write</value>
+            <value>readwrite</value>
+            <default>readwrite</default>
+        </attributeEnum>
+        </element>
+        
+        <element name="TopicAccess" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+            This configuration tag specifies the access rights for a 
+            selection of topics.
+        ]]></comment>
+        <attributeString name="topic_expression" required="true">
+            <comment><![CDATA[
+                This attribute specifies the topics by name. 
+                The wildcards ‘*’ and ‘?’ are allowed and the specified 
+                access rights will be applied to all matching topics. 
+                In case topics match multiple rules the rules will be 
+                applied in sequence of declaration.
+            ]]></comment>
+            <default>*</default>
+            <maxLength>0</maxLength>
+        </attributeString>
+        <attributeEnum name="access_mode" required="true">
+            <comment><![CDATA[
+                This attribute specifies the access rights that will be 
+                applied to the specified topics. The following values 
+                are applicable:
+                <ul>
+                    <li>none</li>
+                    <li>read</li>
+                    <li>write</li>
+                    <li>readwrite</li>
+                </ul>
+            ]]></comment>
+            <value>none</value>
+            <value>read</value>
+            <value>write</value>
+            <value>readwrite</value>
+            <default>readwrite</default>
+        </attributeEnum>
+        </element>
+    </element>
+    
+     
     <element name="Daemon" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
             Every domain is controlled by exactly one daemon: the Splice Daemon.
@@ -942,6 +1088,56 @@
                         <maximum>5.0</maximum>
                     </leafFloat>
                 </element>
+                 
+                <element name="Partition" minOccurrences="0" maxOccurrences="0">
+                    <comment><![CDATA[
+                        This tag specified an inter durability communication 
+                        partition with specific qos settings. Alignment between 
+                        durability services managed through this partition. 
+                        In case multiple partitions are defined the partition 
+                        with the highest alignment_priority that can provide 
+                        the requested data will be used as data source. 
+                        By default (no Partition specified) the 
+                        durability services will use an internal partition 
+                        that inherits the default qos policies and has the
+                        default alignment_priority.
+                    ]]></comment>
+                    <attributeString name="Name" required="true">
+                        <comment><![CDATA[
+                            The name of the partition to use for alignment.
+                        ]]></comment>
+                        <maxLength>0</maxLength>
+                        <default>partition</default>
+                    </attributeString>
+                    <attributeInt name="alignment_priority" required="false">
+                        <comment><![CDATA[
+                            This attribute specifies the alignment priority of 
+                            the partition used by the durability service to 
+                            select the preferred partition to align from. If
+                            no alignment_priority is configured, the service
+                            uses 0 as default.
+                        ]]></comment>
+                        <default>0</default>
+                        <minimum>0</minimum>
+                    </attributeInt>
+                    <attributeFloat name="latency_budget" required="false">
+                        <comment><![CDATA[
+                            This attribute overrules the latency budget for 
+                            this partition specified at this point.
+                        ]]></comment>
+                        <default>0.0</default>
+                        <minimum>0.0</minimum>
+                    </attributeFloat>
+                    <attributeInt name="transport_priority" required="false">
+                        <comment><![CDATA[
+                            This attribute overrules the transport priority for
+                            this partition specified at this point.
+                        ]]></comment>
+                        <default>0</default>
+                        <minimum>0</minimum>
+                    </attributeInt>
+                </element>
+                 
             </element>
             <element name="WaitForAttachment" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
@@ -1214,6 +1410,26 @@
                     <value>Lazy</value>
                     <value>On_Request</value>
                 </attributeEnum>
+                <attributeEnum name="mergePolicy" required="false">
+                    <comment><![CDATA[
+                    This tag specifies the merge policy applicable for a 
+                    specific namespace. The following merge policy values are 
+                    applicable:
+                    <ul>
+                    <li>ignore - No alignment will take place. This is also 
+                    the default value if not specified.</li>
+                    <li>merge - Existing data will remain and data from others 
+                    will be aligned.</li>
+                    <li>reset - Existing data is removed.</li>
+                    <li>replace - Existing data is removed and data from 
+                    others will be aligned.</li>
+                    ]]></comment>
+                    <default>ignore</default>
+                    <value>merge</value>
+                    <value>reset</value>
+                    <value>replace</value>
+                    <value>ignore</value>
+                </attributeEnum>
                 <leafString name="Partition" minOccurrences="1" maxOccurrences="0">
                     <comment><![CDATA[
                         This element specifies a partition expression that
@@ -1468,6 +1684,22 @@
                             enabled switches.</p>
                         ]]></comment>
                         <default>true</default>
+                    </attributeBoolean>
+                    <attributeBoolean name="Compression" required="false">
+                        <comment><![CDATA[
+                            This attribute specifies if networking will apply 
+                            compression to limit bandwidth for a specific 
+                            network partition. This provides great flexibility 
+                            as network partition are dynamically bind to 
+                            logical partitions. The following compression 
+                            values are allowed:
+                            <ul>
+                                <li>false - No compression is applied. This is 
+                                also the default value if not specified.</li>
+                                <li>true - Compression is applicable</li>
+                            </ul>
+                        ]]></comment>
+                        <default>false</default>
                     </attributeBoolean>
                 </element>
             </element>

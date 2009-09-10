@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - C#</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="fixedV4_2.html">
+        Back to Fixed Bugs and Changes V4.2 Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>C# Release Notes</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#usage">How to use the C# API</a></li>
+      <li><a href="#limitations">Current limitations of the C# API</a></li>
+      <li><a href="#future">Future Expected Changes</a></li>
+    </ul>
+    <hr>
+    This page describes the current state of the Beta version of the C# API.<br>
+    
+    <p>
+      The C# API is currently in Beta status and therefore comes without a rich
+      documentation set and without the pingpong and tutorial example code.
+      Furthermore, since not all tests have been ported yet,
+      it hasn't been tested to the same level of quality as the other OpenSplice DDS
+      language bindings. Finally, the product is not NOT API STABLE at the present time;
+      some changes are being planned (see also the last section), so don't expect
+      your current applications to run without any modifications on future
+      releases of the product. Therefore, the C# APIs may change in minor or maintenance
+      releases of OpenSplice DDS until C# reaches Genereal Availability (GA) status.
+    </p>
+    
+    <h2><a name="usage">How to use the C# API</a></h2>
+    <p>
+      The API is currently compiled on the Windows platform using Microsoft's C# compiler. 
+      A port to Linux using the Mono framework has also been used by the opensource community,
+      but that is not yet part of this release. However, it should be possible to run the
+      Windows DLL on Mono, since Mono is binary compatible with Windows. The resulting 
+      deliverable is a library file called dcpssacs.dll, which you can find in the lib 
+      directory alongside all the other OpenSplice DDS product libraries. 
+    </p>
+    <p>
+      Since the DLL is a managed assembly, it is not found by Windows using the normal
+      PATH variable. In order for the .NET framework to find a library, this library 
+      must either be copied to the same location as the executable that tries to load it
+      (in other words, each executable needs to have a copy of the library in its own 
+      directory), or the library must be copied into the Global Assembly Cache (GAC).
+      (For details about the global assembly cache, and how to manage it, see 
+      <a href="http://en.wikipedia.org/wiki/Global_Assembly_Cache"> the Wikipedia 
+      Global Assembly Cache information</a>. However, the last approach is not advised,
+      since the resulting DLL is not properly signed and versioned yet.
+      Copying it to the GAC in its current format may lead to confusion with 
+      future updates, where DLLs may not know what their relationship is with 
+      respect to an older version that was previously installed.
+    </p>
+    <p>
+      The C# API is very similar to the other language bindings,
+      with a couple of exceptions:
+      <ul>
+        <li>The C# API satisfies the C# coding conventions, meaning that:</li> 
+        <ul>
+          <li>All interfaces start with the 'I' character.</li> 
+          <li>All operations are written in CamelBack notation ('CreateTopic' 
+          instead of 'create_topic')</li> 
+          <li>Class-Attributes are not implemented by explicit getter operations,
+          but by C# properties.</li> 
+        </ul>
+        <li>The C# API introduces operation overloading: 
+        many operations have multiple versions with different parameters:</li> 
+        <ul>
+          <li>Choose the operation with the minimum amount of parameters that fits your need.</li> 
+          <li>Parameters that are not passed are set to their default values.</li> 
+          <li>This removes the need for some of the special purpose macro's that represent 
+          default values for parameters.</li> 
+        </ul>
+        <li>Constants have been defined in the classes they refer to.</li> 
+        <ul>
+          <li>For example: the DURATION_INFINITE is a constant called 'Infinite'
+          in the struct Duration.</li> 
+        </ul>
+      </ul>    
+    </p>
+    <p>
+      However, each C# operation still reflects an identical operation in the other
+      language bindings. That means you can use the Reference Manuals of any other
+      language bindings to see what the meaning of a certain operation and its
+      parameters are and how to use it.
+    </p>
+    <p>
+      To generate a C# data model from your Topic IDL definitions, use idlpp in the
+      following way:
+      <ul>
+        <ol>idlpp -l cs -S &lt IDL_FILE &gt</ol>
+      </ul> 
+      <p>
+        Here, 'cs' represents the Csharp language, and -S represents the fact 
+        that there is no dependency on any ORB. See also 'idlpp -h'.
+      </p>
+    </p>
+
+
+    <h2><a name="limitations">Current limitations of the C# API</a></h2>
+    <ul>
+      <li>idlpp is not able to generate the correct C# representation for IDL unions.</li>
+      <li>The resulting DLL is not signed, versioned and added to the Global Assembly Cache yet. </li>
+      <li>Some operations (e.g. DataReader::WaitForHistoricalDataWCondition, 
+       Entity::GetInstanceHandle) are still missing.</li>
+      <li>Datatypes generated by idlpp are not always initialized to valid default values.
+       For example, an array of strings is initialized to a string array holding 
+       'null' pointers, which you need to assign manually before you can write the 
+       contents of your sample into the DDS.</li>
+      <li>The DataWriter does not validate all illegal input yet. It currently assumes 
+       arrays have the correct size when you pass them to the DataWriter.</li>
+      <li>Only the DCPSTopic builtin topic is implemented fully.</li>
+    </ul>
+
+    <h2><a name="future">Future Expected Changes</a></h2>
+  
+     <p>
+      This is a list of the expected future changes. There is no determined
+      schedule for these yet. However, please contact your PrismTech representative
+      if you have a need for one or alternatively, please add it in the opensource
+      implementation and help develop the C# functionality.
+    </p>   
+    
+    <ul>
+      <li>All Qos related structs will be replaced by classes. That changes the 
+       way in which Qos parameters are being passed to operations.</li>
+      <li>Currently the DomainParticipantFactory has 2 static initializers; 
+       The static GetInstance operation and the the static Instance property. 
+       Of these only the latter will remain in future releases.</li>
+      <li>All Operations that currently return a ReturnCode may start to throw
+       an exception instead in future releases.</li>
+    </ul>
+
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br/>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>

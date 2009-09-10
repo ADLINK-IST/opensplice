@@ -120,6 +120,8 @@ u_entityInit(
     u_participant p,
     c_bool owner)
 {
+    os_mutexAttr mutexAttr;
+
     assert(e != NULL);
     assert(ke != NULL);
 
@@ -136,6 +138,10 @@ u_entityInit(
         e->flags |= U_ECREATE_OWNED;
         v_entitySetUserData(ke,e); /* only set user data when owned! */
     }
+    os_mutexAttrInit(&mutexAttr);
+    mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
+    os_mutexInit(&e->mutex,&mutexAttr);
+
     return U_RESULT_OK;
 }
 
@@ -206,6 +212,7 @@ u_entityDeinit(
           * This happens when an entity is freed and its u_participant
           * already has been freed. It means this case is a valid situation.
           */
+        os_mutexDestroy(&e->mutex);
     }
 #undef _FREE_
 
@@ -249,27 +256,22 @@ u_entityClaim(
         } else {
             p = e->participant;
         }
-//        if (u_participantKernel(p) != NULL) {
-            r = u_userProtect(u_entity(p));
-            if (r == U_RESULT_OK) {
-                r = u_handleClaim(e->handle,(v_object *)&ve);
-                if (r != U_RESULT_OK) {
-                    OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-                              "Illegal handle detected");
-                    u_userUnprotect(u_entity(p));
-                }
-            } else if (r == U_RESULT_DETACHING) {
-                OS_REPORT(OS_WARNING, "u_entityClaim", 0,
-                          "Claim failed because the process is detaching "
-                          "from the kernel.");
-            } else {
+        r = u_userProtect(u_entity(p));
+        if (r == U_RESULT_OK) {
+            r = u_handleClaim(e->handle,(v_object *)&ve);
+            if (r != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-                          "Claim failed cannot protect kernel access.");
+                          "Illegal handle detected");
+                u_userUnprotect(u_entity(p));
             }
-//        } else {
-//            OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-//                      "Claim failed cannot  access kernel.");
-//        }
+        } else if (r == U_RESULT_DETACHING) {
+            OS_REPORT(OS_WARNING, "u_entityClaim", 0,
+                      "Claim failed because the process is detaching "
+                      "from the kernel.");
+        } else {
+            OS_REPORT(OS_ERROR, "u_entityClaim", 0,
+                      "Claim failed cannot protect kernel access.");
+        }
     }
     return ve;
 }
@@ -295,6 +297,54 @@ u_entityRelease(
         u_userUnprotect(u_entity(p));
     } else {
         OS_REPORT(OS_ERROR, "u_entityRelease", 0,
+                  "Illegal parameter specified");
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_entityLock(
+    u_entity e)
+{
+    os_result osResult;
+    u_result result;
+
+    if (e != NULL) {
+        osResult = os_mutexLock(&e->mutex);
+        if (osResult == os_resultSuccess) {
+            result = U_RESULT_OK;
+        } else {
+            OS_REPORT(OS_ERROR, "u_entityLock", 0,
+                      "Illegal mutex detected");
+            result = U_RESULT_ILL_PARAM;
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_entityLock", 0,
+                  "Illegal parameter specified");
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_entityUnlock(
+    u_entity e)
+{
+    os_result osResult;
+    u_result result;
+
+    if (e != NULL) {
+        osResult = os_mutexUnlock(&e->mutex);
+        if (osResult == os_resultSuccess) {
+            result = U_RESULT_OK;
+        } else {
+            OS_REPORT(OS_ERROR, "u_entityUnlock", 0,
+                      "Illegal mutex detected");
+            result = U_RESULT_ILL_PARAM;
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_entityUnlock", 0,
                   "Illegal parameter specified");
         result = U_RESULT_ILL_PARAM;
     }
@@ -593,7 +643,6 @@ u_entitySystemId(
 {
     c_long id;
     v_entity ke;
-    c_bool completeness;
 
     ke = u_entityClaim(_this);
 
