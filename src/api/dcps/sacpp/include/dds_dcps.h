@@ -979,9 +979,6 @@ namespace DDS
       virtual StatusMask get_status_changes () = 0;
       virtual InstanceHandle_t get_instance_handle () = 0;
 
-      virtual DDS::String get_name () = 0;
-      virtual ReturnCode_t set_name (const DDS::Char *name) = 0;
-
    protected:
       Entity () {};
       ~Entity () {};
