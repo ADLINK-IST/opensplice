@@ -34,8 +34,8 @@ namespace DDS
       virtual char * get_type_name (
       ) THROW_ORB_EXCEPTIONS;
 
-//      virtual char * get_name (
-//      ) THROW_ORB_EXCEPTIONS;
+      virtual char * get_name (
+      ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::DomainParticipant_ptr get_participant (
       ) THROW_ORB_EXCEPTIONS;
