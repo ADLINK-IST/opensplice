@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CCPP_TOPICDESCRIPTION_H
@@ -34,8 +34,8 @@ namespace DDS
       virtual char * get_type_name (
       ) THROW_ORB_EXCEPTIONS;
 
-//      virtual char * get_name (
-//      ) THROW_ORB_EXCEPTIONS;
+      virtual char * get_name (
+      ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::DomainParticipant_ptr get_participant (
       ) THROW_ORB_EXCEPTIONS;
