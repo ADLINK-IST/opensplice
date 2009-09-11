@@ -733,8 +733,8 @@ module DDS {
 	string
 	get_type_name();
 
-//	string
-//	get_name();
+	string
+	get_name();
 
 	DomainParticipant
 	get_participant();
