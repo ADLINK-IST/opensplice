@@ -1187,7 +1187,7 @@ namespace DDS
       TopicDescription_ptr _this () { return this; }
 
       virtual DDS::String get_type_name () = 0;
-//      virtual DDS::String get_name () = 0;
+      virtual DDS::String get_name () = 0;
       virtual DomainParticipant_ptr get_participant () = 0;
 
    protected:

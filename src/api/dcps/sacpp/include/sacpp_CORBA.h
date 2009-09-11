@@ -13,11 +13,14 @@
 #define SACPP_CORBA_H
 
 #include "sacpp_DDS_DCPS.h"
-
 #include "sacpp_if.h"
 
 namespace CORBA
 {
+    typedef DDS::Double Double;
+    typedef DDS::Float Float;
+    typedef DDS::Short Short;
+    typedef DDS::LongLong LongLong;
     typedef DDS::Boolean Boolean;
     typedef DDS::Octet   Octet;
     typedef DDS::Long    Long;
@@ -31,7 +34,7 @@ namespace CORBA
     typedef DDS::Exception       Exception;
     typedef DDS::UserException   UserException;
     typedef DDS::SystemException SystemException;
-    
+
     static void string_free(char* str);
     static char* string_dup(const char* s);
     static void release(Object_ptr p);
