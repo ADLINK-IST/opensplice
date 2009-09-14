@@ -175,7 +175,6 @@ os_threadModuleInit (
     
     os_threadHookInit();
 
-    os_procAtExit(os_threadMemExit);
 }
 
 /** \brief Deinitialize the thread module
