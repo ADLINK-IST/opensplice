@@ -221,8 +221,7 @@ module DDS {
 
 #ifdef _CoflightAPI_
 	void
-	on_all_data_disposed(
-	    in Topic the_topic);
+	on_all_data_disposed();
 #endif
     };
 

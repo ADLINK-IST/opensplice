@@ -533,7 +533,7 @@ namespace DDS
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
 #ifdef _CoflightAPI_
-      virtual void on_all_data_disposed (Topic_ptr the_topic) = 0;
+      virtual void on_all_data_disposed () = 0;
 #endif
 
    protected:
