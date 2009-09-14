@@ -26,8 +26,8 @@ public:
    static DDS::Object_ptr _duplicate(DDS::Object_ptr obj);
    static DDS::Object_ptr _narrow(DDS::Object_ptr obj);
    static DDS::Object_ptr _nil();
-   
-   DDS::Boolean _is_a(const char * logical_is_type); 
+
+   DDS::Boolean _is_a(const char * logical_is_type);
    virtual DDS::Boolean _local_is_a(const char * id);
    virtual DDS::Boolean is_local_object();
 
@@ -35,6 +35,7 @@ public:
 
 protected:
    DDS_DCPS_Counter m_count;
+   virtual ~Object();
 };
 
 

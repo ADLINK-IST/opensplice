@@ -123,10 +123,14 @@ else
     
     SPLICE_ORB=DDS_OpenFusion_1_6_1
     export SPLICE_ORB
+
     PATH=$PATH:$JAVA_HOME/bin
     PATH=$PATH:$TAO_ROOT/bin
     export PATH
-    
+
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TAO_ROOT/lib
+    export LD_LIBRARY_PATH
+
     echo "Build Examples:"
     if check_platform
     then
