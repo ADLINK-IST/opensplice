@@ -446,7 +446,10 @@ set_hde_envs ()
 	PLATFORM_EXT=unix64
     elif [ "${target}" = "PPC5plus.AIX5.3" ]
     then
-        PLATFORM_EXT=xlc	
+        PLATFORM_EXT=xlc
+    elif [ "${target}" = "sparc.solaris10_studio12" ]
+    then
+        PLATFORM_EXT=suncc
     fi
 }
 
