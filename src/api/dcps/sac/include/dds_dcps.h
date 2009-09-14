@@ -2190,23 +2190,6 @@ DDS_Entity_get_instance_handle (
     DDS_Entity _this);
 
 /*
- *     String
- *     get_name();
- */
-OS_API DDS_string
-DDS_Entity_get_name (
-    DDS_Entity _this);
-
-/*
- *     ReturnCode_t
- *     set_name();
- */
-OS_API DDS_ReturnCode_t
-DDS_Entity_set_name (
-    DDS_Entity _this,
-    const DDS_char *name);
-
-/*
  * interface TypeSupport
  */
 typedef DDS_Object DDS_TypeSupport;

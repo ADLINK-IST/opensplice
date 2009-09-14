@@ -13,11 +13,13 @@
 #define SACPP_MAPPING_H
 
 #include "sacpp_DDS_DCPS.h"
+#include "sacpp_ValueBase.h"
 #include "sacpp_UserException.h"
 #include "sacpp_SystemException.h"
 #include "sacpp_Exception.h"
 #include "sacpp_ExceptionInitializer.h"
 
+#include "mapping/UVAL.h"
 #include "mapping/ARRAY.h"
 #include "mapping/IFACE.h"
 #include "mapping/Memory.h"
@@ -28,5 +30,6 @@
 #include "mapping/BFL.h"
 #include "mapping/UOBJ.h"
 #include "mapping/UVL.h"
+#include "mapping/VALUE.h"
 
 #endif /* SACPP_MAPPING_H */

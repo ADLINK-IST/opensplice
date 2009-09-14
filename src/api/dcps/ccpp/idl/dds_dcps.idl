@@ -490,11 +490,11 @@ module DDS {
         InstanceHandle_t
         get_instance_handle();
 
-	string
-	get_name();
+// 	string
+// 	get_name();
 
-	ReturnCode_t
-	set_name(in string name);
+// 	ReturnCode_t
+// 	set_name(in string name);
 
     };
 
@@ -733,8 +733,8 @@ module DDS {
 	string
 	get_type_name();
 
-//	string
-//	get_name();
+	string
+	get_name();
 
 	DomainParticipant
 	get_participant();
