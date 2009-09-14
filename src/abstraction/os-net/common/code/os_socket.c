@@ -38,7 +38,7 @@ os_sockBind(
 {
     os_result result = os_resultSuccess;
 
-    if (bind(s, (struct sockaddr *)name, namelen) == -1) {
+    if (bind(s, (struct sockaddr *)name, (os_uint)namelen) == -1) {
         result = os_resultFail;
     }
     return result;
@@ -52,7 +52,7 @@ os_sockSendto(
     const struct sockaddr *to,
     os_uint32 tolen)
 {
-    return sendto(s, msg, len, 0, to, tolen);
+    return sendto(s, msg, (os_uint)len, 0, to, (os_uint)tolen);
 }
 
 os_int32
@@ -65,9 +65,9 @@ os_sockRecvfrom(
 {
    int res;
    socklen_t fl = *fromlen;;
-   res = recvfrom(s, buf, len, 0, from, &fl);
+   res = recvfrom(s, buf, (os_uint)len, 0, from, &fl);
    *fromlen=fl;
-   return res;
+   return (os_int32)res;
 }
 
 os_result
@@ -194,62 +194,45 @@ os_sockQueryInterfaces(
     os_result result = os_resultSuccess;
     struct ifconf ifc;
     struct ifreq *ifr;
-    int bufLen = 1000;
+    int bufLen = 0;
     os_socket ifcs;
     unsigned int listIndex;
-    unsigned int ifrLen;
 
     ifcs = os_sockNew (AF_INET, SOCK_DGRAM);
     if (ifcs >= -1) {
+        ifc.ifc_buf = NULL;
         ifc.ifc_len = bufLen;
-        ifc.ifc_buf = os_malloc (ifc.ifc_len);
         while (ifc.ifc_len == bufLen) {
+            os_free (ifc.ifc_buf);
+            bufLen += 1000;
+            ifc.ifc_len = bufLen; 
+            ifc.ifc_buf = os_malloc (ifc.ifc_len);
             memset(ifc.ifc_buf, 0, bufLen);
             ioctl (ifcs, SIOCGIFCONF, &ifc);
-            if (ifc.ifc_len < bufLen) {
-                listIndex = 0;
-                ifr = (struct ifreq *)ifc.ifc_buf;
-                /* returned smaller than provided */
-                while ((listIndex < listSize) &&
-                      ((char *)ifr < ((char *)ifc.ifc_buf + ifc.ifc_len)) &&
-                      (result == os_resultSuccess)) {
-                    ifrLen = (unsigned int)sizeof(ifr->ifr_name);
-#if (OS_SOCKET_HAS_SA_LEN == 1)
-                    if (sizeof(struct sockaddr) > ifr->ifr_addr.sa_len) {
-                        ifrLen += (unsigned int)sizeof(struct sockaddr);
-                    } else {
-                        ifrLen += ifr->ifr_addr.sa_len;
-                    }
-#else
+        }  
+        
+        listIndex = 0;
+        ifr = (struct ifreq *)ifc.ifc_buf;
 
-                    if (ifr->ifr_addr.sa_family == AF_INET) {
-                        ifrLen += sizeof(struct sockaddr_in);
-                    } else if (ifr->ifr_addr.sa_family == AF_INET6) {
-                        ifrLen += sizeof(struct sockaddr_in6);
-                    } else {
-                        ifrLen += (unsigned int)sizeof(struct sockaddr);
-                    }
-#endif
-                   if (ifr->ifr_addr.sa_family == AF_INET) {
-                        /* Get other interface attributes */
-                        result = os_queryInterfaceAttributes (ifcs, ifr,
-                            &ifList[listIndex]);
-                        if (result == os_resultSuccess) {
-                            listIndex++;
-                        }
-                    }
-                    ifr = (struct ifreq *)((char *)ifr + ifrLen);
-                }
+        while ((listIndex < listSize) &&
+              ((char *)ifr < ((char *)ifc.ifc_buf + ifc.ifc_len)) &&
+              (result == os_resultSuccess)) {
+              
+           if (ifr->ifr_addr.sa_family == AF_INET) {
+                /* Get other interface attributes */
+                result = os_queryInterfaceAttributes (ifcs, ifr,
+                    &ifList[listIndex]);
                 if (result == os_resultSuccess) {
-                    *validElements = listIndex;
+                    listIndex++;
                 }
-            } else {
-                os_free (ifc.ifc_buf);
-                bufLen += 1000;
-                ifc.ifc_len = bufLen; 
-                ifc.ifc_buf = os_malloc (ifc.ifc_len);
             }
+            ifr++; /* next ifreq struct in the buffer */
         }
+        
+        if (result == os_resultSuccess) {
+            *validElements = listIndex;
+        }
+                
         os_free (ifc.ifc_buf);
         os_sockFree (ifcs);
     }
