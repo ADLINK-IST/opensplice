@@ -20,9 +20,9 @@ DDS::Object::_local_is_a(const char * id)
 
 DDS::Boolean
 DDS::Object::is_local_object()
-{  
+{
    return FALSE;
-} 
+}
 
 void
 DDS::release(DDS::Object * p)
@@ -33,7 +33,7 @@ DDS::release(DDS::Object * p)
 }
 
 DDS::Boolean
-DDS::Object::_is_a(const char * id)    
+DDS::Object::_is_a(const char * id)
 {
    DDS::Boolean rt = false;
 
@@ -42,4 +42,8 @@ DDS::Object::_is_a(const char * id)
    }
 
    return rt;
+}
+
+DDS::Object::~Object()
+{
 }
