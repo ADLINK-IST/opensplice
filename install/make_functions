@@ -240,7 +240,7 @@ make_rts_mirror_and_builder ()
     ENV="$7"
     GETLIC_INFO_NAME="$8"
     NOINSTALLER="$9"
-    PLATFORM_EXT="$10"
+    PLATFORM_EXT="${10}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
