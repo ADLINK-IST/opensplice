@@ -327,7 +327,7 @@ nw_plugNetworkGetMaxChannelId(
 
 #ifdef PA_LITTLE_ENDIAN
 
-typedef unsigned char nw_charArray[sizeof(os_address)];
+typedef unsigned char nw_charArray[sizeof(nw_seqNr)];
 
 nw_seqNr
 nw_plugByteSwap(
@@ -346,7 +346,7 @@ nw_plugByteSwap(
     srcPtr = srcUnion.array;
     dstPtr = dstUnion.array;
 
-    len = (os_uint32)sizeof(os_address);
+    len = (os_uint32)sizeof(nw_seqNr);
     for (i = 0; i < len; i++) {
         dstPtr[i] = srcPtr[len - i - 1];
     }
