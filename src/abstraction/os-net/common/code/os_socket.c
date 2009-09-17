@@ -226,7 +226,26 @@ os_sockQueryInterfaces(
                     listIndex++;
                 }
             }
+#if (OS_SOCKET_HAS_SA_LEN == 1)
+            /* Apparently the sockaddr part can by sized dynamicly larger then the sock_addr type,
+             * for some platforms. Interpret the data according to the sa_len field in that case. 
+             */
+            {
+                unsigned int ifrLen;
+                ifrLen = (unsigned int)sizeof(ifr->ifr_name);
+                if (sizeof(struct sockaddr) > ifr->ifr_addr.sa_len) {
+                    ifrLen += (unsigned int)sizeof(struct sockaddr);
+                } else {
+                    ifrLen += ifr->ifr_addr.sa_len;
+                }
+                ifr = (struct ifreq *)((char *)ifr + ifrLen);
+            }
+#else
             ifr++; /* next ifreq struct in the buffer */
+#endif
+
+
+           
         }
         
         if (result == os_resultSuccess) {
