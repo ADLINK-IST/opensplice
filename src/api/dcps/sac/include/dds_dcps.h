@@ -580,18 +580,26 @@ typedef void (*DDS_TopicListener_InconsistentTopicListener)
      DDS_Topic topic,
      const DDS_InconsistentTopicStatus *status);
 
-typedef void (*DDS_TopicListener_AllDataDisposedListener)
-    (void *listener_data,
-     DDS_Topic topic);
-
 struct DDS_TopicListener {
     void *listener_data;
     DDS_TopicListener_InconsistentTopicListener on_inconsistent_topic;
-#ifdef _DDS1631API_
-    DDS_TopicListener_AllDataDisposedListener on_all_data_disposed;
-#endif
 };
 OS_API struct DDS_TopicListener *DDS_TopicListener__alloc (void);
+
+/*
+ * interface ExtTopicListener : TopicListener
+ */
+
+typedef void (*DDS_ExtTopicListener_AllDataDisposedListener)
+    (void *listener_data,
+     DDS_Topic topic);
+
+struct DDS_ExtTopicListener {
+    void *listener_data;
+    DDS_TopicListener_InconsistentTopicListener on_inconsistent_topic;
+    DDS_ExtTopicListener_AllDataDisposedListener on_all_data_disposed;
+};
+OS_API struct DDS_ExtTopicListener *DDS_ExtTopicListener__alloc (void);
 
 /*
  * interface DataWriterListener : Listener {
