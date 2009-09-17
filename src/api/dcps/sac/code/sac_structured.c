@@ -211,7 +211,7 @@ sac_copyGapiTopicListener (
     sacListener->listener_data = gapiListener->listener_data;
     sacListener->on_inconsistent_topic = 
 	(DDS_TopicListener_InconsistentTopicListener)gapiListener->on_inconsistent_topic;
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
     sacListener->on_all_data_disposed = 
 	(DDS_TopicListener_AllDataDisposedListener)gapiListener->on_all_data_disposed;
 #endif
@@ -226,7 +226,7 @@ sac_copySacTopicListener (
     gapiListener->listener_data = sacListener->listener_data;
     gapiListener->on_inconsistent_topic = 
 	(gapi_listener_InconsistentTopicListener)sacListener->on_inconsistent_topic;
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
     gapiListener->on_all_data_disposed = 
 	(gapi_listener_AllDataDisposedListener)sacListener->on_all_data_disposed;
 #endif
