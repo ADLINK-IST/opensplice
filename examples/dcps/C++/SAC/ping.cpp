@@ -538,6 +538,8 @@ main (
 #elif defined (PING4)
     topic_id = 'f';
 #elif defined (PING5)
+    topic_id = 'b';
+#elif defined (PING6)
     topic_id = 't';
 #endif 
 #else
