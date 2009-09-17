@@ -329,8 +329,8 @@ javac_check ()
         JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
         if [ ! -f $JAVAC_EXE ]
         then
-            echo "Error - Not found"
-            return 1
+            no_javac
+            return $?
         fi
         PATH=$UNIX_CONV_PATH/bin:$PATH
         set_var PATH "$PATH"
@@ -339,14 +339,14 @@ javac_check ()
         pathcheck javac
         if [ $? != 0 ]
         then
-            echo "Error - Not found"
-            return 1
+            no_javac
+            return $?
         fi
         T_JAVAC_EXE=`which javac`
         if [ "$?" != "0" ]
         then
-            echo "Error - Not found"
-            return 1
+            no_javac
+            return $?
         fi
         JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
     fi
@@ -414,6 +414,19 @@ javac_check ()
     echo "OK - using JAVAC version $REAL_VERSION"
     echo "  setting JAVA_HOME to $JAVA_HOME"
     return 0
+}
+
+no_javac()
+{
+   if [ "$STRICT_CHECKS" = "yes" ]
+   then
+       echo "Error - Not found"
+       return 1
+   else
+       echo "WARNING - Java compiler environment not set, building of all Java related features is disabled."
+       unset_var INCLUDE_JAVA
+       return 0;
+   fi
 }
 
 tao_check()
@@ -680,6 +693,7 @@ cleanup_checks ()
     unset bison_check
     unset flex_check
     unset javac_check
+    unset no_javac
     unset tao_check
     unset gawk_check
     unset csharp_check

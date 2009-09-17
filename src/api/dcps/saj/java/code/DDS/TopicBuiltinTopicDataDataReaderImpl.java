@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-package DDS;
+ package DDS;
 
 public class TopicBuiltinTopicDataDataReaderImpl extends org.opensplice.dds.dcps.DataReaderImpl implements TopicBuiltinTopicDataDataReader
 {
