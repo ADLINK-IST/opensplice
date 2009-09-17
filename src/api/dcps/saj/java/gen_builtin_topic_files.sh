@@ -1,3 +1,13 @@
+# This hard code won't necessarily do what it
+# says on the tin if you change IDL contents. Beware ! @todo
+
+# Added $OSPL_HOME/src/api/dcps/saj/java/header.txt - previously ""
+
+cygwin=false;
+case "`uname`" in
+  CYGWIN*) cygwin=true;
+esac
+ 
 OUT_DIR=$OSPL_HOME/src/api/dcps/saj/java
 
 insert_header_and_move()
@@ -7,12 +17,13 @@ insert_header_and_move()
     printf "Generating %s..." $file
     cat $OUT_DIR/header.txt >$OUT_DIR/tmp.txt
     cat $OUT_DIR/$file >> $OUT_DIR/tmp.txt
+    if $cygwin; then
+        dos2unix $OUT_DIR/tmp.txt # remove spurious ^M's
+    fi
     rm -f $OUT_DIR/$file
     mv $OUT_DIR/tmp.txt $OUT_DIR/code/$file
     printf "done\n"
 }
-
-printf "" > $OUT_DIR/header.txt
 
 cd $OUT_DIR
 idlpp -l java -S code/dds_builtinTopics.idl
@@ -75,6 +86,8 @@ for i in $FILES; do
     insert_header_and_move $i
 done
 
-rm -f $OUT_DIR/header.txt
+# LOOK !!!!!!!!   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+printf "If you're seeing this message THIS HASN'T BEEN FIXED.\n"
+
 rm -rf $OUT_DIR/DDS/*.java
 rmdir $OUT_DIR/DDS

@@ -219,10 +219,9 @@ module DDS {
 	    in Topic the_topic,
 	    in InconsistentTopicStatus status);
 
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
 	void
-	on_all_data_disposed(
-	    in Topic the_topic);
+	on_all_data_disposed();
 #endif
     };
 
@@ -490,11 +489,11 @@ module DDS {
         InstanceHandle_t
         get_instance_handle();
 
-	string
-	get_name();
+// 	string
+// 	get_name();
 
-	ReturnCode_t
-	set_name(in string name);
+// 	ReturnCode_t
+// 	set_name(in string name);
 
     };
 
@@ -733,8 +732,8 @@ module DDS {
 	string
 	get_type_name();
 
-//	string
-//	get_name();
+	string
+	get_name();
 
 	DomainParticipant
 	get_participant();

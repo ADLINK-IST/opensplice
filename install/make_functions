@@ -240,7 +240,7 @@ make_rts_mirror_and_builder ()
     ENV="$7"
     GETLIC_INFO_NAME="$8"
     NOINSTALLER="$9"
-    PLATFORM_EXT="$10"
+    PLATFORM_EXT="${10}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
@@ -446,7 +446,10 @@ set_hde_envs ()
 	PLATFORM_EXT=unix64
     elif [ "${target}" = "PPC5plus.AIX5.3" ]
     then
-        PLATFORM_EXT=xlc	
+        PLATFORM_EXT=xlc
+    elif [ "${target}" = "sparc.solaris10_studio12" ]
+    then
+        PLATFORM_EXT=suncc
     fi
 }
 

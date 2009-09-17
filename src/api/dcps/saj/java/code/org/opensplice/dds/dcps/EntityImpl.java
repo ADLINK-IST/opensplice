@@ -37,18 +37,8 @@ public class EntityImpl extends SajSuperClass implements DDS.Entity {
         return jniGetInstanceHandle();
     }
 
-    public String get_name () {
-        return jniGetName();
-    }
-
-    public int set_name (String name) {
-        return jniSetName(name);
-    }
-
     private native int jniEnable();
     private native DDS.StatusCondition jniGetStatuscondition();
     private native int jniGetStatusChanges();
     private native long jniGetInstanceHandle();
-    private native String jniGetName();
-    private native int jniSetName(String name);
 }

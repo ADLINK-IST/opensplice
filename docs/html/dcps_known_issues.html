@@ -156,27 +156,47 @@
         </tr>
         <tr>
           <td>
-            dds747
+            dds1696
           </td>
           <td>
-            <b>Ownership policy interface incorrect in DCPS API</b><br/>
+            <b>Limitations for output directories for ospl_projgen on Integrity</b><br/>
             <i>
-              As of OMG DDS specification 1.0 the OwnershipQosPolicy is defined for the TopicQos,
-              DataReaderQos and DataWriterQos. The TopicQos specifies the default and the 
-              DataWriterQos and DataReaderQos can override this value. The policy is RxO, which states
-              that the value between reader and writer must be equal in order to have writer to be connected
-              to the reader.<br/>
-              OpenSplice DDS only supports the OwnershipQosPolicy for the TopicQos, so the DataWriter
-              and DataReader take the value specified by the Topic. This is not according to the OMG DDS
-              specification.<br/>
-              As this change would involve an API change, this change will be incorporated in the next
-              major release.
-            </i>
+              ospl_projgen will generate projects which will build incorrectly if it is supplied an output
+              directory ( -o option ) in which the final part of the path matches the name of one of the 
+              address spaces being generated. <br>
+              e.g. ospl_projgen ... -t mmstat -o path/mmstat<br>
+              These projects appear to build correctly however the final image will be incorrect.<br>
+              Other names to avoid currently are inetserver, ivfs_server, ResourceStore, spliced, 
+              networking, durability, pong, ping1, ping2, ping3, ping4, ping5, ping6, shmdump, Chatter, 
+              Chatter_Quit, MessageBoard, UserLoad            </i>
           </td>
         </tr>
+        <tr>
+          <td>
+            dds1710
+          </td>
+          <td>
+            <b>Warnings on VxWorks when Compiling the C++ Examples</b><br/>
+            <i>
+              Compiling the OpenSplice examples on VxWorks 6.6 may produce warnings about the redefinition
+              of SACPP_API.  These warnings can be ignored
+            </i>
+          </td>
+        </tr>      
+        <tr>
+          <td>
+            dds1711
+          </td>
+          <td>
+            <b>Warnings when compiling with the Studio12 compiler</b><br/>
+            <i>
+              There are still numerous warnings when using the Studio12 compiler. These can be ignored and will
+              be tidied in future releases.
+            </i>
+          </td>
+        </tr>      
       </table>
 
-      
       <br/>
       <hr>
       <p>

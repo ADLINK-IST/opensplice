@@ -236,7 +236,7 @@ namespace testNamespace
             // waitSet.AttachCondition(readCond);
 
             ICondition[] cond = null;
-            waitSet.Wait(ref cond, Duration.Infinite);
+            //waitSet.Wait(ref cond, Duration.Infinite);
 
 
             Console.WriteLine("Press enter to write data");

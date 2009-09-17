@@ -115,18 +115,18 @@ DDS::InstanceHandle_t DDS::Entity_impl::get_instance_handle (
     return gapi_entity_get_instance_handle(_gapi_self);
 }
 
-char * DDS::Entity_impl::get_name (
-) THROW_ORB_EXCEPTIONS
-{
-  return gapi_entity_get_name( _gapi_self );
-}
+// char * DDS::Entity_impl::get_name (
+// ) THROW_ORB_EXCEPTIONS
+// {
+//   return gapi_entity_get_name( _gapi_self );
+// }
 
-DDS::ReturnCode_t DDS::Entity_impl::set_name (
-    const char *name
-) THROW_ORB_EXCEPTIONS
-{
-  return gapi_entity_set_name( _gapi_self, (gapi_string)name);
-}
+// DDS::ReturnCode_t DDS::Entity_impl::set_name (
+//     const char *name
+// ) THROW_ORB_EXCEPTIONS
+// {
+//   return gapi_entity_set_name( _gapi_self, (gapi_string)name);
+// }
 
 gapi_entity DDS::Entity_impl::get_gapi_self()
 {

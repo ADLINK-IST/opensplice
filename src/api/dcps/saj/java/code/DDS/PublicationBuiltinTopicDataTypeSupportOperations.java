@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-package DDS;
+ package DDS;
 
 public interface PublicationBuiltinTopicDataTypeSupportOperations extends
     DDS.TypeSupportOperations

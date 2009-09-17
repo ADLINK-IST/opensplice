@@ -39,7 +39,7 @@ template <class T> class DDS_DCPSSequence_out;
 template <class T> class DDS_DCPSInterface_var;
 template <class T> class DDS_DCPSInterface_out;
 template <class T> class DDS_DCPSInterface_mgr;
-template <class T> class DDS_DCPSValueBase_mgr;
+template <class T> class DDSValueBase_mgr;
 template <class T> class DDS_DCPS_var;
 template <class T> class DDS_DCPS_out;
 template <class T> class DDS_DCPS_mgr;
@@ -123,12 +123,14 @@ namespace DDS
    typedef DDS_DCPSInterface_var<Object> Object_var;
    typedef DDS_DCPSInterface_out<Object> Object_out;
    typedef DDS_DCPSInterface_mgr<Object> Object_mgr;
+   SACPP_API void release(Object_ptr p);
 
    class SACPP_API LocalObject;
    typedef LocalObject* LocalObject_ptr;
    typedef DDS_DCPSInterface_var<LocalObject> LocalObject_var;
    typedef DDS_DCPSInterface_out<LocalObject> LocalObject_out;
    typedef DDS_DCPSInterface_mgr<LocalObject> LocalObject_mgr;
+   SACPP_API void release(LocalObject_ptr p);
 
    class SACPP_API Exception;
    typedef Exception* Exception_ptr;
@@ -147,12 +149,9 @@ namespace DDS
    SACPP_API void string_free  (char * str);
    SACPP_API Long string_cmp (const char * str1, const char * str2);
 
-   SACPP_API void release(LocalObject_ptr p);
-   SACPP_API void release(Object_ptr p);
-
    class SACPP_API ValueBase;
-   static void add_ref(ValueBase* vb);
-   static void remove_ref(ValueBase* vb);
+   SACPP_API void add_ref(ValueBase* vb);
+   SACPP_API void remove_ref(ValueBase* vb);
 
    class SACPP_API Counter;
 }

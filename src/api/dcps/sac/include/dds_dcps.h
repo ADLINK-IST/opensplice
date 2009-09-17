@@ -587,7 +587,7 @@ typedef void (*DDS_TopicListener_AllDataDisposedListener)
 struct DDS_TopicListener {
     void *listener_data;
     DDS_TopicListener_InconsistentTopicListener on_inconsistent_topic;
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
     DDS_TopicListener_AllDataDisposedListener on_all_data_disposed;
 #endif
 };
@@ -2188,23 +2188,6 @@ DDS_Entity_get_status_changes (
 OS_API DDS_InstanceHandle_t
 DDS_Entity_get_instance_handle (
     DDS_Entity _this);
-
-/*
- *     String
- *     get_name();
- */
-OS_API DDS_string
-DDS_Entity_get_name (
-    DDS_Entity _this);
-
-/*
- *     ReturnCode_t
- *     set_name();
- */
-OS_API DDS_ReturnCode_t
-DDS_Entity_set_name (
-    DDS_Entity _this,
-    const DDS_char *name);
 
 /*
  * interface TypeSupport

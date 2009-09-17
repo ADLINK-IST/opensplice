@@ -11,7 +11,7 @@
  */
 #include <os_if.h>
 
-#ifdef OSPL_BUILD_DCPSCCPP
+#if defined OSPL_BUILD_DCPSCCPP || defined OSPL_BUILD_DLRLCCPP
 #define SACPP_API OS_API_EXPORT
 #else
 #define SACPP_API OS_API_IMPORT
