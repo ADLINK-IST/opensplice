@@ -194,64 +194,70 @@ os_sockQueryInterfaces(
     os_result result = os_resultSuccess;
     struct ifconf ifc;
     struct ifreq *ifr;
-    int bufLen = 0;
+    int bufLen = 1000;
     os_socket ifcs;
     unsigned int listIndex;
+    unsigned int ifrLen;
 
     ifcs = os_sockNew (AF_INET, SOCK_DGRAM);
     if (ifcs >= -1) {
-        ifc.ifc_buf = NULL;
         ifc.ifc_len = bufLen;
+        ifc.ifc_buf = os_malloc (ifc.ifc_len);
         while (ifc.ifc_len == bufLen) {
-            os_free (ifc.ifc_buf);
-            bufLen += 1000;
-            ifc.ifc_len = bufLen; 
-            ifc.ifc_buf = os_malloc (ifc.ifc_len);
             memset(ifc.ifc_buf, 0, bufLen);
             ioctl (ifcs, SIOCGIFCONF, &ifc);
-        }  
-        
-        listIndex = 0;
-        ifr = (struct ifreq *)ifc.ifc_buf;
-
-        while ((listIndex < listSize) &&
-              ((char *)ifr < ((char *)ifc.ifc_buf + ifc.ifc_len)) &&
-              (result == os_resultSuccess)) {
-              
-           if (ifr->ifr_addr.sa_family == AF_INET) {
-                /* Get other interface attributes */
-                result = os_queryInterfaceAttributes (ifcs, ifr,
-                    &ifList[listIndex]);
-                if (result == os_resultSuccess) {
-                    listIndex++;
-                }
-            }
+            if (ifc.ifc_len < bufLen) {
+                listIndex = 0;
+                ifr = (struct ifreq *)ifc.ifc_buf;
+                /* returned smaller than provided */
+                while ((listIndex < listSize) &&
+                      ((char *)ifr < ((char *)ifc.ifc_buf + ifc.ifc_len)) &&
+                      (result == os_resultSuccess)) {
+                    ifrLen = (unsigned int)sizeof(ifr->ifr_name);
 #if (OS_SOCKET_HAS_SA_LEN == 1)
-            /* Apparently the sockaddr part can by sized dynamicly larger then the sock_addr type,
-             * for some platforms. Interpret the data according to the sa_len field in that case. 
-             */
-            {
-                unsigned int ifrLen;
-                ifrLen = (unsigned int)sizeof(ifr->ifr_name);
-                if (sizeof(struct sockaddr) > ifr->ifr_addr.sa_len) {
-                    ifrLen += (unsigned int)sizeof(struct sockaddr);
-                } else {
-                    ifrLen += ifr->ifr_addr.sa_len;
-                }
-                ifr = (struct ifreq *)((char *)ifr + ifrLen);
-            }
+                    if (sizeof(struct sockaddr) > ifr->ifr_addr.sa_len) {
+                        ifrLen += (unsigned int)sizeof(struct sockaddr);
+                    } else {
+                        ifrLen += ifr->ifr_addr.sa_len;
+                    }
 #else
-            ifr++; /* next ifreq struct in the buffer */
+
+                    if (ifr->ifr_addr.sa_family == AF_INET) {
+                        ifrLen += sizeof(struct sockaddr_in);
+                    } else if (ifr->ifr_addr.sa_family == AF_INET6) {
+                        ifrLen += sizeof(struct sockaddr_in6);
+                    } else {
+                        ifrLen += (unsigned int)sizeof(struct sockaddr);
+                    }
 #endif
+                   /*
+                    * For some platforms (e.g. 64 bit), the sockaddr members may not be the longest members 
+                    * of the Union. In that case the "sizeof"-size should be used. 
+                    */
+                   if (ifrLen < sizeof(struct ifreq)) {
+                      ifrLen = sizeof(struct ifreq);
+                   }
 
-
-           
+                   if (ifr->ifr_addr.sa_family == AF_INET) {
+                        /* Get other interface attributes */
+                        result = os_queryInterfaceAttributes (ifcs, ifr,
+                            &ifList[listIndex]);
+                        if (result == os_resultSuccess) {
+                            listIndex++;
+                        }
+                    }
+                    ifr = (struct ifreq *)((char *)ifr + ifrLen);
+                }
+                if (result == os_resultSuccess) {
+                    *validElements = listIndex;
+                }
+            } else {
+                os_free (ifc.ifc_buf);
+                bufLen += 1000;
+                ifc.ifc_len = bufLen; 
+                ifc.ifc_buf = os_malloc (ifc.ifc_len);
+            }
         }
-        
-        if (result == os_resultSuccess) {
-            *validElements = listIndex;
-        }
-                
         os_free (ifc.ifc_buf);
         os_sockFree (ifcs);
     }
