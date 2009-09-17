@@ -587,7 +587,7 @@ typedef void (*DDS_TopicListener_AllDataDisposedListener)
 struct DDS_TopicListener {
     void *listener_data;
     DDS_TopicListener_InconsistentTopicListener on_inconsistent_topic;
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
     DDS_TopicListener_AllDataDisposedListener on_all_data_disposed;
 #endif
 };

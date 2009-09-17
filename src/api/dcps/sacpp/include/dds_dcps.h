@@ -532,7 +532,7 @@ namespace DDS
       TopicListener_ptr _this () { return this; }
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
-#ifdef _CoflightAPI_
+#ifdef _DDS1631API_
       virtual void on_all_data_disposed () = 0;
 #endif
 

@@ -72,17 +72,17 @@ else
 
     echo "Installing..."
     SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
-    if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2b01-$SHORTSETUP-HDE-installer.bin ]
+    if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE-installer.bin ]
     then
-       $INSTALLERDIR/VC/OpenSpliceDDSV4.2b01-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/installed/
+       $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/installed/
 #--providedLicenseFile licfile
     else
-        if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2b01-$SHORTSETUP-HDE.tar ]
+        if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE.tar ]
         then
             mkdir $WORKDIR/installed
             (
               cd $WORKDIR/installed/ && \
-              tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2b01-$SHORTSETUP-HDE.tar
+              tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE.tar
               mv HDE/$SHORTSETUP/release.com \
                   HDE/$SHORTSETUP/release.com.orig
               sed < HDE/$SHORTSETUP/release.com.orig \
