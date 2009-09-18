@@ -219,12 +219,10 @@ module DDS {
 	    in Topic the_topic,
 	    in InconsistentTopicStatus status);
 
-    };
-    
-    local interface ExtTopicListener : TopicListener {
+#ifdef _DDS1631API_
 	void
 	on_all_data_disposed();
-	
+#endif
     };
 
     local interface DataWriterListener : Listener {
