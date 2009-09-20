@@ -45,6 +45,6 @@ The command line to start pong executable is :
         pong    PING              PONG
         
         
-To build the example, simply use the provided Makefile (tested for GNU make).
+To build the example, simply use the provided BUILD script.
 The RUN script provides a model of how the ping-pong example can be run
 (including OpenSplice daemon start/stop)

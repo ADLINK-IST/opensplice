@@ -38,7 +38,7 @@ os_sockBind(
 {
     os_result result = os_resultSuccess;
 
-    if (bind(s, (struct sockaddr *)name, namelen) == -1) {
+    if (bind(s, (struct sockaddr *)name, (os_uint)namelen) == -1) {
         result = os_resultFail;
     }
     return result;
@@ -52,7 +52,7 @@ os_sockSendto(
     const struct sockaddr *to,
     os_uint32 tolen)
 {
-    return sendto(s, msg, len, 0, to, tolen);
+    return sendto(s, msg, (os_uint)len, 0, to, (os_uint)tolen);
 }
 
 os_int32
@@ -65,9 +65,9 @@ os_sockRecvfrom(
 {
    int res;
    socklen_t fl = *fromlen;;
-   res = recvfrom(s, buf, len, 0, from, &fl);
+   res = recvfrom(s, buf, (os_uint)len, 0, from, &fl);
    *fromlen=fl;
-   return res;
+   return (os_int32)res;
 }
 
 os_result
@@ -230,6 +230,14 @@ os_sockQueryInterfaces(
                         ifrLen += (unsigned int)sizeof(struct sockaddr);
                     }
 #endif
+                   /*
+                    * For some platforms (e.g. 64 bit), the sockaddr members may not be the longest members 
+                    * of the Union. In that case the "sizeof"-size should be used. 
+                    */
+                   if (ifrLen < sizeof(struct ifreq)) {
+                      ifrLen = sizeof(struct ifreq);
+                   }
+
                    if (ifr->ifr_addr.sa_family == AF_INET) {
                         /* Get other interface attributes */
                         result = os_queryInterfaceAttributes (ifcs, ifr,

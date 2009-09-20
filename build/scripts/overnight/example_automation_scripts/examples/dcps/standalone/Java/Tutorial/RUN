@@ -1,0 +1,23 @@
+echo start OpenSplice
+
+ospl start
+
+ping -c 10 localhost > /dev/null
+
+echo start MessageBoard
+java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.MessageBoard &
+
+ping -c 2 localhost > /dev/null
+
+echo start Chatter
+java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.Chatter 
+
+ping -c 4 localhost > /dev/null
+
+echo start Chatter with terminate message
+java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.Chatter -1
+
+ping -c 4 localhost > /dev/null
+
+
+ospl stop

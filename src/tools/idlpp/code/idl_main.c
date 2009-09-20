@@ -407,6 +407,10 @@ main (
     char* ccppOrbPath;
     char* dcpsIdlFileName;
     int returnCode = 0;
+    const char *templ_path;
+    char fnameA[1024];
+ /*    struct stat stFileInfo; */
+/*     int intStat; */
 
     /* Use a unique name, so pass NULL as parameter */
     osr = os_serviceStart(NULL);
@@ -878,7 +882,8 @@ main (
                      * and the generated IDL file (fname).
                      */
                     char cpp_command[MAX_CPP_COMMAND];
-                    cpp_command[0] = '\0';
+                    cpp_command[0] = '\0';                   
+
                     for (i = 0; i < c_iterLength(includeDefinitions); i++) 
                     {
                         /* Extend command line with all include path options */
@@ -888,6 +893,19 @@ main (
                                  (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
                         strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
+                    /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
+                    templ_path = os_getenv ("OSPL_TMPL_PATH");
+                    if (templ_path == NULL) 
+                    {
+                       printf ("Variable OSPL_TMPL_PATH not defined\n");
+                       exit (1);
+                    }
+                    snprintf(fnameA, sizeof(fnameA), "%s", templ_path);
+                    strncat (cpp_command, " -I", (size_t)3);
+                    strncat (cpp_command, QUOTE, strlen(QUOTE));
+                    strncat (cpp_command, fnameA, strlen(fnameA));
+                    strncat (cpp_command, QUOTE, strlen(QUOTE));
+
                     for (i = 0; i < c_iterLength(macroDefinitions); i++) 
                     {
                         /* Extend command line with all macro definitions options */

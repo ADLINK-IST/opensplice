@@ -206,9 +206,9 @@ namespace DDS.OpenSplice.CustomMarshalers
             for (int i = 0; i < samplesToRead; i++)
             {
                 //copyOutDelegate(dataSamples[i].data, ref sampleObj);
-                samplePtr = ReadIntPtr(dataSampleBuf, cursor);
+                samplePtr = ReadIntPtr(dataSampleBuf, cursor + offset_data);
                 sampleObj = sampleDataArray[i];
-                CopyOut(samplePtr, ref sampleObj, cursor + offset_data);
+                CopyOut(samplePtr, ref sampleObj, 0);
                 sampleDataArray[i] = sampleObj;
 
                 // copy the sample info

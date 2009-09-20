@@ -19,6 +19,10 @@ exec/ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
 
 sleep 2
 
+exec/ping $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
+
+sleep 2
+
 exec/ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
 
 sleep 2

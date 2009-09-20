@@ -719,7 +719,9 @@ typedef void (*gapi_listener_AllDataDisposedListener)
 struct gapi_topicListener {
     void *listener_data;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
+#ifdef _DDS1631API_
     gapi_listener_AllDataDisposedListener on_all_data_disposed;
+#endif
 };
 OS_API struct gapi_topicListener *
 gapi_topicListener__alloc (void);
@@ -2263,23 +2265,6 @@ gapi_entity_get_status_changes (
 OS_API gapi_instanceHandle_t
 gapi_entity_get_instance_handle (
     gapi_entity _this);
-
-/*
- *     String
- *     gapi_entity_get_name();
- */
-OS_API gapi_string
-gapi_entity_get_name (
-    gapi_entity _this);
-
-/*
- *     ReturnCode_t
- *     gapi_entity_set_name();
- */
-OS_API gapi_returnCode_t
-gapi_entity_set_name (
-    gapi_entity _this,
-    gapi_string name);
 
 OS_API void
 gapi_object_set_user_data (

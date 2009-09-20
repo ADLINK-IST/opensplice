@@ -17,17 +17,17 @@ public final class ReliabilityQosPolicy
 {
   public DDS.ReliabilityQosPolicyKind kind = null;
   public DDS.Duration_t max_blocking_time = null;
-  public boolean synchonous = false;
+  public boolean synchronous = false;
 
   public ReliabilityQosPolicy ()
   {
   } // ctor
 
-  public ReliabilityQosPolicy (DDS.ReliabilityQosPolicyKind _kind, DDS.Duration_t _max_blocking_time, boolean _synchonous)
+  public ReliabilityQosPolicy (DDS.ReliabilityQosPolicyKind _kind, DDS.Duration_t _max_blocking_time, boolean _synchronous)
   {
     kind = _kind;
     max_blocking_time = _max_blocking_time;
-    synchonous = _synchonous;
+    synchronous = _synchronous;
   } // ctor
 
 } // class ReliabilityQosPolicy

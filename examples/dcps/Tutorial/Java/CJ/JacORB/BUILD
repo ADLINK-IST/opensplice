@@ -11,7 +11,7 @@ idlpp -C -l java ../../Chat.idl
 #
 # Generate jacorb java classed from IDL
 #
-java -classpath $JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/logkit.jar:$CLASSPATH org.jacorb.idl.parser ../../Chat.idl
+java -classpath $JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH org.jacorb.idl.parser ../../Chat.idl
 
 #
 # Compile generated java code

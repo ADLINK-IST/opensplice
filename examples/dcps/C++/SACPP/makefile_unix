@@ -2,14 +2,13 @@
 # Include paths
 INCLUDES=-I./
 INCLUDES+=-I./bld
-INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/SACPP
 INCLUDES+=-I$(OSPL_HOME)/include
 INCLUDES+=-I$(OSPL_HOME)/include/sys
 
 # C++ Compiler settings.
 CXX=g++
 CXXFLAGS=-g -c -m32
-CPPFLAGS=$(INCLUDES)
+CPPFLAGS=$(INCLUDES) -I$(OSPL_HOME)/include/dcps/C++/SACPP
 
 # Linker settings.
 LD_SO=$(CXX)

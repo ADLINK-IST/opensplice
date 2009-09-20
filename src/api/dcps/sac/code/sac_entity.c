@@ -75,28 +75,4 @@ DDS_Entity_get_instance_handle (
 
 }
 
-/*
- *     String
- *     get_name();
- */
-DDS_string
-DDS_Entity_get_name (
-    DDS_Entity _this)
-{
-    return 
-        gapi_entity_get_name((gapi_entity)_this);
-}
-
-/*
- *     ReturnCode_t
- *     set_name();
- */
-DDS_ReturnCode_t
-DDS_Entity_set_name (
-    DDS_Entity _this,
-    const DDS_char *name)
-{
-    return (DDS_ReturnCode_t)
-        gapi_entity_set_name((gapi_entity)_this,(gapi_string)name);
-}
 

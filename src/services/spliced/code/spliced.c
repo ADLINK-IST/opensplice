@@ -383,11 +383,15 @@ startTestServices(
         execHandle = dlopen(this->testServices[i]->command, RTLD_LAZY);
         if (execHandle == NULL) {
             rv = os_resultFail;
+            OS_REPORT_2(OS_WARNING,OSRPT_CNTXT_SPLICED,0,
+                "Problem starting TestService '%s':\n              %s", argv[0], dlerror());
         } else {
             /* now find the main symbol! */
             mwa->mainSymbol = (int (*)(int,char**))dlsym(execHandle, PURE_MAIN_SYMBOL);
             if (mwa->mainSymbol == NULL) {
                 rv = os_resultFail;
+                OS_REPORT_2(OS_WARNING,OSRPT_CNTXT_SPLICED,0,
+                    "Entry-point not found for TestService '%s':\n              %s", argv[0], dlerror());
             } else {
                 /* now start the thread iso the executable */
                 os_threadAttrInit(&attr);
@@ -395,7 +399,7 @@ startTestServices(
                 rv = os_threadCreate(&id, this->testServices[i]->name, &attr, mainWrapper, mwa);
                 this->testServices[i]->procId = (os_procId)id;
                 OS_REPORT_1(OS_INFO,OSRPT_CNTXT_SPLICED,0, "Starting TestService: %s", argv[0]);
-	    }
+            }
         }
         os_nanoSleep(delay);
     }    

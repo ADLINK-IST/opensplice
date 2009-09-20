@@ -991,7 +991,13 @@ in_configTraverseNetworkPartitionElement(
             }
         } else if(0 == strcmp(name, INCF_ATTRIB_NetworkPartitions_connected))
         {
-            success = u_cfAttributeBoolValue(attribute, (c_bool*)&connected);
+        	/* c_bool and os_boolean use two different representations, 
+        	 * just casting may cause loss of information */ 
+        	c_bool outVal;
+        	
+            success = u_cfAttributeBoolValue(attribute, (c_bool*)&outVal);
+            connected = (outVal==FALSE) ? OS_FALSE : OS_TRUE;
+            
             if(!success)
             {
                 IN_REPORT_WARNING_2(
@@ -1239,7 +1245,13 @@ in_configTraverseTracingElement(
                 name = u_cfNodeName(u_cfNode(attribute));
                 if(0 == strcmp(name, INCF_ATTRIB_Tracing_isEnabled))
                 {
-                    success = u_cfAttributeBoolValue(attribute, (c_bool*)&isEnabled);
+                	/* c_bool and os_boolean use two different representations, 
+                	 * just casting may cause loss of information */ 
+                	c_bool outVal = FALSE;
+                	
+                    success = u_cfAttributeBoolValue(attribute, (c_bool*)&outVal);
+                    isEnabled = (outVal==FALSE) ? OS_FALSE : OS_TRUE;
+                    
                     if(!success)
                     {
                         IN_REPORT_WARNING_2(
@@ -2472,7 +2484,13 @@ in_configTraverseDiscoveryChannelElement(
         name = u_cfNodeName(u_cfNode(attribute));
         if(0 == strcmp(name, INCF_ATTRIB_channel_isEnabled))
         {
-            success = u_cfAttributeBoolValue(attribute, (c_bool*)&isEnabled);
+        	/* c_bool and os_boolean use two different representations, 
+        	 * just casting may cause loss of information */ 
+        	c_bool outVal = FALSE;
+        	
+            success = u_cfAttributeBoolValue(attribute, (c_bool*)&outVal);
+            isEnabled = (outVal==FALSE) ? OS_FALSE : OS_TRUE;
+            
             if(!success)
             {
                 IN_REPORT_WARNING_2(
@@ -2607,8 +2625,14 @@ in_configTraverseChannelElement(
             }
         } else if(0 == strcmp(name, INCF_ATTRIB_channel_isDefault))
         {
-            success = u_cfAttributeBoolValue(attribute, (c_bool*)&isDefault);
-            if(!success)
+        	/* c_bool and os_boolean use two different representations, 
+        	 * just casting may cause loss of information */ 
+        	c_bool outVal = FALSE;
+            
+        	success = u_cfAttributeBoolValue(attribute, (c_bool*)&outVal);
+            isDefault = (outVal==FALSE) ? OS_FALSE : OS_TRUE;
+            
+        	if(!success)
             {
                 IN_REPORT_WARNING_2(
                     IN_SPOT,
@@ -2621,7 +2645,13 @@ in_configTraverseChannelElement(
             }
         } else if(0 == strcmp(name, INCF_ATTRIB_channel_isEnabled))
         {
-            success = u_cfAttributeBoolValue(attribute, (c_bool*)&isEnabled);
+        	/* c_bool and os_boolean use two different representations, 
+        	 * just casting may cause loss of information */ 
+        	c_bool outVal = FALSE;
+        	
+            success = u_cfAttributeBoolValue(attribute, (c_bool*)&outVal);
+            isEnabled = (outVal==FALSE) ? OS_FALSE : OS_TRUE;
+            
             if(!success)
             {
                 IN_REPORT_WARNING_2(

@@ -532,7 +532,9 @@ namespace DDS
       TopicListener_ptr _this () { return this; }
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
-      virtual void on_all_data_disposed (Topic_ptr the_topic) = 0;
+#ifdef _DDS1631API_
+      virtual void on_all_data_disposed () = 0;
+#endif
 
    protected:
       TopicListener () {};
@@ -977,9 +979,6 @@ namespace DDS
       virtual StatusMask get_status_changes () = 0;
       virtual InstanceHandle_t get_instance_handle () = 0;
 
-      virtual DDS::String get_name () = 0;
-      virtual ReturnCode_t set_name (const DDS::Char *name) = 0;
-
    protected:
       Entity () {};
       ~Entity () {};
@@ -1188,7 +1187,7 @@ namespace DDS
       TopicDescription_ptr _this () { return this; }
 
       virtual DDS::String get_type_name () = 0;
-//      virtual DDS::String get_name () = 0;
+      virtual DDS::String get_name () = 0;
       virtual DomainParticipant_ptr get_participant () = 0;
 
    protected:

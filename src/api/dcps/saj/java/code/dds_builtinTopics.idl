@@ -101,6 +101,7 @@ module DDS {
     struct ReliabilityQosPolicy {
 		ReliabilityQosPolicyKind kind;
 		Duration_t max_blocking_time;
+		boolean synchronous;
     };
 
     enum DestinationOrderQosPolicyKind {

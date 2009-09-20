@@ -32,8 +32,9 @@ os_ctime_r (
     os_time *t,
     char *buf)
 {
+    time_t tt = t->tv_sec;
     if (buf) {
-        ctime_r((const time_t *)(&t->tv_sec), buf);
+        ctime_r(&tt, buf);
     }
     return buf;
 }

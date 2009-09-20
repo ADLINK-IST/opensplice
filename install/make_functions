@@ -240,7 +240,7 @@ make_rts_mirror_and_builder ()
     ENV="$7"
     GETLIC_INFO_NAME="$8"
     NOINSTALLER="$9"
-    PLATFORM_EXT="$10"
+    PLATFORM_EXT="${10}"
 
     echo Making mirror for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
 
@@ -446,7 +446,10 @@ set_hde_envs ()
 	PLATFORM_EXT=unix64
     elif [ "${target}" = "PPC5plus.AIX5.3" ]
     then
-        PLATFORM_EXT=xlc	
+        PLATFORM_EXT=xlc
+    elif [ "${target}" = "sparc.solaris10_studio12" ]
+    then
+        PLATFORM_EXT=suncc
     fi
 }
 
@@ -705,8 +708,8 @@ install_hde_target ()
         mkdir -p ${HDE_dir}/bin
         install_bin_file ${host_release} ${HDE_dir} bin idlpp${suffix_exe}
         install_bin_file ${host_release} ${HDE_dir} bin cppgen${suffix_exe}
-        # In the HDE we only need the other executables in case host and target are equal
-        if [ "${SPLICE_TARGET}" = "${SPLICE_HOST}" ]
+        # Copy the executables for the target
+        if [ "${SOURCE_TARGET_SHORT}" != "int" ]
         then
             install_bin_file ${target_release} ${HDE_dir} bin spliced${target_suffix_exe}
             install_bin_file ${target_release} ${HDE_dir} bin networking${target_suffix_exe}
@@ -775,6 +778,7 @@ install_hde_target ()
     #
     printf "*     Copy documentation... "
     cp -r ${OSPL_HOME}/docs ${HDE_dir}
+    install_ascii_file "${OSPL_HOME}/index.html" "${HDE_dir}"
     # remove documentation for components that are not installed
     if [ "${INCLUDE_API_DCPS_SAJ}" != "yes" -a "${INCLUDE_API_DCPS_CJ}" != "yes" ]
     then
@@ -1391,6 +1395,10 @@ install_hde_target ()
         then
             echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> ${RELF}
         fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
+        fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI CLASSPATH" >> $RELF
         echo "Ready"
     else
@@ -1407,6 +1415,10 @@ install_hde_target ()
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
         fi
         echo "Ready"
     fi
@@ -1561,6 +1573,7 @@ install_rts_target ()
     #
     echo "*     Copy documentation"
     cp -r ${OSPL_HOME}/docs ${RTS_dir}
+    install_ascii_file "${OSPL_HOME}/index.html" "${RTS_dir}"
     # remove documentation that does not apply to RTS
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_PreProcessor_usermanual.pdf
     rm -f ${RTS_dir}/docs/pdf/OpenSplice_refman*.pdf
@@ -1593,6 +1606,10 @@ install_rts_target ()
         then
             echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> $RELF
         fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
+        fi
         echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI CLASSPATH" >> $RELF
         echo "Ready"
     else
@@ -1608,6 +1625,10 @@ install_rts_target ()
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
         fi
         echo "Ready"
     fi

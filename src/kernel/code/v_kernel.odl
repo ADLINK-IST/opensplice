@@ -1979,7 +1979,7 @@ class v_kernel extends v_observable {
     attribute v_serviceManager               serviceManager;
     attribute v_leaseManager                 livelinessLM;
     attribute v_configuration                configuration;
-    attribute c_long                         userCount;
+    attribute c_ulong                        userCount;
 
     attribute v_builtin                      builtin;
 

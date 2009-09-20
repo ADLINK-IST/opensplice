@@ -24,12 +24,11 @@ CPFLAGS += -macros ../../nw_macros.qac
 # Include dirs for this component
 
 CINCS += -I$(OSPL_HOME)/src/user/include
-CINCS += -I$(OSPL_HOME)/src/loc/collections/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
 CINCS += -I$(OSPL_HOME)/src/utilities/include
-## workarround until v__networkQueue.h has moved from code/ to include/
+## workaround until v__networkQueue.h has moved from code/ to include/
 CINCS += -I$(OSPL_HOME)/src/kernel/code
 CINCS += -I$(OSPL_HOME)/src/user/code
 
@@ -56,12 +55,13 @@ CPFLAGS += -macros ../../nw_macros.qac
 # Include dirs for this component
 
 CINCS += -I$(OSPL_HOME)/src/user/include
-#CINCS += -I$(OSPL_OUTER_HOME)/src/loc/collections/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
 CINCS += -I$(OSPL_HOME)/src/utilities/include
-
+## workaround until v__networkQueue.h has moved from code/ to include/
+CINCS += -I$(OSPL_HOME)/src/kernel/code
+CINCS += -I$(OSPL_HOME)/src/user/code
 
 -include $(DEPENDENCIES)
 
