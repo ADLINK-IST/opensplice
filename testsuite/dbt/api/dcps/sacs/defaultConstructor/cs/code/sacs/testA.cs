@@ -1,118 +1,119 @@
 namespace saj
 {
-	/// <date>May 23, 2005</date>
-	public class testA : Test.Framework.TestCase
-	{
-		public testA() : base("sacs_defaultConstructor_tc1", "sacs_defaultConstructor", "testA"
-			, "Test if struct A is initialized properly.", "Test if struct A is initialized properly."
-			, null)
-		{
-		}
+    /// <date>May 23, 2005</date>
+    public class testA : Test.Framework.TestCase
+    {
+        public testA()
+            : base("sacs_defaultConstructor_tc1", "sacs_defaultConstructor", "testA"
+                , "Test if struct A is initialized properly.", "Test if struct A is initialized properly."
+                , null)
+        {
+        }
 
-		public static string TestInit(testDefConstr.A sample)
-		{
-			if (sample.id != 0)
-			{
-				return "Expected: id == 0; Received: " + sample.id;
-			}
-			if (sample.Name == null)
-			{
-				return "name == null";
-			}
-			if (!sample.Name.Equals(string.Empty))
-			{
-				return "Expected: name == \"\"; Received: \"" + sample.Name + "\"";
-			}
-			if (sample.embedded == null)
-			{
-				return "embedded == null";
-			}
-			if (sample.embedded.x != 0)
-			{
-				return "Expected: embedded.x == 0; Received: " + sample.embedded.x;
-			}
-			if (sample.embedded.y != 0)
-			{
-				return "Expected: embedded.y == 0; Received: " + sample.embedded.y;
-			}
-			if (sample.embedded.z != 0)
-			{
-				return "Expected: embedded.z == 0; Received: " + sample.embedded.z;
-			}
-			if (sample.c != testDefConstr.Color.Red)
-			{
-				return "Expected: c == 0; Received: " + sample.c.Value();
-			}
-			if (sample.nums == null)
-			{
-				return "nums == null";
-			}
-			if (sample.nums.Length != testDefConstr.DIM_NUMS_1.Value)
-			{
-				return "Expected nums.length == " + testDefConstr.DIM_NUMS_1.Value + "; Received: "
-					 + sample.nums.Length;
-			}
-			for (int i = 0; i < testDefConstr.DIM_NUMS_1.Value; i++)
-			{
-				if (sample.nums[i].Length != testDefConstr.DIM_NUMS_2.Value)
-				{
-					return "Expected nums[" + i + "].length == " + testDefConstr.DIM_NUMS_2.Value + "; Received: "
-						 + sample.nums[i].Length;
-				}
-				for (int j = 0; j < testDefConstr.DIM_NUMS_2.Value; j++)
-				{
-					if (sample.nums[i][j] != 0)
-					{
-						return "Expected sample.nums[" + i + "][" + j + "] == 0" + "; Received: " + sample
-							.nums[i][j];
-					}
-				}
-			}
-			if (sample.nums2 == null)
-			{
-				return "sample.nums2 == null";
-			}
-			if (sample.nums2.Length != 0)
-			{
-				return "Expected nums2.length == 0; Received: " + sample.nums2.Length;
-			}
-			if (sample.floatList == null)
-			{
-				return "floatList == null";
-			}
-			if (sample.floatList.Length != 0)
-			{
-				return "Expected floatList.length == 0; Received: " + sample.floatList.Length;
-			}
-			if (sample.la2Dim == null)
-			{
-				return "la2Dim == null";
-			}
-			if (sample.la2Dim.Length != testDefConstr.DIM_LA2DIM_1.Value)
-			{
-				return "Expected la2Dim.length == " + testDefConstr.DIM_LA2DIM_1.Value + "; Received: "
-					 + sample.la2Dim.Length;
-			}
-			for (int i = 0; i < testDefConstr.DIM_LA2DIM_1.Value; i++)
-			{
-				if (sample.la2Dim[i].Length != testDefConstr.DIM_LONGARRAY10_1.Value)
-				{
-					return "Expected la2Dim[" + i + "].length == " + testDefConstr.DIM_LONGARRAY10_1.
-						Value + "; Received: " + sample.la2Dim[i].Length;
-				}
-				for (int j = 0; j < testDefConstr.DIM_LONGARRAY10_1.Value; j++)
-				{
-					if (sample.la2Dim[i][j] != 0)
-					{
-						return "Expected la2Dim[" + i + "][" + j + "] == 0" + "; Received: " + sample.la2Dim
-							[i][j];
-					}
-				}
-			}
-			return null;
-		}
+        public static string TestInit(testDefConstr.A sample)
+        {
+            if (sample.id != 0)
+            {
+                return "Expected: id == 0; Received: " + sample.id;
+            }
+            if (sample.Name == null)
+            {
+                return "name == null";
+            }
+            if (!sample.Name.Equals(string.Empty))
+            {
+                return "Expected: name == \"\"; Received: \"" + sample.Name + "\"";
+            }
+            if (sample.embedded == null)
+            {
+                return "embedded == null";
+            }
+            if (sample.embedded.x != 0)
+            {
+                return "Expected: embedded.x == 0; Received: " + sample.embedded.x;
+            }
+            if (sample.embedded.y != 0)
+            {
+                return "Expected: embedded.y == 0; Received: " + sample.embedded.y;
+            }
+            if (sample.embedded.z != 0)
+            {
+                return "Expected: embedded.z == 0; Received: " + sample.embedded.z;
+            }
+            if (sample.c != testDefConstr.Color.Red)
+            {
+                return "Expected: c == 0; Received: " + sample.c.Value();
+            }
+            if (sample.nums == null)
+            {
+                return "nums == null";
+            }
+            if (sample.nums.Length != testDefConstr.DIM_NUMS_1.Value)
+            {
+                return "Expected nums.length == " + testDefConstr.DIM_NUMS_1.Value + "; Received: "
+                     + sample.nums.Length;
+            }
+            for (int i = 0; i < testDefConstr.DIM_NUMS_1.Value; i++)
+            {
+                if (sample.nums[i].Length != testDefConstr.DIM_NUMS_2.Value)
+                {
+                    return "Expected nums[" + i + "].length == " + testDefConstr.DIM_NUMS_2.Value + "; Received: "
+                         + sample.nums[i].Length;
+                }
+                for (int j = 0; j < testDefConstr.DIM_NUMS_2.Value; j++)
+                {
+                    if (sample.nums[i][j] != 0)
+                    {
+                        return "Expected sample.nums[" + i + "][" + j + "] == 0" + "; Received: " + sample
+                            .nums[i][j];
+                    }
+                }
+            }
+            if (sample.nums2 == null)
+            {
+                return "sample.nums2 == null";
+            }
+            if (sample.nums2.Length != 0)
+            {
+                return "Expected nums2.length == 0; Received: " + sample.nums2.Length;
+            }
+            if (sample.floatList == null)
+            {
+                return "floatList == null";
+            }
+            if (sample.floatList.Length != 0)
+            {
+                return "Expected floatList.length == 0; Received: " + sample.floatList.Length;
+            }
+            if (sample.la2Dim == null)
+            {
+                return "la2Dim == null";
+            }
+            if (sample.la2Dim.Length != testDefConstr.DIM_LA2DIM_1.Value)
+            {
+                return "Expected la2Dim.length == " + testDefConstr.DIM_LA2DIM_1.Value + "; Received: "
+                     + sample.la2Dim.Length;
+            }
+            for (int i = 0; i < testDefConstr.DIM_LA2DIM_1.Value; i++)
+            {
+                if (sample.la2Dim[i].Length != testDefConstr.DIM_LONGARRAY10_1.Value)
+                {
+                    return "Expected la2Dim[" + i + "].length == " + testDefConstr.DIM_LONGARRAY10_1.
+                        Value + "; Received: " + sample.la2Dim[i].Length;
+                }
+                for (int j = 0; j < testDefConstr.DIM_LONGARRAY10_1.Value; j++)
+                {
+                    if (sample.la2Dim[i][j] != 0)
+                    {
+                        return "Expected la2Dim[" + i + "][" + j + "] == 0" + "; Received: " + sample.la2Dim
+                            [i][j];
+                    }
+                }
+            }
+            return null;
+        }
 
-		public override Test.Framework.TestResult Run()
+        public override Test.Framework.TestResult Run()
 		{
 			Test.Framework.TestResult result;
 			int status;
@@ -255,5 +256,5 @@ namespace saj
 				);
 			return result;
 		}
-	}
+    }
 }

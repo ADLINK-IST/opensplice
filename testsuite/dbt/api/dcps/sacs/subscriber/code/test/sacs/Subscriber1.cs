@@ -21,7 +21,7 @@ namespace test.sacs
             DDS.SubscriberQos subQosHolder;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
-            result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass, 
+            result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             qos = (DDS.SubscriberQos)this.ResolveObject("subscriberQos");

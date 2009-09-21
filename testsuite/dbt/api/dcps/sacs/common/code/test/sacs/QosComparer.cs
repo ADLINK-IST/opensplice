@@ -1,41 +1,41 @@
 namespace test.sacs
 {
-	/// <date>Jun 2, 2005</date>
-	public class QosComparer
-	{
-		public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy;
-		public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy;
-		public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy;
-		public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy;
-		public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy;
-		public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy;
-		public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy;
-		public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy;
-		public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy;
-		public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy;
-		public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy;
-		public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy;
-		public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy;
-		public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy;
-		public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy;
-		public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy;
-		public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy;
+    /// <date>Jun 2, 2005</date>
+    public class QosComparer
+    {
+        public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy;
+        public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy;
+        public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy;
+        public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy;
+        public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy;
+        public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy;
+        public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy;
+        public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy;
+        public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy;
+        public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy;
+        public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy;
+        public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy;
+        public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy;
+        public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy;
+        public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy;
+        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy;
+        public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy;
         public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy;
-		public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy;
-		public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy;
-		public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy;
-		public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy;
+        public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy;
+        public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy;
+        public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy;
+        public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy;
         public static readonly DDS.DataWriterQos defaultDataWriterQos;
-		public static readonly DDS.SubscriberQos defaultSubscriberQos;
-		public static readonly DDS.DataReaderQos defaultDataReaderQos;
-		public static readonly DDS.TopicQos defaultTopicQos;
+        public static readonly DDS.SubscriberQos defaultSubscriberQos;
+        public static readonly DDS.DataReaderQos defaultDataReaderQos;
+        public static readonly DDS.TopicQos defaultTopicQos;
 
         static QosComparer()
-	    {
+        {
             defaultDeadlineQosPolicy.Period = DDS.Duration.Infinite;
-            
+
             defaultDestinationOrderQosPolicy.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationOrderQos;
-            
+
             defaultDurabilityQosPolicy.Kind = DDS.DurabilityQosPolicyKind.VolatileDurabilityQos;
 
             defaultDurabilityServiceQosPolicy.ServiceCleanupDelay = DDS.Duration.Zero;
@@ -139,922 +139,922 @@ namespace test.sacs
             defaultTopicQos.TransportPriority = defaultTransportPriorityQosPolicy;
             defaultTopicQos.Lifespan = defaultLifespanQosPolicy;
             defaultTopicQos.Ownership = defaultOwnershipQosPolicy;
-	    }
+        }
 
-		/// <summary>Compares all attributes of two TopicQos objects for equality.</summary>
-		/// <remarks>Compares all attributes of two TopicQos objects for equality.</remarks>
-		/// <param name="qos1">First Qos to compare.</param>
-		/// <param name="qos2">Second Qos to compare.</param>
-		/// <returns><code>true</code> if the two qosses are equal, otherwise <code>false</code>.
-		/// 	</returns>
-		public static bool TopicQosEquals(DDS.TopicQos qos1, DDS.TopicQos qos2)
-		{
+        /// <summary>Compares all attributes of two TopicQos objects for equality.</summary>
+        /// <remarks>Compares all attributes of two TopicQos objects for equality.</remarks>
+        /// <param name="qos1">First Qos to compare.</param>
+        /// <param name="qos2">Second Qos to compare.</param>
+        /// <returns><code>true</code> if the two qosses are equal, otherwise <code>false</code>.
+        /// 	</returns>
+        public static bool TopicQosEquals(DDS.TopicQos qos1, DDS.TopicQos qos2)
+        {
             if (!DurationEquals(qos1.Deadline.Period, qos2.Deadline.Period))
-			{
+            {
                 System.Console.Error.WriteLine("'Deadline.Period' values do not match");
-				return false;
-			}
-			if (qos1.DestinationOrder.Kind != qos2.DestinationOrder.Kind)
-			{
+                return false;
+            }
+            if (qos1.DestinationOrder.Kind != qos2.DestinationOrder.Kind)
+            {
                 System.Console.Error.WriteLine("'DestinationOrder.Kind' values do not match");
-				return false;
-			}
-			if (qos1.Durability.Kind != qos2.Durability.Kind)
-			{
-				System.Console.Error.WriteLine("'Durability.Kind' values do not match");
-				return false;
-			}
+                return false;
+            }
+            if (qos1.Durability.Kind != qos2.Durability.Kind)
+            {
+                System.Console.Error.WriteLine("'Durability.Kind' values do not match");
+                return false;
+            }
             if (!DurationEquals(qos1.DurabilityService.ServiceCleanupDelay, qos2.DurabilityService.ServiceCleanupDelay))
-			{
+            {
                 System.Console.Error.WriteLine("'DurabilityService.ServiceCleanupDelay' values do not match");
-				return false;
-			}
+                return false;
+            }
             if (qos1.DurabilityService.HistoryDepth != qos2.DurabilityService.HistoryDepth)
-			{
+            {
                 System.Console.Error.WriteLine("'DurabilityService.HistoryDepth' values do not match"
-					);
-				return false;
-			}
+                    );
+                return false;
+            }
             if (qos1.DurabilityService.HistoryKind != qos2.DurabilityService.HistoryKind)
-			{
+            {
                 System.Console.Error.WriteLine("'DurabilityService.HistoryKind' values do not match"
-					);
-				return false;
-			}
+                    );
+                return false;
+            }
             if (qos1.DurabilityService.MaxInstances != qos2.DurabilityService.MaxInstances)
-			{
+            {
                 System.Console.Error.WriteLine("'DurabilityService.MaxInstances' values do not match"
-					);
-				return false;
-			}
-			if (qos1.DurabilityService.MaxSamples != qos2.DurabilityService.MaxSamples)
-			{
-				System.Console.Error.WriteLine("'DurabilityService.MaxSamples' values do not match"
-					);
-				return false;
-			}
-			if (qos1.DurabilityService.MaxSamplesPerInstance != qos2.DurabilityService.MaxSamplesPerInstance)
-			{
-				System.Console.Error.WriteLine("'DurabilityService.MaxSamplesPerInstance' values do not match"
-					);
-				return false;
-			}
-			if (qos1.History.Depth != qos2.History.Depth)
-			{
-				System.Console.Error.WriteLine("'History.Depth' values do not match");
-				return false;
-			}
+                    );
+                return false;
+            }
+            if (qos1.DurabilityService.MaxSamples != qos2.DurabilityService.MaxSamples)
+            {
+                System.Console.Error.WriteLine("'DurabilityService.MaxSamples' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.DurabilityService.MaxSamplesPerInstance != qos2.DurabilityService.MaxSamplesPerInstance)
+            {
+                System.Console.Error.WriteLine("'DurabilityService.MaxSamplesPerInstance' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.History.Depth != qos2.History.Depth)
+            {
+                System.Console.Error.WriteLine("'History.Depth' values do not match");
+                return false;
+            }
             if (qos1.History.Kind != qos2.History.Kind)
-			{
+            {
                 System.Console.Error.WriteLine("'History.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.LatencyBudget.Duration, qos2.LatencyBudget.Duration))
-			{
-				System.Console.Error.WriteLine("'LatencyBudget.Duration' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Lifespan.Duration, qos2.Lifespan.Duration))
-			{
-				System.Console.Error.WriteLine("'Lifespan.Duration' values do not match");
-				return false;
-			}
+                return false;
+            }
+            if (!DurationEquals(qos1.LatencyBudget.Duration, qos2.LatencyBudget.Duration))
+            {
+                System.Console.Error.WriteLine("'LatencyBudget.Duration' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.Lifespan.Duration, qos2.Lifespan.Duration))
+            {
+                System.Console.Error.WriteLine("'Lifespan.Duration' values do not match");
+                return false;
+            }
             if (qos1.Liveliness.Kind != qos2.Liveliness.Kind)
-			{
+            {
                 System.Console.Error.WriteLine("'Liveliness.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Liveliness.LeaseDuration, qos2.Liveliness.LeaseDuration
-				))
-			{
-				System.Console.Error.WriteLine("'Liveliness.LeaseDuration' values do not match");
-				return false;
-			}
-			if (qos1.Ownership.Kind != qos2.Ownership.Kind)
-			{
-				System.Console.Error.WriteLine("'Ownership.Kind' values do not match");
-				return false;
-			}
-			if (qos1.Reliability.Kind != qos2.Reliability.Kind)
-			{
-				System.Console.Error.WriteLine("'Reliability.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Reliability.MaxBlockingTime, qos2.Reliability.MaxBlockingTime
-				))
-			{
-				System.Console.Error.WriteLine("'Reliability.MaxBlockingTime' values do not match"
-					);
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxInstances != qos2.ResourceLimits.MaxInstances)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxInstances' values do not match"
-					);
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxSamples != qos2.ResourceLimits.MaxSamples)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxSamples' values do not match"
-					);
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxSamplesPerInstance != qos2.ResourceLimits.MaxSamplesPerInstance)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxSamplesPerInstance' values do not match"
-					);
-				return false;
-			}
-			if (!ByteArrayEquals(qos1.TopicData.Value, qos2.TopicData.Value))
-			{
-				System.Console.Error.WriteLine("'TopicData.Value' values do not match");
-				return false;
-			}
-			if (qos1.TransportPriority.Value != qos2.TransportPriority.Value)
-			{
-				System.Console.Error.WriteLine("'TransportPriority.Value' values do not match");
-				return false;
-			}
-			return true;
-		}
+                return false;
+            }
+            if (!DurationEquals(qos1.Liveliness.LeaseDuration, qos2.Liveliness.LeaseDuration
+                ))
+            {
+                System.Console.Error.WriteLine("'Liveliness.LeaseDuration' values do not match");
+                return false;
+            }
+            if (qos1.Ownership.Kind != qos2.Ownership.Kind)
+            {
+                System.Console.Error.WriteLine("'Ownership.Kind' values do not match");
+                return false;
+            }
+            if (qos1.Reliability.Kind != qos2.Reliability.Kind)
+            {
+                System.Console.Error.WriteLine("'Reliability.Kind' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.Reliability.MaxBlockingTime, qos2.Reliability.MaxBlockingTime
+                ))
+            {
+                System.Console.Error.WriteLine("'Reliability.MaxBlockingTime' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxInstances != qos2.ResourceLimits.MaxInstances)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxInstances' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxSamples != qos2.ResourceLimits.MaxSamples)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxSamples' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxSamplesPerInstance != qos2.ResourceLimits.MaxSamplesPerInstance)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxSamplesPerInstance' values do not match"
+                    );
+                return false;
+            }
+            if (!ByteArrayEquals(qos1.TopicData.Value, qos2.TopicData.Value))
+            {
+                System.Console.Error.WriteLine("'TopicData.Value' values do not match");
+                return false;
+            }
+            if (qos1.TransportPriority.Value != qos2.TransportPriority.Value)
+            {
+                System.Console.Error.WriteLine("'TransportPriority.Value' values do not match");
+                return false;
+            }
+            return true;
+        }
 
-		public static bool SubscriberQosEquals(DDS.SubscriberQos qos1, DDS.SubscriberQos 
-			qos2)
-		{
+        public static bool SubscriberQosEquals(DDS.SubscriberQos qos1, DDS.SubscriberQos
+            qos2)
+        {
             if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
-			{
+            {
                 System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
-					);
-				return false;
-			}
+                    );
+                return false;
+            }
             if (!ByteArrayEquals(qos1.GroupData.Value, qos1.GroupData.Value))
-			{
+            {
                 System.Console.Error.WriteLine("'GroupData.Value' values do not match");
-				return false;
-			}
+                return false;
+            }
             if (!StringArrayEquals(qos1.Partition.Name, qos2.Partition.Name))
-			{
+            {
                 System.Console.Error.WriteLine("'Partition.Name' values do not match");
-				return false;
-			}
-			if (qos1.Presentation.CoherentAccess != qos2.Presentation.CoherentAccess)
-			{
-				System.Console.Error.WriteLine("'Presentation.CoherentAccess' values do not match"
-					);
-				return false;
-			}
-			if (qos1.Presentation.OrderedAccess != qos2.Presentation.OrderedAccess)
-			{
-				System.Console.Error.WriteLine("'Presentation.OrderedAccess' values do not match"
-					);
-				return false;
-			}
-			if (qos1.Presentation.AccessScope != qos2.Presentation.AccessScope)
-			{
-				System.Console.Error.WriteLine("'Presentation.AccessScope' values do not match");
-				return false;
-			}
-			return true;
-		}
+                return false;
+            }
+            if (qos1.Presentation.CoherentAccess != qos2.Presentation.CoherentAccess)
+            {
+                System.Console.Error.WriteLine("'Presentation.CoherentAccess' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.Presentation.OrderedAccess != qos2.Presentation.OrderedAccess)
+            {
+                System.Console.Error.WriteLine("'Presentation.OrderedAccess' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.Presentation.AccessScope != qos2.Presentation.AccessScope)
+            {
+                System.Console.Error.WriteLine("'Presentation.AccessScope' values do not match");
+                return false;
+            }
+            return true;
+        }
 
-		public static bool DataReaderQosEquals(DDS.DataReaderQos qos1, DDS.DataReaderQos qos2)
-		{
-			if (qos1.Durability.Kind != qos2.Durability.Kind)
-			{
-				System.Console.Error.WriteLine("'Durability.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Deadline.Period, qos2.Deadline.Period))
-			{
-				System.Console.Error.WriteLine("'Deadline.Period' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.LatencyBudget.Duration, qos2.LatencyBudget.Duration))
-			{
-				System.Console.Error.WriteLine("'LatencyBudget.Duration' values do not match");
-				return false;
-			}
-			if (qos1.Liveliness.Kind != qos2.Liveliness.Kind)
-			{
-				System.Console.Error.WriteLine("'Liveliness.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Liveliness.LeaseDuration, qos2.Liveliness.LeaseDuration
-				))
-			{
-				System.Console.Error.WriteLine("'Liveliness.LeaseDuration' values do not match");
-				return false;
-			}
-			if (qos1.Reliability.Kind != qos2.Reliability.Kind)
-			{
-				System.Console.Error.WriteLine("'Liveliness.Kind' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.Reliability.MaxBlockingTime, qos2.Reliability.MaxBlockingTime
-				))
-			{
-				System.Console.Error.WriteLine("'Reliability.MaxBlockingTime' values do not match"
-					);
-				return false;
-			}
-			if (qos1.DestinationOrder.Kind != qos2.DestinationOrder.Kind)
-			{
-				System.Console.Error.WriteLine("'DestinationOrder.Kind' values do not match");
-				return false;
-			}
-			if (qos1.History.Kind != qos2.History.Kind)
-			{
-				System.Console.Error.WriteLine("'history.Kind' values do not match");
-				return false;
-			}
-			if (qos1.History.Depth != qos2.History.Depth)
-			{
-				System.Console.Error.WriteLine("'History.Depth' values do not match");
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxInstances != qos2.ResourceLimits.MaxInstances)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxInstances' values do not match"
-					);
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxSamples != qos2.ResourceLimits.MaxSamples)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxSamples' values do not match"
-					);
-				return false;
-			}
-			if (qos1.ResourceLimits.MaxSamplesPerInstance != qos2.ResourceLimits.MaxSamplesPerInstance)
-			{
-				System.Console.Error.WriteLine("'ResourceLimits.MaxSamplesPerInstance' values do not match"
-					);
-				return false;
-			}
+        public static bool DataReaderQosEquals(DDS.DataReaderQos qos1, DDS.DataReaderQos qos2)
+        {
+            if (qos1.Durability.Kind != qos2.Durability.Kind)
+            {
+                System.Console.Error.WriteLine("'Durability.Kind' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.Deadline.Period, qos2.Deadline.Period))
+            {
+                System.Console.Error.WriteLine("'Deadline.Period' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.LatencyBudget.Duration, qos2.LatencyBudget.Duration))
+            {
+                System.Console.Error.WriteLine("'LatencyBudget.Duration' values do not match");
+                return false;
+            }
+            if (qos1.Liveliness.Kind != qos2.Liveliness.Kind)
+            {
+                System.Console.Error.WriteLine("'Liveliness.Kind' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.Liveliness.LeaseDuration, qos2.Liveliness.LeaseDuration
+                ))
+            {
+                System.Console.Error.WriteLine("'Liveliness.LeaseDuration' values do not match");
+                return false;
+            }
+            if (qos1.Reliability.Kind != qos2.Reliability.Kind)
+            {
+                System.Console.Error.WriteLine("'Liveliness.Kind' values do not match");
+                return false;
+            }
+            if (!DurationEquals(qos1.Reliability.MaxBlockingTime, qos2.Reliability.MaxBlockingTime
+                ))
+            {
+                System.Console.Error.WriteLine("'Reliability.MaxBlockingTime' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.DestinationOrder.Kind != qos2.DestinationOrder.Kind)
+            {
+                System.Console.Error.WriteLine("'DestinationOrder.Kind' values do not match");
+                return false;
+            }
+            if (qos1.History.Kind != qos2.History.Kind)
+            {
+                System.Console.Error.WriteLine("'history.Kind' values do not match");
+                return false;
+            }
+            if (qos1.History.Depth != qos2.History.Depth)
+            {
+                System.Console.Error.WriteLine("'History.Depth' values do not match");
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxInstances != qos2.ResourceLimits.MaxInstances)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxInstances' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxSamples != qos2.ResourceLimits.MaxSamples)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxSamples' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.ResourceLimits.MaxSamplesPerInstance != qos2.ResourceLimits.MaxSamplesPerInstance)
+            {
+                System.Console.Error.WriteLine("'ResourceLimits.MaxSamplesPerInstance' values do not match"
+                    );
+                return false;
+            }
             if (!OwnershipQosPolicyEquals(qos1.Ownership, qos2.Ownership))
-			{
-				System.Console.Error.WriteLine("'DataReaderQos.Ownership' differ");
-				return false;
-			}
-			if (!ByteArrayEquals(qos1.UserData.Value, qos2.UserData.Value))
-			{
+            {
+                System.Console.Error.WriteLine("'DataReaderQos.Ownership' differ");
+                return false;
+            }
+            if (!ByteArrayEquals(qos1.UserData.Value, qos2.UserData.Value))
+            {
                 System.Console.Error.WriteLine("'UserData.Value' values do not match");
-				return false;
-			}
-			if (!DurationEquals(qos1.TimeBasedFilter.MinimumSeparation, qos2.TimeBasedFilter.MinimumSeparation))
-			{
-				System.Console.Error.WriteLine("'TimeBasedFilter.MinimumSeparation' values do not match"
-					);
-				return false;
-			}
-			if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay
-				, qos2.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay))
-			{
-				System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay' values do not match"
-					);
-				return false;
-			}
-			if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay
-				, qos2.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay))
-			{
-				System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay' values do not match"
-					);
-				return false;
-			}
-			return true;
+                return false;
+            }
+            if (!DurationEquals(qos1.TimeBasedFilter.MinimumSeparation, qos2.TimeBasedFilter.MinimumSeparation))
+            {
+                System.Console.Error.WriteLine("'TimeBasedFilter.MinimumSeparation' values do not match"
+                    );
+                return false;
+            }
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay
+                , qos2.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay))
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay' values do not match"
+                    );
+                return false;
+            }
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay
+                , qos2.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay))
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay' values do not match"
+                    );
+                return false;
+            }
+            return true;
 
-		}
+        }
 
-		public static bool PublisherQosEquals(DDS.PublisherQos qos1, DDS.PublisherQos qos2
-			)
-		{
-			if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
-			{
-				System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
-					);
-				return false;
-			}
-			if (!ByteArrayEquals(qos1.GroupData.Value, qos2.GroupData.Value))
-			{
-				System.Console.Error.WriteLine("'GroupData.Value' values do not match");
-				return false;
-			}
-			if (!StringArrayEquals(qos1.Partition.Name, qos2.Partition.Name))
-			{
-				System.Console.Error.WriteLine("'Partition.Name' values do not match");
-				return false;
-			}
-			if (qos1.Presentation.CoherentAccess != qos2.Presentation.CoherentAccess)
-			{
-				System.Console.Error.WriteLine("'Presentation.CoherentAccess' values do not match"
-					);
-				return false;
-			}
-			if (qos1.Presentation.OrderedAccess != qos2.Presentation.OrderedAccess)
-			{
-				System.Console.Error.WriteLine("'Presentation.OrderedAccess' values do not match"
-					);
-				return false;
-			}
-			if (qos1.Presentation.AccessScope != qos2.Presentation.AccessScope)
-			{
-				System.Console.Error.WriteLine("'Presentation.AccessScope' values do not match");
-				return false;
-			}
-			return true;
-		}
+        public static bool PublisherQosEquals(DDS.PublisherQos qos1, DDS.PublisherQos qos2
+            )
+        {
+            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            {
+                System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
+                    );
+                return false;
+            }
+            if (!ByteArrayEquals(qos1.GroupData.Value, qos2.GroupData.Value))
+            {
+                System.Console.Error.WriteLine("'GroupData.Value' values do not match");
+                return false;
+            }
+            if (!StringArrayEquals(qos1.Partition.Name, qos2.Partition.Name))
+            {
+                System.Console.Error.WriteLine("'Partition.Name' values do not match");
+                return false;
+            }
+            if (qos1.Presentation.CoherentAccess != qos2.Presentation.CoherentAccess)
+            {
+                System.Console.Error.WriteLine("'Presentation.CoherentAccess' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.Presentation.OrderedAccess != qos2.Presentation.OrderedAccess)
+            {
+                System.Console.Error.WriteLine("'Presentation.OrderedAccess' values do not match"
+                    );
+                return false;
+            }
+            if (qos1.Presentation.AccessScope != qos2.Presentation.AccessScope)
+            {
+                System.Console.Error.WriteLine("'Presentation.AccessScope' values do not match");
+                return false;
+            }
+            return true;
+        }
 
-		public static bool DataWriterQosEquals(DDS.DataWriterQos qos1, DDS.DataWriterQos qos2)
-		{
+        public static bool DataWriterQosEquals(DDS.DataWriterQos qos1, DDS.DataWriterQos qos2)
+        {
             if (!DurabilityQosPolicyEquals(qos1.Durability, qos2.Durability))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Durability' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Durability' differ");
+                return false;
+            }
             if (!DeadlineQosPolicyEquals(qos1.Deadline, qos2.Deadline))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Deadline' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Deadline' differ");
+                return false;
+            }
             if (!LatencyBudgetQosPolicyEquals(qos1.LatencyBudget, qos2.LatencyBudget))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.LatencyBudget' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.LatencyBudget' differ");
+                return false;
+            }
             if (!LivelinessQosPolicyEquals(qos1.Liveliness, qos2.Liveliness))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Liveliness' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Liveliness' differ");
+                return false;
+            }
             if (!ReliabilityQosPolicyEquals(qos1.Reliability, qos2.Reliability))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Reliability' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Reliability' differ");
+                return false;
+            }
             if (!DestinationOrderQosPolicyEquals(qos1.DestinationOrder, qos2.DestinationOrder
-				))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.DestinationOrder' differ");
-				return false;
-			}
+                ))
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.DestinationOrder' differ");
+                return false;
+            }
             if (!HistoryQosPolicyEquals(qos1.History, qos2.History))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.History' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.History' differ");
+                return false;
+            }
             if (!ResourceLimitsQosPolicyEquals(qos1.ResourceLimits, qos2.ResourceLimits))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.ResourceLimits' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.ResourceLimits' differ");
+                return false;
+            }
             if (!TransportPriorityQosPolicyEquals(qos1.TransportPriority, qos2.TransportPriority
-				))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.TransportPriority' differ");
-				return false;
-			}
+                ))
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.TransportPriority' differ");
+                return false;
+            }
             if (!LifespanQosPolicyEquals(qos1.Lifespan, qos2.Lifespan))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Lifespan' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Lifespan' differ");
+                return false;
+            }
             if (!UserDataQosPolicyEquals(qos1.UserData, qos2.UserData))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.UserData' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.UserData' differ");
+                return false;
+            }
             if (!OwnershipQosPolicyEquals(qos1.Ownership, qos2.Ownership))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.Ownership' differ");
-				return false;
-			}
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.Ownership' differ");
+                return false;
+            }
             if (!OwnershipStrengthQosPolicyEquals(qos1.OwnershipStrength, qos2.OwnershipStrength
-				))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.OwnershipStrength' differ");
-				return false;
-			}
+                ))
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.OwnershipStrength' differ");
+                return false;
+            }
             if (!WriterDataLifecycleQosPolicyEquals(qos1.WriterDataLifecycle, qos2.WriterDataLifecycle
-				))
-			{
-				System.Console.Error.WriteLine("'DataWriterQos.WriterDataLifecycle' differ");
-				return false;
-			}
-			return true;
-		}
+                ))
+            {
+                System.Console.Error.WriteLine("'DataWriterQos.WriterDataLifecycle' differ");
+                return false;
+            }
+            return true;
+        }
 
-		public static bool ByteArrayEquals(byte[] arr1, byte[] arr2)
-		{
-			if (arr1.Length != arr2.Length)
-			{
-				System.Console.Error.WriteLine("Byte array lengths not equal.(" + arr1.Length + " != "
-					 + arr2.Length + ")");
-				return false;
-			}
-			for (int i = 0; i < arr1.Length; i++)
-			{
-				if (arr1[i] != arr2[i])
-				{
-					System.Console.Error.WriteLine("Byte arrays not equal (index: " + i + ")");
-					return false;
-				}
-			}
-			return true;
-		}
+        public static bool ByteArrayEquals(byte[] arr1, byte[] arr2)
+        {
+            if (arr1.Length != arr2.Length)
+            {
+                System.Console.Error.WriteLine("Byte array lengths not equal.(" + arr1.Length + " != "
+                     + arr2.Length + ")");
+                return false;
+            }
+            for (int i = 0; i < arr1.Length; i++)
+            {
+                if (arr1[i] != arr2[i])
+                {
+                    System.Console.Error.WriteLine("Byte arrays not equal (index: " + i + ")");
+                    return false;
+                }
+            }
+            return true;
+        }
 
-		public static bool StringArrayEquals(string[] arr1, string[] arr2)
-		{
-			if (arr1.Length != arr2.Length)
-			{
-				System.Console.Error.WriteLine("String array lengths not equal. (" + arr1.Length 
-					+ " != " + arr2.Length + ")");
-				return false;
-			}
-			for (int i = 0; i < arr1.Length; i++)
-			{
-				if (!arr1[i].Equals(arr2[i]))
-				{
-					System.Console.Error.WriteLine("String arrays not equal (index: " + i + ")");
-					return false;
-				}
-			}
-			return true;
-		}
+        public static bool StringArrayEquals(string[] arr1, string[] arr2)
+        {
+            if (arr1.Length != arr2.Length)
+            {
+                System.Console.Error.WriteLine("String array lengths not equal. (" + arr1.Length
+                    + " != " + arr2.Length + ")");
+                return false;
+            }
+            for (int i = 0; i < arr1.Length; i++)
+            {
+                if (!arr1[i].Equals(arr2[i]))
+                {
+                    System.Console.Error.WriteLine("String arrays not equal (index: " + i + ")");
+                    return false;
+                }
+            }
+            return true;
+        }
 
-		/// <summary>Compares two Duration_t object.</summary>
-		/// <remarks>Compares two Duration_t object.</remarks>
-		/// <param name="duration1"></param>
-		/// <param name="duration2"></param>
-		/// <returns>true if the two objects have equal values.</returns>
-		public static bool DurationEquals(DDS.Duration duration1, DDS.Duration duration2
-			)
-		{
-			if (duration1 != null && duration2 != null)
-			{
-				if (duration1.NanoSec != duration2.NanoSec)
-				{
-					System.Console.Error.WriteLine("duration.NanoSec differ");
-					System.Console.Error.WriteLine("duration1 sec: " + duration1.Sec + "\tNanoSec: " 
-						+ duration1.NanoSec);
-					System.Console.Error.WriteLine("duration2 sec: " + duration2.Sec + "\tNanoSec: " 
-						+ duration2.NanoSec);
-					return false;
-				}
-				if (duration1.Sec != duration2.Sec)
-				{
-					System.Console.Error.WriteLine("duration.Sec differ");
-					return false;
-				}
-				return true;
-			}
-			else
-			{
-				if (duration1 == null || duration2 == null)
-				{
-					System.Console.Error.WriteLine("one of the durations is null");
-					return false;
-				}
-				else
-				{
-					return true;
-				}
-			}
-		}
+        /// <summary>Compares two Duration_t object.</summary>
+        /// <remarks>Compares two Duration_t object.</remarks>
+        /// <param name="duration1"></param>
+        /// <param name="duration2"></param>
+        /// <returns>true if the two objects have equal values.</returns>
+        public static bool DurationEquals(DDS.Duration duration1, DDS.Duration duration2
+            )
+        {
+            if (duration1 != null && duration2 != null)
+            {
+                if (duration1.NanoSec != duration2.NanoSec)
+                {
+                    System.Console.Error.WriteLine("duration.NanoSec differ");
+                    System.Console.Error.WriteLine("duration1 sec: " + duration1.Sec + "\tNanoSec: "
+                        + duration1.NanoSec);
+                    System.Console.Error.WriteLine("duration2 sec: " + duration2.Sec + "\tNanoSec: "
+                        + duration2.NanoSec);
+                    return false;
+                }
+                if (duration1.Sec != duration2.Sec)
+                {
+                    System.Console.Error.WriteLine("duration.Sec differ");
+                    return false;
+                }
+                return true;
+            }
+            else
+            {
+                if (duration1 == null || duration2 == null)
+                {
+                    System.Console.Error.WriteLine("one of the durations is null");
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
-		public static bool DeadlineQosPolicyEquals(DDS.DeadlineQosPolicy policy1, DDS.DeadlineQosPolicy
-			 policy2)
-		{
-			if (!DurationEquals(policy1.Period, policy2.Period))
-			{
-				System.Console.Error.WriteLine("'DeadlineQosPolicy.Period' differ");
-				return false;
-			}
-			return true;
-		}
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
+        public static bool DeadlineQosPolicyEquals(DDS.DeadlineQosPolicy policy1, DDS.DeadlineQosPolicy
+             policy2)
+        {
+            if (!DurationEquals(policy1.Period, policy2.Period))
+            {
+                System.Console.Error.WriteLine("'DeadlineQosPolicy.Period' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
-		public static bool DestinationOrderQosPolicyEquals(DDS.DestinationOrderQosPolicy 
-			policy1, DDS.DestinationOrderQosPolicy policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'DestinationOrderQosPolicy.Kind' differ");
-				return false;
-			}
-			return true;
-		}
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
+        public static bool DestinationOrderQosPolicyEquals(DDS.DestinationOrderQosPolicy
+            policy1, DDS.DestinationOrderQosPolicy policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'DestinationOrderQosPolicy.Kind' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
-		public static bool DurabilityQosPolicyEquals(DDS.DurabilityQosPolicy policy1, DDS.DurabilityQosPolicy
-			 policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'DurabilityQosPolicy.Kind' differ");
-				return false;
-			}
-			return true;
-		}
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
+        public static bool DurabilityQosPolicyEquals(DDS.DurabilityQosPolicy policy1, DDS.DurabilityQosPolicy
+             policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'DurabilityQosPolicy.Kind' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
-		public static bool DurabilityServiceQosPolicyEquals(DDS.DurabilityServiceQosPolicy
-			 policy1, DDS.DurabilityServiceQosPolicy policy2)
-		{
-			if (!DurationEquals(policy1.ServiceCleanupDelay, policy2.ServiceCleanupDelay
-				))
-			{
-				System.Console.Error.WriteLine("'DurabilityQosPolicy.ServiceCleanupDelay' differ"
-					);
-				return false;
-			}
-			if (policy1.HistoryKind != policy2.HistoryKind)
-			{
-				System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.HistoryKind' differ"
-					);
-				return false;
-			}
-			if (policy1.HistoryDepth != policy2.HistoryDepth)
-			{
-				System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.HistoryDepth' differ"
-					);
-				return false;
-			}
-			if (policy1.MaxInstances != policy2.MaxInstances)
-			{
-				System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxInstances' differ"
-					);
-				return false;
-			}
-			if (policy1.MaxSamples != policy2.MaxSamples)
-			{
-				System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxSamples' differ");
-				return false;
-			}
-			if (policy1.MaxSamplesPerInstance != policy2.MaxSamplesPerInstance)
-			{
-				System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxSamplesPerInstance' differ"
-					);
-				return false;
-			}
-			return true;
-		}
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
+        public static bool DurabilityServiceQosPolicyEquals(DDS.DurabilityServiceQosPolicy
+             policy1, DDS.DurabilityServiceQosPolicy policy2)
+        {
+            if (!DurationEquals(policy1.ServiceCleanupDelay, policy2.ServiceCleanupDelay
+                ))
+            {
+                System.Console.Error.WriteLine("'DurabilityQosPolicy.ServiceCleanupDelay' differ"
+                    );
+                return false;
+            }
+            if (policy1.HistoryKind != policy2.HistoryKind)
+            {
+                System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.HistoryKind' differ"
+                    );
+                return false;
+            }
+            if (policy1.HistoryDepth != policy2.HistoryDepth)
+            {
+                System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.HistoryDepth' differ"
+                    );
+                return false;
+            }
+            if (policy1.MaxInstances != policy2.MaxInstances)
+            {
+                System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxInstances' differ"
+                    );
+                return false;
+            }
+            if (policy1.MaxSamples != policy2.MaxSamples)
+            {
+                System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxSamples' differ");
+                return false;
+            }
+            if (policy1.MaxSamplesPerInstance != policy2.MaxSamplesPerInstance)
+            {
+                System.Console.Error.WriteLine("'DurabilityServiceQosPolicy.MaxSamplesPerInstance' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
-		public static bool EntityFactoryQosPolicyEquals(DDS.EntityFactoryQosPolicy policy1
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
+        public static bool EntityFactoryQosPolicyEquals(DDS.EntityFactoryQosPolicy policy1
             , DDS.EntityFactoryQosPolicy policy2)
-		{
-			if (policy1.AutoEnableCreatedEntities != policy2.AutoEnableCreatedEntities)
-			{
-				System.Console.Error.WriteLine("'EntityFactoryQosPolicy.AutoEnableCreatedEntities' differ"
-					);
-				return false;
-			}
-			return true;
-		}
+        {
+            if (policy1.AutoEnableCreatedEntities != policy2.AutoEnableCreatedEntities)
+            {
+                System.Console.Error.WriteLine("'EntityFactoryQosPolicy.AutoEnableCreatedEntities' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool GroupDataQosPolicyEquals(DDS.GroupDataQosPolicy policy1, DDS.GroupDataQosPolicy
-			 policy2)
-		{
-			if (!ByteArrayEquals(policy1.Value, policy2.Value))
-			{
-				System.Console.Error.WriteLine("'GroupDataQosPolicy.Value' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (!ByteArrayEquals(policy1.Value, policy2.Value))
+            {
+                System.Console.Error.WriteLine("'GroupDataQosPolicy.Value' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool HistoryQosPolicyEquals(DDS.HistoryQosPolicy policy1, DDS.HistoryQosPolicy
-			 policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'DurabilityQosPolicy.Kind' differ");
-				return false;
-			}
-			if (policy1.Depth != policy2.Depth)
-			{
-				System.Console.Error.WriteLine("'DurabilityQosPolicy.Depth' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'DurabilityQosPolicy.Kind' differ");
+                return false;
+            }
+            if (policy1.Depth != policy2.Depth)
+            {
+                System.Console.Error.WriteLine("'DurabilityQosPolicy.Depth' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool LatencyBudgetQosPolicyEquals(DDS.LatencyBudgetQosPolicy policy1
             , DDS.LatencyBudgetQosPolicy policy2)
-		{
-			if (!DurationEquals(policy1.Duration, policy2.Duration))
-			{
-				System.Console.Error.WriteLine("'LatencyBudgetQosPolicy.Duration' differ");
-				return false;
-			}
-			return true;
-		}
+        {
+            if (!DurationEquals(policy1.Duration, policy2.Duration))
+            {
+                System.Console.Error.WriteLine("'LatencyBudgetQosPolicy.Duration' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool LifespanQosPolicyEquals(DDS.LifespanQosPolicy policy1, DDS.LifespanQosPolicy
-			 policy2)
-		{
-			if (!DurationEquals(policy1.Duration, policy2.Duration))
-			{
-				System.Console.Error.WriteLine("'LifespanQosPolicy.Duration' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (!DurationEquals(policy1.Duration, policy2.Duration))
+            {
+                System.Console.Error.WriteLine("'LifespanQosPolicy.Duration' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool LivelinessQosPolicyEquals(DDS.LivelinessQosPolicy policy1, DDS.LivelinessQosPolicy
-			 policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'LivelinessQosPolicy.Kind' differ");
-				return false;
-			}
-			if (!DurationEquals(policy1.LeaseDuration, policy2.LeaseDuration))
-			{
-				System.Console.Error.WriteLine("'LivelinessQosPolicy.LeaseDuration' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'LivelinessQosPolicy.Kind' differ");
+                return false;
+            }
+            if (!DurationEquals(policy1.LeaseDuration, policy2.LeaseDuration))
+            {
+                System.Console.Error.WriteLine("'LivelinessQosPolicy.LeaseDuration' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool OwnershipQosPolicyEquals(DDS.OwnershipQosPolicy policy1, DDS.OwnershipQosPolicy
-			 policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'OwnershipQosPolicy.Kind' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'OwnershipQosPolicy.Kind' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool OwnershipStrengthQosPolicyEquals(DDS.OwnershipStrengthQosPolicy
              policy1, DDS.OwnershipStrengthQosPolicy policy2)
-		{
-			if (policy1.Value != policy2.Value)
-			{
-				System.Console.Error.WriteLine("'OwnershipStrengthQosPolicy.Value' differ");
-				return false;
-			}
-			return true;
-		}
+        {
+            if (policy1.Value != policy2.Value)
+            {
+                System.Console.Error.WriteLine("'OwnershipStrengthQosPolicy.Value' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool PartitionQosPolicyEquals(DDS.PartitionQosPolicy policy1, DDS.PartitionQosPolicy
-			 policy2)
-		{
-			if (!StringArrayEquals(policy1.Name, policy2.Name))
-			{
-				System.Console.Error.WriteLine("'PartitionQosPolicy.Name' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (!StringArrayEquals(policy1.Name, policy2.Name))
+            {
+                System.Console.Error.WriteLine("'PartitionQosPolicy.Name' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool PresentationQosPolicyEquals(DDS.PresentationQosPolicy policy1,
             DDS.PresentationQosPolicy policy2)
-		{
-			if (policy1.AccessScope != policy2.AccessScope)
-			{
-				System.Console.Error.WriteLine("'PresentationQosPolicy.AccessScope' differ");
-				return false;
-			}
-			if (policy1.CoherentAccess != policy2.CoherentAccess)
-			{
-				System.Console.Error.WriteLine("'PresentationQosPolicy.CoherentAccess' differ");
-				return false;
-			}
-			if (policy1.OrderedAccess != policy2.OrderedAccess)
-			{
-				System.Console.Error.WriteLine("'PresentationQosPolicy.OrderedAccess' differ");
-				return false;
-			}
-			return true;
-		}
+        {
+            if (policy1.AccessScope != policy2.AccessScope)
+            {
+                System.Console.Error.WriteLine("'PresentationQosPolicy.AccessScope' differ");
+                return false;
+            }
+            if (policy1.CoherentAccess != policy2.CoherentAccess)
+            {
+                System.Console.Error.WriteLine("'PresentationQosPolicy.CoherentAccess' differ");
+                return false;
+            }
+            if (policy1.OrderedAccess != policy2.OrderedAccess)
+            {
+                System.Console.Error.WriteLine("'PresentationQosPolicy.OrderedAccess' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool ReaderDataLifecycleQosPolicyEquals(DDS.ReaderDataLifecycleQosPolicy
              policy1, DDS.ReaderDataLifecycleQosPolicy policy2)
-		{
-			if (!DurationEquals(policy1.AutoPurgeNoWriterSamplesDelay, policy2.AutoPurgeNoWriterSamplesDelay
-				))
-			{
-				System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay' differ"
-					);
-				return false;
-			}
-			if (!DurationEquals(policy1.AutoPurgeDisposedSamplesDelay, policy2.AutoPurgeDisposedSamplesDelay
-				))
-			{
-				System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay' differ"
-					);
-				return false;
-			}
-			if (policy1.EnableInvalidSamples != policy2.EnableInvalidSamples)
-			{
-				System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.EnableInvalidSamples' differ"
-					);
-				return false;
-			}
-			return true;
-		}
+        {
+            if (!DurationEquals(policy1.AutoPurgeNoWriterSamplesDelay, policy2.AutoPurgeNoWriterSamplesDelay
+                ))
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay' differ"
+                    );
+                return false;
+            }
+            if (!DurationEquals(policy1.AutoPurgeDisposedSamplesDelay, policy2.AutoPurgeDisposedSamplesDelay
+                ))
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay' differ"
+                    );
+                return false;
+            }
+            if (policy1.EnableInvalidSamples != policy2.EnableInvalidSamples)
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.EnableInvalidSamples' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool ReliabilityQosPolicyEquals(DDS.ReliabilityQosPolicy policy1, DDS.ReliabilityQosPolicy
-			 policy2)
-		{
-			if (policy1.Kind != policy2.Kind)
-			{
-				System.Console.Error.WriteLine("'ReliabilityQosPolicy.Kind' differ");
-				return false;
-			}
-			if (!DurationEquals(policy1.MaxBlockingTime, policy2.MaxBlockingTime))
-			{
-				System.Console.Error.WriteLine("'ReliabilityQosPolicy.MaxBlockingTime' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (policy1.Kind != policy2.Kind)
+            {
+                System.Console.Error.WriteLine("'ReliabilityQosPolicy.Kind' differ");
+                return false;
+            }
+            if (!DurationEquals(policy1.MaxBlockingTime, policy2.MaxBlockingTime))
+            {
+                System.Console.Error.WriteLine("'ReliabilityQosPolicy.MaxBlockingTime' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool ResourceLimitsQosPolicyEquals(DDS.ResourceLimitsQosPolicy policy1
             , DDS.ResourceLimitsQosPolicy policy2)
-		{
-			if (policy1.MaxInstances != policy2.MaxInstances)
-			{
-				System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxInstances' differ");
-				return false;
-			}
-			if (policy1.MaxSamples != policy2.MaxSamples)
-			{
-				System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxSamples' differ");
-				return false;
-			}
-			if (policy1.MaxSamplesPerInstance != policy2.MaxSamplesPerInstance)
-			{
-				System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxSamplesPerInstance' differ"
-					);
-				return false;
-			}
-			return true;
-		}
+        {
+            if (policy1.MaxInstances != policy2.MaxInstances)
+            {
+                System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxInstances' differ");
+                return false;
+            }
+            if (policy1.MaxSamples != policy2.MaxSamples)
+            {
+                System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxSamples' differ");
+                return false;
+            }
+            if (policy1.MaxSamplesPerInstance != policy2.MaxSamplesPerInstance)
+            {
+                System.Console.Error.WriteLine("'ResourceLimitsQosPolicy.MaxSamplesPerInstance' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool TimeBasedFilterQosPolicyEquals(DDS.TimeBasedFilterQosPolicy policy1
             , DDS.TimeBasedFilterQosPolicy policy2)
-		{
-			if (!DurationEquals(policy1.MinimumSeparation, policy2.MinimumSeparation))
-			{
-				System.Console.Error.WriteLine("'TimeBasedFilterQosPolicy.MinimumSeparation' differ"
-					);
-				return false;
-			}
-			return true;
-		}
+        {
+            if (!DurationEquals(policy1.MinimumSeparation, policy2.MinimumSeparation))
+            {
+                System.Console.Error.WriteLine("'TimeBasedFilterQosPolicy.MinimumSeparation' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool TopicDataQosPolicyEquals(DDS.TopicDataQosPolicy policy1, DDS.TopicDataQosPolicy
-			 policy2)
-		{
-			if (!ByteArrayEquals(policy1.Value, policy2.Value))
-			{
-				System.Console.Error.WriteLine("'TopicDataQosPolicy.Value' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (!ByteArrayEquals(policy1.Value, policy2.Value))
+            {
+                System.Console.Error.WriteLine("'TopicDataQosPolicy.Value' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool TransportPriorityQosPolicyEquals(DDS.TransportPriorityQosPolicy
              policy1, DDS.TransportPriorityQosPolicy policy2)
-		{
-			if (policy1.Value != policy2.Value)
-			{
-				System.Console.Error.WriteLine("'TransportPriorityQosPolicy.Value' differ");
-				return false;
-			}
-			return true;
-		}
+        {
+            if (policy1.Value != policy2.Value)
+            {
+                System.Console.Error.WriteLine("'TransportPriorityQosPolicy.Value' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool UserDataQosPolicyEquals(DDS.UserDataQosPolicy policy1, DDS.UserDataQosPolicy
-			 policy2)
-		{
-			if (!ByteArrayEquals(policy1.Value, policy2.Value))
-			{
-				System.Console.Error.WriteLine("'UserDataQosPolicy.Value' differ");
-				return false;
-			}
-			return true;
-		}
+             policy2)
+        {
+            if (!ByteArrayEquals(policy1.Value, policy2.Value))
+            {
+                System.Console.Error.WriteLine("'UserDataQosPolicy.Value' differ");
+                return false;
+            }
+            return true;
+        }
 
-		/// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
-		/// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
-		/// <param name="policy1"></param>
-		/// <param name="policy2"></param>
-		/// <returns><code>true</code> if the values are equal.</returns>
+        /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>
+        /// <remarks>Compares if the values within policy1 are the same as in policy2.</remarks>
+        /// <param name="policy1"></param>
+        /// <param name="policy2"></param>
+        /// <returns><code>true</code> if the values are equal.</returns>
         public static bool WriterDataLifecycleQosPolicyEquals(DDS.WriterDataLifecycleQosPolicy
              policy1, DDS.WriterDataLifecycleQosPolicy policy2)
-		{
-			if (policy1.AutoDisposeUnregisteredInstances != policy2.AutoDisposeUnregisteredInstances)
-			{
-				System.Console.Error.WriteLine("'WriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances' differ"
-					);
-				return false;
-			}
-			return true;
-		}
-	}
+        {
+            if (policy1.AutoDisposeUnregisteredInstances != policy2.AutoDisposeUnregisteredInstances)
+            {
+                System.Console.Error.WriteLine("'WriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances' differ"
+                    );
+                return false;
+            }
+            return true;
+        }
+    }
 }

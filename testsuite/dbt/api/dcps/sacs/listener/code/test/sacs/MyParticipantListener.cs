@@ -1,42 +1,42 @@
 namespace test.sacs
 {
-	/// <date>Jun 16, 2005</date>
-	public class MyParticipantListener : test.sacs.MySubscriberListener, DDS.IDomainParticipantListener
-	{
-		public bool onOfferedDeadlineMissedCalled = false;
+    /// <date>Jun 16, 2005</date>
+    public class MyParticipantListener : test.sacs.MySubscriberListener, DDS.IDomainParticipantListener
+    {
+        public bool onOfferedDeadlineMissedCalled = false;
 
-		public DDS.OfferedDeadlineMissedStatus odmStatus;
+        public DDS.OfferedDeadlineMissedStatus odmStatus;
 
-		public bool onOfferedIncompatibleQosCalled = false;
+        public bool onOfferedIncompatibleQosCalled = false;
 
-		public DDS.OfferedIncompatibleQosStatus oiqStatus;
+        public DDS.OfferedIncompatibleQosStatus oiqStatus;
 
-		public bool onLivelinessLostCalled = false;
+        public bool onLivelinessLostCalled = false;
 
-		public DDS.LivelinessLostStatus llStatus;
+        public DDS.LivelinessLostStatus llStatus;
 
-		public bool onPublicationMatchStatus = false;
+        public bool onPublicationMatchStatus = false;
 
-		public DDS.PublicationMatchedStatus pmStatus;
+        public DDS.PublicationMatchedStatus pmStatus;
 
-		public bool onInconsistentTopicCalled = false;
+        public bool onInconsistentTopicCalled = false;
 
-		public DDS.InconsistentTopicStatus ictStatus;
+        public DDS.InconsistentTopicStatus ictStatus;
 
-		public override void Reset()
-		{
-			base.Reset();
-			onOfferedDeadlineMissedCalled = false;
-			odmStatus = new DDS.OfferedDeadlineMissedStatus();
-			onOfferedIncompatibleQosCalled = false;
-			oiqStatus = new DDS.OfferedIncompatibleQosStatus();
-			onLivelinessLostCalled = false;
-			llStatus = new DDS.LivelinessLostStatus();
-			onPublicationMatchStatus = false;
-			pmStatus = new DDS.PublicationMatchedStatus();
-			onInconsistentTopicCalled = false;
-			ictStatus = new DDS.InconsistentTopicStatus();
-		}
+        public override void Reset()
+        {
+            base.Reset();
+            onOfferedDeadlineMissedCalled = false;
+            odmStatus = new DDS.OfferedDeadlineMissedStatus();
+            onOfferedIncompatibleQosCalled = false;
+            oiqStatus = new DDS.OfferedIncompatibleQosStatus();
+            onLivelinessLostCalled = false;
+            llStatus = new DDS.LivelinessLostStatus();
+            onPublicationMatchStatus = false;
+            pmStatus = new DDS.PublicationMatchedStatus();
+            onInconsistentTopicCalled = false;
+            ictStatus = new DDS.InconsistentTopicStatus();
+        }
 
         #region ITopicListener Members
 
