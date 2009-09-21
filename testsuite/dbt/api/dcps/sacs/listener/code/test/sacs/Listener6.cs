@@ -29,94 +29,96 @@ namespace test.sacs
 			reader = (mod.tstDataReader)this.ResolveObject("datareader");
 			listener = new test.sacs.MyParticipantListener();
 			listener2 = new test.sacs.MyDataReaderListener();
-			rc = participant.Set_listener(listener, 0);
+			rc = participant.SetListener(listener, (DDS.StatusKind)0);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "set_listener on DomainParticipant failed.");
+				result.Result = "set_listener on DomainParticipant failed.";
 				return result;
 			}
-			rc = participant.Set_listener(null, 0);
+			rc = participant.SetListener(null, 0);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Null Listener could not be attached.");
+				result.Result = "Null Listener could not be attached.";
 				return result;
 			}
-			rc = participant.Set_listener(listener, 1012131412);
+            rc = participant.SetListener(listener, (DDS.StatusKind)1012131412);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (2).");
+				result.Result = "Listener could not be attached (2).";
 				return result;
 			}
-			rc = participant.Set_listener(listener, DDS.DATA_AVAILABLE_STATUS.Value);
+			rc = participant.SetListener(listener, DDS.StatusKind.DataAvailable);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (3).");
+				result.Result = "Listener could not be attached (3).";
 				return result;
 			}
-			mod.tst data = new mod.tst(1, 2, 3);
+			mod.tst data = new mod.tst();
+            data.long_1 = 1;
+            data.long_2 = 2;
+            data.long_3 = 3;
 			rc = writer.Write(data, 0L);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "tstDataWriter.write failed.");
+				result.Result = "tstDataWriter.write failed.";
 				return result;
 			}
 			try
 			{
-				java.lang.Thread.Sleep(3000);
+				System.Threading.Thread.Sleep(3000);
 			}
 			catch (System.Exception e)
 			{
-				Sharpen.Runtime.PrintStackTrace(e);
+				System.Console.WriteLine(e);
 			}
 			if (!listener.onDataAvailableCalled)
 			{
-				result.Result = "on_data_available not called.");
+				result.Result = "on_data_available not called.";
 				return result;
 			}
 			listener.Reset();
-			tstHolder = new mod.tst[]();
-			sampleInfoHolder = new DDS.SampleInfo[]();
-			rc = reader.Take(tstHolder, sampleInfoHolder, 1, DDS.SampleStateKind.Any, DDS.ANY_VIEW_STATE
-				.Value, DDS.InstanceStateKind.Any);
+			tstHolder = new mod.tst[0];
+			sampleInfoHolder = new DDS.SampleInfo[0];
+			rc = reader.Take(ref tstHolder, ref sampleInfoHolder, 1, DDS.SampleStateKind.Any, DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "tstDataReader.take failed.");
+				result.Result = "tstDataReader.take failed.";
 				return result;
 			}
-			rc = reader.Set_listener(listener2, DDS.DATA_AVAILABLE_STATUS.Value);
+			rc = reader.SetListener(listener2, DDS.StatusKind.DataAvailable);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (4).");
+				result.Result = "Listener could not be attached (4).";
 				return result;
 			}
 			rc = writer.Write(data, 0L);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "tstDataWriter.write failed.");
+				result.Result = "tstDataWriter.write failed.";
 				return result;
 			}
 			try
 			{
-				java.lang.Thread.Sleep(3000);
+				System.Threading.Thread.Sleep(3000);
 			}
 			catch (System.Exception e)
 			{
-				Sharpen.Runtime.PrintStackTrace(e);
+				System.Console.WriteLine(e);
 			}
 			if (listener.onDataAvailableCalled)
 			{
-				result.Result = "on_data_available is called but shouldn't be.");
+				result.Result = "on_data_available is called but shouldn't be.";
 				return result;
 			}
 			if (!listener2.onDataAvailableCalled)
 			{
-				result.Result = "on_data_available not called (2).");
+				result.Result = "on_data_available not called (2).";
 				return result;
 			}
 			listener.Reset();
 			listener2.Reset();
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

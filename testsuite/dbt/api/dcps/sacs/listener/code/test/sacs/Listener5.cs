@@ -21,32 +21,32 @@ namespace test.sacs
 				.Pass, Test.Framework.TestVerdict.Fail);
 			topic = (DDS.ITopic)this.ResolveObject("topic");
 			listener = new test.sacs.MyTopicListener();
-			rc = topic.Set_listener(listener, DDS.INCONSISTENT_TOPIC_STATUS.Value);
+			rc = topic.SetListener(listener, DDS.StatusKind.InconsistentTopic);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "set_listener on Topic failed.");
+				result.Result = "set_listener on Topic failed.";
 				return result;
 			}
-			rc = topic.Set_listener(null, 0);
+			rc = topic.SetListener(null, 0);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Null Listener could not be attached.");
+				result.Result = "Null Listener could not be attached.";
 				return result;
 			}
-			rc = topic.Set_listener(listener, DDS.INCONSISTENT_TOPIC_STATUS.Value);
+			rc = topic.SetListener(listener, DDS.StatusKind.InconsistentTopic);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (2).");
+				result.Result = "Listener could not be attached (2).";
 				return result;
 			}
-			rc = topic.Set_listener(listener, DDS.INCONSISTENT_TOPIC_STATUS.Value);
+            rc = topic.SetListener(listener, DDS.StatusKind.InconsistentTopic);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (3).");
+				result.Result = "Listener could not be attached (3).";
 				return result;
 			}
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

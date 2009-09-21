@@ -59,4 +59,7 @@
     <Compile Include="idl\bld\defaultConstructorDcps.cs" />
     <Compile Include="idl\bld\IdefaultConstructorDcps.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <PreBuildEvent>idlpp -S -l cs -d "$(ProjectDir)\idl\bld" "$(ProjectDir)\idl\code\defaultConstructor.idl"</PreBuildEvent>
+  </PropertyGroup>
 </Project>

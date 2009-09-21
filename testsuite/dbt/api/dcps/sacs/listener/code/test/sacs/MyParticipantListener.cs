@@ -1,76 +1,127 @@
 namespace test.sacs
 {
 	/// <date>Jun 16, 2005</date>
-	public class MyParticipantListener : test.sacs.MySubscriberListener, DDS.DomainParticipantListener
+	public class MyParticipantListener : test.sacs.MySubscriberListener, DDS.IDomainParticipantListener
 	{
 		public bool onOfferedDeadlineMissedCalled = false;
 
-		public DDS.OfferedDeadlineMissedStatus odmStatus = null;
+		public DDS.OfferedDeadlineMissedStatus odmStatus;
 
 		public bool onOfferedIncompatibleQosCalled = false;
 
-		public DDS.OfferedIncompatibleQosStatus oiqStatus = null;
+		public DDS.OfferedIncompatibleQosStatus oiqStatus;
 
 		public bool onLivelinessLostCalled = false;
 
-		public DDS.LivelinessLostStatus llStatus = null;
+		public DDS.LivelinessLostStatus llStatus;
 
 		public bool onPublicationMatchStatus = false;
 
-		public DDS.PublicationMatchedStatus pmStatus = null;
+		public DDS.PublicationMatchedStatus pmStatus;
 
 		public bool onInconsistentTopicCalled = false;
 
-		public DDS.InconsistentTopicStatus ictStatus = null;
-
-		public virtual void On_offered_deadline_missed(DDS.IDataWriter writer, DDS.OfferedDeadlineMissedStatus
-			 status)
-		{
-			onOfferedDeadlineMissedCalled = true;
-			odmStatus = status;
-		}
-
-		public virtual void On_offered_incompatible_qos(DDS.IDataWriter writer, DDS.OfferedIncompatibleQosStatus
-			 status)
-		{
-			onOfferedIncompatibleQosCalled = true;
-			oiqStatus = status;
-		}
-
-		public virtual void On_liveliness_lost(DDS.IDataWriter writer, DDS.LivelinessLostStatus
-			 status)
-		{
-			onLivelinessLostCalled = true;
-			llStatus = status;
-		}
-
-		public virtual void On_publication_matched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus
-			 status)
-		{
-			onPublicationMatchStatus = true;
-			pmStatus = status;
-		}
-
-		public virtual void On_inconsistent_topic(DDS.ITopic the_topic, DDS.InconsistentTopicStatus
-			 status)
-		{
-			onInconsistentTopicCalled = true;
-			ictStatus = status;
-		}
+		public DDS.InconsistentTopicStatus ictStatus;
 
 		public override void Reset()
 		{
 			base.Reset();
 			onOfferedDeadlineMissedCalled = false;
-			odmStatus = null;
+			odmStatus = new DDS.OfferedDeadlineMissedStatus();
 			onOfferedIncompatibleQosCalled = false;
-			oiqStatus = null;
+			oiqStatus = new DDS.OfferedIncompatibleQosStatus();
 			onLivelinessLostCalled = false;
-			llStatus = null;
+			llStatus = new DDS.LivelinessLostStatus();
 			onPublicationMatchStatus = false;
-			pmStatus = null;
+			pmStatus = new DDS.PublicationMatchedStatus();
 			onInconsistentTopicCalled = false;
-			ictStatus = null;
+			ictStatus = new DDS.InconsistentTopicStatus();
 		}
-	}
+
+        #region ITopicListener Members
+
+        void DDS.ITopicListener.OnInconsistentTopic(DDS.ITopic entityInterface, DDS.InconsistentTopicStatus status)
+        {
+            onInconsistentTopicCalled = true;
+            ictStatus = status;
+        }
+
+        #endregion
+
+        #region IDataWriterListener Members
+
+        void DDS.IDataWriterListener.OnLivelinessLost(DDS.IDataWriter entityInterface, DDS.LivelinessLostStatus status)
+        {
+            onLivelinessLostCalled = true;
+            llStatus = status;
+        }
+
+        void DDS.IDataWriterListener.OnOfferedDeadlineMissed(DDS.IDataWriter entityInterface, DDS.OfferedDeadlineMissedStatus status)
+        {
+            onOfferedDeadlineMissedCalled = true;
+            odmStatus = status;
+        }
+
+        void DDS.IDataWriterListener.OnOfferedIncompatibleQos(DDS.IDataWriter entityInterface, DDS.OfferedIncompatibleQosStatus status)
+        {
+            onOfferedIncompatibleQosCalled = true;
+            oiqStatus = status;
+        }
+
+        void DDS.IDataWriterListener.OnPublicationMatched(DDS.IDataWriter entityInterface, DDS.PublicationMatchedStatus status)
+        {
+            onPublicationMatchStatus = true;
+            pmStatus = status;
+        }
+
+        #endregion
+
+        #region ISubscriberListener Members
+
+        void DDS.ISubscriberListener.OnDataOnReaders(DDS.ISubscriber entityInterface)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        #endregion
+
+        #region IDataReaderListener Members
+
+        void DDS.IDataReaderListener.OnDataAvailable(DDS.IDataReader entityInterface)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnLivelinessChanged(DDS.IDataReader entityInterface, DDS.LivelinessChangedStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnRequestedDeadlineMissed(DDS.IDataReader entityInterface, DDS.RequestedDeadlineMissedStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnRequestedIncompatibleQos(DDS.IDataReader entityInterface, DDS.RequestedIncompatibleQosStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnSampleLost(DDS.IDataReader entityInterface, DDS.SampleLostStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnSampleRejected(DDS.IDataReader entityInterface, DDS.SampleRejectedStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        void DDS.IDataReaderListener.OnSubscriptionMatched(DDS.IDataReader entityInterface, DDS.SubscriptionMatchedStatus status)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        #endregion
+    }
 }

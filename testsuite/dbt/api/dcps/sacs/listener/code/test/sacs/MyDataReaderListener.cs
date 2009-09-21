@@ -5,29 +5,29 @@ namespace test.sacs
 	{
 		public bool onRequestedDeadlineMissedCalled = false;
 
-		public DDS.RequestedDeadlineMissedStatus rdmStatus = null;
+		public DDS.RequestedDeadlineMissedStatus rdmStatus;
 
 		public bool onRequestedIncompatibleQosCalled = false;
 
-		public DDS.RequestedIncompatibleQosStatus riqStatus = null;
+		public DDS.RequestedIncompatibleQosStatus riqStatus;
 
 		public bool onSampleRejectedCalled = false;
 
-		public DDS.SampleRejectedStatus srStatus = null;
+		public DDS.SampleRejectedStatus srStatus;
 
 		public bool onLivelinessChangedCalled = false;
 
-		public DDS.LivelinessChangedStatus lcStatus = null;
+		public DDS.LivelinessChangedStatus lcStatus;
 
 		public bool onDataAvailableCalled = false;
 
 		public bool onSubscriptionMatchCalled = false;
 
-		public DDS.SubscriptionMatchedStatus smStatus = null;
+		public DDS.SubscriptionMatchedStatus smStatus;
 
 		public bool onSampleLostCalled = false;
 
-		public DDS.SampleLostStatus slStatus = null;
+		public DDS.SampleLostStatus slStatus;
 
 		public virtual void On_requested_deadline_missed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus
 			 status)
@@ -79,18 +79,18 @@ namespace test.sacs
 		public virtual void Reset()
 		{
 			onRequestedDeadlineMissedCalled = false;
-			rdmStatus = null;
+			rdmStatus = new DDS.RequestedDeadlineMissedStatus();
 			onRequestedIncompatibleQosCalled = false;
-			riqStatus = null;
+			riqStatus = new DDS.RequestedIncompatibleQosStatus();
 			onSampleRejectedCalled = false;
-			srStatus = null;
+			srStatus = new DDS.SampleRejectedStatus();
 			onLivelinessChangedCalled = false;
-			lcStatus = null;
+			lcStatus = new DDS.LivelinessChangedStatus();
 			onDataAvailableCalled = false;
 			onSubscriptionMatchCalled = false;
-			smStatus = null;
+			smStatus = new DDS.SubscriptionMatchedStatus();
 			onSampleLostCalled = false;
-			slStatus = null;
+			slStatus = new DDS.SampleLostStatus();
 		}
 	}
 }

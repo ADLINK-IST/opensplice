@@ -89,58 +89,40 @@ namespace test.sacs
 				this.entity = entity;
 			}
 
-			public override void Run()
+			public void Run()
 			{
 				System.Console.Out.WriteLine("Thread " + this.id + " started...");
                 System.Threading.Thread.Sleep(0);
 				if (this.entity is DDS.IDomainParticipant)
 				{
-					DDS.DomainParticipantListener listener = new test.sacs.MyParticipantListener();
+					DDS.IDomainParticipantListener listener = new test.sacs.MyParticipantListener();
 					DDS.IDomainParticipant domainEntity = (DDS.IDomainParticipant)this.entity;
-					DDS.Listener l = domainEntity.Get_listener();
-					if (l == null)
+					this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.DataAvailable);
+					if (this.rc == DDS.ReturnCode.Ok)
 					{
-						this.rc = (domainEntity).Set_listener(listener, DDS.DATA_AVAILABLE_STATUS.Value);
+						this.rc = domainEntity.SetListener(null, 0);
 						if (this.rc == DDS.ReturnCode.Ok)
 						{
-							this.rc = domainEntity.Set_listener(null, 0);
-							if (this.rc == DDS.ReturnCode.Ok)
-							{
-								this.rc = domainEntity.Set_listener(listener, DDS.OFFERED_DEADLINE_MISSED_STATUS.
-									Value);
-							}
+							this.rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
 						}
-					}
-					else
-					{
-						this.rc = DDS.RETCODE_ERROR.Value;
 					}
 				}
 				else
 				{
 					if (this.entity is DDS.IPublisher)
 					{
-						DDS.PublisherListener listener = new test.sacs.MyDataWriterListener();
-						DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
-						DDS.Listener l = domainEntity.Get_listener();
-						if (l == null)
-						{
-							this.rc = (domainEntity).Set_listener(listener, DDS.REQUESTED_DEADLINE_MISSED_STATUS
-								.Value);
-							if (this.rc == DDS.ReturnCode.Ok)
-							{
-								this.rc = domainEntity.Set_listener(null, 0);
-								if (this.rc == DDS.ReturnCode.Ok)
-								{
-									this.rc = domainEntity.Set_listener(listener, DDS.REQUESTED_INCOMPATIBLE_QOS_STATUS
-										.Value);
-								}
-							}
-						}
-						else
-						{
-							this.rc = DDS.RETCODE_ERROR.Value;
-						}
+                        // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
+                        //DDS.IPublisherListener listener = new test.sacs.MyDataWriterListener();
+                        //DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
+                        //this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                        //if (this.rc == DDS.ReturnCode.Ok)
+                        //{
+                        //    this.rc = domainEntity.SetListener(null, 0);
+                        //    if (this.rc == DDS.ReturnCode.Ok)
+                        //    {
+                        //        this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
+                        //    }
+                        //}
 					}
 					else
 					{
@@ -148,24 +130,14 @@ namespace test.sacs
 						{
 							DDS.DataWriterListener listener = new test.sacs.MyDataWriterListener();
 							DDS.IDataWriter domainEntity = (DDS.IDataWriter)this.entity;
-							DDS.Listener l = domainEntity.Get_listener();
-							if (l == null)
+							this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+							if (this.rc == DDS.ReturnCode.Ok)
 							{
-								this.rc = (domainEntity).Set_listener(listener, DDS.REQUESTED_DEADLINE_MISSED_STATUS
-									.Value);
+								this.rc = domainEntity.SetListener(null, 0);
 								if (this.rc == DDS.ReturnCode.Ok)
 								{
-									this.rc = domainEntity.Set_listener(null, 0);
-									if (this.rc == DDS.ReturnCode.Ok)
-									{
-										this.rc = domainEntity.Set_listener(listener, DDS.REQUESTED_INCOMPATIBLE_QOS_STATUS
-											.Value);
-									}
+									this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
 								}
-							}
-							else
-							{
-								this.rc = DDS.RETCODE_ERROR.Value;
 							}
 						}
 						else
@@ -174,24 +146,14 @@ namespace test.sacs
 							{
 								DDS.DataReaderListener listener = new test.sacs.MyDataReaderListener();
 								DDS.IDataReader domainEntity = (DDS.IDataReader)this.entity;
-								DDS.Listener l = domainEntity.Get_listener();
-								if (l == null)
+								this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+								if (this.rc == DDS.ReturnCode.Ok)
 								{
-									this.rc = (domainEntity).Set_listener(listener, DDS.OFFERED_DEADLINE_MISSED_STATUS
-										.Value);
+									this.rc = domainEntity.SetListener(null, 0);
 									if (this.rc == DDS.ReturnCode.Ok)
 									{
-										this.rc = domainEntity.Set_listener(null, 0);
-										if (this.rc == DDS.ReturnCode.Ok)
-										{
-											this.rc = domainEntity.Set_listener(listener, DDS.OFFERED_INCOMPATIBLE_QOS_STATUS
-												.Value);
-										}
+										this.rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedIncompatibleQos);
 									}
-								}
-								else
-								{
-									this.rc = DDS.RETCODE_ERROR.Value;
 								}
 							}
 							else
@@ -200,55 +162,35 @@ namespace test.sacs
 								{
 									DDS.TopicListener listener = new test.sacs.MyTopicListener();
 									DDS.ITopic domainEntity = (DDS.ITopic)this.entity;
-									DDS.Listener l = domainEntity.Get_listener();
-									if (l == null)
+									this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.InconsistentTopic);
+									if (this.rc == DDS.ReturnCode.Ok)
 									{
-										this.rc = (domainEntity).Set_listener(listener, DDS.INCONSISTENT_TOPIC_STATUS.Value
-											);
+										this.rc = domainEntity.SetListener(null, 0);
 										if (this.rc == DDS.ReturnCode.Ok)
 										{
-											this.rc = domainEntity.Set_listener(null, 0);
-											if (this.rc == DDS.ReturnCode.Ok)
-											{
-												this.rc = domainEntity.Set_listener(listener, DDS.INCONSISTENT_TOPIC_STATUS.Value
-													);
-											}
+											this.rc = domainEntity.SetListener(listener, DDS.StatusKind.InconsistentTopic);
 										}
-									}
-									else
-									{
-										this.rc = DDS.RETCODE_ERROR.Value;
 									}
 								}
 								else
 								{
 									if (this.entity is DDS.ISubscriber)
 									{
-										DDS.SubscriberListener listener = new test.sacs.MySubscriberListener();
+										DDS.ISubscriberListener listener = new test.sacs.MySubscriberListener();
 										DDS.ISubscriber domainEntity = (DDS.ISubscriber)this.entity;
-										DDS.Listener l = domainEntity.Get_listener();
-										if (l == null)
+										this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+										if (this.rc == DDS.ReturnCode.Ok)
 										{
-											this.rc = (domainEntity).Set_listener(listener, DDS.OFFERED_DEADLINE_MISSED_STATUS
-												.Value);
+											this.rc = domainEntity.SetListener(null, 0);
 											if (this.rc == DDS.ReturnCode.Ok)
 											{
-												this.rc = domainEntity.Set_listener(null, 0);
-												if (this.rc == DDS.ReturnCode.Ok)
-												{
-													this.rc = domainEntity.Set_listener(listener, DDS.DATA_ON_READERS_STATUS.Value);
-												}
+												this.rc = domainEntity.SetListener(listener, DDS.StatusKind.DataOnReaders);
 											}
-										}
-										else
-										{
-											this.rc = DDS.RETCODE_ERROR.Value;
 										}
 									}
 									else
 									{
-										System.Console.Out.WriteLine("Entity type: " + Sharpen.Runtime.GetClassForObject(
-											this.entity).GetSimpleName() + " not supported.");
+										System.Console.Out.WriteLine("Entity type: " + this.entity.ToString() + " not supported.");
 									}
 								}
 							}

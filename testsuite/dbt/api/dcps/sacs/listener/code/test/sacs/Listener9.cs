@@ -33,162 +33,157 @@ namespace test.sacs
 			factory = DDS.DomainParticipantFactory.GetInstance();
 			if (factory == null)
 			{
-				result.Result = "DomainParticipantFactory could not be initialized.");
+				result.Result = "DomainParticipantFactory could not be initialized.";
 				return result;
 			}
-			pqosHolder = new DDS.DomainParticipantQos();
-			factory.GetDefaultParticipantQos(pqosHolder);
-			if (pqosHolder.Value == null)
+
+            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default DomainParticipantQos could not be resolved.");
+				result.Result = "Default DomainParticipantQos could not be resolved.";
 				return result;
 			}
-			participant = factory.CreateParticipant(string.Empty, pqosHolder.Value, null, 0);
+			participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
 			if (participant == null)
 			{
-				result.Result = "Creation of DomainParticipant failed.");
+				result.Result = "Creation of DomainParticipant failed.";
 				return result;
 			}
 			typeSupport = new mod.tstTypeSupport();
 			if (typeSupport == null)
 			{
-				result.Result = "Creation of tstTypeSupport failed.");
+				result.Result = "Creation of tstTypeSupport failed.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
 			rc = typeSupport.RegisterType(participant, "my_type");
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Register type failed.");
+				result.Result = "Register type failed.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			topQosHolder = new DDS.TopicQos();
-			participant.GetDefaultTopicQos(topQosHolder);
-			if (topQosHolder.Value == null)
+
+            if (participant.GetDefaultTopicQos(out topQosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default TopicQos could not be resolved.");
+				result.Result = "Default TopicQos could not be resolved.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			topQosHolder.Value.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
-			topic = participant.CreateTopic("my_topic_t", "my_type", topQosHolder.Value, null
-				, 0);
+			topQosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
+			topic = participant.CreateTopic("my_topic_t", "my_type", ref topQosHolder, null, 0);
 			if (topic == null)
 			{
-				result.Result = "Topic could not be created.");
+				result.Result = "Topic could not be created.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			pubQosHolder = new DDS.PublisherQos();
-			participant.GetDefaultPublisherQos(pubQosHolder);
-			if (pubQosHolder.Value == null)
+
+            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default PublisherQos could not be resolved.");
+				result.Result = "Default PublisherQos could not be resolved.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			publisher = participant.CreatePublisher(pubQosHolder.Value, null, 0);
+			publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
 			if (publisher == null)
 			{
-				result.Result = "Publisher could not be created.");
+				result.Result = "Publisher could not be created.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			wqosHolder = new DDS.DataWriterQos();
-			publisher.GetDefaultDataWriterQos(wqosHolder);
-			if (wqosHolder.Value == null)
+
+            if (publisher.GetDefaultDataWriterQos(out wqosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default DataWriterQos could not be resolved.");
+				result.Result = "Default DataWriterQos could not be resolved.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			wqosHolder.Value.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
-			datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, wqosHolder.Value
-				, null, 0);
+			wqosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
+			datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, ref wqosHolder, null, 0);
 			if (datawriter == null)
 			{
-				result.Result = "DataWriter could not be created.");
+				result.Result = "DataWriter could not be created.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			mod.tst t = new mod.tst(1, 2, 3);
+			mod.tst t = new mod.tst();
+            t.long_1 = 1;
+            t.long_2 = 2;
+            t.long_3 = 3;
+
 			rc = datawriter.Write(t, DDS.InstanceHandle.Nil);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Data could not be written.");
+				result.Result = "Data could not be written.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			sqosHolder = new DDS.SubscriberQos();
-			participant.GetDefaultSubscriberQos(sqosHolder);
-			if (sqosHolder.Value == null)
+
+            if (participant.GetDefaultSubscriberQos(out sqosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default SubscriberQos could not be resolved.");
+				result.Result = "Default SubscriberQos could not be resolved.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			subscriber = participant.CreateSubscriber(sqosHolder.Value, null, 0);
+			subscriber = participant.CreateSubscriber(ref sqosHolder, null, 0);
 			if (subscriber == null)
 			{
-				result.Result = "Subscriber could not be created.");
+				result.Result = "Subscriber could not be created.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			dqosHolder = new DDS.DataReaderQos();
-			subscriber.GetDefaultDataReaderQos(dqosHolder);
-			if (dqosHolder.Value == null)
+
+            if (subscriber.GetDefaultDataReaderQos(out dqosHolder) != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default DataReaderQos could not be resolved.");
+				result.Result = "Default DataReaderQos could not be resolved.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			dqosHolder.Value.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
+			dqosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
 			listener = new test.sacs.MyDataReaderListener();
-			datareader = (mod.tstDataReader)subscriber.CreateDataReader(topic, dqosHolder.Value
-				, listener, DDS.ANY_STATUS.Value);
+			datareader = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref dqosHolder, listener, DDS.StatusKind.Any);
 			if (datareader == null)
 			{
-				result.Result = "DataReader could not be created.");
+				result.Result = "DataReader could not be created.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
 			try
 			{
-				java.lang.Thread.Sleep(3000);
+				System.Threading.Thread.Sleep(3000);
 			}
 			catch (System.Exception e)
 			{
-				Sharpen.Runtime.PrintStackTrace(e);
+				System.Console.WriteLine(e);
 			}
 			if (!listener.onLivelinessChangedCalled)
 			{
-				result.Result = "on_liveliness_changed does not work properly.");
+				result.Result = "on_liveliness_changed does not work properly.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
-			datareader.GetLivelinessChangedStatus(new DDS.LivelinessChangedStatusHolder());
+			
 			if (!listener.onDataAvailableCalled)
 			{
-				result.Result = "on_data_available does not work properly.");
+				result.Result = "on_data_available does not work properly.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
 			rc = participant.DeleteContainedEntities();
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Delete contained entities failed.");
+				result.Result = "Delete contained entities failed.";
 				this.Cleanup(factory, participant);
 				return result;
 			}
 			rc = factory.DeleteParticipant(participant);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Delete DomainParticipant failed.");
+				result.Result = "Delete DomainParticipant failed.";
 				return result;
 			}
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 

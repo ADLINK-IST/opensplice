@@ -24,76 +24,79 @@ namespace test.sacs
 			subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
 			datawriter = (mod.tstDataWriter)this.ResolveObject("datawriter");
 			listener = new test.sacs.MySubscriberListener();
-			rc = subscriber.Set_listener(listener, DDS.DATA_ON_READERS_STATUS.Value);
+			rc = subscriber.SetListener(listener, DDS.StatusKind.DataOnReaders);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached.");
+				result.Result = "Listener could not be attached.";
 				return result;
 			}
-			mod.tst t = new mod.tst(1, 2, 3);
+			mod.tst t = new mod.tst();
+            t.long_1 = 1;
+            t.long_2 = 2;
+            t.long_3 = 3;
 			rc = datawriter.Write(t, DDS.InstanceHandle.Nil);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Data could not be written.");
+				result.Result = "Data could not be written.";
 				return result;
 			}
 			try
 			{
-				java.lang.Thread.Sleep(5000);
+				System.Threading.Thread.Sleep(5000);
 			}
 			catch (System.Exception e)
 			{
-				Sharpen.Runtime.PrintStackTrace(e);
+				System.Console.WriteLine(e);
 			}
 			if (!listener.onDataOnReadersCalled)
 			{
-				result.Result = "on_data_on_readers does not work properly.");
+				result.Result = "on_data_on_readers does not work properly.";
 				return result;
 			}
 			listener.Reset();
-			rc = subscriber.Set_listener(null, 0);
+			rc = subscriber.SetListener(null, 0);
 			datareader = (mod.tstDataReader)this.ResolveObject("datareader");
-			mod.tst[] data = new mod.tst[]();
-			DDS.SampleInfo[] info = new DDS.SampleInfo[]();
-			rc = datareader.Take(data, info, DDS.Length.Unlimited, DDS.ANY_SAMPLE_STATE
-				.Value, DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
+			mod.tst[] data = new mod.tst[0];
+			DDS.SampleInfo[] info = new DDS.SampleInfo[0];
+			rc = datareader.Take(ref data, ref info, DDS.Length.Unlimited, DDS.SampleStateKind.Any,
+				DDS.ViewStateKind.Any, DDS.InstanceStateKind.Any);
 			if (rc == DDS.ReturnCode.Ok)
 			{
-				datareader.ReturnLoan(data, info);
+				datareader.ReturnLoan(ref data, ref info);
 			}
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Null Listener could not be attached.");
+				result.Result = "Null Listener could not be attached.";
 				return result;
 			}
-			rc = subscriber.Set_listener(listener, 1012131412);
+            rc = subscriber.SetListener(listener, (DDS.StatusKind)1012131412);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (2).");
+				result.Result = "Listener could not be attached (2).";
 				return result;
 			}
-			rc = subscriber.Set_listener(listener, DDS.DATA_ON_READERS_STATUS.Value);
+			rc = subscriber.SetListener(listener, DDS.StatusKind.DataOnReaders);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (3).");
+				result.Result = "Listener could not be attached (3).";
 				return result;
 			}
 			try
 			{
-				java.lang.Thread.Sleep(5000);
+				System.Threading.Thread.Sleep(5000);
 			}
 			catch (System.Exception e)
 			{
-				Sharpen.Runtime.PrintStackTrace(e);
+				System.Console.WriteLine(e);
 			}
 			if (listener.onDataOnReadersCalled)
 			{
-				result.Result = "on_data_on_readers does not work properly (2).");
+				result.Result = "on_data_on_readers does not work properly (2).";
 				return result;
 			}
 			listener.Reset();
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

@@ -19,19 +19,19 @@ namespace test.sacs
 			participant = (DDS.IDomainParticipant)testCase.ResolveObject("participant");
 			if (participant == null)
 			{
-				result.Result = "DomainParticipant could not be found.");
+				result.Result = "DomainParticipant could not be found.";
 				return result;
 			}
 			rc = participant.DeleteContainedEntities();
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Could not delete contained entities of DomainParticipant.");
+				result.Result = "Could not delete contained entities of DomainParticipant.";
 				return result;
 			}
 			rc = factory.DeleteParticipant(participant);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Could not delete DomainParticipant.");
+				result.Result = "Could not delete DomainParticipant.";
 				return result;
 			}
 			testCase.UnregisterObject("participant");
@@ -47,8 +47,8 @@ namespace test.sacs
 			testCase.UnregisterObject("datawriter");
 			testCase.UnregisterObject("datawriterQos");
 			testCase.UnregisterObject("factory");
-			result.Result = "Deinitialization success.");
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = "Deinitialization success.";
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

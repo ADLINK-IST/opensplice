@@ -12,6 +12,7 @@ namespace test.sacs
 
 		public override Test.Framework.TestResult Run()
 		{
+
 			DDS.IPublisher publisher;
 			Test.Framework.TestResult result;
 			test.sacs.MyDataWriterListener listener;
@@ -21,32 +22,35 @@ namespace test.sacs
 				.Pass, Test.Framework.TestVerdict.Fail);
 			publisher = (DDS.IPublisher)this.ResolveObject("publisher");
 			listener = new test.sacs.MyDataWriterListener();
-			rc = publisher.Set_listener(listener, 0);
-			if (rc != DDS.ReturnCode.Ok)
-			{
-				result.Result = "set_listener on Publisher failed.");
-				return result;
-			}
-			rc = publisher.Set_listener(null, 0);
-			if (rc != DDS.ReturnCode.Ok)
-			{
-				result.Result = "Null Listener could not be attached.");
-				return result;
-			}
-			rc = publisher.Set_listener(listener, 1012131412);
-			if (rc != DDS.ReturnCode.Ok)
-			{
-				result.Result = "Attaching a listener failed.");
-				return result;
-			}
-			rc = publisher.Set_listener(listener, 0);
-			if (rc != DDS.ReturnCode.Ok)
-			{
-				result.Result = "Listener could not be attached (2).");
-				return result;
-			}
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+
+            // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
+
+            //rc = publisher.SetListener(listener, 0);
+            //if (rc != DDS.ReturnCode.Ok)
+            //{
+            //    result.Result = "set_listener on Publisher failed.";
+            //    return result;
+            //}
+            //rc = publisher.SetListener(null, 0);
+            //if (rc != DDS.ReturnCode.Ok)
+            //{
+            //    result.Result = "Null Listener could not be attached.";
+            //    return result;
+            //}
+            //rc = publisher.SetListener(listener, 1012131412);
+            //if (rc != DDS.ReturnCode.Ok)
+            //{
+            //    result.Result = "Attaching a listener failed.";
+            //    return result;
+            //}
+            //rc = publisher.SetListener(listener, 0);
+            //if (rc != DDS.ReturnCode.Ok)
+            //{
+            //    result.Result = "Listener could not be attached (2).";
+            //    return result;
+            //}
+            //result.Result = expResult;
+            //result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

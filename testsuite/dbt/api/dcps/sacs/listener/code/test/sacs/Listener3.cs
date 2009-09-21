@@ -26,33 +26,32 @@ namespace test.sacs
 			publisher = (DDS.IPublisher)this.ResolveObject("publisher");
 			topic = (DDS.ITopic)this.ResolveObject("topic");
 			listener = new test.sacs.MyDataWriterListener();
-			datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, wQos, listener
-				, DDS.ANY_STATUS.Value);
+			datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, ref wQos, listener, DDS.StatusKind.Any);
 			if (datawriter == null)
 			{
-				result.Result = "DataWriter could not be created.");
+				result.Result = "DataWriter could not be created.";
 				return result;
 			}
-			rc = datawriter.Set_listener(null, 0);
+			rc = datawriter.SetListener(null, 0);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Null Listener could be attached.");
+				result.Result = "Null Listener could be attached.";
 				return result;
 			}
-			rc = datawriter.Set_listener(listener, 1012131412);
+			rc = datawriter.SetListener(listener, (DDS.StatusKind)1012131412);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Invalid mask could be used when attaching a listener.");
+				result.Result = "Invalid mask could be used when attaching a listener.";
 				return result;
 			}
-			rc = datawriter.Set_listener(listener, DDS.PUBLICATION_MATCHED_STATUS.Value);
+			rc = datawriter.SetListener(listener, DDS.StatusKind.PublicationMatched);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Listener could not be attached (2).");
+				result.Result = "Listener could not be attached (2).";
 				return result;
 			}
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

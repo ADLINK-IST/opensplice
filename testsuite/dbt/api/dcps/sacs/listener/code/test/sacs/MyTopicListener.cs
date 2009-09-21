@@ -5,10 +5,9 @@ namespace test.sacs
 	{
 		public bool onInconsistentTopicCalled = false;
 
-		public DDS.InconsistentTopicStatus ictStatus = null;
+		public DDS.InconsistentTopicStatus ictStatus;
 
-		public virtual void On_inconsistent_topic(DDS.ITopic the_topic, DDS.InconsistentTopicStatus
-			 status)
+		public virtual void On_inconsistent_topic(DDS.ITopic the_topic, DDS.InconsistentTopicStatus status)
 		{
 			onInconsistentTopicCalled = true;
 			ictStatus = status;
@@ -17,7 +16,7 @@ namespace test.sacs
 		public virtual void Reset()
 		{
 			onInconsistentTopicCalled = false;
-			ictStatus = null;
+			ictStatus = new DDS.InconsistentTopicStatus();
 		}
 	}
 }
