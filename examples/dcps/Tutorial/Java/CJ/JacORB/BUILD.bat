@@ -9,7 +9,7 @@ ECHO "Compiling IDL with SPLICE IDL compiler"
 idlpp -l java -C ../../Chat.idl
 
 ECHO "Compiling IDL with JacORB IDL compiler"
-java -classpath "%JACORB_HOME%\lib\idl.jar";"%JACORB_HOME%\lib\endorsed\logkit.jar";%CLASSPATH% org.jacorb.idl.parser ../../Chat.idl
+java -classpath "%JACORB_HOME%\lib\idl.jar";"%JACORB_HOME%\lib\endorsed\logkit.jar";"%CLASSPATH%" org.jacorb.idl.parser ../../Chat.idl
 
 ECHO "Compiling generated java code"
 javac -classpath ".;%OSPL_HOME%\jar\dcpscj.jar" -d .. Chat\*.java
