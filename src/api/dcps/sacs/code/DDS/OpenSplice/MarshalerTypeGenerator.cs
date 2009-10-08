@@ -29,6 +29,8 @@ namespace DDS.OpenSplice
                 CSharpCodeProvider codeProvider = new CSharpCodeProvider();
 
                 List<string> assemLocationList = new List<string>();
+
+                GetDefaultAssemblies(ref assemLocationList);
                 GetReferencedAssemblyLocations(dataType.Assembly, ref assemLocationList);
 
                 CodeCompileUnit compileUnit = new CodeCompileUnit();
@@ -66,6 +68,17 @@ namespace DDS.OpenSplice
                     Console.WriteLine(errorStr);
                 }
                 throw;
+            }
+        }
+
+        private void GetDefaultAssemblies(ref List<string> assemLocationList)
+        {
+            Assembly myAssembly = Assembly.GetExecutingAssembly();
+
+            assemLocationList.Add(myAssembly.Location);
+            foreach (AssemblyName assem in myAssembly.GetReferencedAssemblies())
+            {
+                assemLocationList.Add(Assembly.Load(assem).Location);
             }
         }
 
