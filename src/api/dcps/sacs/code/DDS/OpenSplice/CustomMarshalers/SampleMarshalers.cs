@@ -45,7 +45,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_arrival_timestamp = (int)Marshal.OffsetOf(type, "arrival_timestamp");*/
 
 
-        internal static void CopyIn(ref OpenSplice.Gapi.gapi_readerInfo from, IntPtr to)
+        internal static void CopyIn(OpenSplice.Gapi.gapi_readerInfo from, IntPtr to)
         {
         }
 

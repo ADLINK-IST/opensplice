@@ -41,7 +41,7 @@ namespace DDS.OpenSplice.CustomMarshalers
     public delegate void SampleCopyOutDelegate(IntPtr from, ref object to, int offset);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void SampleReaderCopyDelegate(ref Gapi.gapi_Seq samples, ref Gapi.gapi_readerInfo info);
+    public delegate void SampleReaderCopyDelegate(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo info);
 
     public abstract class DatabaseMarshaler : BaseMarshaler
     {
@@ -138,8 +138,15 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
         }   
         
-        public virtual void ReaderCopy(ref Gapi.gapi_Seq samples, ref Gapi.gapi_readerInfo readerInfo)
+        public virtual void ReaderCopy(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo readerInfo)
         {
+            // TODO: readerInfo == null should throw an exception
+
+            if (samples == null)
+            {
+                return;
+            }
+
             int samplesToRead = (int) samples._length;
             IntPtr dataSampleBuf = samples._buffer;
             

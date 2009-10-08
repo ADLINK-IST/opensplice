@@ -285,7 +285,7 @@ namespace DDS.OpenSplice.Gapi
      */
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct gapi_Seq
+    public class gapi_Seq
     {
         public uint _maximum;
         public uint _length;
@@ -942,7 +942,7 @@ namespace DDS.OpenSplice.Gapi
     //} gapi_readerInfo;
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct gapi_readerInfo
+    public class gapi_readerInfo
     {
         public int max_samples;
         public int num_samples;

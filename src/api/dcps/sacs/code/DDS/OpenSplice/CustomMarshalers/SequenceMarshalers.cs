@@ -37,7 +37,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_policy_id = (int)Marshal.OffsetOf(dataType, "policy_id");
         private static readonly int offset_count = (int)Marshal.OffsetOf(dataType, "count");
 
-        static public void CopyOut(ref Gapi.gapi_Seq from, out QosPolicyCount[] to)
+        static public void CopyOut(Gapi.gapi_Seq from, out QosPolicyCount[] to)
         {
             // Initialize managed array to the correct size.
             to = new QosPolicyCount[from._length];
