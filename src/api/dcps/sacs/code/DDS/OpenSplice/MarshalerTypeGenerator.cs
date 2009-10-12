@@ -360,18 +360,27 @@ namespace DDS.OpenSplice
             switch(Gapi.MetaData.baseObjectKind(actualType))
             {
             case c_metaKind.M_STRUCTURE:
-                // Handle embedded struct.
-                copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                        string.Format("object attr{0}Val = dataTo.{1}", index, fieldName)));
-                copyOutMethod.Statements.Add(new CodeSnippetExpression(
-                        string.Format("attr{0}Marshaler.CopyOut(from, ref attr{0}Val, offset + {1})", 
-                                index, offset)));
-                copyOutMethod.Statements.Add(new CodeConditionStatement(
-                        new CodeSnippetExpression(
-                                string.Format("dataTo.{0} == null", fieldName)),
-                        new CodeExpressionStatement(new CodeSnippetExpression(
-                                string.Format("dataTo.{0} = attr{1}Val as {2}", 
-                                        fieldName, index, fieldType.FullName)))));
+                if (fieldType == typeof(DDS.Time) || fieldType == typeof(DDS.Duration) || fieldType == typeof(DDS.InstanceHandle))
+                {
+                    copyOutMethod.Statements.Add(new CodeSnippetExpression(
+                            string.Format("dataTo.{0} = Read{1}(from, offset + {2})",
+                            fieldName, fieldType.Name, offset)));
+                }
+                else
+                {
+                    // Handle embedded struct.
+                    copyOutMethod.Statements.Add(new CodeSnippetExpression(
+                            string.Format("object attr{0}Val = dataTo.{1}", index, fieldName)));
+                    copyOutMethod.Statements.Add(new CodeSnippetExpression(
+                            string.Format("attr{0}Marshaler.CopyOut(from, ref attr{0}Val, offset + {1})",
+                                    index, offset)));
+                    copyOutMethod.Statements.Add(new CodeConditionStatement(
+                            new CodeSnippetExpression(
+                                    string.Format("dataTo.{0} == null", fieldName)),
+                            new CodeExpressionStatement(new CodeSnippetExpression(
+                                    string.Format("dataTo.{0} = attr{1}Val as {2}",
+                                            fieldName, index, fieldType.FullName)))));
+                }
                 break;
             case c_metaKind.M_ENUMERATION:
                 // Handle enum.
@@ -726,7 +735,7 @@ namespace DDS.OpenSplice
                 for (int i = 0; i < nrMembers; i++)
                 {
                 	IntPtr member = Gapi.MetaData.structureMember(metaData, i);
-                    CreateStructMemberWrite(copyInMethod, member, i);
+                    CreateStructMemberWrite(copyInMethod, member, dataType, i);
                 }
             }
             else
@@ -744,21 +753,31 @@ namespace DDS.OpenSplice
         private void CreateStructMemberWrite(
                 CodeMemberMethod copyInMethod,
                 IntPtr member, 
+                Type dataType,
                 int index)
         {
             string cursorName;
             IntPtr memberType = Gapi.MetaData.memberType(member);
             IntPtr actualType = Gapi.MetaData.typeActualType(memberType);
             string fieldName = Gapi.MetaData.specifierName(member);
+            Type fieldType = dataType.GetField(fieldName).FieldType;
             uint offset = Gapi.MetaData.memberOffset(member);
 
             switch(Gapi.MetaData.baseObjectKind(actualType))
             {
             case c_metaKind.M_STRUCTURE:
-                // Handle embedded struct.
-                copyInMethod.Statements.Add(new CodeSnippetExpression(string.Format(
-                        "if (!attr{0}Marshaler.CopyIn(basePtr, from.{1}, to, offset + {2})) return false", 
-                        index, fieldName, offset)));
+                if (fieldType == typeof(DDS.Time) || fieldType == typeof(DDS.Duration) || fieldType == typeof(DDS.InstanceHandle))
+                {
+                    copyInMethod.Statements.Add(new CodeSnippetExpression(
+                        string.Format("Write(to, offset + {0}, from.{1})", offset, fieldName)));
+                }
+                else
+                {
+                    // Handle embedded struct.
+                    copyInMethod.Statements.Add(new CodeSnippetExpression(string.Format(
+                            "if (!attr{0}Marshaler.CopyIn(basePtr, from.{1}, to, offset + {2})) return false",
+                            index, fieldName, offset)));
+                }
                 break;
             case c_metaKind.M_ENUMERATION:
                 // Handle enum.
@@ -1038,6 +1057,10 @@ namespace DDS.OpenSplice
                         // Fetch Marshaler for embedded struct type.
                         fieldName = Gapi.MetaData.specifierName(member);
                         fieldType = dataType.GetField(fieldName).FieldType;
+                        if (fieldType == typeof(DDS.Time) || fieldType == typeof(DDS.Duration) || fieldType == typeof(DDS.InstanceHandle))
+                        {
+                            break;
+                        }
                         implClass.Members.Add(new CodeMemberField(
                                 typeof(DatabaseMarshaler), 
                                 string.Format("attr{0}Marshaler", i)));
