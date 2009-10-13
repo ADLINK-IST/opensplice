@@ -1536,7 +1536,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             to.AutoDisposeUnregisteredInstances =
                 BaseMarshaler.ReadBoolean(from, offset + offset_autodispose_unregistered_instances);
-            to.AutopurgeSuspendedSamplesDelay = BaseMarshaler.ReadDuration(from, offset + offset_autodispose_unregistered_instances);
+            to.AutopurgeSuspendedSamplesDelay = BaseMarshaler.ReadDuration(from, offset + offset_autopurge_suspended_samples_delay);
             to.AutounregisterInstanceDelay = BaseMarshaler.ReadDuration(from, offset + offset_autounregister_instance_delay);
         }
     }
