@@ -48,14 +48,16 @@ namespace DDS.OpenSplice
             Gapi.gapi_publisherDataWriterListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                result = Gapi.Publisher.set_listener(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    mask);
+                using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                {
+                    result = Gapi.Publisher.set_listener(
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        mask);
+                }
             }
-
             return result;
         }
 
@@ -96,22 +98,24 @@ namespace DDS.OpenSplice
             PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
-                    GapiPeer,
-                    topicObj.GapiPeer,
-                    IntPtr.Zero,
-                    listenerMarshaler.GapiPtr,
-                    mask);
-                if (gapiPtr != IntPtr.Zero)
+                using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
                 {
-                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
-                    dataWriter = typeSupport.CreateDataWriter(gapiPtr);
-                    dataWriter.SetListener(listenerHelper);
+                    IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
+                        GapiPeer,
+                        topicObj.GapiPeer,
+                        IntPtr.Zero,
+                        listenerMarshaler.GapiPtr,
+                        mask);
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
+                        dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                        dataWriter.SetListener(listenerHelper);
+                    }
                 }
             }
-
             return dataWriter;
         }
 
@@ -158,19 +162,22 @@ namespace DDS.OpenSplice
                 PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
-                        GapiPeer,
-                        topicObj.GapiPeer,
-                        marshaler.GapiPtr,
-                        listenerMarshaler.GapiPtr,
-                        mask);
-                    if (gapiPtr != IntPtr.Zero)
+                    using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
                     {
-                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
-                        dataWriter = typeSupport.CreateDataWriter(gapiPtr);
-                        dataWriter.SetListener(listenerHelper);
+                        IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
+                            GapiPeer,
+                            topicObj.GapiPeer,
+                            marshaler.GapiPtr,
+                            listenerMarshaler.GapiPtr,
+                            mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
+                            dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                            dataWriter.SetListener(listenerHelper);
+                        }
                     }
                 }
             }

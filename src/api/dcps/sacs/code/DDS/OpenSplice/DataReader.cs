@@ -182,46 +182,46 @@ namespace DDS.OpenSplice
             }
         }
 
-        public ReturnCode GetSampleRejectedStatus(out SampleRejectedStatus status)
+        public ReturnCode GetSampleRejectedStatus(SampleRejectedStatus status)
         {
             return Gapi.DataReader.get_sample_rejected_status(
                 GapiPeer,
-                out status);
+                status);
         }
 
-        public ReturnCode GetLivelinessChangedStatus(out LivelinessChangedStatus status)
+        public ReturnCode GetLivelinessChangedStatus(LivelinessChangedStatus status)
         {
             return Gapi.DataReader.get_liveliness_changed_status(
                  GapiPeer,
-                 out status);
+                 status);
         }
 
-        public ReturnCode GetRequestedDeadlineMissedStatus(out RequestedDeadlineMissedStatus status)
+        public ReturnCode GetRequestedDeadlineMissedStatus(RequestedDeadlineMissedStatus status)
         {
             return Gapi.DataReader.get_requested_deadline_missed_status(
                  GapiPeer,
-                 out status);
+                 status);
         }
 
-        public ReturnCode GetRequestedIncompatibleQosStatus(out RequestedIncompatibleQosStatus status)
+        public ReturnCode GetRequestedIncompatibleQosStatus(RequestedIncompatibleQosStatus status)
         {
             return Gapi.DataReader.get_requested_incompatible_qos_status(
                  GapiPeer,
-                 out status);
+                 status);
         }
 
-        public ReturnCode GetSubscriptionMatchedStatus(out SubscriptionMatchedStatus status)
+        public ReturnCode GetSubscriptionMatchedStatus(SubscriptionMatchedStatus status)
         {
             return Gapi.DataReader.get_subscription_matched_status(
                  GapiPeer,
-                 out status);
+                 status);
         }
 
-        public ReturnCode GetSampleLostStatus(out SampleLostStatus status)
+        public ReturnCode GetSampleLostStatus(SampleLostStatus status)
         {
             return Gapi.DataReader.get_sample_lost_status(
                  GapiPeer,
-                 out status);
+                 status);
         }
 
         public ReturnCode WaitForHistoricalData(Duration maxWait)

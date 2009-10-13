@@ -50,14 +50,16 @@ namespace DDS.OpenSplice
             Gapi.gapi_topicListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (TopicListenerMarshaler marshaler = new TopicListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                result = Gapi.Topic.set_listener(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    mask);
+                using (TopicListenerMarshaler marshaler = new TopicListenerMarshaler(ref gapiListener))
+                {
+                    result = Gapi.Topic.set_listener(
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        mask);
+                }
             }
-
             return result;
         }
 

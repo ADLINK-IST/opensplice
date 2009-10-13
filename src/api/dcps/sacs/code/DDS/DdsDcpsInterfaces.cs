@@ -96,9 +96,9 @@ namespace DDS
     public interface IEntity
     {
         ReturnCode Enable();
-        IStatusCondition GetStatusCondition();
-        StatusKind GetStatusChanges();
-        InstanceHandle GetInstanceHandle();
+        IStatusCondition StatusCondition { get; }
+        StatusKind StatusChanges { get; }
+        InstanceHandle InstanceHandle { get; }
     }
 
     public interface IDomainParticipant : IEntity
@@ -300,12 +300,12 @@ namespace DDS
         ReturnCode SetListener(IDataReaderListener listener, StatusKind mask);
         ITopicDescription GetTopicDescription();
         ISubscriber Subscriber { get; }
-        ReturnCode GetSampleRejectedStatus(out SampleRejectedStatus status);
-        ReturnCode GetLivelinessChangedStatus(out LivelinessChangedStatus status);
-        ReturnCode GetRequestedDeadlineMissedStatus(out RequestedDeadlineMissedStatus status);
-        ReturnCode GetRequestedIncompatibleQosStatus(out RequestedIncompatibleQosStatus status);
-        ReturnCode GetSubscriptionMatchedStatus(out SubscriptionMatchedStatus status);
-        ReturnCode GetSampleLostStatus(out SampleLostStatus status);
+        ReturnCode GetSampleRejectedStatus(SampleRejectedStatus status);
+        ReturnCode GetLivelinessChangedStatus(LivelinessChangedStatus status);
+        ReturnCode GetRequestedDeadlineMissedStatus(RequestedDeadlineMissedStatus status);
+        ReturnCode GetRequestedIncompatibleQosStatus(RequestedIncompatibleQosStatus status);
+        ReturnCode GetSubscriptionMatchedStatus(SubscriptionMatchedStatus status);
+        ReturnCode GetSampleLostStatus(SampleLostStatus status);
         ReturnCode WaitForHistoricalData(Duration maxWait);
         ReturnCode GetMatchedPublications(out InstanceHandle[] publicationHandles);
         ReturnCode GetMatchedPublicationData(

@@ -225,11 +225,11 @@ namespace testNamespace
             WaitSet waitSet = new WaitSet();
 
             // either use status conditions...or
-            IStatusCondition sc = reader2.GetStatusCondition();
+            IStatusCondition sc = reader2.StatusCondition;
             sc.SetEnabledStatuses(StatusKind.DataAvailable);
             waitSet.AttachCondition(sc);
 
-            IStatusCondition sc2 = reader2.GetStatusCondition();
+            IStatusCondition sc2 = reader2.StatusCondition;
 
             // read conditions...
             // IReadCondition readCond = reader2.CreateReadCondition();

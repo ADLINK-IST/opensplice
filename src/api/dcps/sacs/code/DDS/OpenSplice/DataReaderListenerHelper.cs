@@ -45,8 +45,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnRequestedDeadlineMissed(dataReader, status);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnRequestedDeadlineMissed(dataReader, status);
+                }
             }
         }
 
@@ -54,15 +57,18 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
 
-                RequestedIncompatibleQosStatus status = new RequestedIncompatibleQosStatus();
-                status.TotalCount = gapi_status.total_count;
-                status.TotalCountChange = gapi_status.total_count_change;
-                status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, out status.Policies);
+                    RequestedIncompatibleQosStatus status = new RequestedIncompatibleQosStatus();
+                    status.TotalCount = gapi_status.total_count;
+                    status.TotalCountChange = gapi_status.total_count_change;
+                    status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
+                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, out status.Policies);
 
-                listener.OnRequestedIncompatibleQos(dataReader, status);
+                    listener.OnRequestedIncompatibleQos(dataReader, status);
+                }
             }
         }
 
@@ -70,8 +76,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnSampleRejected(dataReader, status);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnSampleRejected(dataReader, status);
+                }
             }
         }
 
@@ -79,8 +88,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnLivelinessChanged(dataReader, status);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnLivelinessChanged(dataReader, status);
+                }
             }
         }
 
@@ -88,8 +100,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnDataAvailable(dataReader);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnDataAvailable(dataReader);
+                }
             }
         }
 
@@ -97,8 +112,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnSubscriptionMatched(dataReader, status);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnSubscriptionMatched(dataReader, status);
+                }
             }
         }
 
@@ -106,8 +124,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                listener.OnSampleLost(dataReader, status);
+                lock (listener)
+                {
+                    IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                    listener.OnSampleLost(dataReader, status);
+                }
             }
         }
 

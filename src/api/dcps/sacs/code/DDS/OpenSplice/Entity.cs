@@ -35,26 +35,35 @@ namespace DDS.OpenSplice
             return Gapi.Entity.enable(GapiPeer);
         }
 
-        public IStatusCondition GetStatusCondition()
+        public IStatusCondition StatusCondition
         {
-            IntPtr gapiPtr = Gapi.Entity.get_statuscondition(GapiPeer);
-            IStatusCondition statusCondition = (IStatusCondition)SacsSuperClass.fromUserData(gapiPtr);
-            if (gapiPtr != null && statusCondition == null)
+            get
             {
-                statusCondition = new StatusCondition(gapiPtr);
+                IntPtr gapiPtr = Gapi.Entity.get_statuscondition(GapiPeer);
+                IStatusCondition statusCondition = (IStatusCondition)SacsSuperClass.fromUserData(gapiPtr);
+                if (gapiPtr != null && statusCondition == null)
+                {
+                    statusCondition = new StatusCondition(gapiPtr);
+                }
+                return statusCondition;
             }
-            return statusCondition;
         }
 
-        public StatusKind GetStatusChanges()
+        public StatusKind StatusChanges
         {
-            return Gapi.Entity.get_status_changes(GapiPeer);
+            get
+            {
+                return Gapi.Entity.get_status_changes(GapiPeer);
+            }
         }
 
-        public InstanceHandle GetInstanceHandle()
+        public InstanceHandle InstanceHandle
         {
-            InstanceHandle handle = Gapi.Entity.get_instance_handle(GapiPeer);
-            return handle;
+            get
+            {
+                InstanceHandle handle = Gapi.Entity.get_instance_handle(GapiPeer);
+                return handle;
+            }
         }
     }
 }

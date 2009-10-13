@@ -89,15 +89,16 @@ namespace DDS.OpenSplice
             Gapi.gapi_domainParticipantListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-
-            using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                result = Gapi.DomainParticipant.set_listener(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    mask);
+                using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
+                {
+                    result = Gapi.DomainParticipant.set_listener(
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        mask);
+                }
             }
-
             return result;
         }
 
@@ -132,19 +133,21 @@ namespace DDS.OpenSplice
             PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
-                    GapiPeer,
-                    IntPtr.Zero,
-                    listenerMarshaler.GapiPtr,
-                    mask);
-                if (gapiPtr != IntPtr.Zero)
+                using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
                 {
-                    publisher = new Publisher(gapiPtr, listenerHelper);
+                    IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                        GapiPeer,
+                        IntPtr.Zero,
+                        listenerMarshaler.GapiPtr,
+                        mask);
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        publisher = new Publisher(gapiPtr, listenerHelper);
+                    }
                 }
             }
-
             return publisher;
         }
 
@@ -186,16 +189,19 @@ namespace DDS.OpenSplice
                 PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
-                        GapiPeer,
-                        marshaler.GapiPtr,
-                        listenerMarshaler.GapiPtr,
-                        mask);
-                    if (gapiPtr != IntPtr.Zero)
+                    using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
                     {
-                        publisher = new Publisher(gapiPtr, listenerHelper);
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            listenerMarshaler.GapiPtr,
+                            mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            publisher = new Publisher(gapiPtr, listenerHelper);
+                        }
                     }
                 }
             }
@@ -242,19 +248,21 @@ namespace DDS.OpenSplice
             SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (SubscriberListenerMarshaler listenerMarshaler = new SubscriberListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
-                    GapiPeer,
-                    IntPtr.Zero,
-                    listenerMarshaler.GapiPtr,
-                    mask);
-                if (gapiPtr != IntPtr.Zero)
+                using (SubscriberListenerMarshaler listenerMarshaler = new SubscriberListenerMarshaler(ref gapiListener))
                 {
-                    subscriber = new Subscriber(gapiPtr, listenerHelper);
+                    IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                        GapiPeer,
+                        IntPtr.Zero,
+                        listenerMarshaler.GapiPtr,
+                        mask);
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        subscriber = new Subscriber(gapiPtr, listenerHelper);
+                    }
                 }
             }
-
             return subscriber;
         }
 
@@ -293,16 +301,19 @@ namespace DDS.OpenSplice
                 SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                using (SubscriberListenerMarshaler listenerMarshaler = new SubscriberListenerMarshaler(ref gapiListener))
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
-                        GapiPeer,
-                        marshaler.GapiPtr,
-                        listenerMarshaler.GapiPtr,
-                        mask);
-                    if (gapiPtr != IntPtr.Zero)
+                    using (SubscriberListenerMarshaler listenerMarshaler = new SubscriberListenerMarshaler(ref gapiListener))
                     {
-                        subscriber = new Subscriber(gapiPtr, listenerHelper);
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            listenerMarshaler.GapiPtr,
+                            mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            subscriber = new Subscriber(gapiPtr, listenerHelper);
+                        }
                     }
                 }
             }
@@ -388,21 +399,23 @@ namespace DDS.OpenSplice
             TopicListenerHelper listenerHelper = new TopicListenerHelper();
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
+            lock (listener)
             {
-                IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                    GapiPeer,
-                    topicName,
-                    typeName,
-                    IntPtr.Zero,
-                    listenerMarshaler.GapiPtr,
-                    mask);
-                if (gapiPtr != IntPtr.Zero)
+                using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
                 {
-                    topic = new Topic(gapiPtr, listenerHelper);
+                    IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                        GapiPeer,
+                        topicName,
+                        typeName,
+                        IntPtr.Zero,
+                        listenerMarshaler.GapiPtr,
+                        mask);
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        topic = new Topic(gapiPtr, listenerHelper);
+                    }
                 }
             }
-
             return topic;
         }
 
@@ -445,18 +458,21 @@ namespace DDS.OpenSplice
                 TopicListenerHelper listenerHelper = new TopicListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                        GapiPeer,
-                        topicName,
-                        typeName,
-                        marshaler.GapiPtr,
-                        listenerMarshaler.GapiPtr,
-                        mask);
-                    if (gapiPtr != IntPtr.Zero)
+                    using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
                     {
-                        topic = new Topic(gapiPtr, listenerHelper);
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                            GapiPeer,
+                            topicName,
+                            typeName,
+                            marshaler.GapiPtr,
+                            listenerMarshaler.GapiPtr,
+                            mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            topic = new Topic(gapiPtr, listenerHelper);
+                        }
                     }
                 }
             }

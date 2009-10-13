@@ -165,7 +165,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_sample_rejected_status")]
         public static extern ReturnCode get_sample_rejected_status(
             IntPtr _this,
-            out SampleRejectedStatus status
+            SampleRejectedStatus status
             );
 
         /*     LivelinessChangedStatus
@@ -174,7 +174,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_liveliness_changed_status")]
         public static extern ReturnCode get_liveliness_changed_status(
             IntPtr _this,
-            out LivelinessChangedStatus status
+            LivelinessChangedStatus status
             );
 
         /*     RequestedDeadlineMissedStatus
@@ -183,7 +183,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_requested_deadline_missed_status")]
         public static extern ReturnCode get_requested_deadline_missed_status(
             IntPtr _this,
-            out RequestedDeadlineMissedStatus status
+            RequestedDeadlineMissedStatus status
             );
 
         /*     RequestedIncompatibleQosStatus
@@ -192,7 +192,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_requested_incompatible_qos_status")]
         public static extern ReturnCode get_requested_incompatible_qos_status(
             IntPtr _this,
-            out RequestedIncompatibleQosStatus status
+            RequestedIncompatibleQosStatus status
             );
 
         /*     SubscriptionMatchedStatus
@@ -201,7 +201,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_subscription_matched_status")]
         public static extern ReturnCode get_subscription_matched_status(
             IntPtr _this,
-            out SubscriptionMatchedStatus status
+            SubscriptionMatchedStatus status
             );
 
         /*     SampleLostStatus
@@ -210,7 +210,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_sample_lost_status")]
         public static extern ReturnCode get_sample_lost_status(
             IntPtr _this,
-            out SampleLostStatus status
+            SampleLostStatus status
             );
 
         /*     ReturnCode_t

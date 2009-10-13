@@ -39,8 +39,11 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                ITopic topic = (ITopic)OpenSplice.SacsSuperClass.fromUserData(topicPtr);
-                listener.OnInconsistentTopic(topic, status);
+                lock (listener)
+                {
+                    ITopic topic = (ITopic)OpenSplice.SacsSuperClass.fromUserData(topicPtr);
+                    listener.OnInconsistentTopic(topic, status);
+                }
             }
         }
 

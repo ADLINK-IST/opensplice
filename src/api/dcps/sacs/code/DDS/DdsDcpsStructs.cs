@@ -273,20 +273,22 @@ namespace DDS
     // ----------------------------------------------------------------------
     // Status structs
     // ----------------------------------------------------------------------
-    public struct InconsistentTopicStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class InconsistentTopicStatus
     {
         public int TotalCount;
         public int TotalCountChange;
     }
 
-
-    public struct SampleLostStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class SampleLostStatus
     {
         public int TotalCount;
         public int TotalCountChange;
     }
 
-    public struct SampleRejectedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class SampleRejectedStatus
     {
         public int TotalCount;
         public int TotalCountChange;
@@ -294,13 +296,15 @@ namespace DDS
         public InstanceHandle LastInstanceHandle;
     }
 
-    public struct LivelinessLostStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class LivelinessLostStatus
     {
         public int TotalCount;
         public int TotalCountChange;
     }
 
-    public struct LivelinessChangedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class LivelinessChangedStatus
     {
         public int AliveCount;
         public int NotAliveCount;
@@ -309,30 +313,24 @@ namespace DDS
         public InstanceHandle LastPublicationHandle;
     }
 
-
-    public struct OfferedDeadlineMissedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class OfferedDeadlineMissedStatus
     {
         public int TotalCount;
         public int TotalCountChange;
         public InstanceHandle LastInstanceHandle;
     }
 
-
-    public struct RequestedDeadlineMissedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class RequestedDeadlineMissedStatus
     {
         public int TotalCount;
         public int TotalCountChange;
         public InstanceHandle LastInstanceHandle;
     }
 
-    public struct QosPolicyCount
-    {
-        public QosPolicyId PolicyId;
-        public int Count;
-    }
-
-
-    public struct OfferedIncompatibleQosStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class OfferedIncompatibleQosStatus
     {
         public int TotalCount;
         public int TotalCountChange;
@@ -340,8 +338,8 @@ namespace DDS
         public QosPolicyCount[] Policies;
     }
 
-
-    public struct RequestedIncompatibleQosStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class RequestedIncompatibleQosStatus
     {
         public int TotalCount;
         public int TotalCountChange;
@@ -349,8 +347,8 @@ namespace DDS
         public QosPolicyCount[] Policies;
     }
 
-
-    public struct PublicationMatchedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class PublicationMatchedStatus
     {
         public int TotalCount;
         public int TotalCountChange;
@@ -359,14 +357,20 @@ namespace DDS
         public long LastSubscriptionHandle;
     }
 
-
-    public struct SubscriptionMatchedStatus
+    [StructLayout(LayoutKind.Sequential)]
+    public class SubscriptionMatchedStatus
     {
         public int TotalCount;
         public int TotalCountChange;
         public int CurrentCount;
         public int CurrentCountChange;
         public long LastPublicationHandle;
+    }
+
+    public struct QosPolicyCount
+    {
+        public QosPolicyId PolicyId;
+        public int Count;
     }
 
     // ----------------------------------------------------------------------
