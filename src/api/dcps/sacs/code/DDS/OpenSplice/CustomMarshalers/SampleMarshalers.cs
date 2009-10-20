@@ -27,44 +27,14 @@ namespace DDS.OpenSplice.CustomMarshalers
 {
     internal static class SampleInfoMarshaler
     {
-        /*private static Type type = typeof(OpenSplice.Gapi.gapi_sampleInfo);
-        public static readonly int Size = Marshal.SizeOf(type);
-
-        private static int offset_sample_state = (int)Marshal.OffsetOf(type, "sample_state");
-        private static int offset_view_state = (int)Marshal.OffsetOf(type, "view_state");
-        private static int offset_instance_state = (int)Marshal.OffsetOf(type, "instance_state");
-        private static int offset_valid_data = (int)Marshal.OffsetOf(type, "valid_data");
-        private static int offset_source_timestamp = (int)Marshal.OffsetOf(type, "source_timestamp");
-        private static int offset_instance_handle = (int)Marshal.OffsetOf(type, "instance_handle");
-        private static int offset_publication_handle = (int)Marshal.OffsetOf(type, "publication_handle");
-        private static int offset_disposed_generation_count = (int)Marshal.OffsetOf(type, "disposed_generation_count");
-        private static int offset_no_writers_generation_count = (int)Marshal.OffsetOf(type, "no_writers_generation_count");
-        private static int offset_sample_rank = (int)Marshal.OffsetOf(type, "sample_rank");
-        private static int offset_generation_rank = (int)Marshal.OffsetOf(type, "generation_rank");
-        private static int offset_absolute_generation_rank = (int)Marshal.OffsetOf(type, "absolute_generation_rank");
-        private static int offset_arrival_timestamp = (int)Marshal.OffsetOf(type, "arrival_timestamp");*/
-
 
         internal static void CopyIn(OpenSplice.Gapi.gapi_readerInfo from, IntPtr to)
         {
+            // No CopyIn needed: SampleInfo is never written into the database.
         }
 
         internal static void CopyOut(IntPtr from, ref SampleInfo toSampleInfo, int offset)
         {
-            //toSampleInfo = new SampleInfo();
-            //toSampleInfo.SampleState = (SampleStateKind)BaseMarshaler.ReadInt32(from, offset + offset_sample_state);
-            //toSampleInfo.ViewState = (ViewStateKind)BaseMarshaler.ReadInt32(from, offset + offset_view_state);
-            //toSampleInfo.InstanceState = (InstanceStateKind)BaseMarshaler.ReadInt32(from, offset + offset_instance_state);
-            //toSampleInfo.ValidData = BaseMarshaler.ReadInt32(from, offset + offset_valid_data) != 0;
-            //toSampleInfo.SourceTimestamp = BaseMarshaler.ReadTime(from, offset + offset_source_timestamp);
-            //toSampleInfo.InstanceHandle = BaseMarshaler.ReadInstanceHandle(from, offset + offset_instance_handle);
-            //toSampleInfo.PublicationHandle = BaseMarshaler.ReadInstanceHandle(from, offset + offset_publication_handle);
-            //toSampleInfo.DisposedGenerationCount = BaseMarshaler.ReadInt32(from, offset + offset_disposed_generation_count);
-            //toSampleInfo.NoWritersGenerationCount = BaseMarshaler.ReadInt32(from, offset + offset_no_writers_generation_count);
-            //toSampleInfo.SampleRank = BaseMarshaler.ReadInt32(from, offset + offset_sample_rank);
-            //toSampleInfo.GenerationRank = BaseMarshaler.ReadInt32(from, offset + offset_generation_rank);
-            //toSampleInfo.AbsoluteGenerationRank = BaseMarshaler.ReadInt32(from, offset + offset_absolute_generation_rank);
-            //toSampleInfo.ArrivalTimestamp = BaseMarshaler.ReadTime(from, offset + offset_arrival_timestamp);
             if (toSampleInfo == null) toSampleInfo = new SampleInfo();
             Marshal.PtrToStructure(new IntPtr(from.ToInt64() + offset), toSampleInfo);
         }

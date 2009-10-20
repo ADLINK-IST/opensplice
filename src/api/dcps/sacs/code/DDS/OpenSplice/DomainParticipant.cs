@@ -498,7 +498,9 @@ namespace DDS.OpenSplice
             ITopic topic = null;
 
             if (gapiPtr != IntPtr.Zero)
+            {
                 topic = new OpenSplice.Topic(gapiPtr);
+            }
 
             return topic;
         }
@@ -603,8 +605,8 @@ namespace DDS.OpenSplice
             using (IMarshaler marshaler = new DomainParticipantQosMarshaler(ref qos))
             {
                 return OpenSplice.Gapi.DomainParticipant.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                    GapiPeer,
+                    marshaler.GapiPtr);
             }
         }
 
@@ -676,11 +678,11 @@ namespace DDS.OpenSplice
 
         public ReturnCode SetDefaultPublisherQos(ref PublisherQos qos)
         {
-            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler())
+            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler(ref qos))
             {
                 return OpenSplice.Gapi.DomainParticipant.set_default_publisher_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                    GapiPeer,
+                    marshaler.GapiPtr);
             }
         }
 
@@ -706,11 +708,11 @@ namespace DDS.OpenSplice
 
         public ReturnCode SetDefaultSubscriberQos(ref SubscriberQos qos)
         {
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler(ref qos))
             {
                 return OpenSplice.Gapi.DomainParticipant.set_default_subscriber_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                    GapiPeer,
+                    marshaler.GapiPtr);
             }
         }
 
@@ -736,11 +738,11 @@ namespace DDS.OpenSplice
 
         public ReturnCode SetDefaultTopicQos(ref TopicQos qos)
         {
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (TopicQosMarshaler marshaler = new TopicQosMarshaler(ref qos))
             {
                 return OpenSplice.Gapi.DomainParticipant.set_default_topic_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                    GapiPeer,
+                    marshaler.GapiPtr);
             }
         }
 

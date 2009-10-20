@@ -141,49 +141,22 @@ namespace DDS.OpenSplice.CustomMarshalers
         public virtual void ReaderCopy(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo readerInfo)
         {
             // TODO: readerInfo == null should throw an exception
+            int samplesToRead = 0;
+            IntPtr dataSampleBuf = null;
 
-            if (samples == null)
+            if (samples != null)
             {
-                return;
+                samplesToRead = (int) samples._length;
+                dataSampleBuf = samples._buffer;
             }
 
-            int samplesToRead = (int) samples._length;
-            IntPtr dataSampleBuf = samples._buffer;
-            
-            //if (samples != IntPtr.Zero)
-            //{
-                //DataSample[] dataSamples;
-                //OpenSplice.CustomMarshalers.SequenceDataSampleMarshaler.CopyOut(samples, out dataSamples, 0);
+            IntPtr dataBufferPtr = Marshal.ReadIntPtr(readerInfo.data_buffer);
+            GCHandle tmpGCHandleData = GCHandle.FromIntPtr(dataBufferPtr);
+            object[] sampleDataArray = tmpGCHandleData.Target as object[];
 
-                //OpenSplice.Gapi.gapi_readerInfo readerInfo;
-                //CustomMarshalers.ReaderInfoMarshaler.CopyOut(info, out readerInfo);
-
-                // TODO: We don't understand why num_samples is zero all the time
-                //readerInfo.num_samples = dataSamples.Length;
-
-                // See the "Hack"comment in the ctor
-                //SampleCopyOutDelegate copyOutDelegate = (SampleCopyOutDelegate)Marshal.GetDelegateForFunctionPointer(
-                //    readerInfo.copy_out, copyOutType);
-
-                // grab the data and sample arrays
-                IntPtr dataBufferPtr = Marshal.ReadIntPtr(readerInfo.data_buffer);
-                GCHandle tmpGCHandleData = GCHandle.FromIntPtr(dataBufferPtr);
-                object[] sampleDataArray = tmpGCHandleData.Target as object[];
-
-                IntPtr infoBufferPtr = Marshal.ReadIntPtr(readerInfo.info_buffer);
-                GCHandle tmpGCHandleInfo = GCHandle.FromIntPtr(infoBufferPtr);
-                SampleInfo[] sampleInfoArray = tmpGCHandleInfo.Target as SampleInfo[];
-
-                //if (readerInfo.max_samples == Length.Unlimited)
-                //{
-                //    samplesToRead = (sampleDataArray == null || sampleDataArray.Length == 0) ? 
-                //            samplesToRead : Math.Min(sampleDataArray.Length, samplesToRead);
-                //}
-                //else
-                //{
-                //    samplesToRead = Math.Min(readerInfo.max_samples, samplesToRead);
-                //}
-            //}
+            IntPtr infoBufferPtr = Marshal.ReadIntPtr(readerInfo.info_buffer);
+            GCHandle tmpGCHandleInfo = GCHandle.FromIntPtr(infoBufferPtr);
+            SampleInfo[] sampleInfoArray = tmpGCHandleInfo.Target as SampleInfo[];
 
             if (sampleDataArray == null || sampleDataArray.Length != samplesToRead)
             {
@@ -212,14 +185,13 @@ namespace DDS.OpenSplice.CustomMarshalers
             int cursor = 0;
             for (int i = 0; i < samplesToRead; i++)
             {
-                //copyOutDelegate(dataSamples[i].data, ref sampleObj);
+                // Copy the samples.
                 samplePtr = ReadIntPtr(dataSampleBuf, cursor + offset_data);
                 sampleObj = sampleDataArray[i];
                 CopyOut(samplePtr, ref sampleObj, 0);
                 sampleDataArray[i] = sampleObj;
 
-                // copy the sample info
-                //sampleInfoArray[i] = dataSamples[i].sampleInfo;
+                // Copy the sample info
                 SampleInfoMarshaler.CopyOut(dataSampleBuf, ref sampleInfoArray[i], 
                         cursor + offset_sampleInfo);
                 cursor += dataSampleSize; 

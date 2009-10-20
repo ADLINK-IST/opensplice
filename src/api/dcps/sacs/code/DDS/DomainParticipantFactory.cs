@@ -252,7 +252,9 @@ namespace DDS
             using (IMarshaler marshaler = new DomainParticipantQosMarshaler(ref qos))
             {
                 // Invoke the corresponding gapi function.
-                result = OpenSplice.Gapi.DomainParticipantFactory.set_default_participant_qos(GapiPeer, marshaler.GapiPtr);
+                result = OpenSplice.Gapi.DomainParticipantFactory.set_default_participant_qos(
+                    GapiPeer, 
+                    marshaler.GapiPtr);
             }
 
             return result;
