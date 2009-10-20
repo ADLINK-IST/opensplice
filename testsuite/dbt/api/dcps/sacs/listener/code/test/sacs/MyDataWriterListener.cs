@@ -15,25 +15,25 @@ namespace test.sacs
         public bool onPublicationMatchStatus = false;
         public DDS.PublicationMatchedStatus pmStatus;
 
-        public virtual void OnOfferedDeadlineMissed(DDS.IDataWriter writer, DDS.OfferedDeadlineMissedStatus status)
+        public override void OnOfferedDeadlineMissed(DDS.IDataWriter writer, DDS.OfferedDeadlineMissedStatus status)
         {
             onOfferedDeadlineMissedCalled = true;
             odmStatus = status;
         }
 
-        public virtual void OnOfferedIncompatibleQos(DDS.IDataWriter writer, DDS.OfferedIncompatibleQosStatus status)
+        public override void OnOfferedIncompatibleQos(DDS.IDataWriter writer, DDS.OfferedIncompatibleQosStatus status)
         {
             onOfferedIncompatibleQosCalled = true;
             oiqStatus = status;
         }
 
-        public virtual void OnLivelinessLost(DDS.IDataWriter writer, DDS.LivelinessLostStatus status)
+        public override void OnLivelinessLost(DDS.IDataWriter writer, DDS.LivelinessLostStatus status)
         {
             onLivelinessLostCalled = true;
             llStatus = status;
         }
 
-        public virtual void OnPublicationMatched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus status)
+        public override void OnPublicationMatched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus status)
         {
             onPublicationMatchStatus = true;
             pmStatus = status;

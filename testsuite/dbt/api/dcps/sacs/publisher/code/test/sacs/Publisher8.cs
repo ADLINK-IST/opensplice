@@ -22,8 +22,6 @@ namespace test.sacs
             DDS.IPublisher publisher;
             DDS.DataWriterQos dataWriterQos;
             DDS.DataWriterQos qosHolder1;
-            DDS.DataWriterQos qosHolder2;
-            DDS.IDataWriter writer;
             DDS.ITopic topic;
             string expResult = "copy_from_topic_qos rejects TOPIC_QOS_DEFAULT with correct code.";
             Test.Framework.TestResult result;

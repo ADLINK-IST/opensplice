@@ -58,8 +58,8 @@ namespace test.sacs
             , int totalCountChange)
         {
             bool result = false;
-            DDS.RequestedDeadlineMissedStatus holder;
-            DDS.ReturnCode rc = reader.GetRequestedDeadlineMissedStatus(out holder);
+            DDS.RequestedDeadlineMissedStatus holder = new DDS.RequestedDeadlineMissedStatus();
+            DDS.ReturnCode rc = reader.GetRequestedDeadlineMissedStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.RequestedDeadlineMissedStatus status = holder;
@@ -93,8 +93,8 @@ namespace test.sacs
             , int totalCountChange)
         {
             bool result = false;
-            DDS.RequestedIncompatibleQosStatus holder;
-            DDS.ReturnCode rc = reader.GetRequestedIncompatibleQosStatus(out holder);
+            DDS.RequestedIncompatibleQosStatus holder = new DDS.RequestedIncompatibleQosStatus();
+            DDS.ReturnCode rc = reader.GetRequestedIncompatibleQosStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.RequestedIncompatibleQosStatus status = holder;
@@ -128,8 +128,8 @@ namespace test.sacs
              totalCountChange)
         {
             bool result = false;
-            DDS.SampleRejectedStatus holder;
-            DDS.ReturnCode rc = reader.GetSampleRejectedStatus(out holder);
+            DDS.SampleRejectedStatus holder = new DDS.SampleRejectedStatus();
+            DDS.ReturnCode rc = reader.GetSampleRejectedStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.SampleRejectedStatus status = holder;
@@ -162,8 +162,8 @@ namespace test.sacs
             int activeCountChange, int inactiveCount, int inactiveCountChange)
         {
             bool result = false;
-            DDS.LivelinessChangedStatus holder;
-            DDS.ReturnCode rc = reader.GetLivelinessChangedStatus(out holder);
+            DDS.LivelinessChangedStatus holder = new DDS.LivelinessChangedStatus();
+            DDS.ReturnCode rc = reader.GetLivelinessChangedStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.LivelinessChangedStatus status = holder;
@@ -212,8 +212,8 @@ namespace test.sacs
             int totalCountChange)
         {
             bool result = false;
-            DDS.SubscriptionMatchedStatus holder;
-            DDS.ReturnCode rc = reader.GetSubscriptionMatchedStatus(out holder);
+            DDS.SubscriptionMatchedStatus holder = new DDS.SubscriptionMatchedStatus();
+            DDS.ReturnCode rc = reader.GetSubscriptionMatchedStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.SubscriptionMatchedStatus status = holder;
@@ -246,8 +246,8 @@ namespace test.sacs
             )
         {
             bool result = false;
-            DDS.SampleLostStatus holder;
-            DDS.ReturnCode rc = reader.GetSampleLostStatus(out holder);
+            DDS.SampleLostStatus holder = new DDS.SampleLostStatus();
+            DDS.ReturnCode rc = reader.GetSampleLostStatus(holder);
             if (rc == DDS.ReturnCode.Ok)
             {
                 DDS.SampleLostStatus status = holder;

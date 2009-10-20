@@ -1,7 +1,7 @@
 namespace test
 {
     /// <date>May 23, 2005</date>
-    public class SAJTester
+    public class SACSTester
     {
         public static void Main(string[] args)
         {

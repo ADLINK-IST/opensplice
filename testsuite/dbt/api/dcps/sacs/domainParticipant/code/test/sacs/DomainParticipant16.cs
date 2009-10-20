@@ -16,7 +16,6 @@ namespace test.sacs
         {
             Test.Framework.TestResult result;
             DDS.IDomainParticipant participant;
-            DDS.IDomainParticipant participant2;
             DDS.DomainParticipantFactory factory;
             DDS.DomainParticipantQos qos;
             string expResult = "Default topicQos is used when TOPIC_QOS_DEFAULT is specified.";
@@ -24,10 +23,6 @@ namespace test.sacs
             DDS.TopicQos topQosHolder2;
             mod.tstTypeSupport typeSupport;
             DDS.ITopic topic;
-            DDS.ITopic topic2;
-            DDS.ITopic topic3;
-            DDS.ITopic topic4;
-            DDS.ITopicDescription description;
             DDS.ReturnCode returnCode;
             factory = (DDS.DomainParticipantFactory)this.ResolveObject("factory");
             qos = (DDS.DomainParticipantQos)this.ResolveObject("participantQos");

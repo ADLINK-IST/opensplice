@@ -29,7 +29,7 @@ namespace test.sacs
             writer = (mod.tstDataWriter)this.ResolveObject("datawriter");
             reader = (mod.tstDataReader)this.ResolveObject("datareader");
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
-            condition = reader.GetStatusCondition();
+            condition = reader.StatusCondition;
             if (condition == null)
             {
                 result.Result = "Could not resolve reader condition.";
@@ -194,48 +194,48 @@ namespace test.sacs
         private void PrintStatusses(DDS.IDataReader reader)
         {
             DDS.ReturnCode rc;
-            DDS.RequestedDeadlineMissedStatus rdmsHolder;
-            rc = reader.GetRequestedDeadlineMissedStatus(out rdmsHolder);
+            DDS.RequestedDeadlineMissedStatus rdmsHolder = new DDS.RequestedDeadlineMissedStatus();
+            rc = reader.GetRequestedDeadlineMissedStatus(rdmsHolder);
             DDS.RequestedDeadlineMissedStatus rdms = rdmsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.RequestedIncompatibleQosStatus riqsHolder;
-            rc = reader.GetRequestedIncompatibleQosStatus(out riqsHolder);
+            DDS.RequestedIncompatibleQosStatus riqsHolder = new DDS.RequestedIncompatibleQosStatus();
+            rc = reader.GetRequestedIncompatibleQosStatus(riqsHolder);
             DDS.RequestedIncompatibleQosStatus riqs = riqsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.SampleRejectedStatus srsHolder;
-            rc = reader.GetSampleRejectedStatus(out srsHolder);
+            DDS.SampleRejectedStatus srsHolder = new DDS.SampleRejectedStatus();
+            rc = reader.GetSampleRejectedStatus(srsHolder);
             DDS.SampleRejectedStatus srs = srsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.LivelinessChangedStatus lcsHolder;
-            rc = reader.GetLivelinessChangedStatus(out lcsHolder);
+            DDS.LivelinessChangedStatus lcsHolder = new DDS.LivelinessChangedStatus();
+            rc = reader.GetLivelinessChangedStatus(lcsHolder);
             DDS.LivelinessChangedStatus lcs = lcsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.SubscriptionMatchedStatus smsHolder;
-            rc = reader.GetSubscriptionMatchedStatus(out smsHolder);
+            DDS.SubscriptionMatchedStatus smsHolder = new DDS.SubscriptionMatchedStatus();
+            rc = reader.GetSubscriptionMatchedStatus(smsHolder);
             DDS.SubscriptionMatchedStatus sms = smsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.SampleLostStatus slsHolder;
-            rc = reader.GetSampleLostStatus(out slsHolder);
+            DDS.SampleLostStatus slsHolder = new DDS.SampleLostStatus();
+            rc = reader.GetSampleLostStatus(slsHolder);
             DDS.SampleLostStatus sls = slsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {

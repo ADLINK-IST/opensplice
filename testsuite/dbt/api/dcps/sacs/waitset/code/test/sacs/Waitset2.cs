@@ -59,13 +59,13 @@ namespace test.sacs
                 result.Result = "create_publisher failed.";
                 return result;
             }
-            condition = participant.GetStatusCondition();
+            condition = participant.StatusCondition;
             if (condition == null)
             {
                 result.Result = "get_status_condition failed.";
                 return result;
             }
-            condition2 = publisher.GetStatusCondition();
+            condition2 = publisher.StatusCondition;
             if (condition2 == null)
             {
                 result.Result = "get_status_condition failed.(2)";

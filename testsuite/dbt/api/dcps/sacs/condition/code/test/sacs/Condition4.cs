@@ -28,7 +28,7 @@ namespace test.sacs
                 Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Fail);
 
             reader = (mod.tstDataReader)this.ResolveObject("datareader");
-            condition = reader.GetStatusCondition();
+            condition = reader.StatusCondition;
             if (condition == null)
             {
                 result.Result = "Could not resolve status condition.";
@@ -59,15 +59,15 @@ namespace test.sacs
             if (holder.Length != 1)
             {
                 System.Console.Out.WriteLine("Holder length : " + holder.Length);
-                System.Console.Out.WriteLine("Status changes: " + reader.GetStatusChanges());
-                reader.GetSubscriptionMatchedStatus(out sHolder);
+                System.Console.Out.WriteLine("Status changes: " + reader.StatusChanges);
+                reader.GetSubscriptionMatchedStatus(sHolder);
                 System.Console.Out.WriteLine("Total count   : " + sHolder.TotalCount);
-                reader.GetLivelinessChangedStatus(out lHolder);
+                reader.GetLivelinessChangedStatus(lHolder);
                 System.Console.Out.WriteLine("Alive count   : " + lHolder.AliveCount);
                 result.Result = "wait should return 1 condition but didn't (1).";
                 return result;
             }
-            rc = reader.GetLivelinessChangedStatus(out lHolder);
+            rc = reader.GetLivelinessChangedStatus(lHolder);
             DDS.LivelinessChangedStatus status = lHolder;
             if (rc != DDS.ReturnCode.Ok)
             {

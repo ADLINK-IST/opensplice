@@ -1,0 +1,27 @@
+. $OSPL_HOME/testsuite/dbt/api/dcps/sacs/bin/test_general
+
+#API_TEST_DIR=$OSPL_HOME/testsuite/dbt/api/dcps/sacs/exec/$SPLICE_TARGET
+TESTCASESDIR=$OSPL_HOME/testsuite/dbt/api/dcps/sacs/exec/$SPLICE_TARGET
+
+TESTCASES="
+    SACSTesterBoundsCheck
+    SACSTesterBuiltin
+    SACSTesterCondition
+    SACSContentFilteredTopicTester
+    SACSTesterParticipant
+    SACSTester
+    SACSErrorInfoTester
+    SACSHistDataWithConditionTester
+    SACSTesterListener
+    SACSTesterPublisher
+    SACSTesterReader
+    SACSTesterStatus
+    SACSTesterSubscriber
+    SACSTesterTopic
+    SACSTesterTypeSupport
+    SACSWaitSetTester
+    SACSTesterWriter
+    "
+
+run_testcases    
+   

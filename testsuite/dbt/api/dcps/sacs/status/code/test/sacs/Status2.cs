@@ -13,18 +13,18 @@ namespace test.sacs
         {
             DDS.ReturnCode rc;
             mod.tstDataReader datareader;
-            DDS.SampleRejectedStatus srStatus;
-            DDS.LivelinessChangedStatus lcStatus;
-            DDS.RequestedDeadlineMissedStatus rdmStatus;
-            DDS.RequestedIncompatibleQosStatus riqStatus;
-            DDS.SubscriptionMatchedStatus smStatus;
-            DDS.SampleLostStatus slStatus;
+            DDS.SampleRejectedStatus srStatus = new DDS.SampleRejectedStatus();
+            DDS.LivelinessChangedStatus lcStatus = new DDS.LivelinessChangedStatus();
+            DDS.RequestedDeadlineMissedStatus rdmStatus = new DDS.RequestedDeadlineMissedStatus();
+            DDS.RequestedIncompatibleQosStatus riqStatus = new DDS.RequestedIncompatibleQosStatus();
+            DDS.SubscriptionMatchedStatus smStatus = new DDS.SubscriptionMatchedStatus();
+            DDS.SampleLostStatus slStatus = new DDS.SampleLostStatus();
             string expResult = "DataReader status test succeeded";
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             datareader = (mod.tstDataReader)this.ResolveObject("datareader");
-            rc = datareader.GetSampleRejectedStatus(out srStatus);
+            rc = datareader.GetSampleRejectedStatus(srStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "SampleRejectedStatus could not be resolved.";
@@ -40,13 +40,13 @@ namespace test.sacs
                 result.Result = "SampleRejectedStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetLivelinessChangedStatus(out lcStatus);
+            rc = datareader.GetLivelinessChangedStatus(lcStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "LivelinessChangedStatus could not be resolved.";
                 return result;
             }
-            rc = datareader.GetRequestedIncompatibleQosStatus(out riqStatus);
+            rc = datareader.GetRequestedIncompatibleQosStatus(riqStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "RequestedIncompatibleStatus could not be resolved.";
@@ -62,13 +62,13 @@ namespace test.sacs
                 result.Result = "RequestedIncompatibleQosStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetSubscriptionMatchedStatus(out smStatus);
+            rc = datareader.GetSubscriptionMatchedStatus(smStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "SubscriptionMatchStatus could not be resolved.";
                 return result;
             }
-            rc = datareader.GetSampleLostStatus(out slStatus);
+            rc = datareader.GetSampleLostStatus(slStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "SampleLostStatus could not be resolved.";
@@ -84,13 +84,12 @@ namespace test.sacs
                 result.Result = "SampleLostStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetRequestedDeadlineMissedStatus(out rdmStatus);
+            rc = datareader.GetRequestedDeadlineMissedStatus(rdmStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "RequestedDeadlineMissedStatus could not be resolved (" + rc + ").";
                 return result;
             }
-            datareader.GetStatusChanges();
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

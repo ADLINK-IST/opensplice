@@ -32,7 +32,7 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topic = (DDS.ITopic)this.ResolveObject("topic");
             drQos = (DDS.DataReaderQos)this.ResolveObject("datareaderQos");
-            condition = writer.GetStatusCondition();
+            condition = writer.StatusCondition;
             if (condition == null)
             {
                 result.Result = "Could not resolve reader condition.";

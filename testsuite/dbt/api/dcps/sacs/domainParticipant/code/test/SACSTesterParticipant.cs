@@ -1,7 +1,7 @@
 namespace test
 {
     /// <date>May 24, 2005</date>
-    public class SAJTesterParticipant
+    public class SACSTesterParticipant
     {
         /// <exception cref="System.Exception"></exception>
         public static void Main(string[] args)

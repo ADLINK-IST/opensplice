@@ -18,7 +18,7 @@ namespace test.sacs
             Test.Framework.TestResult result;
             test.sacs.MyDataWriterListener listener;
             string expResult = "PublisherListener test succeeded.";
-            DDS.ReturnCode rc;
+            //DDS.ReturnCode rc;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");

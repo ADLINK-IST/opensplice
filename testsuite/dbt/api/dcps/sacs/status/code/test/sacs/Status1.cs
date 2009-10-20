@@ -36,7 +36,6 @@ namespace test.sacs
                 result.Result = "InconsistentTopicStatus.TotalCountChange != 0.";
                 return result;
             }
-            topic.GetStatusChanges();
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

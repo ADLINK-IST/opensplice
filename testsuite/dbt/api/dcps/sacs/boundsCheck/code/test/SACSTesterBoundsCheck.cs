@@ -1,6 +1,6 @@
 namespace test
 {
-	public class SAJTesterBoundsCheck
+	public class SACSTesterBoundsCheck
 	{
 		public static void Main(string[] args)
 		{

@@ -46,11 +46,6 @@ namespace test.sacs
                 result.Result = "Get default TopicQos did not return the default qos (1).";
                 return result;
             }
-            if (topQosHolder1.Durability.Kind == null)
-            {
-                result.Result = "Get default TopicQos failed (2).";
-                return result;
-            }
             topQosHolder1.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             topQosHolder1.Liveliness.Kind = DDS.LivelinessQosPolicyKind.AutomaticLivelinessQos;
             topQosHolder1.Reliability.Kind = DDS.ReliabilityQosPolicyKind.ReliableReliabilityQos;

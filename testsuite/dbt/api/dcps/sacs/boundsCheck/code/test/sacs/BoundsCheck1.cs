@@ -30,71 +30,69 @@ namespace test.sacs
 			factory = DDS.DomainParticipantFactory.GetInstance();
 			if (factory == null)
 			{
-				result.Result = "DomainParticipantFactory could not be initialized.");
+				result.Result = "DomainParticipantFactory could not be initialized.";
 				return result;
 			}
 			pqosHolder = new DDS.DomainParticipantQos();
-			factory.GetDefaultParticipantQos(pqosHolder);
-			if (pqosHolder.Value == null)
+			rc = factory.GetDefaultParticipantQos(out pqosHolder);
+			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default DomainParticipantQos could not be resolved.");
+				result.Result = "Default DomainParticipantQos could not be resolved.";
 				return result;
 			}
-			participant = factory.CreateParticipant(string.Empty, pqosHolder.Value, null, 0);
+			participant = factory.CreateParticipant(string.Empty, ref pqosHolder);
 			if (participant == null)
 			{
-				result.Result = "Creation of DomainParticipant failed.");
+				result.Result = "Creation of DomainParticipant failed.";
 				return result;
 			}
 			typeSupport = new mod.boundsTypeTypeSupport();
 			rc = typeSupport.RegisterType(participant, "boundsType");
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Typesupport could not be registered.");
+				result.Result = "Typesupport could not be registered.";
 				return result;
 			}
 			tQosHolder = new DDS.TopicQos();
-			participant.GetDefaultTopicQos(tQosHolder);
-			if (tQosHolder.Value == null)
+			rc = participant.GetDefaultTopicQos(out tQosHolder);
+			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default TopicQos could not be resolved.");
+				result.Result = "Default TopicQos could not be resolved.";
 				return result;
 			}
-			topic = participant.CreateTopic("bounds", "boundsType", tQosHolder.Value, null, 
-				0);
+			topic = participant.CreateTopic("bounds", "boundsType", ref tQosHolder);
 			if (topic == null)
 			{
-				result.Result = "Topic could not be created.");
+				result.Result = "Topic could not be created.";
 				return result;
 			}
 			pubQosHolder = new DDS.PublisherQos();
-			participant.GetDefaultPublisherQos(pubQosHolder);
-			if (pubQosHolder.Value == null)
+			rc = participant.GetDefaultPublisherQos(out pubQosHolder);
+			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default PublisherQos could not be resolved.");
+				result.Result = "Default PublisherQos could not be resolved.";
 				return result;
 			}
-			publisher = participant.CreatePublisher(pubQosHolder.Value, null, 0);
+			publisher = participant.CreatePublisher(ref pubQosHolder);
 			if (publisher == null)
 			{
-				result.Result = "Publisher could not be created.");
+				result.Result = "Publisher could not be created.";
 				return result;
 			}
 			dwQosHolder = new DDS.DataWriterQos();
-			publisher.GetDefaultDataWriterQos(dwQosHolder);
-			if (dwQosHolder.Value == null)
+			rc = publisher.GetDefaultDataWriterQos(out dwQosHolder);
+			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "Default DataWriterQos could not be resolved.");
+				result.Result = "Default DataWriterQos could not be resolved.";
 				return result;
 			}
-			datawriter = (mod.boundsTypeDataWriter)publisher.CreateDataWriter(topic, dwQosHolder
-				.Value, null, 0);
+			datawriter = (mod.boundsTypeDataWriter)publisher.CreateDataWriter(topic, ref dwQosHolder);
 			message = new mod.boundsType();
-			message.Name = null;
+			message.name = null;
 			rc = datawriter.Write(message, 0);
 			if (rc != DDS.ReturnCode.BadParameter)
 			{
-				result.Result = "write of bad data did not return BAD_PARAMETER (1).");
+				result.Result = "write of bad data did not return BAD_PARAMETER (1).";
 				return result;
 			}
 			message = new mod.boundsType();
@@ -102,7 +100,7 @@ namespace test.sacs
 			rc = datawriter.Write(message, 0);
 			if (rc != DDS.ReturnCode.BadParameter)
 			{
-				result.Result = "write of bad data did not return BAD_PARAMETER (2).");
+				result.Result = "write of bad data did not return BAD_PARAMETER (2).";
 				return result;
 			}
 			message = new mod.boundsType();
@@ -113,7 +111,7 @@ namespace test.sacs
 			rc = datawriter.Write(message, 0);
 			if (rc != DDS.ReturnCode.BadParameter)
 			{
-				result.Result = "write of bad data did not return BAD_PARAMETER (2).");
+				result.Result = "write of bad data did not return BAD_PARAMETER (2).";
 				return result;
 			}
 			message = new mod.boundsType();
@@ -121,23 +119,23 @@ namespace test.sacs
 			rc = datawriter.Write(message, 0);
 			if (rc != DDS.ReturnCode.BadParameter)
 			{
-				result.Result = "write of bad data did not return BAD_PARAMETER (2).");
+				result.Result = "write of bad data did not return BAD_PARAMETER (2).";
 				return result;
 			}
 			rc = participant.DeleteContainedEntities();
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "delete_contained_entities failed.");
+				result.Result = "delete_contained_entities failed.";
 				return result;
 			}
 			rc = factory.DeleteParticipant(participant);
 			if (rc != DDS.ReturnCode.Ok)
 			{
-				result.Result = "delete_contained_entities failed.");
+				result.Result = "delete_contained_entities failed.";
 				return result;
 			}
-			result.Result = expResult);
-			result.Verdict = Test.Framework.TestVerdict.Pass);
+			result.Result = expResult;
+			result.Verdict = Test.Framework.TestVerdict.Pass;
 			return result;
 		}
 	}

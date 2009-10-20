@@ -23,7 +23,7 @@ namespace test.sacs
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             topic = (DDS.ITopic)this.ResolveObject("topic");
-            condition = topic.GetStatusCondition();
+            condition = topic.StatusCondition;
             if (condition == null)
             {
                 result.Result = "Could not resolve participant condition.";

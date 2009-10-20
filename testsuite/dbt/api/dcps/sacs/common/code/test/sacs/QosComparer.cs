@@ -588,36 +588,21 @@ namespace test.sacs
         public static bool DurationEquals(DDS.Duration duration1, DDS.Duration duration2
             )
         {
-            if (duration1 != null && duration2 != null)
+            if (duration1.NanoSec != duration2.NanoSec)
             {
-                if (duration1.NanoSec != duration2.NanoSec)
-                {
-                    System.Console.Error.WriteLine("duration.NanoSec differ");
-                    System.Console.Error.WriteLine("duration1 sec: " + duration1.Sec + "\tNanoSec: "
-                        + duration1.NanoSec);
-                    System.Console.Error.WriteLine("duration2 sec: " + duration2.Sec + "\tNanoSec: "
-                        + duration2.NanoSec);
-                    return false;
-                }
-                if (duration1.Sec != duration2.Sec)
-                {
-                    System.Console.Error.WriteLine("duration.Sec differ");
-                    return false;
-                }
-                return true;
+                System.Console.Error.WriteLine("duration.NanoSec differ");
+                System.Console.Error.WriteLine("duration1 sec: " + duration1.Sec + "\tNanoSec: "
+                    + duration1.NanoSec);
+                System.Console.Error.WriteLine("duration2 sec: " + duration2.Sec + "\tNanoSec: "
+                    + duration2.NanoSec);
+                return false;
             }
-            else
+            if (duration1.Sec != duration2.Sec)
             {
-                if (duration1 == null || duration2 == null)
-                {
-                    System.Console.Error.WriteLine("one of the durations is null");
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
+                System.Console.Error.WriteLine("duration.Sec differ");
+                return false;
             }
+            return true;
         }
 
         /// <summary>Compares if the values within policy1 are the same as in policy2.</summary>

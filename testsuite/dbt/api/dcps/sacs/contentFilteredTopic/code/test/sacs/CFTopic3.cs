@@ -21,13 +21,9 @@ namespace test.sacs
             string filteredTypeName = "m";
             string filterExpression = "long_1 < 10";
             DDS.IDomainParticipant participant;
-            DDS.IDomainParticipant retrievedParticipant;
-            string name;
             DDS.ITopic topic;
-            DDS.ITopic retrievedTopic;
             DDS.IContentFilteredTopic filteredTopic;
             Test.Framework.TestResult result;
-            DDS.ReturnCode rc;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");

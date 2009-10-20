@@ -21,9 +21,7 @@ namespace test.sacs
         {
             DDS.ISubscriber subscriber;
             DDS.DataReaderQos dataReaderQos;
-            DDS.DataReaderQos qosHolder1;
-            DDS.DataReaderQos qosHolder2;
-            DDS.IDataReader reader;
+            //DDS.DataReaderQos qosHolder1;
             DDS.ITopic topic;
             string expResult = "copy_from_topic_qos rejects TOPIC_QOS_DEFAULT with correct code.";
             Test.Framework.TestResult result;

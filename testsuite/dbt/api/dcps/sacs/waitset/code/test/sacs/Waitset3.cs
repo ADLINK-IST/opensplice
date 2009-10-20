@@ -29,7 +29,7 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             writer = (mod.tstDataWriter)this.ResolveObject("datawriter");
             reader = (mod.tstDataReader)this.ResolveObject("datareader");
-            subscriberCondition = subscriber.GetStatusCondition();
+            subscriberCondition = subscriber.StatusCondition;
             if (subscriberCondition == null)
             {
                 result.Result = "Could not resolve subscriber condition.";

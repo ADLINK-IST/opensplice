@@ -16,7 +16,6 @@ namespace test.sacs
         {
             Test.Framework.TestResult result;
             string expResult = "contains_entity returns the correct result";
-            DDS.ReturnCode returnCode;
             DDS.IDomainParticipant participant;
             DDS.DomainParticipantFactory factory;
             DDS.TopicQos tHolder = new DDS.TopicQos();
@@ -46,8 +45,8 @@ namespace test.sacs
                 return result;
             }
 
-            handle = participant.GetInstanceHandle();
-            if (handle == 0)
+            handle = participant.InstanceHandle;
+            if (handle == DDS.InstanceHandle.Nil)
             {
                 result.Result = "get_instance_handle returned 0";
                 return result;
@@ -100,7 +99,7 @@ namespace test.sacs
                 result.Result = "Create Reader failed.";
                 return result;
             }
-            handle = topic.GetInstanceHandle();
+            handle = topic.InstanceHandle;
             if (handle == 0)
             {
                 result.Result = "get_instance_handle (topic) returned 0";
@@ -111,7 +110,7 @@ namespace test.sacs
                 result.Result = "contains_entity with topic handle incorrect";
                 return result;
             }
-            handle = publisher.GetInstanceHandle();
+            handle = publisher.InstanceHandle;
             if (handle == 0)
             {
                 result.Result = "get_instance_handle (publisher) returned != 0";
@@ -122,7 +121,7 @@ namespace test.sacs
                 result.Result = "contains_entity with publisher handle incorrect";
                 return result;
             }
-            handle = subscriber.GetInstanceHandle();
+            handle = subscriber.InstanceHandle;
             if (handle == 0)
             {
                 result.Result = "get_instance_handle (subscriber) returned != 0";
@@ -133,7 +132,7 @@ namespace test.sacs
                 result.Result = "contains_entity with subscriber handle incorrect";
                 return result;
             }
-            handle = writer.GetInstanceHandle();
+            handle = writer.InstanceHandle;
             if (handle == 0)
             {
                 result.Result = "get_instance_handle (writer) returned 0";
@@ -144,7 +143,7 @@ namespace test.sacs
                 result.Result = "contains_entity with writer handle incorrect";
                 return result;
             }
-            handle = reader.GetInstanceHandle();
+            handle = reader.InstanceHandle;
             if (handle == 0)
             {
                 result.Result = "get_instance_handle (reader) returned 0";

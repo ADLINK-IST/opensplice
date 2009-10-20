@@ -32,6 +32,7 @@ set_var INCLUDE_FILTERS yes
 set_var INCLUDE_JAVA yes
 set_var INCLUDE_C yes
 set_var INCLUDE_CXX yes
+set_var INCLUDE_CS no
 
 #
 # Technology driven setup
@@ -67,3 +68,8 @@ set_var INCLUDE_SERVICES_SPLICED yes
 set_var INCLUDE_SERVICES_COMMON yes
 set_var INCLUDE_UTILITIES yes
 set_var INCLUDE_TESTENGINE yes
+
+#
+# Test setup
+#
+set_var INCLUDE_DBT_API_DCPS_SACS no

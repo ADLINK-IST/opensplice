@@ -10,7 +10,6 @@ namespace test.sacs
 
         public override Test.Framework.TestResult Run()
         {
-            Test.Framework.TestResult result;
             Test.Framework.TestVerdict expVerdict = Test.Framework.TestVerdict.Pass;
             string sh;
             DDS.ErrorCode eh;

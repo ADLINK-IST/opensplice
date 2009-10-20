@@ -1,7 +1,7 @@
 namespace test
 {
     /// <date>May 31, 2005</date>
-    public class SAJErrorInfoTester
+    public class SACSErrorInfoTester
     {
         public static void Main(string[] args)
         {

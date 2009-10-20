@@ -39,13 +39,13 @@ namespace test.sacs
                 result.Result = "Enabling of DomainParticipant succeeded.";
                 return result;
             }
-            sc = participant.GetStatusCondition();
+            sc = participant.StatusCondition;
             if (sc == null)
             {
                 result.Result = "get_statuscondition failed.";
                 return result;
             }
-            sc2 = participant.GetStatusCondition();
+            sc2 = participant.StatusCondition;
             if (sc2 == null)
             {
                 result.Result = "get_statuscondition failed (2).";

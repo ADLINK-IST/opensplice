@@ -46,7 +46,6 @@ namespace test.sacs
                 result.Result = "PublicationMatchStatus could not be resolved.";
                 return result;
             }
-            datawriter.GetStatusChanges();
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

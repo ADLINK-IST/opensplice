@@ -14,10 +14,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             Test.Framework.TestResult result;
-            Test.Framework.TestVerdict expVerdict = Test.Framework.TestVerdict.Pass;
             string expResult = "Received 3 samples.";
             DDS.ReturnCode ddsReturnCode;
-            bool continueTesting = true;
             mod.tst data = new mod.tst();
             data.long_1 = 1;
             data.long_2 = 2;
