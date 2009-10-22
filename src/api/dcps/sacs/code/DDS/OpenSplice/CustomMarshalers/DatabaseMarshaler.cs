@@ -142,7 +142,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             // TODO: readerInfo == null should throw an exception
             int samplesToRead = 0;
-            IntPtr dataSampleBuf = null;
+            IntPtr dataSampleBuf = IntPtr.Zero;
 
             if (samples != null)
             {
