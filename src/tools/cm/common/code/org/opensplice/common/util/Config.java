@@ -98,6 +98,52 @@ public class Config {
     }
     
     /**
+     * Loads the release information from a file named RELEASEINFO located 
+     * in the etc directory of the installation.
+     * 
+     * @return true if the release information could be loaded, false
+     *              otherwise.
+     */
+    public boolean loadReleaseInfo(){
+        if (config == null){
+            config = new Properties ();
+        }
+        boolean result = true;
+        String homeDir = System.getenv("OSPL_HOME");
+        String separator = System.getProperty("file.separator");
+        File releaseFile = new File (homeDir + separator + "etc" + separator + "RELEASEINFO");
+        if(releaseFile.exists()) {
+            try {
+                config.load(new FileInputStream(releaseFile));
+            } catch (FileNotFoundException e) {
+                result = false;
+            } catch (IOException e) {
+                result = false;
+            }
+        }
+        
+        // If we don't have a value for the version property then try
+        // to load the value from the development tree RELEASE file
+        String version = config.getProperty("PACKAGE_VERSION");    
+        if (version == null) {
+            releaseFile = new File (homeDir + separator + "release_info" + separator + "RELEASE");
+            if(releaseFile.exists()) {
+                try {
+                    config.load(new FileInputStream(releaseFile));
+                } catch (FileNotFoundException e) {
+                    result = false;
+                } catch (IOException e) {
+                    result = false;
+                }
+            }
+        }
+        if(!result){
+            config = null;
+        }
+        return result;
+    }
+
+    /**
      * Loads the default configuration. This located in the home directory of
      * the user in the '.splice_tooling.properties' file.
      * 
@@ -109,10 +155,27 @@ public class Config {
         boolean result = true;
         String homeDir = System.getProperty("user.home");
         String separator = System.getProperty("file.separator");
-        configFile = new File(homeDir + separator + ".ospl_tooling.properties");
         config = new Properties();
         
-        if(!(configFile.exists())){
+        // Load the release information so that we have the PACKAGE_VERSION property.
+        result = loadReleaseInfo();
+       
+        if (result) {
+            String version = config.getProperty("PACKAGE_VERSION");
+            if (version != null) {
+                version = version.replaceAll("\"", "");
+                version = new String ("." + version);
+            } else {
+                version = new String ("");
+            }
+            configFile = new File(homeDir + separator + ".ospl_tooling.properties" + version);
+        } else {
+            configFile = new File(homeDir + separator + ".ospl_tooling.properties");            
+            // Reset the result flag.
+            result = true;
+        }
+                    
+        if(!(configFile.exists())) {
             try {
                 configFile.createNewFile();
             } catch (IOException e) {

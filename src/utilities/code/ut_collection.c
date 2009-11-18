@@ -126,7 +126,7 @@ ut_tableCollectNodes(
     assert(allNodes);
     
     allNodes->tableNodes[allNodes->nodeSeqNumber] = node;
-    allNodes->nodeSeqNumber = allNodes->nodeSeqNumber++;
+    allNodes->nodeSeqNumber++;
     
     return 1;
 }

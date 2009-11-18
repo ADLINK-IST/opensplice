@@ -17,13 +17,114 @@
 #include "nw_socket.h" /* For the types */
 #include "nw__confidence.h"
 
+/* Helper class for storing a list of addresses */
+
+NW_STRUCT(nw_addressList) {
+    nw_addressList next;
+    sk_address address;
+};
+
+/* addressList methods */
+
+/* private */
+
+static nw_addressList
+nw_addressListNew(
+        sk_address address)
+{
+    nw_addressList result = NULL;
+
+    result = (nw_addressList)os_malloc(sizeof(*result));
+    if (result) {
+        result->next = NULL;
+        result->address = address;
+    }
+    return result;
+}
+ /* protected */
+static void
+nw_addressListFree(
+    nw_addressList addressList)
+{
+    nw_addressList currentItem, nextItem;
+    NW_CONFIDENCE(addressList != NULL);
+
+    currentItem = addressList;
+    while (currentItem != NULL) {
+        nextItem = currentItem->next;
+        os_free(currentItem);
+        currentItem = nextItem;
+    }
+}
+
+/* private */
+static nw_bool
+nw_addressListAppend(
+    nw_addressList addressList,
+    sk_address address)
+{
+    nw_bool result = FALSE;
+    nw_bool found;
+    nw_addressList currentItem, nextItem;
+
+    currentItem = addressList;
+    NW_CONFIDENCE(currentItem != NULL);
+
+    if (currentItem) {
+        /* Walk to the last element */
+        /* This is not in the main loop and not many items are expected in this list */
+        nextItem = currentItem->next;
+        found = (currentItem->address == address);
+        while (nextItem && !found) {
+            currentItem = nextItem;
+            nextItem = currentItem->next;
+            found = (currentItem->address == address);
+        }
+        if (!found) {
+            NW_CONFIDENCE(nextItem == NULL);
+            currentItem->next = nw_addressListNew(address);
+        }
+        result = TRUE;
+    }
+    return result;
+}
+
+/* public */
+
+sk_address
+nw_addressListGetAddress(
+    nw_addressList addressList)
+{
+    sk_address result = (sk_address)0;
+    if (addressList) {
+        result = addressList->address;
+    }
+    return result;
+}
+
+
+nw_addressList
+nw_addressListGetNext(
+    nw_addressList addressList)
+{
+    nw_addressList result = NULL;
+
+    if (addressList) {
+        result = addressList->next;
+    }
+    return result;
+}
+
+/* protected */
+
 NW_CLASS(nw_partition);
 NW_STRUCT(nw_partition) {
     sk_partitionId id;
-    sk_address address;
+    nw_addressList addressList;
     sk_bool connected;
     nw_partition nextInHash;
 };
+
 
 nw_partition
 nw_partitionNew(
@@ -33,15 +134,15 @@ nw_partitionNew(
     nw_partition nextInHash) {
 
     nw_partition result = NULL;
-    
+
     result = os_malloc(sizeof(*result));
     if (result != NULL) {
         result->id = id;
-        result->address = address;
+        result->addressList = nw_addressListNew(address);
         result->connected = connected;
         result->nextInHash = nextInHash;
     }
-    
+
     return result;
 }
 
@@ -60,7 +161,7 @@ nw_socketPartitionsInitialize(
     nw_seqNr hashSize)
 {
     size_t hashMemSize;
-    
+
     hashMemSize = hashSize * sizeof(*socketPartitions->hash);
     socketPartitions->hash = os_malloc(hashMemSize);
     memset(socketPartitions->hash, 0, hashMemSize);
@@ -72,9 +173,9 @@ nw_socketPartitions
 nw_socketPartitionsNew() {
 
     nw_socketPartitions result;
-    
+
     result = os_malloc(sizeof(*result));
-    
+
     if (result != NULL) {
         nw_socketPartitionsInitialize(result, NW_PARTITIONS_HASHSIZE);
     }
@@ -107,7 +208,7 @@ nw_bool
 nw_socketPartitionsAdd(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
-    sk_address partitionAddress,
+    sk_address address,
     sk_bool connected)
 {
     nw_bool result = FALSE;
@@ -131,13 +232,15 @@ nw_socketPartitionsAdd(
     }
     if (!found) {
         /* Item has to be appended to the end */
-        *partitionPtr = nw_partitionNew(partitionId, partitionAddress, connected, NULL);
+        *partitionPtr = nw_partitionNew(partitionId, address, connected, NULL);
         result = TRUE;
     } else if (result) {
-        *partitionPtr = nw_partitionNew(partitionId, partitionAddress, connected,
+        *partitionPtr = nw_partitionNew(partitionId, address, connected,
             (*partitionPtr)->nextInHash);
+    } else {
+        result = nw_addressListAppend((*partitionPtr)->addressList, address);
     }
-    
+
     return result;
 }
 
@@ -146,16 +249,16 @@ nw_bool
 nw_socketPartitionsLookup(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
-    sk_address *partitionAddress)
+    nw_addressList *addressList)
 {
     /* Not yet implemented */
-    
+
     nw_bool result = FALSE;
     nw_bool done = FALSE;
     nw_partition partition;
     sk_partitionId hashIndex;
-    
-    NW_CONFIDENCE(partitionAddress != NULL);
+
+    NW_CONFIDENCE(addressList != NULL);
 
     hashIndex = partitionId % socketPartitions->hashSize;
     partition = socketPartitions->hash[hashIndex];
@@ -165,7 +268,7 @@ nw_socketPartitionsLookup(
             partition = partition->nextInHash;
         } else if (partition->id == partitionId) {
             /* Exact match found, set result to TRUE */
-            *partitionAddress = partition->address;
+            *addressList = partition->addressList;
             done = TRUE;
             result = TRUE;
         } else {

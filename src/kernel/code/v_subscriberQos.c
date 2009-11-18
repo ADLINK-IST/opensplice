@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -14,10 +14,11 @@
 #include "v_kernel.h"
 #include "v_qos.h"
 #include "v_policy.h"
-
 #include "os_report.h"
 
+
 static const v_qosChangeMask immutableMask = V_POLICY_BIT_PRESENTATION;
+
 
 /**************************************************************
  * private functions
@@ -35,7 +36,7 @@ v_subscriberQosValidValues(
         valuesOk &= v_presentationPolicyValid(qos->presentation);
         valuesOk &= v_entityFactoryPolicyValid(qos->entityFactory);
         valuesOk &= v_groupDataPolicyValid(qos->groupData);
-    } 
+    }
 
     return (valuesOk?TRUE:FALSE);
 }
@@ -142,9 +143,9 @@ v_subscriberQosSet(
                 result = V_RESULT_IMMUTABLE_POLICY;
             } else {
                 /* set new policies */
-                q->presentation = tmpl->presentation; 
+                q->presentation = tmpl->presentation;
                 q->entityFactory = tmpl->entityFactory;
-                q->partition = c_stringNew(base, tmpl->partition);                
+                q->partition = c_stringNew(base, tmpl->partition);
                 if (cm & V_POLICY_BIT_GROUPDATA) {
                     c_free(q->groupData.value);
                     q->groupData.size = tmpl->groupData.size;
@@ -159,6 +160,7 @@ v_subscriberQosSet(
                 }
                 result = V_RESULT_OK;
             }
+
         } else {
             result = V_RESULT_ILL_PARAM;
         }

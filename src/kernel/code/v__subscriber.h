@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -21,6 +21,7 @@ extern "C" {
 #include "v_subscriberQos.h"
 #include "v_reader.h"
 #include "v_entity.h"
+#include "v_group.h"
 #include "v_event.h"
 
 v_result
@@ -32,6 +33,11 @@ void
 v_subscriberNotify(
     v_subscriber _this,
     v_event event);
+
+void
+v_subscriberConnectNewGroup(
+    v_subscriber s,
+    v_group g);
 
 v_reader
 v_subscriberRemoveShare(

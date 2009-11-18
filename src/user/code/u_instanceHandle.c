@@ -188,7 +188,10 @@ u_instanceHandleFix(
     translator.handle = _this;
     if (translator.lid.lifecycleId & HANDLE_GLOBAL_MASK) {
         /* Is a GID therefore fix handle by lookup. */
-        while (v_objectKind(v_entity(reader)) == K_QUERY) {
+        while (v_objectKind(v_entity(reader)) == K_QUERY ||
+               v_objectKind(v_entity(reader)) == K_DATAREADERQUERY ||
+               v_objectKind(v_entity(reader)) == K_DATAVIEWQUERY) {
+            /* If the entity derives from a query entity it can be cast to a v_query */
             reader = v_querySource(v_query(reader));
         }
         while (v_objectKind(v_entity(reader)) == K_DATAVIEW) {

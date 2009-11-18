@@ -38,11 +38,11 @@ JAR		 = jar
 	#Java
 JAVA		 = java
 JAVA_SRCPATH_SEP = :
-JAVA_LDFLAGS	 = -L$(JAVA_HOME)/jre/lib/amd64
-JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/amd64/server
-JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/amd64/native_threads
-JAVA_INCLUDE	 = -I$(JAVA_HOME)/include
-JAVA_INCLUDE	 += -I$(JAVA_HOME)/include/linux
+JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/jre/lib/amd64"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/amd64/server"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/amd64/native_threads"
+JAVA_INCLUDE	 = -I"$(JAVA_HOME)/include"
+JAVA_INCLUDE	 += -I"$(JAVA_HOME)/include/linux"
 	
 	#soapcpp
 SOAPCPP		= soapcpp2

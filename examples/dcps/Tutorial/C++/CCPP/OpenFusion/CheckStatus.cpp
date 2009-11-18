@@ -66,7 +66,7 @@ void checkStatus(
  **/
 void checkHandle(
     void *handle,
-    char *info ) {
+    const char *info ) {
      
      if (!handle) {
         cerr << "Error in " << info << ": Creation failed: invalid handle" << endl;

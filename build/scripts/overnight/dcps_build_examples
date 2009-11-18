@@ -7,9 +7,15 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-BASE=$PWD
-cd ../../..
+BASE=`/bin/pwd`
+CURRENT_PL_LINUX=`uname | grep Linux`
+CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
+CURRENT_PL_AIX=`uname | grep AIX`
+CURRENT_PL_SUNOS=`uname | grep SunOS`
+IS_WINDOWS_EXE="false"  
 
+
+cd ../../..
 
 SetState BuildingExamples
 echo "BUILD/EXAMPLES=RUNNING" >> $RESFILE
@@ -17,10 +23,8 @@ ArchiveLogs
 
 check_platform()
 {
-   CURRENT_PL_LINUX=`uname | grep Linux`
-   CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 
-  if [ "$CURRENT_PL_LINUX" != "" ] ;then
+  if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;then
     return 0
   elif [ "$CURRENT_PL_CYGWIN" != "" ];then
     return 1
@@ -63,39 +67,82 @@ else
     # Install a copy
     if [ "$DEP" = "none" ]
     then
-        INSTALLERDIR=$WORKDIR/$PRODUCT/install
+        INSTALLERDIR=$WORKDIR/build/install
+        . $WORKDIR/build/release_info/RELEASE
     else
+        echo "Setting OUTER_BASE to $BASE..."
         OUTER_BASE=$BASE
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
+        . $DEPWORKDIR/release_info/RELEASE
     fi
 
     echo "Installing..."
     SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
-    if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE-installer.bin ]
+    if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.bin ]
     then
-       $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/installed/
+       echo "Installing $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.bin into $WORKDIR/installed/"
+
+       $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.bin --mode unattended --prefix $WORKDIR/installed/
 #--providedLicenseFile licfile
     else
-        if [ -f $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE.tar ]
+        echo "$INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.bin does not exist"
+
+        if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.tar ]
         then
+            echo "Untarring $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.tar ..."
             mkdir $WORKDIR/installed
             (
               cd $WORKDIR/installed/ && \
-              tar -xvf $INSTALLERDIR/VC/OpenSpliceDDSV4.2-$SHORTSETUP-HDE.tar
+              tar -xvf $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.tar
               mv HDE/$SHORTSETUP/release.com \
                   HDE/$SHORTSETUP/release.com.orig
               sed < HDE/$SHORTSETUP/release.com.orig \
                   > HDE/$SHORTSETUP/release.com \
                   "s%@@INSTALLDIR@@%$WORKDIR/installed/%"
             )
+        else
+
+            if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.zip ]
+            then
+                echo "Unzipping $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.zip ..."
+                mkdir $WORKDIR/installed
+                (
+                  cd $WORKDIR/installed/ && \
+                  unzip $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.zip
+                )
+            fi
         fi
     fi
-
-    cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-    if [ "$DEP" != "none" ]
+        
+    # If its a windows build with an exe file then the installation doesn't work with the exe file
+    # at the minute.  So use the HDE from the build/install directory instead    
+    if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe ]
     then
-        cp -rp $OUTER_BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+        IS_WINDOWS_EXE="true"
+        echo "Copying (1) $BASE/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/ ...."
+
+        cp -rp $BASE/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/
+
+        echo "DEP is $DEP....."
+
+        if [ "$DEP" != "none" ]
+        then
+            echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/ ...."  
+            cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/
+        fi                   
+    else 
+        echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
+
+        cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+
+        echo "DEP is $DEP....."
+
+        if [ "$DEP" != "none" ]
+        then
+            echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."  
+            cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+        fi
     fi
 
     if [ $? = 0 ]
@@ -105,8 +152,21 @@ else
         echo "ERROR: Install failed"
         exit 1
     fi
-    cd $WORKDIR/installed/HDE/$SHORTSETUP/
-    . ./release.com
+    
+    if check_platform
+    then
+        cd $WORKDIR/installed/HDE/$SHORTSETUP/
+        . ./release.com    
+    else
+       if [ "$IS_WINDOWS_EXE" = "true" ]
+       then 
+          echo "Windows exe file found changing to $INSTALLERDIR/HDE/$SHORTSETUP/"
+          cd $INSTALLERDIR/HDE/$SHORTSETUP/
+       else
+          cd $WORKDIR/installed/HDE/$SHORTSETUP/
+       fi
+    fi
+
     cd examples
     if [ $? != 0 ]
     then
@@ -114,29 +174,102 @@ else
         exit 1
     fi
 
-    EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    # Do not do CORBA C++ and standalone C++ examples with AIX for now as the build fails
+    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    then
+        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
+    else
+        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
+
+        # DLRL examples are not included in an inner only build so only add them if doing an outer build and
+        # they shouldn't be tested if it's AIX either
+        if [ "$DEP" != "none" ]
+        then
+            # There is a problem with the file name being too long if it's windows OSPLO build and 
+            # we are using the HDE from the build/install directory.  So don't do the JAVA DLRL 
+            # example for now if it's a windows OSPLO build
+            if [ "$IS_WINDOWS_EXE" = "false" ]
+            then
+                EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial "
+            fi
+
+            EXAMPLES=$EXAMPLES" dlrl/standalone/C++/Tutorial "
+        fi
+    fi
+ 
     export EXAMPLES
 
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    SPECIAL_BUILD_FILES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
     export SPECIAL_BUILD_FILES
-    
-    SPLICE_ORB=DDS_OpenFusion_1_6_1
-    export SPLICE_ORB
 
-    PATH=$PATH:$JAVA_HOME/bin
-    PATH=$PATH:$TAO_ROOT/bin
-    export PATH
-
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TAO_ROOT/lib
-    export LD_LIBRARY_PATH
+    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    then
+       PATH="/usr/vac/bin:/usr/vacpp/bin:$PATH"
+    fi
 
     echo "Build Examples:"
     if check_platform
     then
+        PATH="$JAVA_HOME/bin:$PATH"
+        PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
+
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
+
+        SPLICE_ORB=DDS_OpenFusion_1_6_1
+         
+        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
+
+        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH
+
         sh $BASE/build_examples.sh
     else
-        $BASE/build_examples.bat
+        PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+        export PATH
+        
+        if [ "$DEP" != "none" ]
+        then
+            if [ "$IS_WINDOWS_EXE" = "true" ]
+            then
+                XPATH="$(cygpath -w $INSTALLERDIR/HDE/$SHORTSETUP)"
+            else
+               XPATH="$(cygpath -w $OSPL_HOME)"
+            fi
+        else
+            XPATH="$(cygpath -w $WORKDIR/installed/HDE/$SHORTSETUP)"
+        fi
+
+        echo "set OSPL_HOME=$XPATH" > setenv.bat
+        
+        XPATH=`cygpath -w "$TAO_ROOT"`
+        echo "set TAO_ROOT=$XPATH" >> setenv.bat
+
+        XPATH=`cygpath -w "$JACORB_HOME"`
+        echo "set JACORB_HOME=$XPATH" >> setenv.bat
+
+        echo "set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> setenv.bat
+        
+        echo "set JAVA_HOME=$JAVA_HOME" >> setenv.bat
+
+        echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin" >> setenv.bat
+
+        echo "set CLASSPATH=%CLASSPATH%;%JACORB_HOME%\lib\endorsed\jacorb.jar;%JACORB_HOME%\lib\endorsed\logkit.jar;%JACORB_HOME%\lib\idl.jar" >> setenv.bat
+
+        if [ $HOSTNAME == "DDS1-WIN2K3" ]
+        then
+            VS80DIR="C:\Program Files\Microsoft Visual Studio 8\Common7\Tools"
+            echo "set VS80COMNTOOLS=$VS80DIR" >> setenv.bat
+        else
+            if [ $HOSTNAME == "dds2-win2k3" ]
+            then
+                VS90DIR="C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools"
+                echo "set VS90COMNTOOLS=$VS90DIR" >> setenv.bat
+            fi
+        fi
+
+        XPATH=`cygpath -w "$BASE"`
+        cmd.exe /c $XPATH/build_examples.bat
+
     fi
     exit $?
 fi

@@ -183,11 +183,16 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteDataReader(IDataReader dataReader)
         {
-            DataReader dataReaderObj = (DataReader)dataReader;
+            ReturnCode result = ReturnCode.BadParameter;
+            DataReader dataReaderObj = dataReader as DataReader;
 
-            return Gapi.Subscriber.delete_datareader(
-                GapiPeer,
-                dataReaderObj.GapiPeer);
+            if (dataReaderObj != null)
+            {
+                result = Gapi.Subscriber.delete_datareader(
+                    GapiPeer,
+                    dataReaderObj.GapiPeer);
+            }
+            return result;
         }
 
         public IDataReader LookupDataReader(string topicName)

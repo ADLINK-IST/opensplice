@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAREADERSAMPLE_H
@@ -46,8 +46,10 @@
         c_class(c_resolve(c_getBase(scope), \
                           "kernelModule::v_dataReaderSample"))
 
+#define v_dataReaderSampleStateTest(_this, mask) v_readerSampleTestState(_this, mask)
+
 #define  v_dataReaderSampleInstance(o) \
-         ((v_dataReaderInstance)v_readerSampleInstance(v_dataReaderSample(o)))
+         ((v_dataReaderInstance)c_typeActualType(v_readerSampleInstance(v_dataReaderSample(o))))
 
 #define  v_dataReaderSampleIndex(o) \
          ((v_index)v_dataReaderSampleInstance(o)->index)
@@ -61,6 +63,9 @@
 
 #define v_dataReaderSampleMessageStateTest(_this,_mask) \
         v_stateTest(v_nodeState(v_dataReaderSampleMessage(_this)),_mask)
+
+#define v_dataReaderSampleInstanceStateTest(_this,_mask) \
+        v_dataReaderInstanceStateTest(v_dataReaderSampleInstance(_this),_mask)
 
 OS_API c_bool
 v_dataReaderSampleRead(

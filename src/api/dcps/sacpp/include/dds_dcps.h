@@ -155,6 +155,11 @@ namespace DDS
    typedef DDS_DCPSInterface_var <TopicListener> TopicListener_var;
    typedef DDS_DCPSInterface_out <TopicListener> TopicListener_out;
 
+   class SACPP_API ExtTopicListener;
+
+   typedef ExtTopicListener * ExtTopicListener_ptr;
+   typedef DDS_DCPSInterface_var <ExtTopicListener> ExtTopicListener_var;
+   typedef DDS_DCPSInterface_out <ExtTopicListener> ExtTopicListener_out;
 
    class SACPP_API DataWriterListener;
 
@@ -532,9 +537,6 @@ namespace DDS
       TopicListener_ptr _this () { return this; }
 
       virtual void on_inconsistent_topic (Topic_ptr the_topic, const InconsistentTopicStatus& status) = 0;
-#ifdef _DDS1631API_
-      virtual void on_all_data_disposed () = 0;
-#endif
 
    protected:
       TopicListener () {};
@@ -544,6 +546,32 @@ namespace DDS
       TopicListener & operator = (const TopicListener &);
    };
 
+   class SACPP_API ExtTopicListener
+   :
+      virtual public TopicListener
+   {
+   public:
+      typedef ExtTopicListener_ptr _ptr_type;
+      typedef ExtTopicListener_var _var_type;
+
+      static ExtTopicListener_ptr _duplicate (ExtTopicListener_ptr obj);
+      DDS::Boolean _local_is_a (const char * id);
+
+      static ExtTopicListener_ptr _narrow (DDS::Object_ptr obj);
+      static ExtTopicListener_ptr _unchecked_narrow (DDS::Object_ptr obj);
+      static ExtTopicListener_ptr _nil () { return NULL; }
+      static const char * _local_id;
+      ExtTopicListener_ptr _this () { return this; }
+
+      virtual void on_all_data_disposed () = 0;
+
+   protected:
+      ExtTopicListener () {};
+      ~ExtTopicListener () {};
+   private:
+      ExtTopicListener (const ExtTopicListener &) {};
+      ExtTopicListener & operator = (const ExtTopicListener &);
+   };
 
    class SACPP_API DataWriterListener
    :

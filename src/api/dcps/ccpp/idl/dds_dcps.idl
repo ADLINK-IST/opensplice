@@ -1,6 +1,6 @@
 #ifndef DDS_DCPS_IDL
 #define DDS_DCPS_IDL
- 
+
 #include "dds_dcps_builtintopics.idl"
 
 #define DOMAINID_TYPE_NATIVE            string
@@ -39,7 +39,7 @@ module DDS {
     const unsigned long DURATION_ZERO_NSEC		= 0;
     const long TIMESTAMP_INVALID_SEC			= -1;
     const unsigned long TIMESTAMP_INVALID_NSEC		= 0xffffffff;
-    
+
     // ----------------------------------------------------------------------
     // Return codes
     // ----------------------------------------------------------------------
@@ -82,7 +82,7 @@ module DDS {
      const ErrorCode_t ERRORCODE_CONTAINS_CONDITIONS           = 19;
      const ErrorCode_t ERRORCODE_CONTAINS_LOANS                = 20;
      const ErrorCode_t ERRORCODE_INCONSISTENT_TOPIC            = 21;
- 
+
     // ----------------------------------------------------------------------
     // Status to support listeners and conditions
     // ----------------------------------------------------------------------
@@ -219,10 +219,12 @@ module DDS {
 	    in Topic the_topic,
 	    in InconsistentTopicStatus status);
 
-#ifdef _DDS1631API_
+    };
+
+    local interface ExtTopicListener : TopicListener {
 	void
 	on_all_data_disposed();
-#endif
+
     };
 
     local interface DataWriterListener : Listener {
@@ -311,7 +313,7 @@ module DDS {
 	    inout ConditionSeq active_conditions,
 	    in Duration_t timeout);
 
-	ReturnCode_t	
+	ReturnCode_t
 	attach_condition(
 	    in Condition cond);
 
@@ -476,7 +478,7 @@ module DDS {
     //
     //  Listener
     //  get_listener();
-    
+
 	ReturnCode_t
 	enable();
 
@@ -509,7 +511,7 @@ module DDS {
 	ReturnCode_t
 	delete_publisher(
 	    in Publisher p);
-	    
+
 	Subscriber
 	create_subscriber(
 	    in SubscriberQos qos,
@@ -522,7 +524,7 @@ module DDS {
 
 	Subscriber
 	get_builtin_subscriber();
-	
+
 	Topic
 	create_topic(
 	    in string topic_name,
@@ -530,7 +532,7 @@ module DDS {
 	    in TopicQos qos,
 	    in TopicListener a_listener,
 	    in StatusMask mask);
-	    
+
 	ReturnCode_t
 	delete_topic(
 	    in Topic a_topic);
@@ -648,7 +650,7 @@ module DDS {
         get_discovered_topic_data(
             inout TopicBuiltinTopicData topic_data,
             in InstanceHandle_t topic_handle);
-        
+
         boolean
         contains_entity(
             in InstanceHandle_t a_handle);
@@ -712,17 +714,17 @@ module DDS {
         string
         get_type_name();
     };
-    
-    
+
+
     // ----------------------------------------------------------------------
     // This class is added to be able to create an ORB dependent factory for
     // typed Readers and Writers.
     // ----------------------------------------------------------------------
     local interface TypeSupportFactory {
-    //  DataReader 
+    //  DataReader
     //  create_datareader (long handle);
-    //  
-    //  DataWriter 
+    //
+    //  DataWriter
     //  create_datawriter (long handle);
     };
 
@@ -741,7 +743,7 @@ module DDS {
 
     local interface Topic : TopicDescription {
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_inconsistent_topic_status(
 	       inout InconsistentTopicStatus a_status);
 
@@ -765,7 +767,7 @@ module DDS {
 	string
 	get_filter_expression();
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_expression_parameters(
 	    inout StringSeq expression_parameters);
 
@@ -781,7 +783,7 @@ module DDS {
 	string
 	get_subscription_expression();
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_expression_parameters(
 	    inout StringSeq expression_parameters);
 
@@ -838,10 +840,10 @@ module DDS {
 	ReturnCode_t
 	end_coherent_changes();
 
-	ReturnCode_t 
+	ReturnCode_t
 	wait_for_acknowledgments(
 	    in Duration_t max_wait);
-	    
+
 	DomainParticipant
 	get_participant();
 
@@ -906,7 +908,7 @@ module DDS {
     //  get_key_value(
     //      inout Data key_holder,
     //      in InstanceHandle_t handle);
-    
+
 	ReturnCode_t
 	set_qos(
 	    in DataWriterQos qos);
@@ -929,23 +931,23 @@ module DDS {
 	Publisher
 	get_publisher();
 
-	ReturnCode_t 
+	ReturnCode_t
 	wait_for_acknowledgments(
 	    in Duration_t max_wait);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_liveliness_lost_status(
 	    inout LivelinessLostStatus status);
-	    
-	ReturnCode_t 
+
+	ReturnCode_t
 	get_offered_deadline_missed_status(
 	    inout OfferedDeadlineMissedStatus status);
-	    
-	ReturnCode_t 
+
+	ReturnCode_t
 	get_offered_incompatible_qos_status(
 	    inout OfferedIncompatibleQosStatus status);
-	    
-	ReturnCode_t 
+
+	ReturnCode_t
 	get_publication_matched_status(
 	   inout PublicationMatchedStatus status);
 
@@ -1143,7 +1145,7 @@ module DDS {
     //  InstanceHandle_t
     //  lookup_instance(
     //      in Data instance);
-    
+
 	ReadCondition
 	create_readcondition(
 	    in SampleStateMask sample_states,
@@ -1187,27 +1189,27 @@ module DDS {
 	Subscriber
 	get_subscriber();
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_sample_rejected_status(
 	   inout SampleRejectedStatus status);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_liveliness_changed_status(
 	   inout LivelinessChangedStatus status);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_requested_deadline_missed_status(
 	   inout RequestedDeadlineMissedStatus status);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_requested_incompatible_qos_status(
 	   inout RequestedIncompatibleQosStatus status);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_subscription_matched_status(
 	   inout SubscriptionMatchedStatus status);
 
-	ReturnCode_t 
+	ReturnCode_t
 	get_sample_lost_status(
 	   inout SampleLostStatus status);
 
@@ -1254,7 +1256,7 @@ module DDS {
 	ReturnCode_t
 	update();
 
-	ReturnCode_t	
+	ReturnCode_t
 	get_code(
 	    inout ErrorCode_t code);
 

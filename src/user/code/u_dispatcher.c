@@ -235,6 +235,7 @@ u_dispatcherInsertListener(
     os_threadAttr attr;
     v_observer ke;
     u_result result = U_RESULT_OK;
+    c_char *name;
 
     if ((_this != NULL) && (listener != NULL)) {
         os_mutexLock(&_this->mutex);
@@ -244,9 +245,13 @@ u_dispatcherInsertListener(
         if (_this->threadId == 0U) {
             result = u_dispatcherClaim(_this,&ke);
             if ((result == U_RESULT_OK) && (ke != NULL)) {
+                name = v_entityName(ke);
+                if (name == NULL) {
+                    name = "NoName";
+                }
                 os_threadAttrInit(&attr);
                 os_threadCreate(&_this->threadId,
-                                v_entityName(ke),
+                                name,
                                 &attr,dispatch,
                                 (void *)_this);
                 result = u_dispatcherRelease(_this);

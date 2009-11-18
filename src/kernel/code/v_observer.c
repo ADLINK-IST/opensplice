@@ -82,61 +82,87 @@ v_observerDeinit(
  */
 void
 v_observerNotify(
-    v_observer o,
+    v_observer _this,
     v_event event,
     c_voidp userData)
 {
+    /* This Notify method is part of the observer-observable pattern.
+     * It is designed to be invoked when _this object as observer receives
+     * an event from an observable object.
+     * It must be possible to pass the event to the subclass of itself by
+     * calling <subclass>Notify(_this, event, userData).
+     * This implies that _this cannot be locked within any Notify method
+     * to avoid deadlocks.
+     * For consistency _this must be locked by v_observerLock(_this) before
+     * calling this method.
+     */
+
     c_ulong trigger;
 
-    assert(o != NULL);
-    assert(C_TYPECHECK(o,v_observer));
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_observer));
 
-    if ((o->eventFlags & V_EVENT_OBJECT_DESTROYED) == 0) {
-        /* observer is not destroyed, so continue */
+    /* The observer will be made insensitive to event as soon as the
+     * observer is deinitialized. However it may be that destruction
+     * of the observer has started before the deinit of the observer
+     * is called. In that case the V_EVENT_OBJECT_DESTROYED flag will
+     * be set to avoid processing of incomming events.
+     */
+    if ((_this->eventFlags & V_EVENT_OBJECT_DESTROYED) == 0) {
+        /* The observer is valid so the event can be processed.
+          */
         if (event != NULL ) {
-            trigger = event->kind & o->eventMask;
+            trigger = event->kind & _this->eventMask;
         } else {
-            trigger = V_EVENT_TRIGGER; /* NULL-event always notifies observers */
+            /* NULL-event always notifies observers */
+            trigger = V_EVENT_TRIGGER;
         }
 
+        /* The following code invokes the observers subclass specific
+         * notification method.
+         * This is a bit strange that the observer has knowledge about
+         * the subclass notification methods, a better model is that
+         * subclasses register the notification method to the observer
+         * instead. The reason for this model is that registering a
+         * function pointer is only valid in the process scope and this
+         * method will typically be called from another process.
+         */
         if (trigger != 0) {
-            switch (v_objectKind(o)) {
+            switch (v_objectKind(_this)) {
             case K_DATAREADER:
-                v_dataReaderNotify(v_dataReader(o), event, userData);
+                v_dataReaderNotify(v_dataReader(_this), event, userData);
             break;
             case K_WAITSET:
-                v_waitsetNotify(v_waitset(o), event, userData);
+                v_waitsetNotify(v_waitset(_this), event, userData);
             break;
             case K_PARTICIPANT:
-                v_participantNotify(v_participant(o), event, userData);
-            break;
-            case K_GROUPQUEUE:
-                v_groupStreamNotify(v_groupStream(o), event, userData);
+                v_participantNotify(v_participant(_this), event, userData);
             break;
             case K_TOPIC:
-                v_topicNotify(v_topic(o), event, userData);
+                v_topicNotify(v_topic(_this), event, userData);
             break;
             case K_QUERY:
-                /* v_queryNotify(v_query(o), event, userData); */
+                /* v_queryNotify(v_query(_this), event, userData); */
             break;
             case K_SPLICED: /* intentionally no break */
             case K_SERVICE:
             case K_NETWORKING:
             case K_DURABILITY:
             case K_CMSOAP:
-                v_serviceNotify(v_service(o), event, userData);
+                v_serviceNotify(v_service(_this), event, userData);
             break;
             case K_SERVICEMANAGER:
-                v_serviceManagerNotify(v_serviceManager(o), event, userData);
+                v_serviceManagerNotify(v_serviceManager(_this), event, userData);
             break;
             case K_WRITER: /* no action for the following observers */
             case K_PUBLISHER:
             case K_SUBSCRIBER:
+            case K_GROUPQUEUE:
             break;
             default:
                 OS_REPORT_1(OS_INFO,"Kernel Observer",0,
                             "Notify an unknown observer type: %d",
-                            v_objectKind(o));
+                            v_objectKind(_this));
             break;
             }
 
@@ -144,13 +170,13 @@ v_observerNotify(
              * Only trigger condition variable if at least
              * one thread is waiting AND the event is seen for the first time.
              */
-            if ((o->waitCount > 0) &&
-                ((trigger == V_EVENT_TRIGGER) || (~o->eventFlags & trigger)))
+            if ((_this->waitCount > 0) &&
+                ((trigger == V_EVENT_TRIGGER) || (~_this->eventFlags & trigger)))
             {
-                o->eventFlags |= trigger; /* store event */
-                c_condBroadcast(&o->cv);
+                _this->eventFlags |= trigger; /* store event */
+                c_condBroadcast(&_this->cv);
             } else {
-                o->eventFlags |= trigger; /* store event */
+                _this->eventFlags |= trigger; /* store event */
             }
         }
     } /* else observer object destroyed, skip notification */

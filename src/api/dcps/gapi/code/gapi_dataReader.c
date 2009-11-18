@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_dataReader.h"
@@ -240,7 +240,7 @@ _DataReaderNew (
     c_bool enable = TRUE;
     c_bool noError = TRUE;
 
-    /* The following code copies the Qos from the subscriber just to 
+    /* The following code copies the Qos from the subscriber just to
      * retrieve the auto enable value.
      * Is it really necessary to have it on this level or can it also
      * be handled in the user layer internally?
@@ -576,7 +576,7 @@ gapi_dataReader_delete_contained_entities (
         gapi_setIterFree (iterSet);
         iterSet = gapi_setFirst(datareader->viewSet);
 
-        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {            
+        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
             _DataReaderView view = (_DataReaderView)gapi_setIterObject(iterSet);
             _EntityClaim(view);
             _DataReaderViewPrepareDelete(view, &context);
@@ -1325,7 +1325,7 @@ gapi_returnCode_t
 gapi_dataReader_get_matched_publications (
     gapi_dataReader _this,
     gapi_instanceHandleSeq *publication_handles)
-{    
+{
     return GAPI_RETCODE_UNSUPPORTED;
 }
 
@@ -1334,7 +1334,7 @@ gapi_dataReader_get_matched_publication_data (
     gapi_dataReader _this,
     gapi_publicationBuiltinTopicData *publication_data,
     const gapi_instanceHandle_t publication_handle)
-{    
+{
     return GAPI_RETCODE_UNSUPPORTED;
 }
 
@@ -1403,7 +1403,7 @@ _DataReaderNotifyDataAvailable (
     void *listenerData;
     gapi_object handle = _EntityHandle(_this);
 
-    callback     = status->callbackInfo.on_data_available; 
+    callback     = status->callbackInfo.on_data_available;
     listenerData = status->callbackInfo.listenerData;
 
     _EntitySetBusy(_this);
@@ -1558,7 +1558,7 @@ onRequestedDeadlineMissed (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_requested_deadline_missed; 
+                callback = status->callbackInfo.on_requested_deadline_missed;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1567,10 +1567,10 @@ onRequestedDeadlineMissed (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);
@@ -1593,15 +1593,15 @@ onRequestedIncompatibleQos (
     _Entity entity;
     _Status status;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         info.policies._maximum = MAX_POLICY_COUNT_ID;
         info.policies._length  = 0;
         info.policies._buffer  = policyCount;
-            
+
         result = _DataReader_get_requested_incompatible_qos_status(
                      _this, TRUE, &info);
-            
+
         /* Only allow the callback if there is a change since the last
          * callback, i.e if total_count_change is non zero
          */
@@ -1619,7 +1619,7 @@ onRequestedIncompatibleQos (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_requested_incompatible_qos; 
+                callback = status->callbackInfo.on_requested_incompatible_qos;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1628,10 +1628,10 @@ onRequestedIncompatibleQos (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);
@@ -1653,7 +1653,7 @@ onSampleRejected (
     _Entity entity;
     _Status status;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataReader_get_sample_rejected_status(
                      _this, TRUE, &info);
@@ -1675,7 +1675,7 @@ onSampleRejected (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_sample_rejected; 
+                callback = status->callbackInfo.on_sample_rejected;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1684,10 +1684,10 @@ onSampleRejected (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);
@@ -1734,7 +1734,7 @@ onLivelinessChanged (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_liveliness_changed; 
+                callback = status->callbackInfo.on_liveliness_changed;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1743,10 +1743,10 @@ onLivelinessChanged (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);
@@ -1840,7 +1840,7 @@ onDataAvailable (
 
 static void
 onSubscriptionMatch (
-    _DataReader _this) 
+    _DataReader _this)
 {
     gapi_subscriptionMatchedStatus info;
     gapi_listener_SubscriptionMatchedListener callback;
@@ -1850,11 +1850,11 @@ onSubscriptionMatch (
     _Status status;
     _Entity entity;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataReader_get_subscription_matched_status (
                      _this, TRUE, &info);
-    
+
         /* Only allow the callback if there is a change since the last
          * callback, i.e if total_count_change is non zero
          */
@@ -1872,7 +1872,7 @@ onSubscriptionMatch (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_subscription_match; 
+                callback = status->callbackInfo.on_subscription_match;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1881,10 +1881,10 @@ onSubscriptionMatch (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);
@@ -1906,7 +1906,7 @@ onSampleLost (
     _Status status;
     _Entity entity;
     c_voidp listenerData;
-   
+
     if ( _this ) {
         result = _DataReader_get_sample_lost_status (
                      _this, TRUE, &info);
@@ -1928,7 +1928,7 @@ onSampleLost (
                     entity = NULL;
                 }
 
-                callback = status->callbackInfo.on_sample_lost; 
+                callback = status->callbackInfo.on_sample_lost;
                 listenerData = status->callbackInfo.listenerData;
 
                 _EntitySetBusy(_this);
@@ -1937,10 +1937,10 @@ onSampleLost (
                 if (entity) {
                     _EntitySetBusy(entity);
                     _EntityRelease(entity);
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                     gapi_objectClearBusy(target);
                 } else {
-                    callback(listenerData, source, &info); 
+                    callback(listenerData, source, &info);
                 }
 
                 gapi_objectClearBusy(source);

@@ -17,7 +17,7 @@
 //  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-﻿using System;
+using System;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice

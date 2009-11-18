@@ -612,7 +612,7 @@ saj_stringSequenceCopyIn(
             saj_exceptionCheck(env);
 
             /* translate the java string to a c string */
-            vm_managed_c_string = (*env)->GetStringUTFChars(env, javaString, NULL);
+            vm_managed_c_string = (*env)->GetStringUTFChars(env, javaString, 0);
             saj_exceptionCheck(env);
 
             if(vm_managed_c_string != NULL)
@@ -1088,7 +1088,7 @@ saj_LookupTypeSupportDataReader(
             saj_exceptionCheck(env);
 
             if(jresult != NULL){
-               data = (*env)->GetStringUTFChars(env, jresult, NULL);
+               data = (*env)->GetStringUTFChars(env, jresult, 0);
                saj_exceptionCheck(env);
                *result = gapi_string_dup(data);
                (*env)->ReleaseStringUTFChars(env, jresult, data);
@@ -1125,7 +1125,7 @@ saj_LookupTypeSupportDataWriter(
             saj_exceptionCheck(env);
 
             if(jresult != NULL){
-                data = (*env)->GetStringUTFChars(env, jresult, NULL);
+                data = (*env)->GetStringUTFChars(env, jresult, 0);
                 saj_exceptionCheck(env);
                 *result = gapi_string_dup(data);
                 (*env)->ReleaseStringUTFChars(env, jresult, data);
@@ -1160,7 +1160,7 @@ saj_LookupTypeSupportConstructorSignature(
             saj_exceptionCheck(env);
 
             if(jresult != NULL){
-                data = (*env)->GetStringUTFChars(env, jresult, NULL);
+                data = (*env)->GetStringUTFChars(env, jresult, 0);
                 saj_exceptionCheck(env);
                 *result = gapi_string_dup(data);
                 (*env)->ReleaseStringUTFChars(env, jresult, data);

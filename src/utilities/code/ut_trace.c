@@ -35,6 +35,7 @@ ut_traceInitialize(
         } else {
             char * filename = os_fileNormalize(outputPathName); 
             stream = fopen(filename, "w");
+            os_free(filename);
             if (stream) {
                 result = 0;
             } else {

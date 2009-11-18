@@ -144,7 +144,14 @@ int main (
     }
     gcc_command[0] = '\0';
     for (i = 1; i < argc; i++) {
-	strcat (gcc_command, argv[i]);
+        if ( r_index( argv[i], ' ') != NULL) {
+	  /* Option contains one or more spaces, so quote it */
+	  strcat (gcc_command, "\"");
+	  strcat (gcc_command, argv[i]);
+	  strcat (gcc_command, "\"");
+	} else {
+	  strcat (gcc_command, argv[i]);
+	}
 	strcat (gcc_command, " ");
 	if (next_is_target) {
 	    strcpy (target, argv[i]);

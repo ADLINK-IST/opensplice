@@ -1,17 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 #include "v__domainAdmin.h"
 #include "v_kernel.h"
+#include "v_entity.h"
 
 #include "v__policy.h"
 
@@ -33,7 +34,7 @@ v_domainAdminAddDomain(
 
     assert(v_domainExpressionIsAbsolute(domainName));
     assert(newDomain != NULL);
-        
+
     domain = v_domainNew(v_objectKernel(da), domainName, NULL);
     found = c_tableInsert(da->domains, domain);
     if (found != domain) {
@@ -44,7 +45,7 @@ v_domainAdminAddDomain(
         /* Do not free domain here because it is returned */
         *newDomain = domain;
     }
-    
+
     return result;
 }
 
@@ -55,7 +56,7 @@ v_domainAdminAddDomainExpression(
 {
     c_bool result = TRUE;
     v_domainInterest domainInterest, found;
-    
+
     assert(!v_domainExpressionIsAbsolute(domainExpr));
 
     domainInterest = v_domainInterestNew(v_objectKernel(da), domainExpr);
@@ -64,7 +65,7 @@ v_domainAdminAddDomainExpression(
         result = FALSE;
     }
     c_free(domainInterest);
-    
+
     return result;
 }
 
@@ -80,9 +81,9 @@ v_domainAdminRemoveDomain(
     c_collection q;
     c_iter list;
     c_value params[1];
-    
+
     assert(v_domainExpressionIsAbsolute(domainName));
-    
+
     expr = (q_expr)q_parse("name like %0");
     params[0] = c_stringValue((char *)domainName);
     q = c_queryNew(da->domains, expr, params);
@@ -101,10 +102,10 @@ v_domainAdminRemoveDomain(
     }
     c_free(q);
     c_iterFree(list);
-    
+
     return result;
 }
-     
+
 static c_bool
 v_domainAdminRemoveDomainExpression(
     v_domainAdmin da,
@@ -116,9 +117,9 @@ v_domainAdminRemoveDomainExpression(
     c_collection q;
     c_iter list;
     c_value params[1];
-    
+
     assert(!v_domainExpressionIsAbsolute(domainExpr));
-    
+
     expr = (q_expr)q_parse("expression like %0");
     params[0] = c_stringValue((char *)domainExpr);
     q = c_queryNew(da->domainInterests, expr, params);
@@ -135,7 +136,7 @@ v_domainAdminRemoveDomainExpression(
     }
     c_free(q);
     c_iterFree(list);
-    
+
     return result;
 }
 
@@ -148,7 +149,7 @@ checkDomainInterest(
     v_domain domain = v_domain(arg);
     c_bool result = TRUE;
 
-    if (v_domainFitsExpression(domain, domainInterest->expression)) {
+    if (v_domainStringMatchesExpression(v_partitionName(domain), domainInterest->expression)) {
         result = FALSE;
     }
 
@@ -169,7 +170,7 @@ resolveDomains(
     struct resolveDomainsArg *a = (struct resolveDomainsArg *)arg;
     c_iter list;
     v_domain d;
-    
+
     list = v_resolveDomains(a->kernel, di->expression);
     d = v_domain(c_iterTakeFirst(list));
     while (d != NULL) {
@@ -221,7 +222,7 @@ removeDomain(
 
     found = c_tableRemove(t, d, NULL, NULL);
     /* 'found' might be NULL, since domains are only added when to this
-     * administration when a group exists for that domain 
+     * administration when a group exists for that domain
      */
     c_free(found);
 }
@@ -290,7 +291,13 @@ v_domainAdminFitsInterest(
 {
     c_bool result;
 
+#if 1
+    c_mutexLock(&da->mutex);
+#endif
     result = !c_tableWalk(da->domainInterests, checkDomainInterest, d);
+#if 1
+    c_mutexUnlock(&da->mutex);
+#endif
 
     return result;
 }
@@ -323,7 +330,7 @@ v_domainAdminAdd(
 c_iter
 v_domainAdminRemove(
     v_domainAdmin da,
-    const c_char *domainExpr) 
+    const c_char *domainExpr)
 {
     /* domainExpr: expression or absolute domain name */
     c_iter domains;
@@ -370,7 +377,7 @@ v_domainAdminSet(
     c_mutexLock(&da->mutex);
     /*
      * The absolute domain names will be added at the end of
-     * the algorithm. 
+     * the algorithm.
      * The domain expressions in the parameter of domainExpressions,
      * replace the existing in da->domainInterests.
      */
@@ -381,7 +388,7 @@ v_domainAdminSet(
     dexpressions = v_partitionPolicySplit(domainExpressions);
     if (dexpressions == NULL) {
         /* switch to default */
-        *addedDomains = c_iterInsert(*addedDomains, v_domainNew(resolveArg.kernel, "", NULL)); 
+        *addedDomains = c_iterInsert(*addedDomains, v_domainNew(resolveArg.kernel, "", NULL));
     } else {
         dexpr = (c_char *)c_iterTakeFirst(dexpressions);
         while (dexpr != NULL) {
@@ -401,7 +408,7 @@ v_domainAdminSet(
     }
 
     /*
-     * The given expressions are now divided across 
+     * The given expressions are now divided across
      * 'addeddomains' and 'da->domainInterests'.
      * Now first add domains to 'addeddomains' that fit the
      * expressions in 'da->domainInterests'.
@@ -424,7 +431,7 @@ v_domainAdminSet(
     updateArg.rdomains = removedDomains;
     c_tableWalk(da->domains, updateDomains, (c_voidp)&updateArg);
 
-    c_iterWalk(*removedDomains, removeDomain, (c_voidp)da->domains); 
+    c_iterWalk(*removedDomains, removeDomain, (c_voidp)da->domains);
 
     /*
      * The da->domains now contains domains that still comply to new
@@ -435,6 +442,30 @@ v_domainAdminSet(
     c_mutexUnlock(&da->mutex);
 
     return TRUE;
+}
+
+c_bool
+v_domainAdminDomainExists(
+    v_domainAdmin da,
+    const c_char *name)
+{
+    v_domain found;
+    C_STRUCT(v_entity) template;
+
+    assert(da != NULL);
+    assert(C_TYPECHECK(da,v_domainAdmin));
+
+    template.name = c_stringNew(c_getBase(da), name);
+    c_mutexLock(&da->mutex);
+    found = c_find(da->domains,&template);
+    c_mutexUnlock(&da->mutex);
+    c_free(template.name);
+    
+    if (found) {
+        c_free(found);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 c_iter
@@ -452,12 +483,11 @@ v_domainAdminLookupDomains(
 
     expr = (q_expr)q_parse("name like %0");
     params[0] = c_stringValue((c_char *)domainExpr);
-    q = c_queryNew(da->domains,expr,params);
-    q_dispose(expr);
-
     c_mutexLock(&da->mutex);
+    q = c_queryNew(da->domains,expr,params);
     list = c_select(q,0);
     c_mutexUnlock(&da->mutex);
+    q_dispose(expr);
     c_free(q);
 
     return list;

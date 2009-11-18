@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_qos.h"
@@ -18,7 +18,7 @@
 
 gapi_domainParticipantQos        gapi_domainParticipantQosDefault = {
         /* gapi_userDataQosPolicy user_data */
-        { 
+        {
             /* gapi_octetSeq value */
             {
                 0,           /* _maximum */
@@ -207,7 +207,7 @@ gapi_subscriberQos               gapi_subscriberQosDefault = {
         {
             NULL,
             FALSE
-        }   
+        }
     };
 
 gapi_dataReaderQos               gapi_dataReaderQosDefault = {
@@ -293,7 +293,7 @@ gapi_dataReaderQos               gapi_dataReaderQosDefault = {
         {
             NULL,
             FALSE
-        }   
+        }
     };
 
 gapi_dataReaderViewQos               gapi_dataReaderViewQosDefault = {
@@ -390,11 +390,11 @@ gapi_validBoolean(
     )
 {
     gapi_boolean valid = FALSE;
-    
+
     if ( (value == FALSE) || (value == TRUE) ) {
          valid = TRUE;
     }
-    
+
     return valid;
 }
 
@@ -492,7 +492,7 @@ validDurabilityQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     return valid;
 }
 
@@ -522,7 +522,7 @@ validDurabilityServiceQosPolicy (
             }
         }
     }
-    
+
     if ( policy->max_samples < -1  ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_DURABILITYSERVICE_QOS_POLICY_ID,
@@ -530,7 +530,7 @@ validDurabilityServiceQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     if ( policy->max_instances < -1 ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_DURABILITYSERVICE_QOS_POLICY_ID,
@@ -538,7 +538,7 @@ validDurabilityServiceQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-   
+
     if ( policy->max_samples_per_instance < -1 ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_DURABILITYSERVICE_QOS_POLICY_ID,
@@ -546,7 +546,7 @@ validDurabilityServiceQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     if ( !gapi_validDuration(&policy->service_cleanup_delay) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_DURABILITYSERVICE_QOS_POLICY_ID,
@@ -611,7 +611,7 @@ validPresentationQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-            
+
     if ( !gapi_validBoolean(policy->ordered_access) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_PRESENTATION_QOS_POLICY_ID,
@@ -629,7 +629,7 @@ validPresentationQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     return valid;
 }
 
@@ -660,7 +660,7 @@ validLivelinessQosPolicy (
     gapi_unsigned_long              qosId)
 {
     gapi_boolean valid = TRUE;
-    
+
     if ( (policy->kind != GAPI_AUTOMATIC_LIVELINESS_QOS)             &&
          (policy->kind != GAPI_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS) &&
          (policy->kind != GAPI_MANUAL_BY_TOPIC_LIVELINESS_QOS) ) {
@@ -670,7 +670,7 @@ validLivelinessQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-     
+
     if ( !gapi_validDuration(&policy->lease_duration) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_LIVELINESS_QOS_POLICY_ID,
@@ -701,7 +701,7 @@ validTimeBasedFilterQosPolicy (
     return valid;
 }
 
-    
+
 static gapi_boolean
 validReliabilityQosPolicy (
     const gapi_reliabilityQosPolicy *policy,
@@ -718,7 +718,7 @@ validReliabilityQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     return valid;
 }
 
@@ -749,8 +749,8 @@ validHistoryQosPolicy (
     gapi_unsigned_long           qosId)
 {
     gapi_boolean valid = TRUE;
-    
-    if ( (policy->kind != GAPI_KEEP_LAST_HISTORY_QOS) && 
+
+    if ( (policy->kind != GAPI_KEEP_LAST_HISTORY_QOS) &&
          (policy->kind != GAPI_KEEP_ALL_HISTORY_QOS) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_HISTORY_QOS_POLICY_ID,
@@ -870,7 +870,7 @@ validResourceLimitsQosPolicy (
     gapi_unsigned_long                  qosId)
 {
     gapi_boolean valid = TRUE;
-    
+
 
     if ( (policy->max_samples <= 0) && (policy->max_samples  != GAPI_LENGTH_UNLIMITED) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
@@ -879,7 +879,7 @@ validResourceLimitsQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     if ( (policy->max_instances <= 0) && (policy->max_instances  != GAPI_LENGTH_UNLIMITED) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_RESOURCELIMITS_QOS_POLICY_ID,
@@ -887,7 +887,7 @@ validResourceLimitsQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-    
+
     if ( (policy->max_samples_per_instance <= 0) && (policy->max_samples_per_instance  != GAPI_LENGTH_UNLIMITED) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_RESOURCELIMITS_QOS_POLICY_ID,
@@ -986,7 +986,7 @@ validReaderLifespanQosPolicy (
     gapi_unsigned_long                  qosId)
 {
     gapi_boolean valid = TRUE;
-   
+
     if ( !gapi_validBoolean(policy->use_lifespan) ) {
         gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_READERLIFESPAN_QOS_POLICY_ID,
@@ -1084,7 +1084,7 @@ validSchedulingQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
-                                   
+
     if ( !validSchedulingPriorityQosPolicy(&policy->scheduling_priority_kind) ) {
 	gapi_errorInvalidQosPolicy(context, qosId,
                                    GAPI_SCHEDULING_QOS_POLICY_ID,
@@ -1156,15 +1156,6 @@ gapi_topicQosIsConsistent (
          !validOwnershipQosPolicy(&qos->ownership, context, GAPI_QOS_TOPIC_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
     }
-    
-    if ( qos->durability.kind == GAPI_TRANSIENT_LOCAL_DURABILITY_QOS ) {
-        gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_TOPIC_ID,
-                                       GAPI_DURABILITY_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_KIND_ID,
-                                       GAPI_ERRORCODE_UNSUPPORTED_VALUE);
-        return GAPI_RETCODE_UNSUPPORTED;
-    }
 
     if ( qos->history.kind == GAPI_KEEP_LAST_HISTORY_QOS ) {
         if ( qos->resource_limits.max_samples_per_instance != GAPI_LENGTH_UNLIMITED ) {
@@ -1211,73 +1202,73 @@ gapi_topicQosEqual (
 
     /* gapi_durabilityServiceQosPolicy durability */
     if ( (qos1->durability_service.history_kind             != qos2->durability_service.history_kind)  ||
-         (qos1->durability_service.history_depth            != qos2->durability_service.history_depth) || 
+         (qos1->durability_service.history_depth            != qos2->durability_service.history_depth) ||
          (qos1->durability_service.max_samples              != qos2->durability_service.max_samples)   ||
          (qos1->durability_service.max_instances            != qos2->durability_service.max_instances) ||
          (qos1->durability_service.max_samples_per_instance != qos2->durability_service.max_samples_per_instance) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_deadlineQosPolicy deadline */
     if ( (qos1->deadline.period.sec     != qos2->deadline.period.sec) ||
          (qos1->deadline.period.nanosec != qos2->deadline.period.nanosec) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_latencyBudgetQosPolicy latency_budget */
     if ( (qos1->latency_budget.duration.sec     != qos2->latency_budget.duration.sec) ||
          (qos1->latency_budget.duration.nanosec != qos2->latency_budget.duration.nanosec) ) {
         equal = FALSE;
     }
- 
+
     /* gapi_livelinessQosPolicy liveliness */
     if ( (qos1->liveliness.kind != qos2->liveliness.kind) ||
          (qos1->liveliness.lease_duration.sec     != qos2->liveliness.lease_duration.sec) ||
          (qos1->liveliness.lease_duration.nanosec != qos2->liveliness.lease_duration.nanosec) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_reliabilityQosPolicy reliability */
     if ( (qos1->reliability.kind != qos2->reliability.kind) ||
          (qos1->reliability.max_blocking_time.sec     != qos2->reliability.max_blocking_time.sec) ||
          (qos1->reliability.max_blocking_time.nanosec != qos2->reliability.max_blocking_time.nanosec) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_destinationOrderQosPolicy destination_order */
     if ( qos1->destination_order.kind != qos2->destination_order.kind  ) {
         equal = FALSE;
     }
-        
+
     /* gapi_historyQosPolicy history */
     if ( (qos1->history.kind  != qos2->history.kind) ||
-         (qos1->history.depth != qos2->history.depth) ) { 
+         (qos1->history.depth != qos2->history.depth) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_resourceLimitsQosPolicy resource_limits */
     if ( (qos1->resource_limits.max_samples              != qos2->resource_limits.max_samples)   ||
          (qos1->resource_limits.max_instances            != qos2->resource_limits.max_instances) ||
          (qos1->resource_limits.max_samples_per_instance != qos2->resource_limits.max_samples_per_instance) ) {
         equal = FALSE;
     }
-        
+
     /* gapi_transportPriorityQosPolicy transport_priority */
     if ( qos1->transport_priority.value != qos2->transport_priority.value )  {
         equal = FALSE;
     }
- 
+
     /* gapi_lifespanQosPolicy lifespan */
     if ( (qos1->lifespan.duration.sec     != qos2->lifespan.duration.sec) ||
          (qos1->lifespan.duration.nanosec != qos2->lifespan.duration.nanosec) ) {
         equal = FALSE;
     }
- 
+
     /* gapi_ownershipQosPolicy ownership */
     if ( qos1->ownership.kind != qos2->ownership.kind ) {
         equal = FALSE;
     }
-      
+
     return equal;
 }
 
@@ -1288,11 +1279,11 @@ gapi_publisherQosIsConsistent (
     )
 {
     gapi_returnCode_t retcode;
-    
+
     if ( !validPresentationQosPolicy(&qos->presentation, context, GAPI_QOS_PUBLISHER_ID)    ||
          !validPartitionQosPolicy(&qos->partition, context, GAPI_QOS_PUBLISHER_ID)          ||
          !validGroupDataQosPolicy(&qos->group_data, context, GAPI_QOS_PUBLISHER_ID)         ||
-         !validEntityFactoryQosPolicy(&qos->entity_factory, context, GAPI_QOS_PUBLISHER_ID) ) 
+         !validEntityFactoryQosPolicy(&qos->entity_factory, context, GAPI_QOS_PUBLISHER_ID) )
     {
         retcode = GAPI_RETCODE_BAD_PARAMETER;
     } else if ( qos->presentation.access_scope != GAPI_INSTANCE_PRESENTATION_QOS ) {
@@ -1329,7 +1320,7 @@ gapi_subscriberQosIsConsistent (
     )
 {
     gapi_returnCode_t retcode;
-    
+
     if ( !validPresentationQosPolicy(&qos->presentation, context, GAPI_QOS_SUBSCRIBER_ID)    ||
          !validPartitionQosPolicy(&qos->partition, context, GAPI_QOS_SUBSCRIBER_ID)          ||
          !validGroupDataQosPolicy(&qos->group_data, context, GAPI_QOS_SUBSCRIBER_ID)         ||
@@ -1382,19 +1373,10 @@ gapi_dataReaderQosIsConsistent (
          !validTimeBasedFilterQosPolicy(&qos->time_based_filter, context, GAPI_QOS_DATAREADER_ID)         ||
          !validOwnershipQosPolicy(&qos->ownership, context, GAPI_QOS_DATAREADER_ID)                       ||
          !validReaderDataLifecycleQosPolicy(&qos->reader_data_lifecycle, context, GAPI_QOS_DATAREADER_ID) ||
-         !validSubscriptionKeyQosPolicy(&qos->subscription_keys, context, GAPI_QOS_DATAREADER_ID)         || 
-         !validReaderLifespanQosPolicy(&qos->reader_lifespan, context, GAPI_QOS_DATAREADER_ID)            || 
-         !validShareQosPolicy(&qos->share, context, GAPI_QOS_DATAREADER_ID) ) {             
+         !validSubscriptionKeyQosPolicy(&qos->subscription_keys, context, GAPI_QOS_DATAREADER_ID)         ||
+         !validReaderLifespanQosPolicy(&qos->reader_lifespan, context, GAPI_QOS_DATAREADER_ID)            ||
+         !validShareQosPolicy(&qos->share, context, GAPI_QOS_DATAREADER_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
-    }
-
-    if ( qos->durability.kind == GAPI_TRANSIENT_LOCAL_DURABILITY_QOS ) {
-        gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_DATAREADER_ID,
-                                       GAPI_DURABILITY_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_KIND_ID,
-                                       GAPI_ERRORCODE_UNSUPPORTED_VALUE);
-        return GAPI_RETCODE_UNSUPPORTED;
     }
 
     if ( qos->history.kind == GAPI_KEEP_LAST_HISTORY_QOS ) {
@@ -1411,7 +1393,7 @@ gapi_dataReaderQosIsConsistent (
             }
         }
     }
-        
+
     if ( qos->time_based_filter.minimum_separation.sec     != GAPI_DURATION_ZERO_SEC ||
          qos->time_based_filter.minimum_separation.nanosec != GAPI_DURATION_ZERO_NSEC ) {
         gapi_errorUnsupportedQosPolicy(context,
@@ -1434,7 +1416,7 @@ gapi_dataReaderViewQosIsConsistent (
     if ( !validViewKeyQosPolicy(&qos->view_keys, context, GAPI_QOS_DATAREADERVIEW_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
     }
-    
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1460,15 +1442,6 @@ gapi_dataWriterQosIsConsistent (
          !validOwnershipStrengthQosPolicy(&qos->ownership_strength, context, GAPI_QOS_DATAWRITER_ID) ||
          !validWriterDataLifecycleQosPolicy(&qos->writer_data_lifecycle, context, GAPI_QOS_DATAWRITER_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
-    }
-   
-    if ( qos->durability.kind == GAPI_TRANSIENT_LOCAL_DURABILITY_QOS ) {
-        gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_DATAWRITER_ID,
-                                       GAPI_DURABILITY_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_KIND_ID,
-                                       GAPI_ERRORCODE_UNSUPPORTED_VALUE);
-        return GAPI_RETCODE_UNSUPPORTED;
     }
 
     if ( qos->history.kind == GAPI_KEEP_LAST_HISTORY_QOS ) {
@@ -1508,7 +1481,7 @@ immutableDurabilityQosPolicy (
                                    GAPI_DURABILITY_QOS_POLICY_ID);
         unchanged = FALSE;
     }
-    
+
     return unchanged;
 }
 
@@ -1598,7 +1571,7 @@ immutableLivelinessQosPolicy (
 }
 
 
-    
+
 static gapi_boolean
 immutableReliabilityQosPolicy (
     const gapi_reliabilityQosPolicy *new_policy,
@@ -1709,7 +1682,7 @@ gapi_domainParticipantFactoryQosCheckMutability (
     const gapi_context              *context
     )
 {
-      
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1725,8 +1698,8 @@ gapi_domainParticipantQosCheckMutability (
          !immutableSchedulingQosPolicy(&new_qos->watchdog_scheduling, &old_qos->watchdog_scheduling, context, GAPI_QOS_TOPIC_ID)) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-        
-      
+
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1747,8 +1720,8 @@ gapi_topicQosCheckMutability (
          !immutableResourceLimitsQosPolicy(&new_qos->resource_limits, &old_qos->resource_limits, context, GAPI_QOS_TOPIC_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-        
-      
+
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1762,7 +1735,7 @@ gapi_publisherQosCheckMutability (
     if ( !immutablePresentationQosPolicy(&new_qos->presentation, &old_qos->presentation, context, GAPI_QOS_PUBLISHER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-      
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1776,7 +1749,7 @@ gapi_subscriberQosCheckMutability (
     if ( !immutablePresentationQosPolicy(&new_qos->presentation, &old_qos->presentation, context, GAPI_QOS_SUBSCRIBER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-      
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1796,7 +1769,7 @@ gapi_dataReaderQosCheckMutability (
          !immutableResourceLimitsQosPolicy(&new_qos->resource_limits, &old_qos->resource_limits, context, GAPI_QOS_DATAREADER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-      
+
     return GAPI_RETCODE_OK;
 }
 
@@ -1827,7 +1800,7 @@ gapi_dataWriterQosCheckMutability (
          !immutableResourceLimitsQosPolicy(&new_qos->resource_limits, &old_qos->resource_limits, context, GAPI_QOS_DATAWRITER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
-      
+
     return GAPI_RETCODE_OK;
 }
 

@@ -2,6 +2,7 @@
 SUM=0
 SUCC=0
 FAIL=0
+FAILURES=0
 
 CUR_PATH=`pwd`
 echo " Begin"
@@ -31,10 +32,11 @@ do
     SUM=`expr $SUM + 1`
     if [ $status = 0 ]; then
        SUCC=`expr $SUCC + 1`
-       echo "Build successed"
+       echo "Build succeeded"
      else
        FAIL=`expr $FAIL + 1`
        echo "Build failed: $status"
+       FAILURES=1
      fi  
     
     echo " #### Project: $PROJECT End ####" 
@@ -42,8 +44,12 @@ do
 done
 cd "$CUR_PATH"
 
-echo "############ Summary of Build:  #############"
-echo "    Summary: $SUM"
-echo "    Successed: $SUCC"
-echo "    Failed: $FAIL"
-echo "#########################"
+if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation failed|failed!|fatal error)' $OSPL_HOME/../../../log/examples/build/summary.txt`" ]
+then
+   FAILURES=1
+   echo "There were failures building the examples - check log for details"
+fi
+
+if [ $FAILURES = 1 ]; then
+   exit 1
+fi

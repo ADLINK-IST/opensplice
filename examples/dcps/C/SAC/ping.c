@@ -754,6 +754,12 @@ main (
     /* Create datawriter */
     PP_quit_writer = DDS_Publisher_create_datawriter (p, PP_quit_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
 
+    /* Fr: workarround for ticket dds1712 */
+    conditionList = DDS_ConditionSeq__alloc();
+    assert(conditionList);
+    DDS_WaitSet_wait (w, conditionList, &wait_timeout);
+    DDS_free(conditionList);
+
     for (block = 0; block < nof_blocks ; block++) {
         while (!finish_flag) {
             /*

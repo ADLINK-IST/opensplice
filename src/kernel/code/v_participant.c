@@ -121,7 +121,11 @@ v_participantInit(
         }
     }
 
+    c_mutexInit(&p->newGroupListMutex,SHARED_MUTEX);
+    p->newGroupList = c_listNew(c_resolve(base, "kernelModule::v_group"));
+
     v_observerSetEventMask(v_observer(p), V_EVENT_NEW_GROUP);
+
     c_lockInit(&p->lock,SHARED_LOCK);
     c_mutexInit(&p->builtinLock,SHARED_MUTEX);
 
@@ -142,10 +146,24 @@ v_participantFree(
     v_entity e;
     v_kernel kernel;
 
+    /* Not clear yet why builtin subscriber lock and participant lock are not taken now?
+     * Also not clear why observer lock is not taken but is freed at the end!
+     */
     if (p != NULL) {
         assert(C_TYPECHECK(p,v_participant));
 
         kernel = v_objectKernel(p);
+
+        if (!v_observableRemoveObserver(v_observable(kernel),v_observer(p))) {
+            if (v_participantName(p) != NULL) {
+                OS_REPORT_1(OS_WARNING,"v_participantFree",0,
+                            "Participant '%s' cannot disconnect from Kernel events",
+                            v_participantName(p));
+            } else {
+                OS_REPORT(OS_WARNING,"v_participantFree",0,
+                          "Participant cannot disconnect from Kernel events");
+            }
+        }
 
         builtinMsg = v_builtinCreateParticipantInfo(kernel->builtin,p);
         v_writeDisposeBuiltinTopic(kernel, V_PARTICIPANTINFO_ID, builtinMsg);
@@ -178,17 +196,6 @@ v_participantFree(
             }
             c_free(e); /* deref o since c_take will not */
         }
-        if (!v_observableRemoveObserver(v_observable(kernel),v_observer(p))) {
-            if (v_participantName(p) != NULL) {
-                OS_REPORT_1(OS_WARNING,"Kernel Participant",0,
-                            "%s: Cannot observe Kernel events",
-                            v_participantName(p));
-            } else {
-                OS_REPORT(OS_WARNING,"Kernel Participant",0,
-                          "Cannot observe Kernel events");
-            }
-        }
-
         found = v_removeParticipant(kernel,p);
         assert(found == p);
         c_free(found);
@@ -254,22 +261,42 @@ v_participantRemove(
 
 
 static c_bool
-autoConnect(
+connectNewGroup(
     c_object o,
     c_voidp arg)
 {
     switch (v_objectKind(o)) {
     case K_PUBLISHER:
-        v_publisherNotify(v_publisher(o), (v_event)arg);
+        v_publisherConnectNewGroup(v_publisher(o), (v_group)arg);
     break;
     case K_SUBSCRIBER:
-        v_subscriberNotify(v_subscriber(o), (v_event)arg);
+        v_subscriberConnectNewGroup(v_subscriber(o), (v_group)arg);
     break;
     default:
         /* Other entities do not connect */
     break;
     }
     return TRUE;
+}
+
+void
+v_participantConnectNewGroup (
+    v_participant _this,
+    v_event event)
+{
+    v_group g;
+
+    c_mutexLock(&_this->newGroupListMutex);
+    g = c_take(_this->newGroupList);
+    while (g) {
+        c_mutexUnlock(&_this->newGroupListMutex);
+        c_lockWrite(&_this->lock);
+        c_walk(_this->entities, connectNewGroup, g);
+        c_lockUnlock(&_this->lock);
+        c_mutexLock(&_this->newGroupListMutex);
+        g = c_take(_this->newGroupList);
+    }
+    c_mutexUnlock(&_this->newGroupListMutex);
 }
 
 static c_bool
@@ -280,7 +307,7 @@ assertLivelinessPublisher(
     v_entity e = v_entity(o);
 
     if (v_objectKind(e) == K_PUBLISHER) {
-        v_publisherNotify(v_publisher(e), (v_event)arg);
+        v_publisherAssertLiveliness(v_publisher(e), (v_event)arg);
     }
     return TRUE;
 }
@@ -337,39 +364,46 @@ v_participantDeleteHistoricalData(
 
 void
 v_participantNotify(
-    v_participant p,
+    v_participant _this,
     v_event event,
     c_voidp userData)
 {
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_participant));
+    /* This Notify method is part of the observer-observable pattern.
+     * It is designed to be invoked when _this object as observer receives
+     * an event from an observable object.
+     * It must be possible to pass the event to the subclass of itself by
+     * calling <subclass>Notify(_this, event, userData).
+     * This implies that _this as observer cannot be locked within any
+     * Notify method to avoid deadlocks.
+     * For consistency _this must be locked by v_observerLock(_this) before
+     * calling this method.
+     */
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_participant));
 
     if (event) {
         switch (event->kind) {
         case V_EVENT_NEW_GROUP:
-            c_lockWrite(&p->lock);
-            c_walk(p->entities, autoConnect, event);
-            c_lockUnlock(&p->lock);
-        break;
-        case V_EVENT_SERVICESTATE_CHANGED:
-        break;
-        case V_EVENT_DATA_AVAILABLE:
+            assert(event->userData);
+            c_mutexLock(&_this->newGroupListMutex);
+            c_listInsert(_this->newGroupList,v_group(event->userData));
+            c_mutexUnlock(&_this->newGroupListMutex);
         break;
         case V_EVENT_LIVELINESS_ASSERT:
-            /* assert all writers */
-            c_lockWrite(&p->lock);
-            c_walk(p->entities, assertLivelinessPublisher, event);
-            c_lockUnlock(&p->lock);
+            c_lockWrite(&_this->lock);
+            c_walk(_this->entities, assertLivelinessPublisher, event);
+            c_lockUnlock(&_this->lock);
         break;
+        case V_EVENT_SERVICESTATE_CHANGED:
+        case V_EVENT_DATA_AVAILABLE:
         case V_EVENT_HISTORY_DELETE:
-            /*Do nothing here.*/
-        break;
         case V_EVENT_HISTORY_REQUEST:
             /*Do nothing here.*/
         break;
         default:
-            OS_REPORT_1(OS_WARNING,"Kernel Participant",0,
-                        "Notify encountered unknown event kind (%d)",event->kind);
+            OS_REPORT_1(OS_WARNING,"v_participantNotify",0,
+                        "Notify encountered unknown event kind (%d)",
+                        event->kind);
         break;
         }
     }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <os.h>
@@ -16,7 +16,7 @@
 #include "report.h"
 #include "serviceMonitor.h"
 
-C_STRUCT(serviceMonitor) 
+C_STRUCT(serviceMonitor)
 {
     spliced spliceDaemon;
     u_serviceManager serviceManager;
@@ -49,7 +49,7 @@ serviceMonitorMain(
             switch (info->restartRule) {
 #ifndef INTEGRITY
             case RR_KILL:
-                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, 
+                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> kill", info->name);
 #if !defined OS_WIN32_DEFS_H
                 os_procDestroy(info->procId, SIGKILL);
@@ -61,9 +61,9 @@ serviceMonitorMain(
                 if (args) {
                     snprintf(args, argc, "\"%s\" \"%s\" %s", info->name, info->configuration, info->args);
                 }
-                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, 
+                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> restart", info->name);
-#if !defined OS_WIN32_DEFS_H && !defined INTEGRITY 
+#if !defined OS_WIN32_DEFS_H && !defined INTEGRITY
                 os_procDestroy(info->procId, SIGKILL);
 #endif
                 procCreateResult = os_procCreate(info->command,
@@ -83,11 +83,11 @@ serviceMonitorMain(
             case RR_HALT:
                 OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> systemhalt", info->name);
-                splicedTerminate(this->spliceDaemon);
+                splicedDoSystemHalt(this->spliceDaemon, SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
             break;
 #endif
             case RR_SKIP:
-                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, 
+                OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> skip", info->name);
             break;
             default:
@@ -125,7 +125,7 @@ serviceMonitorNew(
         this->serviceManager = splicedGetServiceManager(this->spliceDaemon);
         u_dispatcherSetEventMask(u_dispatcher(this->serviceManager),
             V_EVENT_SERVICESTATE_CHANGED);
-        u_dispatcherInsertListener(u_dispatcher(this->serviceManager), 
+        u_dispatcherInsertListener(u_dispatcher(this->serviceManager),
                                   (u_dispatcherListener)serviceMonitorMain,
                                   (c_voidp)this);
     }

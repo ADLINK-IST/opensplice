@@ -22,14 +22,14 @@
         </Partitioning>
         <Channels>
             <Channel enabled="true" name="BestEffort" reliable="false" default="true">
-                <PortNr>3340</PortNr>
+                <PortNr>53340</PortNr>
             </Channel>
             <Channel enabled="true" name="Reliable" reliable="true">
-                <PortNr>3350</PortNr>
+                <PortNr>53350</PortNr>
             </Channel>
         </Channels>
         <Discovery enabled="true">
-            <PortNr>3360</PortNr>
+            <PortNr>53360</PortNr>
         </Discovery>
     </NetworkService>
 

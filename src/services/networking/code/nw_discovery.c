@@ -34,7 +34,7 @@
 #include "v_networkReader.h"
 
 NW_STRUCT(nw_discovery) {
-	NW_EXTENDS(nw_runnable);
+    NW_EXTENDS(nw_runnable);
     nw_plugNetwork network;
 };
 NW_CLASS(nw_discovery);
@@ -51,30 +51,30 @@ nw_discoveryInitialize(
     const nw_runnableTriggerFunc triggerFunc,
     const nw_runnableFinalizeFunc finalizeFunc)
 {
-	NW_CONFIDENCE(discovery != NULL);
+    NW_CONFIDENCE(discovery != NULL);
 
     /* Initialize parent */
     nw_runnableInitialize((nw_runnable)discovery, name, pathName,
         mainFunc, NULL, triggerFunc, finalizeFunc);
 
     /* Initialize self */
-	discovery->network = nw_plugNetworkIncarnate(networkId);
+    discovery->network = nw_plugNetworkIncarnate(networkId);
 }
 
 static void
 nw_discoveryFinalize(
     nw_runnable runnable)
 {
-	nw_discovery discovery;
+    nw_discovery discovery;
 
-	discovery = (nw_discovery)runnable;
-	NW_CONFIDENCE(discovery != NULL);
+    discovery = (nw_discovery)runnable;
+    NW_CONFIDENCE(discovery != NULL);
 
-	/* Finalize parent */
-	nw_runnableFinalize(runnable);
+    /* Finalize parent */
+    nw_runnableFinalize(runnable);
 
     /* Finalize self */
-	nw_plugNetworkExcarnate(discovery->network);
+    nw_plugNetworkExcarnate(discovery->network);
 }
 
 
@@ -301,7 +301,7 @@ nw_discoveryWriterNew(
 
     result = (nw_discoveryWriter)os_malloc(sizeof(*result));
     if (result != NULL) {
-    	schedPathNameSize = strlen(name) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Tx)) +
+        schedPathNameSize = strlen(name) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Tx)) +
                 + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
         schedPath = os_malloc(schedPathNameSize);
         snprintf(schedPath, schedPathNameSize, "%s%s%s%s%s", name, NWCF_SEP,
@@ -321,9 +321,9 @@ nw_discoveryWriterNew(
         c_mutexInit(&result->mutex, PRIVATE_MUTEX);
         c_condInit(&result->condition, &result->mutex, PRIVATE_COND);
         /* Do not start in the constructor, but let somebody else start me */
-	}
+    }
 
-	return result;
+    return result;
 }
 
 void
@@ -384,6 +384,8 @@ NW_STRUCT(nw_discoveryReader) {
     nw_bool checkRequested;
     /* Immediate interaction with the networking plug */
     nw_plugChannel receiveChannel;
+    /* Allow reconnection of nodes that stopped or died earlier */
+    nw_bool reconnectAllowed;
 };
 
 static void
@@ -392,8 +394,8 @@ nw_discoveryReaderTrigger(
 {
     nw_discoveryReader discoveryReader = (nw_discoveryReader)runnable;
 
-	/* Wake up the reader from its blocking action */
-	nw_plugReceiveChannelWakeUp(discoveryReader->receiveChannel);
+    /* Wake up the reader from its blocking action */
+    nw_plugReceiveChannelWakeUp(discoveryReader->receiveChannel);
 }
 
 #define NW_ALIVENODESHASH_HASHVALUE(reader, value) \
@@ -506,6 +508,7 @@ nw_discoveryReaderReceivedHeartbeat(
     nw_aliveNodesHashItem itemFound;
     nw_bool wasCreated;
     os_uint32 i;
+    nw_bool reconnectAllowed;
 
     NW_CONFIDENCE(messageBuffer != NULL);
     NW_CONFIDENCE(bufferLength == NW_DISCOVERY_MESSAGE_SIZE);
@@ -574,7 +577,9 @@ nw_discoveryReaderReceivedHeartbeat(
                     diffTime = c_timeSub(receivedTime,
                         itemFound->lastHeartbeatReceivedTime);
                     eq = c_timeCompare(diffTime, itemFound->maxHeartbeatIntervalAllowed);
-                    if (eq == C_GT) {
+                    
+                    reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
+                    if (eq == C_GT && !reconnectAllowed) {
                         /* It has taken too long for this node to send a heartbeat */
                         itemFound->hasDied = TRUE;
                         discoveryReader->aliveNodesCount--;
@@ -610,6 +615,7 @@ nw_discoveryReaderCheckForDiedNodes(
     nw_aliveNodesHashItem hashItem;
     c_time diffTime;
     c_equality eq;
+    nw_aliveNodesHashItem itemFound;
 
     NW_TRACE(Discovery, 5, "Checking liveliness of nodes");
     for (i=0; i<discoveryReader->aliveNodesHashSize; i++) {
@@ -621,10 +627,15 @@ nw_discoveryReaderCheckForDiedNodes(
                     hashItem->networkId, diffTime.seconds, diffTime.nanoseconds/1000000U);
                 eq = c_timeCompare(diffTime, hashItem->maxHeartbeatIntervalAllowed);
                 if (eq == C_GT) {
-                    /* It has taken too long for this node to send a heartbeat */
-                    hashItem->hasDied = TRUE;
+                    if ( discoveryReader->reconnectAllowed) {  
+                        nw_discoveryReaderRemoveNode(discoveryReader, hashItem->networkId, hashItem->address,&itemFound);
+                        NW_CONFIDENCE(itemFound != NULL);
+                    } else {
+                        hashItem->hasDied = TRUE;
+                        discoveryReader->diedNodesCount++;
+                    }
+                    /* Take action if node has not died before */
                     discoveryReader->aliveNodesCount--;
-                    discoveryReader->diedNodesCount++;
                     NW_TRACE_3(Discovery, 2, "Declared node 0x%x dead, "
                         "no heartbeat received during interval %d.%3.3u", hashItem->networkId,
                         diffTime.seconds, diffTime.nanoseconds/1000000);
@@ -633,6 +644,9 @@ nw_discoveryReaderCheckForDiedNodes(
                             hashItem->address, checkTime,
                             discoveryReader->aliveNodesCount,
                             discoveryReader->arg);
+                    }
+                    if (discoveryReader->reconnectAllowed) {  
+                        nw_aliveNodesHashItemFree(itemFound);
                     }
                 }
             } else {
@@ -660,7 +674,7 @@ nw_discoveryReaderMain(
 
     terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     while (!terminationRequested) {
-    	/* First retrieve a buffer to write in */
+        /* First retrieve a buffer to write in */
         nw_plugReceiveChannelMessageStart(discoveryReader->receiveChannel,
             &messageBuffer, &bufferLength, &senderAddress);
         if (messageBuffer != NULL) {
@@ -759,6 +773,8 @@ nw_discoveryReaderNew(
         for (i=0; i<result->aliveNodesHashSize; i++) {
             NW_ALIVENODESHASH_ITEMBYINDEX(result, i) = NULL;
         }
+
+        result->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
         /* Do not start in the constructor, but let somebody else start me */
     }
 

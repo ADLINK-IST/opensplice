@@ -20,7 +20,7 @@
             reside within one computing node, but also for a configurable and
             extensible set of services. These services provide pluggable functionality
             such as networking (providing QoS-driven real-time networking based
-            on multiple reliable multicast ‘channels’), durability (providing
+            on multiple reliable multicast 'channels'), durability (providing
             fault-tolerant storage for both real-time state data as well as
             persistent settings) and a remote control & monitoring soap-service
             (providing remote web-based access using the SOAP protocol from the
@@ -110,7 +110,7 @@
                         This element specifies the size of the shared memory segment holding the database. Change
                         this value if your system requires more memory than the default. Please note that the
                         operating system should be configured support the requested size. On most platforms you need
-                        ‘root’ privileges to set large sizes.
+                        'root' privileges to set large sizes.
                 ]]></comment>
                 <minimum>1048567</minimum>
                 <default>10485670</default>
@@ -890,7 +890,7 @@
                             <p>In case of a (temporary) high CPU load, the scheduling
                             behaviour of the operating system might affect the
                             capability of the Durability service to send its
-                            heartbeat ‘on time’. This attribute introduces some
+                            heartbeat 'on time'. This attribute introduces some
                             elasticity in this mechanism by making the service
                             send its heartbeat more often then required by the
                             ExpiryTime.</p>
@@ -1439,7 +1439,7 @@
                         different name-spaces do not have an overlap in partitions.
                         The default configuration has one namespace containing all
                         partitions. A partition may contain the
-                        wildcards ‘*’ to match any number of characters and ‘?’
+                        wildcards '*' to match any number of characters and '?'
                         to match one single character.
                     ]]></comment>
                     <maxLength>0</maxLength>
@@ -1605,24 +1605,56 @@
                     This element specifies which network interface card should be used.
                     Every Networking service is bound to only one network interface card
                     (NIC). The card can be uniquely identified by its corresponding
-                    IP address. If the value "first available" is entered here, the
-                    OpenSplice middleware will try to look up an interface that has
+                    IP address or by its symbolic name (e.g. eth0). If the
+                    value "first available" is entered here, the OpenSplice
+                    middleware will try to look up an interface that has 
                     the required capabilities.
                  ]]></comment>
                 <maxLength>15</maxLength>
                 <default>first available</default>
             </leafString>
+            <element name="Reconnection" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                     This element specifies the behavior for the network service
+                     w.r.t. other network services re-connecting after being 
+                     disconnected for a while. 
+                ]]></comment>
+                <attributeBoolean name="allowed" required="true">
+                    <comment><![CDATA[
+                    This attribute specifies whether the network service must
+                    resume communication with an other network service when it
+                    has already been seen before but has been disconnected 
+                    for a while.
+                    <ul>
+                        <li>false - Specifies that the network service must NOT 
+                        resume communication. 
+                        (default).  
+                        <li>true -  Specifies that the network service must
+                        resume communication.
+                    </ul>
+                    ]]></comment>
+                    <default>false</default>
+                </attributeBoolean>
+            </element>
         </element>
-        <element name="Partitioning" minOccurrences="1" maxOccurrences="1">
+            <element name="Partitioning" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
-                <p>The OpenSplice Networking service can be configured to use
-                multicast capabilities. This requires the underlying operating
-                system and network to be configured properly.</p>
-                <p>The multicast mechanism can be considered a simple implementation
-                of the publish and subscribe technique. The Networking service can be
-                configured to make use of this by mapping DCPS partitions onto
-                multicast addresses (networking partitions).,/p>
-                <p>Every node is aware of all networking partitions. Using
+                <p>The OpenSplice Networking service is capable of leveraging
+                the network's multicast and routing capabilities. If some a-priori
+                knowledge about the participating
+                nodes and their topic and partition interest is available, then the
+                networking services in the system can be explicitly instructed to use
+                specific unicast or multicast addresses for its networking traffic.
+                This is done by means of so-called network partitions</p>
+                <p>A network partition is defined by one or more unicast, multicast
+                of broadcast IP addresses. Any networking service that is started
+                will read the network partition settings and, if applicable, join
+                the required multicast groups. For every sample distributed by the
+                networking service, both its partition and topic name will be
+                inspected. In combination with a set of network partition mapping rules,
+                the service will determine to which network partition the sample is
+                written. The mapping rules are configurable as well.</p>
+                <p>Using 
                 networking configuration, nodes can be disconnected from any
                 networking partition. If a node is connected via a low speed
                 interface, it is not capable of receiving high volume data. If
@@ -1631,20 +1663,28 @@
                 onto a specific networking partition, which on its turn is only
                 connected to those nodes that are capable of handling high volume data.</p>
             ]]></comment>
-            <element name="GlobalPartition" minOccurrences="1" maxOccurrences="1">
+            <element name="GlobalPartition" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element specifies the global or default networking partition.
                 ]]></comment>
                 <attributeString name="Address" required="true">
                     <comment><![CDATA[
-                        This attribute identifies the broadcast or multicast address
-                        to be used for global communication elements. The global
+                        The global 
                         networking partition transports data that is either meant
                         to be global, like discovery heartbeats, or that is not
-                        mapped onto any other networking partition.
+                        mapped onto any other networking partition. The address is a list
+                        of one or more unicast, multicast or broadcast addresses. If more
+                        than one address is specified, then the different
+                        addresses are separated by a colon (,) semicolon (;) or space ( ).
+                        Samples for the global partition will be sent to all addresses
+                        that are specified in this list of addresses. To specify the
+                        default broadcast address, use the expression "broadcast".
+                        Addresses can be entered as dotted decimal notation or as the
+                        symbolic hostname, in which case the middleware will try to resolve
+                        the corresponding IP address.
                     ]]></comment>
                     <default>broadcast</default>
-                    <maxLength>15</maxLength>
+                    <maxLength>0</maxLength>
                 </attributeString>
             </element>
             <element name="NetworkPartitions" minOccurrences="0" maxOccurrences="1">
@@ -1665,11 +1705,19 @@
                     </attributeString>
                     <attributeString name="Address" required="true">
                         <comment><![CDATA[
-                            Each networking partition is mapped onto either the
-                            broadcast address or a multicast address.
+                            The address is a list
+                            of one or more unicast, multicast or broadcast addresses. If more
+                            than one address is specified, then the different
+                            addresses are separated by a colon (,) semicolon (;) or space ( ).
+                            Samples for this network partition will be sent to all addresses
+                            that are specified in this list of addresses. To specify the
+                            default broadcast address, use the expression "broadcast".
+                            Addresses can be entered as dotted decimal notation or as the
+                            symbolic hostname, in which case the middleware will try to
+                            resolve the corresponding IP address.
                         ]]></comment>
                         <default>broadcast</default>
-                        <maxLength>15</maxLength>
+                        <maxLength>0</maxLength>
                     </attributeString>
                     <attributeBoolean name="Connected" required="true">
                         <comment><![CDATA[
@@ -1774,10 +1822,10 @@
         <element name="Channels" minOccurrences="1" maxOccurrences="1">
             <comment><![CDATA[
                 <p>This element is used to group a set of Channels.</p>
-                <p>The set of channels define the behaviour of the ‘network’ concerning
+                <p>The set of channels define the behaviour of the 'network' concerning
                 aspects as priority, reliability and latency budget. By configuring
                 a set of channels, the Networking service is able to function as a
-                ‘scheduler’ for the network bandwidth. It achieves this by using the
+                'scheduler' for the network bandwidth. It achieves this by using the
                 application-defined DDS QoS policies of the data to select the most
                 appropriate channel to send the data.</p>
             ]]></comment>
@@ -1853,7 +1901,7 @@
                         This element specifies the port number used by the Channel.
                         Messages for the channel are sent to the port number given.
                         Each channel needs its own unique port number. Please note
-                        that ‘reliable’ channels use a second port, which is the
+                        that 'reliable' channels use a second port, which is the
                         specified PortNr + 1.
                     ]]></comment>
                     <minimum>1</minimum>
@@ -1961,6 +2009,20 @@
                         This element describes the DiffServ setting the channel will apply to all its
                         networking messages.
                         ]]></comment>
+                        <minimum>0</minimum>
+                        <maximum>255</maximum>
+                        <default>0</default>
+                    </leafInt>
+                    <leafEnum name="DontRoute" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[The IP DONTROUTE
+                              socket option is set to the value specified.]]></comment>
+                        <value>True</value>
+                        <value>False</value>
+                        <default>True</default>
+                    </leafEnum>
+                    <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
+                              header value is set to the value specified.]]></comment>
                         <minimum>0</minimum>
                         <maximum>255</maximum>
                         <default>0</default>
@@ -2924,7 +2986,7 @@
                         represents any sequence of characters and a '?' represents one
                         single character.</p>
                         <p>This expression is used to specify the DDS partition(s) from which
-                        DDS samples must be ‘bridged’ to the DBMS domain.</p>
+                        DDS samples must be 'bridged' to the DBMS domain.</p>
                     ]]></comment>
                     <maxLength>0</maxLength>
                     <default>*</default>
@@ -3190,7 +3252,7 @@
                         represents any sequence of characters and a '?' represents one single
                         character.</p>
                         <p>This expression is used to specify the tables from which DBMS data must
-                        be ‘bridged’ to the DDS domain.</p>
+                        be 'bridged' to the DDS domain.</p>
                     ]]></comment>
                     <maxLength>0</maxLength>
                     <default>*</default>

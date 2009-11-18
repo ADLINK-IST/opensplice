@@ -36,7 +36,6 @@ public:
    static DDS_StdString TCRepPrefix;
 
    static DDS_StdString DLLExtension;
-   static DDS_StdString RealNamespace;
 
    static const int clientMax;
    static const int serverMax;

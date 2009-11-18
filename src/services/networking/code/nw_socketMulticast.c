@@ -62,6 +62,12 @@ nw_socketRetrieveMCInterface(
                             (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
                     usedInterface = i;
                     found = SK_TRUE;
+                } else if (strncmp(addressLookingFor,
+                        sk_interfaceInfoGetName(interfaceList[i]),
+                        SK_INTF_MAX_NAME_LEN) == 0) {
+                    /* Interface name looking for matches with this interface's name */
+                    usedInterface = i;
+                    found = SK_TRUE;
                 } else {
                     i++;
                 }
@@ -291,8 +297,13 @@ nw_socketMulticastAddPartition(
 
     if (sk_getAddressType(addressString) == SK_TYPE_MULTICAST) {
         sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
-        address = sk_stringToAddress(addressString, NWCF_DEF(Address));
-        sockAddrMulticast.sin_addr.s_addr = address;
-        nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
+        address = sk_stringToAddress(addressString, NULL);
+        if (address) {
+            sockAddrMulticast.sin_addr.s_addr = address;
+            nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
+        } else {
+            NW_TRACE_1(Test, 4, "nw_socketMulticastAddPartition: "
+                                "Ignored invalid multicast addess %s", addressString);
+        }
     }
 }

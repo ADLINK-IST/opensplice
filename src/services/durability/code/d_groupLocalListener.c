@@ -1656,7 +1656,6 @@ d_groupLocalListenerHandleAlignment(
                     zeroTime.seconds     = 0;
                     zeroTime.nanoseconds = 0;
 
-
                     if((dkind == D_DURABILITY_PERSISTENT) && store){
                         result = d_storeGroupStore(store, localGroup);
 

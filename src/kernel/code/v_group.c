@@ -388,6 +388,8 @@ updatePurgeList(
     struct lifespanExpiry exp;
     c_long purgeCount;
     v_message message;
+    c_long listGuard;
+    c_time guardSleep = {0,1e6};
 
     /* Purge all instances that are expired. */
     /* Precondition is that the instances in the purge list are not alive
@@ -405,6 +407,7 @@ updatePurgeList(
         timestamp = c_timeSub(now, delay);
         purgeItem = c_removeAt(purgeList, 0);
         purgeCount = 0;
+        listGuard = c_listCount(purgeList) + 5;
         while ((purgeItem != NULL) ){
             instance = purgeItem->instance;
             if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
@@ -427,6 +430,17 @@ updatePurgeList(
                purgeItem = NULL;
             }
             purgeCount++;
+
+            /* Spinning loop detection */
+            if (purgeCount >= listGuard) {
+                if (purgeCount == listGuard){
+                    OS_REPORT(OS_ERROR,
+                              "updatePurgeList",
+                              0, "Number of iterations exceeds listlength");
+                }
+                /* Slow down the spinning, to allow analysis with tooling */
+                c_timeNanoSleep(guardSleep);
+            }
         }
     }
 
@@ -699,7 +713,13 @@ v_groupInit(
 
     group->cachedInstance = NULL;
     group->cachedRegMsg = NULL;
+    /* ES, dds1576: For each new group, determine the access mode for the
+     * partition involved in this group.
+     */
+    group->domainAccessMode = v_kernelPartitionAccessMode(kernel, v_partitionName(partition));
 }
+
+
 
 v_group
 v_groupNew(

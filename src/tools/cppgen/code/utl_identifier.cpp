@@ -70,6 +70,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // behaviour -case compiler flag was added which sets 
 // BE_Globals::case_sensitive.
 
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.h>
 #include <idl_extern.h>
 #include <xbe_globals.h>
@@ -131,8 +133,8 @@ long Identifier::compare (Identifier * o)
    {
       char * tmp;
 
-      id1 = strdup (pv_string);
-      id2 = strdup (o->get_string ());
+      id1 = os_strdup (pv_string);
+      id2 = os_strdup (o->get_string ());
 
       tmp = (char*) id1;
       while (*tmp)
@@ -152,8 +154,8 @@ long Identifier::compare (Identifier * o)
 
    if (! BE_Globals::case_sensitive)
    {
-      free ((void*) id1);
-      free ((void*) id2);
+      os_free ((void*) id1);
+      os_free ((void*) id2);
    }
 
    return result;

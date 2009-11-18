@@ -2,21 +2,21 @@ echo start OpenSplice
 
 ospl start
 
-ping -c 10 localhost > /dev/null
+sleep 10
 
 echo start MessageBoard
 ./exec/MessageBoard&
 
-ping -c 2 localhost > /dev/null
+sleep 2
 
 echo start Chatter
 ./exec/Chatter
 
-ping -c 4 localhost > /dev/null
+sleep 4
 
 echo start Chatter with terminate message
 ./exec/Chatter -1
 
-ping -c 4 localhost > /dev/null
+sleep 4
 
 ospl stop

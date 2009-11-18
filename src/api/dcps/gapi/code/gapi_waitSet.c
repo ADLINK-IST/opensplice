@@ -214,6 +214,8 @@ TestAndList(
     v_entity e;
     u_entity ue;
     _Condition cd;
+    _ConditionEntry entry;
+    GetTriggerValue getTriggerValue;
 
     if (_this) {
         if (v_eventTest(_this->kind,V_EVENT_TRIGGER) && (_this->userData)) {
@@ -222,13 +224,55 @@ TestAndList(
              *                  cd->triggerValue;
              */
             cd = (_Condition)_this->userData;
-            if (cd->getTriggerValue(cd)) {
-                if (a->conditions->_maximum == a->conditions->_length) {
-                    gapi_sequence_replacebuf(a->conditions,
+            /* The following lookup of the condition is a poor mans patch.
+             * Actually it scould not happen that an event exists while the
+             * originating condition is already detached.
+             * Expected behavior is that the detach of a condition waits
+             * until all events originating from that condition are processed.
+             * In the current implementation this is not possible because guard
+             * conditions only exists in the gapi.
+             * A detach of a guard condition will therefore not invoke the
+             * kernel and therefore will not be aware of any pending events
+             * as these are passed via the kernel.
+             */
+            entry = a->waitset->conditions;
+            while ((entry != NULL) && (entry->condition != cd)) {
+                entry = entry->next;
+            }
+            if (entry) {
+#if 0
+#if 0
+                /* hack: simply assume that an event from a guard conditions
+                 * always imply that the trigger value is true. So in that
+                 * case don't worry about the guards existence don't access it.
+                 */
+                if (cd->getTriggerValue(cd)) {
+#endif
+                    if (a->conditions->_maximum == a->conditions->_length) {
+                        gapi_sequence_replacebuf(
+                             a->conditions,
+                             (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
+                             a->waitset->length);
+                    }
+                    a->conditions->_buffer[a->conditions->_length++] =
+                              _EntityHandle(cd);
+#if 0
+                }
+#endif
+#else
+                getTriggerValue = cd->getTriggerValue;
+
+                if (_ObjectIsValid(_Object(cd))) {
+                    if (getTriggerValue(cd)) {
+                        if (a->conditions->_maximum == a->conditions->_length) {
+                            gapi_sequence_replacebuf(a->conditions,
                                              (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
                                              a->waitset->length);
+                        }
+                        a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                    }
                 }
-                a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+#endif
             }
         } else {
             r = v_handleClaim(_this->source,(v_object*)&e);

@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
+#include <os_stdlib.h>
 #include "idl.h"
 #include "idl_extern.h"
 #include "xbe.h"
@@ -492,7 +493,7 @@ void be_interface::LoadOpTable
    DDS_StdString opname;
    DDS_StdString opdisp;
    DDS_StdString opdispName;
-   DDS_StdString dispatchPrefix = mdiImpl + strdup ("::_dispatch_");
+   DDS_StdString dispatchPrefix = mdiImpl + os_strdup ("::_dispatch_");
 
    //
    // iterate through all operations and attributes in this scope

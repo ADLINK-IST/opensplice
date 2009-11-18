@@ -39,7 +39,7 @@ using namespace Chat;
 static DDS::GuardCondition_var          escape;
 
 /* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */
-void *
+extern "C" void *
 delayedEscape(
     void *arg)
 {

@@ -150,6 +150,10 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
                 OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Type Support Factory");
               }
             }
+            else
+            {
+              OS_REPORT(OS_ERROR, "CCPP", 0, "Type Support information not available for create_datareader");
+            }
           }
           gapi_free(typeName);
         }

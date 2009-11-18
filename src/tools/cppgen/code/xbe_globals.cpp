@@ -28,7 +28,6 @@ DDS_StdString BE_Globals::TCBasePrefix = "_tcbase_";
 DDS_StdString BE_Globals::TCRepPrefix = "_tcrep_";
 DDS_StdString BE_Globals::UserDLL = "";
 DDS_StdString BE_Globals::DLLExtension = "";
-DDS_StdString BE_Globals::RealNamespace = "DDS_REAL_NAMESPACE";
 DDS_StdString BE_Globals::hExtension = "h";
 DDS_StdString BE_Globals::CExtension = "cpp";
 DDS_StdString BE_Globals::ClientExtension = "";

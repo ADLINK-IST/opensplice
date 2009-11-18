@@ -1061,6 +1061,7 @@ readTopicMetadata(
     if (ret == os_resultSuccess) {
         char * filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "r");
+        os_free(filename);
 
         if (fdes != NULL) {
             size = EXTRA_BACKSLS;
@@ -1224,6 +1225,7 @@ storeTopicMetadata(
 
         filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "w+");
+        os_free(filename);
 
         if (fdes == NULL) {
             d_storeReport(d_store(persistentStore),
@@ -1297,6 +1299,7 @@ metaDataIsCorrect(
     if (ret == 0) {
         char * filename = os_fileNormalize(fileStorePath);
         fdes = fopen(filename, "r");
+        os_free(filename);
 
         if (fdes != NULL) {
             size = EXTRA_BACKSLS;
@@ -1675,6 +1678,8 @@ processTopic(
     if (OS_ISREG(status->stat_mode)) {
         char * filename = os_fileNormalize(path);
         fDes = fopen(filename, "r");
+        os_free(filename);
+
         if (fDes == NULL) {
             /* (INACCESSABLE */
         } else {
@@ -2219,8 +2224,9 @@ getStoreFile(
     if(result){
         fdes = result->fdes;
     } else {
-       char * filename = os_fileNormalize(path);
+        char * filename = os_fileNormalize(path);
         fdes = fopen(filename, mode);
+        os_free(filename);
 
         if(fdes && (persistentStore->sessionAlive == TRUE)){
             result = d_storeFileNew(path, fdes, mode);
@@ -2408,6 +2414,7 @@ setOptimizeTime(
     if(optfname){
         char * filename = os_fileNormalize(optfname);
         fdes = fopen(filename, "w");
+        os_free(filename);
 
         if(fdes){
             fprintf(fdes, "%d", optimizeTime.tv_sec);
@@ -2443,6 +2450,7 @@ isOptimized(
     if(optfname && optfname){
         char * filename = os_fileNormalize(optfname);
         fdes = fopen(filename, "r");
+        os_free(filename);
 
         if(fdes){
             fscanf(fdes, "%d", &seconds);
@@ -3065,6 +3073,7 @@ processExpungeAction(
                         while (status1 == 0) {
                             instance = persistentInstanceDummyNew(key);
                             pInstance = d_tableFind(g->instances, instance);
+                            persistentInstanceFree(instance);
 
                             if(pInstance){
                                 readObject(fdes, MAX_MESSAGE_SIZE, data);
@@ -3095,8 +3104,6 @@ processExpungeAction(
                                 c_free(perData);
                                 totalCount++;
                             } else {
-                                persistentInstanceFree(instance);
-                                instance = NULL;
                                 fprintf(tmpfdes, "%s\n", key); /*write keys*/
                                 /*read data*/
                                 readObject(fdes, MAX_MESSAGE_SIZE, data);

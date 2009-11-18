@@ -50,8 +50,18 @@ test_build_dist ()
     T_BUILD_DIST_3=$?
     test_configure $*
     T_BUILD_DIST_4=$?
+    grep 'command not found' $1 > /dev/null 2>&1
+    T_BUILD_DIST_5=$?
+    grep 'syntax error' $1 > /dev/null 2>&1
+    T_BUILD_DIST_6=$?
+    grep 'Permission denied' $1 > /dev/null 2>&1
+    T_BUILD_DIST_7=$?
+    grep 'cannot create' $1 > /dev/null 2>&1
+    T_BUILD_DIST_8=$?
+    grep ': is a directory' $1 > /dev/null 2>&1
+    T_BUILD_DIST_9=$?
 
-    test $2 = 0 -a $T_BUILD_DIST_1 != 0 -a $T_BUILD_DIST_2 != 0 -a $T_BUILD_DIST_3 != 0 -a $T_BUILD_DIST_4 != 0 
+    test $2 = 0 -a $T_BUILD_DIST_1 != 0 -a $T_BUILD_DIST_2 != 0 -a $T_BUILD_DIST_3 != 0 -a $T_BUILD_DIST_4 != 0 -a $T_BUILD_DIST_5 != 0 -a $T_BUILD_DIST_6 != 0 -a $T_BUILD_DIST_7 != 0 -a $T_BUILD_DIST_8 != 0 -a $T_BUILD_DIST_9 != 0 
     return $?
 }   
 
@@ -63,7 +73,7 @@ test_archive_dist ()
 
 test_build_dbt_tests()
 {
-    grep -E '\*\*\*.* Error [0-9]*' $1 > /dev/null 2>&1
+    grep '\*\*\*.* Error [0-9]*' $1 > /dev/null 2>&1
     T_BUILD_DBT_1=$?
     test_configure $*
     T_BUILD_DBT_2=$?

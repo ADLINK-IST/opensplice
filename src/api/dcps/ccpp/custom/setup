@@ -47,12 +47,12 @@ export SPLICE_ORB
 ###################################################################
 
 #ORB_IDLPP_PATH=[Insert the path yo your ORB's IDL compiler here]
-export PATH=$ORB_IDLPP_PATH:$PATH
+export PATH="$ORB_IDLPP_PATH:$PATH"
 
 ###################################################################
 # Insert the location of your ORB specific libraries below.
 ###################################################################
 
 #ORB_LIBS=[Insert the path yo your ORB specific libraries here]
-LD_LIBRARY_PATH=$OSPL_HOME/custom_lib/ccpp/$SPLICE_ORB/lib:$ORB_LIBS:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH="$OSPL_HOME/custom_lib/ccpp/$SPLICE_ORB/lib:$ORB_LIBS:$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH 

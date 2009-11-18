@@ -405,7 +405,8 @@ xml_fileOutNew (
 
     filename = os_fileNormalize(name);
     stream->file = fopen (filename, mode);
-    
+    os_free(filename);
+
     if (stream->file == NULL) {
        os_free (stream);
        stream = NULL;

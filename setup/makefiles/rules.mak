@@ -47,16 +47,26 @@ LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 	$(AR) r $@ $<
 
 ifeq (,$(findstring win32,$(SPLICE_HOST)))
+ifeq (,$(findstring studio,$(SPLICE_HOST)))
 %.d: %.c
 	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
+else
+%.d: %.c
+	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
+endif
 else
 %.d: %.c
 	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
 endif
 
 ifeq (,$(findstring win32,$(SPLICE_HOST)))
+ifeq (,$(findstring studio,$(SPLICE_HOST)))
 %.d: %.cpp
 	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
+else
+%.d: %.cpp
+	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
+endif
 else
 %.d: %.cpp
 	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
@@ -85,7 +95,7 @@ endif
 
 $(CLASS_DIR)/%.class: $(JCODE_DIR)/%.java 
 ifeq (,$(findstring win32,$(SPLICE_HOST))) 
-	$(JCC) -classpath $(CLASS_DIR):$(JAVA_INC) $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
+	$(JCC) -classpath "$(CLASS_DIR):$(JAVA_INC)" $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
 else
 	$(JCC) -classpath '$(CLASS_DIR);$(JAVA_INC)' $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
 endif

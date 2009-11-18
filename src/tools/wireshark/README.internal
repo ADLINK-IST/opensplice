@@ -4,7 +4,7 @@
 
 In order to receive fewer packets you can enable or disable protocols in the Analyze -> Enabled protocols menu. For example, you can enable only IP, Ethernet and UDP protocols.
 
-In the Edit -> Preferences -> Protocols -> OSPL menu you can change the port numbers for OpenSplice packets. Default port numbers are 3340,3350,3360. You can also specify ranges like "3340-3360".
+In the Edit -> Preferences -> Protocols -> OSPL menu you can change the port numbers for OpenSplice packets. Default port numbers are 53340,53350,53360. You can also specify ranges like "53340-53360".
 
 In the Capture->Options menu you can :
 

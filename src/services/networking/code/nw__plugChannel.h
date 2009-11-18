@@ -48,6 +48,8 @@ NW_STRUCT(nw_plugChannel) {
     /* Callback in case of an fatal error */
     nw_onFatalCallBack onFatal;
     c_voidp onFatalUsrData;
+    /* Allow reconnection after a remote node has died or stopped earlier */
+    nw_bool reconnectAllowed;
 };    
   
 /* Protected functions for descendants */
@@ -61,6 +63,7 @@ NW_STRUCT(nw_plugChannel) {
 #define nw__plugChannelGetSocket(channel)             (channel)->socket
 #define nw__plugChannelGetFragmentLength(channel)     (channel)->fragmentLength
 #define nw__plugChannelGetInterChannelComm(channel)   (channel)->interChannelComm
+#define nw__plugChannelGetReconnectAllowed(channel)   (channel)->reconnectAllowed
 
 void nw_plugChannelInitialize(
          nw_plugChannel channel,

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -15,6 +15,7 @@
 
 #include "v_publisher.h"
 #include "v_entity.h"
+#include "v_group.h"
 #include "v_event.h"
 
 #define v_publisherIsSuspended(_this) \
@@ -30,8 +31,13 @@ v_publisherSetQos(
     v_publisherQos qos);
 
 void
-v_publisherNotify(
-v_publisher _this,
+v_publisherAssertLiveliness(
+    v_publisher _this,
     v_event e);
+
+void
+v_publisherConnectNewGroup(
+    v_publisher _this,
+    v_group g);
 
 #endif

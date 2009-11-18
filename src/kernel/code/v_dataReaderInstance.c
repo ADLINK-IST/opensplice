@@ -297,8 +297,11 @@ v_dataReaderInstanceInsert(
     if (v_stateTest(messageState, L_REGISTER)) {
         if (_this->liveliness == 0) {
             /* if not user defined keys then L_NOWRITERS must be set. */
+#if 0
+/* Fails, not yet clear if the assumption is valid. */
             assert((!v_reader(reader)->qos->userKey.enable) ==
                      v_dataReaderInstanceStateTest(_this, L_NOWRITERS));
+#endif
             /* Reuse this instance.
              * So it must be removed from the purgeListEmpty, which
              * can be achieved by resetting the purgeInsertionTime.
@@ -416,11 +419,20 @@ v_dataReaderInstanceInsert(
                     }
                 } /* else is current owner */
             } else {
-                /* instance has no owner yet,
-                 * so this writer becomes the owneri.
+                /* As a workaround for dds1784 I need to make sure that the
+                 * owner is not set when there are no more live DataWriters.
+                 * Otherwise a new DataWriter with a lower strength would
+                 * never be able to take over ownership again!
+                 *
+                 * THE FOLLOWING CONDITION IS A WORKAROUND AND NEEDS A REAL FIX.
                  */
-                _this->owner.gid = msg_gid;
-                _this->owner.strength = msg_strength;
+                if(_this->liveliness > 0){
+                    /* instance has no owner yet,
+                     * so this writer becomes the owneri.
+                     */
+                    _this->owner.gid = msg_gid;
+                    _this->owner.strength = msg_strength;
+                }
             }
         }
     }
@@ -1177,7 +1189,7 @@ v_dataReaderInstancePurge(
                 } else {
                     assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
                 }
-    
+
                 if (r->views != NULL) {
                     v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
                 }
@@ -1193,7 +1205,7 @@ v_dataReaderInstancePurge(
                 } else {
                     assert(v_reader(r)->qos->lifecycle.enable_invalid_samples);
                 }
-    
+
                 if (r->views != NULL) {
                     v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
                 }

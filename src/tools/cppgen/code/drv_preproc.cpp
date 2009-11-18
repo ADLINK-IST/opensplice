@@ -66,6 +66,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * DRV_pre_proc.cc - pass an IDL file through the C preprocessor
  */
 
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.h>
 #include <idl_extern.h>
 #include <drv_private.h>
@@ -123,16 +125,16 @@ extern int debugging;
  */
 void DRV_cpp_putarg(const char * arg)
 {
-   char *str = strdup (arg);
+   char *str = os_strdup (arg);
    char *str_orig = str;
    char *cp;
    char *dp;
    
    // Always define _DDS_CPP_ and _DDS_
 
-   dp = strdup ("1");
+   dp = os_strdup ("1");
    define ("_DDS_CPP_", -1, (unsigned char *) dp, DEF_CMDLINE);
-   dp = strdup ("1");
+   dp = os_strdup ("1");
    define ("_DDS_", -1, (unsigned char *) dp, DEF_CMDLINE);
 
    // skip '-'
@@ -148,7 +150,7 @@ void DRV_cpp_putarg(const char * arg)
             if (cp != str)
             {
                *cp++ = '\0';
-               dp = strdup (cp);
+               dp = os_strdup (cp);
                define(str,-1,(unsigned char *) dp,DEF_CMDLINE);
             }
             else
@@ -158,7 +160,7 @@ void DRV_cpp_putarg(const char * arg)
          }
          else
          {
-            dp = strdup ("1");
+            dp = os_strdup ("1");
             define (str,-1,(unsigned char *) dp,DEF_CMDLINE);
          }
          break;
@@ -191,7 +193,7 @@ void DRV_cpp_putarg(const char * arg)
       }
    }
 
-   free (str_orig);
+   os_free (str_orig);
 }
 
 /*

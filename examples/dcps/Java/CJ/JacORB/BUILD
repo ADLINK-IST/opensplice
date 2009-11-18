@@ -12,7 +12,7 @@ idlpp -C -l java ../../pingpong.idl
 #
 # Generate jacorb java classed from IDL
 #
-java -classpath $JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH org.jacorb.idl.parser ../../pingpong.idl
+java -classpath "$JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH" org.jacorb.idl.parser ../../pingpong.idl
 
 #
 # Compile generated java code

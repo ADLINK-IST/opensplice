@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -24,6 +24,7 @@
 #include "v_event.h"
 #include "v_proxy.h"
 #include "v_time.h"
+#include "v_domain.h"
 
 #include "q_expr.h"
 
@@ -81,29 +82,52 @@ v_publisherNew(
     v_kernel kernel;
     v_publisher p;
     v_publisherQos q;
+    v_accessMode access;
 
     assert(C_TYPECHECK(participant,v_participant));
 
     kernel = v_objectKernel(participant);
-
-    q = v_publisherQosNew(kernel,qos);
-    if (q != NULL) {
-        p = v_publisher(v_objectNew(kernel,K_PUBLISHER));
-        v_observerInit(v_observer(p),name,NULL,enable);
-        p->domains     = v_domainAdminNew(kernel);
-        p->writers     = c_setNew(v_kernelType(kernel,K_WRITER));
-        p->qos         = q;
-        p->suspendTime = C_TIME_INFINITE;
-        p->participant = participant;
-        c_lockInit(&p->lock,SHARED_LOCK);
-        v_participantAdd(participant,v_entity(p));
-        assert(c_refCount(p) == 3);  /* as handle, by participant and the local variable p */
-        if (enable) {
-            v_publisherEnable(p);
+    /* ES, dds1576: If a partition policy was provided then we need to verify
+     * if the partition policy does not contain any partition expressions for
+     * which write access is not allowed.
+     * If write access is not allowed for one of the partitions listed in the
+     * partition policy of the qos, then the publisher will not be created at
+     * all.
+     */
+    if(qos && qos->partition)
+    {
+        access = v_kernelPartitionAccessMode(kernel, qos->partition);
+    } else
+    {
+        access = V_ACCESS_MODE_READ_WRITE;/* default */
+    }
+    if(access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE)
+    {
+        q = v_publisherQosNew(kernel,qos);
+        if (q != NULL) {
+            p = v_publisher(v_objectNew(kernel,K_PUBLISHER));
+            v_observerInit(v_observer(p),name,NULL,enable);
+            p->domains     = v_domainAdminNew(kernel);
+            p->writers     = c_setNew(v_kernelType(kernel,K_WRITER));
+            p->qos         = q;
+            p->suspendTime = C_TIME_INFINITE;
+            p->participant = participant;
+            c_lockInit(&p->lock,SHARED_LOCK);
+            v_participantAdd(participant,v_entity(p));
+            assert(c_refCount(p) == 3);  /* as handle, by participant and the local variable p */
+            if (enable) {
+                v_publisherEnable(p);
+            }
+        } else {
+            OS_REPORT(OS_ERROR, "v_publisherNew", 0,
+                      "Publisher not created: inconsistent qos");
+            p = NULL;
         }
-    } else {
-        OS_REPORT(OS_ERROR, "v_publisherNew", 0,
-                  "Publisher not created: inconsistent qos");
+    } else
+    {
+        OS_REPORT(OS_ERROR,
+              "v_publisherNew", 0,
+              "Publisher not created: Access rights for one of the partitions listed in the partition list was not sufficient (i.e. write or readwrite).");
         p = NULL;
     }
     return p;
@@ -167,8 +191,6 @@ v_publisherDeinit(
 {
     assert(C_TYPECHECK(p,v_publisher));
 
-    v_domainAdminFree(p->domains);
-    p->domains = NULL;
     v_observerDeinit(v_observer(p));
 }
 
@@ -195,7 +217,7 @@ v_publisherSetQos(
     v_qosChangeMask cm;
     v_writerNotifyChangedQosArg arg;
     v_domain d;
-
+    v_accessMode access;
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
@@ -203,25 +225,47 @@ v_publisherSetQos(
     arg.removedDomains = NULL;
 
     c_lockWrite(&p->lock);
-    result = v_publisherQosSet(p->qos, qos, v_entity(p)->enabled,&cm);
-    if ((result == V_RESULT_OK) && (cm != 0)) {
-        if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */            
-            v_domainAdminSet(p->domains, p->qos->partition, &arg.addedDomains, &arg.removedDomains);
-        }
-        c_walk(p->writers, qosChangedAction, &arg);
 
-        d = v_domain(c_iterTakeFirst(arg.addedDomains));
-        while (d != NULL) {
-            c_free(d);
+    /* ES, dds1576: When the QoS is being set we have to verify that the partitions
+     * listed in the qos do not have an invalid access mode set. For a publisher
+     * an invalid mode is characterized as 'read' mode. If the partitionAccess
+     * check returns ok, then everything continue as normal. If the
+     * partitionAccess check returns something else, then the setQos operation
+     * is aborted. Please see the partitionAccess check operation to know when
+     * a partition expression is not allowed.
+     */
+    if(qos && qos->partition)
+    {
+        access = v_kernelPartitionAccessMode(v_objectKernel(p), qos->partition);
+    } else
+    {
+        access = V_ACCESS_MODE_READ_WRITE;/* default */
+    }
+    if(access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE)
+    {
+        result = v_publisherQosSet( p->qos, qos, v_entity(p)->enabled, &cm);
+        if ((result == V_RESULT_OK) && (cm != 0)) {
+            if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
+                v_domainAdminSet(p->domains, p->qos->partition, &arg.addedDomains, &arg.removedDomains);
+            }
+            c_walk(p->writers, qosChangedAction, &arg);
+
             d = v_domain(c_iterTakeFirst(arg.addedDomains));
-        }
-        c_iterFree(arg.addedDomains);
-        d = v_domain(c_iterTakeFirst(arg.removedDomains));
-        while (d != NULL) {
-            c_free(d);
+            while (d != NULL) {
+                c_free(d);
+                d = v_domain(c_iterTakeFirst(arg.addedDomains));
+            }
+            c_iterFree(arg.addedDomains);
             d = v_domain(c_iterTakeFirst(arg.removedDomains));
+            while (d != NULL) {
+                c_free(d);
+                d = v_domain(c_iterTakeFirst(arg.removedDomains));
+            }
+            c_iterFree(arg.removedDomains);
         }
-        c_iterFree(arg.removedDomains);
+    } else
+    {
+        result = V_RESULT_PRECONDITION_NOT_MET;
     }
     c_lockUnlock(&p->lock);
 
@@ -235,13 +279,13 @@ assertLivelinessWriter(
     c_voidp arg)
 {
     v_entity e = v_entity(o);
+    v_handle handle = *(v_handle *)arg;
 
     if (v_objectKind(e) == K_WRITER) {
         if (arg == NULL) { /* assert ALL writers */
             v_writerAssertByPublisher(v_writer(e));
         } else { /* assert all writers except writer starting the event! */
-            if (v_handleIsEqual(v_publicHandle(v_public(e)),
-                                ((v_event)arg)->source) == FALSE) {
+            if (v_handleIsEqual(v_publicHandle(v_public(e)), handle) == FALSE) {
                 v_writerAssertByPublisher(v_writer(e));
             }
         }
@@ -250,33 +294,45 @@ assertLivelinessWriter(
 }
 
 void
-v_publisherNotify(
+v_publisherAssertLiveliness(
     v_publisher p,
     v_event e)
 {
+    if (e->kind == V_EVENT_LIVELINESS_ASSERT) {
+        c_lockRead(&p->lock);
+        c_walk(p->writers, assertLivelinessWriter, (c_voidp)&e->source);
+        c_lockUnlock(&p->lock);
+    }
+}
+
+void
+v_publisherConnectNewGroup(
+    v_publisher p,
+    v_group g)
+{
     c_bool connect;
-    v_group g;
     c_iter addedDomains;
     v_domain d;
 
-    if (e->kind == V_EVENT_NEW_GROUP) {
-        g = v_group(e->userData);
+    /* ES, dds1576: Only process this group event if the access rights to
+     * the partition listed in the group is write or read_write.
+     */
+    if(v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
+       v_groupDomainAccessMode(g) == V_ACCESS_MODE_WRITE)
+    {
+        c_lockWrite(&p->lock);
         connect = v_domainAdminFitsInterest(p->domains, g->partition);
+
         if (connect) {
             addedDomains = v_domainAdminAdd(p->domains,
                                             v_entityName(g->partition));
-            d = v_domain(c_iterTakeFirst(addedDomains));
             while (d != NULL) {
                 c_free(d);
                 d = v_domain(c_iterTakeFirst(addedDomains));
             }
             c_iterFree(addedDomains);
             c_walk(p->writers, (c_action)v_writerPublishGroup, g);
-        }
-    }
-    if (e->kind == V_EVENT_LIVELINESS_ASSERT) {
-        c_lockRead(&p->lock);
-        c_walk(p->writers, assertLivelinessWriter, (c_voidp)e);
+        }/*else do not connect */
         c_lockUnlock(&p->lock);
     }
 }
@@ -310,15 +366,15 @@ v_publisherAddWriter(
     assert(C_TYPECHECK(w,v_writer));
 
     iter = c_iterNew(NULL);
+    c_lockWrite(&p->lock);
     v_domainAdminWalkDomains(p->domains, collectDomains, iter);
     while ((d = c_iterTakeFirst(iter)) != NULL) {
         v_writerPublish(w,d);
         c_free(d);
     }
-    c_iterFree(iter);
-    c_lockWrite(&p->lock);
     c_setInsert(p->writers,w);
     c_lockUnlock(&p->lock);
+    c_iterFree(iter);
 }
 
 void
@@ -345,7 +401,7 @@ v_publisherCheckDomainInterest(
     v_domain partition)
 {
     return v_domainAdminFitsInterest(p->domains, partition);
-}    
+}
 
 void
 v_publisherPublish(
@@ -357,14 +413,17 @@ v_publisherPublish(
     v_partitionPolicy old;
 
     assert(p != NULL);
-    assert(C_TYPECHECK(p,v_publisher));    
+    assert(C_TYPECHECK(p,v_publisher));
 
     arg.removedDomains = NULL;
 
-    arg.addedDomains = v_domainAdminAdd(p->domains, partitionExpr);
     c_lockWrite(&p->lock);
+    arg.addedDomains = v_domainAdminAdd(p->domains, partitionExpr);
+
     old = p->qos->partition;
-    p->qos->partition = v_partitionPolicyAdd(old, partitionExpr, c_getBase(c_object(p)));
+    p->qos->partition = v_partitionPolicyAdd(old,
+                                             partitionExpr,
+                                             c_getBase(c_object(p)));
     c_free(old);
 
     c_walk(p->writers, qosChangedAction, &arg);
@@ -393,10 +452,13 @@ v_publisherUnPublish(
 
     arg.addedDomains = NULL;
 
-    arg.removedDomains = v_domainAdminRemove(p->domains, partitionExpr);
     c_lockWrite(&p->lock);
+    arg.removedDomains = v_domainAdminRemove(p->domains, partitionExpr);
+
     old = p->qos->partition;
-    p->qos->partition = v_partitionPolicyRemove(old, partitionExpr, c_getBase(c_object(p)));
+    p->qos->partition = v_partitionPolicyRemove(old,
+                                                partitionExpr,
+                                                c_getBase(c_object(p)));
     c_free(old);
 
     c_walk(p->writers, qosChangedAction, &arg);
@@ -476,17 +538,17 @@ v_publisherResume (
     v_writer w;
     c_time suspendTime;
     c_bool resumed = FALSE;
-    
+
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
     c_lockWrite(&p->lock);
-    if (c_timeCompare(p->suspendTime, C_TIME_INFINITE) != C_EQ) {    
+    if (c_timeCompare(p->suspendTime, C_TIME_INFINITE) != C_EQ) {
         suspendTime = p->suspendTime;
         p->suspendTime = C_TIME_INFINITE;
         writers = c_select(p->writers, 0);
         c_lockUnlock(&p->lock);
-    
+
         w = v_writer(c_iterTakeFirst(writers));
         while (w != NULL) {
             v_writerResumePublication(w, &suspendTime);
@@ -498,7 +560,7 @@ v_publisherResume (
     } else {
         c_lockUnlock(&p->lock);
     }
-    
+
     return resumed;
 }
 

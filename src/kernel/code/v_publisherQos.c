@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -137,9 +137,9 @@ v_publisherQosSet(
                 result = V_RESULT_IMMUTABLE_POLICY;
             } else {
                 /* set new policies */
-                q->presentation = tmpl->presentation; 
+                q->presentation = tmpl->presentation;
                 q->entityFactory = tmpl->entityFactory;
-                q->partition = c_stringNew(base, tmpl->partition);                
+                q->partition = c_stringNew(base, tmpl->partition);
                 if (cm & V_POLICY_BIT_GROUPDATA) {
                     c_free(q->groupData.value);
                     q->groupData.size = tmpl->groupData.size;
@@ -147,13 +147,14 @@ v_publisherQosSet(
                         type = c_octet_t(base);
                         q->groupData.value = c_arrayNew(type,tmpl->groupData.size);
                         c_free(type);
-                        memcpy(q->groupData.value,tmpl->groupData.value,tmpl->groupData.size);                
+                        memcpy(q->groupData.value,tmpl->groupData.value,tmpl->groupData.size);
                     } else {
                         q->groupData.value = NULL;
                     }
                 }
                 result = V_RESULT_OK;
             }
+
         } else {
             result = V_RESULT_ILL_PARAM;
         }

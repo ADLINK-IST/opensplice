@@ -43,6 +43,15 @@ os_threadAttrInit (
     assert (threadAttr != NULL);
     threadAttr->schedClass = OS_SCHED_DEFAULT;
     threadAttr->schedPriority = sched_get_priority_min (SCHED_OTHER);
-    threadAttr->stackSize = OS_STACKSIZE_DEFAULT;
+
+    if (OS_STACKSIZE_DEFAULT < PTHREAD_STACK_MIN) 
+    { 
+       threadAttr->stackSize = PTHREAD_STACK_MIN; 
+    } 
+    else 
+    { 
+       threadAttr->stackSize = OS_STACKSIZE_DEFAULT; 
+    } 
+
     return os_resultSuccess;
 }

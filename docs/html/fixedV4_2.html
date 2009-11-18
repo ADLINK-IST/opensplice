@@ -22,7 +22,7 @@
     </ul>
     <hr>
     This page contains a list of all bugfixes and changes incorporated in 
-    OpenSplice V4.2<br>
+    OpenSplice V4.2 series of releases<br>
     
     <h2><a name="highlights">Release Highlights</a></h2>
 
@@ -53,6 +53,111 @@
     
     <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
     <p>
+       <h3>4.2.2</h3>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds1540<br> 6570
+          </td>
+          <td>
+            <b>New command-line option available for the OpenSplice IDL pre-processor (idlpp) for Java only.</b><br>
+            -j [old]:&lt;new><br>
+               Only applicable to JAVA. Defines that the (partial) package
+               name which matches [old] is substituted with the package name
+               which matches &lt;new>. If [old] is not included then the package
+               name defined by &lt;new> is prefixed to all JAVA packages.
+               The package names may only be seperated by '.' characters.
+               A trailing '.' character is not required, but may be used.<br>
+               Example usage: -j :org.opensplice (prefixes all java packages).<br>
+               Example usage: -j com.opensplice.:org.opensplice. (substitutes).
+
+          </td>
+        </tr>
+       </table>
+     </p>
+    <p>
+       <h3>4.2.1</h3>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            New platform
+          </td>
+          <td>
+            <b>x86 / Microsoft Windows 2003 Server/XP (32-bit) host for
+              PowerPC604 / VxWorks 6.5 RTP (32-bit) target with Workbench 2.6</b>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>4.2p1</h3>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds1661
+          </td>
+          <td>
+            <b>StatusCondition is not triggered when splice-daemon updates liveliness of departed/crashed/detached nodes</b> <p><i>
+            Fixed a bug in an internal splice-daemon algorithm w.r.t. handling implicit disposals of built-in topics.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1662
+          </td>
+          <td>
+            <b>Nodes should be able to re-join the reliable protocol after a 'disjoin'</b>
+             <p><i>The networking service now conditionally allows nodes to 
+             re-join the reliability protocol based on the following 
+             configuration setting within the '//OpenSplice/NetworkService/General' tag:
+             <pre>&lt;Reconnection allowed=&quot;true&quot;/&gt;</pre>
+             where 'true' as value for the 'allowed' attribute indicates that
+             re-connections between nodes are allowed and 'false' indicates they
+             aren't.<br/>
+             By default (no configuration), re-connections will not be allowed. 
+             </i></p>
+          </td>
+        </tr>
+       
+       <tr>
+          <td>
+            dds1730
+          </td>
+          <td>
+            <b>The DBMSConnect service doesn't handle out of order updates correctly</b>
+             <p><i>In order to be able to supply order preservation over instance
+             boundaries, the DBMSConnect service now sorts the incoming data 
+             based on the write-time of the sample.</i></p>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>4.2</h3>
         <table width="90%">
         <tr>
           <th width="14%">

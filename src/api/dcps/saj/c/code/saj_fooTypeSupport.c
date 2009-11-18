@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -14,7 +14,7 @@
 #include <os_abstract.h>
 #include <os_heap.h>
 #include <c_metabase.h>
-
+#include <os_stdlib.h>
 #include "saj_fooTypeSupport.h"
 #include "saj__fooDataReader.h"
 #include "saj_copyCache.h"
@@ -48,7 +48,7 @@ SAJ_FUNCTION(jniAlloc) (
     const char *typeName;
     const char *keyList;
     char *typeDescriptor;
-    PA_ADDRCAST typeSupport;    
+    PA_ADDRCAST typeSupport;
     int statusOK = TRUE;
     jsize type_descriptor_length;
 
@@ -58,21 +58,21 @@ SAJ_FUNCTION(jniAlloc) (
     printf ("Waiting:\n");
     gets (line);
 #endif
-    typeName = (*env)->GetStringUTFChars (env, type_name, NULL);
+    typeName = (*env)->GetStringUTFChars (env, type_name, 0);
     /* Convert key_list */
-    keyList = (*env)->GetStringUTFChars (env, key_list, NULL);
+    keyList = (*env)->GetStringUTFChars (env, key_list, 0);
 
     /* Convert type_descriptor */
     type_descriptor_length = (*env)->GetArrayLength(env, type_descriptor);
     typeDescriptor = os_malloc(type_descriptor_length * IDL_MAX_JSTRING_META_SIZE + 1);
-    
+
     if (typeDescriptor) {
         jsize i;
         typeDescriptor[0] = '\0';
         for (i = 0; i < type_descriptor_length && statusOK; i++) {
             jstring type_descriptor_frame = (jstring) (*env)->GetObjectArrayElement(env, type_descriptor, i);
             if (type_descriptor_frame) {
-                const char *typeDescriptorFrame = (*env)->GetStringUTFChars (env, type_descriptor_frame, NULL);
+                const char *typeDescriptorFrame = (*env)->GetStringUTFChars (env, type_descriptor_frame, 0);
                 if (typeDescriptorFrame) {
                     strcat(typeDescriptor, typeDescriptorFrame);
                     (*env)->ReleaseStringUTFChars (env, type_descriptor_frame, typeDescriptorFrame);
@@ -82,8 +82,8 @@ SAJ_FUNCTION(jniAlloc) (
             } else {
                 statusOK = FALSE;
             }
-        }  
-    } 
+        }
+    }
 
     if (typeName != NULL && keyList != NULL && typeDescriptor != NULL && statusOK) {
         typeSupport = (PA_ADDRCAST)gapi_fooTypeSupport__alloc (
@@ -149,21 +149,52 @@ SAJ_FUNCTION(jniRegisterType) (
     jclass object,
     jobject TypeSupport,
     jobject participant,
-    jstring type_alias)
+    jstring type_alias,
+    jstring org_pName,
+    jstring tgt_pName)
 {
     const char *typeAlias;
     const char *typeName;
+    const os_char* tmp;
+    os_char* orgPName;
+    os_char* tgtPName;
     jint result;
     jclass typeSupportClass;
     jfieldID copyCache_fid;
     c_metaObject typeMeta;
     saj_copyCache copyCache;
- 
+
     /* Convert type_alias */
     if (type_alias != NULL) {
-        typeAlias = (*env)->GetStringUTFChars (env, type_alias, NULL);
+        typeAlias = (*env)->GetStringUTFChars (env, type_alias, 0);
     }  else {
         typeAlias = NULL;
+    }
+    if (org_pName != NULL) {
+        tmp = (*env)->GetStringUTFChars (env, org_pName, 0);
+        if(0 == strcmp(tmp, "null"))
+        {
+            orgPName = NULL;
+        } else
+        {
+            orgPName = os_strdup(tmp);
+        }
+        (*env)->ReleaseStringUTFChars (env, org_pName, tmp);
+    }  else {
+        orgPName = NULL;
+    }
+    if (tgt_pName != NULL) {
+        tmp = (*env)->GetStringUTFChars (env, tgt_pName, 0);
+        if(0 == strcmp(tmp, "null"))
+        {
+            tgtPName = NULL;
+        } else
+        {
+            tgtPName = os_strdup(tmp);
+        }
+        (*env)->ReleaseStringUTFChars (env, tgt_pName, tmp);
+    }  else {
+        tgtPName = NULL;
     }
 
     /* Call GAPI register type function */
@@ -175,9 +206,9 @@ SAJ_FUNCTION(jniRegisterType) (
     	typeName = gapi_typeSupport_get_type_name ((gapi_typeSupport)saj_read_gapi_address (env, TypeSupport));
     	typeMeta = (c_metaObject)gapi_domainParticipant_get_type_metadescription (
 	    (gapi_domainParticipant)saj_read_gapi_address (env, participant), typeName);
-      
+
     	if (typeMeta) {
-    	    copyCache = saj_copyCacheNew (env, typeMeta);
+    	    copyCache = saj_copyCacheNew (env, typeMeta, orgPName, tgtPName);
     	    if (copyCache) {
     	        typeSupportClass = (*env)->GetObjectClass (env, TypeSupport);
     		copyCache_fid = (*env)->GetFieldID (env, typeSupportClass, "copyCache", "J");
@@ -190,9 +221,18 @@ SAJ_FUNCTION(jniRegisterType) (
     	}
     }
     /* Release used strings */
-    if (type_alias != NULL) {
+    if (typeAlias != NULL) {
         (*env)->ReleaseStringUTFChars (env, type_alias, typeAlias);
     }
+    if(tgtPName)
+    {
+        os_free(tgtPName);
+    }
+    if(orgPName)
+    {
+        os_free(orgPName);
+    }
+
     return (jint)result;
 }
 

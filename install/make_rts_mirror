@@ -6,7 +6,7 @@
 
 echo "* Build SPLICE RTS"
 
-set_rts_envs $*
+set_rts_envs "$@"
 remove_rts_mirror
 create_rts_mirror
 

@@ -273,16 +273,16 @@ onDeserializerOutOfBuffers(
     c_ulong *length,
     c_serializeActionArg arg)
 {
-	nw_data *networkBuffer = (nw_data *)buffer;
-	nw_length *networkBufferLength = (nw_length *)length;
-	nw_plugChannel plugChannel = (nw_plugChannel)arg;
+    nw_data *networkBuffer = (nw_data *)buffer;
+    nw_length *networkBufferLength = (nw_length *)length;
+    nw_plugChannel plugChannel = (nw_plugChannel)arg;
 
-	NW_CONFIDENCE(networkBuffer != NULL);
-	NW_CONFIDENCE(networkBufferLength != NULL);
-	NW_CONFIDENCE(plugChannel != NULL);
+    NW_CONFIDENCE(networkBuffer != NULL);
+    NW_CONFIDENCE(networkBufferLength != NULL);
+    NW_CONFIDENCE(plugChannel != NULL);
 
-	nw_plugReceiveChannelGetNextFragment(plugChannel,
-	    networkBuffer, networkBufferLength);
+    nw_plugReceiveChannelGetNextFragment(plugChannel,
+        networkBuffer, networkBufferLength);
 }
 
 static c_char *

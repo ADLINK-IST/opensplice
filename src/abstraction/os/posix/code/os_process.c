@@ -118,19 +118,19 @@ signalHandlerThread(
     break;
     case SIGQUIT:
         if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            (_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_IGN)) {
             _SIGNALVECTOR_(SIGQUIT).sa_handler(SIGQUIT);
         }
     break;
     case SIGHUP:
         if ((_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            (_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_IGN)) {
             _SIGNALVECTOR_(SIGHUP).sa_handler(SIGHUP);
         }
     break;
     case SIGTERM:
         if ((_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
+            (_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_IGN)) {
             _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
         }
     break;

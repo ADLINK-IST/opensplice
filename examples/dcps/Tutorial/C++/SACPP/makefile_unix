@@ -38,7 +38,7 @@ dirs :
 $(DCPS_SRC_FILES) : Chat.idl
 	@echo "Compiling IDL with SPLICE IDL compiler"
 	@mkdir -p bld
-	@$(OSPLICE_COMP) $(INCLUDES) $<
+	$(OSPLICE_COMP) $(INCLUDES) $<
 
 exec/Chatter : $(DCPS_OBJ_FILES) Chatter.o CheckStatus.o multitopic.o
 	@echo "Linking Chatter"

@@ -8,8 +8,8 @@ IS_WINDOWS_DEBUG:=$(and $(IF_OSPLENV_IS_WIN32), $(IF_OSPLMODE_IS_DEV))
 
 ifeq ($(SPLICE_ORB), DDS_ACE_TAO_5_6_6)
     ORB_MK_INCLUDE_NAME = tao15-OF  
-    ORB_INCLUDE	     = -I$(TAO_ROOT) -I$(ACE_ROOT)
-    ORB_LDLIBS	     = -L$(ACE_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
+    ORB_INCLUDE	     = "-I$(TAO_ROOT)" -I"$(ACE_ROOT)"
+    ORB_LDLIBS	     = "-L$(ACE_ROOT)/lib" -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sp -Sd -si S.i -ci C.i
@@ -39,11 +39,11 @@ endif
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_6_1)
     ORB_MK_INCLUDE_NAME = tao15-OF
-    ORB_INCLUDE	     = -I$(TAO_ROOT)/include
+    ORB_INCLUDE	     = "-I$(TAO_ROOT)/include"
 ifdef IS_WINDOWS_DEBUG
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
 else
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
 endif
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
@@ -75,11 +75,11 @@ endif
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_MK_INCLUDE_NAME = tao15-OF  
-    ORB_INCLUDE	     = -I$(TAO_ROOT)/include
+    ORB_INCLUDE	     = "-I$(TAO_ROOT)/include"
 ifdef IS_WINDOWS_DEBUG
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACEd -lTAOd -lTAO_PortableServerd -lTAO_AnyTypeCoded
 else
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
 endif
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
@@ -111,11 +111,11 @@ endif
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
     ORB_MK_INCLUDE_NAME = tao14-OF  
-    ORB_INCLUDE	     = -I$(TAO_ROOT)/include
+    ORB_INCLUDE	     = "-I$(TAO_ROOT)/include"
 ifdef IS_WINDOWS_DEBUG
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACEd -lTAOd -lTAO_PortableServerd
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACEd -lTAOd -lTAO_PortableServerd
 else
-    ORB_LDLIBS	     = -L$(TAO_ROOT)/lib -lACE -lTAO -lTAO_PortableServer
+    ORB_LDLIBS	     = "-L$(TAO_ROOT)/lib" -lACE -lTAO -lTAO_PortableServer
 endif
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
@@ -174,8 +174,8 @@ ifeq ($(SPLICE_ORB), DDS_Mico_2_3_11)
 endif
 ifeq ($(SPLICE_ORB), DDS_ACE_TAO_1_4_1)
     ORB_MK_INCLUDE_NAME = TAO
-    ORB_INCLUDE      = -I$(ACE_ROOT) -I$(TAO_ROOT)
-    ORB_LDLIBS       = -L$(ACE_ROOT)/ace -lACE -lTAO -lTAO_PortableServer
+    ORB_INCLUDE      = "-I$(ACE_ROOT)" "-I$(TAO_ROOT)"
+    ORB_LDLIBS       = "-L$(ACE_ROOT)/ace" -lACE -lTAO -lTAO_PortableServer
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -Sv

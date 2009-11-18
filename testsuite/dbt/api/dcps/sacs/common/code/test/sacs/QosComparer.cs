@@ -40,7 +40,7 @@ namespace test.sacs
 
             defaultDurabilityServiceQosPolicy.ServiceCleanupDelay = DDS.Duration.Zero;
             defaultDurabilityServiceQosPolicy.HistoryKind = DDS.HistoryQosPolicyKind.KeepLastHistoryQos;
-            defaultDurabilityServiceQosPolicy.HistoryDepth = -1;
+            defaultDurabilityServiceQosPolicy.HistoryDepth = 1;
             defaultDurabilityServiceQosPolicy.MaxInstances = -1;
             defaultDurabilityServiceQosPolicy.MaxSamples = -1;
             defaultDurabilityServiceQosPolicy.MaxSamplesPerInstance = -1;

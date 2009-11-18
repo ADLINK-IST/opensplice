@@ -532,6 +532,7 @@ sd_XMLSerEnumeration(
          if (literal->value.is.Long == value) {
              index = i;
          }
+         c_free(literal);
     }
     if (index == -1) {
         /* This enumeration was filled with an incorrect value */

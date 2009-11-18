@@ -69,6 +69,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /* Declarations */
 
 %{
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.hh>
 #include <idl_extern.hh>
 

@@ -162,6 +162,17 @@ void
 v_dataReaderUpdatePurgeLists(
     v_dataReader _this);
 
+typedef struct v_dataReaderConnectionChanges_s {
+    /* the following fields are set when the partitionpolicy has changed. */
+    c_iter addedDomains;
+    c_iter removedDomains;
+} v_dataReaderConnectionChanges;
+
+void
+v_dataReaderUpdateConnections(
+    v_dataReader _this,
+    v_dataReaderConnectionChanges *arg);
+
 void
 v_dataReaderNotify(
     v_dataReader _this,
@@ -189,16 +200,9 @@ v_dataReaderNotifyIncompatibleQos(
     v_policyId id,
     v_gid writerGID);
 
-typedef struct v_dataReaderNotifyChangedQosArg_s {
-    /* the following fields are set when the partitionpolicy has changed. */
-    c_iter addedDomains;
-    c_iter removedDomains;
-} v_dataReaderNotifyChangedQosArg;
-
 void
 v_dataReaderNotifyChangedQos(
-    v_dataReader _this,
-     v_dataReaderNotifyChangedQosArg *arg);
+    v_dataReader _this);
 
 void
 v_dataReaderNotifyLivelinessChanged(

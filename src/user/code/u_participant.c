@@ -361,6 +361,23 @@ participantGetWatchDogAttr(
     }
 }
 
+static c_ulong
+u_participantNewGroupListener(
+    u_dispatcher _this,
+    c_ulong event,
+    c_voidp usrData)
+{
+    u_result r;
+    v_participant kp;
+
+    r = u_participantClaim(u_participant(_this), &kp);
+    if ((r == U_RESULT_OK) && (kp != NULL)) {
+        v_participantConnectNewGroup(kp,event);
+        r = u_participantRelease(_this);
+    }
+    return r;
+}
+    
 u_result
 u_participantInit (
     u_participant p,
@@ -371,6 +388,7 @@ u_participantInit (
     os_threadAttr attr;
     os_result osr;
     u_cfElement root;
+    c_ulong mask;
 
     if (p == NULL) {
         return U_RESULT_ILL_PARAM;
@@ -435,15 +453,20 @@ u_participantInit (
                 OS_REPORT(OS_ERROR, "u_participantInit", 0,
                           "Watchdog thread could not be started.\n");
             }
-
-            r = u_participantRelease(p);
-            if (r != U_RESULT_OK) {
-                OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                          "Release Participant failed.");
-            }
         } else {
             OS_REPORT(OS_ERROR, "u_participantInit", 0,
                       "Dispatcher Initialization failed.");
+        }
+        u_dispatcherGetEventMask(u_dispatcher(p), &mask);
+        u_dispatcherInsertListener(u_dispatcher(p),
+                                   u_participantNewGroupListener,
+                                   NULL);
+        mask |= V_EVENT_NEW_GROUP;
+        u_dispatcherSetEventMask(u_dispatcher(p), mask);
+        r = u_participantRelease(p);
+        if (r != U_RESULT_OK) {
+            OS_REPORT(OS_ERROR, "u_participantInit", 0,
+                      "Release Participant failed.");
         }
     } else {
         OS_REPORT(OS_WARNING, "u_participantInit", 0,
@@ -496,6 +519,7 @@ u_participantDeinit (
         if (p->kernel != NULL) {
             r = u_participantClaim(p,&kp);
             if ((r == U_RESULT_OK) && (kp != NULL)) {
+                u_dispatcherDeinit(u_dispatcher(p));
                 lm = v_participantGetLeaseManager(kp);
 
                 if (lm != NULL) {
@@ -519,7 +543,6 @@ u_participantDeinit (
             }
             r = u_kernelRemove(p->kernel,p);
             if (r == U_RESULT_OK) {
-                u_dispatcherDeinit(u_dispatcher(p));
                 /* Disable the participant to avoid multiple Free's */
                 p->kernel = NULL;
             } else {

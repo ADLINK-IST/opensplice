@@ -204,7 +204,7 @@ resolveType (
 
     if (kernel && inOut && inOut->in_topic_name) {
         v_topic topic =
-            v__lookupTopic(
+            v_lookupTopic(
                 kernel,
                 inOut->in_topic_name);
 

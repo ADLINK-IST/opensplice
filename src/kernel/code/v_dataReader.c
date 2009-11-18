@@ -73,6 +73,12 @@ dataReaderLookupInstanceUnlocked(
     assert(C_TYPECHECK(_this,v_dataReader));
     assert(C_TYPECHECK(keyTemplate,v_message));
 
+    /* The following line must be removed asap.
+     * Its not intended to modify the template but there exist a dependency of
+     * this side effect that needs to be removed first.
+     */
+    v_nodeState(keyTemplate) = L_REGISTER;
+
     instance = v_dataReaderInstanceNew(_this, keyTemplate);
 
     if (v_dataReaderQos(_this)->userKey.enable) {
@@ -115,7 +121,13 @@ dataReaderEntrySubscribe(
 
     kernel = v_objectKernel(e);
     g = v_groupSetCreate(kernel->groupSet,d,e->topic);
-    v_groupAddEntry(g,v_entry(e));
+
+    if(v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
+       v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ)
+    {
+        v_groupAddEntry(g,v_entry(e));
+    }
+    c_free(g);
 }
 
 static c_bool
@@ -461,11 +473,10 @@ v_dataReaderNew (
     c_type instanceType;
     c_property sampleProperty;
     c_long i;
+    v_topic topic;
 
     assert(C_TYPECHECK(subscriber,v_subscriber));
-
     kernel = v_objectKernel(subscriber);
-
     if (!q_isFnc(OQLexpr,Q_EXPR_PROGRAM)) {
         OS_REPORT(OS_ERROR,
                   "v_dataReaderNew",0,
@@ -507,105 +518,132 @@ v_dataReaderNew (
                   "Missing from clause.");
         return NULL;
     }
-    q = v_readerQosNew(kernel,qos);
-    if (q == NULL) {
-        OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
-                  "DataReader not created: inconsistent qos");
+    topic = v_lookupTopic (kernel, q_getId(_from));
+    /* ES, dds1576: Before creating the datareader we have to verify that read
+     * access to the topic is allowed. We can accomplish this by checking the
+     * access mode of the topic.
+     */
+    if(!topic)
+    {
+        OS_REPORT_1(OS_ERROR, "v_dataReaderNew",0,
+            "DataReader not created: Could not locate topic with name %s.", q_getId(_from));
         return NULL;
     }
-    _this = v_dataReader(v_objectNew(kernel,K_DATAREADER));
-    _this->shareCount = 1;
-    _this->views = NULL;
-    _this->sampleCount = 0;
-    _this->maxInstances = FALSE;
-    _this->depth = 0x7fffffff; /* MAX_INT */
-    _this->cachedSample = NULL;
-    _this->triggerValue = NULL;
-    _this->updateCnt = 0;
+    if(v_topicAccessMode(topic) == V_ACCESS_MODE_READ || v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
+    {
+        q = v_readerQosNew(kernel,qos);
+        if (q == NULL) {
+            OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
+                      "DataReader not created: inconsistent qos");
+            return NULL;
+        }
+        _this = v_dataReader(v_objectNew(kernel,K_DATAREADER));
+        _this->shareCount = 1;
+        _this->views = NULL;
+        _this->sampleCount = 0;
+        _this->maxInstances = FALSE;
+        _this->depth = 0x7fffffff; /* MAX_INT */
+        _this->cachedSample = NULL;
+        _this->triggerValue = NULL;
+        _this->updateCnt = 0;
 #define _SL_
 #ifdef _SL_
-    _this->cachedSampleCount = 0;
+        _this->cachedSampleCount = 0;
 #endif
-    _this->readCnt = 0;
+        _this->readCnt = 0;
 
 #ifdef _MSG_STAMP_
-    v_dataReaderLogInit(_this);
+        v_dataReaderLogInit(_this);
 #endif
 
-    if (v_isEnabledStatistics(kernel, V_STATCAT_READER)) {
-        readerStatistics = v_readerStatisticsNew(kernel);
-    } else {
-        readerStatistics = NULL;
-    }
-    v_readerInit(v_reader(_this),name,
-                 subscriber,q,
-                 v_statistics(readerStatistics),
-                 enable);
 
-    if (q->share.enable) {
-        v_subscriberLockShares(subscriber);
-        found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
-        if (found != _this) {
-           /* Make sure to set the index and deadline list to NULL,
-            * because v_publicFree will cause a crash in the
-            * v_dataReaderDeinit otherwise.
-       	    */
-       	    _this->index = NULL;
-       	    _this->deadLineList = NULL;
-       	    /*v_publicFree to free reference held by the handle server.*/
-       	    v_publicFree(v_public(_this));
-       	    /*Now free the local reference as well.*/
-            c_free(_this);
-            pa_increment(&(found->shareCount));
-            v_subscriberUnlockShares(subscriber);
-            c_free(q);
-            return c_keep(found);
+        if (v_isEnabledStatistics(kernel, V_STATCAT_READER)) {
+            readerStatistics = v_readerStatisticsNew(kernel);
+        } else {
+            readerStatistics = NULL;
         }
-    }
-    c_free(q);
-
-    arg.dataReader = _this;
-    arg._where = _where;
-    arg.params = &params;
-    _this->index = v_indexNew(_this, _from, onNewIndex, &arg);
-    if (_this->index) {
-        instanceType = v_dataReaderInstanceType(_this);
-        sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
-                                              "sample"));
-        c_free(instanceType);
-        /* the sampleExtent is created with the synchronized parameter
-         * set to TRUE.
-         * So the extent will use a mutex to guarantee reentrancy.
-         * This is needed because samples are kept, copied and freed
-         * outside the reader lock.
-         */
-        _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
-
-        _this->projection = v_projectionNew(_this,_projection);
-
+        v_readerInit(v_reader(_this),name,
+                     subscriber,q,
+                     v_statistics(readerStatistics),
+                     enable);
 
         if (q->share.enable) {
-            v_subscriberUnlockShares(subscriber);
+            assert(subscriber->qos->share.enable);
+
+            if(!subscriber->qos->share.enable){
+                OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
+                "Creating a shared dataReader in a non-shared subscriber.");
+            }
+            v_subscriberLockShares(subscriber);
+            found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
+            if (found != _this) {
+               /* Make sure to set the index and deadline list to NULL,
+                * because v_publicFree will cause a crash in the
+                * v_dataReaderDeinit otherwise.
+                */
+                _this->index = NULL;
+                _this->deadLineList = NULL;
+                /*v_publicFree to free reference held by the handle server.*/
+                v_publicFree(v_public(_this));
+                /*Now free the local reference as well.*/
+                c_free(_this);
+                pa_increment(&(found->shareCount));
+                v_subscriberUnlockShares(subscriber);
+                c_free(q);
+                return c_keep(found);
+            }
+        }
+        c_free(q);
+
+        arg.dataReader = _this;
+        arg._where = _where;
+        arg.params = &params;
+        _this->index = v_indexNew(_this, _from, onNewIndex, &arg);
+        if (_this->index) {
+            instanceType = v_dataReaderInstanceType(_this);
+            sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
+                                                  "sample"));
+            c_free(instanceType);
+            /* the sampleExtent is created with the synchronized parameter
+             * set to TRUE.
+             * So the extent will use a mutex to guarantee reentrancy.
+             * This is needed because samples are kept, copied and freed
+             * outside the reader lock.
+             */
+            _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
+
+            _this->projection = v_projectionNew(_this,_projection);
+
+
+            if (q->share.enable) {
+                v_subscriberUnlockShares(subscriber);
+            }
+
+            participant = v_participant(subscriber->participant);
+            assert(participant != NULL);
+            _this->deadLineList =
+                v_deadLineInstanceListNew(c_getBase(c_object(_this)),
+                                          participant->leaseManager,
+                                          q->deadline.period,
+                                          V_LEASEACTION_READER_DEADLINE_MISSED,
+                                          v_public(_this));
+
+            if (enable) {
+                v_dataReaderEnable(_this);
+            }
+        } else {
+            v_readerDeinit(v_reader(_this));
+            c_free(_this);
+            _this = NULL;
         }
 
-        participant = v_participant(subscriber->participant);
-        assert(participant != NULL);
-        _this->deadLineList =
-            v_deadLineInstanceListNew(c_getBase(c_object(_this)),
-                                      participant->leaseManager,
-                                      q->deadline.period,
-                                      V_LEASEACTION_READER_DEADLINE_MISSED,
-                                      v_public(_this));
-
-        if (enable) {
-            v_dataReaderEnable(_this);
-        }
-    } else {
-        v_readerDeinit(v_reader(_this));
-        c_free(_this);
+    }else
+    {
+        OS_REPORT_2(OS_ERROR, "v_dataReaderNew", 0,
+                    "Creation of DataReader <%s> failed. Topic %s."
+                    "does not have read access rights.", name, q_getId(_from));
         _this = NULL;
     }
-
     return _this;
 }
 
@@ -675,46 +713,51 @@ v_dataReaderFree (
 
     sc = pa_decrement(&(_this->shareCount));
     if (sc > 0) return;
-    assert(sc == 0);
 
+    if(sc == 0){
 #ifdef _MSG_STAMP_
-    v_dataReaderLogReport(_this);
+        v_dataReaderLogReport(_this);
 #endif
-    /* First create message, only at the end dispose. Applications expect
-       the disposed sample to be the last!
-    */
-    kernel = v_objectKernel(_this);
-    builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin,_this);
-    unregisterMsg = v_builtinCreateSubscriptionInfo(kernel->builtin,_this);
+        /* First create message, only at the end dispose. Applications expect
+           the disposed sample to be the last!
+        */
+        kernel = v_objectKernel(_this);
+        builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin,_this);
+        unregisterMsg = v_builtinCreateSubscriptionInfo(kernel->builtin,_this);
 
-    if (v_reader(_this)->qos->share.enable) {
-        subscriber = v_subscriber(v_reader(_this)->subscriber);
-        if (subscriber != NULL) {
-            found = v_dataReader(v_subscriberRemoveShare(subscriber,v_reader(_this)));
-            assert(found == _this);
-            c_free(found);
+        if (v_reader(_this)->qos->share.enable) {
+            subscriber = v_subscriber(v_reader(_this)->subscriber);
+            if (subscriber != NULL) {
+                found = v_dataReader(v_subscriberRemoveShare(subscriber,v_reader(_this)));
+                assert(found == _this);
+                c_free(found);
+            }
         }
-    }
-    v_readerFree(v_reader(_this));
-    v_dataReaderLock(_this);
-    if (_this->views != NULL) {
-        views = c_select(_this->views, 0);
-        view = v_dataView(c_iterTakeFirst(views));
-        while (view != NULL) {
-            v_dataViewFreeUnsafe(view);
+        v_readerFree(v_reader(_this));
+        v_dataReaderLock(_this);
+        if (_this->views != NULL) {
+            views = c_select(_this->views, 0);
             view = v_dataView(c_iterTakeFirst(views));
+            while (view != NULL) {
+                v_dataViewFreeUnsafe(view);
+                view = v_dataView(c_iterTakeFirst(views));
+            }
+            c_iterFree(views);
         }
-        c_iterFree(views);
-    }
-    if (_this->triggerValue) {
-        c_free(v_readerSample(_this->triggerValue)->instance);
-    }
-    v_dataReaderUnLock(_this);
+        if (_this->triggerValue) {
+            c_free(v_readerSample(_this->triggerValue)->instance);
+        }
+        v_dataReaderUnLock(_this);
 
-    v_writeDisposeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
-    v_unregisterBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, unregisterMsg);
-    c_free(builtinMsg);
-    c_free(unregisterMsg);
+        v_writeDisposeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
+        v_unregisterBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, unregisterMsg);
+        c_free(builtinMsg);
+        c_free(unregisterMsg);
+    } else {
+        OS_REPORT_1(OS_ERROR,  "v_dataReaderFree", 0,
+                "dataReader already freed (shareCount is now %d).", sc);
+        assert(sc == 0);
+    }
 }
 
 static c_bool
@@ -1122,9 +1165,11 @@ v_dataReaderRemoveInstance(
              * happens.
              * For now the instance is not removed.
              */
+#ifndef NDEBUG
             OS_REPORT(OS_WARNING,
                       "v_dataReaderInstanceRemove",0,
                       "try removed incorrect instance from NotEmptySet");
+#endif
         }
     }
 
@@ -1155,9 +1200,11 @@ v_dataReaderRemoveInstance(
                  * happens.
                  * For now the instance is not removed.
                  */
+#ifndef NDEBUG
                 OS_REPORT(OS_WARNING,
                           "v_dataReaderInstanceRemove",0,
                           "try removed incorrect instance");
+#endif
             }
         }
     } else if(doFree){
@@ -1323,6 +1370,16 @@ v_dataReaderNotify(
     v_event event,
     c_voidp userData)
 {
+    /* This Notify method is part of the observer-observable pattern.
+     * It is designed to be invoked when _this object as observer receives
+     * an event from an observable object.
+     * It must be possible to pass the event to the subclass of itself by
+     * calling <subclass>Notify(_this, event, userData).
+     * This implies that _this cannot be locked within any Notify method
+     * to avoid deadlocks.
+     * For consistency _this must be locked by v_observerLock(_this) before
+     * calling this method.
+     */
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
 
@@ -1456,7 +1513,7 @@ updateConnections(
     c_voidp arg)
 {
     v_dataReaderEntry e = v_dataReaderEntry(o);
-    v_dataReaderNotifyChangedQosArg *a = (v_dataReaderNotifyChangedQosArg *)arg;
+    v_dataReaderConnectionChanges *a = (v_dataReaderConnectionChanges *)arg;
 
     c_iterWalk(a->addedDomains, dataReaderEntrySubscribe, e);
     c_iterWalk(a->removedDomains, dataReaderEntryUnSubscribe, e);
@@ -1466,9 +1523,24 @@ updateConnections(
 
 /* only called by v_subscriberSetQos() and v_readerSetQos(). */
 void
-v_dataReaderNotifyChangedQos(
+v_dataReaderUpdateConnections(
     v_dataReader _this,
-    v_dataReaderNotifyChangedQosArg *arg)
+    v_dataReaderConnectionChanges *arg)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_dataReader));
+
+    if ((arg != NULL) &&
+        ((arg->addedDomains != NULL) || (arg->removedDomains != NULL))) {
+        /* partition policy has changed */
+        v_readerWalkEntries(v_reader(_this), updateConnections, arg);
+    }
+}
+
+/* only called by v_subscriberSetQos() and v_readerSetQos(). */
+void
+v_dataReaderNotifyChangedQos(
+    v_dataReader _this)
 {
     v_kernel kernel;
     v_message builtinMsg;
@@ -1477,17 +1549,6 @@ v_dataReaderNotifyChangedQos(
     assert(C_TYPECHECK(_this,v_dataReader));
 
     /* publish subscription info */
-
-    if ((arg != NULL) &&
-        ((arg->addedDomains != NULL) || (arg->removedDomains != NULL))) {
-      /* partition policy has changed */
-/**
- * Now the builtin topic is published, after all connections are updated.
- * Depending on the outcome of the RTPS protocol standardisation, this
- * solution is subject to change.
- */
-        v_readerWalkEntries(v_reader(_this), updateConnections, arg);
-    }
     v_dataReaderLock(_this);
     kernel = v_objectKernel(_this);
     builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, _this);

@@ -315,7 +315,7 @@ nw_ringBufferNew(
                 default:
                     NW_CONFIDENCE(FALSE);
                     break;
-	    }
+        }
         } else {
             result->nofEntries = 0;
         }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__reader.h"
@@ -186,32 +186,43 @@ v_readerDeinit(
  **************************************************************/
 c_bool
 v_readerSubscribeGroup(
-    v_reader reader,
+    v_reader _this,
     v_group group)
 {
     c_bool result;
 
-    assert(C_TYPECHECK(reader, v_reader));
-
-    switch(v_objectKind(reader)) {
+    assert(C_TYPECHECK(_this, v_reader));
+    switch(v_objectKind(_this)) {
     case K_DATAREADER:
-        result = v_dataReaderSubscribeGroup(v_dataReader(reader), group);
+        /* ES, dds1576: For the K_DATAREADER object we need to verify if
+         * the access rights are correct. No subscriptions may be made onto
+         * groups which have a v_accessMode of write only.
+         */
+        if(v_groupDomainAccessMode(group) == V_ACCESS_MODE_READ_WRITE ||
+           v_groupDomainAccessMode(group) == V_ACCESS_MODE_READ)
+        {
+            result = v_dataReaderSubscribeGroup(v_dataReader(_this), group);
+            readerGetHistoricalData(_this);
+        } else
+        {
+            result = FALSE;
+        }
     break;
     case K_GROUPQUEUE:
-        result = v_groupStreamSubscribeGroup(v_groupStream(reader), group);
+        result = v_groupStreamSubscribeGroup(v_groupStream(_this), group);
+        readerGetHistoricalData(_this);
     break;
     case K_NETWORKREADER:
-        result = v_networkReaderSubscribeGroup(v_networkReader(reader), group);
+        result = v_networkReaderSubscribeGroup(v_networkReader(_this), group);
+        readerGetHistoricalData(_this);
     break;
     default:
         OS_REPORT_1(OS_ERROR,"v_readerSubscribeGroup failed",0,
                     "illegal reader kind (%d) specified",
-                    v_objectKind(reader));
+                    v_objectKind(_this));
         assert(FALSE);
         result = FALSE;
     }
-    readerGetHistoricalData(reader);
-
     return result;
 }
 
@@ -262,7 +273,7 @@ v_readerSetQos(
     v_readerEntrySetUnlock(r);
     if ((result == V_RESULT_OK) && (cm != 0)) {
         if (v_objectKind(r) == K_DATAREADER) {
-            v_dataReaderNotifyChangedQos(v_dataReader(r), NULL);
+            v_dataReaderNotifyChangedQos(v_dataReader(r));
         }
     }
     return result;

@@ -129,8 +129,16 @@ takeOne(
 
     if (s != NULL) {
         result = TRUE;
-        if (v_stateTest(s->sampleState, L_VALIDDATA)) {
+        if (v_dataReaderSampleStateTest(s, L_VALIDDATA) ||
+                v_dataReaderSampleInstanceStateTest(s, L_DISPOSED)) {
+            /* Keep both the sample and its instance.
+             * If the instance was disposed, taking the sample like we do
+             * here will remove all instance administration. We need the
+             * instance administration at a later stage though, so we need
+             * to keep both the sample and its instance.
+             */
             *sample = c_keep(s);
+            c_keep(v_dataReaderSampleInstance(s));
             result = FALSE;
         }
     } else { /* last sample */
@@ -181,7 +189,11 @@ readerWriterMatch(
     v_writer w)
 {
     struct matchArg matchArg;
-
+    v_gid gid;
+    v_public publ;
+    /**
+     * If (w != NULL) then it is a local writer.
+     */
     if ((w == NULL) && (r == NULL)) {
         /* nothing to check.... */
         matchArg.matched = FALSE;
@@ -192,8 +204,14 @@ readerWriterMatch(
             */
             matchArg.matched = FALSE;
             matchArg.partition = rInfo->partition.name;
-            if (w->publisher != NULL) {
-                v_entityWalkEntities(v_entity(w->publisher), partitionNotMatched, &matchArg);
+
+            /*Claim publisher first before walking over relations.*/
+            gid = v_publicGid(v_public(w->publisher));
+            publ = v_gidClaim(gid, v_objectKernel(w));
+
+            if (publ) {
+                v_entityWalkEntities(v_entity(publ), partitionNotMatched, &matchArg);
+                v_gidRelease(gid, v_objectKernel(w));
             }
         } else { /* w == NULL && r != NULL */
             /* for every partition of r check if it matches
@@ -201,8 +219,14 @@ readerWriterMatch(
             */
             matchArg.matched = FALSE;
             matchArg.partition = oInfo->partition.name;
-            if (v_reader(r)->subscriber != NULL) {
-                v_entityWalkEntities(v_entity(v_reader(r)->subscriber), partitionNotMatched, &matchArg);
+
+            /*Claim subscriber first before walking over relations*/
+            gid = v_publicGid(v_public(v_reader(r)->subscriber));
+            publ = v_gidClaim(gid, v_objectKernel(r));
+
+            if (publ) {
+                v_entityWalkEntities(v_entity(publ), partitionNotMatched, &matchArg);
+                v_gidRelease(gid, v_objectKernel(r));
             }
         }
     }
@@ -669,7 +693,8 @@ v_splicedProcessSubscriptionInfo(
 /* returns 0, when no DCPSPublicationInfo sample was available.
  * Otherwise 1 is returned */
 static int
-v_splicedProcessPublicationInfo(
+v_splicedProcessPublicationInfo
+(
     v_spliced spliced)
 {
     int result = 0;
@@ -713,7 +738,7 @@ v_splicedProcessPublicationInfo(
         oInfo = v_builtinPublicationInfoData(kernel->builtin,msg);
         w = v_writer(v_gidClaim(oInfo->key, kernel));
 
-        if (v_stateTest(v_readerSample(oSample)->sampleState, L_DISPOSED)) {
+        if (v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) {
             oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID],
                               msg, NULL, NULL);
         } else {
@@ -730,13 +755,21 @@ v_splicedProcessPublicationInfo(
             oldInfo = NULL;
         }
 
-        requestedMessages = lookupMatchingReadersByTopic(spliced, oInfo);
+        if (v_dataReaderSampleStateTest(oSample, L_VALIDDATA)) {
+            requestedMessages = lookupMatchingReadersByTopic(spliced, oInfo);
+        } else {
+            if (oldInfo != NULL) {
+                requestedMessages = lookupMatchingReadersByTopic(spliced, oldInfo);
+            } else {
+                requestedMessages = NULL;
+            }
+        }
         reqMsg = c_iterTakeFirst(requestedMessages);
         while (reqMsg != NULL) {
             rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
             r = v_dataReader(v_gidClaim(rInfo->key, kernel));
 
-            if ((!v_stateTest(v_readerSample(oSample)->sampleState, L_DISPOSED)) &&
+            if ((!v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) &&
                 (readerWriterMatch(kernel, rInfo, r, oInfo, w) == TRUE)) {
                 if (checkOfferedRequested(oInfo, rInfo, compatible) == FALSE) {
                     for (id = 0; id < V_POLICY_ID_COUNT; id++) {
@@ -811,6 +844,7 @@ v_splicedProcessPublicationInfo(
         if (w != NULL) {
             v_gidRelease(oInfo->key, kernel);
         }
+        c_free(v_dataReaderSampleInstance(oSample));
         c_free(oSample);
     }
     return result;
@@ -1039,6 +1073,7 @@ v_splicedManageKernel(
 
     expr = q_parse(HB_VIEW_EXPR);
     params[0] = c_ulongValue(v_gidSystemId(spliced->hb.id));
+
     spliced->readers[V_HEARTBEATINFO_ID] = v_dataReaderNew(spliced->builtinSubscriber,
                                                            HB_READER_NAME,
                                                            expr, params,

@@ -112,7 +112,7 @@ os_pathSep(void)
 
 os_result
 os_access(
-    char *file_path,
+    const char *file_path,
     os_int32 permission)
 {
     struct _stat statbuf;
@@ -449,6 +449,7 @@ os_readdir(
     return result;
 }
 
+/* The result of os_fileNormalize should be freed with os_free */
 char *
 os_fileNormalize(
     const char *filepath)
@@ -493,4 +494,11 @@ os_fsync(
         r = os_resultFail;
     }
     return r;
+}
+
+int snprintf(char *s, size_t n, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    return _vsnprintf(s, n, format, args);
 }

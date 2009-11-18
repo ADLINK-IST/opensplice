@@ -222,12 +222,17 @@ namespace DDS
          */
         public ReturnCode DeleteParticipant(IDomainParticipant a_participant)
         {
-            DomainParticipant participant = (DomainParticipant)a_participant;
-            return OpenSplice.Gapi.DomainParticipantFactory.delete_participant_w_action(
-                GapiPeer,
-                participant.GapiPeer,
-                DeleteEntityAction,
-                IntPtr.Zero);
+            ReturnCode result = ReturnCode.BadParameter;
+            DomainParticipant participant = a_participant as DomainParticipant;
+            if (participant != null)
+            {
+                result = OpenSplice.Gapi.DomainParticipantFactory.delete_participant_w_action(
+                    GapiPeer,
+                    participant.GapiPeer,
+                    DeleteEntityAction,
+                    IntPtr.Zero);
+            }
+            return result;
         }
 
         /**

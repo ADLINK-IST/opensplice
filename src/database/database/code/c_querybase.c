@@ -830,6 +830,12 @@ makeRange(
             range->start = v;
             rangeList = c_iterAppend(rangeList,range);
 
+            /* In case v is a value of a reference type (string or object)
+             * it should have been c_keeped when assigned to the 'start' and
+             * 'end' attributes of the two ranges above.
+             * to avoid a lot of if statements the following correction is
+             * performed:
+             */
             if (v.kind == V_STRING) {
                 c_keep(c_keep(c_keep(c_keep(v.is.String))));
             }
@@ -966,6 +972,7 @@ transformEnumLabelToValue(
                 /* Transform string value into int value */
                 l = c_enumValue(c_enumeration(t),
                                 c_qConst(expr)->value.is.String);
+                c_free(c_qConst(expr)->value.is.String);
                 c_qConst(expr)->value = l->value;
                 c_free(l);
             }
@@ -979,9 +986,11 @@ transformEnumLabelToValue(
                     /* Transform string value into int value */
                     if (os_strncasecmp(c_qConst(expr)->value.is.String,
                                               "true",5) == 0) {
+                        c_free(c_qConst(expr)->value.is.String);
                         c_qConst(expr)->value = c_boolValue(TRUE);
                     } else if (os_strncasecmp(c_qConst(expr)->value.is.String,
                                               "false",6) == 0) {
+                        c_free(c_qConst(expr)->value.is.String);
                         c_qConst(expr)->value = c_boolValue(FALSE);
                     } else {
                          OS_REPORT_1(OS_API_INFO,

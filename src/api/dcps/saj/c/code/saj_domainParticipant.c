@@ -382,7 +382,7 @@ SAJ_FUNCTION(jniFindTopic) (
 
     /* process the jstring objects */
     if(jtopic_name != NULL){
-        topicName = (*env)->GetStringUTFChars(env, jtopic_name, NULL);
+        topicName = (*env)->GetStringUTFChars(env, jtopic_name, 0);
     }
     if(duration != NULL){
         saj_durationCopyIn(env, duration, &timeout);
@@ -504,11 +504,10 @@ SAJ_FUNCTION(jniCreateContentfilteredtopic) (
     topic = (gapi_topic)saj_read_gapi_address(env, related_topic);
 
     if(jname != NULL){
-        name = (*env)->GetStringUTFChars(env, jname, NULL);
+        name = (*env)->GetStringUTFChars(env, jname, 0);
     }
     if(jfilter_expression != NULL){
-        filter_expression = (*env)->GetStringUTFChars(env, jfilter_expression,
-                                                                        NULL);
+        filter_expression = (*env)->GetStringUTFChars(env, jfilter_expression, 0);
     }
     if((filter_expression != NULL) && (name != NULL)){
         gapi_filter_parameters = gapi_sequence_malloc();
@@ -609,14 +608,14 @@ SAJ_FUNCTION(jniCreateMultitopic) (
 
     /* convert jstrings to c strings */
     if(jname != NULL){
-        name = (*env)->GetStringUTFChars(env, jname, NULL);
+        name = (*env)->GetStringUTFChars(env, jname, 0);
     }
     if(jtype_name != NULL){
-        type_name = (*env)->GetStringUTFChars(env, jtype_name, NULL);
+        type_name = (*env)->GetStringUTFChars(env, jtype_name, 0);
     }
     if(jsubscription_expression != NULL){
         subscription_expression = (*env)->GetStringUTFChars(env,
-                                                jsubscription_expression, NULL);
+                                                jsubscription_expression, 0);
     }
     if ( (name != NULL) && (type_name != NULL) && (subscription_expression != NULL)){
         expression_parameters = gapi_stringSeq__alloc();

@@ -17,13 +17,24 @@
 
 #define SPLICED_NAME "spliced" OS_EXESUFFIX
 
+/* These defines of exit codes are mirrored in the following files:
+ * - src/tools/ospl/unix/code/ospl.c
+ * - src/tools/ospl/win32/code/ospl.c
+ * - src/services/spliced/code/spliced.h
+ */
+#define OSPL_EXIT_CODE_OK 0
+
+#define OSPL_EXIT_CODE_RECOVERABLE_ERROR -1
+
+#define OSPL_EXIT_CODE_UNRECOVERABLE_ERROR -2
+
 static void
 print_usage(
     char *name)
 {
     printf ("\nUsage:\n"
             "      ospl -h\n"
-            "      ospl start [URI]\n"
+            "      ospl [-f] start [URI]\n"
             "      ospl [[-d <domain> | -a] stop [URI]]\n"
             "      ospl list\n\n"
             "      -h       Show this help\n\n");
@@ -32,7 +43,22 @@ print_usage(
             "               defined by the environment variable OSPL_URI. This setting can\n"
             "               be overruled with the command line URI definition. When none of\n"
             "               the URI definitions is specified, a default system will be\n"
-            "               started.\n\n");
+            "               started.\n");
+    printf ("               Upon exit an exit code will be provided to indicated the cause of\n"
+            "               termination. The following exit codes are supported:\n"
+            "               * 0 : normal termination as result of ‘OSPL stop’.\n"
+            "               * -1: a recoverable error occurred.\n"
+            "                     The system has encountered a runtime error and has terminated.\n"
+            "                     A restart of the system is possible. E.g., the system ran out\n"
+            "                     of resources.\n");
+    printf ("               * -2: an unrecoverable error occurred.\n"
+            "                     The system has encountered an error that cannot be resolved by\n"
+            "                     a restart of the system. E.g., the configuration file contains\n"
+            "                     errors or does not exist.\n");
+    printf ("               When the -f option is specified the ospl command will not return\n"
+            "               directly, but it will instead block until termination of the\n"
+            "               OpenSpliceDDS deamon. If the -f option is not specified the ospl\n"
+            "               command will return immediately after start up.\n\n");
     printf ("      stop     Stop the identified system\n\n"
             "               Stop is the default command, thus when no command is specified\n"
             "               stop is assumed. The system to stop is identified by the URI\n"
@@ -42,7 +68,15 @@ print_usage(
             "               via the -d option. \n"
             "               When no domain is specified by the URI or by it's name a \n"
             "               default system is assumed. The -a options specifies to stop all\n"
-            "               running splice systems started by the current user.\n\n");
+            "               running splice systems started by the current user.\n");
+    printf ("               Upon exit an exit code will be provided to indicated the cause\n"
+            "               of termination. The following exit codes are supported:\n"
+            "               * 0 : normal termination as result of  ‘OSPL stop’.\n"
+            "               * -1: Not Applicable\n");
+    printf ("               * -2: an unrecoverable error occurred.\n"
+            "                     The system has encountered an error that cannot be\n"
+            "                     resolved by a retry of the same command. E.g., A\n"
+            "                     faulty URI was provided.\n\n");
     printf ("      list     Show all systems started by the current user by their domain\n"
             "               name\n\n");
 }
@@ -78,10 +112,15 @@ static void
 removeKeyfile(
     const char *key_file_name)
 {
+    /* try to unlink the key file. This is a fallback option. In normal circumstances
+     * the spliced process will have deleted the key file, but something it failed
+     * and we have to unlink it here. But in general the unlink call below will
+     * fail because the file is already gone. This failure can be ignored.
+     */
     unlink(key_file_name);
 }
 
-static void
+static int
 shutdownDDS(
     const char *key_file_name,
     const char *domain_name)
@@ -94,6 +133,7 @@ shutdownDDS(
     int pid;
     FILE *kf;
     int len;
+    int retCode = OSPL_EXIT_CODE_OK;
 
     printf("\nShutting down domain \"%s\" ", domain_name);
     kf = fopen(key_file_name, "r");
@@ -113,8 +153,14 @@ shutdownDDS(
         sscanf(creator_pid, "%d", &pid);
         removeProcesses(pid);
         removeKeyfile(key_file_name);
+    } else
+    {
+        /* unrecoverable, can not read keyfile.*/
+        retCode = OSPL_EXIT_CODE_UNRECOVERABLE_ERROR;
     }
     printf(" Ready\n\n");
+
+    return retCode;
 }
 
 static char *
@@ -145,7 +191,7 @@ matchKey(
     return NULL;
 }
 
-static void
+static int
 findSpliceSystemAndRemove(
     const char *domain_name)
 {
@@ -154,6 +200,7 @@ findSpliceSystemAndRemove(
     char key_file_name[MAX_PATH];
     int last = 0;
     char *shmName;
+    int retCode = OSPL_EXIT_CODE_OK;
 
     strcpy(key_file_name, key_file_path);
     strcat(key_file_name, "\\");
@@ -162,30 +209,34 @@ findSpliceSystemAndRemove(
 
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
-    if (fileHandle == INVALID_HANDLE_VALUE) {
-        return;
-    }
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        strcpy(key_file_name, key_file_path);
+        strcat(key_file_name, "\\");
+        strcat(key_file_name, fileData.cFileName);
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, fileData.cFileName);
+        while (!last) {
+            shmName = matchKey(key_file_name, domain_name);
+            if (shmName != NULL) {
+                retCode = shutdownDDS(key_file_name, shmName);
+                free(shmName);
+            }
 
-    while (!last) {
-        shmName = matchKey(key_file_name, domain_name);
-        if (shmName != NULL) {
-            shutdownDDS(key_file_name, shmName);
-            free(shmName);
+            if (FindNextFile(fileHandle, &fileData) == 0) {
+                last = 1;
+            } else {
+                strcpy(key_file_name, key_file_path);
+                strcat(key_file_name, "\\");
+                strcat(key_file_name, fileData.cFileName);
+            }
         }
-
-        if (FindNextFile(fileHandle, &fileData) == 0) {
-            last = 1;
-        } else {
-            strcpy(key_file_name, key_file_path);
-            strcat(key_file_name, "\\");
-            strcat(key_file_name, fileData.cFileName);
-        }
+        FindClose(fileHandle);
+    } else
+    {
+        retCode = OSPL_EXIT_CODE_UNRECOVERABLE_ERROR;
     }
-    FindClose(fileHandle);
+    return retCode;
+
 }
 
 static int
@@ -208,7 +259,7 @@ findSpliceSystemAndShow(void)
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        return 0;
+        return -2;
     }
 
       found_count = 0;
@@ -241,7 +292,7 @@ findSpliceSystemAndShow(void)
     }
     fclose(key_file);
     FindClose(fileHandle);
-    return found_count;
+    return OSPL_EXIT_CODE_OK;
 }
 
 static int
@@ -439,81 +490,26 @@ safeUri(
     }
 }
 
-#if 0
-/* No longer needed, we now have os_locate */
-static int
-findSpliced(
-    char **command)
-{
-    int valid;
-    char *path;
-    char *d;
-    char *c;
-    const char *fsep;
-    os_iter dirs;
-
-    assert(command != NULL);
-    assert(*command != NULL);
-
-    valid = TRUE;
-    /* If the command contains an absolute or relative path,
-       only check the permissions, otherwise search the file
-       in the PATH environment
-    */
-    fsep = os_fileSep();
-    if ((**command == '.') || (strncmp(*command, fsep, strlen(fsep)) == 0)) {
-        if (os_access(*command, OS_ROK | OS_XOK) == os_resultSuccess) {
-            valid = TRUE;
-        } else {
-            valid = FALSE;
-        }
-    } else {
-        valid = FALSE;
-        path = os_getenv("PATH");
-        dirs = splitString(path, ";"); /* ':' for unix and ';' for windows */
-        d = (char *)os_iterTakeFirst(dirs);
-        while (d != NULL) {
-            if (valid == FALSE) {
-                c = (char *)os_malloc(strlen(d) + strlen(fsep) + strlen(*command) + 1);
-                if (c != NULL) {
-                    strcpy(c, d);
-                    strcat(c, fsep);
-                    strcat(c, *command);
-                    /* Check file permissions. Do not have to check if file exists, since
-                       permission check fails when the file does not exist.
-                    */
-                    if (os_access(c, OS_ROK | OS_XOK) == os_resultSuccess) {
-                        valid = TRUE;
-                        os_free(*command);
-                        *command = c;
-                        c = NULL;
-                    }
-                }
-                os_free(c);
-            }
-            os_free(d);
-            d = (char *)os_iterTakeFirst(dirs);
-        }
-        os_iterFree(dirs);
-    }
-
-    return valid;
-}
-#endif
-
 int
 main(
     int argc,
     char *argv[])
 {
     int opt;
+    int retCode = OSPL_EXIT_CODE_OK;
     char *domain_name = NULL;
     char *uri = NULL;
     char *command = NULL;
+    os_time sleepTime;
+    os_result result;
+    os_int32 status;
+
     cf_element platformConfig = NULL;
     cfgprs_status r;
     os_procAttr pa;
     os_procId pi;
+    os_boolean blocking = OS_FALSE;
+    os_boolean blockingDefined = OS_FALSE;
 
     os_osInit();
     uri = os_getenv("OSPL_URI");
@@ -528,102 +524,152 @@ main(
         key_file_path = os_getenv("TMP");
     }
 
-    while ((opt = getopt(argc, argv, "had:")) != -1) {
-        switch (opt) {
+    while ((opt = getopt(argc, argv, "hafd:")) != -1)
+    {
+        switch (opt)
+        {
         case 'h':
             print_usage(argv[0]);
-            exit(0);
-        break;
+            exit(OSPL_EXIT_CODE_OK);
+            break;
         case 'd':
-            if (domain_name) {
+            if (domain_name)
+            {
                 print_usage(argv[0]);
-                exit (-1);
+                exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
             }
             domain_name = optarg;
-        break;
+            break;
         case 'a':
-            if (domain_name) {
+            if (domain_name)
+            {
                 print_usage(argv[0]);
-                exit(-1);
+                exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
             }
             uri = NULL;
             domain_name = "*";
-        break;
+            break;
+        case 'f':
+            if(blockingDefined)
+            {
+                print_usage (argv[0]);
+                exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+            }
+            blocking = OS_TRUE;
+            blockingDefined = OS_TRUE;
+            break;
         case '?':
             print_usage(argv[0]);
-            exit(-1);
-        break;
+            exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+            break;
         default:
-        break;
+            break;
         }
     }
-    if ((argc-optind) > 2) {
+    if ((argc-optind) > 3)
+    {
         print_usage(argv[0]);
-        exit(-1);
+        exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
     if (key_file_path == NULL) {
         fprintf(stderr, "No basic path found\n");
-        exit(-1);
+        exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
 
     command = argv[optind];
-    if (command && argv[optind+1]) {
+    if (command && argv[optind+1])
+    {
         uri = argv[optind+1];
     }
     safeUri(&uri);
-    if (uri && (strlen(uri) > 0)) {
+    if (uri && (strlen(uri) > 0))
+    {
         r = cfg_parse_ospl(uri, &platformConfig);
-        if (r == CFGPRS_OK) {
+        if (r == CFGPRS_OK)
+        {
             domain_name = findDomain(platformConfig);
-            if (domain_name == NULL) {
+            if (domain_name == NULL)
+            {
                 printf("The domain name could not be determined from the configuration\n");
-                exit(-1);
+                exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
             }
-        } else {
-            if (r == CFGPRS_NO_INPUT) {
+        } else
+        {
+            if (r == CFGPRS_NO_INPUT)
+            {
                 printf ("Error: Cannot open URI \"%s\". Exiting now...\n", uri);
             }
-            else {
+            else
+            {
                 printf ("Errors are detected in the configuration. Exiting now...\n");
             }
-            exit(-1);
+            exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
         }
     }
-    if ((command == NULL) || (strcmp(command, "stop") == 0)) {
-        if (domain_name == NULL) {
+    if ((command == NULL) || (strcmp(command, "stop") == 0))
+    {
+        if (domain_name == NULL)
+        {
             domain_name = "The default Domain";
         }
-        findSpliceSystemAndRemove(domain_name);
+
+        retCode = findSpliceSystemAndRemove(domain_name);
     } else {
-        if (strcmp (command, "start") == 0) {
-            if (domain_name == NULL) {
+        if (strcmp (command, "start") == 0)
+        {
+            if (domain_name == NULL)
+            {
                 domain_name = "The default Domain";
             }
-            if (!spliceSystemRunning(domain_name)) {
-                printf("\nStarting up domain \"%s\" .\n", domain_name);
-                if (uri == NULL) {
+            if (!spliceSystemRunning(domain_name))
+            {
+                if(!blocking)
+                {
+                    printf("\nStarting up domain \"%s\" .\n", domain_name);
+                } else
+                {
+                    printf("\nStarting up domain \"%s\" and blocking.\n", domain_name);
+                }
+                if (uri == NULL)
+                {
                     uri = os_strdup("");
                 }
-                // command = os_strdup("spliced.exe");
-                // findSpliced(&command); */
                 command = os_locate(SPLICED_NAME, OS_ROK|OS_XOK);
                 os_procAttrInit(&pa);
                 os_procCreate(command, "OpenSplice Control Service", uri, &pa, &pi);
-                Sleep(2000); /* take time to first show the license message from spliced */
-            } else {
+                if(blocking)
+                {
+                    /* just check every 100 ms if the deamon has terminated already */
+                    sleepTime.tv_sec = 0;
+                    sleepTime.tv_nsec = 100000000; /*100 ms*/
+                    result = os_procCheckStatus(pi, &status);
+                    while(result != os_resultSuccess)
+                    {
+                        result = os_procCheckStatus(pi, &status);
+                        os_nanoSleep(sleepTime);
+                    }
+                } else
+                {
+                    Sleep(2000); /* take time to first show the license message from spliced */
+                }
+            } else
+            {
                 printf("Splice System with domain name \"%s\" is found running, ignoring command\n",
                     domain_name);
             }
-        } else {
-            if (strcmp(command, "list") == 0) {
+        } else
+        {
+            if (strcmp(command, "list") == 0)
+            {
                 return findSpliceSystemAndShow();
-            } else {
+            } else
+            {
                 print_usage(argv[0]);
-                exit(-1);
+                exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
             }
         }
     }
     os_free(uri);
     uri = NULL;
-    return 0;
+    return retCode;
 }

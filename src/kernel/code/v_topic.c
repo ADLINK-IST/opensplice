@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__topic.h"
@@ -27,6 +27,11 @@
 #include "v_event.h"
 #include "v_policy.h"
 #include "v_time.h"
+#include "v__domain.h"
+#include "v_configuration.h"
+#include "v__policy.h"
+#include "os_heap.h"
+#include "v_topic.h"
 
 #ifdef _EXTENT_
 #include "c_extent.h"
@@ -38,6 +43,11 @@
 #include "os_report.h"
 
 #define USERDATA_FIELD_NAME "userData"
+
+static v_accessMode
+v_domainDetermineTopicAccessMode(
+    const c_char* typeName,
+    v_kernel kernel);
 
 static c_type
 messageTypeNew(
@@ -379,7 +389,7 @@ v__topicNew(
     }
 
     c_lockWrite(&kernel->lock);
-    found = v__lookupTopic(kernel, name);
+    found = v_lookupTopic(kernel, name);
     if (found) {
         /* Check found topic with new topic */
         /* compare topic, if inconsistent, reject creation! */
@@ -410,6 +420,7 @@ v__topicNew(
                 topic->dataField = field;
                 topic->qos = newQos;
                 topic->keyExpr = c_stringNew(c_getBase(kernel), keyExpr);
+                topic->accessMode = v_domainDetermineTopicAccessMode(typeName, kernel);
 
                 /* determine CRC codes */
                 str = c_metaScopedName(c_metaObject(field->type));
@@ -783,4 +794,108 @@ v_topicMessageCopyKeyValues(
         field = (c_field)keyFields[i];
         c_fieldCopy(field, (c_object)src, field, (c_object)dst);
     }
+}
+
+/* ES, dds1576 added */
+v_accessMode
+v_domainDetermineTopicAccessMode(
+    const c_char* typeName,
+    v_kernel kernel)
+{
+    v_configuration config;
+    v_cfElement root;
+    v_cfElement element;
+    c_iter iter;
+    v_accessMode retVal = V_ACCESS_MODE_UNDEFINED;
+    c_value expression;
+    c_value accessMode;
+
+    config = v_getConfiguration(kernel);
+    if(config)
+    {
+        root = v_configurationGetRoot(config);
+        /* Iterate over all partitionAccess elements */
+        iter = v_cfElementXPath(root, "Domain/TopicAccess");
+        while(c_iterLength(iter) > 0)
+        {
+            element = v_cfElement(c_iterTakeFirst(iter));
+            /* Get the partition expression value, it should be a string */
+            expression = v_cfElementAttributeValue(element, "topic_expression");
+            if(expression.kind == V_STRING)
+            {
+                if(v_domainStringMatchesExpression(typeName, expression.is.String))
+                {
+                    /* The partition matches the expression.*/
+                    accessMode = v_cfElementAttributeValue(element, "access_mode");
+                    if(accessMode.kind == V_STRING)
+                    {
+                        /* A correct solution space can be realized between multiple
+                         * expressions having an AND relationship by specifying the
+                         * following rules R&W=RW, R&N=N, W&N=N, RW&N=N.
+                         */
+                        switch(retVal)
+                        {
+                            case V_ACCESS_MODE_UNDEFINED: /* start state */
+                                if(strcmp(accessMode.is.String, "none") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_NONE;
+                                } else if(strcmp(accessMode.is.String, "write") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_WRITE;
+                                } else if(strcmp(accessMode.is.String, "read") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_READ;
+                                } else if(strcmp(accessMode.is.String, "readwrite") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_READ_WRITE;
+                                }
+                                break;
+                            case V_ACCESS_MODE_WRITE:
+                                if(strcmp(accessMode.is.String, "read") == 0 ||
+                                   strcmp(accessMode.is.String, "readwrite") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_READ_WRITE;
+                                } else if(strcmp(accessMode.is.String, "none") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_NONE;
+                                }
+                                break;
+                            case V_ACCESS_MODE_READ:
+                                if(strcmp(accessMode.is.String, "write") == 0 ||
+                                   strcmp(accessMode.is.String, "readwrite") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_READ_WRITE;
+                                } else if(strcmp(accessMode.is.String, "none") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_NONE;
+                                }
+                                break;
+                            case V_ACCESS_MODE_READ_WRITE:
+                                if(strcmp(accessMode.is.String, "none") == 0)
+                                {
+                                    retVal = V_ACCESS_MODE_NONE;
+                                }
+                                break;
+                            default: /* case V_ACCESS_MODE_NONE > none always remains none */
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        if(iter)
+        {
+            c_iterFree(iter);
+        }
+        if(root)
+        {
+            c_free(root);
+        }
+    }
+    if(retVal == V_ACCESS_MODE_UNDEFINED)
+    {
+        /* No specific rights defined, fall back to default */
+        retVal = V_ACCESS_MODE_READ_WRITE;
+    }
+    return retVal;
 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef SPLICED_H
@@ -22,6 +22,17 @@ extern "C" {
 
 #define spliced(o) ((spliced)o)
 
+/* These defines of exit codes are mirrored in the following files:
+ * - src/tools/ospl/unix/code/ospl.c
+ * - src/tools/ospl/win32/code/ospl.c
+ * - src/services/spliced/code/spliced.h
+ */
+#define SPLICED_EXIT_CODE_OK 0
+
+#define SPLICED_EXIT_CODE_RECOVERABLE_ERROR -1
+
+#define SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR -2
+
 s_configuration
 splicedGetConfiguration(
     spliced spliceDaemon);
@@ -35,8 +46,9 @@ splicedGetServiceManager(
     spliced spliceDaemon);
 
 void
-splicedTerminate(
-    spliced spliceDaemon);
+splicedDoSystemHalt(
+    spliced spliceDaemon,
+    int code);
 
 sr_serviceInfo
 splicedGetServiceInfo(

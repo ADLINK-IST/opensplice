@@ -13,7 +13,7 @@
 #ifndef V__GROUPSTREAM_H
 #define V__GROUPSTREAM_H
 
-#include "v_event.h"
+#include "v_group.h"
 #include "v_groupStream.h"
 #include "kernelModule.h"
 
@@ -22,10 +22,9 @@ extern "C" {
 #endif
 
 void
-v_groupStreamNotify (
+v_groupStreamConnectNewGroups (
     v_groupStream _this,
-    v_event e,
-    c_voidp userData);
+    v_group group);
 
 void
 v_groupStreamNotifyDataAvailable (

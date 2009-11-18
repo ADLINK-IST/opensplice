@@ -104,7 +104,7 @@ public class MessageBoard {
         ErrorHandler.checkHandle(
             nameServiceTS, "new NameServiceTypeSupport");
         nameServiceTypeName = nameServiceTS.get_type_name();
-        nameServiceTS.register_type(parentDP, nameServiceTypeName);
+        status = nameServiceTS.register_type(parentDP, nameServiceTypeName);
         ErrorHandler.checkStatus(
             status, "Chat.NameServiceTypeSupport.register_type");
         

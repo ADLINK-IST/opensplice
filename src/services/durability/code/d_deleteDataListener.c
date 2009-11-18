@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d__deleteDataListener.h"
@@ -53,14 +53,14 @@ deleteGroupDataNew(
     d_deleteDataListener listener)
 {
     deleteGroupData data;
-    
+
     assert(sender);
     assert(listener);
     assert(d_listenerIsValid(d_listener(listener), D_DELETE_DATA_LISTENER));
     assert(d_objectIsValid(d_object(sender), D_FELLOW) == TRUE);
-    
+
     data = deleteGroupData(os_malloc(C_SIZEOF(deleteGroupData)));
-    
+
     if(data){
         if(partitionExpression){
             data->partitionExpression = os_strdup(partitionExpression);
@@ -104,9 +104,9 @@ d_deleteDataListenerNew(
     d_subscriber subscriber)
 {
     d_deleteDataListener listener;
-    
+
     listener = NULL;
-    
+
     if(subscriber){
         listener = d_deleteDataListener(os_malloc(C_SIZEOF(d_deleteDataListener)));
         d_listener(listener)->kind = D_DELETE_DATA_LISTENER;
@@ -121,19 +121,19 @@ d_deleteDataListenerInit(
     d_subscriber subscriber)
 {
     os_threadAttr attr;
-    
+
     os_threadAttrInit(&attr);
-    
-    d_readerListenerInit(   d_readerListener(listener), 
-                            d_deleteDataListenerAction, subscriber, 
-                            D_DELETE_DATA_TOPIC_NAME, 
+
+    d_readerListenerInit(   d_readerListener(listener),
+                            d_deleteDataListenerAction, subscriber,
+                            D_DELETE_DATA_TOPIC_NAME,
                             D_DELETE_DATA_TOP_NAME,
                             V_RELIABILITY_RELIABLE,
                             V_HISTORY_KEEPALL,
                             V_LENGTH_UNLIMITED,
                             attr,
-                            d_deleteDataListenerDeinit); 
-    
+                            d_deleteDataListenerDeinit);
+
 }
 
 void
@@ -141,7 +141,7 @@ d_deleteDataListenerFree(
     d_deleteDataListener listener)
 {
     assert(d_listenerIsValid(d_listener(listener), D_DELETE_DATA_LISTENER));
-    
+
     if(listener){
         d_readerListenerFree(d_readerListener(listener));
     }
@@ -152,7 +152,7 @@ d_deleteDataListenerDeinit(
     d_object object)
 {
     assert(d_listenerIsValid(d_listener(object), D_DELETE_DATA_LISTENER));
-    
+
     return;
 }
 
@@ -185,10 +185,10 @@ deleteAction(
     d_admin admin;
     d_durability durability;
     c_char *partition, *topic;
-    
+
     assert(entity != NULL);
     assert(C_TYPECHECK(entity, v_participant));
-    
+
     data            = deleteGroupData(args);
     participant     = v_participant(entity);
     t.seconds       = data->deleteTime.seconds;
@@ -198,19 +198,19 @@ deleteAction(
     config          = d_durabilityGetConfiguration(durability);
     params[0]       = c_stringValue(data->partitionExpression);
     params[1]       = c_stringValue(data->topicExpression);
-    
+
     c_lockRead(&participant->lock);
     matchingGroups = v_groupSetSelect(
                         v_kernel(v_object(participant)->kernel)->groupSet,
-                        "partition.name like %0 AND topic.name like %1", 
+                        "partition.name like %0 AND topic.name like %1",
                         params);
     c_lockUnlock(&participant->lock);
     group = v_group(c_iterTakeFirst(matchingGroups));
-    
+
     while(group){
         partition = v_partitionName(v_groupPartition(group));
         topic = v_topicName(v_groupTopic(group));
-        
+
         if(d_configurationGroupInAligneeNS(config,
                                            partition,
                                            topic,
@@ -226,7 +226,7 @@ deleteAction(
         group = v_group(c_iterTakeFirst(matchingGroups));
     }
     c_iterFree(matchingGroups);
-    
+
     return;
 }
 
@@ -240,26 +240,26 @@ deleteGroupDataAction(
     d_admin admin;
     c_bool callOnceMore;
     d_communicationState comState;
-    
+
     data = deleteGroupData(d_actionGetArgs(action));
-    
+
     if(terminate == FALSE){
         admin = d_listenerGetAdmin(d_listener(data->listener));
         durability = d_adminGetDurability(admin);
-        
+
         if(d_durabilityGetState(durability) == D_STATE_COMPLETE){
             comState = d_fellowGetCommunicationState(data->sender);
-            
+
             if(comState == D_COMMUNICATION_STATE_APPROVED){
                 /*fellow approved and I am complete, so take action now.*/
                 u_entityAction(u_entity(d_durabilityGetService(durability)),
                                deleteAction, data);
                 deleteGroupDataFree(data);
                 callOnceMore = FALSE;
-            } else if(comState == D_COMMUNICATION_STATE_UNKNOWN){ 
+            } else if(comState == D_COMMUNICATION_STATE_UNKNOWN){
                 /*communication state unknown so far, so try again later.*/
                 callOnceMore = TRUE;
-            } else { 
+            } else {
                 /*fellow not approved, so ignore deletion.*/
                 deleteGroupDataFree(data);
                 callOnceMore = FALSE;
@@ -289,9 +289,9 @@ d_deleteDataListenerAction(
     d_actionQueue queue;
     d_action action;
     os_time sleepTime;
-    
+
     assert(d_listenerIsValid(d_listener(listener), D_DELETE_DATA_LISTENER));
-    
+
     admin      = d_listenerGetAdmin(listener);
     queue      = d_adminGetActionQueue(admin);
     durability = d_adminGetDurability(admin);
@@ -299,33 +299,33 @@ d_deleteDataListenerAction(
     sender     = d_networkAddressNew(message->senderAddress.systemId,
                                      message->senderAddress.localId,
                                      message->senderAddress.lifecycleId);
-    
+
     fellow     = d_adminGetFellow(admin, sender);
-    
+
     if(fellow){
         if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED){
             if(delData->partitionExpr && delData->topicExpr){
-                d_printTimedEvent(durability, D_LEVEL_FINE, 
-                           D_THREAD_DELETE_DATA_LISTENER, 
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                           D_THREAD_DELETE_DATA_LISTENER,
                           "Received deleteData message. partitionExpr: '%s', topicExpr: '%s'.\n",
                           delData->partitionExpr,
                           delData->topicExpr);
             } else if(delData->partitionExpr){
-                d_printTimedEvent(durability, D_LEVEL_FINE, 
-                           D_THREAD_DELETE_DATA_LISTENER, 
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                           D_THREAD_DELETE_DATA_LISTENER,
                           "Received deleteData message. partitionExpr: '%s', topicExpr: 'NULL'.\n",
                           delData->partitionExpr);
             } else if(delData->topicExpr){
-                d_printTimedEvent(durability, D_LEVEL_FINE, 
-                           D_THREAD_DELETE_DATA_LISTENER, 
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                           D_THREAD_DELETE_DATA_LISTENER,
                           "Received deleteData message. partitionExpr: 'NULL', topicExpr: '%s'.\n",
                           delData->topicExpr);
             } else {
-                d_printTimedEvent(durability, D_LEVEL_FINE, 
-                           D_THREAD_DELETE_DATA_LISTENER, 
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                           D_THREAD_DELETE_DATA_LISTENER,
                           "Received deleteData message. partitionExpr: 'NULL', topicExpr: 'NULL'.\n");
             }
-            
+
             data = deleteGroupDataNew(delData->partitionExpr, delData->topicExpr,
                                       delData->actionTime, fellow,
                                       d_deleteDataListener(listener));
@@ -334,17 +334,17 @@ d_deleteDataListenerAction(
             action = d_actionNew(os_timeGet(), sleepTime, deleteGroupDataAction, data);
             d_actionQueueAdd(queue, action);
         } else {
-            d_printTimedEvent(durability, D_LEVEL_WARNING, 
-                       D_THREAD_DELETE_DATA_LISTENER, 
+            d_printTimedEvent(durability, D_LEVEL_WARNING,
+                       D_THREAD_DELETE_DATA_LISTENER,
                       "Fellow not approved, so ignore the message.\n");
         }
         d_fellowFree(fellow);
     } else {
-        d_printTimedEvent(durability, D_LEVEL_WARNING, 
-                D_THREAD_DELETE_DATA_LISTENER, 
+        d_printTimedEvent(durability, D_LEVEL_WARNING,
+                D_THREAD_DELETE_DATA_LISTENER,
                 "Fellow unknown so far, so ignore the message.\n");
     }
     d_networkAddressFree(sender);
-    
+
     return;
 }

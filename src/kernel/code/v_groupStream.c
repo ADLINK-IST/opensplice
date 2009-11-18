@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -30,15 +30,15 @@
 
 /**
  * To be able to slave mechanisms to the mechanisms already implemented in the
- * v_group, it is necessary to monitor all actions that are taken in the group 
- * (write, dispose, register, unregister, lifespan expiry, service_cleanup_delay 
- * expiry, etc.). The v_groupStream  provides an abstract base reader 
- * class for implementations that need to monitor these actions. The 
- * implementation of this base class allows the creation of multiple 
- * implementations for handling group actions. When an instance of the 
- * v_groupStream is attached to a group, all actions in the group will be 
+ * v_group, it is necessary to monitor all actions that are taken in the group
+ * (write, dispose, register, unregister, lifespan expiry, service_cleanup_delay
+ * expiry, etc.). The v_groupStream  provides an abstract base reader
+ * class for implementations that need to monitor these actions. The
+ * implementation of this base class allows the creation of multiple
+ * implementations for handling group actions. When an instance of the
+ * v_groupStream is attached to a group, all actions in the group will be
  * forwarded to the stream using the v_groupStreamWrite.
- * 
+ *
  * The v_groupStream provides facilities for:
  * - Autoconnecting to new appearing groups.
  * - Notification on new data available (usage i.c.w. waitset).
@@ -55,11 +55,11 @@ isGroupConnected(
     c_voidp args)
 {
     struct groupConnected* data;
-    
+
     assert(C_TYPECHECK(group, v_group));
-    
+
     data = (struct groupConnected*)args;
-    
+
     if(strcmp(v_partitionName(group->partition),
               v_partitionName(data->group->partition)) == 0){
         if(strcmp(v_topicName(group->topic),
@@ -68,6 +68,38 @@ isGroupConnected(
         }
     }
     return (!data->connected);
+}
+
+void
+v_groupStreamConnectNewGroups(
+    v_groupStream stream,
+    v_group group)
+{
+    struct groupConnected data;
+
+    assert(stream != NULL);
+    assert(C_TYPECHECK(stream,v_groupStream));
+    v_observerLock(v_observer(stream));
+
+    /*
+     * This means the group is interesting for this
+     * groupActionStream. Now I have to check if the stream is already
+     * connected to this group, because we wouldn't want to connect
+     * multiple times to one single group.
+     */
+    data.connected = FALSE;
+    data.group     = group;
+
+    c_walk(stream->groups, (c_action)isGroupConnected, &data);
+
+    if(data.connected == FALSE){
+        /*
+         * The stream is not connected to the group yet, so connect now.
+         */
+        v_groupStreamSubscribeGroup(stream, group);
+    }
+    v_observerUnlock(v_observer(stream));
+    return;
 }
 
 void
@@ -80,34 +112,34 @@ v_groupStreamNotify(
     c_iter partitions;
     c_bool interested;
     v_domain partition, found;
-    
+
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
     if (e) {
         if (e->kind == V_EVENT_NEW_GROUP) {
             v_observerLock(v_observer(stream));
-            
+
             /*
              * Check if group fits interest. This extra steps are needed because
-             * the groupActionStream does not create the groups that match the 
-             * subscriber qos partition expression on creation. It only needs to 
-             * connect to new groups once they are created. This is a different 
+             * the groupActionStream does not create the groups that match the
+             * subscriber qos partition expression on creation. It only needs to
+             * connect to new groups once they are created. This is a different
              * approach then for a data reader.
              */
             partition = v_group(e->userData)->partition;
-            
+
             /*
-             * Because already existing partitions are created and added to the 
-             * subscriber of the groupActionStream at creation time, these 
-             * partitions can be resolved from the subscriber. This is necessary to 
-             * determine whether the groupActionStream should connect to the new 
+             * Because already existing partitions are created and added to the
+             * subscriber of the groupActionStream at creation time, these
+             * partitions can be resolved from the subscriber. This is necessary to
+             * determine whether the groupActionStream should connect to the new
              * group or if it is already connected.
-             */ 
-            partitions = v_subscriberLookupDomains(v_reader(stream)->subscriber, 
+             */
+            partitions = v_subscriberLookupDomains(v_reader(stream)->subscriber,
                                                    v_partitionName(partition));
             interested = FALSE;
             found = v_domain(c_iterTakeFirst(partitions));
-            
+
             while(found){
                 if(interested == FALSE){
                     if(strcmp(v_partitionName(partition),
@@ -119,19 +151,19 @@ v_groupStreamNotify(
                 found = v_domain(c_iterTakeFirst(partitions));
             }
             c_iterFree(partitions);
-            
+
             if(interested == TRUE){
                 /*
-                 * This means the group is interesting for this 
-                 * groupActionStream. Now I have to check if the stream is already 
-                 * connected to this group, because we wouldn't want to connect 
+                 * This means the group is interesting for this
+                 * groupActionStream. Now I have to check if the stream is already
+                 * connected to this group, because we wouldn't want to connect
                  * multiple times to one single group.
                  */
                 data.connected = FALSE;
                 data.group     = v_group(e->userData);
-                
+
                 c_walk(stream->groups, (c_action)isGroupConnected, &data);
-                
+
                 if(data.connected == FALSE){
                     /*
                      * The stream is not connected to the group yet, so connect now.
@@ -152,6 +184,16 @@ void
 v_groupStreamNotifyDataAvailable(
     v_groupStream stream)
 {
+    /* This Notify method is part of the observer-observable pattern.
+     * It is designed to be invoked when _this object as observer receives
+     * an event from an observable object.
+     * It must be possible to pass the event to the subclass of itself by
+     * calling <subclass>Notify(_this, event, userData).
+     * This implies that _this cannot be locked within any Notify method
+     * to avoid deadlocks.
+     * For consistency _this must be locked by v_observerLock(_this) before
+     * calling this method.
+     */
     C_STRUCT(v_event) event;
     c_bool changed;
 
@@ -176,13 +218,13 @@ v_groupStreamInit(
     v_subscriber subscriber,
     v_readerQos qos)
 {
-    v_kernel kernel;    
+    v_kernel kernel;
 
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(subscriber, v_subscriber));
 
     kernel = v_objectKernel(subscriber);
-    
+
     stream->groups = c_setNew(v_kernelType(kernel,K_GROUP));
     v_readerInit(v_reader(stream),name,subscriber,qos,NULL,TRUE);
     v_subscriberAddReader(subscriber,v_reader(stream));
@@ -194,14 +236,14 @@ v_groupStreamDeinit(
 {
     c_iter groups;
     v_group group;
-    
+
     assert(C_TYPECHECK(stream, v_groupStream));
 
     v_readerDeinit(v_reader(stream));
-    
+
     groups = c_select(stream->groups, 0);
     group = v_group(c_iterTakeFirst(groups));
-    
+
     while(group){
         v_groupRemoveStream(group, stream);
         c_free(group);
@@ -237,7 +279,7 @@ v_groupStreamSubscribe(
     params[0] = c_objectValue(partition);
     list = v_groupSetSelect(kernel->groupSet,"partition = %0 ",params);
     group = c_iterTakeFirst(list);
-    
+
     while (group != NULL) {
         v_groupStreamSubscribeGroup(stream, group);
         c_free(group);
@@ -254,13 +296,13 @@ v_groupStreamSubscribeGroup(
     v_group group)
 {
     c_bool inserted;
-    
+
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(group, v_group));
-            
+
     if (v_reader(stream)->qos->durability.kind == v_topicQosRef(group->topic)->durability.kind) {
         inserted = v_groupAddStream(group, stream);
-        
+
         if(inserted == TRUE){
             c_insert(stream->groups, group);
         }
@@ -276,14 +318,14 @@ v_groupStreamUnSubscribe(
     c_iter list;
     v_group group;
     c_bool result;
-    
+
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(partition, v_domain));
 
     list = c_select(stream->groups, 0);
     group = c_iterTakeFirst(list);
     result = FALSE;
-    
+
     while (group != NULL) {
         if(strcmp(v_partitionName(partition),
                   v_partitionName(group->partition)) == 0){
@@ -304,12 +346,12 @@ v_groupStreamUnSubscribeGroup(
 {
     v_group found;
     c_bool result;
-    
+
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(group, v_group));
 
     found = c_remove(stream->groups, group, NULL, NULL);
-    
+
     if(found == group){
         result = TRUE;
     } else {
@@ -329,7 +371,7 @@ v_groupStreamWrite(
     assert(C_TYPECHECK(action, v_groupAction));
 
     result = V_WRITE_ERROR;
-    
+
     switch(v_objectKind(stream)){
         case K_GROUPQUEUE:
             result = v_groupQueueWrite(v_groupQueue(stream), action);

@@ -441,6 +441,16 @@ DDS_TopicListener__alloc (
 
 }
 
+struct DDS_ExtTopicListener *
+DDS_ExtTopicListener__alloc (
+    void
+    )
+{
+    return (struct DDS_ExtTopicListener *)
+        gapi_alloc (sizeof(struct DDS_ExtTopicListener));
+
+}
+
 struct DDS_DataWriterListener *
 DDS_DataWriterListener__alloc (
     void

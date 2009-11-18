@@ -482,10 +482,15 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteTopic(ITopic t)
         {
-            Topic topic = (Topic)t;
-            return OpenSplice.Gapi.DomainParticipant.delete_topic(
-                GapiPeer,
-                topic.GapiPeer);
+            ReturnCode result = ReturnCode.BadParameter;
+            Topic topic = t as Topic;
+            if (topic != null)
+            {
+                result = OpenSplice.Gapi.DomainParticipant.delete_topic(
+                    GapiPeer,
+                    topic.GapiPeer);
+            }
+            return result;
         }
 
         public ITopic FindTopic(string topicName, Duration timeout)
@@ -532,20 +537,22 @@ namespace DDS.OpenSplice
         {
             IContentFilteredTopic contentFilteredTopic = null;
 
-            Topic related = (Topic)relatedTopic;
-
-            using (IMarshaler marshaler = new SequenceStringMarshaler(expressionParameters))
+            Topic related = relatedTopic as Topic;
+            if (relatedTopic != null)
             {
-                IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipant.create_contentfilteredtopic(
-                    GapiPeer,
-                    name,
-                    related.GapiPeer,
-                    filterExpression,
-                    marshaler.GapiPtr);
-
-                if (gapiPtr != IntPtr.Zero)
+                using (IMarshaler marshaler = new SequenceStringMarshaler(expressionParameters))
                 {
-                    contentFilteredTopic = new ContentFilteredTopic(gapiPtr);
+                    IntPtr gapiPtr = OpenSplice.Gapi.DomainParticipant.create_contentfilteredtopic(
+                        GapiPeer,
+                        name,
+                        related.GapiPeer,
+                        filterExpression,
+                        marshaler.GapiPtr);
+
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        contentFilteredTopic = new ContentFilteredTopic(gapiPtr);
+                    }
                 }
             }
 
@@ -554,10 +561,15 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic t)
         {
-            ContentFilteredTopic contentFilteredTopic = (ContentFilteredTopic)t;
-            return OpenSplice.Gapi.DomainParticipant.delete_contentfilteredtopic(
-                GapiPeer,
-                contentFilteredTopic.GapiPeer);
+            ReturnCode result = ReturnCode.BadParameter;
+            ContentFilteredTopic contentFilteredTopic = t as ContentFilteredTopic;
+            if (contentFilteredTopic != null)
+            {
+                result = OpenSplice.Gapi.DomainParticipant.delete_contentfilteredtopic(
+                    GapiPeer,
+                    contentFilteredTopic.GapiPeer);
+            }
+            return result;
         }
 
 
@@ -586,10 +598,15 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteMultiTopic(IMultiTopic t)
         {
-            MultiTopic multiTopic = (MultiTopic)t;
-            return OpenSplice.Gapi.DomainParticipant.delete_multitopic(
-                GapiPeer,
-                multiTopic.GapiPeer);
+            ReturnCode result = ReturnCode.BadParameter;
+            MultiTopic multiTopic = t as MultiTopic;
+            if (multiTopic != null)
+            {
+                result = OpenSplice.Gapi.DomainParticipant.delete_multitopic(
+                    GapiPeer,
+                    multiTopic.GapiPeer);
+            }
+            return result;
         }
 
         public ReturnCode DeleteContainedEntities()

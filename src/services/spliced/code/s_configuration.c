@@ -471,6 +471,7 @@ s_configurationSetTracingOutputFile(
                 char * filename = os_fileNormalize(value);
                 config->tracingOutputFile = fopen(filename, "a");
                 config->tracingOutputFileName = os_strdup(value);
+                os_free(filename);
             }
         }
     }

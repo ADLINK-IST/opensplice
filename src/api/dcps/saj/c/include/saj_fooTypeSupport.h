@@ -27,10 +27,10 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_FooTypeSupportImpl_jniFree
 /*
  * Class:     org_opensplice_dds_dcps_FooTypeSupportImpl
  * Method:    jniRegisterType
- * Signature: (Ljava/lang/Object;LDDS/DomainParticipant;Ljava/lang/String;)I
+ * Signature: (Ljava/lang/Object;LDDS/DomainParticipant;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_FooTypeSupportImpl_jniRegisterType
-  (JNIEnv *, jclass, jobject, jobject, jstring);
+  (JNIEnv *, jclass, jobject, jobject, jstring, jstring, jstring);
 
 #ifdef __cplusplus
 }

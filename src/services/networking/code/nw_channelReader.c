@@ -72,7 +72,7 @@ nw_channelReaderConnectToNewGroups(
         nw_receiveChannelAddGroup(channelReader->receiveChannel, entry);
         /* Call the action routine if needed */
         if (action != NULL) {
-        	action(entry, arg);
+            action(entry, arg);
         }
         /* Any more new groups? */
         newGroupAvailable = nw_channelUserRetrieveNewGroup(
@@ -83,10 +83,10 @@ nw_channelReaderConnectToNewGroups(
 }
 
 NW_STRUCT(nw_newEntryArg) {
-	v_networkHashValue hashValue;
-	const char *partitionName;
-	const char *topicName;
-	v_networkReaderEntry entryFound;
+    v_networkHashValue hashValue;
+    const char *partitionName;
+    const char *topicName;
+    v_networkReaderEntry entryFound;
 };
 NW_CLASS(nw_newEntryArg);
 
@@ -95,28 +95,28 @@ onNewGroupAction (
     v_networkReaderEntry entry,
     nw_channelOnNewGroupArg arg)
 {
-	nw_newEntryArg newEntryArg = (nw_newEntryArg)arg;
+    nw_newEntryArg newEntryArg = (nw_newEntryArg)arg;
 
-	NW_CONFIDENCE(newEntryArg != NULL);
+    NW_CONFIDENCE(newEntryArg != NULL);
 
-	if ( (  /* Either the hash matches, or complement partitions are
+    if ( (  /* Either the hash matches, or complement partitions are
              * enabled. */
-	        ((entry->hashValue.h1 == newEntryArg->hashValue.h1) &&
+            ((entry->hashValue.h1 == newEntryArg->hashValue.h1) &&
              (entry->hashValue.h2 == newEntryArg->hashValue.h2) &&
              (entry->hashValue.h3 == newEntryArg->hashValue.h3) &&
              (entry->hashValue.h4 == newEntryArg->hashValue.h4) )
              ||
              /* If not checked here, first package will be dropped if enabled */
              nw_configurationUseComplementPartitions()
-	     )
-	     &&
-	    (strcmp(v_partitionName(v_groupPartition(entry->group)),
-	           newEntryArg->partitionName) == 0) &&
-	    (strcmp(v_topicName(v_groupTopic(entry->group)),
-	           newEntryArg->topicName) == 0)) {
+         )
+         &&
+        (strcmp(v_partitionName(v_groupPartition(entry->group)),
+               newEntryArg->partitionName) == 0) &&
+        (strcmp(v_topicName(v_groupTopic(entry->group)),
+               newEntryArg->topicName) == 0)) {
         NW_CONFIDENCE(newEntryArg->entryFound == NULL);
-	    newEntryArg->entryFound = entry;
-	}
+        newEntryArg->entryFound = entry;
+    }
 }
 
 static v_networkReaderEntry
@@ -126,7 +126,7 @@ onLookupEntryAction(
     const char *topicName,
     nw_entryLookupArg arg)
 {
-	v_networkReaderEntry result;
+    v_networkReaderEntry result;
     nw_channelReader channelReader;
     NW_STRUCT(nw_newEntryArg) newEntryArg;
 

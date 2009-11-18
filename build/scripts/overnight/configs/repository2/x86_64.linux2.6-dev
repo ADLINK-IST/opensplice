@@ -9,5 +9,5 @@ RUN_EXAMPLES=yes
 
 . configs/`hostname`/common
 
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Linux-gcc346-inline-64bit-090414
-export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.5.0_16_64
+export TAO_ROOT=/home/dds/INSTALLED\ FOR\ DDS/TAO161_0-RedHat-EL53-gcc412-inline-64bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
+export JAVA_HOME=/home/dds/INSTALLED\ FOR\ DDS/jdk1.5.0_16_64

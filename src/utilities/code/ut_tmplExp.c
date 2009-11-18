@@ -531,6 +531,7 @@ ut_fileOutNew(
     filename = os_fileNormalize(fname); 
     stream->file = fopen(filename, mode);
     os_free(fname);
+    os_free(filename);
 
     if (stream->file == NULL) {
         os_free(stream);

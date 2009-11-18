@@ -11,7 +11,9 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
     {
         super("$(java-class-name)DataReaderImpl",
             "$(java-class-name)DataWriterImpl",
-            "(L$(java-class-name)TypeSupport;)V");
+            "(L$(java-class-name)TypeSupport;)V",
+            "$(java-org-package-name)",
+            "$(java-tgt-package-name)");
 
         int success = 0;
 
@@ -27,7 +29,7 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
              * DomainParticipantFactory exists.
              */
             DDS.DomainParticipantFactory f = DDS.DomainParticipantFactory.get_instance();
-            
+
             if (f != null) {
                 success = org.opensplice.dds.dcps.FooTypeSupportImpl.Alloc(
                         this,

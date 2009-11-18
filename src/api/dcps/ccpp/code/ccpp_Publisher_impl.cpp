@@ -151,6 +151,10 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
                 OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Type Support Factory");
               }
             }
+            else
+            {
+              OS_REPORT(OS_ERROR, "CCPP", 0, "Type Support information not available for create_datawriter");
+            }
           }
           gapi_free(typeName);
         }

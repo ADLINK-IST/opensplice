@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <assert.h>
@@ -35,9 +35,15 @@
 #define PURE_MAIN_SYMBOL "ospl_main"
 #endif
 
+static void
+splicedExit(
+    const char *msg,
+    int result);
+
 C_STRUCT(spliced)
 {
     int                     terminate;
+    int                     systemHaltCode;/* 0 == ok, -1 == recoverable */
     c_ulong                 options;
     s_configuration         config;
     u_spliced               service;        /* splicedaemon service/participant */
@@ -55,9 +61,9 @@ C_STRUCT(spliced)
 #endif
 };
 
-/** This global variable is needed, since all resources of the 
+/** This global variable is needed, since all resources of the
     splicedaemon are freed when the process exits. No arguments
-    are given to the exit handler (in our case the function 
+    are given to the exit handler (in our case the function
     splicedFree())
 */
 
@@ -74,19 +80,28 @@ argumentsCheck(
     char *argv[])
 {
     this->name = os_strdup(argv[0]);
+    if (this->name == NULL) {
+        splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+    }
     if (argc == 1) {
         this->uri = os_strdup("");
+        if (this->uri == NULL) {
+            splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+        }
     } else if (argc == 2) {
         this->uri = os_strdup(argv[1]);
+        if (this->uri == NULL) {
+            splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+        }
     } else {
         printf("usage: %s [<URI>]\n",argv[0]);
         printf("\n");
         printf("<URI> file://<abs path to configuration> \n");
-        exit(-1);
+        exit(SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
 }
 
-static void
+void
 splicedExit(
     const char *msg,
     int result)
@@ -127,16 +142,16 @@ waitForServices(
     os_time pollDelay = {1, 0};
     os_time curTime;
     os_time stopTime;
-    
+
     curTime = os_timeGet();
     stopTime = os_timeAdd(curTime, this->config->serviceTerminatePeriod);
-        
+
     do {
         terminateCount = 0;
         names = u_serviceManagerGetServices(this->serviceManager, STATE_TERMINATED);
-        
+
         name = c_iterTakeFirst(names);
-        
+
         while (name != NULL) {
             for (j = 0; j < this->nrKnownServices; j++) {
                 cmp = strcmp(name, this->knownServices[j]->name);
@@ -149,8 +164,8 @@ waitForServices(
         }
         c_iterFree(names);
         curTime = os_timeGet();
-        
-        if( (os_timeCompare(curTime, stopTime) == OS_LESS) && 
+
+        if( (os_timeCompare(curTime, stopTime) == OS_LESS) &&
             (terminateCount < this->nrKnownServices)) {
             os_nanoSleep(pollDelay);
         }
@@ -163,7 +178,7 @@ splicedKnownServicesFree(
     spliced this)
 {
     int i;
-    
+
     assert(this != NULL);
 
     for (i = 0; i < this->nrKnownServices; i++) {
@@ -183,7 +198,7 @@ splicedTestServicesFree(
     spliced this)
 {
     int i;
-    
+
     assert(this != NULL);
 
     for (i = 0; i < this->nrTestServices; i++) {
@@ -236,10 +251,11 @@ serviceCommandIsValid(
 }
 
 
-static void
+static int
 startServices(
     spliced this)
 {
+    int retCode = SPLICED_EXIT_CODE_OK;
 #ifdef INTEGRITY
    static Semaphore networkSvcStartSem;
    static Semaphore durabilitySvcStartSem;
@@ -267,7 +283,7 @@ startServices(
     int argc;
 
     assert(this != NULL);
-    
+
     for (i = 0; i < this->nrKnownServices; i++) {
         /* Now compose stuff */
         info = this->knownServices[i];
@@ -283,14 +299,14 @@ startServices(
                    3+strlen(info->configuration)+
                    2;
             args = os_malloc(argc);
-            if (args) 
+            if (args)
             {
-                if (strlen(info->args) == 0) 
+                if (strlen(info->args) == 0)
                 {
                     snprintf(args, argc, "\"%s\" \"%s\"",
                              info->name, info->configuration);
-                } 
-                else 
+                }
+                else
                 {
                     snprintf(args, argc, "\"%s\" \"%s\" \"%s\"",
                              info->name, info->configuration, info->args);
@@ -299,13 +315,13 @@ startServices(
             procCreateResult = os_procCreate(info->command,
                 info->name, args,
                 &info->procAttr, &info->procId);
-            if (procCreateResult == os_resultSuccess) 
+            if (procCreateResult == os_resultSuccess)
             {
                 OS_REPORT_2(OS_INFO, OSRPT_CNTXT_SPLICED,
                             0, "Started service %s with args %s",
                             info->name, args);
-            } 
-            else 
+            }
+            else
             {
                 OS_REPORT_2(OS_WARNING, OSRPT_CNTXT_SPLICED,
                             0, "Could not start service %s with args %s",
@@ -315,15 +331,17 @@ startServices(
             {
                 os_free(args);
             }
-        } 
-        else 
+        }
+        else
         {
+            retCode = SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR;
            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
                 "Could not find file '%s' with read and execute permissions",
                 info->command);
         }
     }
 #endif
+    return retCode;
 }
 
 #ifdef OSPL_ENV_SHMT
@@ -402,7 +420,7 @@ startTestServices(
             }
         }
         os_nanoSleep(delay);
-    }    
+    }
 }
 #else
 #define startTestServices(this)
@@ -445,7 +463,7 @@ getKnownServices(
         services = u_cfElementXPath(spliceCfg, "Service");
         this->nrKnownServices = c_iterLength(services);
         if (this->nrKnownServices > 0) {
-            this->knownServices = (sr_serviceInfo *)os_malloc((os_uint32)(this->nrKnownServices * 
+            this->knownServices = (sr_serviceInfo *)os_malloc((os_uint32)(this->nrKnownServices *
                                                             (int)sizeof(sr_serviceInfo)));
             if (this->knownServices != NULL) {
                 i = 0;
@@ -482,7 +500,7 @@ getTestServices(
         services = u_cfElementXPath(spliceCfg, "TestService");
         this->nrTestServices = c_iterLength(services);
         if (this->nrTestServices > 0) {
-            this->testServices = (sr_serviceInfo *)os_malloc((os_uint)(this->nrTestServices * 
+            this->testServices = (sr_serviceInfo *)os_malloc((os_uint)(this->nrTestServices *
                                                             (int)sizeof(sr_serviceInfo)));
             if (this->testServices != NULL) {
                 i = 0;
@@ -557,6 +575,7 @@ splicedNew()
 
     if (this != NULL) {
         this->terminate = 0;
+        this->systemHaltCode = SPLICED_EXIT_CODE_OK;
         this->config = s_configurationNew();
         this->service = NULL;
         this->serviceManager = NULL;
@@ -581,7 +600,6 @@ splicedFree(void)
 {
     spliced this = spl_daemon;
     v_duration lease = {300, 0}; /* 5 minutes */
-
     if (this != NULL) {
         if (this->service != NULL) {
             u_participantRenewLease(u_participant(this->service), lease);
@@ -594,15 +612,25 @@ splicedFree(void)
         serviceMonitorStop(this->sMonitor);
         serviceMonitorFree(this->sMonitor);
         this->sMonitor = NULL;
-
         waitForServices(this);
         /* All services have stopped, or timeout has occurred */
+
+        /* signal internal threads to stop.
+         */
         u_splicedPrepareTermination(this->service);
+        {
+            /* Give internal threads some time to stop.
+             */
+            os_time sleep = {1,0}; /* 1s */
+            os_nanoSleep(sleep);
+        }
+        /* At this point no rock solid guarantee all threads are stopped.
+         * Following destruction will cause threads too crash.
+         */
         s_kernelManagerFree(this->km);
         this->km = NULL;
         s_garbageCollectorFree(this->gc);
         this->gc = NULL;
-
         if (this->service != NULL) {
             if (!u_serviceChangeState(u_service(this->service),STATE_TERMINATED)) {
                 OS_REPORT(OS_ERROR,OSRPT_CNTXT_SPLICED,0,
@@ -613,7 +641,6 @@ splicedFree(void)
             u_serviceManagerFree(this->serviceManager);
             this->serviceManager = NULL;
         }
-
         if (this->service != NULL) {
             u_splicedFree(this->service);
             this->service = NULL;
@@ -623,7 +650,6 @@ splicedFree(void)
 
         splicedKnownServicesFree(this);
         splicedTestServicesFree(this);
-
         u_userDetach();
         os_serviceStop();
         OS_REPORT(OS_INFO,OSRPT_CNTXT_SPLICED,0,
@@ -635,7 +661,7 @@ splicedFree(void)
         s_configurationFree(this->config);
         this->config = NULL;
         os_free(this);
-    }    
+    }
 }
 
 /**************************************************************
@@ -671,12 +697,13 @@ splicedGetServiceManager(
 }
 
 void
-splicedTerminate(
-    spliced spliceDaemon)
+splicedDoSystemHalt(
+    spliced spliceDaemon,
+    int code)
 {
     assert(spliceDaemon != NULL);
 
-    spliceDaemon->terminate = 1;
+    spliceDaemon->systemHaltCode = code;
 }
 
 sr_serviceInfo
@@ -714,24 +741,31 @@ main(
     u_result r;
     os_time delay;
     os_result osr;
+    int retCode = SPLICED_EXIT_CODE_OK;
 
     osr = os_serviceStart(os_serviceName()); /* should become this->uri in the future */
     if (osr != os_resultSuccess) {
         printf("Failed to initialize.\n");
-        return 1;
-    } 
+        return SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR;
+    }
     u_userInitialise();
-    
+
     this = splicedNew();
     if (this == NULL) {
-        splicedExit("Failed to allocate memory.", 2);
+        splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
     spl_daemon = this;
 
 #ifdef INTEGRITY
     this->name = os_strdup("spliced");
+    if (this->name == NULL) {
+        splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+    }
     this->uri = os_strdup ("file:///ospl.xml");
-#else    
+    if (this->uri == NULL) {
+        splicedExit("Failed to allocate memory.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+    }
+#else
     argumentsCheck(this, argc, argv);
     os_procSetTerminationHandler(termHandler);
 #endif
@@ -739,56 +773,63 @@ main(
 
     this->service = u_splicedNew(this->uri);
     if (this->service == NULL) {
-        splicedExit("Failed to attach to kernel.", 4);
+        splicedExit("Failed to attach to kernel.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
 
     readConfiguration(this);
 
     dds_builtInTypes__register_types (kernelGetBase(u_entity(this->service)));
-    
+
     u_serviceChangeState(u_service(this->service), STATE_INITIALISING);
     this->serviceManager = u_serviceManagerNew(u_participant(this->service));
 
     this->km = s_kernelManagerNew(this);
     if (this->km == NULL) {
-        splicedExit("Failed to create kernel manager.", 5);
+        splicedExit("Failed to create kernel manager.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
     if (!s_kernelManagerWaitForActive(this->km)) {
-        splicedExit("Failed to start kernel manager.", 6);
+        splicedExit("Failed to start kernel manager.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
-    
+
     this->gc = s_garbageCollectorNew(this);
     if (this->gc == NULL) {
-        splicedExit("Failed to create garbage collector.", 7);
+        splicedExit("Failed to create garbage collector.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
     if (!s_garbageCollectorWaitForActive(this->gc)) {
-        splicedExit("Failed to start garbage collector.", 8);
+        splicedExit("Failed to start garbage collector.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
 
     this->sMonitor = serviceMonitorNew(this);
-
+    if (this->sMonitor == NULL) {
+        splicedExit("Failed to create service monitor.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+    }
     r = u_splicedStartHeartbeat(this->service, this->config->leasePeriod,
             this->config->leaseRenewalPeriod);
     if (r != U_RESULT_OK) {
-        splicedExit("Failed to start heartbeats.", 9);
+        splicedExit("Failed to start heartbeats.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
     }
 
     u_serviceChangeState(u_service(this->service), STATE_OPERATIONAL);
 
     /* Start services */
-    startServices(this);
-    startTestServices(this);
+    retCode = startServices(this);
+    if(retCode == SPLICED_EXIT_CODE_OK)
+    {
+        startTestServices(this);
 
-    delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
-    delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
+        delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
+        delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
 
-    while (!this->terminate) {
-        u_participantRenewLease(u_participant(this->service), this->config->leasePeriod);
-        os_nanoSleep(delay);
+        while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
+            u_participantRenewLease(u_participant(this->service), this->config->leasePeriod);
+            os_nanoSleep(delay);
+        }
+    }
+    if(this->systemHaltCode != SPLICED_EXIT_CODE_OK && retCode == SPLICED_EXIT_CODE_OK)
+    {
+        retCode = SPLICED_EXIT_CODE_RECOVERABLE_ERROR;
     }
     u_splicedStopHeartbeat(this->service);
-
     splicedFree();
-    
-    return 0;
+    return retCode;
 }

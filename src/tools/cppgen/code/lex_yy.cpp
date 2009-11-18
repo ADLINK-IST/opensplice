@@ -744,6 +744,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * idl.ll - Lexical scanner for IDL 1.1
  */
 
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.h>
 #include <idl_extern.h>
 #include <utl_incl.h>
@@ -1273,7 +1275,7 @@ case 48:
 YY_RULE_SETUP
 #line 177 "idl.ll"
 {
-                  yylval.strval = strdup ("::");
+                  yylval.strval = os_strdup ("::");
                   return SCOPE_DELIMITOR;
                 }
         YY_BREAK
@@ -1281,7 +1283,7 @@ case 49:
 YY_RULE_SETUP
 #line 183 "idl.ll"
 {
-    char *z = (char *) malloc(strlen(DDS_YYTEXT) + 1);
+    char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
     strcpy(z, DDS_YYTEXT);
     yylval.strval = z;
     return IDENTIFIER;
@@ -1291,7 +1293,7 @@ case 50:
 YY_RULE_SETUP
 #line 190 "idl.ll"
 {
-                                                        char *z = (char *) malloc(strlen(DDS_YYTEXT) + 1);
+                                                        char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
                                                         strcpy(z, DDS_YYTEXT);
                                                         yylval.strval = z;
                                                         BEGIN NORMAL_STATE;
@@ -2378,7 +2380,7 @@ static void *yy_flex_alloc( size )
 yy_size_t size;
 #endif
         {
-        return (void *) malloc( size );
+        return (void *) os_malloc( size );
         }
 
 #ifdef YY_USE_PROTOS
@@ -2406,7 +2408,7 @@ static void yy_flex_free( ptr )
 void *ptr;
 #endif
         {
-        free( ptr );
+        os_free( ptr );
         }
 
 #if YY_MAIN

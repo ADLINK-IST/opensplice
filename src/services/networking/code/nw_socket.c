@@ -16,6 +16,7 @@
 /* Implementation */
 #include <string.h>       /* for memcmp and memset          */
 #include "os_heap.h"
+#include "os_stdlib.h"
 #include "os_socket.h"
 
 /* Descendants */
@@ -30,9 +31,11 @@
 #include "nw_configuration.h"
 #include "nw_profiling.h"
 #include "nw_misc.h" /* for nw_stringDup and nw_dumpToString */
+#include "nw_stringList.h"
 #include "nw_report.h"
 
 #define SK_CONTROLPORT(portNr) ((portNr)+1)
+
 
 /* ------------------------------ Debug function ---------------------------- */
 
@@ -226,7 +229,6 @@ nw_socketSetBroadcastOption(
     os_result retVal;
 
     if (sock != NULL) {
-        /* Set broadcast option */
         optLen = (socklen_t)sizeof(enableBroadcast);
         retVal = os_sockSetsockopt(sock->socketData,
                             SOL_SOCKET, SO_BROADCAST,
@@ -260,7 +262,6 @@ nw_socketSetTOS(
     os_result retVal;
 
     if (sock != NULL) {
-        /* Set broadcast option */
         optLen = (socklen_t)sizeof(tos);
         retVal = os_sockSetsockopt(sock->socketData,
                             IPPROTO_IP, IP_TOS,
@@ -284,6 +285,40 @@ nw_socketSetTOS(
     return result;
 }
 
+static int
+nw_socketSetTimeToLive(
+    nw_socket sock,
+    c_ulong timeToLive)
+{
+    int result = SK_TRUE;
+    int opt = (int)timeToLive;
+    socklen_t optLen;
+    os_result retVal;
+
+    if (sock != NULL) {
+        optLen = (socklen_t)sizeof(timeToLive);
+        retVal = os_sockSetsockopt(sock->socketData,
+                            IPPROTO_IP, IP_TTL,
+                            (const void *)&opt, optLen);
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "set socket time to live", "setsockopt");
+        if ((retVal == os_resultSuccess) && (sock->supportsControl)) {
+            retVal = os_sockSetsockopt(sock->socketControl,
+                                IPPROTO_IP, IP_TTL,
+                                (const void *)&opt, optLen);
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "set socket time to live", "setsockopt");
+        }
+        if (retVal != os_resultSuccess) {
+            result = SK_FALSE;
+        }
+    } else {
+        result = SK_FALSE;
+    }
+
+    return result;
+}
+
 
 os_int
 nw_socketSetDontRouteOption(
@@ -295,7 +330,6 @@ nw_socketSetDontRouteOption(
     os_result retVal;
 
     if (sock != NULL) {
-        /* Set broadcast option */
         optLen = (socklen_t)sizeof(disableRouting);
         retVal = os_sockSetsockopt(sock->socketData,
                             SOL_SOCKET, SO_DONTROUTE,
@@ -318,6 +352,43 @@ nw_socketSetDontRouteOption(
 
     return result;
 }
+
+
+#if 0
+static int
+nw_socketSetDontFragment(
+    nw_socket sock,
+    nw_bool dontFragment)
+{
+    int result = SK_TRUE;
+    int opt = dontFragment?1:0;
+    socklen_t optLen;
+    os_result retVal;
+
+    if (sock != NULL) {
+        optLen = (socklen_t)sizeof(opt);
+        retVal = os_sockSetsockopt(sock->socketData,
+                            IPPROTO_IP, SO_DONTFRAG,
+                            (const void *)&opt, optLen);
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "set socket dontfragment option", "setsockopt");
+        if ((retVal == os_resultSuccess) && (sock->supportsControl)){
+            retVal = os_sockSetsockopt(sock->socketControl,
+                                IPPROTO_IP, SO_DONTFRAG,
+                                (const void *)&opt, optLen);
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "set socket dontfragment option", "setsockopt");
+        }
+        if (retVal != os_resultSuccess) {
+            result = SK_FALSE;
+        }
+    } else {
+        result = SK_FALSE;
+    }
+
+    return result;
+}
+#endif
 
 sk_bool
 nw_socketGetDataSocket(
@@ -432,20 +503,50 @@ nw_socketAddPartition(
     sk_bool connected)
 {
     sk_address address;
+    nw_stringList addressNameList;
+    unsigned int size, i;
+    const char *currentAddress;
 
-    if (strcmp(addressString, NWCF_BROADCAST_EXPR) == 0) {
-        address = nw_socketBroadcastAddress(sock);
-    } else {
-        address = sk_stringToAddress(addressString, NWCF_DEF(Address));
-    }
-    nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected);
+    NW_TRACE_2(Test, 3, "Adding address expression \"%s\" to partition %d",
+        addressString, partitionId);
 
-    /* Do any multicast related actions if needed */
-    if (partitionId != 0 && connected) {
-        /* No need to add first the default partition,
-           that already happened with socket initialization */
-        nw_socketMulticastAddPartition(sock, addressString);
+    addressNameList = nw_stringListNew(addressString, NW_ADDRESS_SEPARATORS);
+
+    size = nw_stringListGetSize(addressNameList);
+    for (i=0; i<size; i++) {
+        currentAddress = nw_stringListGetValue(addressNameList, i);
+        if (sk_getAddressType(currentAddress) == SK_TYPE_BROADCAST) {
+            address = nw_socketBroadcastAddress(sock);
+        } else {
+            address = sk_stringToAddress(currentAddress, NULL);
+        }
+        /* Ignore invalid addresses and our own address */
+        if (!address) {
+            NW_TRACE_2(Test, 4, "Ignoring invalid network address \"%s\" in partition %d",
+                currentAddress, partitionId);
+        } else if (nw_socketPrimaryAddressCompare(sock, address)
+#ifdef NW_LOOPBACK
+                && !nw_configurationUseLoopback()
+#endif
+            ) {
+            NW_CONFIDENCE(sizeof(address) == sizeof(struct in_addr));
+            NW_TRACE_3(Test, 4, "Ignoring localhost \"%s\" (%s) in partition %d",
+                currentAddress, inet_ntoa(*((struct in_addr *)(&address))), partitionId);
+        } else {
+            NW_CONFIDENCE(sizeof(address) == sizeof(struct in_addr));
+            NW_TRACE_3(Test, 4, "Adding host \"%s\" (%s) to partition %d",
+                currentAddress, inet_ntoa(*((struct in_addr *)(&address))), partitionId);
+
+            nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected);
+            /* Do any multicast related actions if needed */
+            if (partitionId != 0 && connected) {
+                /* No need to add first the default partition,
+                   that already happened with socket initialisation */
+                nw_socketMulticastAddPartition(sock, currentAddress);
+            }
+        }
     }
+    nw_stringListFree(addressNameList);
 }
 
 
@@ -463,7 +564,11 @@ nw_socketPrimaryAddressCompare(
         /* First check 'wildcard' (zeroes only) */
         result = (toCompare == zeroAddress);
         if (!result) {
-            /* No wildcard, then compare bytes */
+            /* No wildcard, then compare to localhost */
+            result = (toCompare == htonl(INADDR_LOOPBACK));
+        }
+        if (!result) {
+            /* No localhost either, then compare bytes */
             result = (toCompare == *((sk_address *)&sock->sockAddrPrimary.sin_addr));
         }
     }
@@ -486,11 +591,20 @@ nw_socketNew(
 {
     nw_socket result = NULL;
     os_int success = SK_TRUE;
-    char *addressLookingFor;
-    sk_addressType addressType;
+    char *interfaceLookingFor;
+    sk_addressType defaultAddressType;
+    const char *defaultNetworkAddress;
+    nw_stringList defaultAddressNameList;
     sk_portNr portNrControl = SK_CONTROLPORT(portNr);
     c_ulong bufSizeRequested;
+    c_bool DontRouteRequested;
+    c_bool DontFragRequested;
     c_ulong TOSRequested;
+    c_ulong TTLRequested;
+
+    defaultAddressNameList = nw_stringListNew(defaultAddress, NW_ADDRESS_SEPARATORS);
+    /* Use first entry in stringlist as default address */
+    defaultNetworkAddress = nw_stringListGetValue(defaultAddressNameList, 0);
 
     result = (nw_socket)os_malloc((os_uint32)sizeof(*result));
     if (result != NULL) {
@@ -514,11 +628,13 @@ nw_socketNew(
         }
         FD_ZERO(&result->sockSet);
 
-        addressLookingFor = NWCF_SIMPLE_PARAM(String, NWCF_ROOT(General), Interface);
-        addressType = sk_getAddressType(defaultAddress);
-        switch (addressType) {
+        interfaceLookingFor = NWCF_SIMPLE_PARAM(String, NWCF_ROOT(General), Interface);
+        defaultAddressType = sk_getAddressType(defaultNetworkAddress);
+        switch (defaultAddressType) {
+            case SK_TYPE_UNKNOWN:
+            case SK_TYPE_UNICAST:
             case SK_TYPE_BROADCAST:
-                nw_socketGetDefaultBroadcastInterface(addressLookingFor,
+                nw_socketGetDefaultBroadcastInterface(interfaceLookingFor,
                     result->socketData, &result->sockAddrPrimary,
                     &result->sockAddrBroadcast);
                 result->sockAddrData = result->sockAddrBroadcast;
@@ -529,11 +645,11 @@ nw_socketNew(
                     inet_ntoa(result->sockAddrData.sin_addr));
             break;
             case SK_TYPE_MULTICAST:
-                nw_socketGetDefaultMulticastInterface(addressLookingFor,
+                nw_socketGetDefaultMulticastInterface(interfaceLookingFor,
                     result->socketData, &result->sockAddrPrimary,
                     &result->sockAddrBroadcast);
                 result->sockAddrData.sin_addr.s_addr = sk_stringToAddress(
-                    defaultAddress, NWCF_DEF(Address));
+                    defaultNetworkAddress, NWCF_DEF(Address));
                 /* We can stop multicasting from looping back though */
                 result->loopsback = SK_FALSE;
             break;
@@ -547,7 +663,7 @@ nw_socketNew(
             default:
             break;
         }
-        os_free(addressLookingFor);
+        os_free(interfaceLookingFor);
 
         result->sockAddrPrimary.sin_family = AF_INET;
         result->sockAddrPrimary.sin_port = htons(0); /* Don't care */
@@ -587,10 +703,23 @@ nw_socketNew(
         } else {
             /* Set option to avoid receivebuffer */
             success = success && nw_socketSetReceiveBufferSize(result, 0);
+            /* Set option for avoiding routing to other interfaces */
+#ifndef OS_VXWORKS_DEFS_H
+            /* Set options for DONT_ROUTE flag in IP header */
+            DontRouteRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DontRoute);
+            success = success && nw_socketSetDontRouteOption(result, DontRouteRequested);
+#endif
+            /* Set options for DONT_FRAG flag in IP header */
+            DontFragRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DontFragment);
+            /*success = success && nw_socketSetDontFrag(result, DontFragRequested);*/
+
             /* Set option for custom TOS */
             TOSRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DiffServField);
             success = success && nw_socketSetTOS(result, (os_int)TOSRequested);
 
+            /* Set option for custom TTL */
+            TTLRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, TimeToLive);
+            success = success && nw_socketSetTimeToLive(result, TTLRequested);  
 
             if (success) {
                     NW_REPORT_INFO_3(2, "Created sending socket \"%s\"for "
@@ -608,13 +737,16 @@ nw_socketNew(
                               name);
         }
 
-        switch (addressType) {
-            case SK_TYPE_BROADCAST: nw_socketBroadcastInitialize(result, receiving); break;
+        switch (defaultAddressType) {
+            case SK_TYPE_BROADCAST:
+            case SK_TYPE_UNKNOWN:
+            case SK_TYPE_UNICAST: nw_socketBroadcastInitialize(result, receiving); break;
             case SK_TYPE_MULTICAST: nw_socketMulticastInitialize(result, receiving); break;
             default: break;
         }
 
     }
+    nw_stringListFree(defaultAddressNameList);
 
     return result;
 }
@@ -765,8 +897,9 @@ nw_socketSendDataToPartition(
     sk_length length)
 {
     sk_length result = 0;
-    os_int32 sendRes;
+    os_int32 sendRes, sendResAll;
     os_int sendToSucceeded;
+    nw_addressList addressList;
     sk_address partitionAddress;
     struct sockaddr_in sockAddrForPartition;
     nw_bool found;
@@ -778,28 +911,39 @@ nw_socketSendDataToPartition(
     NW_PROF_LAPSTART(SendTo);
 
     found = nw_socketPartitionsLookup(sock->partitions, partitionId,
-        &partitionAddress);
+        &addressList);
     NW_CONFIDENCE(found);
 
     sockAddrForPartition = sock->sockAddrData;
-    sockAddrForPartition.sin_addr.s_addr = (in_addr_t)partitionAddress;
+    sendResAll = 0;
+    while (addressList) {
+        partitionAddress = nw_addressListGetAddress(addressList);
+        addressList = nw_addressListGetNext(addressList);
+
+        sockAddrForPartition.sin_addr.s_addr = (in_addr_t)partitionAddress;
 
     NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_SEND);
 
-    sendRes = os_sockSendto(sock->socketData, buffer, length,
-                     (const struct sockaddr *)&sockAddrForPartition,
-                     (socklen_t)sizeof(sockAddrForPartition)
-                     );
-    NW_PROF_LAPSTOP(SendTo);
+        sendRes = os_sockSendto(sock->socketData, buffer, length,
+          (const struct sockaddr *)&sockAddrForPartition,
+          (socklen_t)sizeof(sockAddrForPartition));
+        NW_PROF_LAPSTOP(SendTo);
+        if (sendRes > 0) {
+            if (sendResAll >= 0 ) {
+                sendResAll = sendRes;
+            }
+        } else {
+            SK_REPORT_SOCKFUNC(1, os_resultFail,
+                "sending data to the socket", "sendto");
+            sendToSucceeded = SK_FALSE;
+            sendResAll = sendRes;
+        }
+    }
 
-    if (sendRes > 0) {
+    if (sendResAll > 0) {
         SK_REPORT_SOCKFUNC(5, os_resultSuccess,
-                               "sending data to the socket", "sendto");
+             "sending data to the socket", "sendto");
         sendToSucceeded = SK_TRUE;
-    } else {
-        SK_REPORT_SOCKFUNC(1, os_resultFail,
-                               "sending data to the socket", "sendto");
-        sendToSucceeded = SK_FALSE;
     }
 
     if (sendToSucceeded) {
@@ -923,6 +1067,7 @@ nw_socketReceive(
     selectRes = os_sockSelect(sock->maxSockfd+1, &sock->sockSet, NULL, NULL, &tmpTimeOut);
 
     if (selectRes > 0) {
+
         if (sock->supportsControl) {
             if (FD_ISSET(sock->socketControl, &sock->sockSet)) {
                 NW_CONFIDENCE(sock->supportsControl);
@@ -939,7 +1084,7 @@ nw_socketReceive(
             recvRes = os_sockRecvfrom(sock->socketData, buffer, length,
                                (struct sockaddr *)&sockAddr, (socklen_t *)&fromLen);
         }
-        
+
         if (recvRes > 0) {
             if (sock->loopsback) {
 #ifdef NW_LOOPBACK

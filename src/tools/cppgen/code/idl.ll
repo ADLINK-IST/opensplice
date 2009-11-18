@@ -67,6 +67,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * idl.ll - Lexical scanner for IDL 1.1
  */
 
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.hh>
 #include <idl_extern.hh>
 #include <utl_incl.hh>
@@ -175,20 +177,20 @@ opaque          return OPAQUE;
 \>\>		return RIGHT_SHIFT;
 
 \:\:		{
-		  yylval.strval = strdup ("::");
+		  yylval.strval = os_strdup ("::");
 		  return SCOPE_DELIMITOR;
 		}
 
 
 _?[a-zA-Z][a-zA-Z0-9_]*	{
-    char *z = (char *) malloc(strlen(CPPGEN_YYTEXT) + 1);
+    char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
     strcpy(z, CPPGEN_YYTEXT);
     yylval.strval = z;
     return IDENTIFIER;
 }
 
 <PRAGMA_STATE>-?[0-9]+"."[0-9]+ {
-							char *z = (char *) malloc(strlen(CPPGEN_YYTEXT) + 1);
+							char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
 							strcpy(z, CPPGEN_YYTEXT);
 							yylval.strval = z;
 							BEGIN NORMAL_STATE;

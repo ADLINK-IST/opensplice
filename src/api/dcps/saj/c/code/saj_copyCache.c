@@ -39,6 +39,8 @@ C_STRUCT(saj_copyCache) {
     void 		*cache;  /* start of cache  */
     c_long 		length;  /* length of cache */
     c_long 		iWrite;  /* write index     */
+    os_char*    orgPName;
+    os_char*    tgtPName;
     sajReaderCopyCache	readerCache;
 };
 
@@ -114,6 +116,33 @@ static const char *java_keywords[61] = {
     "_wait",
     "_while"
 };
+
+static os_char*
+saj_getScopedName(
+    c_metaObject object,
+    const os_char separator);
+
+static os_char*
+saj_getSubstitutedScopedName(
+    c_metaObject object,
+    const os_char separator,
+    const os_char* orgPName,
+    const os_char* tarPName);
+
+static os_boolean
+saj_scopeNameRefersToDDSObject(
+    const os_char* scopeName,
+    const os_char separator);
+
+static os_char*
+saj_substitute(
+    const os_char* org,
+    const os_char* src,
+    const os_char* tgt);
+
+os_char*
+saj_charToString(
+    const os_char source);
 
 static char *
 saj_dekeyedId (
@@ -208,28 +237,44 @@ STATIC void saj_cacheBStringBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheEnumBuild (c_enumeration o, saj_context ctx);
 STATIC void saj_cacheArrObjectBuild (c_collectionType o, saj_context ctx);
 STATIC void saj_cacheSeqObjectBuild (c_collectionType o, saj_context ctx);
-STATIC void saj_scopedTypeName (c_char *buffer, c_long bufferSize, c_metaObject object, const c_char *separator);
-STATIC void saj_fieldDescriptor (c_type type, char *descriptor, unsigned int size);
-STATIC void saj_classDescriptor (c_type type, char *descriptor, unsigned int size);
+STATIC void saj_scopedTypeName (c_char *buffer, c_long bufferSize, c_metaObject object, const os_char separator, saj_copyCache copyCache);
+STATIC void saj_fieldDescriptor (c_type type, char *descriptor, unsigned int size, saj_copyCache copyCache);
+STATIC void saj_classDescriptor (c_type type, char *descriptor, unsigned int size, saj_copyCache copyCache);
 
 saj_copyCache
 saj_copyCacheNew (
     JNIEnv *env,
-    c_metaObject object)
+    c_metaObject object,
+    const os_char* orgPName,
+    const os_char* tgtPName)
 {
     saj_copyCache copyCache = os_malloc (C_SIZEOF(saj_copyCache));
 
     if (copyCache) {
-	copyCache->cache = os_malloc (CACHE_BLOCKSIZE);
-	if (copyCache->cache) {
-	    copyCache->length = CACHE_BLOCKSIZE;
-	    copyCache->iWrite = 0;
-	    saj_copyCacheBuild (copyCache, object, env);
-	    saj_copyReaderCacheBuild (copyCache, object, env);
-	} else {
-	    os_free (copyCache);
-	    copyCache = NULL;
-	}
+        copyCache->cache = os_malloc (CACHE_BLOCKSIZE);
+        if (copyCache->cache) {
+            copyCache->length = CACHE_BLOCKSIZE;
+            copyCache->iWrite = 0;
+            if(orgPName)
+            {
+                copyCache->orgPName = os_strdup(orgPName);
+            } else
+            {
+                copyCache->orgPName = NULL;
+            }
+            if(tgtPName)
+            {
+                copyCache->tgtPName = os_strdup(tgtPName);
+            } else
+            {
+                copyCache->tgtPName = NULL;
+            }
+            saj_copyCacheBuild (copyCache, object, env);
+            saj_copyReaderCacheBuild (copyCache, object, env);
+        } else {
+            os_free (copyCache);
+            copyCache = NULL;
+        }
     }
     return copyCache;
 }
@@ -602,7 +647,7 @@ saj_cacheStructBuild (
     jclass javaClass;
 
     classDescriptor [0] = '\0';
-    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor));
+    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
 
     context.copyCache = ctx->copyCache;
     context.javaEnv = ctx->javaEnv;
@@ -654,7 +699,7 @@ saj_cacheStructMember (
     char fieldDescriptor[512];
 
     fieldDescriptor[0] = '\0';
-    saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor));
+    saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor), ctx->copyCache);
 
     member.memberOffset = o->offset;
     member.javaFID = (*ctx->javaEnv)->GetFieldID (
@@ -736,7 +781,7 @@ saj_cacheUnionCaseField (
     jthrowable jexception;
 
     fieldDescriptor[0] = '\0';
-    saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor));
+    saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor), ctx->copyCache);
 
     /* Look for a setter that implicitly sets the discriminator to 1 of the appropriate cases. */
     snprintf (operatorDescr, sizeof (operatorDescr), "(%s)V", fieldDescriptor);
@@ -778,8 +823,8 @@ saj_cacheUnionCaseField (
 
     /* Also look for a possible setter that includes the discriminator as 1st parameter. */
     fieldDescriptor[0] = '\0';
-    saj_fieldDescriptor (switchType, fieldDescriptor, sizeof (fieldDescriptor));
-    saj_fieldDescriptor (c_specifier(o)->type, &fieldDescriptor[strlen(fieldDescriptor)], sizeof (fieldDescriptor) - strlen(fieldDescriptor));
+    saj_fieldDescriptor (switchType, fieldDescriptor, sizeof (fieldDescriptor), ctx->copyCache);
+    saj_fieldDescriptor (c_specifier(o)->type, &fieldDescriptor[strlen(fieldDescriptor)], sizeof (fieldDescriptor) - strlen(fieldDescriptor), ctx->copyCache);
     snprintf (operatorDescr, sizeof (operatorDescr), "(%s)V", fieldDescriptor);
     unionCase.setterWithDiscrID = (*(ctx->javaEnv))->GetMethodID (ctx->javaEnv, ctx->javaClass,
             saj_dekeyedId(c_specifier(o)->name), operatorDescr);
@@ -830,9 +875,9 @@ saj_cacheUnionBuild (
     jthrowable jexception;
 
     classDescriptor [0] = '\0';
-    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor));
+    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
     discrDescriptor[0] = '\0';
-    saj_fieldDescriptor (c_typeActualType(o->switchType), discrDescriptor, sizeof (discrDescriptor));
+    saj_fieldDescriptor (c_typeActualType(o->switchType), discrDescriptor, sizeof (discrDescriptor), ctx->copyCache);
 
     context.copyCache = ctx->copyCache;
     context.javaEnv = ctx->javaEnv;
@@ -864,7 +909,7 @@ saj_cacheUnionBuild (
     snprintf (methodDescriptor, sizeof (methodDescriptor), "()%s", discrDescriptor);
     if (c_baseObject(c_typeActualType(o->switchType))->kind == M_ENUMERATION) {
 	classDescriptor[0] = '\0';
-        saj_classDescriptor (c_typeActualType(o->switchType), classDescriptor, sizeof(classDescriptor));
+        saj_classDescriptor (c_typeActualType(o->switchType), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
 	javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
 #if JNI_TRACE
         printf ("JNI: FindClass (\"%s\") = 0x%x\n", classDescriptor, javaClass);
@@ -912,7 +957,7 @@ saj_cacheUnionBuild (
             char discrClassDescriptor [512];
 
             discrClassDescriptor[0] = '\0';
-            saj_classDescriptor (c_typeActualType(o->switchType), discrClassDescriptor, sizeof(discrClassDescriptor));
+            saj_classDescriptor (c_typeActualType(o->switchType), discrClassDescriptor, sizeof(discrClassDescriptor), ctx->copyCache);
             snprintf (methodSignature, sizeof(methodSignature), "()L%s;", discrClassDescriptor);
 
             copyUnion.getDiscrMethodID = (*(ctx->javaEnv))->GetMethodID((ctx->javaEnv), copyUnion.unionClass, "discriminator", methodSignature);
@@ -1225,7 +1270,7 @@ saj_cacheArrObjectBuild (
     jclass javaClass;
 
     classDescriptor [0] = '\0';
-    saj_classDescriptor (c_typeActualType(o->subType), classDescriptor, sizeof(classDescriptor));
+    saj_classDescriptor (c_typeActualType(o->subType), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
     javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
 #if JNI_TRACE
     printf ("JNI: FindClass (\"%s\") = 0x%x\n", classDescriptor, javaClass);
@@ -1306,14 +1351,14 @@ saj_cacheSeqObjectBuild (
     jclass javaClass;
 
     classDescriptor [0] = '\0';
-    saj_classDescriptor (c_typeActualType(o->subType), classDescriptor, sizeof(classDescriptor));
+    saj_classDescriptor (c_typeActualType(o->subType), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
     javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
 #if JNI_TRACE
     printf ("JNI: FindClass (\"%s\") = 0x%x\n", classDescriptor, javaClass);
 #endif
     objectSeqHeader.seqClass = (*(ctx->javaEnv))->NewGlobalRef (ctx->javaEnv, javaClass);
 #if JNI_TRACE
-    printf ("JNI: NewGlobalRef (\"%s\") = 0x%x\n", javaClass, objectSeqHeader.seqClass);
+    printf ("JNI: NewGlobalRef (\"%x\") = 0x%x\n", javaClass, objectSeqHeader.seqClass);
 #endif
     (*(ctx->javaEnv))->DeleteLocalRef (ctx->javaEnv, javaClass);
 #if JNI_TRACE
@@ -1494,10 +1539,11 @@ saj_cacheEnumBuild (
     jclass javaClass;
 
     classDescriptor [0] = '\0';
-    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor));
+    saj_classDescriptor (c_type(o), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
     saj_cacheHeader ((sajCopyHeader *)&copyEnum, sajEnum, sizeof(copyEnum));
     copyEnum.nrOfElements = c_arraySize (o->elements);
     javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
+    saj_exceptionCheck (ctx->javaEnv);
 #if JNI_TRACE
     printf ("JNI: FindClass (\"%s\") = 0x%x\n", classDescriptor, javaClass);
 #endif
@@ -1533,29 +1579,310 @@ saj_cacheEnumBuild (
     saj_copyCacheWrite (ctx->copyCache, &copyEnum, sizeof(copyEnum));
 }
 
-STATIC void
-saj_scopeName (
-    c_char *buffer,
-    c_long bufferSize,
-    c_metaObject object,
-    const c_char *separator)
+/* ES, dds1540: This operation verifies if the scopeName refers to an object
+ * in the DDS package, if so OS_TRUE is returned, otherwise OS_FALSE is
+ * returned.
+ *
+ * @param scopeName the scoped name to search in
+ * @param separator The seperator between packages
+ * @return OS_TRUE if the scoped name refers to a DDS object, OS_FALSE if not.
+ */
+os_boolean
+saj_scopeNameRefersToDDSObject(
+    const os_char* scopeName,
+    const os_char separator)
 {
-    c_metaObject module;
+    os_boolean isDdsObject;
+    os_char* ptr;
+    os_char* tmp ;
 
-    if (object) {
-        module = c_metaObject(object)->definedIn;
-        if (module) {
-	    if (module->name) {
-	        saj_scopeName (buffer, bufferSize, module, separator);
-	    }
-            strncat (buffer, saj_dekeyedId(c_metaObject(object)->name), bufferSize);
-	    if (c_baseObject(object)->kind == M_STRUCTURE ||
-                c_baseObject(object)->kind == M_UNION) {
-                strncat (buffer, "Package", bufferSize);
-	    }
-            strncat (buffer, separator, bufferSize);
-        } /* else object is in base module, so effectively no scope */
+    assert(scopeName);
+
+    tmp = strdup(scopeName);
+    ptr = strchr(tmp, separator);
+    if(ptr)
+    {
+        *ptr = '\0';
+        if(0 == strcmp(tmp, "DDS"))
+        {
+            ptr++;
+            ptr = strchr(ptr, separator);
+            if(!ptr)
+            {
+                isDdsObject = OS_TRUE;
+            } else
+            {
+                isDdsObject = OS_FALSE;
+            }
+        } else
+        {
+            isDdsObject = OS_FALSE;
+        }
+    } else
+    {
+        isDdsObject = OS_FALSE;
     }
+    os_free(tmp);
+    return isDdsObject;
+}
+
+/* ES, dds1540: this operation will return the scoped name of an object and will
+ * have applied any required prefixing or substitution.
+ *
+ * @param object the object of which the scoped name is required
+ * @param separator The seperator of packages
+ * @param orgPName The original package name to search for, may be NULL.
+ * @param tarPName The package name to replace all occurances of 'orgPName' with
+ *                 or if 'orgPName' is NULL, then this package name will be
+ *                 prefixed to every object. May be NULL
+ * @return The scoped name of the object. Must be freed! Can also return NULL.
+ */
+os_char*
+saj_getSubstitutedScopedName(
+    c_metaObject object,
+    const os_char separator,
+    const os_char* orgPName,
+    const os_char* tarPName)
+{
+    os_char* org;
+    os_char* substitutedPName;
+    os_char* sepPtr;
+    os_char* tarPNameSubbed;
+    os_char* orgPNameSubbed;
+    assert(object);
+
+    /* Step 1: determine the 'original' scoped name, without any prefixing or
+     * substitution
+     */
+    org = saj_getScopedName(object, separator);
+
+    /* Step 2: Determine if the scoped name refers to an object in the DDS
+     * package, if so we must ignore it from any prefixing or substitution
+     * instructions
+     */
+    if(org && !saj_scopeNameRefersToDDSObject(org, separator))
+    {
+        if(!orgPName && tarPName)
+        {
+            /* just prepend */
+            substitutedPName = os_malloc(strlen(tarPName) + strlen(org) + 1 /*length seperator*/ + 1 /* \0 */);
+            sepPtr = saj_charToString(separator);
+            tarPNameSubbed = saj_substitute(tarPName, ".", sepPtr);
+            strcpy(substitutedPName, tarPNameSubbed);
+            substitutedPName = strncat(substitutedPName, &separator, 1 /*length seperator*/);
+            substitutedPName = strncat(substitutedPName, org, strlen(org));
+            os_free(tarPNameSubbed);
+            os_free(sepPtr);
+        } else if(orgPName && tarPName)
+        {
+            sepPtr = saj_charToString(separator);
+            orgPNameSubbed = saj_substitute(orgPName, ".", sepPtr);
+            tarPNameSubbed = saj_substitute(tarPName, ".", sepPtr);
+            substitutedPName = saj_substitute(org, orgPNameSubbed, tarPNameSubbed);
+            os_free(sepPtr);
+            os_free(orgPNameSubbed);
+            os_free(tarPNameSubbed);
+        } else
+        {
+            /* no prepending / substitution needed! */
+            substitutedPName = org;
+            org = NULL;
+        }
+    } else
+    {
+       /* excluded from prepending / substitution! */
+       substitutedPName = org;/* org could be null already */
+       org = NULL;
+    }
+    if(org)
+    {
+        os_free(org);
+    }
+
+    return substitutedPName;
+}
+
+/* ES, dds1540: This exact operation is copied in the
+ * tools/idlpp/code/idl_genJavaHelper.c file. so any bugs fixed here, should be
+ * fixed there as well!!
+ */
+os_char*
+saj_substitute(
+    const os_char* string,
+    const os_char* searchFor,
+    const os_char* replaceWith)
+{
+    os_char* result;
+    os_char* ptr;
+    os_char* tmp;
+
+    tmp = os_strdup(string);
+    ptr = strstr(tmp, searchFor);
+    if(ptr)
+    {
+        os_char* before;
+        os_char* after;
+
+        before = os_malloc(ptr - tmp);
+        *ptr = '\0';
+        strcpy(before, tmp);
+        ptr = ptr+strlen(searchFor);
+        after = saj_substitute(ptr, searchFor, replaceWith);
+        result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
+        strcpy(result, before);
+        strncat(result, replaceWith, strlen(replaceWith));
+        strncat(result, after, strlen(after));
+        os_free(before);
+        os_free(after);
+    } else
+    {
+        result = tmp;
+        tmp = NULL;
+    }
+    if(tmp)
+    {
+        os_free(tmp);
+    }
+    return result;
+}
+
+os_char*
+saj_charToString(
+    const os_char source)
+{
+    os_char* result;
+
+    result = os_malloc(2); /* 1 for the char to be converted, and 1 for the '\0' */
+    memset(result, 0, 2);
+    *result = source;
+
+    return result;
+
+}
+
+/* ES, dds1540: This operation will return the scoped name of 'object'. This
+ * operation will not take any potential substitution or prefixing rules into
+ * account! For that use the 'saj_getSubstitutedScopedName' operation.
+ * This operation is implemented as a two pass operation, it will first
+ * calculate the length of the scoped name and then copy the scoped name in.
+ * The reason for this approach is because we are always starting with the inner
+ * object and have to backtrace towards the outer modules, yet the outer modules
+ * need to be printed first. Now this can be solved in many ways, a two pass
+ * approach was chosen here because it is avoids many mallocs and free's and
+ * because we then do not have to work with some buffer with a limited length
+ * which in theory could not be enough to hold the entire scoped name.
+ *
+ * @param object The object for which the scoped name is required.
+ * @param separator The seperator of packages
+ * @return The scoped name of the object. Must be freed! Can be NULL!
+ */
+os_char*
+saj_getScopedName(
+    c_metaObject object,
+    const os_char separator)
+{
+    c_metaObject obj;
+    os_char* scopeName;
+    os_char* scopeNameEnd;
+    os_uint32 nameLength = 0;
+    os_uint32 sepLength;
+
+    assert(object);
+
+    if(object && object->name)
+    {
+        sepLength = 1 /*length seperator*/;
+        /* Step 1: We need to determine the scope name length. We do this by
+         * traversing all containing objects and determine the length of each of
+         * their names.
+         */
+        obj = c_metaObject(object);
+        while(obj && obj->name)
+        {
+            if (obj == object &&
+                (c_baseObject(obj)->kind == M_STRUCTURE ||
+                 c_baseObject(obj)->kind == M_UNION))
+            {
+                nameLength += strlen(c_metaObject(obj)->name);
+                nameLength += strlen("Package");
+            }
+            else
+            {
+                nameLength += strlen(saj_dekeyedId(c_metaObject(obj)->name));
+            }
+
+            obj = c_metaObject(obj)->definedIn;
+            /* Only if there is a next object, should there be a separator included
+             */
+            if(obj)
+            {
+                nameLength += sepLength;
+            }
+        }
+        /* Step 2a: Allocate memory for the scoped name with the found size. */
+        scopeName = os_malloc(nameLength + 1);
+        memset(scopeName, 0, nameLength + 1);
+        /* Step 2b: Move the pointer of the newly allocated string to the back, as
+         * we are going reversely through the list of objects to construct the
+         * scoped name.
+         */
+        scopeNameEnd = scopeName + nameLength - 1;
+        /* Step 3: Copy the name values into the scopeName */
+        obj = c_metaObject(object);
+        while(obj && obj->name)
+        {
+            os_char* name;
+            os_uint32 length;
+            os_uint32 anonPackageLength;
+            os_char* anonPackage;
+
+            /* Step 3a: Get the name of the object and determine it's length */
+            if (obj == object &&
+                (c_baseObject(obj)->kind == M_STRUCTURE ||
+                 c_baseObject(obj)->kind == M_UNION))
+            {
+                name = c_metaObject(obj)->name;
+                anonPackage = "Package";
+                anonPackageLength = strlen(anonPackage);
+            } else
+            {
+                name = saj_dekeyedId(c_metaObject(obj)->name);
+                anonPackage = NULL;
+                anonPackageLength = 0;
+            }
+            length = strlen(name);
+
+            /* Step 3b: Move the pointer back by the 'length' amount. I.E., we are
+             * moving the pointer towards the original 'scopeName' pointer again.
+             */
+            scopeNameEnd = scopeNameEnd - anonPackageLength;
+            assert(scopeName <= scopeNameEnd);
+            if(anonPackage)
+            {
+                strncpy(scopeNameEnd, anonPackage, anonPackageLength);
+            }
+            scopeNameEnd = scopeNameEnd - length;
+            assert(scopeName <= scopeNameEnd);
+            /* Step 3c: Copy the name into the scopeName. */
+            strncpy(scopeNameEnd, name, length);
+            /* Step 3d: If we have not yet reached the original scopeName pointer
+             * then we need to copy a separator into the scopeName to prepare for
+             * the next name to be prepended.
+             */
+            if(scopeName != scopeNameEnd)
+            {
+                scopeNameEnd = scopeNameEnd - sepLength;
+                assert(scopeName < scopeNameEnd);
+                strncpy(scopeNameEnd, &separator, sepLength);
+            }
+            obj = c_metaObject(obj)->definedIn;
+        }
+        assert(scopeName == scopeNameEnd);
+    } else
+    {
+        scopeName = NULL;
+    }
+    return scopeName;
 }
 
 STATIC void
@@ -1563,20 +1890,34 @@ saj_scopedTypeName (
     c_char *buffer,
     c_long bufferSize,
     c_metaObject object,
-    const c_char *separator)
+    const os_char separator,
+    saj_copyCache copyCache)
 {
-    saj_scopeName (buffer, bufferSize, object->definedIn, separator);
-    /*    if (strlen(buffer)) {
-	strncat (buffer, separator, bufferSize);
-	}*/
+    os_char* scopeName;
+    os_char tmp[2];
+
+    if(object->definedIn)
+    {
+        scopeName = saj_getSubstitutedScopedName(object->definedIn, separator, copyCache->orgPName, copyCache->tgtPName);
+        if(scopeName)
+        {
+            strncat (buffer, scopeName, bufferSize);
+            tmp[0] = separator;
+            tmp[1] = '\0';
+            strncat (buffer, tmp, bufferSize);
+            os_free(scopeName);
+        }/* else null was returned which means the object was not defined inside a module */
+    }
     strncat (buffer, saj_dekeyedId(c_metaObject(object)->name), bufferSize);
 }
+
 
 STATIC void
 saj_fieldDescriptor (
     c_type type,
     char *descriptor,
-    unsigned int size)
+    unsigned int size,
+    saj_copyCache copyCache)
 {
     assert (type);
     assert (descriptor);
@@ -1653,45 +1994,45 @@ saj_fieldDescriptor (
         break;
     case M_COLLECTION:
         if (c_collectionType(type)->kind == C_STRING) {
-	    snprintf (descriptor, size-1, "Ljava/lang/String;");
+	        snprintf (descriptor, size-1, "Ljava/lang/String;");
         } else if (c_collectionType(type)->kind == C_SEQUENCE) {
             /* sequence */
-	    if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    } else {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    }
+	        if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        } else {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        }
         } else if (c_collectionType(type)->kind == C_ARRAY) {
             /* array */
-	    if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    } else {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    }
+	        if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        } else {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        }
         }
         break;
     case M_ENUMERATION:
 	strncpy (descriptor, "L", size);
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
 	strncat (descriptor, ";", size);
         break;
     case M_MODULE:
         break;
     case M_STRUCTURE:
 	strncpy (descriptor, "L", size);
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
 	strncat (descriptor, ";", size);
         break;
     case M_TYPEDEF:
-        saj_fieldDescriptor (c_typeDef(type)->alias, descriptor, size);
+        saj_fieldDescriptor (c_typeDef(type)->alias, descriptor, size, copyCache);
         break;
     case M_UNION:
 	strncpy (descriptor, "L", size);
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
 	strncat (descriptor, ";", size);
         break;
     }
@@ -1702,7 +2043,8 @@ STATIC void
 saj_classDescriptor (
     c_type type,
     char *descriptor,
-    unsigned int size)
+    unsigned int size,
+    saj_copyCache copyCache)
 {
     assert (type);
     assert (descriptor);
@@ -1780,40 +2122,40 @@ saj_classDescriptor (
     case M_COLLECTION:
         if (c_collectionType(type)->kind == C_STRING) {
             /* string */
-	    snprintf (descriptor, size-1, "java/lang/String");
+	        snprintf (descriptor, size-1, "java/lang/String");
         } else if (c_collectionType(type)->kind == C_SEQUENCE) {
             /* sequence */
-	    if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    } else {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    }
+	        if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        } else {
+	    	    snprintf (descriptor, size-1, "[");
+		        saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+	        }
         } else if (c_collectionType(type)->kind == C_ARRAY) {
             /* array */
-	    if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    } else {
-	    	snprintf (descriptor, size-1, "[");
-		saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1);
-	    }
+            if (c_baseObject(c_typeActualType(c_collectionType(type)->subType))->kind == M_PRIMITIVE) {
+                snprintf (descriptor, size-1, "[");
+                saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+            } else {
+                snprintf (descriptor, size-1, "[");
+                saj_fieldDescriptor (c_typeActualType(c_collectionType(type)->subType), &descriptor[1], size-1, copyCache);
+            }
         }
         break;
     case M_ENUMERATION:
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
         break;
     case M_MODULE:
         break;
     case M_STRUCTURE:
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
         break;
     case M_TYPEDEF:
-        saj_classDescriptor (c_typeDef(type)->alias, descriptor, size);
+        saj_classDescriptor (c_typeDef(type)->alias, descriptor, size, copyCache);
         break;
     case M_UNION:
-	saj_scopedTypeName (descriptor, size, c_metaObject(type), "/");
+	saj_scopedTypeName (descriptor, size, c_metaObject(type), '/', copyCache);
         break;
     }
     assert (strlen (descriptor) != (size - 1));
@@ -1979,7 +2321,7 @@ saj_copyReaderCacheBuild (
     jobject javaObject;
 
     tmp[0] = '\0';
-    saj_classDescriptor (c_type(object), tmp, sizeof(tmp));
+    saj_classDescriptor (c_type(object), tmp, sizeof(tmp), copyCache);
     javaObject = (*env)->FindClass (env, tmp);
 #if JNI_TRACE
     printf ("JNI: FindClass (\"%s\") = 0x%x\n", tmp, javaObject);
@@ -1996,7 +2338,7 @@ saj_copyReaderCacheBuild (
     readerCache->dataClass_constructor_mid = (*env)->GetMethodID (env, readerCache->dataClass, "<init>", "()V");
 
     tmp[0] = '\0';
-    saj_classDescriptor (c_type(object), tmp, sizeof(tmp));
+    saj_classDescriptor (c_type(object), tmp, sizeof(tmp), copyCache);
     strncat (tmp, "Holder", sizeof(tmp));
     javaObject = (*env)->FindClass (env, tmp);
 #if JNI_TRACE
@@ -2012,7 +2354,7 @@ saj_copyReaderCacheBuild (
 #endif
 
     tmp[0] = '\0';
-    saj_classDescriptor (c_type(object), tmp, sizeof(tmp));
+    saj_classDescriptor (c_type(object), tmp, sizeof(tmp), copyCache);
     strncat (tmp, "SeqHolder", sizeof(tmp));
     javaObject = (*env)->FindClass (env, tmp);
 #if JNI_TRACE
@@ -2033,7 +2375,7 @@ saj_copyReaderCacheBuild (
     }
 
     tmp[0] = '\0';
-    saj_fieldDescriptor (c_type(object), &tmp[strlen(tmp)], sizeof(tmp)-strlen(tmp));
+    saj_fieldDescriptor (c_type(object), &tmp[strlen(tmp)], sizeof(tmp)-strlen(tmp), copyCache);
     readerCache->dataHolder_value_fid = (*env)->GetFieldID (env, readerCache->dataHolderClass, "value", tmp);
 #if JNI_TRACE
     printf ("JNI: GetFieldID (0x%x, \"%s\", \"%s\") = %d\n", readerCache->dataHolderClass, "value", tmp, readerCache->dataHolder_value_fid);
@@ -2041,7 +2383,7 @@ saj_copyReaderCacheBuild (
     if (readerCache->dataSeqHolderClass) {
 	/* sequence holder class is only generated for interfaces (datareader/datawriter) */
         strncpy (tmp, "[", sizeof(tmp));
-        saj_fieldDescriptor (c_type(object), &tmp[strlen(tmp)], sizeof(tmp)-strlen(tmp));
+        saj_fieldDescriptor (c_type(object), &tmp[strlen(tmp)], sizeof(tmp)-strlen(tmp), copyCache);
         readerCache->dataSeqHolder_value_fid = (*env)->GetFieldID (env, readerCache->dataSeqHolderClass, "value", tmp);
 #if JNI_TRACE
         printf ("JNI: GetFieldID (0x%x, \"%s\", \"%s\") = %d\n", readerCache->dataSeqHolderClass, "value", tmp, readerCache->dataSeqHolder_value_fid);

@@ -966,12 +966,20 @@ class v_projection {
     attribute ARRAY<v_mapping>               rules;
 };
 
+enum v_accessMode { V_ACCESS_MODE_UNDEFINED,
+                    V_ACCESS_MODE_READ,
+                    V_ACCESS_MODE_WRITE,
+                    V_ACCESS_MODE_READ_WRITE,
+                    V_ACCESS_MODE_NONE,
+                    V_ACCESS_MODE_COUNT };
+
 class v_topic extends v_observer {
     attribute c_type                         messageType;
     attribute c_property                     dataField;
     attribute v_topicQos                     qos;
     attribute c_string                       keyExpr;
     attribute ARRAY<c_field>                 messageKeyList;
+    attribute v_accessMode                   accessMode;
     /* keyType is a reference to a generated type 'topicName<Key>'.
        It is a structure that contains fields 'field1'.. 'fieldN'.
        The fields correspond to the fields specified by the keyList.
@@ -996,7 +1004,7 @@ class v_filter {
 /* -------------------------------------------------------------------------- */
 
 class v_domain extends v_entity {
-    attribute v_qos                          qos;
+    attribute v_qos                         qos;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1327,7 +1335,7 @@ class v_group extends v_entity {
     attribute v_topic                        topic;
     attribute v_domain                       partition;
     attribute c_long                         depth;
-
+    attribute v_accessMode             domainAccessMode;
     /* Group associated Reader Entries */
     attribute v_groupEntrySet topicEntrySet;   /* Normal dataReader entries. */
     attribute v_groupEntrySet networkEntrySet; /* Network interface entries. */
@@ -1495,6 +1503,8 @@ class v_participant extends v_observer {
     attribute SET<v_proxy>                   resendWriters;
     attribute c_mutex                        builtinLock;
     attribute v_subscriber                   builtinSubscriber;
+    attribute c_mutex                        newGroupListMutex;
+    attribute LIST<v_group>                  newGroupList;
 };
 
 /* -------------------------------------------------------------------------- */

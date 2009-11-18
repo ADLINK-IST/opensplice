@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -67,6 +66,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // utl_global.cc - Implementation of class IDL_GlobalData
 //
 
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.h>
 #include <idl_extern.h>
 
@@ -591,7 +592,7 @@ idl_bool IDL_GlobalData::valid_identifier (const char *id)
       NULL
    };
 
-   char *id1 = strdup (id);
+   char *id1 = os_strdup (id);
    char *tmp = id1;
    idl_bool result = I_TRUE;
 
@@ -611,6 +612,6 @@ idl_bool IDL_GlobalData::valid_identifier (const char *id)
       }
    }
 
-   free (id1);
+   os_free (id1);
    return result;
 }

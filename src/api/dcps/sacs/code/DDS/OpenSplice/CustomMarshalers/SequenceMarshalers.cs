@@ -119,7 +119,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(to, offset + offset__buffer, bufPtr);
 
             // Set _release field
-            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)1);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -226,7 +226,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(to, offset + offset__buffer, bufPtr);
 
             // Set _release field
-            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)1);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -307,6 +307,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         internal static void CopyIn(string[] from, IntPtr to, int offset)
         {
             Int32 length = 0;
+            IntPtr arrayPtr = IntPtr.Zero;
 
             // guard against null
             if (from != null)
@@ -321,24 +322,23 @@ namespace DDS.OpenSplice.CustomMarshalers
             // Set _length field
             BaseMarshaler.Write(to, offset + offset__length, length);
 
-            // Allocate a buffer containing the sequence content starting at element 0 up til the full Length of the array.
-            IntPtr arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
-            for (int index = 0; index < length; index++)
+            if (length > 0)
             {
-                //IntPtr stringPtr = OpenSplice.Gapi.GenericAllocRelease.string_dup(from[index]);
-                IntPtr stringPtr = Marshal.StringToHGlobalAnsi(from[index]);
-                BaseMarshaler.Write(arrayPtr, Size * index, stringPtr);
+                // Allocate a buffer containing the sequence content starting at element 0 up til the full Length of the array.
+                arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
+                for (int index = 0; index < length; index++)
+                {
+                    //IntPtr stringPtr = OpenSplice.Gapi.GenericAllocRelease.string_dup(from[index]);
+                    IntPtr stringPtr = Marshal.StringToHGlobalAnsi(from[index]);
+                    BaseMarshaler.Write(arrayPtr, Size * index, stringPtr);
+                }
             }
 
             // _buffer field: set the pointer to the appropriate location.
             BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
-            // TODO: Erik: Verify that this is really what we want to do, we are
-            // doing our own memory management, so we don't think gapi should
-            // clean up memory...
-
             // Set _release field
-            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)1);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -459,7 +459,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
             // Set _release field
-            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)1);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -570,7 +570,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(to, offset + offset__buffer, arrayPtr);
 
             // Set _release field
-            BaseMarshaler.Write(to, offset + offset__release, (byte)0);
+            BaseMarshaler.Write(to, offset + offset__release, (byte)1);
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)

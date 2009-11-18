@@ -450,7 +450,9 @@ in_socketBind(
         if (retVal == os_resultSuccess) {
             retVal = os_sockBind(sock->socketData,
                 (const struct sockaddr *)&bindAddress,
-                (socklen_t)sizeof(bindAddress));
+                /* (socklen_t)sizeof(bindAddress)); */
+                /* the size must be precise on solaris, otherwise EINV */
+				(socklen_t)sizeof(struct sockaddr_in)); /* FIXME encapsulate the struct-size */ 
             IN_REPORT_SOCKFUNC(2, retVal,
                            "bind socket", "bind");
 
@@ -470,7 +472,9 @@ in_socketBind(
                 if (retVal == os_resultSuccess) {
                     retVal = os_sockBind(sock->socketControl,
                         (const struct sockaddr *)&bindAddress,
-                        (socklen_t)sizeof(bindAddress));
+                        /* (socklen_t)sizeof(bindAddress)); */
+                        /* the size must be precise on solaris, otherwise EINV */
+                        (socklen_t)sizeof(struct sockaddr_in)); /* FIXME encapsulate the struct-size */ 
                     IN_REPORT_SOCKFUNC(2, retVal,
                                    "bind socket", "bind");
                 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_registerType.h"
@@ -14,17 +14,17 @@
 
 #include <os_heap.h>
 #include <os_stdlib.h>
-
+#include <errno.h>
 #include <c_iterator.h>
 #include <sd_serializerXMLTypeinfo.h>
 
 #include <ctype.h>
 
 static void
-idl_reportOpenError (
+idl_reportOpenError(
     char *fname)
 {
-    printf ("Error opening file %s for writing\n", fname);
+    printf ("Error opening file %s for writing. Reason: %s (%d)\n", fname, strerror( errno ), errno);
     exit (-1);
 }
 
@@ -163,7 +163,7 @@ idl_registerType (
     idl_registerHeaderFile (basename);
     idl_fileOutFree (idl_fileCur());
 
-    
+
     snprintf (fname, (size_t)((int)strlen(basename)+20), "%s_register.c", basename);
     idl_fileSetCur (idl_fileOutNew (fname, "w"));
     if (idl_fileCur () == NULL) {

@@ -9,6 +9,8 @@
  *   for full copyright notice and license terms. 
  *
  */
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include "xbe_utils.h"
 #include "xbe_string.h"
 
@@ -710,7 +712,7 @@ DDS_StdString BaseName (const char * fullpath)
 {
    assert (fullpath);
 
-   char * s = strdup (fullpath);
+   char * s = os_strdup (fullpath);
    char * t = s + strlen (s);
 
    while (t >= s)
@@ -728,7 +730,7 @@ DDS_StdString BaseName (const char * fullpath)
    assert (t <= s + strlen(s));
 
    DDS_StdString result (t);
-   free (s);
+   os_free (s);
    return result;
 }
 

@@ -7,23 +7,29 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
-BASE=$PWD
+BASE=`/bin/pwd`
 cd ../../..
+
+CURRENT_PL_LINUX=`uname | grep Linux`
+CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
+CURRENT_PL_AIX=`uname | grep AIX`
+CURRENT_PL_SUNOS=`uname | grep SunOS`
 
 check_platform()
 {
-   CURRENT_PL_LINUX=`uname | grep Linux`
-   CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 
-  if [ "$CURRENT_PL_LINUX" != "" ] ;then
-    return 0
-  elif [ "$CURRENT_PL_CYGWIN" != "" ];then
-    return 1
-  else 
-   echo UNKNOWN Platform:
-   echo Current platform: `uname`
-   exit
-  fi
+
+   if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;
+   then
+     return 0
+   elif [ "$CURRENT_PL_CYGWIN" != "" ];
+   then
+     return 1
+   else 
+    echo UNKNOWN Platform:
+    echo Current platform: `uname`
+    exit
+   fi
 }
 
 SetState TestingExamples
@@ -90,39 +96,90 @@ else
         BASE=$DEPWORKDIR/build/scripts/overnight
     fi
     SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
-    cd $WORKDIR/installed/HDE/$SHORTSETUP/
-    . ./release.com
+
+    if [ -d $WORKDIR/installed/HDE/$SHORTSETUP/ ]
+    then
+        cd $WORKDIR/installed/HDE/$SHORTSETUP/
+    else
+        cd $DEPWORKDIR/install/HDE/$SHORTSETUP/
+    fi
+
+
+    if check_platform
+    then
+       . ./release.com
+    fi
+
     cd examples
- 
-    export EXAMPLES="dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+
+    # Do not do CORBA C++ or standalone C++ examples with AIX for now as the build fails and don't do
+    # dlrl either with AIX
+    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    then
+        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
+    else
+        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
+    
+        # DLRL examples are not included in an inner only build so only add them if doing an outer build
+        if [ "$DEP" != "none" ]
+        then
+            EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
+        fi
+    fi 
+
     export EXAMPLES
 
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial services/dbmsconnect/SQL/C++/ODBC"
+    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
     export SPECIAL_BUILD_FILES
 
     echo "Updating XML:"
+    echo "OSPL_URI before XMLFILE update is $OSPL_URI"
+
     sleep 7200 &
     UNIQID=$!
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml/'`
+
+    echo "XMLFILE is $XMLFILE"
+    echo "OSPL_URI is $OSPL_URI"
+
     NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
+
+    echo "NEWXMLFILE is $NEWXMLFILE"
+    echo "UNIQID is $UNIQID"
+
     sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
     OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml/'`
 
     echo "Running Examples:"
     
-    PATH=$PATH:$JAVA_HOME/bin
-    PATH=$PATH:$TAO_ROOT/bin
-    export PATH
+    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    then
+       PATH="/usr/vac/bin:/usr/vacpp/bin:$PATH"
+    fi
 
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TAO_ROOT/lib
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
     export LD_LIBRARY_PATH
 
     if check_platform
     then
+        PATH="$JAVA_HOME/bin:$PATH"
+        PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
+
+        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
+
+        export PATH CLASSPATH
+
         sh $BASE/run_examples.sh
     else
-        $BASE/run_examples.bat
+        PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+        export PATH
+
+        XPATH="$(cygpath -w $BASE)";
+
+        echo "NOT Calling cmd.exe with $XPATH\run_examples.bat "
+# Do not run the examples yet as they hang and prevent other runs taking place
+#        cmd.exe /c $XPATH//run_examples.bat
     fi
     exit $?
 fi

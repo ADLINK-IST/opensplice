@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <c_iterator.h>
@@ -193,7 +193,7 @@ idl_macroSetGet (
 {
     idl_macro macro;
 
-    macro = c_iterResolve(macroSet->macroSet, 
+    macro = c_iterResolve(macroSet->macroSet,
                 idl_macroNameMatch, (c_iterResolveCompareArg)name);
     return macro;
 }
@@ -548,13 +548,14 @@ idl_fileOutNew (
         fname = os_strdup(name);
     }
     stream->file = fopen (fname, mode);
-    os_free(fname);
 
-    if (stream->file == NULL) {
+    if (stream->file == NULL)
+    {
         /* QAC EXPECT 5007; will not use wrapper */
         os_free (stream);
         stream = NULL;
     }
+    os_free(fname);
     return stream;
 }
 
@@ -587,9 +588,12 @@ idl_fileOutPrintf (
 {
     va_list args;
 
-    va_start (args, format);
-    vfprintf (stream->file, format, args);
-    va_end (args);
+    if(stream)
+    {
+        va_start (args, format);
+        vfprintf (stream->file, format, args);
+        va_end (args);
+    }
 }
 
 static idl_fileOut idl_fileCurrentOut = NULL;

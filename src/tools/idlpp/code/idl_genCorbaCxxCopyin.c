@@ -24,6 +24,7 @@
 #include "idl_tmplExp.h"
 
 #include <c_typebase.h>
+#include <os_heap.h>
 #include <os_stdlib.h>
 
 #define BOUNDSCHECK ("OSPL_BOUNDS_CHECK")

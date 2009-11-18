@@ -47,7 +47,19 @@ nw_socketRetrieveBCInterface(
         /* Retrieve interface from custom settings */
         if (strncmp(addressLookingFor, NWCF_DEF(Interface),
                     (os_uint)sizeof(NWCF_DEF(Interface))) == 0) {
-            usedInterface = 0;
+	  /* In case of no none loopback broadcast interfaces */
+	  usedInterface = 0;
+
+	  /* Try and find the first non loopback broadcast interface */
+	  for ( i = 0; (i < nofInterfaces); i++ ) {
+	    testAddr = (struct sockaddr_in *)
+	      sk_interfaceInfoGetPrimaryAddress(interfaceList[i]);
+	    if ( ntohl(*((os_uint32 *)&(testAddr->sin_addr))) != INADDR_LOOPBACK  ) {
+	      usedInterface = i;
+	      break;
+	    }
+	  }
+	    
         } else {
              i = 0;
              while ((i < nofInterfaces) && !found) {
@@ -59,6 +71,13 @@ nw_socketRetrieveBCInterface(
                 if (strncmp(addressLookingFor,
                             inet_ntoa(testAddr->sin_addr),
                             (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
+                    /* IP address looking for matches with this interface's address */
+                    usedInterface = i;
+                    found = SK_TRUE;
+                } else if (strncmp(addressLookingFor,
+                        sk_interfaceInfoGetName(interfaceList[i]),
+                        SK_INTF_MAX_NAME_LEN) == 0) {
+                    /* Interface name looking for matches with this interface's name */
                     usedInterface = i;
                     found = SK_TRUE;
                 } else {

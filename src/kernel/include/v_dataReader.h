@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAREADER_H
@@ -90,7 +90,7 @@ v_dataReaderGetTopic(
 
 OS_API v_dataReaderInstance
 v_dataReaderLookupInstance (
-    v_dataReader _this, 
+    v_dataReader _this,
     v_message keyTemplate);
 
 OS_API c_bool
@@ -121,21 +121,21 @@ OS_API c_bool
 v_dataReaderTakeInstance(
     v_dataReader _this,
     v_dataReaderInstance instance,
-    v_readerSampleAction action, 
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_dataReaderReadNextInstance(
-    v_dataReader _this, 
+    v_dataReader _this,
     v_dataReaderInstance instance,
-    v_readerSampleAction action, 
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_dataReaderTakeNextInstance(
-    v_dataReader _this, 
+    v_dataReader _this,
     v_dataReaderInstance instance,
-    v_readerSampleAction action, 
+    v_readerSampleAction action,
     c_voidp arg);
 
 #undef OS_API

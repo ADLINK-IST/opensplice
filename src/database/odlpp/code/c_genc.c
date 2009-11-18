@@ -1038,6 +1038,7 @@ c_unionBody(
                         if (c_valueCompare(l->value, l_enum->value) == C_EQ) {
                             index = ie;
                         }
+                        c_free(l_enum);
                     }
                     assert (index != -1);
                     c_out(context, "c_literal(c_constant(c_enumeration(c_union(o)->switchType)->elements[%d])->operand)->value;\n", index);

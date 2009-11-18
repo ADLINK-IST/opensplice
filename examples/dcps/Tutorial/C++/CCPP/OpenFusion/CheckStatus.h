@@ -42,6 +42,6 @@ void checkStatus(DDS::ReturnCode_t status, const char *info);
 /**
  * Check whether a valid handle has been returned. If not, then terminate.
  **/
-void checkHandle(void *handle, char *info);
+void checkHandle(void *handle, const char *info);
 
 #endif

@@ -63,6 +63,20 @@ idl_genInterface(
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("actual-type-name", idl_typeSpecName(typeSpec)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-type-name", idl_scopeStackJava(scope, ".", name)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-class-name", idl_scopeStackJava(scope, "/", name)));
+    if(idl_genJavaHelperGetOrgPName())
+    {
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-org-package-name", idl_genJavaHelperGetOrgPName()));
+    } else
+    {
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-org-package-name", "null"));
+    }
+    if(idl_genJavaHelperGetTgtPName())
+    {
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-tgt-package-name", idl_genJavaHelperGetTgtPName()));
+    } else
+    {
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-tgt-package-name", "null"));
+    }
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-meta-type-name", idl_scopeStack(scope, "::", name)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-actual-type-name", idl_corbaJavaTypeFromTypeSpec(typeSpec)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));

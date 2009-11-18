@@ -24,6 +24,7 @@
 #include "idl_genSplHelper.h"
 
 #include <c_typebase.h>
+#include <os_heap.h>
 #include <os_stdlib.h>
 
 #include <stdio.h>

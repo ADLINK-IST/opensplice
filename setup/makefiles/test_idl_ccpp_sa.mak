@@ -1,5 +1,4 @@
 # default values for directory and idl-files to process 
-
 ifeq (,$(findstring win32,$(SPLICE_TARGET)))
   IDL_INC_FLAGS = -I$(IDL_DIR) -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
 else
@@ -29,7 +28,10 @@ IDLPP_IDL   = $(TOPIC_IDL:%.idl=%Dcps.idl)
 IDLPP_OBJ   = $(IDLPP_CPP:%.cpp=%$(OBJ_POSTFIX))
 
 # ospldcg compiler settings.
-OSPLDCG      := ospldcg 
+JAR_INC_DIR =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
+JAR_DIR = `$(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)`
+OUTER_HOME_PATH =`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)`
+OSPLDCG	:=java -DOSPL_OUTER_HOME=$(OUTER_HOME_PATH) -jar $(JAR_DIR)/ospldcg.jar
 OSPLDCGFLAGS +=  -l SACPP $(IDL_INC_FLAGS)
 
 # ospldcg output

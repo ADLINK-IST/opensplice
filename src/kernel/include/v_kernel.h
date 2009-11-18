@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_KERNEL_H
@@ -128,13 +128,13 @@ v_removeTopic (
     v_topic t);
 
 OS_API v_topic
-v__lookupTopic (
+v_lookupTopic (
     v_kernel _this,
     const char *name);
 
 OS_API c_iter
 v_resolveTopics (
-    v_kernel _this, 
+    v_kernel _this,
     const c_char *expr);
 
 OS_API v_participant

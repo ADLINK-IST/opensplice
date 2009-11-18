@@ -51,7 +51,7 @@
 
 /* define default ports: can be several ranges, for ex:
   "32828-32830,32832"  */
-#define OSPL_UDP_PORTS "3340,3350,3360"
+#define OSPL_UDP_PORTS "53340,53350,53360"
 
 
 /* Forward declaration we need below */

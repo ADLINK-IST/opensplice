@@ -1316,6 +1316,7 @@ d_configurationSetTracingOutputFile(
             char * filename = os_fileNormalize(value);
             config->tracingOutputFile = fopen(filename, "a");
             config->tracingOutputFileName = os_strdup(filename);
+            os_free(filename);
         }
     }
 }

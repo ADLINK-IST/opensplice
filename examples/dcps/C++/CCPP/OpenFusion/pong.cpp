@@ -24,8 +24,8 @@ using namespace pingpong;
 // Configurable parameters (through cmdline)
 // These are the default settings
 //
-static char * read_partition = "PING";
-static char * write_partition = "PONG";
+static const char * read_partition = "PING";
+static const char * write_partition = "PONG";
 
 int
 main (

@@ -143,7 +143,10 @@ v_entryAddGroup(
     proxy = v_proxyNew(v_objectKernel(group),
                        v_publicHandle(v_public(group)), NULL);
     found = c_insert(entry->groups, proxy);
-    assert(found == proxy);
+    /* if the creation of the DataReader creates the group then
+     * the DataReader will also be notified about this group.
+     * In that case found will be different than proxy.
+     */
     c_free(proxy);
 }    
 

@@ -32,7 +32,7 @@ namespace DDS
         DataReader_impl(gapi_dataReader handle);
        ~DataReader_impl();
 
-        virtual ::DDS::ReturnCode_t read (
+        ::DDS::ReturnCode_t read (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -41,7 +41,7 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take (
+        ::DDS::ReturnCode_t take (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -50,31 +50,31 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t read_w_condition (
+        ::DDS::ReturnCode_t read_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take_w_condition (
+        ::DDS::ReturnCode_t take_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t read_next_sample (
+        ::DDS::ReturnCode_t read_next_sample (
             void * data_values,
             ::DDS::SampleInfo & sample_info
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take_next_sample (
+        ::DDS::ReturnCode_t take_next_sample (
             void * data_values,
             ::DDS::SampleInfo & sample_info
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t read_instance (
+        ::DDS::ReturnCode_t read_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -84,7 +84,7 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take_instance (
+        ::DDS::ReturnCode_t take_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -94,7 +94,7 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t read_next_instance (
+        ::DDS::ReturnCode_t read_next_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -104,7 +104,7 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take_next_instance (
+        ::DDS::ReturnCode_t take_next_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -114,7 +114,7 @@ namespace DDS
             ::DDS::InstanceStateMask instance_states
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t read_next_instance_w_condition (
+        ::DDS::ReturnCode_t read_next_instance_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -122,7 +122,7 @@ namespace DDS
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t take_next_instance_w_condition (
+        ::DDS::ReturnCode_t take_next_instance_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
             CORBA::Long max_samples,
@@ -130,17 +130,17 @@ namespace DDS
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t return_loan (
+        ::DDS::ReturnCode_t return_loan (
             void *dataBuf,
             void *infoBuf
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t get_key_value (
+        ::DDS::ReturnCode_t get_key_value (
             void * key_holder,
             ::DDS::InstanceHandle_t handle
         ) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::InstanceHandle_t lookup_instance (
+        ::DDS::InstanceHandle_t lookup_instance (
             const void * instance
         ) THROW_ORB_EXCEPTIONS;
 

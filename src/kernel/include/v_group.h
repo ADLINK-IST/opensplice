@@ -85,6 +85,9 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 #define v_groupSampleSetMessage(_this,_message) \
         (v_groupSampleTemplate(_this)->message = c_keep(_message))
 
+#define v_groupDomainAccessMode(_this)\
+        (v_group(_this)->domainAccessMode)
+
 OS_API void
 v_groupFree (
     v_group _this);

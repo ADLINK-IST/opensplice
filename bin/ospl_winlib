@@ -1,4 +1,2 @@
-CMD="$OSPL_HOME/bin/ospl_wincmd lib -o $*"
-. $CMD
-unset CMD
+"$OSPL_HOME/bin/ospl_wincmd" lib -o "$@" 
 true

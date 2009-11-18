@@ -122,6 +122,50 @@ DDS::TopicListener_ptr DDS::TopicListener::_unchecked_narrow (DDS::Object_ptr p)
    return result;
 }
 
+const char * DDS::ExtTopicListener::_local_id = "IDL:DDS/ExtTopicListener:1.0";
+
+DDS::ExtTopicListener_ptr DDS::ExtTopicListener::_duplicate (DDS::ExtTopicListener_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::ExtTopicListener::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::ExtTopicListener::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   typedef TopicListener NestedBase_1;
+
+   if (NestedBase_1::_local_is_a (_id))
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::ExtTopicListener_ptr DDS::ExtTopicListener::_narrow (DDS::Object_ptr p)
+{
+   DDS::ExtTopicListener_ptr result = NULL;
+   if (p && p->_is_a (DDS::ExtTopicListener::_local_id))
+   {
+      result = dynamic_cast<DDS::ExtTopicListener_ptr> (p);
+      result->m_count++;
+   }
+   return result;
+}
+
+DDS::ExtTopicListener_ptr DDS::ExtTopicListener::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::ExtTopicListener_ptr result;
+   result = dynamic_cast<DDS::ExtTopicListener_ptr> (p);
+   result->m_count++;
+   return result;
+}
+
 const char * DDS::DataWriterListener::_local_id = "IDL:DDS/DataWriterListener:1.0";
 
 DDS::DataWriterListener_ptr DDS::DataWriterListener::_duplicate (DDS::DataWriterListener_ptr p)

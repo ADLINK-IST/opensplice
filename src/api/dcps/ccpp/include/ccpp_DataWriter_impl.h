@@ -32,53 +32,53 @@ namespace DDS
       DataWriter_impl(const gapi_dataWriter handle);
      ~DataWriter_impl();
 
-        virtual ::DDS::InstanceHandle_t lookup_instance (
+        ::DDS::InstanceHandle_t lookup_instance (
             const void * instance_data) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::InstanceHandle_t register_instance(
+        ::DDS::InstanceHandle_t register_instance(
             const void * instance_data) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::InstanceHandle_t register_instance_w_timestamp(
+        ::DDS::InstanceHandle_t register_instance_w_timestamp(
             const void * instance_data,
             const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t unregister_instance(
+        ::DDS::ReturnCode_t unregister_instance(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t unregister_instance_w_timestamp(
+        ::DDS::ReturnCode_t unregister_instance_w_timestamp(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle,
             const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t write(
+        ::DDS::ReturnCode_t write(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t write_w_timestamp(
+        ::DDS::ReturnCode_t write_w_timestamp(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle,
             const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t dispose(
+        ::DDS::ReturnCode_t dispose(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t dispose_w_timestamp(
+        ::DDS::ReturnCode_t dispose_w_timestamp(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle,
             const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t writedispose(
+        ::DDS::ReturnCode_t writedispose(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t writedispose_w_timestamp(
+        ::DDS::ReturnCode_t writedispose_w_timestamp(
             const void * instance_data,
             ::DDS::InstanceHandle_t handle,
             const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS;
 
-        virtual ::DDS::ReturnCode_t get_key_value(
+        ::DDS::ReturnCode_t get_key_value(
             void * key_holder,
             ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS;
 

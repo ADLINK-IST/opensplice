@@ -338,16 +338,42 @@ v_groupInstanceRegister (
      * Under normal condition register messages are always followd by an
      * unregister message but message can be reordered due to transport.
      */
-    registration = &instance->unregisterMessages;
     found = NULL;
-    while ((*registration != NULL) && (found == NULL)) {
-        if (v_gidCompare((*registration)->message->writerGID,
-                         message->writerGID) == C_EQ) {
-            found = *registration;
-            (*registration) = found->next;
-            found->next = NULL;
-        } else {
-            registration = &((*registration)->next);
+    if (instance->unregisterMessages) {
+        v_registration previous = NULL;
+        c_time delay = {5,0};
+        c_time purgeTime = v_timeGet();
+
+        purgeTime = c_timeSub(purgeTime,delay);
+        registration = &instance->unregisterMessages;
+        while ((*registration != NULL) && (found == NULL)) {
+            if (v_gidCompare((*registration)->message->writerGID,
+                             message->writerGID) == C_EQ) {
+                found = *registration;
+                (*registration) = found->next;
+                found->next = NULL;
+            } else {
+#if 1
+                /* Temporary implementation. Final solution must be more efficient.
+                 * e.g. by walking from oldest to newer and use of an active garbage collector.
+                 * The purgeDelay should also be specified via a configuration parameter.
+                 */
+                if (c_timeCompare((*registration)->message->allocTime,purgeTime) == C_LT) {
+                    c_free(*registration);
+                    found = NULL;
+                    if (previous) {
+                        previous->next = NULL;
+                    } else {
+                        instance->unregisterMessages = NULL;
+                    }
+                } else {
+                    previous = *registration;
+                    registration = &((*registration)->next);
+                }
+#else
+                registration = &((*registration)->next);
+#endif
+            }
         }
     }
     if (found == NULL) {

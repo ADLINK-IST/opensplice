@@ -1,6 +1,6 @@
 # target context in platform specific config.mak
 
-WINCMD = sh $(OSPL_HOME)/bin/ospl_wincmd
+WINCMD = $(OSPL_HOME)/bin/ospl_wincmd
 WINCSC = sh $(OSPL_HOME)/bin/ospl_wincsc
 
 # Set name context of used tooling
@@ -83,7 +83,7 @@ CXXFLAGS	= -EHsc -nologo -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
+CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads

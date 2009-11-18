@@ -74,6 +74,7 @@ struct readerActionArg {
     v_group group;
 };
 
+
 static void
 onNewGroupReaderAction(
     v_entity e,
@@ -233,6 +234,9 @@ onNodeStarted(
 
     NW_TRACE_2(Discovery, 1, "Discovered active remote node with id 0x%x, currently %u active nodes known",
         networkId, aliveCount);
+    NW_REPORT_INFO_2(1,"Topology Discovery: Discovered active remote node 0x%x, currently %u active nodes known",
+                        networkId,  aliveCount);
+    
     /* Advertise my existence */
     /* Note: this will be p2p in the future */
     nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter);
@@ -263,6 +267,8 @@ onNodeStopped(
 
     NW_TRACE_2(Discovery, 1, "Node with id 0x%x has stopped, currently %u active nodes known",
         networkId, aliveCount);
+    NW_REPORT_INFO_2(1,"Topology Discovery: Remote node 0x%x has stopped, currently %u active nodes known",
+                        networkId, aliveCount);
     /* Tell the bridge about this stopped node */
     nw_bridgeNotifyNodeStopped(controller->bridge, networkId, address);
     if (aliveCount == 0) {
@@ -288,6 +294,8 @@ onNodeDied(
 
     NW_TRACE_2(Discovery, 1, "Node with id 0x%x has died, currently %u active nodes known",
         networkId, aliveCount);
+    NW_REPORT_INFO_2(1,"Topology Discovery: Remote node 0x%x has died, currently %u active nodes known",
+                        networkId, aliveCount);
     /* Tell the bridge about this stopped node */
     nw_bridgeNotifyNodeDied(controller->bridge, networkId, address);
     if (aliveCount == 0) {
@@ -657,8 +665,8 @@ nw_controllerInitialize(
     /* Create a dataReader to read from */
     controller->reader = u_networkReaderNew(controller->subscriber,
                                             NW_READER_NAME, 
-					    NULL,
-					    FALSE); /*ignoreReliabilityQoS*/
+                        NULL,
+                        FALSE); /*ignoreReliabilityQoS*/
     controller->networkId = getNetworkId(controller);
     controller->bridge = nw_bridgeNew(controller->networkId);
     

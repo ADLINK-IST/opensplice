@@ -1606,6 +1606,8 @@ c_expressionValue(
       assert(FALSE);
     }
 #undef _CASE_
+    c_free(left);
+    c_free(right);
     return result;
 }
 

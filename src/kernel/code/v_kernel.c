@@ -45,6 +45,7 @@
 #include "v__spliced.h"
 #include "v__leaseManager.h"
 #include "v__crc.h"
+#include "os.h"
 
 #define __ERROR(m) printf(m); printf("\n");
 
@@ -595,7 +596,7 @@ alwaysFalse(
 
 
 v_topic
-v__lookupTopic(
+v_lookupTopic(
     v_kernel kernel,
     const char *name)
 {

@@ -211,7 +211,7 @@ NW_STRUCT(nw_plugReceivingPartition) {
 
     /* A list of writing buffers that possibly have to be resent. The buffers
      * are created by the sendChannel */
-/*    nw_plugDataBufferReliabilityAdmin resendBufferList; */
+    /*    nw_plugDataBufferReliabilityAdmin resendBufferList; */
 
     /* A list of resendItems that is to be used for quick allocation and
      * deallocation by partitionNodes */
@@ -947,7 +947,7 @@ nw_plugSendChannelMessagesFlush(
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_SEND);
     NW_CONFIDENCE(!sendChannel->processingMessage);
 
-    partition = sendChannel->currentPartition;
+
     /* Only do something if we have written any messages */
     if (all && (sendChannel->currentMsgCount > 0) && sendChannel->inUse) {
         nw_plugSendChannelPushCurrentWriteBuffer(sendChannel,
@@ -967,17 +967,22 @@ nw_plugSendChannelMessagesFlush(
             NW_STAMP(buffer,NW_BUF_TIMESTAMP_FLUSH);
             bytesSent = nw_plugBufferGetLength(nw_plugBuffer(buffer));
             /* Valid Partition so Send data to network */
-#ifdef NW_DEBUGGING
+
+            /*partition = sendChannel->currentPartition;*/
+            partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel,nw_plugDataBufferGetPartitionId(buffer));
+
+            #ifdef NW_DEBUGGING
             if (!(os_int)nw_configurationLoseSentMessage()) {
 #endif
-                if (nw_plugDataBufferGetPartitionId(buffer) !=
+                /*
+            	if (nw_plugDataBufferGetPartitionId(buffer) !=
                     partition->partitionId)
                 {
                     NW_REPORT_ERROR_2("nw_plugSendChannelMessagesFlush",
                             "Partition Id of Channel (%u) differs from buffer (%u)",
                              partition->partitionId,
                              nw_plugDataBufferGetPartitionId(buffer));
-                }
+                }*/
                 nw_socketSendDataToPartition(
                     nw__plugChannelGetSocket(channel),
                     partition->partitionId,
@@ -1141,9 +1146,11 @@ nw_plugSendChannelGetNextFragment(
         NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage), *buffer);
     /*nw_messageHolderSetLength(sendChannel->lastMessage, messageLength);*/
 
-    nw_messageHolderSetLength(sendChannel->lastMessage,
-            NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, messageLength));
-
+    /* Note: Do not add padding bytes by aligning the messageLength value to 
+     * next higher multiple of 4, as this will cause faults on receiver side 
+     * deserializing fragmented strings */
+    nw_messageHolderSetLength(sendChannel->lastMessage, messageLength);
+    
     if (!sendChannel->fragmenting) {
         /* Not currently fragmenting a message */
         /* Increase fragmented seqnr for this partition */
@@ -1155,9 +1162,13 @@ nw_plugSendChannelGetNextFragment(
         NW_CONFIDENCE(sendChannel->currentFragmentSeqNr > 0);
         sendChannel->currentFragmentSeqNr++;
     }
-    sendChannel->currentFragmentLength = sendChannel->currentFragmentLength +
-        NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, messageLength);
-
+    
+    /* Note: Do not add padding bytes by aligning the messageLength value to 
+     * next higher multiple of 4, as this will cause faults on receiver side 
+     * deserializing fragmented strings */
+    sendChannel->currentFragmentLength = 
+    	sendChannel->currentFragmentLength + messageLength;
+    
     nw_plugBufferSetLength(
         nw_plugBuffer(sendChannel->currentWriteBuffer),
         sendChannel->currentFragmentLength);
@@ -1655,7 +1666,8 @@ nw_plugPartitionNodeAckReceived(
     nw_plugPartitionNode partitionNode,
     nw_seqNr startingNr,
     nw_seqNr closingNr,
-    nw_length remoteRecvBuffer)
+    nw_length remoteRecvBuffer,
+    nw_bool reconnectAllowed)
 {
     nw_resendItem currentItem;
     nw_resendItem firstItem;
@@ -1671,6 +1683,23 @@ nw_plugPartitionNodeAckReceived(
     NW_CONFIDENCE(startingNr > 0);
     NW_CONFIDENCE(closingNr >= startingNr);
 
+    if ((partitionNode->owner->state == NW_NODESTATE_NOT_RESPONDING)||
+        (partitionNode->owner->state == NW_NODESTATE_STOPPED)){
+        
+        if (reconnectAllowed) {
+            /* We received an ACK from the node, so we will mark it as responding again. */       
+            partitionNode->owner->state = NW_NODESTATE_RESPONDING;  
+            {
+                nw_partitionId partitionId;
+                nw_plugPartitionNode tmpPartitionNode;
+                   
+                for (partitionId = 0; partitionId < partitionNode->owner->nofPartitions; partitionId++) {
+                    tmpPartitionNode = NW_RECEIVINGNODE_PARTITIONNODE_BY_ID(partitionNode->owner, partitionId);
+                    tmpPartitionNode->firstStartingNr = 0;
+                }
+            }
+        }
+    }
 
     if (partitionNode->owner->state == NW_NODESTATE_RESPONDING) {
         if (partitionNode->firstStartingNr == 0) {
@@ -2175,6 +2204,8 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
     nw_address sendingAddress;
     nw_seqNr sendingNodeId;
     nw_plugReceivingNode receivingNode;
+    char *addressString;
+
 
     /* Walk over all messages in the messageBox */
     messageReceived = nw_plugChannelProcessMessageBox(channel,
@@ -2199,6 +2230,10 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                     receivingNode = nw_plugSendChannelLookupReceivingNode(
                         sendChannel, sendingNodeId, sendingAddress);
                     if (receivingNode != NULL) {
+                        addressString = nw_addressToString(receivingNode->address);
+                        NW_REPORT_WARNING_2("reliable protocol",
+                            "No heartbeats received from Node 0x%x (address %s)",
+                            receivingNode->nodeId, addressString);
                         nw_plugReceivingNodeNotResponding(receivingNode);
                     }
                 break;
@@ -2241,7 +2276,7 @@ nw_periodicProcessIncomingAcks( nw_plugChannel channel )
                 sendingAddress);
             NW_CONFIDENCE(partitionNode != NULL);
             nw_plugPartitionNodeAckReceived(partitionNode,
-                startingNr, closingNr, remoteRecvBuffer);
+                startingNr, closingNr, remoteRecvBuffer,channel->reconnectAllowed);
 
             NW_TRACE_2(Send, 4, "plugChannel %s: sendthread: recvACK with ThrottleValue: %d",
                 nw__plugChannelGetName(channel),remoteRecvBuffer);
@@ -2484,6 +2519,7 @@ nw_periodicResend( nw_plugChannel channel,
     nw_resendItem resendItem;
     nw_plugDataBuffer dataBuffer;
     nw_length length;
+    char *addressString;
 
     /* Now walk over all plugPartitionNodes in order to find out which
      * data to resend and do the actual resend */
@@ -2500,6 +2536,11 @@ nw_periodicResend( nw_plugChannel channel,
             resendItem = partitionNode->pendingResendListHead;
             if (resendItem->controlFlushPass >
                 sendChannel->recoveryFactor * sendChannel->maxRetries) {
+                
+                addressString = nw_addressToString(receivingNode->address);
+                NW_REPORT_WARNING_3("reliable protocol",
+                    "Node 0x%x (address %s) has not acked message after %d retries",
+                    receivingNode->nodeId, addressString,sendChannel->maxRetries);
                 nw_plugReceivingNodeNotResponding(receivingNode);
             } else {
                 do {

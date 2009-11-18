@@ -171,7 +171,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     /* Others */
     DDS::DataReader_ptr                 parentReader;
     DDS::DataWriter_ptr                 parentWriter;
-    char                                *nameFinderExpr;
+    const char                          *nameFinderExpr;
     const char                          *partitionName = "ChatRoom";
     DDS::ReturnCode_t                   status;
 

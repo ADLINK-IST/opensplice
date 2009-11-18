@@ -1,11 +1,13 @@
-SPATH=`echo $PATH | tr ':' ' '`
+SPATH=`echo $PATH | tr ' ' '\177' | tr ':' ' '`
 
 pathcheck ()
 {
     for i in $SPATH
     do
-        test -f $i/$1 && return 0
+        PATHCHECK_FOUND="`echo $i | tr '\177' ' '`/$1"
+        test -f "$PATHCHECK_FOUND" && return 0
     done
+    PATHCHECK_FOUND=
     return 1
 }
 
@@ -34,8 +36,8 @@ convert_windows_path ()
             fi
             ;;
         *)
-            UNIX_CONV_PATH=$1
-            DOS_CONV_PATH=$1
+            UNIX_CONV_PATH="$1"
+            DOS_CONV_PATH="$1"
             ;;
     esac
     return 0
@@ -87,7 +89,7 @@ csharp_check ()
                     continue
                 fi
 
-                PATH=/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH
+                PATH="/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH"
                 break
             fi
         done
@@ -226,6 +228,27 @@ gcc_check ()
     return 0
 }
 
+# test if sun studio is at version 12
+sun_cc_studio12_check ()
+{
+    echo -n "cc: "
+    pathcheck cc
+    if [ $? != 0 ]
+    then
+        echo "Error - Not found"
+        return 1
+    fi
+    cc_VER=`cc -V 2>&1 | grep '^cc:' | sed 's/\(.*Sun C \)\([0-9.]*\)\( .*\)/\2/'`     
+    if [ ${cc_VER} != "5.9" ]
+    then
+        echo "Error - Only SunCC 5.9 (Studio 12) is supported"
+        return 1
+    fi
+
+    echo "OK - using version" `cc -V 2>&1 |  grep '^cc:'`
+    return 0
+}
+
 # require GNU make 3.80 or 3.81
 make_check ()
 {
@@ -311,6 +334,29 @@ flex_check ()
     return 0
 }
 
+# require ar and ld
+binutils_native_check ()
+{
+    echo -n "BINUTILS: "
+
+    pathcheck ar
+    if [ $? != 0 ]
+    then
+        echo "Error - ar Not found"
+        return 1
+    fi
+
+    pathcheck ld
+    if [ $? != 0 ]
+    then
+        echo "Error - ld Not found"
+        return 1
+    fi
+
+    echo "OK"
+    return 0
+}
+
 # require javac and check JAVA_HOME
 javac_check ()
 {
@@ -326,13 +372,13 @@ javac_check ()
         then
             return 1
         fi
-        JAVAC_EXE=$UNIX_CONV_PATH/bin/javac
-        if [ ! -f $JAVAC_EXE ]
+        JAVAC_EXE="$UNIX_CONV_PATH/bin/javac"
+        if [ ! -f "$JAVAC_EXE" ]
         then
             no_javac
             return $?
         fi
-        PATH=$UNIX_CONV_PATH/bin:$PATH
+        PATH="$UNIX_CONV_PATH/bin:$PATH"
         set_var PATH "$PATH"
     else
         # If not check the path for java
@@ -342,27 +388,32 @@ javac_check ()
             no_javac
             return $?
         fi
-        T_JAVAC_EXE=`which javac`
+        T_JAVAC_EXE="$PATHCHECK_FOUND"
         if [ "$?" != "0" ]
         then
             no_javac
             return $?
         fi
-        JAVAC_EXE=`readlink -f $T_JAVAC_EXE`
+        JAVAC_EXE=`readlink -f "$T_JAVAC_EXE"`
     fi
 
-    $JAVAC_EXE -version 2> javac.ver
+    "$JAVAC_EXE" -version 2> javac.ver
     REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
     JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
     rm -f javac.ver
     if [ -n "$JAVAC_VERSION" ]
     then
-        if [ $JAVAC_VERSION -ge $REQUIRED_VERSION ]
+        if [ "$JAVAC_VERSION" -ge "$REQUIRED_VERSION" ]
         then
-            JAVA_HOME=`echo $JAVAC_EXE | awk '{ print substr($1, 1, length($1)-9); }'`
+            JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
         else
             echo "Error - Only JAVA 1.5 and above is supported"
+            return 1
+        fi
+        if [ ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
+        then
+            echo "Error - Only JAVA 1.5 is supported"
             return 1
         fi
     else
@@ -370,7 +421,7 @@ javac_check ()
         return 1
     fi
 
-    LD_LIBRARY_PATH=$JAVA_HOME/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="$JAVA_HOME/lib:$LD_LIBRARY_PATH"
 
     T_LD_PATH=yes
     TYPE=`uname -m`
@@ -379,7 +430,7 @@ javac_check ()
             if [ "$TYPE" = "x86_64" ]
             then
 		        JAVA_PATH_EXT=amd64
-		        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server
+		        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server"
 	        else
 		        JAVA_PATH_EXT=i386
 	        fi
@@ -389,10 +440,10 @@ javac_check ()
             ;;
         CYGWIN_NT*)
             JAVA_PATH_EXT=i386
-            PATH=$UNIX_CONV_PATH/lib:$PATH
-            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT
-            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client
-            PATH=$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads
+            PATH="$UNIX_CONV_PATH/lib:$PATH"
+            PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT"
+            PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client"
+            PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads"
             set_var PATH "$PATH"
             T_LD_PATH=no
             ;;
@@ -404,9 +455,9 @@ javac_check ()
 
     if [ "$T_LD_PATH" != "no" ]
     then
-        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT
-        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client
-        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT"
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/client"
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/native_threads"
         set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
         export LD_LIBRARY_PATH
     fi
@@ -465,20 +516,21 @@ tao_check_fn ()
             return 1
         fi
     else
-        TAOIDL_EXE=`which tao_idl`
+        TAOIDL_EXE="$PATHCHECK_FOUND"
         if [ "$?" != "0" ]
         then
             echo "$1 - Not TAO found"
             return 1
         fi
-  		TAO_ROOT=`dirname \`dirname $TAOIDL_EXE\``
+        TAO_ROOT1=`dirname "$TAOIDL_EXE"`
+  	    TAO_ROOT=`dirname "$TAO_ROOT1"`
         set_var TAO_ROOT "$TAO_ROOT"
-    fi
-    LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
+  	fi
+    LD_LIBRARY_PATH="$TAO_ROOT/lib:$LD_LIBRARY_PATH"
     set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 
-    PATH=$TAO_ROOT/bin:$PATH
+    PATH="$TAO_ROOT/bin:$PATH"
     set_var PATH "$PATH"
 
     TAO_VERSION=`tao_idl -V 2>&1 | grep "PrismTech Version"`
@@ -558,11 +610,10 @@ jacorb_check()
    return $RES
 }
 
-# jacorb_check - should be on the CLASSPATH
-jacorb_check_fn ()
-{
-    echo -n "JACORB: "
+# converts mixed to unix paths. This operates on CLASSPATH
 
+convert_native_classpath_to_unix_classpath ()
+{
     case `uname` in
       CYGWIN_NT*)
          WIN32CP=true
@@ -592,7 +643,7 @@ jacorb_check_fn ()
                 then
                     echo
                     echo "ERROR: Invalid CLASSPATH segment \"$CPS\""
-                    return 1
+                    return 1 || return 1
                 fi
             fi
         }
@@ -603,6 +654,35 @@ jacorb_check_fn ()
     else
         PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
     fi
+}
+
+# converts a unix path to the appropriate format on the native system
+convert_unix_classpath_to_native_classpath ()
+{
+    case `uname` in
+      CYGWIN_NT*)
+         WIN32CP=true
+    esac
+
+    if [ "$WIN32CP" = "true" ]
+    then
+        WIN_CPATH=`echo "$CLASSPATH" | tr ' ' '%' | tr ':' ' '`
+        CLASSPATH=""
+
+        for i in $WIN_CPATH
+        do
+            CP=`echo $i | tr '%' ' '`
+            CLASSPATH=`cygpath -w "$CP"`\;"$CLASSPATH"
+        done
+    fi
+}
+
+# jacorb_check - should be on the CLASSPATH
+jacorb_check_fn ()
+{
+    echo -n "JACORB: "
+
+    convert_native_classpath_to_unix_classpath
     FOUND_IN_CLASSPATH=false
     for i in PATHS
     do
@@ -620,7 +700,7 @@ jacorb_check_fn ()
 
     if [ "$FOUND_IN_CLASSPATH" != "true" ]
     then
-        if test ! -d $JACORB_HOME
+        if test ! -d "$JACORB_HOME"
         then
             echo "$1 - JACORB_HOME is not a directory"
             return 1
@@ -635,43 +715,34 @@ jacorb_check_fn ()
 
     if [ "$FOUND_IN_CLASSPATH" != "true" ]
     then
-        if [ ! -f $JACORB_HOME/lib/endorsed/jacorb.jar ]
+        if [ ! -f "$JACORB_HOME/lib/endorsed/jacorb.jar" ]
         then
             echo "$1 - $JACORB_HOME/lib/endorsed/jacorb.jar in CLASSPATH invalid"
             return 1
         fi
-        CLASSPATH=$JACORB_HOME/lib/endorsed/jacorb.jar:$CLASSPATH
+        CLASSPATH="$JACORB_HOME/lib/endorsed/jacorb.jar:$CLASSPATH"
 
-        if [ ! -f $JACORB_HOME/lib/endorsed/logkit.jar ]
+        if [ ! -f "$JACORB_HOME/lib/endorsed/logkit.jar" ]
         then
             echo "$1 - $JACORB_HOME/lib/endorsed/logkit.jar in CLASSPATH invalid"
             return 1
         fi
-        CLASSPATH=$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH
+        CLASSPATH="$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH"
 
-        if [ ! -f $JACORB_HOME/lib/endorsed/avalon-framework.jar ]
+        if [ ! -f "$JACORB_HOME/lib/endorsed/avalon-framework.jar" ]
         then
             echo "$1 - $JACORB_HOME/lib/endorsed/avalon-framework.jar in CLASSPATH invalid"
             return 1
         fi
-        CLASSPATH=$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH
-        if [ ! -f $JACORB_HOME/lib/idl.jar ]
+        CLASSPATH="$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH"
+        if [ ! -f "$JACORB_HOME/lib/idl.jar" ]
         then
             echo "$1 - $JACORB_HOME/lib/idl.jar in CLASSPATH invalid"
             return 1
         fi
-        CLASSPATH=$JACORB_HOME/lib/idl.jar:$CLASSPATH
-        if [ "$WIN32CP" = "true" ]
-        then
-            WIN_CPATH=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
-            CLASSPATH=""
+        CLASSPATH="$JACORB_HOME/lib/idl.jar:$CLASSPATH"
 
-            for i in $WIN_CPATH
-            do
-                CP=`echo $i | tr '%' ' '`
-                CLASSPATH=`cygpath -w "$CP"`\;$CLASSPATH
-            done
-        fi
+        convert_unix_classpath_to_native_classpath
         set_var CLASSPATH "$CLASSPATH"
     fi
     echo "OK"
@@ -698,10 +769,11 @@ cleanup_checks ()
     unset gawk_check
     unset csharp_check
     unset jacorb_check
+    unset PATHCHECK_FOUND
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
-    unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH
+    unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH TAO_ROOT1
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
     unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
     unset CSC_EXE VERSIONS NET_VERSION TYPE

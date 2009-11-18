@@ -187,11 +187,16 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteDataWriter(IDataWriter dataWriter)
         {
-            DataWriter dataWriterObj = (DataWriter)dataWriter;
+            ReturnCode result = ReturnCode.BadParameter;
+            DataWriter dataWriterObj = dataWriter as DataWriter;
 
-            return Gapi.Publisher.delete_datawriter(
-                GapiPeer,
-                dataWriterObj.GapiPeer);
+            if (dataWriterObj != null)
+            {
+                result = Gapi.Publisher.delete_datawriter(
+                    GapiPeer,
+                    dataWriterObj.GapiPeer);
+            }
+            return result;
         }
 
         public IDataWriter LookupDataWriter(string topicName)

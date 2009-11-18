@@ -264,7 +264,9 @@ typedef struct {
 OS_API saj_copyCache
 saj_copyCacheNew (
     JNIEnv *env,
-    c_metaObject object);
+    c_metaObject object,
+    const os_char* orgPName,
+    const os_char* tgtPName);
 
 OS_API void
 saj_copyCacheFree (

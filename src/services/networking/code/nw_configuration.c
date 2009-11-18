@@ -219,6 +219,7 @@ nw_configurationInitializeTracing(
                          outFileName, errno);
                      traceConfig->outFile = stdout;
                 }
+                os_free(filename);
             }
 
             traceConfig->timestamps = NWCF_SIMPLE_PARAM(Bool, root, Timestamps);
@@ -425,6 +426,7 @@ nw_configurationInitializeProfiling(
                          outFileName, errno);
                      profConfig->outFile = stdout;
                 }
+                os_free(filename);
             }
             os_free(outFileName);
         }

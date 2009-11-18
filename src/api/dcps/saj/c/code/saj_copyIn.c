@@ -2525,7 +2525,7 @@ saj_cfoiString (
     dst = (c_string *)(dstString);
 
     if(stringObject){
-        strNative = (*(ctx->javaEnv))->GetStringUTFChars (ctx->javaEnv, (jstring)stringObject, NULL);
+        strNative = (*(ctx->javaEnv))->GetStringUTFChars (ctx->javaEnv, (jstring)stringObject, 0);
         result = saj_copyGetStatus(ctx);
 
         if(result == SAJ_COPYRESULT_OK){
@@ -2604,7 +2604,7 @@ saj_cfoiBString (
     dst = (c_string *)(dstString);
 
     if(stringObject){
-        strNative = (*(ctx->javaEnv))->GetStringUTFChars (ctx->javaEnv, (jstring)stringObject, NULL);
+        strNative = (*(ctx->javaEnv))->GetStringUTFChars (ctx->javaEnv, (jstring)stringObject, 0);
         result = saj_copyGetStatus(ctx);
 
         if(result == SAJ_COPYRESULT_OK){
@@ -2625,7 +2625,6 @@ saj_cfoiBString (
             }
         }
     } else {
-        assert(FALSE);
         result = SAJ_COPYRESULT_BAD_PARAMETER;
         OS_REPORT(OS_ERROR, "dcpssaj", 0, "String bounds violation (null reference)");
     }

@@ -265,9 +265,7 @@ nw_msgHolderPtrAddCompleteMessage(
     msgHolderPtr->fragmentedMsgNr = 0;
     msgHolderPtr->totNrOfFragmentsContained = 1;
     msgHolderPtr->totNrOfFragmentsNeeded = 1;
-    /* One for the head */
-    nw_plugBufferDefragAdminKeep(admin);
-    /* One for the tail */
+    /* Keep on behalf of this msgHolderPtr */
     nw_plugBufferDefragAdminKeep(admin);
 }
 
@@ -277,12 +275,13 @@ nw_msgHolderPtrAddHeadAdmin(
     nw_plugBufferDefragAdmin admin,
     nw_messageHolder messageHolder)
 {
-    NW_CONFIDENCE(msgHolderPtr->firstAdmin == NULL);
-
     msgHolderPtr->firstAdmin = admin;
+    if ( !msgHolderPtr->lastAdmin) {
+        msgHolderPtr->lastAdmin = admin;
+    }
     msgHolderPtr->totNrOfFragmentsContained++;
     msgHolderPtr->messageHolder = messageHolder;
-    /* Keep because of firstAdmin */
+    /* Keep on behalf of this msgHolderPtr */
     nw_plugBufferDefragAdminKeep(admin);
 }
 
@@ -292,7 +291,15 @@ nw_msgHolderPtrAddMiddleAdmin(
     nw_plugBufferDefragAdmin admin)
 {
     msgHolderPtr->totNrOfFragmentsContained++;
-    /* Keep because of firstAdmin */
+    if ((!msgHolderPtr->firstAdmin) ||
+         msgHolderPtr->firstAdmin->prev == admin){
+       msgHolderPtr->firstAdmin = admin; 
+    }
+    if ((!msgHolderPtr->lastAdmin) ||
+         msgHolderPtr->lastAdmin->next == admin){
+       msgHolderPtr->lastAdmin = admin; 
+    }
+    /* Keep on behalf of this msgHolderPtr */
     nw_plugBufferDefragAdminKeep(admin);
 }
 
@@ -302,14 +309,13 @@ nw_msgHolderPtrAddTailAdmin(
     nw_plugBufferDefragAdmin admin,
     nw_seqNr nrOfFragmentsNeeded)
 {
-    NW_CONFIDENCE(msgHolderPtr->lastAdmin == NULL);
-
+    if ( !msgHolderPtr->firstAdmin) {
+        msgHolderPtr->firstAdmin = admin;
+    }
     msgHolderPtr->lastAdmin = admin;
     msgHolderPtr->totNrOfFragmentsContained++;
     msgHolderPtr->totNrOfFragmentsNeeded = nrOfFragmentsNeeded;
-    /* Keep because of firstAdmin */
-    nw_plugBufferDefragAdminKeep(admin);
-    /* Keep because of lastAdmin */
+    /* Keep on behalf of this msgHolderPtr */
     nw_plugBufferDefragAdminKeep(admin);
 }
 
@@ -366,30 +372,50 @@ nw_plugSendingPartitionNodeNew(
 
 static void
 nw_plugSendingPartitionNodeFree(
+    nw_plugReceiveChannel receiveChannel,
     nw_plugSendingPartitionNode sendingPartitionNode)
 {
     nw_plugBufferDefragAdmin admin;
     nw_msgHolderPtr msgHolderPtr;
 
+    while (sendingPartitionNode->msgHolderPtrsHead != NULL) {
+        msgHolderPtr = sendingPartitionNode->msgHolderPtrsHead;
+        sendingPartitionNode->msgHolderPtrsHead = msgHolderPtr->next;
+        
+        admin = msgHolderPtr->firstAdmin;
+        while (msgHolderPtr->firstAdmin != msgHolderPtr->lastAdmin) {
+            msgHolderPtr->firstAdmin = admin->next;
+            
+            nw_plugBufferDefragAdminRelease(receiveChannel,admin);
+            if (admin->usedCount == 1) {
+                /*this admin buffer is no longer used, remove it from the list*/
+                nw_plugBufferDefragAdminRelease(receiveChannel, admin);
+            }
+            admin = msgHolderPtr->firstAdmin;
+        }
+        
+        nw_plugBufferDefragAdminRelease(receiveChannel,admin); /* for first */
+        if (admin->usedCount == 1) {
+            /*this admin buffer is no longer used, remove it from the list*/
+            nw_plugBufferDefragAdminRelease(receiveChannel, admin);
+        }
+        
+        nw_msgHolderPtrFree(msgHolderPtr);
+    }
     admin = sendingPartitionNode->outOfOrderAdminsHead.next;
     while (admin->next != NULL) {
         sendingPartitionNode->outOfOrderAdminsHead.next = admin->next;
-        nw_plugBufferDefragAdminFree(admin);
+        nw_plugBufferDefragAdminRelease(receiveChannel,admin);
         admin = sendingPartitionNode->outOfOrderAdminsHead.next;
     }
 
     admin = sendingPartitionNode->defragAdminsHead.next;
     while (admin->next != NULL) {
         sendingPartitionNode->defragAdminsHead.next = admin->next;
-        nw_plugBufferDefragAdminFree(admin);
+        nw_plugBufferDefragAdminRelease(receiveChannel,admin);
         admin = sendingPartitionNode->defragAdminsHead.next;
     }
 
-    while (sendingPartitionNode->msgHolderPtrsHead != NULL) {
-        msgHolderPtr = sendingPartitionNode->msgHolderPtrsHead;
-        sendingPartitionNode->msgHolderPtrsHead = msgHolderPtr->next;
-        nw_msgHolderPtrFree(msgHolderPtr);
-    }
 }
 
 static void
@@ -627,7 +653,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             if (!isOutOfOrder) {
                 result = admin;
                 if (orderPreservation) {
-		  /* Now find the first missing packetnumber.*/
+          /* Now find the first missing packetnumber.*/
 
                     packetNrPrevious = nw_plugDataBufferGetPacketNr(DF_DATA(admin));
                     currentAdmin = admin->next;
@@ -661,7 +687,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             sendingPartitionNode->active = FALSE;
             
             /*release all admins for this PartitionNode*/
-            nw_plugSendingPartitionNodeFree(sendingPartitionNode);          
+            nw_plugSendingPartitionNodeFree(receiveChannel,sendingPartitionNode);          
         } 
         
         /* Todo: recheck this assert NW_CONFIDENCE((result == NULL) == isOutOfOrder); */
@@ -825,7 +851,6 @@ nw_plugSendingPartitionDropMsgHolderPtr(
     nw_plugSendingPartitionNode sendingPartitionNode)
 {
     nw_plugBufferDefragAdmin admin;
-    nw_bool found = FALSE;
     nw_bool result = FALSE;
     nw_msgHolderPtr msgHolderPtr = sendingPartitionNode->msgHolderPtrsHead;
 
@@ -833,31 +858,14 @@ nw_plugSendingPartitionDropMsgHolderPtr(
     if ( msgHolderPtr->next != NULL) {
 
         /* This is the oldest MsgHolderPtr and it's not the last one, so we're releasing its buffers */
-        /* If FirstAdmin is set, we use that to locate the buffers. If not we're locating them */
-        /* based on the fragmented message number */
         NW_CONFIDENCE( !nw_msgHolderPtrIsComplete(msgHolderPtr));
         NW_CONFIDENCE( msgHolderPtr->totNrOfFragmentsContained != 0 );
         admin = msgHolderPtr->firstAdmin;
 
-        if ( admin == NULL ){
-            /* it can't always be easy */
-            admin = sendingPartitionNode->defragAdminsHead.next;
-            if(admin)
-            {
-                while( (!found) && (admin->next != NULL)) {
-                    admin = admin->next;
-                    found = msgHolderPtr->fragmentedMsgNr == nw_plugDataBufferGetFragmentedMsgNr(DF_DATA(admin));
-                }
-            }
-        }
-
-        if(msgHolderPtr->lastAdmin != NULL) {
-            nw_plugBufferDefragAdminRelease(receiveChannel,msgHolderPtr->lastAdmin);
-        }
-
         /* the msgHolderPtr is there for a reason, so there should be a corresponding admin */
         NW_CONFIDENCE(admin);/*let this be, inconsistency detected which should not occur*/
-        if (admin)  { /*apparently the inconsistency occurs, avoid core dump.*/
+        if (admin)  { 
+            /*apparently the inconsistency occurs, avoid core dump.*/
             while ((msgHolderPtr->totNrOfFragmentsContained > 0) &&
                        (admin->next != NULL) ){
                 nw_plugBufferDefragAdmin tmp = admin->next;
@@ -1000,6 +1008,30 @@ nw_plugReceiveChannelFree(
             nw__plugChannelGetName(channel), receiveChannel->fragmentsOutOfOrderDropped);
     }
 
+    while (receiveChannel->sendingPartitionNodes != NULL) {
+        sendingPartitionNode = receiveChannel->sendingPartitionNodes;
+        receiveChannel->sendingPartitionNodes = sendingPartitionNode->next;
+        nw_plugSendingPartitionNodeFree(receiveChannel,sendingPartitionNode);
+    }
+    
+    while (receiveChannel->readyMsgHolderPtrsHead != NULL) {
+        msgHolderPtr = receiveChannel->readyMsgHolderPtrsHead;
+        receiveChannel->readyMsgHolderPtrsHead = msgHolderPtr->next;
+        nw_msgHolderPtrFree(msgHolderPtr);
+    }
+    
+    while (receiveChannel->freeMsgHolderPtrs != NULL) {
+        msgHolderPtr = receiveChannel->freeMsgHolderPtrs;
+        receiveChannel->freeMsgHolderPtrs = msgHolderPtr->next;
+        nw_msgHolderPtrFree(msgHolderPtr);
+    }
+    
+    while (receiveChannel->waitingDataBuffersHead != NULL) {
+        admin = receiveChannel->waitingDataBuffersHead;
+        receiveChannel->waitingDataBuffersHead = admin->next;
+        nw_plugBufferDefragAdminFree(admin);
+    }
+    
     i = 0;
     while (receiveChannel->freeBuffers != NULL) {
         admin = receiveChannel->freeBuffers;
@@ -1008,29 +1040,6 @@ nw_plugReceiveChannelFree(
         i++;
     }
     NW_CONFIDENCE(i == receiveChannel->nofFreeBuffers);
-
-    while (receiveChannel->waitingDataBuffersHead != NULL) {
-        admin = receiveChannel->waitingDataBuffersHead;
-        receiveChannel->waitingDataBuffersHead = admin->next;
-        nw_plugBufferDefragAdminFree(admin);
-    }
-    while (receiveChannel->freeMsgHolderPtrs != NULL) {
-        msgHolderPtr = receiveChannel->freeMsgHolderPtrs;
-        receiveChannel->freeMsgHolderPtrs = msgHolderPtr->next;
-        nw_msgHolderPtrFree(msgHolderPtr);
-    }
-
-    while (receiveChannel->readyMsgHolderPtrsHead != NULL) {
-        msgHolderPtr = receiveChannel->readyMsgHolderPtrsHead;
-        receiveChannel->readyMsgHolderPtrsHead = msgHolderPtr->next;
-        nw_msgHolderPtrFree(msgHolderPtr);
-    }
-
-    while (receiveChannel->sendingPartitionNodes != NULL) {
-        sendingPartitionNode = receiveChannel->sendingPartitionNodes;
-        receiveChannel->sendingPartitionNodes = sendingPartitionNode->next;
-        nw_plugSendingPartitionNodeFree(sendingPartitionNode);
-    }
 
     /* inherited finalization */
     nw_plugChannelFinalize(channel);
@@ -1044,9 +1053,10 @@ nw_plugReceiveChannelRemoveDefragmentationGarbage(
     nw_plugReceiveChannel receiveChannel)
 {
     nw_plugSendingPartitionNode sendingPartitionNode;
+    nw_plugChannel channel = nw_plugChannel(receiveChannel);
     nw_bool result = FALSE;
-    static nw_bool reported = FALSE;
     static nw_bool reported_garbage_error = FALSE;
+    os_time timeout = {0, 200000000}; /* 200 milli seconds */
 
     if (nw_plugChannelGetReliabilityOffered(nw_plugChannel(receiveChannel)) != NW_REL_RELIABLE) {
         sendingPartitionNode = receiveChannel->sendingPartitionNodes;
@@ -1056,22 +1066,35 @@ nw_plugReceiveChannelRemoveDefragmentationGarbage(
             }
             sendingPartitionNode = sendingPartitionNode->next;
         }
-        if (result ) {
-            if ( ! reported ) {
-                NW_REPORT_WARNING_2("receiving data from the network",
-                    "Channel \"%s\" exceeded maximum defragmentation buffers %u, "
-                    "messages have been dropped",
-                    nw__plugChannelGetName(nw_plugChannel(receiveChannel)),
-                    receiveChannel->maxNofBuffers);
-                reported = TRUE;
-            }
-        }else if(!reported_garbage_error){/* Listen very carefully, I shall only say this once allo allo */
+        if ((!result )&& (!reported_garbage_error)){
+            /* Listen very carefully, I shall only say this once */
             NW_REPORT_WARNING_2("receiving data from the network",
                 "Channel \"%s\" exceeded maximum defragmentation buffers %u, "
                 "But unable to garbage collect buffers",
                 nw__plugChannelGetName(nw_plugChannel(receiveChannel)),
                 receiveChannel->maxNofBuffers);
             reported_garbage_error = TRUE;
+        }
+        if (!result) {
+            if ( receiveChannel->waitingDataBuffersHead == NULL )
+            {
+                /* no buffers to garbage collect and no buffers left to process.
+                 * there's no other option than to just deactivate this channel.
+                 */
+                 
+                if ((channel->onFatal != NULL) &&
+                    (nw__plugChannelGetReliabilityOffered(channel) != NW_REL_RELIABLE))
+                {
+                    NW_REPORT_ERROR_1("receiving data from the network",
+                        "Channel \"%s\" no more buffers available, "
+                        "terminating Networking service",
+                        nw__plugChannelGetName(channel));
+                    channel->onFatal(channel->onFatalUsrData);
+                    channel->onFatal = NULL;
+                }
+                os_nanoSleep(timeout); /* Give network mainthread chance to process the callback */ 
+                receiveChannel->wakeupRequested = TRUE;
+            }
         }
     }
     return result;
@@ -1203,8 +1226,6 @@ nw_plugReceiveChannelTakeFirstMessageHolder(
                         lastReturnedMsgHolderPtr->lastAdmin);
         if (wasLastAdmin) {
             /* Yes, it was, so get the next message */
-            /* Also make sure to release the buffer because of the lastAdmin ptr */
-            nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
             nw_msgHolderPtrRelease(receiveChannel, lastReturnedMsgHolderPtr);
         } else {
             /* No, it was not, so move to the next fragment */
@@ -1273,8 +1294,6 @@ nw_plugReceiveChannelIgnoreLastReturnedMessage(
                         lastReturnedMsgHolderPtr->lastAdmin);
         if (wasLastAdmin) {
             /* Yes, it was, so get the next message */
-            /* Also make sure to release the buffer because of the lastAdmin ptr */
-            nw_plugBufferDefragAdminRelease(receiveChannel, lastReturnedBuffer);
             nw_msgHolderPtrRelease(receiveChannel, lastReturnedMsgHolderPtr);
         } else {
             /* No, it was not, so move to the next fragment */
@@ -1447,6 +1466,7 @@ nw_plugReceiveChannelInsertDataReceived(
         NW_TRACE_1(Receive, 5, "Channel %s: packet received from inactive node,"
             " that has been removed from the protocol for this channel",
             nw__plugChannelGetName(nw_plugChannel(receiveChannel)));
+        nw_plugReceiveChannelReleaseBuffer(receiveChannel, buffer);
     }
 }
 
@@ -1493,7 +1513,9 @@ nw_plugReceiveChannelReadSocket(
                         sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
                         connected = FALSE;
                         nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &connected);
+#ifdef FILTER_ON_SENDING_PARTITION
                         if (connected) {
+#endif
                             /* communicate incoming data message to sending thread
                              * for reliable channels (for acking) */
                             reliable = (nw__plugChannelGetReliabilityOffered(nw_plugChannel(channel)) == NW_REL_RELIABLE);
@@ -1514,6 +1536,7 @@ nw_plugReceiveChannelReadSocket(
                             }
                             admin->prev = channel->waitingDataBuffersTail;
                             channel->waitingDataBuffersTail = admin;
+#ifdef FILTER_ON_SENDING_PARTITION
                         } else {
                             /* This is a strange situation: data received for
                              * a disconnected partition. Either the switch
@@ -1524,6 +1547,7 @@ nw_plugReceiveChannelReadSocket(
                                  sendingPartitionId);
                             nw_plugReceiveChannelReleaseBuffer(channel, buffer);
                         }
+#endif
                     } else {
                         char *str;
                         /* DataLength <= 0, so invalid data */
@@ -1600,16 +1624,38 @@ nw_CheckMessageBox( nw_plugChannel channel )
     while (messageReceived) {
         switch (messageType) {
             case NW_MBOX_NODE_STARTED:
+                if (channel->reconnectAllowed) {
+                    /* Now walk over all partitionNodes to find the ones that match this NodeId*/
+                    currentNode = ReceiveChannel->sendingPartitionNodes;
+                    while ((currentNode != NULL)) {
+                        if (currentNode->nodeId == sendingNodeId) {
+                            /* mark them as active again and Initialize */
+                            currentNode->active = TRUE;
+                            currentNode->packetNrWaitingFor = 0; /* Next packet can be any packet */
+                            currentNode->msgHolderPtrsHead = NULL;
+                            currentNode->msgHolderPtrsTail = NULL;
+                            currentNode->outOfOrderAdminsHead.prev = NULL;
+                            currentNode->outOfOrderAdminsHead.next = &currentNode->outOfOrderAdminsTail;
+                            currentNode->outOfOrderAdminsTail.prev = &currentNode->outOfOrderAdminsHead;
+                            currentNode->outOfOrderAdminsTail.next = NULL;
+                            currentNode->defragAdminsHead.prev = NULL;
+                            currentNode->defragAdminsHead.next = &currentNode->defragAdminsTail;
+                            currentNode->defragAdminsTail.prev = &currentNode->defragAdminsHead;
+                            currentNode->defragAdminsTail.next = NULL;
+                        }
+                        currentNode = currentNode->next;
+                    }
+                }
             break;
             case NW_MBOX_NODE_STOPPED:
             case NW_MBOX_NODE_DIED:
-                /* Now walk over all partitionNodes to find the once that match this NodeId*/
+                /* Now walk over all partitionNodes to find the ones that match this NodeId*/
                 currentNode = ReceiveChannel->sendingPartitionNodes;
                 while ((currentNode != NULL)) {
                     if (currentNode->nodeId == sendingNodeId) {
                         /* mark as inactive and release all admins for this PartitionNode */
                         currentNode->active = FALSE;                       
-                        nw_plugSendingPartitionNodeFree(currentNode);          
+                        nw_plugSendingPartitionNodeFree(ReceiveChannel,currentNode);          
                     }
                     currentNode = currentNode->next;
                 }
@@ -1715,6 +1761,7 @@ nw_plugReceiveChannelMessageStart(
                                 receiveChannel->maxNofBuffers);
                             channel->onFatal(channel->onFatalUsrData);
                             channel->onFatal = NULL;
+                            os_nanoSleep(timeout); /* Give network mainthread chance to process the callback */ 
                         }
                         receiveChannel->wakeupRequested = TRUE;
                     }

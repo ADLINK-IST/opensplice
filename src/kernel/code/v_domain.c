@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -18,49 +18,65 @@
 #include "v_participant.h"
 #include "v_publisher.h"
 #include "v_subscriber.h"
+#include "v_configuration.h"
+#include "v__policy.h"
+#include "os_heap.h"
 
 /* Protected */
 
 c_bool
 v_domainExpressionIsAbsolute(
-    const char *domainExpression)
+    const c_char* expression)
 {
     c_bool result;
-    
-    /* Absolute expressions are those which do not contain a '?' or a '*' */
-    
-    result = (strchr(domainExpression, '*') == NULL);
-    result = result && (strchr(domainExpression, '?') == NULL);
-    
-    return result;
-}    
 
+    assert(expression);
+
+    /* Absolute expressions are those which do not contain a '?' or a '*' */
+    if(strchr(expression, '*') == NULL && strchr(expression, '?') == NULL)
+    {
+        result = TRUE;
+    } else
+    {
+        result = FALSE;
+    }
+
+    return result;
+}
 
 c_bool
-v_domainFitsExpression(
-    v_domain domain,
-    const char *domainExpression)
+v_domainStringMatchesExpression(
+    const c_char* string,
+    const c_char* expression)
 {
-    c_bool result;
-    c_value domainNameValue, domainExprValue, resultValue;
-    
-    assert(domain != NULL);
-    assert(C_TYPECHECK(domain, v_domain));
-    assert(domainExpression != NULL);
-    
-    /* Check exact name match and expression match */
-    if (v_domainExpressionIsAbsolute(domainExpression)) {
-        result = (strcmp(domainExpression, v_partitionName(domain)) == 0);
-    } else {
-        domainNameValue = c_stringValue((char *)v_partitionName(domain));
-        domainExprValue = c_stringValue((char *)domainExpression);
-        resultValue = c_valueStringMatch(domainExprValue, domainNameValue);
-        result = resultValue.is.Boolean;
-    }
-    
-    return result;
-}    
+    c_bool result = FALSE;
+    c_value matchResult;
+    c_value expressionValue;
+    c_value stringValue;
 
+    assert(string);
+    assert(expression);
+
+    if(v_domainExpressionIsAbsolute(expression))
+    {
+        if(strcmp(expression, string) == 0)
+        {
+             result  = TRUE;
+        }
+    } else
+    {
+        expressionValue.kind = V_STRING;
+        expressionValue.is.String = (c_char*)expression;
+        stringValue.kind = V_STRING;
+        stringValue.is.String = (c_char*)string;
+        matchResult = c_valueStringMatch(expressionValue, stringValue);
+        if(matchResult.is.Boolean == TRUE)
+        {
+            result = TRUE;
+        }
+    }
+    return result;
+}
 
 /* Public */
 
@@ -120,29 +136,29 @@ v_domainLookupPublishers(
     v_participant participant;
     v_entity entity;
     v_entity domain2;
-    
+
     result = NULL;
     participants = v_resolveParticipants(v_objectKernel(domain), "*");
     participant = v_participant(c_iterTakeFirst(participants));
-    
+
     while (participant != NULL) {
         c_lockRead(&participant->lock);
         entities = c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
-        
+
         while (entity != NULL) {
             if (v_objectKind(entity) == K_PUBLISHER) {
                 domains = v_publisherLookupDomains(v_publisher(entity),
                                                    v_partitionName(domain));
-                
+
                 if (c_iterLength(domains) > 0) {
                     result = c_iterInsert(result, entity); /* transfer refcount */
                 } else {
                     c_free(entity);
                 }
                 domain2 = v_entity(c_iterTakeFirst(domains));
-                
+
                 while (domain2 != NULL) {
                     c_free(domain2);
                     domain2 = v_entity(c_iterTakeFirst(domains));
@@ -157,7 +173,7 @@ v_domainLookupPublishers(
         participant = v_participant(c_iterTakeFirst(participants));
     }
     c_iterFree(participants);
-    return result;   
+    return result;
 }
 
 c_iter
@@ -171,29 +187,29 @@ v_domainLookupSubscribers(
     v_participant participant;
     v_entity entity;
     v_entity domain2;
-    
+
     result = NULL;
     participants = v_resolveParticipants(v_objectKernel(domain), "*");
     participant = v_participant(c_iterTakeFirst(participants));
-    
+
     while (participant != NULL) {
         c_lockRead(&participant->lock);
         entities = c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
-        
+
         while (entity != NULL) {
             if(v_objectKind(entity) == K_SUBSCRIBER) {
                 domains = v_subscriberLookupDomains(v_subscriber(entity),
                                                     v_partitionName(domain));
-                
+
                 if (c_iterLength(domains) > 0) {
                     result = c_iterInsert(result, entity); /* transfer refcount */
                 } else {
                     c_free(entity);
                 }
                 domain2 = v_entity(c_iterTakeFirst(domains));
-                
+
                 while (domain2 != NULL) {
                     c_free(domain2);
                     domain2 = v_entity(c_iterTakeFirst(domains));
@@ -218,10 +234,127 @@ v_domainInterestNew(
     const char *domainExpression)
 {
     v_domainInterest result = NULL;
-   
+
 
     result = c_new(v_kernelType(kernel, K_DOMAININTEREST));
     result->expression = c_stringNew(c_getBase(c_object(kernel)), domainExpression);
-    
+
     return result;
-}    
+}
+
+/*
+ * ES, dds1576: This method consults the configuration info stored in the kernel
+ * to determine the access policy for this partition
+ */
+v_accessMode
+v_kernelPartitionAccessMode(
+    v_kernel _this,
+    v_partitionPolicy partition)
+{
+    v_configuration config;
+    v_cfElement root;
+    v_cfElement element;
+    c_iter iter;
+    v_accessMode retVal = V_ACCESS_MODE_UNDEFINED;
+    c_value expression;
+    c_value accessMode;
+    c_iter partitionsSplit;
+    c_char* partitionName;
+
+    config = v_getConfiguration(_this);
+    if(config)
+    {
+        root = v_configurationGetRoot(config);
+        /* Iterate over all partitionAccess elements */
+        iter = v_cfElementXPath(root, "Domain/PartitionAccess");
+        while(c_iterLength(iter) > 0)
+        {
+            element = v_cfElement(c_iterTakeFirst(iter));
+            /* Get the partition expression value, it should be a string */
+            expression = v_cfElementAttributeValue(element, "partition_expression");
+            if(expression.kind == V_STRING)
+            {
+                /* iterate over partitions, if one matches, exit and return */
+                partitionsSplit = v_partitionPolicySplit(partition);
+                while(c_iterLength(partitionsSplit) > 0)
+                {
+                    partitionName = (c_char*)c_iterTakeFirst(partitionsSplit);
+                    if(v_domainStringMatchesExpression(partitionName, expression.is.String))
+                    {
+                        /* The partition matches the expression.*/
+                        accessMode = v_cfElementAttributeValue(element, "access_mode");
+                        if(accessMode.kind == V_STRING)
+                        {
+                            /* A correct solution space can be realized between multiple
+                             * expressions having an AND relationship by specifying the
+                             * following rules R&W=RW, R&N=N, W&N=N, RW&N=N.
+                             */
+                            switch(retVal)
+                            {
+                                case V_ACCESS_MODE_UNDEFINED: /* start state */
+                                    if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    } else if(strcmp(accessMode.is.String, "write") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "read") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ;
+                                    } else if(strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_WRITE:
+                                    if(strcmp(accessMode.is.String, "read") == 0 ||
+                                       strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_READ:
+                                    if(strcmp(accessMode.is.String, "write") == 0 ||
+                                       strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_READ_WRITE:
+                                    if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                default: /* case V_ACCESS_MODE_NONE > none always remains none */
+                                    break;
+                            }
+                        }
+                    }
+                    os_free(partitionName);
+                }
+                c_iterFree(partitionsSplit);
+            }
+        }
+        if(iter)
+        {
+            c_iterFree(iter);
+        }
+        if(root)
+        {
+            c_free(root);
+        }
+    }
+    if(retVal == V_ACCESS_MODE_UNDEFINED)
+    {
+        /* No specific rights defined, fall back to default */
+        retVal = V_ACCESS_MODE_READ_WRITE;
+    }
+    return retVal;
+}

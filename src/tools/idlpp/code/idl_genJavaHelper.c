@@ -18,6 +18,29 @@
 #include <os_iterator.h>
 #include <os_heap.h>
 #include <os_stdlib.h>
+#include <errno.h>
+
+static os_char* orgPackageName = NULL;
+static os_char* tarPackageName = NULL;
+
+static os_char*
+idl_genJavaHelperApplyPackageSubstitute(
+    os_char* source,
+    const os_char *scopeSepp);
+
+static os_char*
+idl_genJavaHelperSubstitute(
+    const os_char* string,
+    const os_char* searchFor,
+    const os_char* replaceWith);
+
+static void
+idl_reportOpenError(
+    char *fname)
+{
+    printf ("Error opening file %s for writing. Reason: %s (%d)\n", fname, strerror( errno ), errno);
+    exit (-1);
+}
 
 /* Specify a list of all C keywords */
 static const char *java_keywords[61] = {
@@ -146,6 +169,51 @@ idl_scopeStackJava (
            strcat (scopeStack, Id);
            si++;
         }
+        if(strlen(scopeStack) > 0)
+        {
+            os_char* ptr;
+            os_char* ptr2;
+            os_char* ptr3;
+
+            /* es, dds1540: The following code is not pretty, but time limitations
+             * required it's implementation. To ensure
+             * proper substitution of for example package name 'Chat' with
+             * 'org.opensplice.Chat' without substitution class names like
+             * 'ChatMessage' to 'org.opensplice.ChatMessage' we need to take some
+             * special arrangements. We need to allow the user to state he wants to
+             * replace 'Chat.' with ''org.opensplice.Chat.', as this would resolve
+             * the previously stated problem.
+             * However this function for getting the scope stack is called in a
+             * special way if only the package names are required (without the
+             * specific class at the end). In these cases package Chat would become
+             * in string format 'Chat' instead of 'Chat.'. And this would cause
+             * problems when doing the substitution for the directory names and
+             * package directives. So to ensure substitution always goes correctly
+             * we added the scopeSepp to the end of the scopeStack and input that
+             * into the substitution algorithm. After the algorithm we remove the
+             * added scopeSepp again.
+             * So not that nicely solved, but lack of time to do it more nicely
+             * (which would be to support regular expression type things).
+             */
+            ptr = os_malloc(strlen(scopeStack)+ strlen(scopeSepp) + 1);
+            strcpy(ptr, scopeStack);
+            strncat(ptr, scopeSepp, strlen(scopeSepp));
+            ptr2 = idl_genJavaHelperApplyPackageSubstitute(ptr, scopeSepp);
+            memset(ptr, 0, strlen(ptr));
+            os_free(ptr);
+            ptr3 = strrchr(ptr2, *scopeSepp);
+            if(ptr3)
+            {
+                *ptr3 = '\0';
+            }
+            ptr = os_strdup(ptr2);
+            memset(ptr2, 0, strlen(ptr2));
+            os_free(ptr2);
+            memset(scopeStack, 0, strlen(scopeStack));
+            os_free(scopeStack);
+            scopeStack = ptr;
+        }
+
         if (name) {
             /* A user identifier is specified */
             /* Translate the user identifier to a C identifier */
@@ -166,14 +234,14 @@ idl_scopeStackJava (
            strcat (scopeStack, Id);
         }
      } else {
-	/* The stack is empty */
-	if (name) {
-	    /* A user identifier is specified */
-	    scopeStack = os_strdup(idl_javaId(name));
-	} else {
-	    /* make the stack represenation empty */
-	    scopeStack = os_strdup("");
-	}
+        /* The stack is empty */
+        if (name) {
+            /* A user identifier is specified */
+            scopeStack = os_strdup(idl_javaId(name));
+        } else {
+            /* make the stack represenation empty */
+            scopeStack = os_strdup("");
+        }
     }
     /* return the scope stack representation */
     return scopeStack;
@@ -256,46 +324,69 @@ idl_corbaJavaTypeFromTypeSpec (
 
 static int
 idl_createDir (
-    idl_scope scope)
+    os_char* fname)
 {
-    idl_scopeElement se;
-    c_long si;
     char pathName[OS_PATH_MAX];
     os_result statRes;
     struct os_stat statbuf;
     char* outdir;
-    pathName[0] = '\0';
+    os_char* stackScope;
+    os_char* token;
+    const os_char* osSep;
 
+    pathName[0] = '\0';
     outdir = idl_dirOutCur();
 
     if(outdir){
         sprintf(pathName, "%s%s", outdir, os_fileSep());
     }
+    /* make sure that we replace the os file seperator with a simple character
+     * like '/', this will allow us to parse easier later.
+     */
+    osSep = os_fileSep();
+    stackScope = idl_genJavaHelperSubstitute(fname, osSep, "/");
 
-    for (si = 0; si < idl_scopeStackSize(scope); si++) {
-	se = idl_scopeIndexed (scope, si);
-	strcat (pathName, idl_javaId(idl_scopeJavaElementName(se)));
-	statRes = os_stat (pathName, &statbuf);
-	if ((statRes == os_resultFail)) {
-	    /* @todo                                                      */
-	    /* Assume the file does not exist. On some platforms          */
-	    /* a check to see if errno == ENOENT would be more conclusive */
-	    /* That fails on WIN32 however because stat is not fully      */
-	    /* compatible. Only an os_stat implementation can solve that. */
-	    os_mkdir(pathName, 0777);
-	    statRes = os_stat(pathName, &statbuf);
-	} else {
-	    if (!OS_ISDIR(statbuf.stat_mode)) {
-	        printf ("File %s already exists, but is not a directory\n", pathName);
-	        return 0;
-	    }
-	}
-	if (statRes == os_resultFail) {
-	    printf ("Error when creating directory %s\n", pathName);
-	    return 0;
-	}
-	strcat (pathName, os_fileSep());
+    if(stackScope[0] != '\0'){ /* strlen(stackScope) > 0 */
+        do
+        {
+            token = strchr(stackScope, '/');
+            /* make sure this is not the last part of the file name, for example
+             * for the file name org/opensplice/foo.java we only want to create
+             * directories for org and opensplice, the foo.java part is not a
+             * directory. So we can simply state if no '/' char can be
+             * found then we must be at the end part of the file name!
+             */
+            if(token)
+            {
+                *token = '\0';
+                token++;
+                strcat (pathName, stackScope);
+                stackScope = token;
+                statRes = os_stat (pathName, &statbuf);
+                if (statRes == os_resultFail) {
+                    /* @todo                                                      */
+                    /* Assume the file does not exist. On some platforms          */
+                    /* a check to see if errno == ENOENT would be more conclusive */
+                    /* That fails on WIN32 however because stat is not fully      */
+                    /* compatible. Only an os_stat implementation can solve that. */
+
+                    os_mkdir(pathName, 0777);
+                    statRes = os_stat(pathName, &statbuf);
+                } else {
+                    if (!OS_ISDIR(statbuf.stat_mode)) {
+                        printf ("File %s already exists, but is not a directory\n", pathName);
+                        return 0;
+                    }
+                }
+                if (statRes == os_resultFail) {
+                    printf ("Error when creating directory %s\n", pathName);
+                    return 0;
+                }
+                strcat (pathName, os_fileSep());
+            }
+        } while(token);
     }
+
     return 1;
 }
 
@@ -304,19 +395,23 @@ idl_openJavaPackage (
     idl_scope scope,
     const char *name)
 {
-    char *fname;
-    char *package_file;
+    os_char *fname;
+    os_char *package_file;
 
-    package_file = os_malloc(strlen (name) + strlen (".java") + 1);
-    strcpy(package_file, name);
-    strcat(package_file, ".java");
-    fname = idl_scopeStackJava(scope, os_fileSep(), package_file);
-    if (idl_createDir(scope)) {
-	idl_fileSetCur(idl_fileOutNew (fname, "w"));
+    package_file = idl_scopeStackJava(scope, os_fileSep(), name);
+    fname = os_malloc(strlen (package_file) + strlen (".java") + 1);
+    strcpy(fname, package_file);
+    strcat(fname, ".java");
+    if (idl_createDir(fname)) {
+	    idl_fileSetCur(idl_fileOutNew (fname, "w"));
+        if (idl_fileCur() == NULL) {
+            idl_reportOpenError(fname);
+        }
     } else {
-	idl_fileSetCur(NULL);
+	    idl_fileSetCur(NULL);
     }
     os_free(package_file);
+    os_free(fname);
 }
 
 void
@@ -421,4 +516,126 @@ c_char *
 idl_genJavaConstantGetter(void)
 {
     return os_strdup(".value");
+}
+
+void
+idl_genJavaHelperInit(
+    os_char* originalPackageName,
+    os_char* targetPackageName)
+{
+    if(originalPackageName)
+    {
+        orgPackageName = os_strdup(originalPackageName);
+    }
+    if(targetPackageName)
+    {
+        tarPackageName = os_strdup(targetPackageName);
+    }
+}
+
+os_char*
+idl_genJavaHelperGetOrgPName(
+    void)
+{
+    return orgPackageName;
+}
+
+os_char*
+idl_genJavaHelperGetTgtPName(
+    void)
+{
+    return tarPackageName;
+}
+
+/* Result must be freed with os_free! */
+os_char*
+idl_genJavaHelperApplyPackageSubstitute(
+    os_char* source,
+    const os_char *scopeSepp)
+{
+    os_char* result;
+    os_char* tarPackageNameTMP;
+    os_char* orgPackageNameTMP;
+    assert(source);
+
+    /* only if 'tarPackageName' is valid should there be any substitution done */
+    if(tarPackageName)
+    {
+        /* if 'orgPackageName' is not valid, then we just need to prefix */
+        if(!orgPackageName)
+        {
+            tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp);
+            if(0 != strcmp(tarPackageNameTMP+(strlen(tarPackageNameTMP)-strlen(scopeSepp)), scopeSepp))
+            {
+                result = os_malloc(strlen(tarPackageNameTMP) + strlen(scopeSepp) + strlen(source) + 1);
+                strcpy(result, tarPackageNameTMP);
+                result = strncat(result, scopeSepp, strlen(scopeSepp));
+            } else
+            {
+                result = os_malloc(strlen(tarPackageNameTMP) + strlen(source) + 1);
+                strcpy(result, tarPackageNameTMP);
+            }
+            result = strncat(result, source, strlen(source));
+            os_free(tarPackageNameTMP);
+        } else
+        {
+            /* We need to substitute all occurances of 'orgPackageName' with
+             * 'tarPackageName'
+             */
+            tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp);
+            orgPackageNameTMP = idl_genJavaHelperSubstitute(orgPackageName, ".", scopeSepp);
+            result = idl_genJavaHelperSubstitute(source, orgPackageNameTMP, tarPackageNameTMP);
+            os_free(tarPackageNameTMP);
+            os_free(orgPackageNameTMP);
+        }
+    } else
+    {
+        /* No substitution to perform, just return the original string */
+        result = os_strdup(source);
+    }
+    return result;
+}
+
+/* ES, dds1540: This exact operation is copied in the
+ * api/dcps/saj/c/code/saj_copyCache.c file. so any bugs fixed here, should be
+ * fixed there as well!!
+ */
+os_char*
+idl_genJavaHelperSubstitute(
+    const os_char* string,
+    const os_char* searchFor,
+    const os_char* replaceWith)
+{
+    os_char* result;
+    os_char* ptr;
+    os_char* tmp;
+
+    tmp = os_strdup(string);
+    ptr = strstr(tmp, searchFor);
+    if(ptr)
+    {
+        os_char* before;
+        os_char* after;
+
+        before = os_malloc(ptr - tmp+1);
+        *ptr = '\0';
+        strcpy(before, tmp);
+        ptr = ptr+strlen(searchFor);
+        after = idl_genJavaHelperSubstitute(ptr, searchFor, replaceWith);
+        result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
+        strcpy(result, before);
+        strncat(result, replaceWith, strlen(replaceWith));
+        strncat(result, after, strlen(after));
+        os_free(before);
+        os_free(after);
+    } else
+    {
+        result = tmp;
+        tmp = NULL;
+    }
+    if(tmp)
+    {
+        os_free(tmp);
+    }
+    return result;
 }

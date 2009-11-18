@@ -253,13 +253,6 @@ pbbool be_ClientHeader::Open (const DDS_StdString& mainFilename)
       if (BE_Globals::UserDLL != (const char *)"")
       {
          BE_Globals::DLLExtension = " ";
-         os << "#if !defined(_WIN32)"<< nl;
-         os << "   #define " << DLLMACRO << nl;
-         os << "#endif" << nl;
-
-         os << nl;
-
-         BE_Globals::RealNamespace = "namespace " + BE_Globals::UserDLL + BE_Globals::DLLExtension;
       }
 
       return pbtrue;

@@ -410,6 +410,7 @@ os_readdir(
     return result;
 }
 
+/* The result of os_fileNormalize should be freed with os_free */
 char *
 os_fileNormalize(
     const char *filepath)

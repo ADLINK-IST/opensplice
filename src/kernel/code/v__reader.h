@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -46,7 +46,7 @@ v_readerUnSubscribe(
 c_bool
 v_readerSubscribeGroup (
     v_reader _this,
-    v_group g);
+    v_group group);
 
 c_bool
 v_readerUnSubscribeGroup (

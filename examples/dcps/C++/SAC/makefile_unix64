@@ -26,7 +26,7 @@ DCPS_OBJ_FILES = $(patsubst %.c, %.o, $(DCPS_SRC_FILES))
 
 .c.o :
 	@echo "Compiling $<"
-	@$(CC) $(CPPFLAGS) $(CCFLAGS) $< -o $@
+	$(CC) $(CPPFLAGS) $(CCFLAGS) $< -o $@
 
 all : dirs exec/ping exec/pong
 	@echo ">>>> all done"
@@ -40,17 +40,17 @@ dirs :
 $(DCPS_SRC_FILES) : pingpong.idl
 	@echo "Compiling $< with SPLICE IDL compiler"
 	@mkdir -p bld
-	@$(OSPLICE_COMP) $(INCLUDES) $<
+	$(OSPLICE_COMP) $(INCLUDES) $<
 
 exec/ping : $(DCPS_OBJ_FILES) ping.o
 	@echo "Linking PING"
 	@mkdir -p exec
-	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)
+	$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)
 
 exec/pong : $(DCPS_OBJ_FILES) pong.o
 	@echo "Linking PONG"
 	@mkdir -p exec
-	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)
+	$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)
 
 clean :
 	@rm -f *.o ospl-info.log

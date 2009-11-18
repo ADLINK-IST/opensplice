@@ -36,7 +36,7 @@ typedef struct sk_interfaceInfo_s *sk_interfaceInfo;
 #define SK_FALSE (0)
 #define SK_TRUE  (!SK_FALSE)
 
-extern os_sockErrno skLastSockError; 
+extern os_sockErrno skLastSockError;
 
 /* Socketfunctions all return -1 on error */
 #define SK_REPORT_SOCKFUNC(level, retval, context,function)          \
@@ -73,19 +73,21 @@ void              sk_interfaceInfoFreeAll(
                       sk_interfaceInfo *interfaceList /* [nofInterfaces] */,
                       os_uint nofInterfaces);
 
-char *            sk_interfaceInfoGetName(
+/* Returned string never longer than SK_INTF_MAX_NAME_LEN */
+#define SK_INTF_MAX_NAME_LEN (16)
+const char *      sk_interfaceInfoGetName(
                       const sk_interfaceInfo interfaceInfo);
-                     
+
 /* Currently not used
 unsigned short    sk_interfaceInfoGetFlags(
                       const sk_interfaceInfo interfaceInfo);
 */
-                     
+
 struct sockaddr * sk_interfaceInfoGetPrimaryAddress(
                       const sk_interfaceInfo interfaceInfo);
-                     
+
 struct sockaddr * sk_interfaceInfoGetBroadcastAddress(
                       const sk_interfaceInfo interfaceInfo);
-                       
+
 #endif /* NW_SOCKETMISC_H */
 

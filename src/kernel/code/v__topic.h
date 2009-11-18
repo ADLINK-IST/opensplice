@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -32,7 +32,7 @@ extern "C" {
 OS_API void
 v_topicDeinit(
     v_topic topic);
-   
+
 OS_API v_topic
 v__topicNew(
     v_kernel kernel,
@@ -41,7 +41,7 @@ v__topicNew(
     const c_char *keyList,
     v_topicQos qos,
     c_bool announce);
- 
+
 /**
  * for every notify method the observer lock must be locked!
  */

@@ -193,7 +193,7 @@ in_configFinalizePartitioning(
 #define INCF_ATTRIB_Discovery_PortNr_value_DEF  INCF_DEF_DISCOVERY_CHANNEL_PORT
 #define INCF_ATTRIB_Data_PortNr_value_DEF       INCF_DEF_DATA_CHANNEL_PORT
 #define INCF_ATTRIB_PortNr_value_MIN            0
-#define INCF_ATTRIB_PortNr_value_MAX            32000
+#define INCF_ATTRIB_PortNr_value_MAX            65535
 #define INCF_ELEM_GroupQueueSize                "GroupQueueSize"
 #define INCF_ATTRIB_GroupQueueSize_value_DEF    500
 #define INCF_ATTRIB_GroupQueueSize_value_MIN    100

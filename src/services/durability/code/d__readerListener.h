@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -44,11 +44,11 @@ C_STRUCT(d_readerListener){
 #define D_SELECT_ALL            "select * from %s"
 #define D_STRLEN_SELECT_ALL     ((size_t)(16))
 
-c_ulong             d_readerListenerAction          (u_dispatcher o, 
-                                                     u_waitsetEvent event, 
+c_ulong             d_readerListenerAction          (u_dispatcher o,
+                                                     u_waitsetEvent event,
                                                      c_voidp usrData);
 
-void                d_readerListenerProcessAction   (d_message message, 
+void                d_readerListenerProcessAction   (d_message message,
                                                      c_voidp copyArg);
 
 void                d_readerListenerInitView        (d_readerListener listener,
@@ -70,7 +70,7 @@ c_bool              d_readerListenerStart           (d_readerListener listener);
 
 c_bool              d_readerListenerStop            (d_readerListener listener);
 
-c_bool              d_readerListenerCopy            (c_object object, 
+c_bool              d_readerListenerCopy            (c_object object,
                                                      c_voidp copyArg);
 
 void                d_readerListenerDeinit          (d_object object);

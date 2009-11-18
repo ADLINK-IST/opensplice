@@ -3,7 +3,7 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
-CSC      = csc
+CSC      = gmcs
 
     # Binary used for filtering
 FILTER           = filter_gcc
@@ -38,11 +38,11 @@ JAR		 = jar
 	#Java
 JAVA		 = java
 JAVA_SRCPATH_SEP = :
-JAVA_LDFLAGS	 = -L$(JAVA_HOME)/jre/lib/i386
-JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/i386/client
-JAVA_LDFLAGS	 += -L$(JAVA_HOME)/jre/lib/i386/native_threads
-JAVA_INCLUDE	 = -I$(JAVA_HOME)/include
-JAVA_INCLUDE	 += -I$(JAVA_HOME)/include/linux
+JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/jre/lib/i386"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/i386/client"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/i386/native_threads"
+JAVA_INCLUDE	 = -I"$(JAVA_HOME)/include"
+JAVA_INCLUDE	 += -I"$(JAVA_HOME)/include/linux"
 
 	#soapcpp
 SOAPCPP		= soapcpp2
@@ -59,6 +59,10 @@ CFLAGS_STRICT	 = -Wall -W -pedantic
 # Set compiler options for single threaded process
 CFLAGS		 = -m32 -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
 CXXFLAGS	 = -m32 -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
+
+# For Linux, this test release version supports symbolic names in stead of IP addresses
+CFLAGS      += -DDO_HOST_BY_NAME
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_GNU_SOURCE

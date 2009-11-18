@@ -356,7 +356,7 @@ nw_receiveChannelAddGroup(
     NW_CONFIDENCE(channel != NULL);
 
     if (channel != NULL) {
-    	/* Add entry to hashtable */
+        /* Add entry to hashtable */
         nw_entryHashInsert(channel->hash, entry);
         NW_TRACE_3(Groups, 2,
                    "Channel %u added new group with partition %s and topic %s",

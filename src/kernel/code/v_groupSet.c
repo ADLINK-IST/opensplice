@@ -147,17 +147,17 @@ v_groupSetSelect(
         return NULL;
     }
 
-    q = c_queryNew(set->groups,expr,params);
-    q_dispose(expr);
-    if (q == NULL) {
-        assert(q != NULL);
-        return NULL;
-    }
     c_lockRead(&set->lock);
-    list = c_select(q,0);
+    q = c_queryNew(set->groups,expr,params);
+    if (q == NULL) {
+        list = NULL;
+    } else {
+        list = c_select(q,0);
+    }
     c_lockUnlock(&set->lock);
-
+    assert(q != NULL);
     c_free(q);
+    q_dispose(expr);
 
     return list;
 }
@@ -214,17 +214,17 @@ v_groupSetGet(
     }
     params[0] = c_stringValue((c_string)partitionName);
     params[1] = c_stringValue((c_string)topicName);
-    q = c_queryNew(set->groups, expr, params);
-    q_dispose(expr);
-    if (q == NULL) {
-        assert(q != NULL);
-        return NULL;
-    }
     c_lockRead(&set->lock);
-    list = c_select(q,0);
+    q = c_queryNew(set->groups, expr, params);
+    if (q == NULL) {
+        list = NULL;
+    } else {
+        list = c_select(q,0);
+    }
     c_lockUnlock(&set->lock);
-
+    assert(q != NULL);
     c_free(q);
+    q_dispose(expr);
     assert(c_iterLength(list) <= 1);
     g = v_group(c_iterTakeFirst(list));
     c_iterFree(list);

@@ -1,5 +1,7 @@
 
 # line 72 "idl.yy"
+#include <os_stdlib.h>
+#include <os_heap.h>
 #include <idl.h>
 #include <idl_extern.h>
 
@@ -1075,7 +1077,7 @@ char * yyreds[] =
         goto yynewstate;\
 }
 #define YYRECOVERING()  (!!yyerrflag)
-#define YYNEW(type)     malloc(sizeof(type) * yynewmax)
+#define YYNEW(type)     os_malloc(sizeof(type) * yynewmax)
 #define YYCOPY(to, from, type) \
         (type *) memcpy(to, (char *) from, yymaxdepth * sizeof (type))
 #define YYENLARGE( from, type) \

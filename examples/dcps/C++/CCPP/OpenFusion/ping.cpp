@@ -69,8 +69,8 @@ static unsigned int nof_cycles = 100;
 static unsigned int nof_blocks = 20;
 static char topic_id  = 's';
 
-static char * write_partition = "PING";
-static char * read_partition  = "PONG";
+static const char * write_partition = "PING";
+static const char * read_partition  = "PONG";
 
 //
 // Global Variables
@@ -153,7 +153,7 @@ add_stats (
 static void
 init_stats (
     stats_type& stats,
-    char *name)
+    const char *name)
 {
     strncpy ((char *)stats.name, name, 19);
     stats.name[19] = '\0';

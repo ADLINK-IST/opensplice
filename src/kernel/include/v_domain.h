@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DOMAIN_H
@@ -64,6 +64,11 @@ v_domainLookupPublishers (
 OS_API c_iter
 v_domainLookupSubscribers (
     v_domain _this);
+
+v_accessMode
+v_kernelPartitionAccessMode(
+    v_kernel _this,
+    v_partitionPolicy partition);
 
 
 #undef OS_API

@@ -244,7 +244,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
     
     /* Return the simulated Multitopic. */
     return namedMessageTopic;
-};
+}
 
 DDS_ReturnCode_t
 DDS_DomainParticipant_delete_simulated_multitopic(
@@ -300,7 +300,7 @@ DDS_DomainParticipant_delete_simulated_multitopic(
     checkStatus(status, "DDS_DomainParticipant_delete_topic (chatMessageTopic)");
     
     return status;
-};
+}
 
 
 /* Implementation for the callback function "on_data_available". */

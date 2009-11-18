@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -94,7 +94,7 @@ u_dataReaderNew(
     if (s != NULL) {
         result = u_subscriberClaim(s,&ks);
         if ((result == U_RESULT_OK) && (ks != NULL)) {
-            reader = v_dataReaderNew(ks,name,OQLexpr,params,qos,enable);
+            reader = v_dataReaderNew(ks,name, OQLexpr,params,qos,enable);
             if (reader != NULL) {
                 p = u_entityParticipant(u_entity(s));
                 _this = u_entityAlloc(p,u_dataReader,reader,TRUE);

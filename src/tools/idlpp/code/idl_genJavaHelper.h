@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IDL_GENJAVAHELPER_H
@@ -35,5 +35,18 @@ c_char *idl_sequenceIndexString(idl_typeSeq typeSeq);
 c_char *idl_arrayJavaIndexString(idl_typeArray typeArray);
 
 c_char *idl_genJavaConstantGetter(void);
+
+os_char*
+idl_genJavaHelperGetTgtPName(
+    void);
+
+os_char*
+idl_genJavaHelperGetOrgPName(
+    void);
+
+void
+idl_genJavaHelperInit(
+    os_char* originalPackageName,
+    os_char* targetPackageName);
 
 #endif /* IDL_GENJAVAHELPER_H */

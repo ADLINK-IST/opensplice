@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -28,9 +28,9 @@ d_statusRequestListenerNew(
     d_subscriber subscriber)
 {
     d_statusRequestListener listener;
-    
+
     listener = NULL;
-    
+
     if(subscriber){
         listener = d_statusRequestListener(os_malloc(C_SIZEOF(d_statusRequestListener)));
         d_listener(listener)->kind = D_STATUS_REQ_LISTENER;
@@ -45,17 +45,17 @@ d_statusRequestListenerInit(
     d_subscriber subscriber)
 {
     os_threadAttr attr;
-        
+
     os_threadAttrInit(&attr);
-    
-    d_readerListenerInit(   d_readerListener(listener), 
-                            d_statusRequestListenerAction, subscriber, 
+
+    d_readerListenerInit(   d_readerListener(listener),
+                            d_statusRequestListenerAction, subscriber,
                             D_STATUS_REQ_TOPIC_NAME, D_STATUS_REQ_TOP_NAME,
                             V_RELIABILITY_RELIABLE,
                             V_HISTORY_KEEPALL,
                             V_LENGTH_UNLIMITED, attr,
                             d_statusRequestListenerDeinit);
-    
+
 }
 
 void
@@ -63,7 +63,7 @@ d_statusRequestListenerFree(
     d_statusRequestListener listener)
 {
     assert(d_listenerIsValid(d_listener(listener), D_STATUS_REQ_LISTENER));
-    
+
     if(listener){
         d_readerListenerFree(d_readerListener(listener));
     }
@@ -74,7 +74,7 @@ d_statusRequestListenerDeinit(
     d_object object)
 {
     assert(d_listenerIsValid(d_listener(object), D_STATUS_REQ_LISTENER));
-    
+
     return;
 }
 
@@ -101,9 +101,9 @@ d_statusRequestListenerAction(
     d_publisher publisher;
     d_status status;
     d_networkAddress addr;
-    
+
     assert(d_listenerIsValid(d_listener(listener), D_STATUS_REQ_LISTENER));
-    
+
     admin = d_listenerGetAdmin(listener);
     publisher = d_adminGetPublisher(admin);
     status = d_statusNew(admin);

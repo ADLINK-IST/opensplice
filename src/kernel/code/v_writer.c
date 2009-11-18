@@ -1224,15 +1224,27 @@ v_writerNew(
     if (topic == NULL) {
         return NULL;
     }
-
-    q = v_writerQosNew(kernel,qos);
-    if (q != NULL) {
-        w = v_writer(v_objectNew(kernel,K_WRITER));
-        v_writerInit(w, p, name, topic, q, enable);
-        c_free(q); /* ref now in w->qos */
-    } else {
-        OS_REPORT(OS_ERROR, "v_writerNew", 0,
-                  "Writer not created: inconsistent qos");
+    /* ES, dds1576: Before creating the datawriter we have to verify that write
+     * access to the topic is allowed. We can accomplish this by checking the
+     * access mode of the topic.
+     */
+    if(v_topicAccessMode(topic) == V_ACCESS_MODE_WRITE || v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
+    {
+        q = v_writerQosNew(kernel,qos);
+        if (q != NULL) {
+            w = v_writer(v_objectNew(kernel,K_WRITER));
+            v_writerInit(w, p, name, topic, q, enable);
+            c_free(q); /* ref now in w->qos */
+        } else {
+            OS_REPORT(OS_ERROR, "v_writerNew", 0,
+                      "Writer not created: inconsistent qos");
+            w = NULL;
+        }
+    } else
+    {
+        OS_REPORT_1(OS_ERROR, "v_writerNew", 0,
+                    "Creation of writer <%s> failed. Topic "
+                    "does not have write access rights.", name);
         w = NULL;
     }
 
@@ -2192,13 +2204,18 @@ v_writerWaitForAcknowledgments(
 
 		if(c_tableCount(w->resendInstances) > 0){
 		    if(c_timeIsInfinite(timeout)){
-		        flags = v__observerWait(v_observer(w));
+		    	result = V_RESULT_UNDEFINED;
+		    	do {
+					flags = v__observerWait(v_observer(w));
 
-                if(c_tableCount(w->resendInstances) == 0){
-		            result = V_RESULT_OK;
-                } else {
-                    result = V_RESULT_ILL_PARAM;
-                }
+					if(c_tableCount(w->resendInstances) == 0){
+						result = V_RESULT_OK;
+					} else if (flags & V_EVENT_OBJECT_DESTROYED) {
+                        result = V_RESULT_ILL_PARAM;
+                   }
+		    	} while (result == V_RESULT_UNDEFINED);
+
+
             } else {
                 curTime = v_timeGet();
                 endTime = c_timeAdd(curTime, timeout);

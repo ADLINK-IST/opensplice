@@ -52,6 +52,11 @@ v_domainAdminSet(
     c_iter *addedDomains,
     c_iter *removedDomains);
 
+c_bool
+v_domainAdminDomainExists(
+    v_domainAdmin _this,
+    const c_char *domainName);
+
 c_iter
 v_domainAdminLookupDomains(
     v_domainAdmin _this,

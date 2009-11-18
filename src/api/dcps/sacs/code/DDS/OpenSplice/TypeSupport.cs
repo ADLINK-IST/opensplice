@@ -127,10 +127,12 @@ namespace DDS.OpenSplice
                 typeName);
                         
             
+            // If there is no explicit marshaler, then generate one.
             if (marshaler == null)
             {
                 // Get the attribute names and offsets of this datatype.
-                IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, typeName);
+                // This meta-data is looked up by using the IDL type name.
+                IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, TypeName);
                  
                 // Generate a new marshaller using the available generator.
                 marshaler = DatabaseMarshaler.Create(domainObj, metaData, dataType, generator);
@@ -146,10 +148,6 @@ namespace DDS.OpenSplice
                 }
             }
             
-            // TODO: Is this Type_Name actually going to be different after 
-            // register_type is called?
-            //InitType(domainObj.GapiPeer);
-
             return result;
         }
         

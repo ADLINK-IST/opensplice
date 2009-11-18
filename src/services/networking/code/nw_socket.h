@@ -25,9 +25,12 @@ typedef enum sk_addressType_e {
     SK_TYPE_UNKNOWN,
     SK_TYPE_LOOPBACK,
     SK_TYPE_BROADCAST,
-    SK_TYPE_MULTICAST
+    SK_TYPE_MULTICAST,
+    SK_TYPE_UNICAST
 } sk_addressType;
 
+/* Separators allowed when defining a list of networking addresses */
+#define NW_ADDRESS_SEPARATORS ";, "
 
 nw_socket   nw_socketSendNew(
                 const char *defaultAddress,
@@ -43,12 +46,12 @@ nw_socket   nw_socketReceiveNew(
 
 void        nw_socketFree(
                 nw_socket sock);
-                
+
 
 sk_bool     nw_socketLoopsback(
                 nw_socket sock);
 
-                
+
 sk_address  nw_socketPrimaryAddress(
                 nw_socket sock);
 
@@ -61,8 +64,8 @@ sk_address  nw_socketDataAddress(
 os_int      nw_socketPrimaryAddressCompare(
                 nw_socket sock,
                 sk_address toCompare);
-                
-                
+
+
 
 void        nw_socketAddPartition(
                 nw_socket sock,
@@ -86,7 +89,7 @@ sk_length   nw_socketSendDataToPartition(
                 sk_partitionId partitionId,
                 void *buffer,
                 sk_length length);
-                
+
 
 sk_length   nw_socketSendControlTo(
                 nw_socket sock,
@@ -100,8 +103,9 @@ sk_length   nw_socketReceive(
                 void *buffer,
                 sk_length length,
                 os_time *timeOut);
+
 os_int      nw_socketBind(
                 nw_socket sock);
-                       
+
 #endif /* NW_SOCKET_H */
 

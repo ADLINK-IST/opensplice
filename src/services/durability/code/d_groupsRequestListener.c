@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -48,34 +48,34 @@ collectLocalGroups(
     d_completeness completeness;
     d_quality quality;
     c_bool proceed;
-    
+
     d_newGroup newGroup;
-    
+
     helper = (struct collectGroupsHelper *)args;
-    
+
     partition    = d_groupGetPartition(group);
     topic        = d_groupGetTopic(group);
     kind         = d_groupGetKind(group);
     completeness = d_groupGetCompleteness(group);
     quality      = d_groupGetQuality(group);
-   
-    /* Only send groups that fulfill the partition and/or topic that 
+
+    /* Only send groups that fulfill the partition and/or topic that
      * are requested. Besides that, local groups must also NOT be sent.
      */
     proceed = TRUE;
-    
+
     if(proceed){
         if(d_groupIsPrivate(group)){
             proceed = FALSE; /*Don't send private groups*/
         }
     }
-    
+
     if(helper->partition){
         if(strcmp(helper->partition, partition) != 0){
             proceed = FALSE;
         }
     }
-    
+
     if(proceed){
         if(helper->topic){
             if(strcmp(helper->topic, topic) != 0){
@@ -83,20 +83,20 @@ collectLocalGroups(
             }
         }
     }
-    
+
     if(proceed){
         /* Also send the groups where I am not the aligner for since the master
-         * might not know this group and the data for this group will not be aligned 
+         * might not know this group and the data for this group will not be aligned
          * when not sending the group.
          */
-        newGroup = d_newGroupNew(helper->admin, partition, topic, kind, 
+        newGroup = d_newGroupNew(helper->admin, partition, topic, kind,
                                  completeness, quality);
         d_messageSetAddressee(d_message(newGroup), helper->addressee);
-        d_tableInsert(helper->groups, newGroup);                                 
+        d_tableInsert(helper->groups, newGroup);
     }
     os_free(partition);
     os_free(topic);
-    
+
     return TRUE;
 }
 
@@ -112,12 +112,12 @@ sendLocalGroups(
     c_voidp args)
 {
     struct sendGroupsHelper* helper;
-    
+
     helper = (struct sendGroupsHelper*)args;
-    
+
     d_newGroupSetAlignerCount(group, helper->groupCount);
     d_publisherNewGroupWrite(helper->publisher, group, helper->addressee);
-    
+
     return TRUE;
 }
 
@@ -126,9 +126,9 @@ d_groupsRequestListenerNew(
     d_subscriber subscriber)
 {
     d_groupsRequestListener listener;
-    
+
     listener = NULL;
-    
+
     if(subscriber){
         listener = d_groupsRequestListener(os_malloc(C_SIZEOF(d_groupsRequestListener)));
         d_listener(listener)->kind = D_GROUPS_REQ_LISTENER;
@@ -143,17 +143,17 @@ d_groupsRequestListenerInit(
     d_subscriber subscriber)
 {
     os_threadAttr attr;
-        
+
     os_threadAttrInit(&attr);
-    d_readerListenerInit(   d_readerListener(listener), 
-                            d_groupsRequestListenerAction, subscriber, 
+    d_readerListenerInit(   d_readerListener(listener),
+                            d_groupsRequestListenerAction, subscriber,
                             D_GROUPS_REQ_TOPIC_NAME, D_GROUPS_REQ_TOP_NAME,
                             V_RELIABILITY_RELIABLE,
                             V_HISTORY_KEEPALL,
                             V_LENGTH_UNLIMITED,
                             attr,
                             d_groupsRequestListenerDeinit);
-    
+
 }
 
 void
@@ -161,7 +161,7 @@ d_groupsRequestListenerFree(
     d_groupsRequestListener listener)
 {
     assert(d_listenerIsValid(d_listener(listener), D_GROUPS_REQ_LISTENER));
-    
+
     if(listener){
         d_readerListenerFree(d_readerListener(listener));
     }
@@ -172,9 +172,9 @@ d_groupsRequestListenerDeinit(
     d_object object)
 {
     assert(d_listenerIsValid(d_listener(object), D_GROUPS_REQ_LISTENER));
-        
+
     return;
-    
+
 }
 
 c_bool
@@ -201,11 +201,11 @@ d_groupsRequestListenerAction(
     struct sendGroupsHelper sendHelper;
     d_newGroup group;
     d_groupsRequest request;
-    
-    assert(d_listenerIsValid(d_listener(listener), D_GROUPS_REQ_LISTENER)); 
-    
+
+    assert(d_listenerIsValid(d_listener(listener), D_GROUPS_REQ_LISTENER));
+
     request = (d_groupsRequest)message;
-    
+
     helper.admin     = d_listenerGetAdmin(listener);
     durability       = d_adminGetDurability(helper.admin);
     helper.partition = request->partition;
@@ -215,27 +215,27 @@ d_groupsRequestListenerAction(
     helper.addressee = d_networkAddressNew(message->senderAddress.systemId,
                                            message->senderAddress.localId,
                                            message->senderAddress.lifecycleId);
-    
+
     d_printTimedEvent(durability, D_LEVEL_FINE,
-                D_THREAD_GROUPS_REQUEST_LISTENER, 
-                "Received groupsRequest from fellow %d; sending all groups\n", 
+                D_THREAD_GROUPS_REQUEST_LISTENER,
+                "Received groupsRequest from fellow %d; sending all groups\n",
                 message->senderAddress.systemId);
-    
+
     d_adminGroupWalk(helper.admin, collectLocalGroups, &helper);
-    
+
     sendHelper.groupCount = d_tableSize(helper.groups);
-    
+
     d_printTimedEvent(durability, D_LEVEL_FINE,
-                D_THREAD_GROUPS_REQUEST_LISTENER, 
-                "Sending %u groups\n", 
+                D_THREAD_GROUPS_REQUEST_LISTENER,
+                "Sending %u groups\n",
                 sendHelper.groupCount);
     sendHelper.publisher  = d_adminGetPublisher(helper.admin);
     sendHelper.addressee  = helper.addressee;
-    
+
     d_tableWalk(helper.groups, sendLocalGroups, &sendHelper);
 
     if(sendHelper.groupCount == 0){ /*let the sender know I received the request.*/
-        group = d_newGroupNew(helper.admin, NULL, NULL, D_DURABILITY_TRANSIENT, 
+        group = d_newGroupNew(helper.admin, NULL, NULL, D_DURABILITY_TRANSIENT,
                                 D_GROUP_COMPLETE, v_timeGet());
         d_newGroupSetAlignerCount(group, 0);
         d_publisherNewGroupWrite(sendHelper.publisher, group, sendHelper.addressee);
@@ -244,8 +244,8 @@ d_groupsRequestListenerAction(
 
     d_networkAddressFree(helper.addressee);
     d_tableFree(helper.groups);
-    
-    d_printTimedEvent(durability, D_LEVEL_FINE, 
+
+    d_printTimedEvent(durability, D_LEVEL_FINE,
         D_THREAD_GROUPS_REQUEST_LISTENER, "All local groups sent to fellow\n");
     return;
 }

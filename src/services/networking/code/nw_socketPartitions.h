@@ -24,12 +24,26 @@ void                 nw_socketPartitionsFree(
 nw_bool              nw_socketPartitionsAdd(
                          nw_socketPartitions socketPartitions,
                          sk_partitionId partitionId,
-                         sk_address partitionAddress,
+                         sk_address address,
                          sk_bool connected);
 
+/* Forward declaration */
+NW_CLASS(nw_addressList);
+
+/* No need to free the received addressList */
 nw_bool              nw_socketPartitionsLookup(
                          nw_socketPartitions socketPartitions,
                          sk_partitionId partitionId,
-                         sk_address *partitionAddress);
+                         nw_addressList *addressList);
+
+
+/* addressList methods */
+
+sk_address           nw_addressListGetAddress(
+                         nw_addressList addressList);
+
+nw_addressList       nw_addressListGetNext(
+                         nw_addressList addressList);
+
 
 #endif /*NW_SOCKETPARTITIONS_H*/

@@ -56,7 +56,10 @@
 /* ------------------ General/NetworkInterfaceAddress ---------------------- */
 #define NWCF_NAME_Interface             "NetworkInterfaceAddress"     /* string */
 #define NWCF_DEF_Interface              NWCF_FIRSTAVAILABLE_EXPR
-
+/* ------------------ General/Reconnection ---------------------- */
+#define NWCF_NAME_Reconnection          "Reconnection"                /* string */
+#define NWCF_ATTRIB_allowed             "allowed"                      /* ulong */
+#define NWCF_DEF_allowed                (0)
 /* ----------------------------- Channels ----------------------------------- */
 #define NWCF_ROOT_Channels              "Channels"
 /* ------------------------- Channels/Channel ------------------------------- */
@@ -187,6 +190,16 @@
 #define NWCF_NAME_RecoveryFactor      "RecoveryFactor"                 /* ulong */
 #define NWCF_DEF_RecoveryFactor       (3U)
 #define NWCF_MIN_RecoveryFactor       (2U)
+
+/* ----------------- Channels/Channel/Sending/DontRoute --------------------- */
+/* The default if TRUE because in older OpenSplice versions, there was no
+ * configuration option and it was always set to true... */
+#define NWCF_NAME_DontRoute           "DontRoute"                      /* bool */
+#define NWCF_DEF_DontRoute            (TRUE) 
+
+/* ----------------- Channels/Channel/Sending/DontFrag ---------------------- */
+#define NWCF_NAME_DontFragment        "DontFragment"                   /* bool */
+#define NWCF_DEF_DontFragment         (FALSE)
 
 /* ----------------- Channels/Channel/Sending/DiffServField ----------------- */
 #define NWCF_NAME_DiffServField       "DiffServField"                  /* ulong */

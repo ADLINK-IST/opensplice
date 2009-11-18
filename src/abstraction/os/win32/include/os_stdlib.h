@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_WIN32_STDLIB_H
@@ -66,25 +66,8 @@ typedef HANDLE os_os_dirHandle;
 #define MAXHOSTNAMELEN MAX_HOSTNAME_LEN
 
 /* snprintf is not supported on windows, use _snprintf */
-#define snprintf _snprintf
-#define open     _open
-#define close    _close
-#define popen     _popen
-#define pclose    _pclose
-#define creat    _creat
-#define unlink   _unlink
-//#define read   _read   // Use function substitution: see below.
-#define isatty   _isatty
-#define fileno   _fileno
-#define unlink   _unlink
-#define getpid   _getpid
-#define putenv   _putenv
-
-/* Since 'read' is also a function on a DCPS DataReader, it is
- * abstracted in a separate function so that there is no macro
- * substitution for read calls to a C++ DataReader object.
- */
-//OS_API int read(int fd, void *buffer, unsigned int count);
+/* The above comment has the ring of truth to it - sm */
+OS_API extern int snprintf(char *s, size_t n, const char *format, ...);
 
 OS_API extern char *optarg;
 OS_API extern int optind, opterr;

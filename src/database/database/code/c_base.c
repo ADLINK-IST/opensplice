@@ -995,7 +995,10 @@ c_baseInit (
 
         caseNumber = 0;
         /* c_unionCaseNew transfers refCount of type and
-         * c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN")
+         * c_enumValue(_SWITCH_TYPE_,"....")
+         * for maintainability it would be appropriate that c_unionCaseNew
+         * keeps type and the enum values, and that these objects are freed
+         * in this method after c_unionCaseNew.
          */
         type = c_address_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ADDRESS"));
@@ -1886,8 +1889,13 @@ c_free (
 #endif /* NDEBUG */
         return; /* cyclic reference detection */
     }
-    safeCount = pa_decrement(&header->refCount);
-    /* Take a local pointer, since header->type pointer will be deleted */
+
+#if CHECK_REF
+    /* Take a local pointer, since header->type pointer will be deleted
+     * The determination of actual type is also done here, because it is needed
+     * in the UT_TRACE below. Normally it is only needed when the ref count
+     * of the object becomes 0.
+     */
     headerType = header->type;
     if ((c_baseObject(headerType)->kind == M_EXTENT) ||
         (c_baseObject(headerType)->kind == M_EXTENTSYNC)) {
@@ -1899,18 +1907,30 @@ c_free (
         ACTUALTYPE(type,headerType);
     }
 
-#if CHECK_REF
     if (type && c_metaObject(type)->name) {
         if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
             if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
                 UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
-                        object, safeCount+1, safeCount);
+                        object, safeCount, safeCount-1);
             }
         }
     }
 #endif
 
+    safeCount = pa_decrement(&header->refCount);
+
     if (safeCount == 0) {
+        /* Take a local pointer, since header->type pointer will be deleted */
+        headerType = header->type;
+        if ((c_baseObject(headerType)->kind == M_EXTENT) ||
+            (c_baseObject(headerType)->kind == M_EXTENTSYNC)) {
+            c_type t;
+            t = c_extentType(c_extent(headerType));
+            ACTUALTYPE(type,t);
+            c_free(t);
+        } else {
+            ACTUALTYPE(type,headerType);
+        }
         c_freeReferences(c_metaObject(type),object);
 #ifndef NDEBUG
         {

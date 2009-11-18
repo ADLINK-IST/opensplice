@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
  package DDS;
@@ -24,7 +24,9 @@ public class ParticipantBuiltinTopicDataTypeSupport extends org.opensplice.dds.d
     {
         super("DDS/ParticipantBuiltinTopicDataDataReaderImpl",
             "DDS/ParticipantBuiltinTopicDataDataWriterImpl",
-            "(LDDS/ParticipantBuiltinTopicDataTypeSupport;)V");
+            "(LDDS/ParticipantBuiltinTopicDataTypeSupport;)V",
+            null,
+            null);
 
         int success = 0;
 
@@ -40,7 +42,7 @@ public class ParticipantBuiltinTopicDataTypeSupport extends org.opensplice.dds.d
              * DomainParticipantFactory exists.
              */
             DDS.DomainParticipantFactory f = DDS.DomainParticipantFactory.get_instance();
-            
+
             if (f != null) {
                 success = org.opensplice.dds.dcps.FooTypeSupportImpl.Alloc(
                         this,

@@ -119,10 +119,16 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeleteReadCondition(IReadCondition condition)
         {
-            ReadCondition conditionObj = (ReadCondition)condition;
-            return Gapi.DataReader.delete_readcondition(
-                GapiPeer,
-                conditionObj.GapiPeer);
+            ReturnCode result = ReturnCode.BadParameter;
+            ReadCondition conditionObj = condition as ReadCondition;
+
+            if (conditionObj != null)
+            {
+                result = Gapi.DataReader.delete_readcondition(
+                    GapiPeer,
+                    conditionObj.GapiPeer);
+            }
+            return result;
         }
 
         public ReturnCode DeleteContainedEntities()

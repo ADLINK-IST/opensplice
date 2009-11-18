@@ -218,6 +218,9 @@ nw_plugChannelInitialize(
     channel->messageBox = nw_messageBoxNew();
     channel->onFatal = onFatal;
     channel->onFatalUsrData = onFatalUsrData;
+
+    
+    channel->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
 }
 
 

@@ -1946,7 +1946,7 @@ c_tableWalk(
     struct c_tableWalkActionArg walkActionArg;
     c_bool result = TRUE;
 
-    if (t->object != NULL) {
+    if (t->count > 0) {
         if ((t->key == NULL) || (c_arraySize(t->key) == 0)) {
             result = action(t->object,actionArg);
         } else {

@@ -14,3 +14,6 @@ endif
 CFLAGS_OPT       = -O0 -g
 CFLAGS_DEBUG     = -DNDEBUG
 JCFLAGS          = -g
+
+#Csc compiler flags
+CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full

@@ -9,16 +9,18 @@
  *   for full copyright notice and license terms. 
  *
  */
+
 /** \file kernel/include/v_participant.h
  *  \brief This file defines the interface of the kernel participant class.
  *
- *  The kernel participant implements an application specific container that will
- *  hold all kernel entities created by the application and where the application
- *  remains the owner. The existence of these entities depend on the existence of
- *  the participant. When an application deletes a participant either explicit or
- *  implicit via e.g. an exit handler all contained entities are also deleted.
- *  However if entities are in use i.e. are referenced by a process it will remain
- *  until the process releases the reference.
+ *  The kernel participant implements an application specific container that
+ *  will hold all kernel entities created by the application and where the
+ *  application remains the owner.
+ *  The existence of these entities depend on the existence of the participant.
+ *  When an application deletes a participant either explicit or implicit via
+ *  e.g. an exit handler all contained entities are also deleted.
+ *  However if entities are in use i.e. are referenced by a process it will
+ *  remain until the process releases the reference.
  */
 
 #ifndef V_PARTICIPANT_H
@@ -51,12 +53,13 @@ extern "C" {
 #define v_participant(o) (C_CAST(o,v_participant))
 #define v_participantName(o) (v_entityName(v_participant(o)))
 
-/** \fn v_participant v_participantNew (v_kernel k, const c_char *name, v_qos qos)
+/** \fn v_participant v_participantNew(v_kernel k, const c_char *name, v_qos qos)
  *  \brief Creates a new participant object.
  *
  *  \param k The kernel scope wherein the participant shall be defined.
  *  \param name An optional name that is associated to the created participant.
- *  \param qos The Quality of service values to be assigned to the created participant.
+ *  \param qos The Quality of service values to be assigned to the created
+ *             participant.
  *  \return The newly created participant.
  */
 OS_API v_participant
@@ -136,6 +139,17 @@ v_participantNotify(
     v_event e,
     c_voidp userData);
 
+/** \fn void v_participantConnectNewGroup( v_participant _this, v_event event);
+ *  \brief This function will connect all DataWriters and DataReaders of
+ *         intrest to the new group (indecated by the 'new group' event.
+ *  Note that for now the event is passed but eventually the group should be
+ *  passed.
+ */
+OS_API void
+v_participantConnectNewGroup (
+    v_participant _this,
+    v_event event);
+
 OS_API void
 v_participantAssertLiveliness(
     v_participant _this);
@@ -154,7 +168,8 @@ v_participantDeleteHistoricalData(
  *
  * \param service The participant to operate on.
  */
-OS_API void v_participantRenewLease(
+OS_API void
+v_participantRenewLease(
     v_participant _this,
     v_duration leasePeriod);
 

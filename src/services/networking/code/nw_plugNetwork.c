@@ -39,8 +39,8 @@ typedef unsigned char nw_protocolVersion;
 
 NW_CLASS(nw_pathUserData);
 NW_STRUCT(nw_pathUserData) {
-	char *pathName;
-	nw_userData userData;
+    char *pathName;
+    nw_userData userData;
 };
 
 
@@ -68,23 +68,23 @@ nw_plugNetworkGetOrCreateUserDataPtr(
     nw_plugNetwork network,
     const char *pathName)
 {
-	nw_userData *result = NULL;
-	nw_seqNr i;
-	
-	for (i=0; (i<network->nofPaths) && (result == NULL); i++) {
-		if (strcmp(pathName, NW_USERDATA_PATH_BY_ID(network, i)) == 0) {
-			/* Pathname found, so return pointer to userdata */
-			result = &(NW_USERDATA_DATA_BY_ID(network, i));
-		}
-	}
-	
-	if (result == NULL) {
+    nw_userData *result = NULL;
+    nw_seqNr i;
+    
+    for (i=0; (i<network->nofPaths) && (result == NULL); i++) {
+        if (strcmp(pathName, NW_USERDATA_PATH_BY_ID(network, i)) == 0) {
+            /* Pathname found, so return pointer to userdata */
+            result = &(NW_USERDATA_DATA_BY_ID(network, i));
+        }
+    }
+    
+    if (result == NULL) {
         NW_USERDATA_PATH_BY_ID(network, network->nofPaths) = nw_stringDup(pathName);
-		result = &(NW_USERDATA_DATA_BY_ID(network, network->nofPaths));
-		network->nofPaths++;
-	}
-	
-	return result;
+        result = &(NW_USERDATA_DATA_BY_ID(network, network->nofPaths));
+        network->nofPaths++;
+    }
+    
+    return result;
 }
 
 static void
@@ -265,7 +265,7 @@ nw_plugNetworkNewChannel(
     if ((network != NULL) &&
         NW_CHANNEL_ID_IS_VALID(network, network->nofCreatedChannels)) {
         
-    	userDataPtr = nw_plugNetworkGetOrCreateUserDataPtr(network, pathName);
+        userDataPtr = nw_plugNetworkGetOrCreateUserDataPtr(network, pathName);
         switch (communication) {
             case NW_COMM_RECEIVE:
                 result = (nw_plugChannel)nw_plugReceiveChannelNew(

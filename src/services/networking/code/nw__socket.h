@@ -31,5 +31,9 @@ os_int               nw_socketSetBroadcastOption(
                       nw_socket sock,
                       os_int enableBroadcast);
 
+int               nw_socketSetDontRouteOption(
+                      nw_socket sock,
+                      os_int dontRoute);
+
 #endif /* NW__SOCKET_H */
 
