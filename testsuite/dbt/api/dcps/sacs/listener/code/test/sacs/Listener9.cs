@@ -1,4 +1,4 @@
-namespace test.sacs
+ namespace test.sacs
 {
     /// <date>Jun 2, 2005</date>
     public class Listener9 : Test.Framework.TestCase
@@ -71,7 +71,7 @@ namespace test.sacs
                 return result;
             }
             topQosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
-            topic = participant.CreateTopic("my_topic_t", "my_type", ref topQosHolder, null, 0);
+            topic = participant.CreateTopic("my_topic_t", "my_type", ref topQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";
@@ -85,7 +85,7 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";
@@ -126,7 +126,7 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref sqosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref sqosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";

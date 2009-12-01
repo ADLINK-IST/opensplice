@@ -42,7 +42,7 @@ namespace test.sacs
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder, null, 0);
+            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";

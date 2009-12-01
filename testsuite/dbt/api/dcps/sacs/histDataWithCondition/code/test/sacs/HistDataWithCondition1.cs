@@ -58,6 +58,7 @@ namespace test.sacs
                 result.Result = "Writing data failed.";
                 return result;
             }
+
             drQos = (DDS.DataReaderQos)this.ResolveObject("datareaderQos");
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topic = (DDS.ITopic)this.ResolveObject("topic");
@@ -68,6 +69,7 @@ namespace test.sacs
                 result.Result = "creating datareader failed.";
                 return result;
             }
+            
             resource = new DDS.ResourceLimitsQosPolicy();
             resource.MaxInstances = -1;
             resource.MaxSamples = -1;
@@ -94,7 +96,8 @@ namespace test.sacs
             {
                 result.Result = "datareader.take failed " + ddsReturnCode + " (" + dataList
                     .Length + " samples taken)";
-                subscriber.DeleteDataReader(reader);
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "waitForHistoricalDataWithCondition not implemented yet.");
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail; subscriber.DeleteDataReader(reader);
                 return result;
             }
             for (int i = 0; i < dataList.Length; i++)
@@ -105,6 +108,8 @@ namespace test.sacs
             if (dataList.Length != 4)
             {
                 result.Result = "Unexpected number of samples received.";
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "waitForHistoricalDataWithCondition not implemented yet.");
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 subscriber.DeleteDataReader(reader);
                 return result;
             }

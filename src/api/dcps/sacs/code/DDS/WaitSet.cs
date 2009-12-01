@@ -41,7 +41,7 @@ namespace DDS
                     marshaler.GapiPtr,
                     ref timeout);
 
-                if (result == ReturnCode.Ok)
+                if (result == ReturnCode.Ok || result == ReturnCode.Timeout)
                 {
                     marshaler.CopyOut(out activeConditions);
                 }

@@ -42,7 +42,7 @@ namespace test.sacs
                 return result;
             }
             qos.Partition.Name = new string[] { "Partition1", "Partition2", "Partition3" };
-            publisher2 = participant.CreatePublisher(ref qos, null, 0);
+            publisher2 = participant.CreatePublisher(ref qos);//, null, 0);
             if (publisher2 == null)
             {
                 result.Result = "could not create a publisher (2)";
@@ -55,7 +55,7 @@ namespace test.sacs
                 result.Result = "topic == null";
                 return result;
             }
-            writer = publisher2.CreateDataWriter(topic, ref dataWriterQosHolder, null, 0);
+            writer = publisher2.CreateDataWriter(topic, ref dataWriterQosHolder);//, null, 0);
             if (writer == null)
             {
                 result.Result = "could not create a writer (3)";
@@ -91,7 +91,7 @@ namespace test.sacs
                 result.Result = "could not delete a publisher (8)";
                 return result;
             }
-            writer = publisher2.CreateDataWriter(topic, ref dataWriterQosHolder, null, 0);
+            writer = publisher2.CreateDataWriter(topic, ref dataWriterQosHolder);//, null, 0);
             if (writer != null)
             {
                 result.Result = "could create a writer on a deleted publisher (9)";

@@ -34,7 +34,7 @@ namespace test.sacs
                 result.Result = "could not get default SubscriberQos";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subscriberQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subscriberQosHolder);//, null, DDS.StatusKind.Any);
             if (subscriber == null)
             {
                 result.Result = "could create a Subscriber";

@@ -64,7 +64,7 @@ namespace DDS.OpenSplice
             //if (result != ReturnCode.Ok)
             //    throw new Exception("Failed to register builtin topic: DDSParticipant");
 
-            DDS.TopicBuiltinTopicDataTypeSupport DDSTopic = 
+            DDS.TopicBuiltinTopicDataTypeSupport DDSTopic =
                 new DDS.TopicBuiltinTopicDataTypeSupport(new DDSTopicBuiltinTopicMarshaler());
             result = DDSTopic.RegisterType(participant, DDSTopic.TypeName);
             if (result != ReturnCode.Ok)
@@ -89,7 +89,7 @@ namespace DDS.OpenSplice
             Gapi.gapi_domainParticipantListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener == null)
             {
                 using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
                 {
@@ -97,6 +97,19 @@ namespace DDS.OpenSplice
                         GapiPeer,
                         marshaler.GapiPtr,
                         mask);
+                }
+            }
+            else
+            {
+                lock (listener)
+                {
+                    using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.DomainParticipant.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
                 }
             }
             return result;
@@ -119,12 +132,6 @@ namespace DDS.OpenSplice
 
         public IPublisher CreatePublisher(IPublisherListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreatePublisher();
-            }
-
             IPublisher publisher = null;
 
             // Note: we use the same gapi lister as the DataWriter since the
@@ -173,12 +180,6 @@ namespace DDS.OpenSplice
 
         public IPublisher CreatePublisher(ref PublisherQos qos, IPublisherListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreatePublisher(ref qos);
-            }
-
             IPublisher publisher = null;
 
             using (IMarshaler marshaler = new PublisherQosMarshaler(ref qos))
@@ -236,12 +237,6 @@ namespace DDS.OpenSplice
 
         public ISubscriber CreateSubscriber(ISubscriberListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateSubscriber();
-            }
-
             ISubscriber subscriber = null;
 
             OpenSplice.Gapi.gapi_subscriberListener gapiListener;
@@ -287,12 +282,6 @@ namespace DDS.OpenSplice
 
         public ISubscriber CreateSubscriber(ref SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateSubscriber(ref qos);
-            }
-
             ISubscriber subscriber = null;
 
             using (IMarshaler marshaler = new SubscriberQosMarshaler(ref qos))
@@ -345,19 +334,45 @@ namespace DDS.OpenSplice
                     IntPtr reader_gapiPtr;
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSTopic");
                     if (reader_gapiPtr != IntPtr.Zero)
+                    {
                         new DDS.TopicBuiltinTopicDataDataReader(reader_gapiPtr);
+                        IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
+                        if (topic_gapiPtr != IntPtr.Zero)
+                        {
+                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                        }
 
+                    }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSParticipant");
-                    if (reader_gapiPtr != IntPtr.Zero)
+                    if (reader_gapiPtr != IntPtr.Zero){
                         new DDS.ParticipantBuiltinTopicDataDataReader(reader_gapiPtr);
+                        IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
+                        if (topic_gapiPtr != IntPtr.Zero)
+                        {
+                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                        }
 
+                    }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSPublication");
-                    if (reader_gapiPtr != IntPtr.Zero)
+                    if (reader_gapiPtr != IntPtr.Zero){
                         new DDS.PublicationBuiltinTopicDataDataReader(reader_gapiPtr);
+                        IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
+                        if (topic_gapiPtr != IntPtr.Zero)
+                        {
+                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                        }
 
+                    }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSSubscription");
-                    if (reader_gapiPtr != IntPtr.Zero)
-                        new DDS.SubscriptionBuiltinTopicDataDataReader(reader_gapiPtr);
+                    if (reader_gapiPtr != IntPtr.Zero){
+                        new DDS.SubscriptionBuiltinTopicDataDataReader(reader_gapiPtr); 
+                        IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
+                        if (topic_gapiPtr != IntPtr.Zero)
+                        {
+                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                        }
+
+                    }
                 }
 
                 return subscriber;
@@ -387,12 +402,6 @@ namespace DDS.OpenSplice
         public ITopic CreateTopic(string topicName, string typeName,
             ITopicListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateTopic(topicName, typeName);
-            }
-
             ITopic topic = null;
 
             OpenSplice.Gapi.gapi_topicListener gapiListener;
@@ -444,12 +453,6 @@ namespace DDS.OpenSplice
         public ITopic CreateTopic(string topicName, string typeName, ref TopicQos qos,
             ITopicListener listener, StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateTopic(topicName, typeName, ref qos);
-            }
-
             ITopic topic = null;
 
             using (IMarshaler marshaler = new TopicQosMarshaler(ref qos))

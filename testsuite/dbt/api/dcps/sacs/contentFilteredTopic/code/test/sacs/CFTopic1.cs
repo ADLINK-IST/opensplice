@@ -106,16 +106,30 @@ namespace test.sacs
                 result.Result = "operation get_expression_parameters returned " + rc;
                 return result;
             }
+            
             retrievedExpressionParameters = ssHolder;
             if (retrievedExpressionParameters == null)
             {
                 result.Result = "operation get_expression_parameters failed (5).";
                 return result;
             }
-            if (!System.Array.Equals(retrievedExpressionParameters, expressionParameters))
+            //LF, System.Array.Equals tests instance equality - this is not what we are looking for here...
+            /*if (!System.Array.Equals(retrievedExpressionParameters, expressionParameters))
             {
-                result.Result = "unexpected parameters after calling get_expression_parameters (5).";
+                result.Result = "unexpected parameters after calling get_expression_parameters (5)." + retrievedExpressionParameters[0] + " : " + expressionParameters[0] ;
                 return result;
+            }*/
+
+            if (retrievedExpressionParameters.Length == expressionParameters.Length)
+            {
+                for (int i = 0; i < retrievedExpressionParameters.Length; i++ )
+                {
+                    if (retrievedExpressionParameters[i] != expressionParameters[i])
+                    {
+                        result.Result = "unexpected parameters after calling get_expression_parameters (5)." + retrievedExpressionParameters[i] + " : " + expressionParameters[i];
+                        return result;
+                    }
+                }
             }
 
             // TODO: JLS, Verify that the hexstring is correct.
@@ -135,10 +149,21 @@ namespace test.sacs
             }
             retrievedExpressionParameters = ssHolder;
             //if (!System.Array.equals(retrievedExpressionParameters, newExpressionParameters)){
-            if (!System.Array.Equals(retrievedExpressionParameters, expressionParameters))
+            /*if (!System.Array.Equals(retrievedExpressionParameters, expressionParameters))
             {
                 result.Result = "unexpected parameters after calling get_expression_parameters (6).";
                 return result;
+            }*/
+            if (retrievedExpressionParameters.Length == expressionParameters.Length)
+            {
+                for (int i = 0; i < retrievedExpressionParameters.Length; i++)
+                {
+                    if (retrievedExpressionParameters[i] != expressionParameters[i])
+                    {
+                        result.Result = "unexpected parameters after calling get_expression_parameters (5)." + retrievedExpressionParameters[i] + " : " + expressionParameters[i];
+                        return result;
+                    }
+                }
             }
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;

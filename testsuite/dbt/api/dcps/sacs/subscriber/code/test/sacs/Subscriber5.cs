@@ -42,19 +42,19 @@ namespace test.sacs
                 result.Result = "Could not retrieve default DataReaderQos (1).";
                 return result;
             }
-            reader1 = subscriber.CreateDataReader(topic, ref dataReaderQos, null, 0);
+            reader1 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
             if (reader1 == null)
             {
                 result.Result = "Could not create a DataReader (2).";
                 return result;
             }
-            reader2 = subscriber.CreateDataReader(topic, ref dataReaderQos, null, 0);
+            reader2 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create a DataReader (3).";
                 return result;
             }
-            reader3 = subscriber.CreateDataReader(topic, ref dataReaderQos, null, 0);
+            reader3 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
             if (reader3 == null)
             {
                 result.Result = "Could not create a DataReader (4).";

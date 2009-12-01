@@ -554,6 +554,8 @@ os_procDestroy(
     return rv;
 }
 
+#ifndef VXWORKS_RTP
+
 /** \brief Get the process effective scheduling class
  *
  * Possible Results:
@@ -592,7 +594,6 @@ os_procAttrGetClass(void)
     return class;
 }
 
-#ifndef VXWORKS_RTP
 /** \brief Get the process effective scheduling priority
  *
  * Possible Results:

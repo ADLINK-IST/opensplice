@@ -55,18 +55,21 @@ namespace test.sacs
                 result.Result = "could not register a type with a null name (4)";
                 return result;
             }
+
             rc = typeSupport.RegisterType(participant, string.Empty);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "could not register a type with an empty name (5)";
                 return result;
             }
+
             rc = typeSupport.RegisterType(null, "type_name6");
             if (rc == DDS.ReturnCode.Ok)
             {
                 result.Result = "could register a type on a null participant (6)";
                 return result;
             }
+
             rc = factory.DeleteParticipant(participant);
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -79,6 +82,8 @@ namespace test.sacs
                 result.Result = "could register a type on a null participant (8)";
                 return result;
             }
+
+
             rc = typeSupport.RegisterType(participant, "type_name9");
             if (rc == DDS.ReturnCode.Ok)
             {

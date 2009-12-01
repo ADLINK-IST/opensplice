@@ -44,7 +44,7 @@ namespace test.sacs
                 result.Result = "contains_entity with incorrect handle incorrect";
                 return result;
             }
-
+            
             handle = participant.InstanceHandle;
             if (handle == DDS.InstanceHandle.Nil)
             {

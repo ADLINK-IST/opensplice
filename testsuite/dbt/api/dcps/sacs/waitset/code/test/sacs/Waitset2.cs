@@ -53,7 +53,7 @@ namespace test.sacs
                 result.Result = "get_default_publisher_qos failed.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, DDS.StatusKind.Any);
             if (publisher == null)
             {
                 result.Result = "create_publisher failed.";

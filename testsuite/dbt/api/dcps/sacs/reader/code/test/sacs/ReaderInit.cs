@@ -52,7 +52,7 @@ namespace test.sacs
                 result.Result = "Default SubscriberQos could not be resolved.";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";
@@ -71,7 +71,7 @@ namespace test.sacs
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
-            topic = participant.CreateTopic("tst", "tstType", ref tQosHolder, null, 0);
+            topic = participant.CreateTopic("tst", "tstType", ref tQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";
@@ -83,7 +83,7 @@ namespace test.sacs
                 result.Result = "Default PublisherQos could not be resolved.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";

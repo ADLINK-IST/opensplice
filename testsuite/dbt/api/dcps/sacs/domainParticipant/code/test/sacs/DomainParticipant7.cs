@@ -59,7 +59,7 @@ namespace test.sacs
                 result.Result = "Register type failed.";
                 return result;
             }
-            topic = participant.CreateTopic("MyDCPSTopic", "myTopicType", ref topQosHolder1, null, 0);
+            topic = participant.CreateTopic("MyDCPSTopic", "myTopicType", ref topQosHolder1);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Create topic failed (3)";

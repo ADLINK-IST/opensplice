@@ -995,7 +995,7 @@ install_hde_target ()
 
     if [ "${INCLUDE_CXX}" = "yes" ]
     then
-        if [ "${SOURCE_TARGET_SHORT}" != "int" -o "${target}" != "PPC604.vxworks6.6" -o "${target}" != "PPC604.vxworks6.5" ]
+        if [ "${SOURCE_TARGET_SHORT}" != "int" -a "${target}" != "PPC604.vxworks6.6" -a "${target}" != "PPC604.vxworks6.5" ]
         then
             echo "*         For CORBA C++ OpenFusion... "
             mkdir ${HDE_dir}/examples/dcps/CORBA
@@ -1173,7 +1173,7 @@ install_hde_target ()
 
     if [ "${INCLUDE_C}" = "yes" ]
     then
-        if [ "${target}" != "PPC604.vxworks6.6" -o "${target}" != "PPC604.vxworks6.5" ]
+        if [ "${target}" != "PPC604.vxworks6.6" -a "${target}" != "PPC604.vxworks6.5" ]
         then
             echo "*         For C++ on C... "
             mkdir ${HDE_dir}/examples/dcps/standalone/C++OnC
@@ -1215,9 +1215,8 @@ install_hde_target ()
                 install_ascii_file    ${OSPL_HOME}/examples/dcps/C++/SAC_x86.win32/PingPong/README.txt \
                     ${HDE_dir}/examples/dcps/standalone/C++OnC/PingPong
             fi
-            echo "*           Ready"
-        fi
-        echo "*         C++ On C Ready"
+            echo "*         C++ On C Ready"
+        fi        
 
         echo "*         For standalone C... "
         mkdir ${HDE_dir}/examples/dcps/standalone/C

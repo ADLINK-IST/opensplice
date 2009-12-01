@@ -4,7 +4,7 @@ namespace test.sacs
     public class Waitset6 : Test.Framework.TestCase
     {
         public Waitset6()
-            : base("sacs_waitset_tc6", "waitset", "waitset", "test datawriter status condition in waitset"
+            : base("sacs_waitset_tc6", "waitset", "waitset", "test datareader status condition in waitset"
                 , "test datawriter status condition in waitset", null)
         {
             this.AddPreItem(new test.sacs.WaitsetInit());

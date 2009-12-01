@@ -59,7 +59,7 @@ namespace test.sacs
                 result.Result = "participant.get_default_publisher_qos failed (2).";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref publisherQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref publisherQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "participant.create_publisher failed (3).";
@@ -84,7 +84,7 @@ namespace test.sacs
                 result.Result = "participant.get_default_subscriber_qos failed (6).";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subscriberQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subscriberQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "participant.create_subscriber failed (7).";

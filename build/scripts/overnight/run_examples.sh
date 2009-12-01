@@ -2,16 +2,17 @@
 SUM=0
 SUCC=0
 FAIL=0
-FAILURES=0
-
+RUN_SUMMARY_LOG=$LOGDIR/examples/run/run_results_summary.txt
+RUN_LOG=$LOGDIR/examples/run/run_results.txt
+SUMMARY_LOG=$LOGDIR/examples/run/overview.log
 CUR_PATH=`pwd`
-echo " Begin"
+
+echo " Begin running examples - `date`"
 
 for PROJECT in $EXAMPLES 
-do
-    echo " ### Project: $PROJECT Begin ### "
+do 
     cd "$CUR_PATH/$PROJECT"
-    
+
     run="yes"
     
     for test in $EXCLUDED_TESTS
@@ -20,37 +21,86 @@ do
 	   run="no"
 	fi
     done
+
+    echo " ### Project: $PROJECT Begin ### " > run.log
         
     if [ $run = "yes" ]; 
     then
-        sh RUN
+        sh RUN >> run.log 2>&1
         status=$?
         
         SUM=`expr $SUM + 1`
         if [ $status = 0 ]; then
-            SUCC=`expr $SUCC + 1`
-	    echo " ### Project: $PROJECT success ### "
+           if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error)' $CUR_PATH/$PROJECT/run.log`" ]
+           then
+               FAIL=`expr $FAIL + 1`
+
+               SEGMENTATIONFAULTS=`grep -ci "segmentation" $CUR_PATH/$PROJECT/run.log`
+               FILENOTFOUND=`grep -ci "file not found" $CUR_PATH/$PROJECT/run.log`
+               ASSERTIONFAILED=`grep -ci "assertion failed" $CUR_PATH/$PROJECT/run.log`
+               NOCLASSDEFFOUND=`grep -ci "NoClassDefFoundError" $CUR_PATH/$PROJECT/run.log`
+               ERROR=`grep -ci "error" $CUR_PATH/$PROJECT/run.log`
+               CREATIONOFKERNEL=`grep -ci "creation of kernel failed" $CUR_PATH/$PROJECT/run.log`
+               TIMEOUTS=`grep -ci "timeout" $CUR_PATH/$PROJECT/run.log`
+               KILLED=`grep -ci "killed" $CUR_PATH/$PROJECT/run.log`
+
+               echo "Run $PROJECT FAILED " >> run.log
+               echo "Run $PROJECT FAILED " >> $RUN_SUMMARY_LOG
+               echo "" >> $RUN_SUMMARY_LOG
+               echo "Segmentation Faults         = $SEGMENTATIONFAULTS" >> $RUN_SUMMARY_LOG
+               echo "File not found errors       = $FILENOTFOUND" >> $RUN_SUMMARY_LOG
+               echo "NoClassDefFound errors      = $NOCLASSDEFFOUND" >> $RUN_SUMMARY_LOG
+               echo "Errors                      = $ERROR" >> $RUN_SUMMARY_LOG
+               echo "Creation of kernel failures = $CREATIONOFKERNEL" >> $RUN_SUMMARY_LOG
+               echo "Timeouts                    = $TIMEOUTS" >> $RUN_SUMMARY_LOG
+               echo "Killed                      = $KILLED" >> $RUN_SUMMARY_LOG
+               echo "Assertion Failed            = $ASSERTIONFAILED" >> $RUN_SUMMARY_LOG
+               echo "" >> $RUN_SUMMARY_LOG
+               echo "See run_results.txt for full details of failures " >> $RUN_SUMMARY_LOG           
+               echo "" >> $RUN_SUMMARY_LOG
+            else
+               SUCC=`expr $SUCC + 1`
+	       echo " ### Run $PROJECT PASSED ### " >> $RUN_SUMMARY_LOG
+	       echo " ### Run $PROJECT PASSED ### " >> run.log
+            fi
         else
             FAIL=`expr $FAIL + 1`
-	    echo " ### Project: $PROJECT failed with status: $status ### "
-            FAILURES=1
+	    echo " ### Run $PROJECT FAILED with status: $status ### " >> run.log
+	    echo " ### Run $PROJECT FAILED with status: $status ### " >> $RUN_SUMMARY_LOG
         fi  
 	 
-        echo " ### Project: $PROJECT End ### "
-        echo ""
+        echo " ### Project: $PROJECT End ### " >> run.log
+        echo "" >> run.log
+
+        cat run.log  >> $RUN_LOG
+        sleep 10
+
     else
         echo "Next Examples"
     fi
 done
 
-if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation failed|failed!|fatal error)' $OSPL_HOME/../../../log/examples/run/overview.log`" ]
-then
-   FAILURES=1
-   echo "There were failures running the examples - check log for details"
-fi
-
 cd "$CUR_PATH"
 
-if [ $FAILURES = 1 ]; then
-   exit 1
+echo "" >> $SUMMARY_LOG
+echo "############# Summary of Build ##########"  >> $SUMMARY_LOG
+echo "     Examples Run     : $SUM"  >> $SUMMARY_LOG
+echo "     Runs passed      : $SUCC"  >> $SUMMARY_LOG
+echo "     Runs failed      : $FAIL"  >> $SUMMARY_LOG
+echo "#########################################"  >> $SUMMARY_LOG
+echo ""  >> $SUMMARY_LOG
+
+echo "RESULTS ......."  >> $SUMMARY_LOG
+echo ""  >> $SUMMARY_LOG
+cat $RUN_SUMMARY_LOG  >> $SUMMARY_LOG
+sleep 10
+
+rm $RUN_SUMMARY_LOG
+sleep 5
+
+if [ $FAIL != 0 ]; then
+
+    exit 1
 fi
+
+

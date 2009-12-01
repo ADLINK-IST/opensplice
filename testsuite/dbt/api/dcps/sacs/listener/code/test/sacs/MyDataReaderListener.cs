@@ -1,7 +1,7 @@
 namespace test.sacs
 {
     /// <date>Jun 8, 2005</date>
-    public class MyDataReaderListener : DDS.DataReaderListener
+    public class MyDataReaderListener : DDS.IDataReaderListener
     {
         public bool onRequestedDeadlineMissedCalled = false;
 
@@ -29,47 +29,48 @@ namespace test.sacs
 
         public DDS.SampleLostStatus slStatus;
 
-        public virtual void On_requested_deadline_missed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus
+        public virtual void OnRequestedDeadlineMissed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus
              status)
         {
             onRequestedDeadlineMissedCalled = true;
             rdmStatus = status;
         }
 
-        public virtual void On_requested_incompatible_qos(DDS.IDataReader reader, DDS.RequestedIncompatibleQosStatus
+        public virtual void OnRequestedIncompatibleQos(DDS.IDataReader reader, DDS.RequestedIncompatibleQosStatus
              status)
         {
             onRequestedIncompatibleQosCalled = true;
             riqStatus = status;
         }
 
-        public virtual void On_sample_rejected(DDS.IDataReader reader, DDS.SampleRejectedStatus
+        public virtual void OnSampleRejected(DDS.IDataReader reader, DDS.SampleRejectedStatus
              status)
         {
             onSampleRejectedCalled = true;
             srStatus = status;
         }
 
-        public virtual void On_liveliness_changed(DDS.IDataReader reader, DDS.LivelinessChangedStatus
+        public virtual void OnLivelinessChanged(DDS.IDataReader reader, DDS.LivelinessChangedStatus
              status)
         {
+            
             onLivelinessChangedCalled = true;
             lcStatus = status;
         }
 
-        public virtual void On_data_available(DDS.IDataReader reader)
+        public virtual void OnDataAvailable(DDS.IDataReader reader)
         {
             onDataAvailableCalled = true;
         }
 
-        public virtual void On_subscription_matched(DDS.IDataReader reader, DDS.SubscriptionMatchedStatus
+        public virtual void OnSubscriptionMatched(DDS.IDataReader reader, DDS.SubscriptionMatchedStatus
              status)
         {
             onSubscriptionMatchCalled = true;
             smStatus = status;
         }
 
-        public virtual void On_sample_lost(DDS.IDataReader reader, DDS.SampleLostStatus status
+        public virtual void OnSampleLost(DDS.IDataReader reader, DDS.SampleLostStatus status
             )
         {
             onSampleLostCalled = true;

@@ -25,17 +25,20 @@ namespace test.sacs
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSParticipant could not be found.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic2 = (DDS.ITopic)participant.LookupTopicDescription("DCPSParticipant");
             if (topic2 == null)
             {
                 result.Result = "Builtin Topic DCPSParticipant could not be found(2).";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             if (topic != topic2)
             {
                 result.Result = "Resolved topics do not match for DCPSParticipant.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSPublication");

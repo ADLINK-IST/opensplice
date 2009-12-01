@@ -106,6 +106,8 @@ namespace test.sacs
             {
                 result.Result = "datareader.take failed " + ddsReturnCode + " (" + dataList
                     .Length + " samples taken)";
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "waitForHistoricalDataWithCondition not implemented yet.");
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail; subscriber.DeleteDataReader(reader);
                 subscriber.DeleteDataReader(reader);
                 return result;
             }

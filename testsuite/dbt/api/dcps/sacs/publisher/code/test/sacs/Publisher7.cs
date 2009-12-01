@@ -44,7 +44,7 @@ namespace test.sacs
             publisher.SetDefaultDataWriterQos(ref dataWriterQos);
 
             //TODO: JLS, DDS.DataWriterQos.Default does not exist
-            //writer = publisher.CreateDataWriter(topic, DDS.DataWriterQos.Default, null, 0);
+            writer = publisher.CreateDataWriter(topic, ref qosHolder1);
             if (writer == null)
             {
                 result.Result = "Could not create a DataWriter.";

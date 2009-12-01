@@ -31,6 +31,7 @@ namespace test.sacs
             // TODO: JLS, should one of these TestVerdicts be Fail?
             result = new Test.Framework.TestResult("creation of 3 GuardCondions is succesfull"
                 , "succesfully created 3 GuardConditions", Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Pass);
+
             return result;
         }
     }

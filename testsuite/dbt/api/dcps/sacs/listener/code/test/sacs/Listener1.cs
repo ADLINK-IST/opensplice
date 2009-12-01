@@ -56,6 +56,7 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
+            System.Console.WriteLine("1");
             rc = typeSupport.RegisterType(participant, "my_type");
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -64,14 +65,14 @@ namespace test.sacs
                 return result;
             }
 
+            System.Console.WriteLine("2");
             if (participant.GetDefaultTopicQos(out topQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default TopicQos could not be resolved.";
                 this.Cleanup(factory, participant);
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder, null,
-                0);
+            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder);//, null,0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";
@@ -79,13 +80,14 @@ namespace test.sacs
                 return result;
             }
 
+            System.Console.WriteLine("3");
             if (participant.GetDefaultSubscriberQos(out sqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default SubscriberQos could not be resolved.";
                 this.Cleanup(factory, participant);
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref sqosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref sqosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";
@@ -93,6 +95,7 @@ namespace test.sacs
                 return result;
             }
 
+            System.Console.WriteLine("4");
             if (subscriber.GetDefaultDataReaderQos(out dqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataReaderQos could not be resolved.";
@@ -109,13 +112,14 @@ namespace test.sacs
                 return result;
             }
 
+            System.Console.WriteLine("5");
             if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default PublisherQos could not be resolved.";
                 this.Cleanup(factory, participant);
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";
@@ -123,6 +127,7 @@ namespace test.sacs
                 return result;
             }
 
+            System.Console.WriteLine("6");
             if (publisher.GetDefaultDataWriterQos(out wqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataWriterQos could not be resolved.";
@@ -138,7 +143,11 @@ namespace test.sacs
             }
             try
             {
+
+                System.Console.WriteLine("7");
                 System.Threading.Thread.Sleep(3000);
+
+                System.Console.WriteLine("8");
             }
             catch (System.Exception e)
             {
@@ -152,6 +161,7 @@ namespace test.sacs
             }
             listener.Reset();
 
+            System.Console.WriteLine("9");
             mod.tst t = new mod.tst();
             t.long_1 = 1;
             t.long_2 = 2;
@@ -166,14 +176,22 @@ namespace test.sacs
             }
             try
             {
+
+                System.Console.WriteLine("10");
                 System.Threading.Thread.Sleep(3000);
+
+                System.Console.WriteLine("111");
             }
             catch (System.Exception e)
             {
+
+                System.Console.WriteLine("123");
                 System.Console.WriteLine(e);
             }
             if (!listener.onDataAvailableCalled)
             {
+
+                System.Console.WriteLine("11");
                 result.Result = "on_data_available does not work properly.";
                 this.Cleanup(factory, participant);
                 return result;

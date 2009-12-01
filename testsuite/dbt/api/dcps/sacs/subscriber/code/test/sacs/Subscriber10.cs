@@ -21,7 +21,8 @@ namespace test.sacs
         {
             DDS.ISubscriber subscriber;
             DDS.DataReaderQos dataReaderQos;
-            //DDS.DataReaderQos qosHolder1;
+            DDS.IDomainParticipant participant;
+            DDS.DataReaderQos qosHolder1;
             DDS.ITopic topic;
             string expResult = "copy_from_topic_qos rejects TOPIC_QOS_DEFAULT with correct code.";
             Test.Framework.TestResult result;
@@ -29,6 +30,7 @@ namespace test.sacs
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
+            participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
             if (subscriber.GetDefaultDataReaderQos(out dataReaderQos) != DDS.ReturnCode.Ok)
@@ -41,7 +43,14 @@ namespace test.sacs
             dataReaderQos.History.Depth = 150;
 
             // TODO: JLS, DDS.TopicQos.Default does not exist
-            //rc = subscriber.CopyFromTopicQos(out qosHolder1, DDS.TopicQos.Default);
+            DDS.TopicQos topicQosHolder;
+            rc = participant.GetDefaultTopicQos(out topicQosHolder);
+            if (rc != DDS.ReturnCode.Ok)
+            {
+                result.Result = "Could not retrieve topicQos";
+                return result;
+            }
+            rc = subscriber.CopyFromTopicQos(out qosHolder1,ref topicQosHolder);
             if (rc != DDS.ReturnCode.BadParameter)
             {
                 result.Result = "copy_from_topic_qos returns wrong code (RETCODE = " + rc + ").";

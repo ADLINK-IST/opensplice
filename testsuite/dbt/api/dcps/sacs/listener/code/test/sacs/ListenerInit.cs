@@ -22,6 +22,7 @@ namespace test.sacs
             DDS.ITopic topic;
             DDS.DataReaderQos drQosHolder;
             mod.tstDataReader datareader;
+            //mod.tstDataReader datareader2;
             DDS.DataWriterQos dwQosHolder;
             mod.tstDataWriter datawriter;
             Test.Framework.TestResult result;
@@ -29,7 +30,7 @@ namespace test.sacs
             result = new Test.Framework.TestResult("Initialization success", string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             factory = DDS.DomainParticipantFactory.GetInstance();
-            if (factory == null)
+             if (factory == null)
             {
                 result.Result = "DomainParticipantFactory could not be initialized.";
                 return result;
@@ -52,7 +53,7 @@ namespace test.sacs
                 result.Result = "Default SubscriberQos could not be resolved.";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";
@@ -71,7 +72,7 @@ namespace test.sacs
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
-            topic = participant.CreateTopic("tst", "tstType", ref tQosHolder, null, 0);
+            topic = participant.CreateTopic("tst", "tstType", ref tQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";
@@ -89,13 +90,19 @@ namespace test.sacs
                 result.Result = "DataReader could not be created.";
                 return result;
             }
+            //datareader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref drQosHolder, null, 0);
+            //if (datareader2 == null)
+            //{
+            //    result.Result = "DataReader could not be created.";
+            //    return result;
+            //}
 
             if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default PublisherQos could not be resolved.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";
@@ -117,6 +124,7 @@ namespace test.sacs
             testCase.RegisterObject("subscriber", subscriber);
             testCase.RegisterObject("subscriberQos", subQosHolder);
             testCase.RegisterObject("datareader", datareader);
+            //testCase.RegisterObject("datareader2", datareader2);
             testCase.RegisterObject("datareaderQos", drQosHolder);
             testCase.RegisterObject("publisher", publisher);
             testCase.RegisterObject("publisherQos", pubQosHolder);

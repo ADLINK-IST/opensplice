@@ -77,7 +77,7 @@ namespace test.sacs
             typeName2 = topic.TypeName;
             if (!typeName.Equals(typeName2))
             {
-                result.Result = "Resolved Topic type name is not correct. ('" + typeName + "' != '"
+            result.Result = "Resolved Topic type name is not correct. ('" + typeName + "' != '"
                      + typeName2 + "')";
                 System.Console.Out.WriteLine("NOTE\t\t: See STR/CP: TH020");
                 return result;

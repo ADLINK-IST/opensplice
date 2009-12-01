@@ -16,6 +16,7 @@ namespace test.sacs
             mod.tstDataReader reader;
             mod.tstDataWriter writer;
             long handle;
+
             DDS.ReturnCode rc;
             Test.Framework.TestResult result;
             string expResult = "reader::lookup_instance test succeeded.";
@@ -28,7 +29,7 @@ namespace test.sacs
             t.long_2 = 1;
             t.long_3 = 1;
 
-            rc = writer.Write(t, 0);
+            rc = writer.Write(t,0);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "write failed";

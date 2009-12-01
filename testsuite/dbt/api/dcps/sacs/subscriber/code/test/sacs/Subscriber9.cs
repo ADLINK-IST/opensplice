@@ -46,6 +46,7 @@ namespace test.sacs
             subscriber.SetDefaultDataReaderQos(ref dataReaderQos);
 
             // TODO: JLS, DDS.DataReaderQos.Default does not exist
+            //LF, this is different than in Java. Supplying createDataReader only with a topic, creates a reader with the subscribers default_reader_qos, which have been altered previously in this test.            
             reader = subscriber.CreateDataReader(topic);
             if (reader == null)
             {
@@ -58,9 +59,10 @@ namespace test.sacs
                 result.Result = "Could not retrieve DataReader qos";
                 return result;
             }
-            if (!test.sacs.QosComparer.DataReaderQosEquals(qosHolder1, qosHolder2))
+            
+            if (test.sacs.QosComparer.DataReaderQosEquals(qosHolder1, qosHolder2))
             {
-                result.Result = "Default DataReadearQos is not used when DATAREADER_QOS_DEFAULT is specified.";
+                result.Result = "Default DataReadearQos is not used when DATAREADER_QOS_DEFAULT is specified." + qosHolder2.History.Kind + "  ::  " + qosHolder1.History.Kind;
                 return result;
             }
             rc = subscriber.DeleteDataReader(reader);

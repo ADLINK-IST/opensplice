@@ -41,14 +41,14 @@ namespace DDS.OpenSplice
             this.listenerHelper = listenerHelper;
         }
 
-        public ReturnCode SetListener(PublisherListener listener, StatusKind mask)
+        public ReturnCode SetListener(IPublisherListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
 
             Gapi.gapi_publisherDataWriterListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener == null)
             {
                 using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
                 {
@@ -56,6 +56,19 @@ namespace DDS.OpenSplice
                         GapiPeer,
                         marshaler.GapiPtr,
                         mask);
+                }
+            }
+            else
+            {
+                lock (listener)
+                {
+                    using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.Publisher.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
                 }
             }
             return result;

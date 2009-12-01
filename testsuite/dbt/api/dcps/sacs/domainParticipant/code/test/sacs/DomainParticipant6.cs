@@ -34,7 +34,7 @@ namespace test.sacs
                 result.Result = "Get default SubscriberQos failed.";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Create Subscriber failed.";

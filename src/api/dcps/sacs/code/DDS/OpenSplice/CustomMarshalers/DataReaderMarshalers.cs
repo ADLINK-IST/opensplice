@@ -54,7 +54,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 return ReturnCode.PreconditionNotMet;
 
             // 2nd Check: maxSamples <= length.
-            if (maxSamples > length)
+            if  (length > 0 && maxSamples > length)
                 return ReturnCode.PreconditionNotMet;
 
             // 3rd Check: In case maxSamples == Length.Unlimited, make maxSamples equal to available length.

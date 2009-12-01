@@ -46,7 +46,7 @@ namespace test.sacs
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "WaitSet.Wait failed.";
+                result.Result = "WaitSet.Wait failed. (1)";
                 return result;
             }
             if (conditionHolder.Length != 1)
@@ -72,7 +72,7 @@ namespace test.sacs
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Timeout)
             {
-                result.Result = "WaitSet.Wait failed.";
+                result.Result = "WaitSet.Wait failed. (2)";
                 return result;
             }
             if (conditionHolder.Length != 0)
@@ -90,10 +90,11 @@ namespace test.sacs
                 result.Result = "tstDataWriter.write failed.";
                 return result;
             }
+
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "WaitSet.Wait failed.";
+                result.Result = "WaitSet.Wait failed. (3)";
                 return result;
             }
             if (conditionHolder.Length != 1)
@@ -116,10 +117,11 @@ namespace test.sacs
                 result.Result = "tstDataReader.take failed.";
                 return result;
             }
+
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Timeout)
             {
-                result.Result = "WaitSet.Wait failed(2).";
+                result.Result = "WaitSet.Wait failed(4).";
                 return result;
             }
             if (conditionHolder.Length > 0)
@@ -141,10 +143,11 @@ namespace test.sacs
             {
                 System.Console.Error.WriteLine("Sleep failed...");
             }
+
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "WaitSet.Wait failed.";
+                result.Result = "WaitSet.Wait failed. (5)";
                 return result;
             }
             if (conditionHolder.Length != 1)
@@ -175,10 +178,11 @@ namespace test.sacs
                 result.Result = "tstDataReader.take failed.";
                 return result;
             }
+
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Timeout)
             {
-                result.Result = "WaitSet.Wait failed(3).";
+                result.Result = "WaitSet.Wait failed(6).";
                 return result;
             }
             if (conditionHolder.Length > 0)

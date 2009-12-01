@@ -58,7 +58,7 @@ namespace test.sacs
                 result.Result = "Created a DataReader without a Topic (1).";
                 return result;
             }
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos, null, 0);
+            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a new Subscriber (2).";
@@ -76,8 +76,8 @@ namespace test.sacs
                 result.Result = "Created a DataReader on a deleted Subscriber (2).";
                 return result;
             }
-            topic = participant.CreateTopic("subscriber3tc_topic", "my_type", ref topicQos, null
-                , 0);
+            topic = participant.CreateTopic("subscriber3tc_topic", "my_type", ref topicQos);//, null
+                //, 0);
             if (topic == null)
             {
                 result.Result = "Could not create a new Topic (3).";
@@ -125,7 +125,7 @@ namespace test.sacs
                 return result;
             }
             qos.Durability.Kind = DDS.DurabilityQosPolicyKind.VolatileDurabilityQos;
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos, null, 0);
+            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a Subscriber (8).";

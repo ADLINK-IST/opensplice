@@ -27,6 +27,7 @@ namespace test.sacs
             resultCode[0] = waitset.AttachCondition(condition1);
             resultCode[1] = waitset.AttachCondition(condition2);
             resultCode[2] = waitset.AttachCondition(condition3);
+
             if (resultCode[0] != 0 || resultCode[1] != 0 || resultCode[2] != 0)
             {
                 result = new Test.Framework.TestResult("attached guardconditions to a waitset", "attach_condition returned RETCODE: "

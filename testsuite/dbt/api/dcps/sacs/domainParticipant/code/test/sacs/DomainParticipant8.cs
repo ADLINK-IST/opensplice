@@ -85,14 +85,14 @@ namespace test.sacs
             }
 
             participant2.GetDefaultPublisherQos(out pholder);
-            publisher = participant2.CreatePublisher(ref pholder, null, 0);
+            publisher = participant2.CreatePublisher(ref pholder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Create Publisher failed.";
                 return result;
             }
             participant2.GetDefaultSubscriberQos(out sholder);
-            subscriber = participant2.CreateSubscriber(ref sholder, null, 0);
+            subscriber = participant2.CreateSubscriber(ref sholder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Create Subscriber failed.";

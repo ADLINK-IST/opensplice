@@ -35,13 +35,14 @@ namespace test.sacs
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
-                result.Result = "Builtin datareader for" + topicName + " could not be resolved.";
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
                 return result;
             }
+            
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
-                result.Result = "Builtin topic for datareader of" + topicName + " could not be resolved.";
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
                 return result;
             }
             topic2 = participant.LookupTopicDescription(topicName);
@@ -59,13 +60,14 @@ namespace test.sacs
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
-                result.Result = "Builtin datareader for" + topicName + " could not be resolved.";
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
-                result.Result = "Builtin topic for datareader of" + topicName + " could not be resolved.";
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
                 return result;
             }
             topic2 = participant.LookupTopicDescription(topicName);
@@ -83,13 +85,14 @@ namespace test.sacs
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
-                result.Result = "Builtin datareader for" + topicName + " could not be resolved.";
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
-                result.Result = "Builtin topic for datareader of" + topicName + " could not be resolved.";
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
                 return result;
             }
             topic2 = participant.LookupTopicDescription(topicName);
@@ -107,13 +110,14 @@ namespace test.sacs
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
-                result.Result = "Builtin datareader for" + topicName + " could not be resolved.";
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
-                result.Result = "Builtin topic for datareader of" + topicName + " could not be resolved.";
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
                 return result;
             }
             topic2 = participant.LookupTopicDescription(topicName);

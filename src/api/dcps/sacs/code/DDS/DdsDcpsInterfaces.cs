@@ -218,6 +218,7 @@ namespace DDS
         ReturnCode DeleteContainedEntities();
         ReturnCode SetQos(ref PublisherQos qos);
         ReturnCode GetQos(out PublisherQos qos);
+        ReturnCode SetListener(IPublisherListener listener, StatusKind mask);
         ReturnCode SuspendPublications();
         ReturnCode ResumePublications();
         ReturnCode BeginCoherentChanges();

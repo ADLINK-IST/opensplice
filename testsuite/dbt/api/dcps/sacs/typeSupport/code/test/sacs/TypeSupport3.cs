@@ -46,6 +46,7 @@ namespace test.sacs
             }
             typeSupport = new mod.tstTypeSupport();
             otherTypeTypeSupport = new mod.otherTypeTypeSupport();
+            
             rc = typeSupport.RegisterType(participant, "type1");
             if (rc != DDS.ReturnCode.Ok)
             {

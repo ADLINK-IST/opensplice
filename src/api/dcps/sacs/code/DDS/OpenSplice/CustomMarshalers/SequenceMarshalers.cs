@@ -563,7 +563,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             for (int index = 0; index < length; index++)
             {
                 T objectType = (T)from[index];
-                BaseMarshaler.Write(arrayPtr, Size * index, objectType.GapiPeer);
+                BaseMarshaler.Write(arrayPtr, Size * index, objectType == null ? IntPtr.Zero : objectType.GapiPeer);
             }
 
             // _buffer field: set the pointer to the appropriate location.

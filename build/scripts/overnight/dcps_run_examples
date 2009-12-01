@@ -65,7 +65,7 @@ cat <<EOF > summary.html
     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
     <HTML>
 
-    <H2><a HREF=overview.log>Overview log</a></H2>
+    <H2><a HREF=run_results.txt>Overview log</a></H2>
     <TABLE>
     <TBODY>
     <TABLE border=1>
@@ -141,7 +141,6 @@ else
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml/'`
 
     echo "XMLFILE is $XMLFILE"
-    echo "OSPL_URI is $OSPL_URI"
 
     NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
 
@@ -180,6 +179,8 @@ else
         echo "NOT Calling cmd.exe with $XPATH\run_examples.bat "
 # Do not run the examples yet as they hang and prevent other runs taking place
 #        cmd.exe /c $XPATH//run_examples.bat
+
+        mv $LOGDIR/examples/run/run_results.txt $LOGDIR/examples/run/overview.log
     fi
     exit $?
 fi

@@ -23,6 +23,16 @@ namespace test.sacs
 
         public DDS.InconsistentTopicStatus ictStatus;
 
+        new public bool onLivelinessChangedCalled = false;
+        public DDS.LivelinessChangedStatus llcStatus;
+
+        new public bool onDataAvailableCalled = false;
+
+        new public bool onRequestedDeadlineMissedCalled = false;
+        public DDS.RequestedDeadlineMissedStatus rdmStatus;
+        new public bool onRequestedIncompatibleQosCalled = false;
+        public DDS.RequestedIncompatibleQosStatus rcqStatus;
+
         public override void Reset()
         {
             base.Reset();
@@ -36,6 +46,13 @@ namespace test.sacs
             pmStatus = new DDS.PublicationMatchedStatus();
             onInconsistentTopicCalled = false;
             ictStatus = new DDS.InconsistentTopicStatus();
+            onDataAvailableCalled = false;
+            onRequestedDeadlineMissedCalled = false;
+            rdmStatus = new DDS.RequestedDeadlineMissedStatus();
+            onRequestedIncompatibleQosCalled = false;
+            rcqStatus = new DDS.RequestedIncompatibleQosStatus();
+            onLivelinessChangedCalled = false;
+            llcStatus = new DDS.LivelinessChangedStatus();
         }
 
         #region ITopicListener Members
@@ -89,22 +106,26 @@ namespace test.sacs
 
         void DDS.IDataReaderListener.OnDataAvailable(DDS.IDataReader entityInterface)
         {
-            throw new System.NotImplementedException();
+            onDataAvailableCalled = true;
         }
 
         void DDS.IDataReaderListener.OnLivelinessChanged(DDS.IDataReader entityInterface, DDS.LivelinessChangedStatus status)
         {
-            throw new System.NotImplementedException();
+            onLivelinessChangedCalled = true;
+            llcStatus = status;
         }
 
         void DDS.IDataReaderListener.OnRequestedDeadlineMissed(DDS.IDataReader entityInterface, DDS.RequestedDeadlineMissedStatus status)
         {
-            throw new System.NotImplementedException();
+
+            onRequestedDeadlineMissedCalled = true;
+            rdmStatus = status;
         }
 
         void DDS.IDataReaderListener.OnRequestedIncompatibleQos(DDS.IDataReader entityInterface, DDS.RequestedIncompatibleQosStatus status)
         {
-            throw new System.NotImplementedException();
+            onRequestedIncompatibleQosCalled = true;
+            riqStatus = status;
         }
 
         void DDS.IDataReaderListener.OnSampleLost(DDS.IDataReader entityInterface, DDS.SampleLostStatus status)

@@ -54,6 +54,7 @@ namespace test.sacs
                 result.Result = "Could not create datareader.";
                 return result;
             }
+            
             activeConditions = new DDS.Condition[0];
             rc = waitset.Wait(ref activeConditions, new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Timeout)
@@ -99,6 +100,7 @@ namespace test.sacs
                 result.Result = "WaitSet.Wait failed(2).";
                 return result;
             }
+
             if (activeConditions.Length != 1)
             {
                 result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one(2).";

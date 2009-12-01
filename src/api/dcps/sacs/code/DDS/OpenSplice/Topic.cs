@@ -50,7 +50,7 @@ namespace DDS.OpenSplice
             Gapi.gapi_topicListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener == null)
             {
                 using (TopicListenerMarshaler marshaler = new TopicListenerMarshaler(ref gapiListener))
                 {
@@ -58,6 +58,19 @@ namespace DDS.OpenSplice
                         GapiPeer,
                         marshaler.GapiPtr,
                         mask);
+                }
+            }
+            else
+            {
+                lock (listener)
+                {
+                    using (TopicListenerMarshaler marshaler = new TopicListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.Topic.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
                 }
             }
             return result;
@@ -74,19 +87,19 @@ namespace DDS.OpenSplice
         {
             using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
             {
-				ReturnCode result = Gapi.Topic.get_qos(
+                ReturnCode result = Gapi.Topic.get_qos(
                 GapiPeer,
                 marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
                     marshaler.CopyOut(out qos);
-					return result;
-				}
+                    return result;
+                }
             }
 
-			qos = new TopicQos();
-			return ReturnCode.Error;
+            qos = new TopicQos();
+            return ReturnCode.Error;
         }
 
         public ReturnCode SetQos(ref TopicQos qos)

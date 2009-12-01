@@ -192,7 +192,7 @@ then
     else
         mkdir $LOGDIR/examples
         mkdir $LOGDIR/examples/build
-        $IBSDIR/dcps_build_examples $ARGS > $LOGDIR/examples/build/summary.txt 2>&1
+        $IBSDIR/dcps_build_examples $ARGS > $LOGDIR/examples/build/build_results.txt 2>&1
         BUILD_EXAMPLES_STAGE_WORKED=$?
         if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 ]
         then
@@ -206,7 +206,7 @@ then
         if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 ]
         then
             mkdir $LOGDIR/examples/run
-            $IBSDIR/dcps_run_examples $ARGS > $LOGDIR/examples/run/overview.log 2>&1
+            $IBSDIR/dcps_run_examples $ARGS > $LOGDIR/examples/run/run_results.txt 2>&1
             RUN_EXAMPLES_STAGE_WORKED=$?
             if [ $RUN_EXAMPLES_STAGE_WORKED = 0 ]
             then

@@ -59,7 +59,7 @@ namespace test.sacs
                 result.Result = "participant.get_default_topic_qos failed.";
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topicQosHolder, null, 0);
+            topic = participant.CreateTopic("my_topic", "my_type", ref topicQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "participant.create_topic failed.";

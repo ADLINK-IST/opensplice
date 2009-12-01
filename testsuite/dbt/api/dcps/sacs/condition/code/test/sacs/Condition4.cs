@@ -68,6 +68,7 @@ namespace test.sacs
                 return result;
             }
             rc = reader.GetLivelinessChangedStatus(lHolder);
+            
             DDS.LivelinessChangedStatus status = lHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -86,10 +87,11 @@ namespace test.sacs
                      + ").";
                 return result;
             }
+
             value = condition.GetTriggerValue();
             if (value)
             {
-                result.Result = "GetTriggerValue returned true.";
+                result.Result = "GetTriggerValue returned true. " + reader.StatusChanges;
                 return result;
             }
             statusMask = condition.GetEnabledStatuses();

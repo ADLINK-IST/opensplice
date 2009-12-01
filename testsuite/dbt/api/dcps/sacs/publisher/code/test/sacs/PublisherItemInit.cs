@@ -30,7 +30,7 @@ namespace test.sacs
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, ref pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";
@@ -42,7 +42,7 @@ namespace test.sacs
                 result.Result = "Default PublisherQos could not be resolved.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder, null, 0);
+            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";

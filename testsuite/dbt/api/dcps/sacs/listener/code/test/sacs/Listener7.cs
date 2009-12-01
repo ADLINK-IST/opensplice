@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace test.sacs
 {
     /// <date>Jun 2, 2005</date>
@@ -11,6 +13,8 @@ namespace test.sacs
             this.AddPostItem(new test.sacs.ListenerDeinit());
         }
 
+        DDS.ReturnCode rc;
+
         public override Test.Framework.TestResult Run()
         {
             DDS.IDomainParticipant participant;
@@ -21,8 +25,10 @@ namespace test.sacs
             mod.tstDataReader reader;
             Test.Framework.TestResult result;
             test.sacs.Listener7.ListenerThread[] threads;
+            //Thread[] threads;
             string expResult = "Listener multithread test succeeded.";
             DDS.ReturnCode[] results;
+
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
@@ -31,6 +37,7 @@ namespace test.sacs
             topic = (DDS.ITopic)this.ResolveObject("topic");
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
+                        
             threads = new test.sacs.Listener7.ListenerThread[6];
             int i = 0;
             threads[i] = new test.sacs.Listener7.ListenerThread(this, participant, i);
@@ -75,7 +82,128 @@ namespace test.sacs
             return result;
         }
 
-        private class ListenerThread
+
+        
+        private static void runListeners(Listener7 _enclosing, DDS.IEntity entity, int id)
+        {
+            DDS.ReturnCode rc = DDS.ReturnCode.Error;
+
+            System.Console.Out.WriteLine("Thread " + id + " started...");
+            System.Threading.Thread.Sleep(0);
+            if (entity is DDS.IDomainParticipant)
+            {
+                DDS.IDomainParticipantListener listener = new test.sacs.MyParticipantListener();
+                DDS.IDomainParticipant domainEntity = (DDS.IDomainParticipant)entity;
+                rc = (domainEntity).SetListener(listener, DDS.StatusKind.DataAvailable);
+                if (rc == DDS.ReturnCode.Ok)
+                {
+                    rc = domainEntity.SetListener(null, 0);
+                    if (rc == DDS.ReturnCode.Ok)
+                    {
+                        rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+                    }
+                }
+            }
+            else
+            {
+                if (entity is DDS.IPublisher)
+                {
+                    // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
+                    DDS.IPublisherListener listener = new test.sacs.MyPublisherListener();
+                    DDS.IPublisher domainEntity = (DDS.IPublisher)entity;
+                    rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                    if (rc == DDS.ReturnCode.Ok)
+                    {
+                        rc = domainEntity.SetListener(null, 0);
+                        if (rc == DDS.ReturnCode.Ok)
+                        {
+                            rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
+                        }
+                    }
+                }
+                else
+                {
+                    if (entity is DDS.IDataWriter)
+                    {
+                        DDS.DataWriterListener listener = new test.sacs.MyDataWriterListener();
+                        DDS.IDataWriter domainEntity = (DDS.IDataWriter)entity;
+                        rc = (domainEntity).SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                        if (rc == DDS.ReturnCode.Ok)
+                        {
+                            rc = domainEntity.SetListener(null, 0);
+                            if (rc == DDS.ReturnCode.Ok)
+                            {
+                                rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (entity is DDS.IDataReader)
+                        {
+                            DDS.IDataReaderListener listener = new test.sacs.MyDataReaderListener();
+                            DDS.IDataReader domainEntity = (DDS.IDataReader)entity;
+                            rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+                            if (rc == DDS.ReturnCode.Ok)
+                            {
+                                rc = domainEntity.SetListener(null, 0);
+                                if (rc == DDS.ReturnCode.Ok)
+                                {
+                                    rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedIncompatibleQos);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (entity is DDS.ITopic)
+                            {
+                                DDS.TopicListener listener = new test.sacs.MyTopicListener();
+                                DDS.ITopic domainEntity = (DDS.ITopic)entity;
+                                rc = (domainEntity).SetListener(listener, DDS.StatusKind.InconsistentTopic);
+                                if (rc == DDS.ReturnCode.Ok)
+                                {
+                                    rc = domainEntity.SetListener(null, 0);
+                                    if (rc == DDS.ReturnCode.Ok)
+                                    {
+                                        rc = domainEntity.SetListener(listener, DDS.StatusKind.InconsistentTopic);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (entity is DDS.ISubscriber)
+                                {
+                                    DDS.ISubscriberListener listener = new test.sacs.MySubscriberListener();
+                                    DDS.ISubscriber domainEntity = (DDS.ISubscriber)entity;
+                                    rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+                                    if (rc == DDS.ReturnCode.Ok)
+                                    {
+                                        rc = domainEntity.SetListener(null, 0);
+                                        if (rc == DDS.ReturnCode.Ok)
+                                        {
+                                            rc = domainEntity.SetListener(listener, DDS.StatusKind.DataOnReaders);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    System.Console.Out.WriteLine("Entity type: " + entity.ToString() + " not supported.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            System.Console.Out.WriteLine("Thread " + id + " finished.");
+        }
+
+        public virtual DDS.ReturnCode GetResult()
+        {
+            return this.rc;
+        }
+        
+       
+       private class ListenerThread 
         {
             private int id;
 
@@ -88,6 +216,7 @@ namespace test.sacs
                 this._enclosing = _enclosing;
                 this.id = id;
                 this.entity = entity;
+                
             }
 
             public void Run()
@@ -112,18 +241,17 @@ namespace test.sacs
                 {
                     if (this.entity is DDS.IPublisher)
                     {
-                        // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
-                        //DDS.IPublisherListener listener = new test.sacs.MyDataWriterListener();
-                        //DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
-                        //this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
-                        //if (this.rc == DDS.ReturnCode.Ok)
-                        //{
-                        //    this.rc = domainEntity.SetListener(null, 0);
-                        //    if (this.rc == DDS.ReturnCode.Ok)
-                        //    {
-                        //        this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
-                        //    }
-                        //}
+                        DDS.IPublisherListener listener = new test.sacs.MyPublisherListener();
+                        DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
+                        this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                        if (this.rc == DDS.ReturnCode.Ok)
+                        {
+                            this.rc = domainEntity.SetListener(null, 0);
+                            if (this.rc == DDS.ReturnCode.Ok)
+                            {
+                                this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
+                            }
+                        }
                     }
                     else
                     {
@@ -145,7 +273,7 @@ namespace test.sacs
                         {
                             if (this.entity is DDS.IDataReader)
                             {
-                                DDS.DataReaderListener listener = new test.sacs.MyDataReaderListener();
+                                DDS.IDataReaderListener listener = new test.sacs.MyDataReaderListener();
                                 DDS.IDataReader domainEntity = (DDS.IDataReader)this.entity;
                                 this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
                                 if (this.rc == DDS.ReturnCode.Ok)
@@ -210,12 +338,14 @@ namespace test.sacs
 
             internal void Start()
             {
-                throw new System.NotImplementedException();
+                //throw new System.NotImplementedException();
+                Run(); 
             }
 
             internal void Join()
             {
                 throw new System.NotImplementedException();
+                
             }
         }
     }

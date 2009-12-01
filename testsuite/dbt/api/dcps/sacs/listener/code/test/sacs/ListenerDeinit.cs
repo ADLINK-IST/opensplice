@@ -44,6 +44,7 @@ namespace test.sacs
             testCase.UnregisterObject("subscriber");
             testCase.UnregisterObject("subscriberQos");
             testCase.UnregisterObject("datareader");
+           // testCase.UnregisterObject("datareader2");
             testCase.UnregisterObject("datareaderQos");
             testCase.UnregisterObject("datawriter");
             testCase.UnregisterObject("datawriterQos");

@@ -30,7 +30,7 @@ namespace test.sacs
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, ref pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";
@@ -42,7 +42,7 @@ namespace test.sacs
                 result.Result = "Default SubscriberQos could not be resolved.";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subQosHolder, null, 0);
+            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";

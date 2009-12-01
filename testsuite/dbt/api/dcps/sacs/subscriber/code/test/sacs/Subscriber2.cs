@@ -52,7 +52,7 @@ namespace test.sacs
             //    return result;
             //}
             qos = test.sacs.QosComparer.defaultDataReaderQos;
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos, null, 0);
+            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a subscriber (4).";
