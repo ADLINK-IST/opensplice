@@ -1,0 +1,25 @@
+################################ master runs ##################################
+E   opensplice/rhel4d/x86.linux2.6-dev 20 heads/master none
+E   opensplice/rhel4d/x86.linux2.6-release 20 heads/master none
+
+M   opensplice/rhel4e/x86.linux2.6-dev 20 heads/master none
+M   opensplice/rhel4e/x86.linux2.6-release 20 heads/master none
+
+E   opensplice/DDS1-WIN2K3/x86.win32-dev 50 heads/master none
+E   opensplice/DDS1-WIN2K3/x86.win32-release 50 heads/master none
+
+M   opensplice/dds2-win2k3/x86.win32-dev 50 heads/master none
+M   opensplice/dds2-win2k3/x86.win32-release 50 heads/master none
+
+E   opensplice/rhel5a/x86.linux2.6-dev 20 heads/master none
+E   opensplice/rhel5a/x86.linux2.6-release 20 heads/master none
+
+E   opensplice/rhel53a/x86.linux2.6-dev 20 heads/master none
+E   opensplice/rhel53a/x86.linux2.6-release 20 heads/master none
+
+E   opensplice/rhel53-64/x86_64.linux2.6-dev 20 heads/master none
+E   opensplice/rhel53-64/x86_64.linux2.6-release 20 heads/master none
+
+E   opensplice/ultra60/studio12-dev 60 heads/master none
+E   opensplice/ultra60/studio12-release 60 heads/master none
+################################# end master runs #############################
