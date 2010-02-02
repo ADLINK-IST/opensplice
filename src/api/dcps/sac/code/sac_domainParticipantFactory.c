@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -49,12 +49,12 @@ DDS_DomainParticipantFactory_get_instance (
         struct gapi_domainParticipantListener gListener;
         struct gapi_domainParticipantListener *pListener = NULL;
         DDS_DomainParticipant participant;
-        
+
         if ( a_listener ) {
             sac_copySacDomainParticipantListener(a_listener, &gListener);
             pListener = &gListener;
         }
-    
+
         participant = (DDS_DomainParticipant) gapi_domainParticipantFactory_create_participant (
             (gapi_domainParticipantFactory)_this,
             (gapi_domainId_t)domain_id,
@@ -70,7 +70,7 @@ DDS_DomainParticipantFactory_get_instance (
                 participant = NULL;
             }
         }
-    
+
         return (DDS_DomainParticipant) participant;
 }
 
@@ -139,6 +139,38 @@ DDS_DomainParticipantFactory_get_default_participant_qos (
     gapi_domainParticipantFactory_get_default_participant_qos (
         (gapi_domainParticipantFactory)_this,
         (gapi_domainParticipantQos *)qos
+    );
+}
+
+/*     ReturnCode_t
+ *     set_qos(
+ *         in DomainParticipantFactoryQos qos);
+ */
+DDS_ReturnCode_t
+DDS_DomainParticipantFactory_set_qos (
+    DDS_DomainParticipantFactory _this,
+    const DDS_DomainParticipantFactoryQos *qos)
+{
+    return (DDS_ReturnCode_t)
+	gapi_domainParticipantFactory_set_qos (
+	    (gapi_domainParticipantFactory)_this,
+	    (const gapi_domainParticipantFactoryQos *)qos
+	);
+}
+
+/*     ReturnCode_t
+ *     get_qos(
+ *         inout DomainParticipantFactoryQos qos);
+ */
+DDS_ReturnCode_t
+DDS_DomainParticipantFactory_get_qos (
+    DDS_DomainParticipantFactory _this,
+    DDS_DomainParticipantFactoryQos *qos)
+{
+    return (DDS_ReturnCode_t)
+    gapi_domainParticipantFactory_get_qos (
+        (gapi_domainParticipantFactory)_this,
+        (gapi_domainParticipantFactoryQos *)qos
     );
 }
 
