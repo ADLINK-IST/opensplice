@@ -141,6 +141,7 @@ int main (
 
     if (argc < 2) {
 	printf ("Usage: %s gcc gcc-options\n", argv[0]);
+        return 1;
     }
     gcc_command[0] = '\0';
     for (i = 1; i < argc; i++) {
