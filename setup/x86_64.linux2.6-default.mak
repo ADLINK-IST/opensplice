@@ -3,7 +3,7 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
-CSC      = csc
+CSC		 = gmcs
 
     # Binary used for filtering
 FILTER           = filter_gcc
