@@ -73,4 +73,4 @@ set_var INCLUDE_TESTENGINE yes
 #
 # Test setup
 #
-set_var INCLUDE_DBT_API_DCPS_SACS no
+set_var INCLUDE_DBT_API_DCPS_SACS yes

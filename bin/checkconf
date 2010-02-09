@@ -398,8 +398,8 @@ javac_check ()
     fi
 
     "$JAVAC_EXE" -version 2> javac.ver
-    REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
-    JAVAC_VERSION=`echo $REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
+    JAVAC_REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
+    JAVAC_VERSION=`echo $JAVAC_REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
     rm -f javac.ver
     if [ -n "$JAVAC_VERSION" ]
     then
@@ -462,7 +462,7 @@ javac_check ()
         export LD_LIBRARY_PATH
     fi
 
-    echo "OK - using JAVAC version $REAL_VERSION"
+    echo "OK - using JAVAC version $JAVAC_REAL_VERSION"
     echo "  setting JAVA_HOME to $JAVA_HOME"
     return 0
 }
@@ -478,6 +478,67 @@ no_javac()
        unset_var INCLUDE_JAVA
        return 0;
    fi
+}
+
+gmcs_check()
+{
+   if [ "$STRICT_CHECKS" = "yes" ]
+   then
+       gmcs_check_fn "Error"
+       RES=$?
+   else
+       gmcs_check_fn "Warning"
+       if [ $? != 0 ]
+       then
+           echo "   gmcs C# compiler not found, disabling SACS api build."
+           . $OSPL_HOME/setup/environment/exclude_sacs
+       fi
+       RES=0
+   fi
+   return $RES
+}
+
+# require gmcs
+gmcs_check_fn ()
+{
+    GMCS_REQUIRED_VERSION=2.4.0.0
+
+    echo -n "GMCS: "
+    pathcheck gmcs
+    if [ $? != 0 ]
+    then
+        echo "$1 - No gmcs compiler found"
+        return 1
+    fi
+
+    GMCS_VERSION_OUTPUT=`gmcs --version 2>&1 | grep "Mono"`
+    if [ $? != 0 ]
+    then
+        echo "$1 - Cannot setup GMCS"
+        gmcs --version
+        return 1
+    else
+        GMCS_REAL_VERSION="`echo $GMCS_VERSION_OUTPUT | sed -n '/version/ s/.*version \([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p'`"
+        GMCS_REQUIRED_VER=`echo $GMCS_REQUIRED_VERSION | sed -e 's;\.;0;g'`
+        GMCS_VERSION=`echo $GMCS_REAL_VERSION | sed -e 's;\.;0;g'`
+
+        if [ -n "$GMCS_VERSION" ]
+        then
+            if ! [ "$GMCS_VERSION" -ge "$GMCS_REQUIRED_VER" ]
+            then
+                echo "Error - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
+                return 1
+            fi
+        else
+            echo "Error - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
+            return 1
+        fi
+
+    fi
+
+    echo "OK - using GMCS version $GMCS_REAL_VERSION"
+    echo "  found in $PATHCHECK_FOUND"
+    return 0
 }
 
 tao_check()
@@ -770,7 +831,8 @@ cleanup_checks ()
     unset csharp_check
     unset jacorb_check
     unset PATHCHECK_FOUND
-    unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
+    unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION
+    unset GMCS_VERSION GMCS_REAL_VERSION GMCS_VERSION_OUTPUT GMCS_REQUIRED_VERSION GMCS_REQUIRED_VER
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
     unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH TAO_ROOT1
