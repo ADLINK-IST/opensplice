@@ -111,7 +111,7 @@ idl_languageAndModeSupported(void)
 
 /* Translate an IDL identifier into a language specific identifier.
    The IDL specification states that all identifiers that match
-   a language keyword must be prepended by a langauge specific prefix.
+   a language keyword must be prepended by a language specific prefix.
 */
 c_char *
 idl_languageId(
@@ -127,7 +127,7 @@ idl_languageId(
         id = idl_cxxId (identifier);
     break;
     case IDL_LANG_CS:
-        id = idl_CsharpId (identifier);
+        id = idl_CsharpId (identifier, FALSE);
     break;
     case IDL_LANG_JAVA:
         id = idl_javaId (identifier);

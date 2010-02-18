@@ -17,6 +17,7 @@
 #include "idl_keyDef.h"
 #include "idl_genMetaHelper.h"
 
+#include <ctype.h>
 #include <os_iterator.h>
 #include <os_heap.h>
 #include <os_stdlib.h>
@@ -63,8 +64,50 @@ idl_metaCsharpSerialize2XML(
         metaElmnt->descriptor = idl_genXMLmeta(metaElmnt->type);
 }
 
+static c_char *
+toPascalCase(const c_char *name)
+{
+    unsigned int i, j, nrUnderScores;
+    c_char *result;
+
+    /* Determine number of '_' characters. */
+    nrUnderScores = 0;
+    for (i = 0; i < strlen(name); i++) {
+        if (name[i] == '_') nrUnderScores++;
+    }
+
+    /* Allocate a string big enough to hold the PascalCase representation. */
+    result = os_malloc(strlen(name) + 1 - nrUnderScores);
+
+    /* Now go to UpperCase when necessary.
+     * (for loop includes '\0' terminator.)  */
+    for (i = 0, j = 0; i <= strlen(name); i++, j++) {
+        /* Start out with capital. */
+        if (i == 0) {
+            result[j] = toupper(name[i]);
+        } else if (name[i] == '_') {
+            /* On underscore, start new capital. */
+            result[j] = toupper(name[++i]);
+        } else {
+            /* If underscores mark te occurence of new words, then go to
+             * lower-case for all the other characters.
+             * In the other case, the name could already be in camelCase,
+             * so copy the characters as is.
+             */
+            if (nrUnderScores > 0) {
+                result[j] = tolower(name[i]);
+            } else {
+                result[j] = name[i];
+            }
+        }
+    }
+
+    return result;
+}
+
+
 /* Specify a list of all C# keywords */
-static const char *Csharp_keywords[91] = {
+static const c_char *Csharp_keywords[] = {
     /* C# keywords */
     "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char",
     "checked", "class", "const", "continue", "decimal", "default", "delegate",
@@ -84,6 +127,7 @@ static const char *Csharp_keywords[91] = {
     "Equals", "Finalize", "GetHashCode", "GetType", "MemberwiseClone",
     "ReferenceEquals", "ToString"
 };
+#define NR_CSHARP_KEYWORDS sizeof(Csharp_keywords)/sizeof(c_char *)
 
 /* Translate an IDL identifier into a C# language identifier.
    The IDL specification often states that all identifiers that
@@ -91,25 +135,36 @@ static const char *Csharp_keywords[91] = {
 */
 c_char *
 idl_CsharpId(
-    const char *identifier)
+    const c_char *identifier,
+    c_bool customPSM)
 {
     c_long i;
-    char *CsharpId;
+    c_char *CsharpId;
 
-    /* search through the Java keyword list */
+    /* In case of the custom PSM mode, first go to PascalCase. */
+    if (customPSM) {
+        CsharpId = toPascalCase(identifier);
+    } else {
+        CsharpId = os_strdup(identifier);
+    }
+
+    /* search through the C# keyword list */
     /* QAC EXPECT 5003; Bypass qactools error, why is this a violation */
-    for (i = 0; i < (c_long)(sizeof(Csharp_keywords)/sizeof(c_char *)); i++) {
+    for (i = 0; i < NR_CSHARP_KEYWORDS; i++) {
     /* QAC EXPECT 5007, 3416; will not use wrapper, no side effects here */
-        if (strcmp (Csharp_keywords[i], identifier) == 0) {
+        if (strcmp (Csharp_keywords[i], CsharpId) == 0) {
+            /* Determine Escape character. */
+            char escChar = customPSM ? '@' : '_';
+
             /* If a keyword matches the specified identifier, prepend _ */
             /* QAC EXPECT 5007; will not use wrapper */
-            CsharpId = os_malloc((size_t)((int)strlen(identifier)+1+1));
-            snprintf(CsharpId, (size_t)((int)strlen(identifier)+1+1), "_%s", identifier);
-            return CsharpId;
+            c_char *EscCsharpId = os_malloc((size_t)((int)strlen(CsharpId)+1+1));
+            snprintf(EscCsharpId, (size_t)((int)strlen(CsharpId)+1+1), "%c%s", escChar, CsharpId);
+            return EscCsharpId;
         }
     }
 
-    return os_strdup(identifier);
+    return CsharpId;
     /* QAC EXPECT 2006; performance is selected above rules here */
 }
 
@@ -138,8 +193,8 @@ idl_scopeCsharpElementName (
 c_char *
 idl_scopeStackCsharp (
     idl_scope scope,
-    const char *scopeSepp,
-    const char *name)
+    const c_char *scopeSepp,
+    const c_char *name)
 {
     c_long si;
     c_long sz;
@@ -151,11 +206,11 @@ idl_scopeStackCsharp (
     if (si < sz) {
         /* The scope stack is not empty */
         /* Copy the first scope element name */
-        scopeStack = os_strdup(idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si))));
+        scopeStack = os_strdup(idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si)), FALSE));
         si++;
         while (si < sz) {
             /* Translate the scope name to a C identifier */
-            Id = idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si)));
+            Id = idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si)), FALSE);
             /* allocate space for the current scope stack + the separator
                and the next scope name
              */
@@ -174,8 +229,8 @@ idl_scopeStackCsharp (
         }
         if (name) {
             /* A user identifier is specified */
-            /* Translate the user identifier to a C identifier */
-            Id = idl_CsharpId(name);
+            /* Translate the user identifier to a C# identifier */
+            Id = idl_CsharpId(name, FALSE);
             /* allocate space for the current scope stack + the separator
                and the user identifier
              */
@@ -195,9 +250,9 @@ idl_scopeStackCsharp (
     /* The stack is empty */
         if (name) {
             /* A user identifier is specified */
-            scopeStack = os_strdup(idl_CsharpId(name));
+            scopeStack = os_strdup(idl_CsharpId(name, FALSE));
         } else {
-            /* make the stack represenation empty */
+            /* make the stack representation empty */
             scopeStack = os_strdup("");
         }
     }
@@ -205,12 +260,86 @@ idl_scopeStackCsharp (
     return scopeStack;
 }
 
+/* Specify a 2-Dimensional list where the 1st dimension specifies the names
+ * of all IDL types that are already predefined in the API, and the 2nd dimension
+ * specifies the corresponding names used to represent these datatypes in C#.
+ */
+static const c_char *Csharp_predefined[][2] = {
+    /* Predefined DDS types */
+    { "DDS.Duration_t",         "DDS.Duration"          },
+    { "DDS.Time_t",             "DDS.Time",             },
+    { "DDS.BuiltinTopicKey_t",  "DDS.BuiltinTopicKey"   },
+    { "DDS.InstanceHandle_t",   "DDS.InstanceHandle"    }
+};
+#define NR_PREDEFINED_DATATYPES sizeof(Csharp_predefined)/(2*sizeof(c_char *))
+
+/* This function determines whether the requested datatype is already predefined
+ * in the C# API. The list of predefined datatypes is mentioned in the
+ * Csharp_predefined string array above. If name and scope that are passed
+ * as parameters match a name in the Csharp_predefined list, this function
+ * will return TRUE, otherwise it will return FALSE.
+ */
+c_bool
+idl_isPredefined(
+    idl_typeSpec typeSpec)
+{
+    c_long i;
+    c_bool predefined = FALSE;
+
+    /* For a given IDL datatype, get the name of its C# representation. */
+    c_char *scopedName = idl_CsharpTypeFromTypeSpec(typeSpec, FALSE, FALSE);
+
+    /* Iterate over the list of predefined C# datatypes and compare them to the
+     * current C# datatype. If there is a match, indicate so and stop the loop.
+     */
+    for (i = 0; i < NR_PREDEFINED_DATATYPES; i++) {
+        if (strcmp(scopedName, Csharp_predefined[i][0]) == 0) {
+            predefined = TRUE;
+            i = NR_PREDEFINED_DATATYPES; /* stop searching any further. */
+        }
+    }
+
+    os_free(scopedName);
+    return predefined;
+}
+
+/* This function translates an IDL typename that has been pre-defined in the
+ * C# API already into the name of its C# representation. Otherwise it returns
+ * just the original IDL type name.
+ */
+static c_char *
+idl_translateIfPredefined(
+    c_char *typeName)
+{
+    c_long i;
+
+    /* Iterate over the list of predefined C# datatypes and compare them to the
+     * current IDL datatype. If there is a match, translate the IDL datatype
+     * name into its corresponding C# datatype name.
+     */
+    for (i = 0; i < NR_PREDEFINED_DATATYPES; i++) {
+        if (strcmp(typeName, Csharp_predefined[i][0]) == 0) {
+            os_free(typeName);
+            typeName = os_strdup(Csharp_predefined[i][1]);
+            i = NR_PREDEFINED_DATATYPES; /* stop searching any further. */
+        }
+    }
+
+    return typeName;
+}
+
 /* Return the C# specific type identifier for the
-   specified type specification
+   specified type specification. The substPredefs
+   parameter determines whether the function should
+   attempt to translate IDL types that already have
+   a predefined representation into this predefined
+   representation.
 */
 c_char *
 idl_CsharpTypeFromTypeSpec (
-    idl_typeSpec typeSpec)
+    idl_typeSpec typeSpec,
+    c_bool customPSM,
+    c_bool substPredefs)
 {
     c_char *typeName;
 
@@ -261,23 +390,54 @@ idl_CsharpTypeFromTypeSpec (
         }
         /* QAC EXPECT 3416; No side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-        return idl_CsharpTypeFromTypeSpec (idl_typeSeqActual(idl_typeSeq (typeSpec)));
+        typeName = idl_CsharpTypeFromTypeSpec (
+                idl_typeSeqActual(idl_typeSeq (typeSpec)),
+                customPSM,
+                substPredefs);
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        return idl_CsharpTypeFromTypeSpec (idl_typeArrayActual(idl_typeArray (typeSpec)));
+        typeName = idl_CsharpTypeFromTypeSpec (
+                idl_typeArrayActual(idl_typeArray (typeSpec)),
+                customPSM,
+                substPredefs);
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-        return idl_CsharpTypeFromTypeSpec (idl_typeDefActual(idl_typeDef (typeSpec)));
-    } else {
-    /* if a user type is specified build it from its scope and its name.
-       The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
-       idl_tunion.
-     */
         typeName = idl_scopeStackCsharp(
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 ".",
                 idl_typeSpecName(typeSpec));
+        if (substPredefs) {
+            if (idl_isPredefined(typeSpec)) {
+                /* idl_translateIfPredefined will release old value when required. */
+                typeName = idl_translateIfPredefined(typeName);
+            } else {
+                typeName = idl_CsharpTypeFromTypeSpec (
+                        idl_typeDefRefered(idl_typeDef(typeSpec)),
+                        customPSM,
+                        substPredefs);
+            }
+        }
+    } else {
+        /* if a user type is specified, build it from its scope and its name.
+           The type should be one of idl_tenum, idl_tstruct, idl_tunion.
+         */
+        typeName = idl_scopeStackCsharp(
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                ".",
+                idl_typeSpecName(typeSpec));
+        if (substPredefs) {
+            /* idl_translateIfPredefined will release old value when required. */
+            typeName = idl_translateIfPredefined(typeName);
+        }
+
+        /* If a customPSM is specified, translate the typeName into PascalCase. */
+        if (customPSM) {
+            c_char *tmp = typeName;
+            typeName = toPascalCase(typeName);
+            os_free(tmp);
+        }
+
     }
     return typeName;
-    /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
+    /* QAC EXPECT 5101; The switch statement is simple, therefore the total complexity is low */
 }
 
 c_char *

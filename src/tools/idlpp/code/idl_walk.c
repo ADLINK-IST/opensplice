@@ -1760,8 +1760,8 @@ idl_structure(
             idl_structureMember(o, o->members[mi], context);
         }
         idl_scopePopFree(context->ownScope);
+        idl_structureClose(context, o);
     }
-    idl_structureClose(context, o);
 }
 
 void
