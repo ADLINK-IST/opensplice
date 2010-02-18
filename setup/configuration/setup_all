@@ -33,7 +33,7 @@ set_var INCLUDE_FILTERS yes
 set_var INCLUDE_JAVA yes
 set_var INCLUDE_C yes
 set_var INCLUDE_CXX yes
-set_var INCLUDE_CS no
+set_var INCLUDE_CS yes
 
 #
 # Technology driven setup
@@ -54,7 +54,7 @@ set_var INCLUDE_API_DCPS_JNI yes
 set_var INCLUDE_API_DCPS_SAJ yes
 set_var INCLUDE_API_DCPS_CJ yes
 set_var INCLUDE_API_DCPS_JAVA yes
-set_var INCLUDE_API_DCPS_SACS no
+set_var INCLUDE_API_DCPS_SACS yes
 set_var INCLUDE_TOOLS yes
 set_var INCLUDE_TOOLS_IDLPP yes
 set_var INCLUDE_TOOLS_OSPL yes
@@ -73,4 +73,4 @@ set_var INCLUDE_TESTENGINE yes
 #
 # Test setup
 #
-set_var INCLUDE_DBT_API_DCPS_SACS no
+set_var INCLUDE_DBT_API_DCPS_SACS yes
