@@ -99,7 +99,8 @@ namespace DDS.OpenSplice.CustomMarshalers
                 IntPtr participant,
                 IntPtr metaData,
                 Type t, 
-                IMarshalerTypeGenerator generator)
+                IMarshalerTypeGenerator generator,
+                bool customPSM)
         {
             DatabaseMarshaler marshaler;
             
@@ -107,7 +108,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (!typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, Type>(participant, t), out marshaler))
             {
                 // Delegate creation of the marshaler instance to the MarshalerGenerator.
-                marshaler = generator.CreateMarshaler(participant, metaData, t);
+                marshaler = generator.CreateMarshaler(participant, metaData, t, customPSM);
 
                 // Add the new marshaler to the list of known marshalers.
                 typeMarshalers.Add(new KeyValuePair<IntPtr, Type>(participant, t), marshaler);

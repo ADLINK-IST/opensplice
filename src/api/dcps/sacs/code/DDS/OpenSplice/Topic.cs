@@ -78,39 +78,37 @@ namespace DDS.OpenSplice
 
         public ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus status)
         {
-            return Gapi.Topic.get_inconsistent_topic_status(
-                GapiPeer,
-                ref status);
+            if (status == null) status = new InconsistentTopicStatus();
+            return Gapi.Topic.get_inconsistent_topic_status(GapiPeer, status);
         }
 
-        public ReturnCode GetQos(out TopicQos qos)
+        public ReturnCode GetQos(ref TopicQos qos)
         {
+            ReturnCode result;
+            
             using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
             {
-                ReturnCode result = Gapi.Topic.get_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-
+                result = Gapi.Topic.get_qos(GapiPeer, marshaler.GapiPtr);
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
-                    return result;
+                    marshaler.CopyOut(ref qos);
                 }
             }
 
-            qos = new TopicQos();
-            return ReturnCode.Error;
+            return result;
         }
 
-        public ReturnCode SetQos(ref TopicQos qos)
+        public ReturnCode SetQos(TopicQos qos)
         {
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler(ref qos))
+            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
             {
-                result = Gapi.Topic.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = marshaler.CopyIn(qos);
+                if (result == DDS.ReturnCode.Ok)
+                {
+                    result = Gapi.Topic.set_qos(GapiPeer, marshaler.GapiPtr);
+                }
             }
 
             return result;

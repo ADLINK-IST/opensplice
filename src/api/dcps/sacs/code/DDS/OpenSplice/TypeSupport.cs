@@ -37,6 +37,7 @@ namespace DDS.OpenSplice
         protected Type dataType = null;
         protected DatabaseMarshaler marshaler = null;
         protected IMarshalerTypeGenerator generator = null;
+        protected bool customPSM = false;
 
         protected delegate void DummyOperationDelegate();
         protected DummyOperationDelegate dummyOperationDelegate;
@@ -84,10 +85,12 @@ namespace DDS.OpenSplice
          */
         public TypeSupport(
             Type dataType,
-            IMarshalerTypeGenerator generator)
+            IMarshalerTypeGenerator generator,
+            bool customPSM)
         {
             this.dataType = dataType;
             this.generator = generator;
+            this.customPSM = customPSM;
 
             //this.fakeCopyOutDelegate = new FakeSampleCopyOutDelegate(FakeCopyOut);
             this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
@@ -140,7 +143,7 @@ namespace DDS.OpenSplice
                 IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, TypeName);
 
                 // Generate a new marshaller using the available generator.
-                marshaler = DatabaseMarshaler.Create(domainObj, metaData, dataType, generator);
+                marshaler = DatabaseMarshaler.Create(domainObj, metaData, dataType, generator, customPSM);
 
                 // Attach the functions in the generated marshaler to the current TypeSupport.
                 result = AttachMarshalerDelegates(this.GapiPeer, marshaler);

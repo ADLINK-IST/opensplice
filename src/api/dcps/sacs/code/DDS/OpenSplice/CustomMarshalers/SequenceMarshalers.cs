@@ -37,10 +37,13 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_policy_id = (int)Marshal.OffsetOf(dataType, "policy_id");
         private static readonly int offset_count = (int)Marshal.OffsetOf(dataType, "count");
 
-        static public void CopyOut(Gapi.gapi_Seq from, out QosPolicyCount[] to)
+        static public void CopyOut(Gapi.gapi_Seq from, ref QosPolicyCount[] to)
         {
             // Initialize managed array to the correct size.
-            to = new QosPolicyCount[from._length];
+            if (to.Length != from._length)
+            {
+                to = new QosPolicyCount[from._length];
+            }
 
             for (int index = 0; index < from._length; index++)
             {
@@ -61,7 +64,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset__buffer = (int)Marshal.OffsetOf(type, "_buffer");
         private static readonly int offset__release = (int)Marshal.OffsetOf(type, "_release");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
@@ -72,7 +75,6 @@ namespace DDS.OpenSplice.CustomMarshalers
             : this()
         {
             CopyIn(from, gapiPtr, 0);
-            cleanupRequired = true;
         }
 
         public SequenceIntPtrMarshaler()
@@ -82,14 +84,19 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr, 0);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
+        internal void CopyIn(IntPtr[] from)
+        {
+            cleanupRequired = true;
+            CopyIn(from, gapiPtr, 0);
+        }
+        
         internal static void CopyIn(IntPtr[] from, IntPtr to, int offset)
         {
             Int32 length = 0;
@@ -130,18 +137,21 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
-        internal void CopyOut(out IntPtr[] to)
+        internal void CopyOut(ref IntPtr[] to)
         {
-            CopyOut(gapiPtr, out to, 0);
+            CopyOut(gapiPtr, ref to, 0);
         }
 
-        internal static void CopyOut(IntPtr from, out IntPtr[] to, int offset)
+        internal static void CopyOut(IntPtr from, ref IntPtr[] to, int offset)
         {
             // Get _length field
             int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
-            to = new IntPtr[length];
+            if (to == null || to.Length != length)
+            {
+                to = new IntPtr[length];
+            }
 
             if (length > 0)
             {
@@ -168,7 +178,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset__buffer = (int)Marshal.OffsetOf(type, "_buffer");
         private static readonly int offset__release = (int)Marshal.OffsetOf(type, "_release");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
@@ -178,8 +188,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         public SequenceOctetMarshaler(byte[] from)
             : this()
         {
-            CopyIn(from, gapiPtr, 0);
             cleanupRequired = true;
+            CopyIn(from, gapiPtr, 0);
         }
 
         public SequenceOctetMarshaler()
@@ -189,11 +199,10 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr, 0);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
@@ -237,18 +246,21 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
-        internal void CopyOut(out byte[] to)
+        internal void CopyOut(ref byte[] to)
         {
-            CopyOut(gapiPtr, out to, 0);
+            CopyOut(gapiPtr, ref to, 0);
         }
 
-        internal static void CopyOut(IntPtr from, out byte[] to, int offset)
+        internal static void CopyOut(IntPtr from, ref byte[] to, int offset)
         {
             // Get _length field
             int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
-            to = new byte[length];
+            if (to == null || to.Length != length)
+            {
+                to = new byte[length];
+            }
 
             if (length > 0)
             {
@@ -275,18 +287,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset__buffer = (int)Marshal.OffsetOf(type, "_buffer");
         private static readonly int offset__release = (int)Marshal.OffsetOf(type, "_release");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public SequenceStringMarshaler(string[] from)
-            : this()
-        {
-            CopyIn(from, gapiPtr, 0);
-            cleanupRequired = true;
         }
 
         public SequenceStringMarshaler()
@@ -296,15 +301,20 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr, 0);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(string[] from, IntPtr to, int offset)
+        internal DDS.ReturnCode CopyIn(string[] from)
+        {
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr, 0);
+        }
+        
+        internal static DDS.ReturnCode CopyIn(string[] from, IntPtr to, int offset)
         {
             Int32 length = 0;
             IntPtr arrayPtr = IntPtr.Zero;
@@ -328,7 +338,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 arrayPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size * length);
                 for (int index = 0; index < length; index++)
                 {
-                    //IntPtr stringPtr = OpenSplice.Gapi.GenericAllocRelease.string_dup(from[index]);
+                    if (from[index] == null) return DDS.ReturnCode.BadParameter;
                     IntPtr stringPtr = Marshal.StringToHGlobalAnsi(from[index]);
                     BaseMarshaler.Write(arrayPtr, Size * index, stringPtr);
                 }
@@ -339,6 +349,8 @@ namespace DDS.OpenSplice.CustomMarshalers
 
             // Set _release field
             BaseMarshaler.Write(to, offset + offset__release, (byte)1);
+            
+            return DDS.ReturnCode.Ok;
         }
 
         internal static void CleanupIn(IntPtr nativePtr, int offset)
@@ -362,18 +374,21 @@ namespace DDS.OpenSplice.CustomMarshalers
             OpenSplice.Gapi.GenericAllocRelease.Free(arrayPtr);
         }
 
-        internal void CopyOut(out string[] to)
+        internal void CopyOut(ref string[] to)
         {
-            CopyOut(gapiPtr, out to, 0);
+            CopyOut(gapiPtr, ref to, 0);
         }
 
-        internal static void CopyOut(IntPtr from, out string[] to, int offset)
+        internal static void CopyOut(IntPtr from, ref string[] to, int offset)
         {
             // Get _length field
             int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
-            to = new string[length];
+            if (to == null || to.Length != length)
+            {
+                to = new string[length];
+            }
 
             if (length > 0)
             {
@@ -411,8 +426,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         public SequenceInstanceHandleMarshaler(InstanceHandle[] from)
             : this()
         {
-            CopyIn(from, gapiPtr, 0);
             cleanupRequired = true;
+            CopyIn(from, gapiPtr, 0);
         }
 
         public SequenceInstanceHandleMarshaler()
@@ -470,18 +485,22 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
-        internal void CopyOut(out InstanceHandle[] to)
+        internal void CopyOut(ref InstanceHandle[] to)
         {
-            CopyOut(gapiPtr, out to, 0);
+            CopyOut(gapiPtr, ref to, 0);
         }
 
-        internal static void CopyOut(IntPtr from, out InstanceHandle[] to, int offset)
+        internal static void CopyOut(IntPtr from, ref InstanceHandle[] to, int offset)
         {
             // Get _length field
             int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
-            to = new InstanceHandle[length];
+            // Initialize managed array to the correct size.
+            if (to == null || to.Length != length)
+            {
+                to = new InstanceHandle[length];
+            }
 
             if (length > 0)
             {
@@ -521,8 +540,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         public SequenceMarshaler(TInterface[] from)
             : this()
         {
-            CopyIn(from, gapiPtr, 0);
             cleanupRequired = true;
+            CopyIn(from, gapiPtr, 0);
         }
 
         public SequenceMarshaler()
@@ -581,18 +600,22 @@ namespace DDS.OpenSplice.CustomMarshalers
             BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
-        internal void CopyOut(out TInterface[] to)
+        internal void CopyOut(ref TInterface[] to)
         {
-            CopyOut(gapiPtr, out to, 0);
+            CopyOut(gapiPtr, ref to, 0);
         }
 
-        internal static void CopyOut(IntPtr from, out TInterface[] to, int offset)
+        internal static void CopyOut(IntPtr from, ref TInterface[] to, int offset)
         {
             // Get _length field
             int length = BaseMarshaler.ReadInt32(from, offset + offset__length);
 
             // Initialize managed array to the correct size.
-            to = new TInterface[length];
+            // Initialize managed array to the correct size.
+            if (to == null || to.Length != length)
+            {
+                to = new TInterface[length];
+            }
 
             if (length > 0)
             {

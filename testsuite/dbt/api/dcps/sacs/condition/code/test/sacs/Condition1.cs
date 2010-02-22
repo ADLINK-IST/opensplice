@@ -74,8 +74,8 @@ namespace test.sacs
                 thread = new System.Threading.Thread(delegate()
                 {
                     this.success = false;
-                    DDS.ICondition[] attachedConditions;
-                    DDS.ReturnCode rc = this.waitset.GetConditions(out attachedConditions);
+                    DDS.ICondition[] attachedConditions = null;
+                    DDS.ReturnCode rc = this.waitset.GetConditions(ref attachedConditions);
                     if (rc == DDS.ReturnCode.Ok)
                     {
                         DDS.ICondition[] activeConditions = new DDS.ICondition[0];

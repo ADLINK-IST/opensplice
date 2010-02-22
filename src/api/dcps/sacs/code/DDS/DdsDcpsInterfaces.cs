@@ -41,7 +41,7 @@ namespace DDS
         ReturnCode Wait(ref ICondition[] activeConditions, Duration timeout);
         ReturnCode AttachCondition(ICondition condition);
         ReturnCode DetachCondition(ICondition condition);
-        ReturnCode GetConditions(out ICondition[] attachedConditions);
+        ReturnCode GetConditions(ref ICondition[] attachedConditions);
     }
 
     public interface IGuardCondition : ICondition
@@ -79,15 +79,15 @@ namespace DDS
         IDomainParticipant CreateParticipant(string domainId);
         IDomainParticipant CreateParticipant(string domainId,
             IDomainParticipantListener listener, StatusKind mask);
-        IDomainParticipant CreateParticipant(string domainId, ref DomainParticipantQos qos);
-        IDomainParticipant CreateParticipant(string domainId, ref DomainParticipantQos qos,
+        IDomainParticipant CreateParticipant(string domainId, DomainParticipantQos qos);
+        IDomainParticipant CreateParticipant(string domainId, DomainParticipantQos qos,
             IDomainParticipantListener listener, StatusKind mask);
         ReturnCode DeleteParticipant(IDomainParticipant participant);
         IDomainParticipant LookupParticipant(string domainId);
-        ReturnCode SetDefaultParticipantQos(ref DomainParticipantQos qos);
-        ReturnCode GetDefaultParticipantQos(out DomainParticipantQos qos);
-        ReturnCode SetQos(ref DomainParticipantFactoryQos qos);
-        ReturnCode GetQos(out DomainParticipantFactoryQos qos);
+        ReturnCode SetDefaultParticipantQos(DomainParticipantQos qos);
+        ReturnCode GetDefaultParticipantQos(ref DomainParticipantQos qos);
+        ReturnCode SetQos(DomainParticipantFactoryQos qos);
+        ReturnCode GetQos(ref DomainParticipantFactoryQos qos);
     }
 
     // ----------------------------------------------------------------------
@@ -105,43 +105,56 @@ namespace DDS
     {
         IPublisher CreatePublisher();
         IPublisher CreatePublisher(
-            IPublisherListener listener, StatusKind mask);
-        IPublisher CreatePublisher(ref PublisherQos qos);
-        IPublisher CreatePublisher(ref PublisherQos qos,
-            IPublisherListener listener, StatusKind mask);
+                IPublisherListener listener, 
+                StatusKind mask);
+        IPublisher CreatePublisher(PublisherQos qos);
+        IPublisher CreatePublisher(
+                PublisherQos qos,
+                IPublisherListener listener, 
+                StatusKind mask);
         ReturnCode DeletePublisher(IPublisher p);
         ISubscriber CreateSubscriber();
         ISubscriber CreateSubscriber(
-            ISubscriberListener listener, StatusKind mask);
-        ISubscriber CreateSubscriber(ref SubscriberQos qos);
-        ISubscriber CreateSubscriber(ref SubscriberQos qos,
-            ISubscriberListener listener, StatusKind mask);
+                ISubscriberListener listener, 
+                StatusKind mask);
+        ISubscriber CreateSubscriber(SubscriberQos qos);
+        ISubscriber CreateSubscriber(
+                SubscriberQos qos,
+                ISubscriberListener listener, 
+                StatusKind mask);
         ReturnCode DeleteSubscriber(ISubscriber s);
         ISubscriber BuiltInSubscriber { get; }
         ITopic CreateTopic(string topicName, string typeName);
-        ITopic CreateTopic(string topicName, string typeName,
-            ITopicListener listener, StatusKind mask);
-        ITopic CreateTopic(string topicName, string typeName, ref TopicQos qos);
-        ITopic CreateTopic(string topicName, string typeName, ref TopicQos qos,
-            ITopicListener listener, StatusKind mask);
+        ITopic CreateTopic(
+                string topicName, 
+                string typeName,
+                ITopicListener listener, 
+                StatusKind mask);
+        ITopic CreateTopic(string topicName, string typeName, TopicQos qos);
+        ITopic CreateTopic(
+                string topicName, 
+                string typeName, 
+                TopicQos qos,
+                ITopicListener listener, 
+                StatusKind mask);
         ReturnCode DeleteTopic(ITopic topic);
         ITopic FindTopic(string topicName, Duration timeout);
         ITopicDescription LookupTopicDescription(string name);
         IContentFilteredTopic CreateContentFilteredTopic(
-            string name,
-            ITopic relatedTopic,
-            string filterExpression,
-            params string[] expressionParameters);
+                string name,
+                ITopic relatedTopic,
+                string filterExpression,
+                params string[] expressionParameters);
         ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic aContentFilteredTopic);
         IMultiTopic CreateMultiTopic(
-            string name,
-            string typeName,
-            string subscriptionExpression,
-            params string[] expressionParameters);
+                string name,
+                string typeName,
+                string subscriptionExpression,
+                params string[] expressionParameters);
         ReturnCode DeleteMultiTopic(IMultiTopic multiTopic);
         ReturnCode DeleteContainedEntities();
-        ReturnCode SetQos(ref DomainParticipantQos qos);
-        ReturnCode GetQos(out DomainParticipantQos qos);
+        ReturnCode SetQos(DomainParticipantQos qos);
+        ReturnCode GetQos(ref DomainParticipantQos qos);
         ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask);
         ReturnCode IgnoreParticipant(InstanceHandle handle);
         ReturnCode IgnoreTopic(InstanceHandle handle);
@@ -149,12 +162,12 @@ namespace DDS
         ReturnCode IgnoreSubscription(InstanceHandle handle);
         string DomainId { get; }
         ReturnCode AssertLiveliness();
-        ReturnCode SetDefaultPublisherQos(ref PublisherQos qos);
-        ReturnCode GetDefaultPublisherQos(out PublisherQos qos);
-        ReturnCode SetDefaultSubscriberQos(ref SubscriberQos qos);
-        ReturnCode GetDefaultSubscriberQos(out SubscriberQos qos);
-        ReturnCode SetDefaultTopicQos(ref TopicQos qos);
-        ReturnCode GetDefaultTopicQos(out TopicQos qos);
+        ReturnCode SetDefaultPublisherQos(PublisherQos qos);
+        ReturnCode GetDefaultPublisherQos(ref PublisherQos qos);
+        ReturnCode SetDefaultSubscriberQos(SubscriberQos qos);
+        ReturnCode GetDefaultSubscriberQos(ref SubscriberQos qos);
+        ReturnCode SetDefaultTopicQos(TopicQos qos);
+        ReturnCode GetDefaultTopicQos(ref TopicQos qos);
         bool ContainsEntity(InstanceHandle handle);
         ReturnCode GetCurrentTime(out Time currentTime);
         ITypeSupport GetTypeSupport(string registeredName);
@@ -182,15 +195,15 @@ namespace DDS
     public interface ITopic : IEntity, ITopicDescription
     {
         ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus aStatus);
-        ReturnCode GetQos(out TopicQos qos);
-        ReturnCode SetQos(ref TopicQos qos);
+        ReturnCode GetQos(ref TopicQos qos);
+        ReturnCode SetQos(TopicQos qos);
         ReturnCode SetListener(ITopicListener listener, StatusKind mask);
     }
 
     public interface IContentFilteredTopic : ITopicDescription
     {
         string GetFilterExpression();
-        ReturnCode GetExpressionParameters(out string[] expressionParameters);
+        ReturnCode GetExpressionParameters(ref string[] expressionParameters);
         ReturnCode SetExpressionParameters(params string[] expressionParameters);
         ITopic RelatedTopic { get; }
     }
@@ -198,7 +211,7 @@ namespace DDS
     public interface IMultiTopic : ITopicDescription
     {
         string SubscriptionExpression { get; }
-        ReturnCode GetExpressionParameters(out string[] expressionParameters);
+        ReturnCode GetExpressionParameters(ref string[] expressionParameters);
         ReturnCode SetExpressionParameters(params string[] expressionParameters);
     }
 
@@ -208,16 +221,20 @@ namespace DDS
     public interface IPublisher : IEntity
     {
         IDataWriter CreateDataWriter(ITopic topic);
-        IDataWriter CreateDataWriter(ITopic topic,
-            IDataWriterListener listener, StatusKind mask);
-        IDataWriter CreateDataWriter(ITopic topic, ref DataWriterQos qos);
-        IDataWriter CreateDataWriter(ITopic topic, ref DataWriterQos qos,
-            IDataWriterListener listener, StatusKind mask);
+        IDataWriter CreateDataWriter(
+                ITopic topic,
+                IDataWriterListener listener, StatusKind mask);
+        IDataWriter CreateDataWriter(ITopic topic, DataWriterQos qos);
+        IDataWriter CreateDataWriter(
+                ITopic topic, 
+                DataWriterQos qos,
+                IDataWriterListener listener, 
+                StatusKind mask);
         ReturnCode DeleteDataWriter(IDataWriter dataWriter);
         IDataWriter LookupDataWriter(string topicName);
         ReturnCode DeleteContainedEntities();
-        ReturnCode SetQos(ref PublisherQos qos);
-        ReturnCode GetQos(out PublisherQos qos);
+        ReturnCode SetQos(PublisherQos qos);
+        ReturnCode GetQos(ref PublisherQos qos);
         ReturnCode SetListener(IPublisherListener listener, StatusKind mask);
         ReturnCode SuspendPublications();
         ReturnCode ResumePublications();
@@ -225,93 +242,97 @@ namespace DDS
         ReturnCode EndCoherentChanges();
         ReturnCode WaitForAcknowledgments(Duration maxWait);
         IDomainParticipant GetParticipant();
-        ReturnCode SetDefaultDataWriterQos(ref DataWriterQos qos);
-        ReturnCode GetDefaultDataWriterQos(out DataWriterQos qos);
-        ReturnCode CopyFromTopicQos(out DataWriterQos dataWriterQos, ref TopicQos topicQos);
+        ReturnCode SetDefaultDataWriterQos(DataWriterQos qos);
+        ReturnCode GetDefaultDataWriterQos(ref DataWriterQos qos);
+        ReturnCode CopyFromTopicQos(ref DataWriterQos dataWriterQos, TopicQos topicQos);
     }
 
     public interface IDataWriter : IEntity
     {
-        ReturnCode SetQos(ref DataWriterQos qos);
-        ReturnCode GetQos(out DataWriterQos qos);
+        ReturnCode SetQos(DataWriterQos qos);
+        ReturnCode GetQos(ref DataWriterQos qos);
         ReturnCode SetListener(IDataWriterListener listener, StatusKind mask);
         ITopic Topic { get; }
         IPublisher Publisher { get; }
         ReturnCode WaitForAcknowledgments(Duration maxWait);
-        ReturnCode GetLivelinessLostStatus(out LivelinessLostStatus status);
-        ReturnCode GetOfferedDeadlineMissedStatus(out OfferedDeadlineMissedStatus status);
-        ReturnCode GetOfferedIncompatibleQosStatus(out OfferedIncompatibleQosStatus status);
-        ReturnCode GetPublicationMatchedStatus(out PublicationMatchedStatus status);
+        ReturnCode GetLivelinessLostStatus(ref LivelinessLostStatus status);
+        ReturnCode GetOfferedDeadlineMissedStatus(ref OfferedDeadlineMissedStatus status);
+        ReturnCode GetOfferedIncompatibleQosStatus(ref OfferedIncompatibleQosStatus status);
+        ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status);
         ReturnCode AssertLiveliness();
-        ReturnCode GetMatchedSubscriptions(out InstanceHandle[] subscriptionHandles);
+        ReturnCode GetMatchedSubscriptions(ref InstanceHandle[] subscriptionHandles);
         ReturnCode GetMatchedSubscriptionData(
-            out SubscriptionBuiltinTopicData subscriptionData,
-            InstanceHandle subscriptionHandle);
+                ref SubscriptionBuiltinTopicData subscriptionData,
+                InstanceHandle subscriptionHandle);
     }
 
     public interface ISubscriber : IEntity
     {
         IDataReader CreateDataReader(ITopicDescription topic);
-        IDataReader CreateDataReader(ITopicDescription topic,
-            IDataReaderListener listener, StatusKind mask);
-        IDataReader CreateDataReader(ITopicDescription topic, ref DataReaderQos qos);
-        IDataReader CreateDataReader(ITopicDescription topic, ref DataReaderQos qos,
-            IDataReaderListener listener, StatusKind mask);
+        IDataReader CreateDataReader(
+                ITopicDescription topic,
+                IDataReaderListener listener, StatusKind mask);
+        IDataReader CreateDataReader(ITopicDescription topic, DataReaderQos qos);
+        IDataReader CreateDataReader(
+                ITopicDescription topic, 
+                DataReaderQos qos,
+                IDataReaderListener listener, 
+                StatusKind mask);
         ReturnCode DeleteDataReader(IDataReader dataReader);
         ReturnCode DeleteContainedEntities();
         IDataReader LookupDataReader(string topicName);
-        ReturnCode GetDataReaders(out IDataReader[] readers);
+        ReturnCode GetDataReaders(ref IDataReader[] readers);
         ReturnCode GetDataReaders(
-            out IDataReader[] readers,
-            SampleStateKind sampleStates,
-            ViewStateKind viewStates,
-            InstanceStateKind instanceStates);
+                ref IDataReader[] readers,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
         ReturnCode NotifyDataReaders();
-        ReturnCode SetQos(ref SubscriberQos qos);
-        ReturnCode GetQos(out SubscriberQos qos);
+        ReturnCode SetQos(SubscriberQos qos);
+        ReturnCode GetQos(ref SubscriberQos qos);
         ReturnCode SetListener(ISubscriberListener listener, StatusKind mask);
         ReturnCode BeginAccess();
         ReturnCode EndAccess();
         IDomainParticipant Participant { get; }
-        ReturnCode SetDefaultDataReaderQos(ref DataReaderQos qos);
-        ReturnCode GetDefaultDataReaderQos(out DataReaderQos qos);
-        ReturnCode CopyFromTopicQos(out DataReaderQos dataReaderQos, ref TopicQos topicQos);
+        ReturnCode SetDefaultDataReaderQos(DataReaderQos qos);
+        ReturnCode GetDefaultDataReaderQos(ref DataReaderQos qos);
+        ReturnCode CopyFromTopicQos(ref DataReaderQos dataReaderQos, TopicQos topicQos);
     }
 
     public interface IDataReader : IEntity
     {
         IReadCondition CreateReadCondition();
         IReadCondition CreateReadCondition(
-            SampleStateKind sampleStates,
-            ViewStateKind viewStates,
-            InstanceStateKind instanceStates);
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
         IQueryCondition CreateQueryCondition(
-            string queryExpression,
-            params string[] queryParameters);
+                string queryExpression,
+                params string[] queryParameters);
         IQueryCondition CreateQueryCondition(
-            SampleStateKind sampleStates,
-            ViewStateKind viewStates,
-            InstanceStateKind instanceStates,
-            string queryExpression,
-            params string[] queryParameters);
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates,
+                string queryExpression,
+                params string[] queryParameters);
         ReturnCode DeleteReadCondition(IReadCondition condition);
         ReturnCode DeleteContainedEntities();
-        ReturnCode SetQos(ref DataReaderQos qos);
-        ReturnCode GetQos(out DataReaderQos qos);
+        ReturnCode SetQos(DataReaderQos qos);
+        ReturnCode GetQos(ref DataReaderQos qos);
         ReturnCode SetListener(IDataReaderListener listener, StatusKind mask);
         ITopicDescription GetTopicDescription();
         ISubscriber Subscriber { get; }
-        ReturnCode GetSampleRejectedStatus(SampleRejectedStatus status);
-        ReturnCode GetLivelinessChangedStatus(LivelinessChangedStatus status);
-        ReturnCode GetRequestedDeadlineMissedStatus(RequestedDeadlineMissedStatus status);
-        ReturnCode GetRequestedIncompatibleQosStatus(RequestedIncompatibleQosStatus status);
-        ReturnCode GetSubscriptionMatchedStatus(SubscriptionMatchedStatus status);
-        ReturnCode GetSampleLostStatus(SampleLostStatus status);
+        ReturnCode GetSampleRejectedStatus(ref SampleRejectedStatus status);
+        ReturnCode GetLivelinessChangedStatus(ref LivelinessChangedStatus status);
+        ReturnCode GetRequestedDeadlineMissedStatus(ref RequestedDeadlineMissedStatus status);
+        ReturnCode GetRequestedIncompatibleQosStatus(ref RequestedIncompatibleQosStatus status);
+        ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status);
+        ReturnCode GetSampleLostStatus(ref SampleLostStatus status);
         ReturnCode WaitForHistoricalData(Duration maxWait);
-        ReturnCode GetMatchedPublications(out InstanceHandle[] publicationHandles);
+        ReturnCode GetMatchedPublications(ref InstanceHandle[] publicationHandles);
         ReturnCode GetMatchedPublicationData(
-            out PublicationBuiltinTopicData publicationData,
-            InstanceHandle publicationHandle);
+                ref PublicationBuiltinTopicData publicationData,
+                InstanceHandle publicationHandle);
     }
 
     // listener interfaces

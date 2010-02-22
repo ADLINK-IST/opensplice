@@ -24,7 +24,11 @@ namespace DDS.OpenSplice
 {
     public interface IMarshalerTypeGenerator
     {
-        DatabaseMarshaler CreateMarshaler(IntPtr participant, IntPtr metaData, Type dataType);
+        DatabaseMarshaler CreateMarshaler(
+            IntPtr participant, 
+            IntPtr metaData,
+            Type dataType,
+            bool customPSM);
     }
 }
         

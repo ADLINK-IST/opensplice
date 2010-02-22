@@ -34,7 +34,7 @@ namespace test.sacs
         {
             defaultDeadlineQosPolicy.Period = DDS.Duration.Infinite;
 
-            defaultDestinationOrderQosPolicy.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationOrderQos;
+            defaultDestinationOrderQosPolicy.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationorderQos;
 
             defaultDurabilityQosPolicy.Kind = DDS.DurabilityQosPolicyKind.VolatileDurabilityQos;
 
@@ -45,7 +45,7 @@ namespace test.sacs
             defaultDurabilityServiceQosPolicy.MaxSamples = -1;
             defaultDurabilityServiceQosPolicy.MaxSamplesPerInstance = -1;
 
-            defaultEntityFactoryQosPolicy.AutoEnableCreatedEntities = true;
+            defaultEntityFactoryQosPolicy.AutoenableCreatedEntities = true;
 
             defaultGroupDataQosPolicy.Value = new byte[0];
 
@@ -69,8 +69,8 @@ namespace test.sacs
             defaultPresentationQosPolicy.CoherentAccess = false;
             defaultPresentationQosPolicy.OrderedAccess = false;
 
-            defaultReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay = DDS.Duration.Infinite;
-            defaultReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay = DDS.Duration.Infinite;
+            defaultReaderDataLifecycleQosPolicy.AutopurgeDisposedSamplesDelay = DDS.Duration.Infinite;
+            defaultReaderDataLifecycleQosPolicy.AutopurgeNowriterSamplesDelay = DDS.Duration.Infinite;
             defaultReaderDataLifecycleQosPolicy.EnableInvalidSamples = true;
 
             defaultReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.BestEffortReliabilityQos;
@@ -88,7 +88,7 @@ namespace test.sacs
 
             defaultUserDataQosPolicy.Value = new byte[0];
 
-            defaultWriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances = true;
+            defaultWriterDataLifecycleQosPolicy.AutodisposeUnregisteredInstances = true;
 
             defaultDataWriterQos.Durability = defaultDurabilityQosPolicy;
             defaultDataWriterQos.Deadline = defaultDeadlineQosPolicy;
@@ -281,7 +281,7 @@ namespace test.sacs
         public static bool SubscriberQosEquals(DDS.SubscriberQos qos1, DDS.SubscriberQos
             qos2)
         {
-            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
                     );
@@ -406,15 +406,15 @@ namespace test.sacs
                     );
                 return false;
             }
-            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay
-                , qos2.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay))
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay
+                , qos2.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay' values do not match"
                     );
                 return false;
             }
-            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay
-                , qos2.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay))
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay
+                , qos2.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay' values do not match"
                     );
@@ -427,7 +427,7 @@ namespace test.sacs
         public static bool PublisherQosEquals(DDS.PublisherQos qos1, DDS.PublisherQos qos2
             )
         {
-            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
                     );
@@ -708,7 +708,7 @@ namespace test.sacs
         public static bool EntityFactoryQosPolicyEquals(DDS.EntityFactoryQosPolicy policy1
             , DDS.EntityFactoryQosPolicy policy2)
         {
-            if (policy1.AutoEnableCreatedEntities != policy2.AutoEnableCreatedEntities)
+            if (policy1.AutoenableCreatedEntities != policy2.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactoryQosPolicy.AutoEnableCreatedEntities' differ"
                     );
@@ -889,14 +889,14 @@ namespace test.sacs
         public static bool ReaderDataLifecycleQosPolicyEquals(DDS.ReaderDataLifecycleQosPolicy
              policy1, DDS.ReaderDataLifecycleQosPolicy policy2)
         {
-            if (!DurationEquals(policy1.AutoPurgeNoWriterSamplesDelay, policy2.AutoPurgeNoWriterSamplesDelay
+            if (!DurationEquals(policy1.AutopurgeNowriterSamplesDelay, policy2.AutopurgeNowriterSamplesDelay
                 ))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay' differ"
                     );
                 return false;
             }
-            if (!DurationEquals(policy1.AutoPurgeDisposedSamplesDelay, policy2.AutoPurgeDisposedSamplesDelay
+            if (!DurationEquals(policy1.AutopurgeDisposedSamplesDelay, policy2.AutopurgeDisposedSamplesDelay
                 ))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay' differ"
@@ -1033,7 +1033,7 @@ namespace test.sacs
         public static bool WriterDataLifecycleQosPolicyEquals(DDS.WriterDataLifecycleQosPolicy
              policy1, DDS.WriterDataLifecycleQosPolicy policy2)
         {
-            if (policy1.AutoDisposeUnregisteredInstances != policy2.AutoDisposeUnregisteredInstances)
+            if (policy1.AutodisposeUnregisteredInstances != policy2.AutodisposeUnregisteredInstances)
             {
                 System.Console.Error.WriteLine("'WriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances' differ"
                     );

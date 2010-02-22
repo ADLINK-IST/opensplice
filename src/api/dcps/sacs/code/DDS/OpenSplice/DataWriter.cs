@@ -63,30 +63,33 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public ReturnCode SetQos(ref DataWriterQos qos)
+        public ReturnCode SetQos(DataWriterQos qos)
         {
-            using (IMarshaler marshaler = new DataWriterQosMarshaler(ref qos))
-            {
-                return Gapi.DataWriter.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-            }
-        }
-
-        public ReturnCode GetQos(out DataWriterQos qos)
-        {
-            qos = new DataWriterQos();
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
             using (DataWriterQosMarshaler marshaler = new DataWriterQosMarshaler())
             {
-                result = Gapi.DataWriter.get_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = marshaler.CopyIn(qos);
+                if (result == ReturnCode.Ok)
+                {
+                    result = Gapi.DataWriter.set_qos(GapiPeer, marshaler.GapiPtr);
+                }
+            }
+
+            return result;
+        }
+
+        public ReturnCode GetQos(ref DataWriterQos qos)
+        {
+            ReturnCode result;
+
+            using (DataWriterQosMarshaler marshaler = new DataWriterQosMarshaler())
+            {
+                result = Gapi.DataWriter.get_qos(GapiPeer, marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
+                    marshaler.CopyOut(ref qos);
                 }
             }
 
@@ -117,37 +120,31 @@ namespace DDS.OpenSplice
 
         public ReturnCode WaitForAcknowledgments(Duration maxWait)
         {
-            return Gapi.DataWriter.wait_for_acknowledgments(
-                GapiPeer,
-                ref maxWait);
+            return Gapi.DataWriter.wait_for_acknowledgments(GapiPeer, ref maxWait);
         }
 
-        public ReturnCode GetLivelinessLostStatus(out LivelinessLostStatus status)
+        public ReturnCode GetLivelinessLostStatus(ref LivelinessLostStatus status)
         {
-            return Gapi.DataWriter.get_liveliness_lost_status(
-                 GapiPeer,
-                 out status);
+            if (status == null) status = new LivelinessLostStatus();
+            return Gapi.DataWriter.get_liveliness_lost_status(GapiPeer, status);
         }
 
-        public ReturnCode GetOfferedDeadlineMissedStatus(out OfferedDeadlineMissedStatus status)
+        public ReturnCode GetOfferedDeadlineMissedStatus(ref OfferedDeadlineMissedStatus status)
         {
-            return Gapi.DataWriter.get_offered_deadline_missed_status(
-                 GapiPeer,
-                 out status);
+            if (status == null) status = new OfferedDeadlineMissedStatus();
+            return Gapi.DataWriter.get_offered_deadline_missed_status(GapiPeer, status);
         }
 
-        public ReturnCode GetOfferedIncompatibleQosStatus(out OfferedIncompatibleQosStatus status)
+        public ReturnCode GetOfferedIncompatibleQosStatus(ref OfferedIncompatibleQosStatus status)
         {
-            return Gapi.DataWriter.get_offered_incompatible_qos_status(
-                 GapiPeer,
-                 out status);
+            if (status == null) status = new OfferedIncompatibleQosStatus();
+            return Gapi.DataWriter.get_offered_incompatible_qos_status(GapiPeer, status);
         }
 
-        public ReturnCode GetPublicationMatchedStatus(out PublicationMatchedStatus status)
+        public ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status)
         {
-            return Gapi.DataWriter.get_publication_matched_status(
-                 GapiPeer,
-                 out status);
+            if (status == null) status = new PublicationMatchedStatus();
+            return Gapi.DataWriter.get_publication_matched_status(GapiPeer, status);
         }
 
         public ReturnCode AssertLiveliness()
@@ -155,41 +152,41 @@ namespace DDS.OpenSplice
             return Gapi.DataWriter.assert_liveliness(GapiPeer);
         }
 
-        public ReturnCode GetMatchedSubscriptions(out InstanceHandle[] subscriptionHandles)
+        public ReturnCode GetMatchedSubscriptions(ref InstanceHandle[] subscriptionHandles)
         {
-            subscriptionHandles = null;
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
             using (SequenceInstanceHandleMarshaler marshaler = new SequenceInstanceHandleMarshaler())
             {
                 result = Gapi.DataWriter.get_matched_subscriptions(
-                    GapiPeer,
-                    marshaler.GapiPtr);
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out subscriptionHandles);
+                    marshaler.CopyOut(ref subscriptionHandles);
                 }
             }
 
             return result;
         }
 
-        public ReturnCode GetMatchedSubscriptionData(out SubscriptionBuiltinTopicData subscriptionData, InstanceHandle subscriptionHandle)
+        public ReturnCode GetMatchedSubscriptionData(
+                ref SubscriptionBuiltinTopicData subscriptionData, 
+                InstanceHandle subscriptionHandle)
         {
-            subscriptionData = new SubscriptionBuiltinTopicData();
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
             using (SubscriptionBuiltinTopicDataMarshaler marshaler = new SubscriptionBuiltinTopicDataMarshaler())
             {
                 result = Gapi.DataWriter.get_matched_subscription_data(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    subscriptionHandle);
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        subscriptionHandle);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out subscriptionData);
+                    marshaler.CopyOut(ref subscriptionData);
                 }
             }
 

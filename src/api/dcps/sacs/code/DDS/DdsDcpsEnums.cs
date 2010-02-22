@@ -165,7 +165,7 @@ namespace DDS
         Any = 0xffff,
     }
 
-    public enum DurabilityQosPolicyKind
+/*    public enum DurabilityQosPolicyKind
     {
         VolatileDurabilityQos,
         TransientLocalDurabilityQos,
@@ -222,5 +222,5 @@ namespace DDS
     {
         PriorityRelative,
         PriorityAbsolute
-    }
+    }*/
 } // end namespace DDS

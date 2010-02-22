@@ -17,12 +17,16 @@ namespace DDS.OpenSplice
         public MarshalerTypeGenerator()
         { }
 
-        public DatabaseMarshaler CreateMarshaler(IntPtr participant, IntPtr metaData, Type dataType)
+        public DatabaseMarshaler CreateMarshaler(
+                IntPtr participant, 
+                IntPtr metaData, 
+                Type dataType,
+                bool customPSM)
         {
             CompilerResults results = null;
 
             // Generate the interface wrapper here and add to namespace
-            CodeTypeDeclaration marshalerClass = CreateMarshalerClass(participant, dataType, metaData);
+            CodeTypeDeclaration marshalerClass = CreateMarshalerClass(participant, dataType, metaData, customPSM);
 
             try
             {
@@ -94,8 +98,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private CompilerResults CompileCode(CodeDomProvider provider, List<string> assemLocationList,
-                                                  CodeCompileUnit compileUnit)
+        private CompilerResults CompileCode(
+                CodeDomProvider provider, 
+                List<string> assemLocationList,
+                CodeCompileUnit compileUnit)
         {
             // Configure a CompilerParameters that links referenced assemblies
             // and produces the specified executable file.
@@ -147,7 +153,8 @@ namespace DDS.OpenSplice
         private CodeTypeDeclaration CreateMarshalerClass(
                 IntPtr participant, 
                 Type dataType, 
-                IntPtr metaData)
+                IntPtr metaData,
+                bool customPSM)
         {
             string marshalerClassName = string.Format("{0}Marshaler", dataType.Name);
             CodeTypeDeclaration implClass = new CodeTypeDeclaration(marshalerClassName);
@@ -156,11 +163,11 @@ namespace DDS.OpenSplice
             implClass.BaseTypes.Add(typeof(DatabaseMarshaler));
 
             //CreateFieldsAndProperties(implClass);
-            CreateConstructor(implClass, dataType, metaData, participant);            
+            CreateConstructor(implClass, dataType, metaData, participant, customPSM);            
 
             CreateSampleReaderAlloc(implClass, dataType);
-            CreateCopyIn(implClass, dataType, metaData);
-            CreateCopyOut(implClass, dataType, metaData);
+            CreateCopyIn(implClass, dataType, metaData, customPSM);
+            CreateCopyOut(implClass, dataType, metaData, customPSM);
 
             return implClass;
         }
@@ -296,7 +303,8 @@ namespace DDS.OpenSplice
         private void CreateCopyOut(
                 CodeTypeDeclaration implClass, 
                 Type dataType, 
-                IntPtr metaData)
+                IntPtr metaData,
+                bool customPSM)
         {
             CodeMemberMethod copyOutMethod = new CodeMemberMethod();
             copyOutMethod.Name = "CopyOut";
@@ -333,6 +341,7 @@ namespace DDS.OpenSplice
                 {
                     IntPtr member = Gapi.MetaData.structureMember(metaData, i);
                     string fieldName = Gapi.MetaData.specifierName(member);
+                    if (customPSM) fieldName = ToPascalCase(fieldName);
                     FieldInfo field = dataType.GetField(fieldName);
                     CreateStructMemberRead(copyOutMethod, field.FieldType, fieldName, member, i);
                 }
@@ -682,7 +691,8 @@ namespace DDS.OpenSplice
         private void CreateCopyIn(
                 CodeTypeDeclaration implClass, 
                 Type dataType, 
-                IntPtr metaData)
+                IntPtr metaData,
+                bool customPSM)
         {
             CodeMemberMethod copyInMethodFromNative = new CodeMemberMethod();
             copyInMethodFromNative.Name = "CopyIn";
@@ -735,7 +745,7 @@ namespace DDS.OpenSplice
                 for (int i = 0; i < nrMembers; i++)
                 {
                 	IntPtr member = Gapi.MetaData.structureMember(metaData, i);
-                    CreateStructMemberWrite(copyInMethod, member, dataType, i);
+                    CreateStructMemberWrite(copyInMethod, member, dataType, i, customPSM);
                 }
             }
             else
@@ -754,12 +764,15 @@ namespace DDS.OpenSplice
                 CodeMemberMethod copyInMethod,
                 IntPtr member, 
                 Type dataType,
-                int index)
+                int index,
+                bool customPSM)
         {
             string cursorName;
+            int maxSize;
             IntPtr memberType = Gapi.MetaData.memberType(member);
             IntPtr actualType = Gapi.MetaData.typeActualType(memberType);
             string fieldName = Gapi.MetaData.specifierName(member);
+            if (customPSM) fieldName = ToPascalCase(fieldName);
             Type fieldType = dataType.GetField(fieldName).FieldType;
             uint offset = Gapi.MetaData.memberOffset(member);
 
@@ -814,9 +827,22 @@ namespace DDS.OpenSplice
                     // Handle strings.
                     copyInMethod.Statements.Add(new CodeSnippetExpression(
                             string.Format("if (from.{0} == null) return false", fieldName)));
+                    maxSize = Gapi.MetaData.collectionTypeMaxSize(actualType);
+                    // Check for bounds if a maximum bound was specified.
+                    if (maxSize > 0)
+                    {
+                        copyInMethod.Statements.Add(new CodeSnippetExpression(
+                                string.Format("if (from.{0}.Length > {1}) return false", 
+                                        fieldName, maxSize)));
+                    }
+                    else
+                    {
+                        copyInMethod.Statements.Add(new CodeCommentStatement(
+                                "Unbounded string: bounds check not required..."));
+                    }
                     copyInMethod.Statements.Add(new CodeSnippetExpression(
                             string.Format("Write(basePtr, to, offset + {0}, ref from.{1})", 
-                                    offset,fieldName))); 
+                                    offset, fieldName))); 
                     break;
                 case c_collKind.C_SEQUENCE:
                 case c_collKind.C_ARRAY:
@@ -848,7 +874,7 @@ namespace DDS.OpenSplice
         {
             CodeStatement[] result;
             int arrLength, seqMaxLength;
-            string seqLengthName, seqBufName, seqTypeName, nextCursorName;
+            string seqLengthName, seqBufName, seqTypeName, nextCursorName, iterationIndex;
             IntPtr subType;
             IntPtr actualType;
             CodeStatement[] forBody;
@@ -899,32 +925,36 @@ namespace DDS.OpenSplice
                     seqTypeName = string.Format("attr{0}Seq{1}Type", index, dimension);
                     nextCursorName = string.Format("attr{0}Cursor{1}", index, dimension + 1);
                     seqMaxLength = Gapi.MetaData.collectionTypeMaxSize(collType);
+                    iterationIndex = CreateArrayIterationIndex(collStartType, dimension);
                     
                     forBody = CreateArrayMemberWrite(collStartType, actualType, index, 
                             dimension + 1, fieldName, seqBufName, nextCursorName);
-                    result = new CodeStatement[7];
+                    result = new CodeStatement[8];
                     result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
-                            string.Format("int {0} = from.{1}{2}.Length", seqLengthName, fieldName, 
-                                    CreateArrayIterationIndex(collStartType, dimension))));
+                            string.Format("if (from.{0}{1} == null) return false", 
+                                    fieldName, iterationIndex)));
+                    result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("int {0} = from.{1}{2}.Length", 
+                                    seqLengthName, fieldName, iterationIndex)));
                     if (seqMaxLength == 0)
                     {
-                        result[1] = new CodeCommentStatement("Unbounded sequence: bounds check not required...");
+                        result[2] = new CodeCommentStatement("Unbounded sequence: bounds check not required...");
                     }
                     else
                     {
-                        result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                        result[2] = new CodeExpressionStatement(new CodeSnippetExpression(
                                 string.Format("if ({0} > {1}) return false", seqLengthName, seqMaxLength)));
                     }
-                    result[2] = new CodeExpressionStatement(new CodeSnippetExpression(
+                    result[3] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("IntPtr {0} = DDS.OpenSplice.Database.c.newArray({1}, {2})", 
                                     seqBufName, seqTypeName, seqLengthName)));
-                    result[3] = new CodeExpressionStatement(new CodeSnippetExpression(
-                            string.Format("Write({0}, {1}, {2})", bufName, cursorName, seqBufName)));
                     result[4] = new CodeExpressionStatement(new CodeSnippetExpression(
-                            string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType))));
+                            string.Format("Write({0}, {1}, {2})", bufName, cursorName, seqBufName)));
                     result[5] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType))));
+                    result[6] = new CodeExpressionStatement(new CodeSnippetExpression(
                             string.Format("int {0} = 0", nextCursorName)));
-                    result[6] = new CodeIterationStatement(
+                    result[7] = new CodeIterationStatement(
                             new CodeExpressionStatement(new CodeSnippetExpression(
                                     string.Format("int i{0} = 0", dimension))), 
                             new CodeSnippetExpression(
@@ -954,38 +984,59 @@ namespace DDS.OpenSplice
                 string bufName,
                 string cursorName)
         {
-            string snippet;
+            int maxSize;
             CodeStatement[] result = new CodeStatement[2];
             string arrayBrackets = CreateArrayIterationIndex(collStartType, dimension);
             switch(collKind)
             {
             case c_metaKind.M_STRUCTURE:
-                snippet = string.Format(
+                result = new CodeStatement[2];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(string.Format(
                         "if (!attr{0}Marshaler.CopyIn(basePtr, from.{1}{2}, {3}, {4})) " +
                         "return false",
-                        index, fieldName, arrayBrackets, bufName, cursorName);
+                        index, fieldName, arrayBrackets, bufName, cursorName)));
                 break;
             case c_metaKind.M_ENUMERATION:
-                snippet = string.Format("Write({0}, {1}, (uint) from.{2}{3})", 
-                        bufName, cursorName, fieldName, arrayBrackets);
+                result = new CodeStatement[2];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(string.Format(
+                        "Write({0}, {1}, (uint) from.{2}{3})", 
+                        bufName, cursorName, fieldName, arrayBrackets)));
                 break;
             case c_metaKind.M_PRIMITIVE:
-                snippet = string.Format("Write({0}, {1}, from.{2}{3})", 
-                        bufName, cursorName, fieldName, arrayBrackets);
+                result = new CodeStatement[2];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(string.Format(
+                        "Write({0}, {1}, from.{2}{3})", 
+                        bufName, cursorName, fieldName, arrayBrackets)));
                 break;
             case c_metaKind.M_COLLECTION:
                 // Assert that this collection is always of type string!!
-                snippet = string.Format(
+                result = new CodeStatement[4];
+                result[0] = new CodeExpressionStatement(new CodeSnippetExpression(
+                        string.Format("if (from.{0}{1} == null) return false", 
+                                fieldName, arrayBrackets)));
+                maxSize = Gapi.MetaData.collectionTypeMaxSize(collType);
+                // Check for bounds if a maximum bound was specified.
+                if (maxSize > 0)
+                {
+                    result[1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                            string.Format("if (from.{0}{1}.Length > {2}) return false", 
+                                    fieldName, arrayBrackets, maxSize)));
+                }
+                else
+                {
+                    result[1] = new CodeCommentStatement(
+                            "Unbounded string: bounds check not required...");
+                }
+                result[2] = new CodeExpressionStatement(new CodeSnippetExpression(string.Format(
                         "Write(basePtr, {0}, {1}, ref from.{2}{3})", 
-                        bufName, cursorName, fieldName, arrayBrackets);
+                        bufName, cursorName, fieldName, arrayBrackets)));
                 break;
             default:
                 throw new Exception("Unsupported Array type");
             }
              
-            result[0] = new CodeExpressionStatement(new CodeSnippetExpression(snippet));
-            snippet = string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType)); 
-            result[1] = new CodeExpressionStatement(new CodeSnippetExpression(snippet));
+            result[result.Length - 1] = new CodeExpressionStatement(new CodeSnippetExpression(
+                    string.Format("{0} += {1}", cursorName, Gapi.MetaData.typeSize(collType))));
             
             return result;
         }
@@ -1027,7 +1078,8 @@ namespace DDS.OpenSplice
                 CodeTypeDeclaration implClass, 
                 Type dataType, 
                 IntPtr metaData, 
-                IntPtr participant)
+                IntPtr participant,
+                bool customPSM)
         {
             string fieldName;
             Type fieldType;
@@ -1056,6 +1108,7 @@ namespace DDS.OpenSplice
                     case c_metaKind.M_STRUCTURE: 
                         // Fetch Marshaler for embedded struct type.
                         fieldName = Gapi.MetaData.specifierName(member);
+                        if (customPSM) fieldName = ToPascalCase(fieldName);
                         fieldType = dataType.GetField(fieldName).FieldType;
                         if (fieldType == typeof(DDS.Time) || fieldType == typeof(DDS.Duration) || fieldType == typeof(DDS.InstanceHandle))
                         {
@@ -1067,11 +1120,12 @@ namespace DDS.OpenSplice
                         defaultConstructor.Statements.Add(new CodeSnippetExpression(
                                 string.Format("attr{0}Marshaler = GetMarshaler(participant, typeof({1}))", 
                                         i, fieldType.FullName)));
-                        DatabaseMarshaler.Create(participant, actualType, fieldType, this);
+                        DatabaseMarshaler.Create(participant, actualType, fieldType, this, customPSM);
                         break;
                     case c_metaKind.M_COLLECTION:
                         // Fetch Marshaler for member type when that turns out to be a struct.
                         fieldName = Gapi.MetaData.specifierName(member);
+                        if (customPSM) fieldName = ToPascalCase(fieldName);
                         fieldType = dataType.GetField(fieldName).FieldType;
                         
                         // Iterate to the element type of the collection.
@@ -1102,7 +1156,7 @@ namespace DDS.OpenSplice
                             defaultConstructor.Statements.Add(new CodeSnippetExpression(
                                     string.Format("attr{0}Marshaler = GetMarshaler(participant, typeof({1}))", 
                                             i, fieldType.FullName)));
-                            DatabaseMarshaler.Create(participant, memberType, fieldType, this);
+                            DatabaseMarshaler.Create(participant, memberType, fieldType, this, customPSM);
                         }
                         break;
                     default:
@@ -1119,5 +1173,45 @@ namespace DDS.OpenSplice
             // add the constructor to the class
             implClass.Members.Add(defaultConstructor);
         }
+        
+        private string ToPascalCase(string name)
+        {
+            int i, j, nrUnderScores;
+            char[] chars;
+
+            /* Determine number of '_' characters. */
+            nrUnderScores = 0;
+            for (i = 0; i < name.Length; i++) {
+                if (name[i] == '_') nrUnderScores++;
+            }
+
+            /* Allocate a string big enough to hold the PascalCase representation. */
+            chars = new char[name.Length - nrUnderScores];
+
+            /* Now go to UpperCase when necessary. */
+            for (i = 0, j = 0; i < name.Length; i++, j++) {
+                /* Start out with capital. */
+                if (i == 0) {
+                    chars[j] = Char.ToUpper(name[i]);
+                } else if (name[i] == '_') {
+                    /* On underscore, start new capital. */
+                    chars[j] = Char.ToUpper(name[++i]);
+                } else {
+                    /* If underscores mark te occurence of new words, then go to
+                     * lower-case for all the other characters.
+                     * In the other case, the name could already be in camelCase,
+                     * so copy the characters as is.
+                     */
+                    if (nrUnderScores > 0) {
+                        chars[j] = Char.ToLower(name[i]);
+                    } else {
+                        chars[j] = name[i];
+                    }
+                }
+            }
+
+            return new string(chars);
+        }
+
     }
 }

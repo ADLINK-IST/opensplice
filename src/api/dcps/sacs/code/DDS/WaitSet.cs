@@ -43,7 +43,7 @@ namespace DDS
 
                 if (result == ReturnCode.Ok || result == ReturnCode.Timeout)
                 {
-                    marshaler.CopyOut(out activeConditions);
+                    marshaler.CopyOut(ref activeConditions);
                 }
             }
 
@@ -66,9 +66,8 @@ namespace DDS
                 conditionObj.GapiPeer);
         }
 
-        public ReturnCode GetConditions(out ICondition[] attachedConditions)
+        public ReturnCode GetConditions(ref ICondition[] attachedConditions)
         {
-            attachedConditions = null;
             ReturnCode result = ReturnCode.Error;
 
             using (SequenceMarshaler<ICondition, Condition> marshaler = new SequenceMarshaler<ICondition, Condition>())
@@ -79,7 +78,7 @@ namespace DDS
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out attachedConditions);
+                    marshaler.CopyOut(ref attachedConditions);
                 }
             }
 

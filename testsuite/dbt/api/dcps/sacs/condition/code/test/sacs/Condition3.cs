@@ -21,7 +21,7 @@ namespace test.sacs
             DDS.ISubscriber subscriber;
             DDS.ICondition[] activeConditions = new DDS.Condition[0];
             Test.Framework.TestResult result;
-            DDS.DataReaderQos drQos;
+            DDS.DataReaderQos drQos = null;
             mod.tst[] tstHolder;
             DDS.SampleInfo[] sampleInfoHolder;
             string[] queryParams;
@@ -54,7 +54,7 @@ namespace test.sacs
                 result.Result = "Could not attach condition.";
                 return result;
             }
-            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref drQos, null, 0);
+            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, drQos); //, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create datareader.";
@@ -169,7 +169,7 @@ namespace test.sacs
                 result.Result = "delete_datareader succeeded, but should not.";
                 return result;
             }
-            rc = waitset.GetConditions(out activeConditions);
+            rc = waitset.GetConditions(ref activeConditions);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed.";
@@ -215,7 +215,7 @@ namespace test.sacs
                 result.Result = "delete_readcondition failed.";
                 return result;
             }
-            rc = waitset.GetConditions(out activeConditions);
+            rc = waitset.GetConditions(ref activeConditions);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed(2).";
@@ -391,7 +391,7 @@ namespace test.sacs
                 result.Result = "delete_readcondition failed(q7).";
                 return result;
             }
-            rc = waitset.GetConditions(out activeConditions);
+            rc = waitset.GetConditions(ref activeConditions);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed(q7).";

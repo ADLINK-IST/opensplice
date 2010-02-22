@@ -126,9 +126,42 @@ namespace DDS.OpenSplice.Gapi
      * // gapi Constants & Macro's
      * // ----------------------------------------------------------------------
       */
+    
     internal static class NativeConstants
     {
         public static IntPtr GapiParticipantQosDefault
+        {
+            get
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        public static IntPtr GapiPublisherQosDefault
+        {
+            get
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        public static IntPtr GapiSubscriberQosDefault
+        {
+            get
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        public static IntPtr GapiTopicQosDefault
+        {
+            get
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        public static IntPtr GapiDataWriterQosDefault
         {
             get
             {
@@ -801,6 +834,14 @@ namespace DDS.OpenSplice.Gapi
         gapi_writerDataLifecycleQosPolicy writer_data_lifecycle;
     }
 
+    [StructLayoutAttribute(LayoutKind.Sequential)]
+    internal struct BuiltinTopicKey
+    {
+        public uint SystemId;
+        public uint LocalId;
+        public uint Serial;
+    }
+
     /*
      * struct TopicBuiltinTopicData {
      *     BuiltinTopicKey_t key;
@@ -820,6 +861,7 @@ namespace DDS.OpenSplice.Gapi
      *     TopicDataQosPolicy topic_data;
      * };
      */
+
     [StructLayoutAttribute(LayoutKind.Sequential)]
     internal struct gapi_topicBuiltinTopicData
     {

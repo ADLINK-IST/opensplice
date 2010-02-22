@@ -47,12 +47,12 @@ namespace DDS.OpenSplice
             using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
             {
                 result = Gapi.QueryCondition.get_query_parameters(
-                GapiPeer,
-                marshaler.GapiPtr);
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out queryParameters);
+                    marshaler.CopyOut(ref queryParameters);
                 }
             }
 
@@ -62,11 +62,14 @@ namespace DDS.OpenSplice
         public ReturnCode SetQueryParameters(params string[] queryParameters)
         {
             ReturnCode result = ReturnCode.Error;
-            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler(queryParameters))
+            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
             {
-                result = Gapi.QueryCondition.set_query_parameters(
-                GapiPeer,
-                marshaler.GapiPtr);
+                if (marshaler.CopyIn(queryParameters) == ReturnCode.Ok)
+                {
+                    result = Gapi.QueryCondition.set_query_parameters(
+                            GapiPeer,
+                            marshaler.GapiPtr);
+                }
             }
 
             return result;

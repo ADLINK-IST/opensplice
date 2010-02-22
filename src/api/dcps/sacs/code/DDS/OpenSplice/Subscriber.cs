@@ -51,24 +51,26 @@ namespace DDS.OpenSplice
             listenerHelper.CreateListener(out gapiListener);
             if (listener == null)
             {
-                using (SubscriberListenerMarshaler marshaler = new SubscriberListenerMarshaler(ref gapiListener))
+                using (SubscriberListenerMarshaler marshaler = 
+                        new SubscriberListenerMarshaler(ref gapiListener))
                 {
                     result = Gapi.Subscriber.set_listener(
-                        GapiPeer,
-                        marshaler.GapiPtr,
-                        mask);
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
                 }
             }
             else
             {
                 lock (listener)
                 {
-                    using (SubscriberListenerMarshaler marshaler = new SubscriberListenerMarshaler(ref gapiListener))
+                    using (SubscriberListenerMarshaler marshaler = 
+                            new SubscriberListenerMarshaler(ref gapiListener))
                     {
                         result = Gapi.Subscriber.set_listener(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            mask);
+                                GapiPeer,
+                                marshaler.GapiPtr,
+                                mask);
                     }
                 }
             }
@@ -85,29 +87,26 @@ namespace DDS.OpenSplice
                 SacsSuperClass superObj = (SacsSuperClass)topic;
 
                 IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
-                    GapiPeer,
-                    superObj.GapiPeer,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    StatusKind.Any);
+                        GapiPeer,
+                        superObj.GapiPeer,
+                        IntPtr.Zero,
+                        IntPtr.Zero,
+                        StatusKind.Any);
                 if (gapiPtr != IntPtr.Zero)
                 {
-                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
+                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) 
+                            as OpenSplice.TypeSupport;
                     dataReader = typeSupport.CreateDataReader(gapiPtr);
                 }
             }
             return dataReader;
         }
 
-        public IDataReader CreateDataReader(ITopicDescription topic,
-            IDataReaderListener listener, StatusKind mask)
+        public IDataReader CreateDataReader(
+                ITopicDescription topic,
+                IDataReaderListener listener, 
+                StatusKind mask)
         {
-
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateDataReader(topic);
-            }
 
             DataReader dataReader = null;
 
@@ -121,17 +120,19 @@ namespace DDS.OpenSplice
                 listenerHelper.CreateListener(out gapiListener);
                 lock (listener)
                 {
-                    using (DataReaderListenerMarshaler listenerMarshaler = new DataReaderListenerMarshaler(ref gapiListener))
+                    using (DataReaderListenerMarshaler listenerMarshaler = 
+                            new DataReaderListenerMarshaler(ref gapiListener))
                     {
                         IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
-                            GapiPeer,
-                            superObj.GapiPeer,
-                            IntPtr.Zero,
-                            listenerMarshaler.GapiPtr,
-                            mask);
+                                GapiPeer,
+                                superObj.GapiPeer,
+                                IntPtr.Zero,
+                                listenerMarshaler.GapiPtr,
+                                mask);
                         if (gapiPtr != IntPtr.Zero)
                         {
-                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
+                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) 
+                                    as OpenSplice.TypeSupport;
                             dataReader = typeSupport.CreateDataReader(gapiPtr);
                             dataReader.SetListener(listenerHelper);
                         }
@@ -141,66 +142,73 @@ namespace DDS.OpenSplice
             return dataReader;
         }
 
-        public IDataReader CreateDataReader(ITopicDescription topic, ref DataReaderQos qos)
+        public IDataReader CreateDataReader(ITopicDescription topic, DataReaderQos qos)
         {
             IDataReader dataReader = null;
             if (topic != null)
             {
                 SacsSuperClass superObj = (SacsSuperClass)topic;
 
-                using (IMarshaler marshaler = new DataReaderQosMarshaler(ref qos))
+                using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
                 {
-                    IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
-                        GapiPeer,
-                        superObj.GapiPeer,
-                        marshaler.GapiPtr,
-                        IntPtr.Zero,
-                        StatusKind.Any);
-                    if (gapiPtr != IntPtr.Zero)
+                    if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                     {
-                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
-                        dataReader = typeSupport.CreateDataReader(gapiPtr);
+                        IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
+                                GapiPeer,
+                                superObj.GapiPeer,
+                                marshaler.GapiPtr,
+                                IntPtr.Zero,
+                                StatusKind.Any);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) 
+                                    as OpenSplice.TypeSupport;
+                            dataReader = typeSupport.CreateDataReader(gapiPtr);
+                        }
                     }
                 }
             }
             return dataReader;
         }
 
-        public IDataReader CreateDataReader(ITopicDescription topic, ref DataReaderQos qos,
-            IDataReaderListener listener, StatusKind mask)
+        public IDataReader CreateDataReader(
+                ITopicDescription topic, 
+                DataReaderQos qos,
+                IDataReaderListener listener, 
+                StatusKind mask)
         {
-            // just in case they use this with null
-            if (listener == null)
-            {
-                return CreateDataReader(topic, ref qos);
-            }
-
             DataReader dataReader = null;
+            
             if (topic != null)
             {
                 SacsSuperClass superObj = (SacsSuperClass)topic;
 
-                using (IMarshaler marshaler = new DataReaderQosMarshaler(ref qos))
+                using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
                 {
-                    OpenSplice.Gapi.gapi_dataReaderListener gapiListener;
-                    DataReaderListenerHelper listenerHelper = new DataReaderListenerHelper();
-                    listenerHelper.Listener = listener;
-                    listenerHelper.CreateListener(out gapiListener);
-                    lock (listener)
+                    if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                     {
-                        using (DataReaderListenerMarshaler listenerMarshaler = new DataReaderListenerMarshaler(ref gapiListener))
+                        OpenSplice.Gapi.gapi_dataReaderListener gapiListener;
+                        DataReaderListenerHelper listenerHelper = new DataReaderListenerHelper();
+                        listenerHelper.Listener = listener;
+                        listenerHelper.CreateListener(out gapiListener);
+                        lock (listener)
                         {
-                            IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
-                                GapiPeer,
-                                superObj.GapiPeer,
-                                marshaler.GapiPtr,
-                                listenerMarshaler.GapiPtr,
-                                mask);
-                            if (gapiPtr != IntPtr.Zero)
+                            using (DataReaderListenerMarshaler listenerMarshaler = 
+                                    new DataReaderListenerMarshaler(ref gapiListener))
                             {
-                                TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) as OpenSplice.TypeSupport;
-                                dataReader = typeSupport.CreateDataReader(gapiPtr);
-                                dataReader.SetListener(listenerHelper);
+                                IntPtr gapiPtr = Gapi.Subscriber.create_datareader(
+                                        GapiPeer,
+                                        superObj.GapiPeer,
+                                        marshaler.GapiPtr,
+                                        listenerMarshaler.GapiPtr,
+                                        mask);
+                                if (gapiPtr != IntPtr.Zero)
+                                {
+                                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName) 
+                                            as OpenSplice.TypeSupport;
+                                    dataReader = typeSupport.CreateDataReader(gapiPtr);
+                                    dataReader.SetListener(listenerHelper);
+                                }
                             }
                         }
                     }
@@ -218,8 +226,8 @@ namespace DDS.OpenSplice
             if (dataReaderObj != null)
             {
                 result = Gapi.Subscriber.delete_datareader(
-                    GapiPeer,
-                    dataReaderObj.GapiPeer);
+                        GapiPeer,
+                        dataReaderObj.GapiPeer);
             }
             return result;
         }
@@ -227,8 +235,8 @@ namespace DDS.OpenSplice
         public IDataReader LookupDataReader(string topicName)
         {
             IntPtr gapiPtr = Gapi.Subscriber.lookup_datareader(
-                GapiPeer,
-                topicName);
+                    GapiPeer,
+                    topicName);
 
             IDataReader dataReader = SacsSuperClass.fromUserData(gapiPtr) as IDataReader;
             return dataReader;
@@ -242,29 +250,32 @@ namespace DDS.OpenSplice
                 IntPtr.Zero);
         }
 
-        public ReturnCode GetDataReaders(out IDataReader[] readers)
+        public ReturnCode GetDataReaders(ref IDataReader[] readers)
         {
-            return GetDataReaders(out readers, SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
+            return GetDataReaders(ref readers, SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
         }
 
-        public ReturnCode GetDataReaders(out IDataReader[] readers, SampleStateKind sampleStates,
-            ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public ReturnCode GetDataReaders(
+                ref IDataReader[] readers, 
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
-            readers = null;
             ReturnCode result = ReturnCode.Error;
 
-            using (SequenceMarshaler<IDataReader, DataReader> marshaler = new SequenceMarshaler<IDataReader, DataReader>())
+            using (SequenceMarshaler<IDataReader, DataReader> marshaler = 
+                    new SequenceMarshaler<IDataReader, DataReader>())
             {
                 result = Gapi.Subscriber.get_datareaders(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    sampleStates,
-                    viewStates,
-                    instanceStates);
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        sampleStates,
+                        viewStates,
+                        instanceStates);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out readers);
+                    marshaler.CopyOut(ref readers);
                 }
             }
 
@@ -276,30 +287,37 @@ namespace DDS.OpenSplice
             return Gapi.Subscriber.notify_datareaders(GapiPeer);
         }
 
-        public ReturnCode SetQos(ref SubscriberQos qos)
+        public ReturnCode SetQos(SubscriberQos qos)
         {
-            using (IMarshaler marshaler = new SubscriberQosMarshaler(ref qos))
+            DDS.ReturnCode result;
+            
+            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
             {
-                return OpenSplice.Gapi.Subscriber.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = marshaler.CopyIn(qos);
+                if (result == DDS.ReturnCode.Ok)
+                {
+                    result = OpenSplice.Gapi.Subscriber.set_qos(
+                            GapiPeer,
+                            marshaler.GapiPtr);
+                }
             }
+
+            return result;
         }
 
-        public ReturnCode GetQos(out SubscriberQos qos)
+        public ReturnCode GetQos(ref SubscriberQos qos)
         {
-            qos = new SubscriberQos();
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
             using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
             {
                 result = OpenSplice.Gapi.Subscriber.get_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
+                    marshaler.CopyOut(ref qos);
                 }
             }
 
@@ -322,59 +340,82 @@ namespace DDS.OpenSplice
             {
                 IntPtr gapiPtr = Gapi.Subscriber.get_participant(GapiPeer);
 
-                IDomainParticipant domainParticipant = SacsSuperClass.fromUserData(gapiPtr) as IDomainParticipant;
+                IDomainParticipant domainParticipant = SacsSuperClass.fromUserData(gapiPtr) 
+                        as IDomainParticipant;
                 return domainParticipant;
             }
         }
 
-        public ReturnCode SetDefaultDataReaderQos(ref DataReaderQos qos)
+        public ReturnCode SetDefaultDataReaderQos(DataReaderQos qos)
         {
-            using (IMarshaler marshaler = new DataReaderQosMarshaler(ref qos))
-            {
-                return OpenSplice.Gapi.Subscriber.set_default_datareader_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-            }
-        }
-
-        public ReturnCode GetDefaultDataReaderQos(out DataReaderQos qos)
-        {
-            qos = new DataReaderQos();
-            ReturnCode result = ReturnCode.Error;
-
+            DDS.ReturnCode result;
+            
             using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
             {
-                result = OpenSplice.Gapi.Subscriber.get_default_datareader_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-
-                if (result == ReturnCode.Ok)
+                result = marshaler.CopyIn(qos);
+                if (result == DDS.ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
+                    return OpenSplice.Gapi.Subscriber.set_default_datareader_qos(
+                            GapiPeer,
+                            marshaler.GapiPtr);
                 }
             }
 
             return result;
         }
 
-        public ReturnCode CopyFromTopicQos(out DataReaderQos dataReaderQos, ref TopicQos topicQos)
+        public ReturnCode GetDefaultDataReaderQos(ref DataReaderQos qos)
         {
-            dataReaderQos = new DataReaderQos();
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
-            using (IMarshaler marshaler = new TopicQosMarshaler(ref topicQos))
+            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
             {
-                using (DataReaderQosMarshaler dataReaderMarshaler = new
-                    DataReaderQosMarshaler())
-                {
-                    result = OpenSplice.Gapi.Subscriber.copy_from_topic_qos(
+                result = OpenSplice.Gapi.Subscriber.get_default_datareader_qos(
                     GapiPeer,
-                    dataReaderMarshaler.GapiPtr,
                     marshaler.GapiPtr);
 
+                if (result == ReturnCode.Ok)
+                {
+                    marshaler.CopyOut(ref qos);
+                }
+            }
+
+            return result;
+        }
+
+        public ReturnCode CopyFromTopicQos(ref DataReaderQos dataReaderQos, TopicQos topicQos)
+        {
+            ReturnCode result = ReturnCode.Ok;
+
+            if (dataReaderQos == null) 
+            {
+                result = GetDefaultDataReaderQos(ref dataReaderQos);
+            }
+
+            if (result == ReturnCode.Ok)
+            {
+                using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+                {
+                    result = marshaler.CopyIn(topicQos);
                     if (result == ReturnCode.Ok)
                     {
-                        dataReaderMarshaler.CopyOut(out dataReaderQos);
+                        using (DataReaderQosMarshaler dataReaderMarshaler = 
+                                new DataReaderQosMarshaler())
+                        {
+                            result = dataReaderMarshaler.CopyIn(dataReaderQos);
+                            if (result == ReturnCode.Ok)
+                            {
+                                result = OpenSplice.Gapi.Subscriber.copy_from_topic_qos(
+                                        GapiPeer,
+                                        dataReaderMarshaler.GapiPtr,
+                                        marshaler.GapiPtr);
+
+                                if (result == ReturnCode.Ok)
+                                {
+                                    dataReaderMarshaler.CopyOut(ref dataReaderQos);
+                                }
+                            }
+                        }
                     }
                 }
             }

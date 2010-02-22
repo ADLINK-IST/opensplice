@@ -12,7 +12,7 @@ namespace test.sacs
         {
             DDS.IDomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos participantQos;
+            DDS.DomainParticipantQos participantQos = null;
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult("Initialization success", string.Empty,
                 Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Fail);
@@ -23,12 +23,12 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out participantQos) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref participantQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref participantQos, null, 0);
+            participant = factory.CreateParticipant(string.Empty, participantQos, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";

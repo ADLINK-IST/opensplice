@@ -89,10 +89,10 @@ toPascalCase(const c_char *name)
             /* On underscore, start new capital. */
             result[j] = toupper(name[++i]);
         } else {
-            /* If underscores mark te occurence of new words, then go to
+            /* If underscores mark the occurrence of new words, then go to
              * lower-case for all the other characters.
              * In the other case, the name could already be in camelCase,
-             * so copy the characters as is.
+             * so copy the character as is.
              */
             if (nrUnderScores > 0) {
                 result[j] = tolower(name[i]);
@@ -268,7 +268,6 @@ static const c_char *Csharp_predefined[][2] = {
     /* Predefined DDS types */
     { "DDS.Duration_t",         "DDS.Duration"          },
     { "DDS.Time_t",             "DDS.Time",             },
-    { "DDS.BuiltinTopicKey_t",  "DDS.BuiltinTopicKey"   },
     { "DDS.InstanceHandle_t",   "DDS.InstanceHandle"    }
 };
 #define NR_PREDEFINED_DATATYPES sizeof(Csharp_predefined)/(2*sizeof(c_char *))

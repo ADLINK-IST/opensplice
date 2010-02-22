@@ -37,18 +37,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_watchdog_scheduling = (int)Marshal.OffsetOf(type, "watchdog_scheduling");
         private static int offset_listener_scheduling = (int)Marshal.OffsetOf(type, "listener_scheduling");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public DomainParticipantQosMarshaler(ref DomainParticipantQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public DomainParticipantQosMarshaler()
@@ -58,20 +51,46 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref DomainParticipantQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(DomainParticipantQos from)
         {
-            UserDataQosPolicyMarshaler.CopyIn(ref from.UserData, to, offset_user_data);
-            EntityFactoryQosPolicyMarshaler.CopyIn(ref from.EntityFactory, to, offset_entity_factory);
-            SchedulingQosPolicyMarshaler.CopyIn(ref from.WatchdogScheduling, to, offset_watchdog_scheduling);
-            SchedulingQosPolicyMarshaler.CopyIn(ref from.ListenerScheduling, to, offset_listener_scheduling);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(DomainParticipantQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = UserDataQosPolicyMarshaler.CopyIn(from.UserData, to, offset_user_data);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = EntityFactoryQosPolicyMarshaler.CopyIn(
+                            from.EntityFactory, to, offset_entity_factory);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = SchedulingQosPolicyMarshaler.CopyIn(
+                            from.WatchdogScheduling, to, offset_watchdog_scheduling);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = SchedulingQosPolicyMarshaler.CopyIn(
+                            from.ListenerScheduling, to, offset_listener_scheduling);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "DomainParticipantQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal static void CleanupIn(IntPtr nativePtr)
@@ -82,17 +101,18 @@ namespace DDS.OpenSplice.CustomMarshalers
             SchedulingQosPolicyMarshaler.CleanupIn(nativePtr, offset_listener_scheduling);
         }
 
-        internal void CopyOut(out DomainParticipantQos to)
+        internal void CopyOut(ref DomainParticipantQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out DomainParticipantQos to)
+        internal static void CopyOut(IntPtr from, ref DomainParticipantQos to)
         {
-            UserDataQosPolicyMarshaler.CopyOut(from, out to.UserData, offset_user_data);
-            EntityFactoryQosPolicyMarshaler.CopyOut(from, out to.EntityFactory, offset_entity_factory);
-            SchedulingQosPolicyMarshaler.CopyOut(from, out to.WatchdogScheduling, offset_watchdog_scheduling);
-            SchedulingQosPolicyMarshaler.CopyOut(from, out to.ListenerScheduling, offset_listener_scheduling);
+            if (to == null) to = new DomainParticipantQos();
+            UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
+            EntityFactoryQosPolicyMarshaler.CopyOut(from, ref to.EntityFactory, offset_entity_factory);
+            SchedulingQosPolicyMarshaler.CopyOut(from, ref to.WatchdogScheduling, offset_watchdog_scheduling);
+            SchedulingQosPolicyMarshaler.CopyOut(from, ref to.ListenerScheduling, offset_listener_scheduling);
         }
     }
 
@@ -103,18 +123,11 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         private static int offset_entity_factory = (int)Marshal.OffsetOf(type, "entity_factory");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public DomainParticipantFactoryQosMarshaler(ref DomainParticipantFactoryQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public DomainParticipantFactoryQosMarshaler()
@@ -124,17 +137,34 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref DomainParticipantFactoryQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(DomainParticipantFactoryQos from)
         {
-            EntityFactoryQosPolicyMarshaler.CopyIn(ref from.EntityFactory, to, offset_entity_factory);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(DomainParticipantFactoryQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = EntityFactoryQosPolicyMarshaler.CopyIn(from.EntityFactory, to, offset_entity_factory);
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.DomainParticipantFactoryQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "DomainParticipantFactoryQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal static void CleanupIn(IntPtr nativePtr)
@@ -142,14 +172,15 @@ namespace DDS.OpenSplice.CustomMarshalers
             EntityFactoryQosPolicyMarshaler.CleanupIn(nativePtr, offset_entity_factory);
         }
 
-        internal void CopyOut(out DomainParticipantFactoryQos to)
+        internal void CopyOut(ref DomainParticipantFactoryQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out DomainParticipantFactoryQos to)
+        internal static void CopyOut(IntPtr from, ref DomainParticipantFactoryQos to)
         {
-            EntityFactoryQosPolicyMarshaler.CopyOut(from, out to.EntityFactory, offset_entity_factory);
+            if (to == null) to = new DomainParticipantFactoryQos();
+            EntityFactoryQosPolicyMarshaler.CopyOut(from, ref to.EntityFactory, offset_entity_factory);
         }
     }
 
@@ -163,18 +194,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_group_data = (int)Marshal.OffsetOf(type, "group_data");
         private static readonly int offset_entity_factory = (int)Marshal.OffsetOf(type, "entity_factory");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public PublisherQosMarshaler(ref PublisherQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public PublisherQosMarshaler()
@@ -184,20 +208,47 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref PublisherQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(PublisherQos from)
         {
-            PresentationQosPolicyMarshaler.CopyIn(ref from.Presentation, to, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyIn(ref from.Partition, to, offset_partition);
-            GroupDataQosPolicyMarshaler.CopyIn(ref from.GroupData, to, offset_group_data);
-            EntityFactoryQosPolicyMarshaler.CopyIn(ref from.EntityFactory, to, offset_entity_factory);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(PublisherQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = PresentationQosPolicyMarshaler.CopyIn(
+                        from.Presentation, to, offset_presentation);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PartitionQosPolicyMarshaler.CopyIn(
+                            from.Partition, to, offset_partition);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = GroupDataQosPolicyMarshaler.CopyIn(
+                            from.GroupData, to, offset_group_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = EntityFactoryQosPolicyMarshaler.CopyIn(
+                            from.EntityFactory, to, offset_entity_factory);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.PublisherQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "PublisherQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal static void CleanupIn(IntPtr nativePtr)
@@ -208,17 +259,18 @@ namespace DDS.OpenSplice.CustomMarshalers
             EntityFactoryQosPolicyMarshaler.CleanupIn(nativePtr, offset_entity_factory);
         }
 
-        internal void CopyOut(out PublisherQos to)
+        internal void CopyOut(ref PublisherQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out PublisherQos to)
+        internal static void CopyOut(IntPtr from, ref PublisherQos to)
         {
-            PresentationQosPolicyMarshaler.CopyOut(from, out to.Presentation, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyOut(from, out to.Partition, offset_partition);
-            GroupDataQosPolicyMarshaler.CopyOut(from, out to.GroupData, offset_group_data);
-            EntityFactoryQosPolicyMarshaler.CopyOut(from, out to.EntityFactory, offset_entity_factory);
+            if (to == null) to = new PublisherQos();
+            PresentationQosPolicyMarshaler.CopyOut(from, ref to.Presentation, offset_presentation);
+            PartitionQosPolicyMarshaler.CopyOut(from, ref to.Partition, offset_partition);
+            GroupDataQosPolicyMarshaler.CopyOut(from, ref to.GroupData, offset_group_data);
+            EntityFactoryQosPolicyMarshaler.CopyOut(from, ref to.EntityFactory, offset_entity_factory);
         }
     }
 
@@ -233,18 +285,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_entity_factory = (int)Marshal.OffsetOf(type, "entity_factory");
         private static readonly int offset_share = (int)Marshal.OffsetOf(type, "share");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public SubscriberQosMarshaler(ref SubscriberQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public SubscriberQosMarshaler()
@@ -254,20 +299,51 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref SubscriberQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(SubscriberQos from)
         {
-            PresentationQosPolicyMarshaler.CopyIn(ref from.Presentation, to, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyIn(ref from.Partition, to, offset_partition);
-            GroupDataQosPolicyMarshaler.CopyIn(ref from.GroupData, to, offset_group_data);
-            EntityFactoryQosPolicyMarshaler.CopyIn(ref from.EntityFactory, to, offset_entity_factory);
-            ShareQosPolicyMarshaler.CopyIn(ref from.Share, to, offset_share);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(SubscriberQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = PresentationQosPolicyMarshaler.CopyIn(
+                        from.Presentation, to, offset_presentation);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PartitionQosPolicyMarshaler.CopyIn(
+                            from.Partition, to, offset_partition);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = GroupDataQosPolicyMarshaler.CopyIn(
+                            from.GroupData, to, offset_group_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = EntityFactoryQosPolicyMarshaler.CopyIn(
+                            from.EntityFactory, to, offset_entity_factory);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ShareQosPolicyMarshaler.CopyIn(
+                            from.Share, to, offset_share);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.SubscriberQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "SubscriberQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal static void CleanupIn(IntPtr nativePtr)
@@ -280,18 +356,19 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         }
 
-        internal void CopyOut(out SubscriberQos to)
+        internal void CopyOut(ref SubscriberQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out SubscriberQos to)
+        internal static void CopyOut(IntPtr from, ref SubscriberQos to)
         {
-            PresentationQosPolicyMarshaler.CopyOut(from, out to.Presentation, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyOut(from, out to.Partition, offset_partition);
-            GroupDataQosPolicyMarshaler.CopyOut(from, out to.GroupData, offset_group_data);
-            EntityFactoryQosPolicyMarshaler.CopyOut(from, out to.EntityFactory, offset_entity_factory);
-            ShareQosPolicyMarshaler.CopyOut(from, out to.Share, offset_share);
+            if (to == null) to = new SubscriberQos();
+            PresentationQosPolicyMarshaler.CopyOut(from, ref to.Presentation, offset_presentation);
+            PartitionQosPolicyMarshaler.CopyOut(from, ref to.Partition, offset_partition);
+            GroupDataQosPolicyMarshaler.CopyOut(from, ref to.GroupData, offset_group_data);
+            EntityFactoryQosPolicyMarshaler.CopyOut(from, ref to.EntityFactory, offset_entity_factory);
+            ShareQosPolicyMarshaler.CopyOut(from, ref to.Share, offset_share);
         }
     }
 
@@ -314,18 +391,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_lifespan = (int)Marshal.OffsetOf(type, "lifespan");
         private static readonly int offset_ownership = (int)Marshal.OffsetOf(type, "ownership");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public TopicQosMarshaler(ref TopicQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public TopicQosMarshaler()
@@ -335,30 +405,84 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
 
-        internal static void CopyIn(ref TopicQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(TopicQos from)
         {
-            TopicDataQosPolicyMarshaler.CopyIn(ref from.TopicData, to, offset_topic_data);
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DurabilityServiceQosPolicyMarshaler.CopyIn(ref from.DurabilityService, to, offset_durability_service);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyIn(ref from.History, to, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyIn(ref from.ResourceLimits, to, offset_resource_limits);
-            TransportPriorityQosPolicyMarshaler.CopyIn(ref from.TransportPriority, to, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyIn(ref from.Lifespan, to, offset_lifespan);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(TopicQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = TopicDataQosPolicyMarshaler.CopyIn(
+                        from.TopicData, to, offset_topic_data);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DurabilityQosPolicyMarshaler.CopyIn(
+                            from.Durability, to, offset_durability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DurabilityServiceQosPolicyMarshaler.CopyIn(
+                            from.DurabilityService, to, offset_durability_service);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(
+                            from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(
+                            from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(
+                            from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(
+                            from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(
+                            from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = HistoryQosPolicyMarshaler.CopyIn(
+                            from.History, to, offset_history);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ResourceLimitsQosPolicyMarshaler.CopyIn(
+                            from.ResourceLimits, to, offset_resource_limits);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TransportPriorityQosPolicyMarshaler.CopyIn(
+                            from.TransportPriority, to, offset_transport_priority);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LifespanQosPolicyMarshaler.CopyIn(
+                            from.Lifespan, to, offset_lifespan);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(
+                            from.Ownership, to, offset_ownership);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.TopicQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "TopicQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -378,26 +502,27 @@ namespace DDS.OpenSplice.CustomMarshalers
             OwnershipQosPolicyMarshaler.CleanupIn(nativePtr, offset_ownership);
         }
 
-        internal void CopyOut(out TopicQos to)
+        internal void CopyOut(ref TopicQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out TopicQos to)
+        internal static void CopyOut(IntPtr from, ref TopicQos to)
         {
-            TopicDataQosPolicyMarshaler.CopyOut(from, out to.TopicData, offset_topic_data);
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DurabilityServiceQosPolicyMarshaler.CopyOut(from, out to.DurabilityService, offset_durability_service);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyOut(from, out to.DestinationOrder, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyOut(from, out to.History, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyOut(from, out to.ResourceLimits, offset_resource_limits);
-            TransportPriorityQosPolicyMarshaler.CopyOut(from, out to.TransportPriority, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyOut(from, out to.Lifespan, offset_lifespan);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
+            if (to == null) to = new TopicQos();
+            TopicDataQosPolicyMarshaler.CopyOut(from, ref to.TopicData, offset_topic_data);
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DurabilityServiceQosPolicyMarshaler.CopyOut(from, ref to.DurabilityService, offset_durability_service);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
+            HistoryQosPolicyMarshaler.CopyOut(from, ref to.History, offset_history);
+            ResourceLimitsQosPolicyMarshaler.CopyOut(from, ref to.ResourceLimits, offset_resource_limits);
+            TransportPriorityQosPolicyMarshaler.CopyOut(from, ref to.TransportPriority, offset_transport_priority);
+            LifespanQosPolicyMarshaler.CopyOut(from, ref to.Lifespan, offset_lifespan);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
         }
     }
 
@@ -422,18 +547,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_reader_lifespan = (int)Marshal.OffsetOf(type, "reader_lifespan");
         private static readonly int offset_share = (int)Marshal.OffsetOf(type, "share");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public DataReaderQosMarshaler(ref DataReaderQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public DataReaderQosMarshaler()
@@ -443,31 +561,91 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref DataReaderQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(DataReaderQos from)
         {
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyIn(ref from.History, to, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyIn(ref from.ResourceLimits, to, offset_resource_limits);
-            UserDataQosPolicyMarshaler.CopyIn(ref from.UserData, to, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
-            TimeBasedFilterQosPolicyMarshaler.CopyIn(ref from.TimeBasedFilter, to, offset_time_based_filter);
-            ReaderDataLifecycleQosPolicyMarshaler.CopyIn(ref from.ReaderDataLifecycle, to, offset_reader_data_lifecycle);
-            SubscriptionKeyQosPolicyMarshaler.CopyIn(ref from.SubscriptionKeys, to, offset_subscription_keys);
-            ReaderLifespanQosPolicyMarshaler.CopyIn(ref from.ReaderLifespan, to, offset_reader_lifespan);
-            ShareQosPolicyMarshaler.CopyIn(ref from.Share, to, offset_share);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(DataReaderQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = DurabilityQosPolicyMarshaler.CopyIn(
+                        from.Durability, to, offset_durability);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(
+                            from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(
+                            from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(
+                            from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(
+                            from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(
+                            from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = HistoryQosPolicyMarshaler.CopyIn(
+                            from.History, to, offset_history);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ResourceLimitsQosPolicyMarshaler.CopyIn(
+                            from.ResourceLimits, to, offset_resource_limits);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = UserDataQosPolicyMarshaler.CopyIn(
+                            from.UserData, to, offset_user_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(
+                            from.Ownership, to, offset_ownership);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TimeBasedFilterQosPolicyMarshaler.CopyIn(
+                            from.TimeBasedFilter, to, offset_time_based_filter);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReaderDataLifecycleQosPolicyMarshaler.CopyIn(
+                            from.ReaderDataLifecycle, to, offset_reader_data_lifecycle);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = SubscriptionKeyQosPolicyMarshaler.CopyIn(
+                            from.SubscriptionKeys, to, offset_subscription_keys);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReaderLifespanQosPolicyMarshaler.CopyIn(
+                            from.ReaderLifespan, to, offset_reader_lifespan);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ShareQosPolicyMarshaler.CopyIn(
+                            from.Share, to, offset_share);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.DataReaderQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "DataReaderQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -489,28 +667,29 @@ namespace DDS.OpenSplice.CustomMarshalers
             ShareQosPolicyMarshaler.CleanupIn(nativePtr, offset_share);
         }
 
-        internal void CopyOut(out DataReaderQos to)
+        internal void CopyOut(ref DataReaderQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out DataReaderQos to)
+        internal static void CopyOut(IntPtr from, ref DataReaderQos to)
         {
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyOut(from, out to.DestinationOrder, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyOut(from, out to.History, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyOut(from, out to.ResourceLimits, offset_resource_limits);
-            UserDataQosPolicyMarshaler.CopyOut(from, out to.UserData, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
-            TimeBasedFilterQosPolicyMarshaler.CopyOut(from, out to.TimeBasedFilter, offset_time_based_filter);
-            ReaderDataLifecycleQosPolicyMarshaler.CopyOut(from, out to.ReaderDataLifecycle, offset_reader_data_lifecycle);
-            SubscriptionKeyQosPolicyMarshaler.CopyOut(from, out to.SubscriptionKeys, offset_subscription_keys);
-            ReaderLifespanQosPolicyMarshaler.CopyOut(from, out to.ReaderLifespan, offset_reader_lifespan);
-            ShareQosPolicyMarshaler.CopyOut(from, out to.Share, offset_share);
+            if (to == null) to = new DataReaderQos();
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
+            HistoryQosPolicyMarshaler.CopyOut(from, ref to.History, offset_history);
+            ResourceLimitsQosPolicyMarshaler.CopyOut(from, ref to.ResourceLimits, offset_resource_limits);
+            UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
+            TimeBasedFilterQosPolicyMarshaler.CopyOut(from, ref to.TimeBasedFilter, offset_time_based_filter);
+            ReaderDataLifecycleQosPolicyMarshaler.CopyOut(from, ref to.ReaderDataLifecycle, offset_reader_data_lifecycle);
+            SubscriptionKeyQosPolicyMarshaler.CopyOut(from, ref to.SubscriptionKeys, offset_subscription_keys);
+            ReaderLifespanQosPolicyMarshaler.CopyOut(from, ref to.ReaderLifespan, offset_reader_lifespan);
+            ShareQosPolicyMarshaler.CopyOut(from, ref to.Share, offset_share);
         }
     }
 
@@ -534,18 +713,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_ownership_strength = (int)Marshal.OffsetOf(type, "ownership_strength");
         private static readonly int offset_writer_data_lifecycle = (int)Marshal.OffsetOf(type, "writer_data_lifecycle");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public DataWriterQosMarshaler(ref DataWriterQos qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public DataWriterQosMarshaler()
@@ -555,30 +727,87 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref DataWriterQos from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(DataWriterQos from)
         {
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyIn(ref from.History, to, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyIn(ref from.ResourceLimits, to, offset_resource_limits);
-            TransportPriorityQosPolicyMarshaler.CopyIn(ref from.TransportPriority, to, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyIn(ref from.Lifespan, to, offset_lifespan);
-            UserDataQosPolicyMarshaler.CopyIn(ref from.UserData, to, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
-            OwnershipStrengthQosPolicyMarshaler.CopyIn(ref from.OwnershipStrength, to, offset_ownership_strength);
-            WriterDataLifecycleQosPolicyMarshaler.CopyIn(ref from.WriterDataLifecycle, to, offset_writer_data_lifecycle);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
+
+        internal static DDS.ReturnCode CopyIn(DataWriterQos from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = DurabilityQosPolicyMarshaler.CopyIn(
+                        from.Durability, to, offset_durability);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(
+                            from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(
+                            from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(
+                            from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(
+                            from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(
+                            from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = HistoryQosPolicyMarshaler.CopyIn(
+                            from.History, to, offset_history);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ResourceLimitsQosPolicyMarshaler.CopyIn(
+                            from.ResourceLimits, to, offset_resource_limits);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TransportPriorityQosPolicyMarshaler.CopyIn(
+                            from.TransportPriority, to, offset_transport_priority);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LifespanQosPolicyMarshaler.CopyIn(
+                            from.Lifespan, to, offset_lifespan);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = UserDataQosPolicyMarshaler.CopyIn(
+                            from.UserData, to, offset_user_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(
+                            from.Ownership, to, offset_ownership);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipStrengthQosPolicyMarshaler.CopyIn(
+                            from.OwnershipStrength, to, offset_ownership_strength);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = WriterDataLifecycleQosPolicyMarshaler.CopyIn(
+                            from.WriterDataLifecycle, to, offset_writer_data_lifecycle);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.DataWriterQosMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "DataWriterQos attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -599,27 +828,28 @@ namespace DDS.OpenSplice.CustomMarshalers
             WriterDataLifecycleQosPolicyMarshaler.CleanupIn(nativePtr, offset_writer_data_lifecycle);
         }
 
-        internal void CopyOut(out DataWriterQos to)
+        internal void CopyOut(ref DataWriterQos to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out DataWriterQos to)
+        internal static void CopyOut(IntPtr from, ref DataWriterQos to)
         {
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyOut(from, out to.DestinationOrder, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyOut(from, out to.History, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyOut(from, out to.ResourceLimits, offset_resource_limits);
-            TransportPriorityQosPolicyMarshaler.CopyOut(from, out to.TransportPriority, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyOut(from, out to.Lifespan, offset_lifespan);
-            UserDataQosPolicyMarshaler.CopyOut(from, out to.UserData, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
-            OwnershipStrengthQosPolicyMarshaler.CopyOut(from, out to.OwnershipStrength, offset_ownership_strength);
-            WriterDataLifecycleQosPolicyMarshaler.CopyOut(from, out to.WriterDataLifecycle, offset_writer_data_lifecycle);
+            if (to == null) to = new DataWriterQos();
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
+            HistoryQosPolicyMarshaler.CopyOut(from, ref to.History, offset_history);
+            ResourceLimitsQosPolicyMarshaler.CopyOut(from, ref to.ResourceLimits, offset_resource_limits);
+            TransportPriorityQosPolicyMarshaler.CopyOut(from, ref to.TransportPriority, offset_transport_priority);
+            LifespanQosPolicyMarshaler.CopyOut(from, ref to.Lifespan, offset_lifespan);
+            UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
+            OwnershipStrengthQosPolicyMarshaler.CopyOut(from, ref to.OwnershipStrength, offset_ownership_strength);
+            WriterDataLifecycleQosPolicyMarshaler.CopyOut(from, ref to.WriterDataLifecycle, offset_writer_data_lifecycle);
         }
     }
 
@@ -645,18 +875,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_ownership = (int)Marshal.OffsetOf(type, "ownership");
         private static int offset_topic_data = (int)Marshal.OffsetOf(type, "topic_data");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public TopicBulitinTopicDataMarshaler(ref TopicBuiltinTopicData qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public TopicBulitinTopicDataMarshaler()
@@ -666,38 +889,97 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref TopicBuiltinTopicData from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(TopicBuiltinTopicData from)
         {
-            BuiltinTopicKeyMarshaler.CopyIn(ref from.Key, to, offset_key);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
 
-            IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.Name);
-            BaseMarshaler.Write(to, offset_name, namePtr);
+        internal static DDS.ReturnCode CopyIn(TopicBuiltinTopicData from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = BuiltinTopicKeyMarshaler.CopyIn(from.Key, to, offset_key);
 
-            IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
+                IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.Name);
+                BaseMarshaler.Write(to, offset_name, namePtr);
 
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DurabilityServiceQosPolicyMarshaler.CopyIn(ref from.DurabilityService, to, offset_durability_service);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            TransportPriorityQosPolicyMarshaler.CopyIn(ref from.TransportPriority, to, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyIn(ref from.Lifespan, to, offset_lifespan);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyIn(ref from.History, to, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyIn(ref from.ResourceLimits, to, offset_resource_limits);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
-            TopicDataQosPolicyMarshaler.CopyIn(ref from.TopicData, to, offset_topic_data);
+                IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
+                BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
+
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DurabilityQosPolicyMarshaler.CopyIn(
+                            from.Durability, to, offset_durability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DurabilityServiceQosPolicyMarshaler.CopyIn(
+                            from.DurabilityService, to, offset_durability_service);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(
+                            from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(
+                            from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(
+                            from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(
+                            from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(
+                            from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TransportPriorityQosPolicyMarshaler.CopyIn(
+                            from.TransportPriority, to, offset_transport_priority);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LifespanQosPolicyMarshaler.CopyIn(
+                            from.Lifespan, to, offset_lifespan);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(
+                            from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = HistoryQosPolicyMarshaler.CopyIn(
+                            from.History, to, offset_history);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ResourceLimitsQosPolicyMarshaler.CopyIn(
+                            from.ResourceLimits, to, offset_resource_limits);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(
+                            from.Ownership, to, offset_ownership);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TopicDataQosPolicyMarshaler.CopyIn(
+                            from.TopicData, to, offset_topic_data);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.TopicBulitinTopicDataMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "TopicBulitinTopicData attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -727,16 +1009,16 @@ namespace DDS.OpenSplice.CustomMarshalers
             TopicDataQosPolicyMarshaler.CleanupIn(nativePtr, offset_topic_data);
         }
 
-        internal void CopyOut(out TopicBuiltinTopicData to)
+        internal void CopyOut(ref TopicBuiltinTopicData to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out TopicBuiltinTopicData to)
+        internal static void CopyOut(IntPtr from, ref TopicBuiltinTopicData to)
         {
-            to = new TopicBuiltinTopicData();
+            if (to == null) to = new TopicBuiltinTopicData();
 
-            BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
+            BuiltinTopicKeyMarshaler.CopyOut(from, ref to.Key, offset_key);
 
             IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_name);
             to.Name = Marshal.PtrToStringAnsi(namePtr);
@@ -744,18 +1026,18 @@ namespace DDS.OpenSplice.CustomMarshalers
             IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            TransportPriorityQosPolicyMarshaler.CopyOut(from, out to.TransportPriority, offset_transport_priority);
-            LifespanQosPolicyMarshaler.CopyOut(from, out to.Lifespan, offset_lifespan);
-            DestinationOrderQosPolicyMarshaler.CopyOut(from, out to.DestinationOrder, offset_destination_order);
-            HistoryQosPolicyMarshaler.CopyOut(from, out to.History, offset_history);
-            ResourceLimitsQosPolicyMarshaler.CopyOut(from, out to.ResourceLimits, offset_resource_limits);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
-            TopicDataQosPolicyMarshaler.CopyOut(from, out to.TopicData, offset_topic_data);
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            TransportPriorityQosPolicyMarshaler.CopyOut(from, ref to.TransportPriority, offset_transport_priority);
+            LifespanQosPolicyMarshaler.CopyOut(from, ref to.Lifespan, offset_lifespan);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
+            HistoryQosPolicyMarshaler.CopyOut(from, ref to.History, offset_history);
+            ResourceLimitsQosPolicyMarshaler.CopyOut(from, ref to.ResourceLimits, offset_resource_limits);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
+            TopicDataQosPolicyMarshaler.CopyOut(from, ref to.TopicData, offset_topic_data);
         }
     }
 
@@ -782,18 +1064,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_topic_data = (int)Marshal.OffsetOf(type, "topic_data");
         private static int offset_group_data = (int)Marshal.OffsetOf(type, "group_data");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public PublicationBuiltinTopicDataMarshaler(ref PublicationBuiltinTopicData qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public PublicationBuiltinTopicDataMarshaler()
@@ -803,38 +1078,82 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref PublicationBuiltinTopicData from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(PublicationBuiltinTopicData from)
         {
-            BuiltinTopicKeyMarshaler.CopyIn(ref from.Key, to, offset_key);
-            BuiltinTopicKeyMarshaler.CopyIn(ref from.ParticipantKey, to, offset_participant_key);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
 
-            IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
-            BaseMarshaler.Write(to, offset_topic_name, namePtr);
+        internal static DDS.ReturnCode CopyIn(PublicationBuiltinTopicData from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = BuiltinTopicKeyMarshaler.CopyIn(from.Key, to, offset_key);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = BuiltinTopicKeyMarshaler.CopyIn(from.ParticipantKey, to, offset_participant_key);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
+                    BaseMarshaler.Write(to, offset_topic_name, namePtr);
 
-            IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
+                    IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
+                    BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
 
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            LifespanQosPolicyMarshaler.CopyIn(ref from.Lifespan, to, offset_lifespan);
-            UserDataQosPolicyMarshaler.CopyIn(ref from.UserData, to, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
-            OwnershipStrengthQosPolicyMarshaler.CopyIn(ref from.OwnershipStrength, to, offset_ownership_strength);
-            PresentationQosPolicyMarshaler.CopyIn(ref from.Presentation, to, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyIn(ref from.Partition, to, offset_partition);
-            TopicDataQosPolicyMarshaler.CopyIn(ref from.TopicData, to, offset_topic_data);
-            GroupDataQosPolicyMarshaler.CopyIn(ref from.GroupData, to, offset_group_data);
+                    result = DurabilityQosPolicyMarshaler.CopyIn(from.Durability, to, offset_durability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LifespanQosPolicyMarshaler.CopyIn(from.Lifespan, to, offset_lifespan);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = UserDataQosPolicyMarshaler.CopyIn(from.UserData, to, offset_user_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(from.Ownership, to, offset_ownership);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipStrengthQosPolicyMarshaler.CopyIn(from.OwnershipStrength, to, offset_ownership_strength);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PresentationQosPolicyMarshaler.CopyIn(from.Presentation, to, offset_presentation);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PartitionQosPolicyMarshaler.CopyIn(from.Partition, to, offset_partition);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TopicDataQosPolicyMarshaler.CopyIn(from.TopicData, to, offset_topic_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = GroupDataQosPolicyMarshaler.CopyIn(from.GroupData, to, offset_group_data);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.PublicationBuiltinTopicDataMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "PublicationBuiltinTopicData attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -865,17 +1184,17 @@ namespace DDS.OpenSplice.CustomMarshalers
             GroupDataQosPolicyMarshaler.CleanupIn(nativePtr, offset_group_data);
         }
 
-        internal void CopyOut(out PublicationBuiltinTopicData to)
+        internal void CopyOut(ref PublicationBuiltinTopicData to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out PublicationBuiltinTopicData to)
+        internal static void CopyOut(IntPtr from, ref PublicationBuiltinTopicData to)
         {
-            to = new PublicationBuiltinTopicData();
+            if (to == null) to = new PublicationBuiltinTopicData();
 
-            BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
-            BuiltinTopicKeyMarshaler.CopyOut(from, out to.ParticipantKey, offset_participant_key);
+            BuiltinTopicKeyMarshaler.CopyOut(from, ref to.Key, offset_key);
+            BuiltinTopicKeyMarshaler.CopyOut(from, ref to.ParticipantKey, offset_participant_key);
 
             IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_topic_name);
             to.TopicName = Marshal.PtrToStringAnsi(namePtr);
@@ -883,19 +1202,19 @@ namespace DDS.OpenSplice.CustomMarshalers
             IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            LifespanQosPolicyMarshaler.CopyOut(from, out to.Lifespan, offset_lifespan);
-            UserDataQosPolicyMarshaler.CopyOut(from, out to.UserData, offset_user_data);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
-            OwnershipStrengthQosPolicyMarshaler.CopyOut(from, out to.OwnershipStrength, offset_ownership_strength);
-            PresentationQosPolicyMarshaler.CopyOut(from, out to.Presentation, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyOut(from, out to.Partition, offset_partition);
-            TopicDataQosPolicyMarshaler.CopyOut(from, out to.TopicData, offset_topic_data);
-            GroupDataQosPolicyMarshaler.CopyOut(from, out to.GroupData, offset_group_data);
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            LifespanQosPolicyMarshaler.CopyOut(from, ref to.Lifespan, offset_lifespan);
+            UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
+            OwnershipStrengthQosPolicyMarshaler.CopyOut(from, ref to.OwnershipStrength, offset_ownership_strength);
+            PresentationQosPolicyMarshaler.CopyOut(from, ref to.Presentation, offset_presentation);
+            PartitionQosPolicyMarshaler.CopyOut(from, ref to.Partition, offset_partition);
+            TopicDataQosPolicyMarshaler.CopyOut(from, ref to.TopicData, offset_topic_data);
+            GroupDataQosPolicyMarshaler.CopyOut(from, ref to.GroupData, offset_group_data);
         }
     }
 
@@ -922,18 +1241,11 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_topic_data = (int)Marshal.OffsetOf(type, "topic_data");
         private static int offset_group_data = (int)Marshal.OffsetOf(type, "group_data");
 
-        private bool cleanupRequired;
+        private bool cleanupRequired = false;
         private readonly IntPtr gapiPtr;
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }
-        }
-
-        public SubscriptionBuiltinTopicDataMarshaler(ref SubscriptionBuiltinTopicData qos)
-            : this()
-        {
-            CopyIn(ref qos, gapiPtr);
-            cleanupRequired = true;
         }
 
         public SubscriptionBuiltinTopicDataMarshaler()
@@ -943,38 +1255,82 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void Dispose()
         {
-            if (cleanupRequired)
+            if (cleanupRequired) 
             {
                 CleanupIn(gapiPtr);
             }
-
             OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
         }
 
-        internal static void CopyIn(ref SubscriptionBuiltinTopicData from, IntPtr to)
+        internal DDS.ReturnCode CopyIn(SubscriptionBuiltinTopicData from)
         {
-            BuiltinTopicKeyMarshaler.CopyIn(ref from.Key, to, offset_key);
-            BuiltinTopicKeyMarshaler.CopyIn(ref from.ParticipantKey, to, offset_participant_key);
+            cleanupRequired = true;
+            return CopyIn(from, gapiPtr);
+        }
 
-            IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
-            BaseMarshaler.Write(to, offset_topic_name, namePtr);
+        internal static DDS.ReturnCode CopyIn(SubscriptionBuiltinTopicData from, IntPtr to)
+        {
+            DDS.ReturnCode result;
+            if (from != null) {
+                result = BuiltinTopicKeyMarshaler.CopyIn(from.Key, to, offset_key);
+                if (result == DDS.ReturnCode.Ok) {
+                    result = BuiltinTopicKeyMarshaler.CopyIn(from.ParticipantKey, to, offset_participant_key);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    IntPtr namePtr = Marshal.StringToHGlobalAnsi(from.TopicName);
+                    BaseMarshaler.Write(to, offset_topic_name, namePtr);
 
-            IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
-            BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
+                    IntPtr typeNamePtr = Marshal.StringToHGlobalAnsi(from.TypeName);
+                    BaseMarshaler.Write(to, offset_type_name, typeNamePtr);
 
-            DurabilityQosPolicyMarshaler.CopyIn(ref from.Durability, to, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyIn(ref from.Deadline, to, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyIn(ref from.LatencyBudget, to, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyIn(ref from.Liveliness, to, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyIn(ref from.Reliability, to, offset_reliability);
-            OwnershipQosPolicyMarshaler.CopyIn(ref from.Ownership, to, offset_ownership);
-            DestinationOrderQosPolicyMarshaler.CopyIn(ref from.DestinationOrder, to, offset_destination_order);
-            UserDataQosPolicyMarshaler.CopyIn(ref from.UserData, to, offset_user_data);
-            TimeBasedFilterQosPolicyMarshaler.CopyIn(ref from.TimeBasedFilter, to, offset_time_based_filter);
-            PresentationQosPolicyMarshaler.CopyIn(ref from.Presentation, to, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyIn(ref from.Partition, to, offset_partition);
-            TopicDataQosPolicyMarshaler.CopyIn(ref from.TopicData, to, offset_topic_data);
-            GroupDataQosPolicyMarshaler.CopyIn(ref from.GroupData, to, offset_group_data);
+                    result = DurabilityQosPolicyMarshaler.CopyIn(from.Durability, to, offset_durability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DeadlineQosPolicyMarshaler.CopyIn(from.Deadline, to, offset_deadline);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LatencyBudgetQosPolicyMarshaler.CopyIn(from.LatencyBudget, to, offset_latency_budget);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = LivelinessQosPolicyMarshaler.CopyIn(from.Liveliness, to, offset_liveliness);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = ReliabilityQosPolicyMarshaler.CopyIn(from.Reliability, to, offset_reliability);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = OwnershipQosPolicyMarshaler.CopyIn(from.Ownership, to, offset_ownership);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = UserDataQosPolicyMarshaler.CopyIn(from.UserData, to, offset_user_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TimeBasedFilterQosPolicyMarshaler.CopyIn(from.TimeBasedFilter, to, offset_time_based_filter);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PresentationQosPolicyMarshaler.CopyIn(from.Presentation, to, offset_presentation);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = PartitionQosPolicyMarshaler.CopyIn(from.Partition, to, offset_partition);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = TopicDataQosPolicyMarshaler.CopyIn(from.TopicData, to, offset_topic_data);
+                }
+                if (result == DDS.ReturnCode.Ok) {
+                    result = GroupDataQosPolicyMarshaler.CopyIn(from.GroupData, to, offset_group_data);
+                }
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.SubscriptionBuiltinTopicDataMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosToplevelMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "SubscriptionBuiltinTopicData attribute may not be a null pointer.");
+            }
+            return result;
         }
 
         internal void CleanupIn(IntPtr nativePtr)
@@ -1005,17 +1361,17 @@ namespace DDS.OpenSplice.CustomMarshalers
             GroupDataQosPolicyMarshaler.CleanupIn(nativePtr, offset_group_data);
         }
 
-        internal void CopyOut(out SubscriptionBuiltinTopicData to)
+        internal void CopyOut(ref SubscriptionBuiltinTopicData to)
         {
-            CopyOut(gapiPtr, out to);
+            CopyOut(gapiPtr, ref to);
         }
 
-        internal static void CopyOut(IntPtr from, out SubscriptionBuiltinTopicData to)
+        internal static void CopyOut(IntPtr from, ref SubscriptionBuiltinTopicData to)
         {
-            to = new SubscriptionBuiltinTopicData();
+            if (to == null) to = new SubscriptionBuiltinTopicData();
 
-            BuiltinTopicKeyMarshaler.CopyOut(from, out to.Key, offset_key);
-            BuiltinTopicKeyMarshaler.CopyOut(from, out to.ParticipantKey, offset_participant_key);
+            BuiltinTopicKeyMarshaler.CopyOut(from, ref to.Key, offset_key);
+            BuiltinTopicKeyMarshaler.CopyOut(from, ref to.ParticipantKey, offset_participant_key);
 
             IntPtr namePtr = BaseMarshaler.ReadIntPtr(from, offset_topic_name);
             to.TopicName = Marshal.PtrToStringAnsi(namePtr);
@@ -1023,19 +1379,19 @@ namespace DDS.OpenSplice.CustomMarshalers
             IntPtr typeNamePtr = BaseMarshaler.ReadIntPtr(from, offset_type_name);
             to.TypeName = Marshal.PtrToStringAnsi(typeNamePtr);
 
-            DurabilityQosPolicyMarshaler.CopyOut(from, out to.Durability, offset_durability);
-            DeadlineQosPolicyMarshaler.CopyOut(from, out to.Deadline, offset_deadline);
-            LatencyBudgetQosPolicyMarshaler.CopyOut(from, out to.LatencyBudget, offset_latency_budget);
-            LivelinessQosPolicyMarshaler.CopyOut(from, out to.Liveliness, offset_liveliness);
-            ReliabilityQosPolicyMarshaler.CopyOut(from, out to.Reliability, offset_reliability);
-            OwnershipQosPolicyMarshaler.CopyOut(from, out to.Ownership, offset_ownership);
-            DestinationOrderQosPolicyMarshaler.CopyOut(from, out to.DestinationOrder, offset_destination_order);
-            UserDataQosPolicyMarshaler.CopyOut(from, out to.UserData, offset_user_data);
-            TimeBasedFilterQosPolicyMarshaler.CopyOut(from, out to.TimeBasedFilter, offset_time_based_filter);
-            PresentationQosPolicyMarshaler.CopyOut(from, out to.Presentation, offset_presentation);
-            PartitionQosPolicyMarshaler.CopyOut(from, out to.Partition, offset_partition);
-            TopicDataQosPolicyMarshaler.CopyOut(from, out to.TopicData, offset_topic_data);
-            GroupDataQosPolicyMarshaler.CopyOut(from, out to.GroupData, offset_group_data);
+            DurabilityQosPolicyMarshaler.CopyOut(from, ref to.Durability, offset_durability);
+            DeadlineQosPolicyMarshaler.CopyOut(from, ref to.Deadline, offset_deadline);
+            LatencyBudgetQosPolicyMarshaler.CopyOut(from, ref to.LatencyBudget, offset_latency_budget);
+            LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
+            ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
+            OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
+            UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
+            TimeBasedFilterQosPolicyMarshaler.CopyOut(from, ref to.TimeBasedFilter, offset_time_based_filter);
+            PresentationQosPolicyMarshaler.CopyOut(from, ref to.Presentation, offset_presentation);
+            PartitionQosPolicyMarshaler.CopyOut(from, ref to.Partition, offset_partition);
+            TopicDataQosPolicyMarshaler.CopyOut(from, ref to.TopicData, offset_topic_data);
+            GroupDataQosPolicyMarshaler.CopyOut(from, ref to.GroupData, offset_group_data);
         }
     }
 }

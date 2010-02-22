@@ -144,7 +144,9 @@ module DDS {
     };
 
     struct WriterDataLifecycleQosPolicy {
-	boolean autodispose_unregistered_instances;
+        boolean autodispose_unregistered_instances;
+        Duration_t autopurge_suspended_samples_delay;
+        Duration_t autounregister_instance_delay;
     };
 
     struct ReaderDataLifecycleQosPolicy {
@@ -155,7 +157,7 @@ module DDS {
     
     struct DurabilityServiceQosPolicy {
 	Duration_t service_cleanup_delay;
-	HistoryQosPolicyKind history_kind;
+        HistoryQosPolicyKind history_kind;
         long history_depth;
         long max_samples;
         long max_instances;
@@ -201,7 +203,7 @@ module DDS {
         SchedulingPriorityQosPolicy scheduling_priority_kind;
         long scheduling_priority;
     };
-
+    
     struct DomainParticipantFactoryQos {
 	EntityFactoryQosPolicy entity_factory;
     };
@@ -272,10 +274,11 @@ module DDS {
     };
 
     struct SubscriberQos {
-	PresentationQosPolicy presentation;
-	PartitionQosPolicy partition;
-	GroupDataQosPolicy group_data;
-	EntityFactoryQosPolicy entity_factory;
+        PresentationQosPolicy presentation;
+        PartitionQosPolicy partition;
+        GroupDataQosPolicy group_data;
+        EntityFactoryQosPolicy entity_factory;
+        ShareQosPolicy share;
     };
 
     struct ParticipantBuiltinTopicData {

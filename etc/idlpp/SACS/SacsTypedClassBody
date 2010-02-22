@@ -663,19 +663,15 @@ $sp($(spaces))    private const string metaDescriptor = "$(meta-descriptor)";
 
 $sp($(spaces))    public $(typename)TypeSupport()
 $sp($(spaces))        : base(typeof($(typename)),
-$sp($(spaces))                new MarshalerTypeGenerator())
+$sp($(spaces))                new MarshalerTypeGenerator(), $(custom-psm))
 $sp($(spaces))    { }
 
-$sp($(spaces))    public $(typename)TypeSupport(
-$sp($(spaces))            IMarshalerTypeGenerator generator)
-$sp($(spaces))        : base(typeof($(typename)),
-$sp($(spaces))                generator)
+$sp($(spaces))    public $(typename)TypeSupport(IMarshalerTypeGenerator generator)
+$sp($(spaces))        : base(typeof($(typename)), generator, $(custom-psm))
 $sp($(spaces))    { }
 
-$sp($(spaces))    public $(typename)TypeSupport(
-$sp($(spaces))            DatabaseMarshaler marshaler)
-$sp($(spaces))        : base(typeof($(typename)),
-$sp($(spaces))                marshaler)
+$sp($(spaces))    public $(typename)TypeSupport(DatabaseMarshaler marshaler)
+$sp($(spaces))        : base(typeof($(typename)), marshaler)
 $sp($(spaces))    { }
 
 $sp($(spaces))    public override string TypeName

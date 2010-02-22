@@ -16,9 +16,9 @@ namespace test.sacs
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
             mod.tstTypeSupport typeSupport;
-            DDS.TopicQos topicQosHolder;
+            DDS.TopicQos topicQos = null;
             DDS.ITopic topic;
-            DDS.DomainParticipantQos pqosHolder;
+            DDS.DomainParticipantQos pqos = null;
             DDS.ReturnCode rc;
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult("Initialization success", string.Empty, Test.Framework.TestVerdict.Pass,
@@ -30,12 +30,12 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqos, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";
@@ -54,19 +54,19 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out topicQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref topicQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "participant.get_default_topic_qos failed.";
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topicQosHolder);//, null, 0);
+            topic = participant.CreateTopic("my_topic", "my_type", topicQos);//, null, 0);
             if (topic == null)
             {
                 result.Result = "participant.create_topic failed.";
                 return result;
             }
             testCase.RegisterObject("factory", factory);
-            testCase.RegisterObject("participantQos", pqosHolder);
+            testCase.RegisterObject("participantQos", pqos);
             testCase.RegisterObject("participant", participant);
             testCase.RegisterObject("topic", topic);
             result.Result = "Initialization success.";

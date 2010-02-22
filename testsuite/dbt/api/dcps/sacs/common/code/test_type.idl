@@ -13,11 +13,15 @@ module mod {
     };
 #pragma keylist otherType long_1
     
+    typedef string<5> callSign;
+    
     struct boundsType{
         long long_1;
         string name;
+        //callSign name5;
         string<5> name5;
-        sequence<string, 2> strSeq2;
+        sequence<callSign, 2> strSeq2;
+        sequence<octet> octSeq;
     };
 #pragma keylist boundsType long_1
 };

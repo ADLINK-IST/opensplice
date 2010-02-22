@@ -192,6 +192,7 @@ idl_structureOpen(
         snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("custom-psm", csUserData->customPSM ? "true" : "false"));
 
         if (csUserData->idlpp_metaList) {
             idl_metaCsharp *metaElmnt = os_iterTakeFirst(csUserData->idlpp_metaList);
