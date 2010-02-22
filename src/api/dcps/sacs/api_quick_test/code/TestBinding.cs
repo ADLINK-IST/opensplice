@@ -84,25 +84,25 @@ namespace testNamespace
             Console.WriteLine("DomainParticipantFactory: " + dpf);
 
             // Tailor the DomainPartipantFactoryQos;
-            DomainParticipantFactoryQos dpfQos;
-            ReturnCode result = dpf.GetQos(out dpfQos);
+            DomainParticipantFactoryQos dpfQos = null;
+            ReturnCode result = dpf.GetQos(ref dpfQos);
             Console.WriteLine("DomainParticipantFactory.get_qos: {0}", result);
-            Console.WriteLine("DomainParticipantFactoryQos.entity_factory.autoenable_created_entities: " + dpfQos.EntityFactory.AutoEnableCreatedEntities);
+            Console.WriteLine("DomainParticipantFactoryQos.entity_factory.autoenable_created_entities: " + dpfQos.EntityFactory.AutoenableCreatedEntities);
 
-            dpfQos.EntityFactory.AutoEnableCreatedEntities = false;
-            result = dpf.SetQos(ref dpfQos);
+            dpfQos.EntityFactory.AutoenableCreatedEntities = false;
+            result = dpf.SetQos(dpfQos);
             Console.WriteLine("DomainParticipantFactory.set_qos: {0}", result);
 
             // Get the QOS settings for the Factory...  Check values without additional changes
-            DomainParticipantFactoryQos dpf2Qos;
-            result = dpf.GetQos(out dpf2Qos);
+            DomainParticipantFactoryQos dpf2Qos = null;
+            result = dpf.GetQos(ref dpf2Qos);
             Console.WriteLine("DomainParticipantFactory.get_qos: {0}", result);
-            Console.WriteLine("DomainParticipantFactoryQos.entity_factory.autoenable_created_entities: " + dpf2Qos.EntityFactory.AutoEnableCreatedEntities);
+			Console.WriteLine("DomainParticipantFactoryQos.entity_factory.autoenable_created_entities: " + dpf2Qos.EntityFactory.AutoenableCreatedEntities);
 
             // Create the domainParticipant itself.
             DomainParticipantQos dpQos = new DomainParticipantQos();
             dpQos.UserData.Value = new byte[] { (byte)1, (byte)2, (byte)3 };
-            dpQos.EntityFactory.AutoEnableCreatedEntities = true;
+            dpQos.EntityFactory.AutoenableCreatedEntities = true;
             dpQos.ListenerScheduling.SchedulingClass.Kind = SchedulingClassQosPolicyKind.ScheduleDefault;
             dpQos.ListenerScheduling.SchedulingPriorityKind.Kind = SchedulingPriorityQosPolicyKind.PriorityRelative;
             dpQos.ListenerScheduling.SchedulingPriority = 0;
@@ -110,7 +110,7 @@ namespace testNamespace
             dpQos.WatchdogScheduling.SchedulingPriorityKind.Kind = SchedulingPriorityQosPolicyKind.PriorityRelative;
             dpQos.WatchdogScheduling.SchedulingPriority = 4;
 
-            IDomainParticipant dp = dpf.CreateParticipant(null, ref dpQos);
+            IDomainParticipant dp = dpf.CreateParticipant(null, dpQos);
             Console.Write("DomainParticipant: ");
             Console.WriteLine(dp != null ? "yes" : "no");
 
@@ -121,24 +121,24 @@ namespace testNamespace
             // And look up this DomainParticipant.
             IDomainParticipant dp2 = dpf.LookupParticipant(null);
 
-            DomainParticipantQos dp2Qos;
+            DomainParticipantQos dp2Qos = null;
 
             Console.Write("lookup DomainParticipant: ");
             Console.WriteLine(dp2 != null ? "Success" : "Fail");
-            result = dp2.GetQos(out dp2Qos);
+            result = dp2.GetQos(ref dp2Qos);
             Console.WriteLine("DomainParticipant.get_qos: {0}", result);
-            Console.WriteLine("DomainParticipantQos.entity_factory.autoenable_created_entities: " + dp2Qos.EntityFactory.AutoEnableCreatedEntities);
+            Console.WriteLine("DomainParticipantQos.entity_factory.autoenable_created_entities: " + dp2Qos.EntityFactory.AutoenableCreatedEntities);
 
             // Create a new PublisherQos and set some values...
             PublisherQos publisherQos = new PublisherQos();
-            publisherQos.EntityFactory.AutoEnableCreatedEntities = true;
+            publisherQos.EntityFactory.AutoenableCreatedEntities = true;
             publisherQos.Partition.Name = new string[] { "howdy" }; //, "neighbor", "partition" };
 
             // true not supported in 4.1 ??
             publisherQos.Presentation.OrderedAccess = false;
 
             // Create the Publisher
-            IPublisher publisher = dp.CreatePublisher(ref publisherQos);
+            IPublisher publisher = dp.CreatePublisher(publisherQos);
             Console.WriteLine("Create Publisher: {0}", publisher);
 
             //DataWriterQos dwQos;
@@ -154,20 +154,20 @@ namespace testNamespace
             Console.WriteLine("Register Typesupport Result: {0}", result);
 
             // Create a topic for the Detection type
-            TopicQos topicQos;
-            result = dp.GetDefaultTopicQos(out topicQos);
+            TopicQos topicQos = null;
+            result = dp.GetDefaultTopicQos(ref topicQos);
 
 			//topicQos.Ownership.Kind = OwnershipQosPolicyKind.ExclusiveOwnershipQos;
 
 			//DDS.Test.TestTopicQos2(ref topicQos);
 
             // Add a listener to the topic
-            ITopic topic = dp.CreateTopic("Data_DataTest", support.TypeName, ref topicQos,
+            ITopic topic = dp.CreateTopic("Data_DataTest", support.TypeName, topicQos,
                 this, StatusKind.InconsistentTopic);
 
             topicQos.History.Depth = 5;
 
-            ITopic topic2 = dp.CreateTopic("Data_DataTest", support.TypeName, ref topicQos);
+            ITopic topic2 = dp.CreateTopic("Data_DataTest", support.TypeName, topicQos);
 
             //			ErrorCode errorCode;
             //			string msg;
@@ -179,12 +179,12 @@ namespace testNamespace
             Data.IDataTestDataWriter dataWriter = publisher.CreateDataWriter(topic) as Data.IDataTestDataWriter;
 
             // Create a SubscriberQos object and set the partition name
-            SubscriberQos subscriberQos;
-            result = dp.GetDefaultSubscriberQos(out subscriberQos);
+            SubscriberQos subscriberQos = null;
+            result = dp.GetDefaultSubscriberQos(ref subscriberQos);
             subscriberQos.Partition.Name = new string[] { "howdy" };
 
             // Create the subscriber
-            ISubscriber sub = dp.CreateSubscriber(ref subscriberQos);
+            ISubscriber sub = dp.CreateSubscriber(subscriberQos);
             // Verify that the subsciber was created...
             if (sub == null)
             {
@@ -192,24 +192,24 @@ namespace testNamespace
                 return;
             }
 
-            DDS.DataReaderQos readerQos;
-            sub.GetDefaultDataReaderQos(out readerQos);
+            DDS.DataReaderQos readerQos = null;
+            sub.GetDefaultDataReaderQos(ref readerQos);
 
             //readerQos.SubscriptionKeys.KeyList = new string[] { "test" };
             //readerQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
             //readerQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
 
             // Create a DataReader for the Detection topic
-            Data.IDataTestDataReader dataReader = sub.CreateDataReader(topic, ref readerQos, this, StatusKind.DataAvailable)
+            Data.IDataTestDataReader dataReader = sub.CreateDataReader(topic, readerQos, this, StatusKind.DataAvailable)
                 as Data.IDataTestDataReader;
 
             // Create a filtered detection topic (only read detections that have an id != 4)
             IContentFilteredTopic filteredTopic = dp.CreateContentFilteredTopic("Another", topic, "TestId <> %0", "4");
 
-			string[] testParams;
-			result = filteredTopic.GetExpressionParameters(out testParams);
+			string[] testParams = null;
+			result = filteredTopic.GetExpressionParameters(ref testParams);
 			result = filteredTopic.SetExpressionParameters("hello", "test");
-			result = filteredTopic.GetExpressionParameters(out testParams);
+			result = filteredTopic.GetExpressionParameters(ref testParams);
 
             // Create a DataReader to read the filtered topic
             IDataReader reader2 = sub.CreateDataReader(filteredTopic);
