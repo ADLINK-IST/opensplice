@@ -39,6 +39,8 @@
 static c_long indent_level = 0;
     /** enumeration element index */
 static c_long enum_element = 0;
+    /** enumeration enum name */
+static char *enum_enumName = NULL;
 
 static void idl_arrayDimensions(idl_typeArray typeArray);
 
@@ -656,6 +658,10 @@ idl_enumerationOpen(
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     enum_element = idl_typeEnumNoElements(enumSpec);
+
+    /* Hold on to the name of the enum, until we looped though all the labels. */
+    enum_enumName = os_strdup(name);
+
     indent_level++;
     os_free(enumName);
 
@@ -686,6 +692,9 @@ idl_enumerationClose (
     idl_fileOutPrintf(idl_fileCur(), "};\n");
     idl_printIndent(indent_level);
     idl_fileOutPrintf (idl_fileCur(), "#endregion\n\n");
+
+    /* Release the enum name since we no longer need to reference it. */
+    os_free(enum_enumName);
 }
 
 /** @brief callback function called on definition of an enumeration element in the IDL input file.
@@ -717,10 +726,15 @@ idl_enumerationElementOpenClose (
     const char *name,
     void *userData)
 {
-    char *labelName;
+    char *nameCopy, *labelName;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
 
-    labelName = idl_CsharpId(name, csUserData->customPSM);
+    /* If the element if prefixed with the name of the enum, remove the prefix. */
+    nameCopy = os_strdup(name);
+    idl_CsharpRemovePrefix(enum_enumName, nameCopy);
+
+    /* Translate the remaining label into its C# representation. */
+    labelName = idl_CsharpId(nameCopy, csUserData->customPSM);
     enum_element--;
     if (enum_element == 0) {
         idl_printIndent(indent_level);
@@ -730,6 +744,7 @@ idl_enumerationElementOpenClose (
         idl_fileOutPrintf(idl_fileCur(), "%s,\n", labelName);
     }
     os_free(labelName);
+    os_free(nameCopy);
 }
 
 

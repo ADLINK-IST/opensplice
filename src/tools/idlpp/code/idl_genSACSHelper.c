@@ -64,6 +64,42 @@ idl_metaCsharpSerialize2XML(
         metaElmnt->descriptor = idl_genXMLmeta(metaElmnt->type);
 }
 
+void
+idl_CsharpRemovePrefix (
+    const char *prefix,
+    char *name)
+{
+    unsigned int i, prefixMatch;
+
+    /* if the name is not prefixed, do nothing */
+    prefixMatch = TRUE;
+    for (i = 0; i < strlen(prefix) && prefixMatch; i++) {
+        if (toupper(prefix[i]) != toupper(name[i])) {
+            prefixMatch = FALSE;
+        }
+    }
+
+    if (prefixMatch) {
+        char *p;
+        int newLength = 0;
+        unsigned int j;
+
+        p = name + strlen(prefix);
+        newLength = strlen(name) - strlen(prefix);
+
+        /* (for loop over new element length)  */
+        for (i = 0, j = 0; i <= newLength; i++, j++) {
+            if (j == 0 && p[i] == '_') {
+                /* On first underscore, skip. */
+                name[j] = p[++i];
+            } else {
+                name[j] = p[i];
+            }
+        }
+        name[j] = '\0';
+    }
+}
+
 static c_char *
 toPascalCase(const c_char *name)
 {

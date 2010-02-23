@@ -43,6 +43,11 @@ idl_metaCsharpSerialize2XML(
         idl_metaCsharp *metaElmnt,
         void *args);
 
+void
+idl_CsharpRemovePrefix (
+        const char *name,
+        char *prefix);
+
 c_char *idl_CsharpId(
         const c_char *identifier,
         c_bool customPSM);
