@@ -197,21 +197,11 @@ namespace DDS.OpenSplice
         {
             ReturnCode result = ReturnCode.Error;
 
-            Gapi.gapi_domainParticipantListener gapiListener;
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-            if (listener == null)
+            if (listener != null)
             {
-                using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
-                {
-                    result = Gapi.DomainParticipant.set_listener(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            mask);
-                }
-            }
-            else
-            {
+                Gapi.gapi_domainParticipantListener gapiListener;
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
                 lock (listener)
                 {
                     using (DomainParticipantListenerMarshaler marshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
@@ -223,47 +213,59 @@ namespace DDS.OpenSplice
                     }
                 }
             }
+            else
+            {
+                result = Gapi.DomainParticipant.set_listener(
+                        GapiPeer,
+                        IntPtr.Zero,
+                        mask);
+            }
             return result;
         }
 
         public IPublisher CreatePublisher()
         {
-            IPublisher publisher = null;
-            IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
-                    GapiPeer,
-                    Gapi.NativeConstants.GapiPublisherQosDefault,
-                    IntPtr.Zero,
-                    StatusKind.Any);
-            if (gapiPtr != IntPtr.Zero)
-            {
-                publisher = new Publisher(gapiPtr);
-            }
-            return publisher;
+            return CreatePublisher(null, 0);
         }
 
         public IPublisher CreatePublisher(IPublisherListener listener, StatusKind mask)
         {
             IPublisher publisher = null;
 
-            // Note: we use the same gapi lister as the DataWriter since the
-            // publisher doesn't add anything unique
-            OpenSplice.Gapi.gapi_publisherDataWriterListener gapiListener;
-            PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener != null)
             {
-                using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                // Note: we use the same gapi lister as the DataWriter since the
+                // publisher doesn't add anything unique
+                OpenSplice.Gapi.gapi_publisherDataWriterListener gapiListener;
+                PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                    using (PublisherDataWriterListenerMarshaler listenerMarshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    {
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                                GapiPeer,
+                                Gapi.NativeConstants.GapiPublisherQosDefault,
+                                listenerMarshaler.GapiPtr,
+                                mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            publisher = new Publisher(gapiPtr, listenerHelper);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
                             GapiPeer,
                             Gapi.NativeConstants.GapiPublisherQosDefault,
-                            listenerMarshaler.GapiPtr,
+                            IntPtr.Zero,
                             mask);
-                    if (gapiPtr != IntPtr.Zero)
-                    {
-                        publisher = new Publisher(gapiPtr, listenerHelper);
-                    }
+                if (gapiPtr != IntPtr.Zero)
+                {
+                    publisher = new Publisher(gapiPtr);
                 }
             }
             return publisher;
@@ -271,26 +273,7 @@ namespace DDS.OpenSplice
 
         public IPublisher CreatePublisher(PublisherQos qos)
         {
-            IPublisher publisher = null;
-
-            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler())
-            {
-                if (marshaler.CopyIn(qos) == ReturnCode.Ok)
-                {
-                    // Invoke the corresponding gapi function.
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            IntPtr.Zero,
-                            0);
-                    if (gapiPtr != IntPtr.Zero)
-                    {
-                        publisher = new Publisher(gapiPtr);
-                    }
-                }
-            }
-
-            return publisher;
+            return CreatePublisher(qos, null, 0);
         }
 
         public IPublisher CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask)
@@ -303,24 +286,40 @@ namespace DDS.OpenSplice
                 // publisher doesn't add anything unique
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
-                    Gapi.gapi_publisherDataWriterListener gapiListener;
-                    PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
-                    listenerHelper.Listener = listener;
-                    listenerHelper.CreateListener(out gapiListener);
-                    lock (listener)
+                    if (listener != null)
                     {
-                        using (PublisherDataWriterListenerMarshaler listenerMarshaler = 
-                                new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                        Gapi.gapi_publisherDataWriterListener gapiListener;
+                        PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
+                        listenerHelper.Listener = listener;
+                        listenerHelper.CreateListener(out gapiListener);
+                        lock (listener)
                         {
-                            IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
-                                    GapiPeer,
-                                    marshaler.GapiPtr,
-                                    listenerMarshaler.GapiPtr,
-                                    mask);
-                            if (gapiPtr != IntPtr.Zero)
+                            using (PublisherDataWriterListenerMarshaler listenerMarshaler =
+                                    new PublisherDataWriterListenerMarshaler(ref gapiListener))
                             {
-                                publisher = new Publisher(gapiPtr, listenerHelper);
+                                IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                                        GapiPeer,
+                                        marshaler.GapiPtr,
+                                        listenerMarshaler.GapiPtr,
+                                        mask);
+                                if (gapiPtr != IntPtr.Zero)
+                                {
+                                    publisher = new Publisher(gapiPtr, listenerHelper);
+                                }
                             }
+                        }
+                    }
+                    else
+                    {
+                        // Invoke the corresponding gapi function.
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_publisher(
+                                GapiPeer,
+                                marshaler.GapiPtr,
+                                IntPtr.Zero,
+                                mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            publisher = new Publisher(gapiPtr);
                         }
                     }
                 }
@@ -331,51 +330,62 @@ namespace DDS.OpenSplice
 
         public ReturnCode DeletePublisher(IPublisher p)
         {
+            ReturnCode result = ReturnCode.BadParameter;
+
             Publisher publisher = (Publisher)p;
-            ReturnCode result = Gapi.DomainParticipant.delete_publisher(
-                    GapiPeer,
-                    publisher.GapiPeer);
+            if (publisher != null)
+            {
+                result = Gapi.DomainParticipant.delete_publisher(
+                        GapiPeer,
+                        publisher.GapiPeer);
+            }
 
             return result;
         }
 
         public ISubscriber CreateSubscriber()
         {
-            ISubscriber subscriber = null;
-            IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
-                    GapiPeer,
-                    Gapi.NativeConstants.GapiSubscriberQosDefault,
-                    IntPtr.Zero,
-                    StatusKind.Any);
-            if (gapiPtr != IntPtr.Zero)
-            {
-                subscriber = new Subscriber(gapiPtr);
-            }
-            return subscriber;
+            //TODO: JLS: This had been sending a StatusKind.Any before
+            return CreateSubscriber(null, 0);
         }
 
         public ISubscriber CreateSubscriber(ISubscriberListener listener, StatusKind mask)
         {
             ISubscriber subscriber = null;
 
-            OpenSplice.Gapi.gapi_subscriberListener gapiListener;
-            SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener != null)
             {
-                using (SubscriberListenerMarshaler listenerMarshaler = 
-                        new SubscriberListenerMarshaler(ref gapiListener))
+                OpenSplice.Gapi.gapi_subscriberListener gapiListener;
+                SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                    using (SubscriberListenerMarshaler listenerMarshaler =
+                            new SubscriberListenerMarshaler(ref gapiListener))
+                    {
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                                GapiPeer,
+                                Gapi.NativeConstants.GapiSubscriberQosDefault,
+                                listenerMarshaler.GapiPtr,
+                                mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            subscriber = new Subscriber(gapiPtr, listenerHelper);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
                             GapiPeer,
                             Gapi.NativeConstants.GapiSubscriberQosDefault,
-                            listenerMarshaler.GapiPtr,
+                            IntPtr.Zero,
                             mask);
-                    if (gapiPtr != IntPtr.Zero)
-                    {
-                        subscriber = new Subscriber(gapiPtr, listenerHelper);
-                    }
+                if (gapiPtr != IntPtr.Zero)
+                {
+                    subscriber = new Subscriber(gapiPtr);
                 }
             }
             return subscriber;
@@ -383,25 +393,7 @@ namespace DDS.OpenSplice
 
         public ISubscriber CreateSubscriber(SubscriberQos qos)
         {
-            ISubscriber subscriber = null;
-
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
-            {
-                if (marshaler.CopyIn(qos) == ReturnCode.Ok)
-                {
-                    // Invoke the corresponding gapi function.
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            IntPtr.Zero,
-                            0);
-                    if (gapiPtr != IntPtr.Zero)
-                    {
-                        subscriber = new Subscriber(gapiPtr);
-                    }
-                }
-            }
-            return subscriber;
+            return CreateSubscriber(qos, null, 0);
         }
 
         public ISubscriber CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
@@ -412,24 +404,40 @@ namespace DDS.OpenSplice
             {
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
-                    OpenSplice.Gapi.gapi_subscriberListener gapiListener;
-                    SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
-                    listenerHelper.Listener = listener;
-                    listenerHelper.CreateListener(out gapiListener);
-                    lock (listener)
+                    if (listener != null)
                     {
-                        using (SubscriberListenerMarshaler listenerMarshaler = 
-                                new SubscriberListenerMarshaler(ref gapiListener))
+                        OpenSplice.Gapi.gapi_subscriberListener gapiListener;
+                        SubscriberListenerHelper listenerHelper = new SubscriberListenerHelper();
+                        listenerHelper.Listener = listener;
+                        listenerHelper.CreateListener(out gapiListener);
+                        lock (listener)
                         {
-                            IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
-                                    GapiPeer,
-                                    marshaler.GapiPtr,
-                                    listenerMarshaler.GapiPtr,
-                                    mask);
-                            if (gapiPtr != IntPtr.Zero)
+                            using (SubscriberListenerMarshaler listenerMarshaler =
+                                    new SubscriberListenerMarshaler(ref gapiListener))
                             {
-                                subscriber = new Subscriber(gapiPtr, listenerHelper);
+                                IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                                        GapiPeer,
+                                        marshaler.GapiPtr,
+                                        listenerMarshaler.GapiPtr,
+                                        mask);
+                                if (gapiPtr != IntPtr.Zero)
+                                {
+                                    subscriber = new Subscriber(gapiPtr, listenerHelper);
+                                }
                             }
+                        }
+                    }
+                    else
+                    {
+                        // Invoke the corresponding gapi function.
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_subscriber(
+                                GapiPeer,
+                                marshaler.GapiPtr,
+                                IntPtr.Zero,
+                                mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            subscriber = new Subscriber(gapiPtr);
                         }
                     }
                 }
@@ -438,13 +446,19 @@ namespace DDS.OpenSplice
             return subscriber;
         }
 
-
         public ReturnCode DeleteSubscriber(ISubscriber s)
         {
+            ReturnCode result = ReturnCode.BadParameter;
+
             Subscriber subscriber = (Subscriber)s;
-            return Gapi.DomainParticipant.delete_subscriber(
-                    GapiPeer,
-                    subscriber.GapiPeer);
+            if (subscriber != null)
+            {
+                result = Gapi.DomainParticipant.delete_subscriber(
+                        GapiPeer,
+                        subscriber.GapiPeer);
+            }
+
+            return result;
         }
 
         public ISubscriber BuiltInSubscriber
@@ -521,88 +535,62 @@ namespace DDS.OpenSplice
 
         public ITopic CreateTopic(string topicName, string typeName)
         {
-            ITopic topic = null;
-
-            IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                    GapiPeer,
-                    topicName,
-                    typeName,
-                    Gapi.NativeConstants.GapiTopicQosDefault,
-                    IntPtr.Zero,
-                    StatusKind.Any);
-
-            if (gapiPtr != IntPtr.Zero)
-            {
-                topic = new Topic(gapiPtr);
-            }
-
-            return topic;
+            return CreateTopic(topicName, typeName, null, 0);
         }
 
-        public ITopic CreateTopic(
-                string topicName, 
-                string typeName,
-                ITopicListener listener, 
-                StatusKind mask)
+        public ITopic CreateTopic(string topicName, string typeName, ITopicListener listener, StatusKind mask)
         {
             ITopic topic = null;
 
-            OpenSplice.Gapi.gapi_topicListener gapiListener;
-            TopicListenerHelper listenerHelper = new TopicListenerHelper();
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-            lock (listener)
+            if (listener != null)
             {
-                using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
+                OpenSplice.Gapi.gapi_topicListener gapiListener;
+                TopicListenerHelper listenerHelper = new TopicListenerHelper();
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
                 {
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                            GapiPeer,
-                            topicName,
-                            typeName,
-                            Gapi.NativeConstants.GapiTopicQosDefault,
-                            listenerMarshaler.GapiPtr,
-                            mask);
-                    if (gapiPtr != IntPtr.Zero)
+                    using (TopicListenerMarshaler listenerMarshaler = new TopicListenerMarshaler(ref gapiListener))
                     {
-                        topic = new Topic(gapiPtr, listenerHelper);
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                                GapiPeer,
+                                topicName,
+                                typeName,
+                                Gapi.NativeConstants.GapiTopicQosDefault,
+                                listenerMarshaler.GapiPtr,
+                                mask);
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            topic = new Topic(gapiPtr, listenerHelper);
+                        }
                     }
                 }
             }
+            else
+            {
+                IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                        GapiPeer,
+                        topicName,
+                        typeName,
+                        Gapi.NativeConstants.GapiTopicQosDefault,
+                        IntPtr.Zero,
+                        mask);
+
+                if (gapiPtr != IntPtr.Zero)
+                {
+                    topic = new Topic(gapiPtr);
+                }
+            }
+
             return topic;
         }
 
         public ITopic CreateTopic(string topicName, string typeName, TopicQos qos)
         {
-            ITopic topic = null;
-
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
-            {
-                if (marshaler.CopyIn(qos) == ReturnCode.Ok)
-                {
-                    // Invoke the corresponding gapi function.
-                    IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                            GapiPeer,
-                            topicName,
-                            typeName,
-                            marshaler.GapiPtr,
-                            IntPtr.Zero,
-                            StatusKind.Any);
-
-                    if (gapiPtr != IntPtr.Zero)
-                    {
-                        topic = new Topic(gapiPtr);
-                    }
-                }
-            }
-            return topic;
+            return CreateTopic(topicName, typeName, qos, null, 0);
         }
 
-        public ITopic CreateTopic(
-                string topicName, 
-                string typeName, 
-                TopicQos qos,
-                ITopicListener listener, 
-                StatusKind mask)
+        public ITopic CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask)
         {
             ITopic topic = null;
 
@@ -610,26 +598,45 @@ namespace DDS.OpenSplice
             {
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
-                    OpenSplice.Gapi.gapi_topicListener gapiListener;
-                    TopicListenerHelper listenerHelper = new TopicListenerHelper();
-                    listenerHelper.Listener = listener;
-                    listenerHelper.CreateListener(out gapiListener);
-                    lock (listener)
+                    if (listener != null)
                     {
-                        using (TopicListenerMarshaler listenerMarshaler = 
-                                new TopicListenerMarshaler(ref gapiListener))
+                        OpenSplice.Gapi.gapi_topicListener gapiListener;
+                        TopicListenerHelper listenerHelper = new TopicListenerHelper();
+                        listenerHelper.Listener = listener;
+                        listenerHelper.CreateListener(out gapiListener);
+                        lock (listener)
                         {
-                            IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
-                                    GapiPeer,
-                                    topicName,
-                                    typeName,
-                                    marshaler.GapiPtr,
-                                    listenerMarshaler.GapiPtr,
-                                    mask);
-                            if (gapiPtr != IntPtr.Zero)
+                            using (TopicListenerMarshaler listenerMarshaler =
+                                    new TopicListenerMarshaler(ref gapiListener))
                             {
-                                topic = new Topic(gapiPtr, listenerHelper);
+                                IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                                        GapiPeer,
+                                        topicName,
+                                        typeName,
+                                        marshaler.GapiPtr,
+                                        listenerMarshaler.GapiPtr,
+                                        mask);
+                                if (gapiPtr != IntPtr.Zero)
+                                {
+                                    topic = new Topic(gapiPtr, listenerHelper);
+                                }
                             }
+                        }
+                    }
+                    else
+                    {
+                        // Invoke the corresponding gapi function.
+                        IntPtr gapiPtr = Gapi.DomainParticipant.create_topic(
+                                GapiPeer,
+                                topicName,
+                                typeName,
+                                marshaler.GapiPtr,
+                                IntPtr.Zero,
+                                mask);
+
+                        if (gapiPtr != IntPtr.Zero)
+                        {
+                            topic = new Topic(gapiPtr);
                         }
                     }
                 }
@@ -641,6 +648,7 @@ namespace DDS.OpenSplice
         public ReturnCode DeleteTopic(ITopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
+
             Topic topic = t as Topic;
             if (topic != null)
             {
@@ -648,6 +656,7 @@ namespace DDS.OpenSplice
                         GapiPeer,
                         topic.GapiPeer);
             }
+
             return result;
         }
 
@@ -731,6 +740,7 @@ namespace DDS.OpenSplice
         public ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
+
             ContentFilteredTopic contentFilteredTopic = t as ContentFilteredTopic;
             if (contentFilteredTopic != null)
             {
@@ -738,6 +748,7 @@ namespace DDS.OpenSplice
                     GapiPeer,
                     contentFilteredTopic.GapiPeer);
             }
+
             return result;
         }
 
@@ -774,6 +785,7 @@ namespace DDS.OpenSplice
         public ReturnCode DeleteMultiTopic(IMultiTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
+
             MultiTopic multiTopic = t as MultiTopic;
             if (multiTopic != null)
             {
@@ -781,6 +793,7 @@ namespace DDS.OpenSplice
                         GapiPeer,
                         multiTopic.GapiPeer);
             }
+
             return result;
         }
 
@@ -984,9 +997,10 @@ namespace DDS.OpenSplice
 
         public bool ContainsEntity(InstanceHandle handle)
         {
-            return Gapi.DomainParticipant.contains_entity(
+            byte result = Gapi.DomainParticipant.contains_entity(
                     GapiPeer,
                     handle);
+            return result != 0;
         }
 
         public ReturnCode GetCurrentTime(out Time currentTime)

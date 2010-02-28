@@ -42,21 +42,33 @@ namespace DDS.OpenSplice
         {
             ReturnCode result = ReturnCode.Error;
 
-            Gapi.gapi_publisherDataWriterListener gapiListener;
-            if (listenerHelper == null)
+            if (listener != null)
             {
-                // Since the real DataWriter is created from the TypeSupport,
-                // the listenerHelper is not "readonly"
-                listenerHelper = new PublisherDataWriterListenerHelper();
+                Gapi.gapi_publisherDataWriterListener gapiListener;
+                if (listenerHelper == null)
+                {
+                    // Since the real DataWriter is created from the TypeSupport,
+                    // the listenerHelper is not "readonly"
+                    listenerHelper = new PublisherDataWriterListenerHelper();
+                }
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
+                {
+                    using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.DataWriter.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
+                }
             }
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-
-            using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+            else
             {
                 result = Gapi.DataWriter.set_listener(
                     GapiPeer,
-                    marshaler.GapiPtr,
+                    IntPtr.Zero,
                     mask);
             }
 

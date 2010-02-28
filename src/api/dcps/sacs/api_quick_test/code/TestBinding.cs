@@ -80,7 +80,7 @@ namespace testNamespace
 			//DDS.Test.TestTopicQos();
 
             // Create a DomainParticipantFactory
-            DomainParticipantFactory dpf = DomainParticipantFactory.GetInstance();
+            DomainParticipantFactory dpf = DomainParticipantFactory.Instance;
             Console.WriteLine("DomainParticipantFactory: " + dpf);
 
             // Tailor the DomainPartipantFactoryQos;
@@ -113,6 +113,16 @@ namespace testNamespace
             IDomainParticipant dp = dpf.CreateParticipant(null, dpQos);
             Console.Write("DomainParticipant: ");
             Console.WriteLine(dp != null ? "yes" : "no");
+
+
+            if (dp.ContainsEntity(0))
+            {
+                Console.WriteLine("contains_entity with nil handle incorrect");
+            }
+            if (dp.ContainsEntity(100))
+            {
+                Console.WriteLine("contains_entity with incorrect handle incorrect");
+            }
 
             Time currentTime;
             dp.GetCurrentTime(out currentTime);

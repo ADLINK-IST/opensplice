@@ -40,7 +40,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         static public void CopyOut(Gapi.gapi_Seq from, ref QosPolicyCount[] to)
         {
             // Initialize managed array to the correct size.
-            if (to.Length != from._length)
+            if (to == null || to.Length != from._length)
             {
                 to = new QosPolicyCount[from._length];
             }

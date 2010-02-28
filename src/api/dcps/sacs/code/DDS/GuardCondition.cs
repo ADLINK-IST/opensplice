@@ -32,7 +32,8 @@ namespace DDS
 
         public ReturnCode SetTriggerValue(bool value)
         {
-            return OpenSplice.Gapi.GuardCondition.set_trigger_value(GapiPeer, value);
+            byte byteValue = value ? (byte)1 : (byte)0;
+            return OpenSplice.Gapi.GuardCondition.set_trigger_value(GapiPeer, byteValue);
         }
     }
 }

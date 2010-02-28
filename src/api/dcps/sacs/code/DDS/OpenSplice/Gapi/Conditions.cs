@@ -29,7 +29,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_trigger_value();
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_condition_get_trigger_value")]
-        public static extern bool get_trigger_value(
+        public static extern byte get_trigger_value(
             IntPtr _this);
     }
 
@@ -50,7 +50,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_guardCondition_set_trigger_value")]
         public static extern ReturnCode set_trigger_value(
             IntPtr _this,
-            bool value);
+            byte value);
     }
 
     static internal class StatusCondition

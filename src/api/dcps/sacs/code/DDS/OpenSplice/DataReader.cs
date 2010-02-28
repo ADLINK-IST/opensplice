@@ -42,21 +42,33 @@ namespace DDS.OpenSplice
         {
             ReturnCode result = ReturnCode.Error;
 
-            Gapi.gapi_dataReaderListener gapiListener;
-            if (listenerHelper == null)
+            if (listener != null)
             {
-                // Since the real DataReader is created from the TypeSupport,
-                // the listenerHelper is not "readonly"
-                listenerHelper = new DataReaderListenerHelper();
+                Gapi.gapi_dataReaderListener gapiListener;
+                if (listenerHelper == null)
+                {
+                    // Since the real DataReader is created from the TypeSupport,
+                    // the listenerHelper is not "readonly"
+                    listenerHelper = new DataReaderListenerHelper();
+                }
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
+                {
+                    using (DataReaderListenerMarshaler marshaler = new DataReaderListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.DataReader.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
+                }
             }
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-
-            using (DataReaderListenerMarshaler marshaler = new DataReaderListenerMarshaler(ref gapiListener))
+            else
             {
                 result = Gapi.DataReader.set_listener(
                     GapiPeer,
-                    marshaler.GapiPtr,
+                    IntPtr.Zero,
                     mask);
             }
 
@@ -134,14 +146,15 @@ namespace DDS.OpenSplice
         public ReturnCode DeleteReadCondition(IReadCondition condition)
         {
             ReturnCode result = ReturnCode.BadParameter;
-            ReadCondition conditionObj = condition as ReadCondition;
 
+            ReadCondition conditionObj = condition as ReadCondition;
             if (conditionObj != null)
             {
                 result = Gapi.DataReader.delete_readcondition(
                         GapiPeer,
                         conditionObj.GapiPeer);
             }
+
             return result;
         }
 
