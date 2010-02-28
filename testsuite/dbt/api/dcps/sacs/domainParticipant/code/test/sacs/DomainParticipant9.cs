@@ -32,7 +32,7 @@ namespace test.sacs
             sholder = new DDS.SubscriberQos();
             tholder = new DDS.TopicQos();
 
-            if (participant.GetDefaultPublisherQos(out pholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_publisher_qos failed.";
                 return result;
@@ -45,14 +45,14 @@ namespace test.sacs
             pqp.Name = partitions;
 
             pqos.Partition = pqp;
-            rc = participant.SetDefaultPublisherQos(ref pqos);
+            rc = participant.SetDefaultPublisherQos(pqos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "set_default_publisher_qos failed (1).";
                 return result;
             }
 
-            if (participant.GetDefaultPublisherQos(out pholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_publisher_qos failed (2).";
                 return result;
@@ -63,21 +63,21 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out sholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref sholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_subscriber_qos failed.";
                 return result;
             }
             sqos = sholder;
             sqos.Partition = pqp;
-            rc = participant.SetDefaultSubscriberQos(ref sqos);
+            rc = participant.SetDefaultSubscriberQos(sqos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "set_default_subscriber_qos failed (1).";
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out sholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref sholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_subscriber_qos failed (2).";
                 return result;
@@ -88,7 +88,7 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out tholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref tholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_topic_qos failed.";
                 return result;
@@ -96,14 +96,14 @@ namespace test.sacs
             tqos = tholder;
             tqos.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
 
-            rc = participant.SetDefaultTopicQos(ref tqos);
+            rc = participant.SetDefaultTopicQos(tqos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "set_default_topic_qos failed (1).";
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out tholder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref tholder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_topic_qos failed (2).";
                 return result;

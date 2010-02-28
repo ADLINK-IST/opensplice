@@ -20,40 +20,40 @@ namespace test.sacs
             DDS.ReturnCode rc;
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos qosHolder;
+			DDS.DomainParticipantQos qosHolder = null;
             DDS.IStatusCondition condition;
             DDS.IStatusCondition condition2;
             DDS.IPublisher publisher;
-            DDS.PublisherQos pubQosHolder;
+			DDS.PublisherQos pubQosHolder = null;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             holder = new DDS.ICondition[0];
             DDS.WaitSet waitset = new DDS.WaitSet();
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "Factory get_instance failed.";
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out qosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref qosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_participant_qos failed.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref qosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, qosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "create_participant failed.";
                 return result;
             }
 
-            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_default_publisher_qos failed.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, DDS.StatusKind.Any);
+            publisher = participant.CreatePublisher(pubQosHolder);//, null, DDS.StatusKind.Any);
             if (publisher == null)
             {
                 result.Result = "create_publisher failed.";
@@ -77,7 +77,7 @@ namespace test.sacs
                 result.Result = "attach_condition returned RETCODE: " + rc;
                 return result;
             }
-            rc = waitset.GetConditions(out holder);
+            rc = waitset.GetConditions(ref holder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions returned RETCODE: " + rc;
@@ -99,7 +99,7 @@ namespace test.sacs
                 result.Result = "detach_condition returned RETCODE: " + rc + " (1)";
                 return result;
             }
-            rc = waitset.GetConditions(out holder);
+            rc = waitset.GetConditions(ref holder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions returned RETCODE: " + rc + " (1)";
@@ -122,7 +122,7 @@ namespace test.sacs
                 result.Result = "attach_condition returned RETCODE: " + rc;
                 return result;
             }
-            rc = waitset.GetConditions(out holder);
+            rc = waitset.GetConditions(ref holder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions returned RETCODE: " + rc;

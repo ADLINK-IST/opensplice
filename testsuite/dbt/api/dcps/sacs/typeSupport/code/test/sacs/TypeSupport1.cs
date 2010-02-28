@@ -16,10 +16,10 @@ namespace test.sacs
             string expResult = "type is registered.";
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
+            DDS.DomainParticipantQos pqosHolder = null;
             mod.tstTypeSupport typesupport;
             DDS.ReturnCode returnCode;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."
@@ -27,13 +27,13 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Default DomainParticipantQos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "Creation of DomainParticipant failed."

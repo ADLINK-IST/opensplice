@@ -30,7 +30,7 @@ namespace test.sacs
                 result.Result = "Register type failed.";
                 return result;
             }
-            topic = participant.CreateTopic("my_other_topic", "my_other_type", ref topicQos);//, null, 0);
+            topic = participant.CreateTopic("my_other_topic", "my_other_type", topicQos);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";

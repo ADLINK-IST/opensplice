@@ -17,10 +17,10 @@ namespace test.sacs
             DDS.IDomainParticipant participant;
             DDS.IDomainParticipant participant2;
             DDS.DomainParticipantFactory factory;
-            DDS.DomainParticipantQos qos;
+			DDS.DomainParticipantQos qos = null;
             string expResult = "Topic test succeeded.";
-            DDS.TopicQos topQosHolder1;
-            DDS.TopicQos topQosHolder2;
+			DDS.TopicQos topQosHolder1 = null;
+			DDS.TopicQos topQosHolder2 = null;
             mod.tstTypeSupport typeSupport;
             DDS.ITopic topic;
             DDS.ITopic topic2;
@@ -36,7 +36,7 @@ namespace test.sacs
             typeSupport = new mod.tstTypeSupport();
             typeSupport.RegisterType(participant, "My_Type");
 
-            if (participant.GetDefaultTopicQos(out topQosHolder1) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref topQosHolder1) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Get default TopicQos failed (1).";
                 return result;
@@ -49,7 +49,7 @@ namespace test.sacs
             topQosHolder1.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             topQosHolder1.Liveliness.Kind = DDS.LivelinessQosPolicyKind.AutomaticLivelinessQos;
             topQosHolder1.Reliability.Kind = DDS.ReliabilityQosPolicyKind.ReliableReliabilityQos;
-            topQosHolder1.DestinationOrder.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationOrderQos;
+            topQosHolder1.DestinationOrder.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationorderQos;
             topQosHolder1.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             topQosHolder1.Ownership.Kind = DDS.OwnershipQosPolicyKind.SharedOwnershipQos;
             typeSupport = new mod.tstTypeSupport();
@@ -59,7 +59,7 @@ namespace test.sacs
                 result.Result = "Register type failed.";
                 return result;
             }
-            topic = participant.CreateTopic("MyDCPSTopic", "myTopicType", ref topQosHolder1);//, null, 0);
+            topic = participant.CreateTopic("MyDCPSTopic", "myTopicType", topQosHolder1);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Create topic failed (3)";
@@ -77,7 +77,7 @@ namespace test.sacs
                 result.Result = "Find topic failed (5)";
                 return result;
             }
-            topic2.GetQos(out topQosHolder2);
+            topic2.GetQos(ref topQosHolder2);
             if (!test.sacs.QosComparer.TopicQosEquals(topQosHolder1, topQosHolder2))
             {
                 result.Result = "Find Topic did not find the correct Topic. (5)";
@@ -107,7 +107,7 @@ namespace test.sacs
                 result.Result = "Expected RETCODE_BAD_PARAMETER but received " + returnCode + " after deleting a non exisiting topic (9).";
                 return result;
             }
-            participant2 = factory.CreateParticipant(string.Empty, ref qos, null, 0);
+            participant2 = factory.CreateParticipant(string.Empty, qos);//, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create Participant failed (10).";

@@ -17,7 +17,7 @@ namespace test.sacs
             DDS.TopicQos qos;
             DDS.TopicQos qos2;
             string expResult = "Topic test succeeded";
-            DDS.TopicQos topQosHolder;
+			DDS.TopicQos topQosHolder = null;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             string typeName;
@@ -34,7 +34,7 @@ namespace test.sacs
             name = (string)this.ResolveObject("topicName");
             typeName = (string)this.ResolveObject("topicTypeName");
 
-            rc = topic.GetQos(out topQosHolder);
+            rc = topic.GetQos(ref topQosHolder);
             qos = topQosHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -48,13 +48,13 @@ namespace test.sacs
             }
             qos.Deadline.Period.NanoSec = 1234;
             qos.Deadline.Period.Sec = 9;
-            rc = topic.SetQos(ref qos);
+            rc = topic.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set TopicQos failed (2).";
                 return result;
             }
-            topic.GetQos(out topQosHolder);
+            topic.GetQos(ref topQosHolder);
             qos2 = topQosHolder;
             if (!test.sacs.TopicQosComparer.TopicQosEqual(qos, qos2))
             {

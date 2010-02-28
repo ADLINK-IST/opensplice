@@ -3,32 +3,32 @@ namespace test.sacs
     /// <date>Jun 2, 2005</date>
     public class QosComparer
     {
-        public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy;
-        public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy;
-        public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy;
-        public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy;
-        public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy;
-        public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy;
-        public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy;
-        public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy;
-        public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy;
-        public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy;
-        public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy;
-        public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy;
-        public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy;
-        public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy;
-        public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy;
-        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy;
-        public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy;
-        public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy;
-        public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy;
-        public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy;
-        public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy;
-        public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy;
-        public static readonly DDS.DataWriterQos defaultDataWriterQos;
-        public static readonly DDS.SubscriberQos defaultSubscriberQos;
-        public static readonly DDS.DataReaderQos defaultDataReaderQos;
-        public static readonly DDS.TopicQos defaultTopicQos;
+        public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy = new DDS.DeadlineQosPolicy();
+        public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy = new DDS.DestinationOrderQosPolicy();
+        public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy = new DDS.DurabilityQosPolicy();
+        public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy = new DDS.DurabilityServiceQosPolicy();
+        public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy = new DDS.EntityFactoryQosPolicy();
+        public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy = new DDS.GroupDataQosPolicy();
+        public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy = new DDS.HistoryQosPolicy();
+        public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy = new DDS.LatencyBudgetQosPolicy();
+        public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy = new DDS.LifespanQosPolicy();
+        public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy = new DDS.LivelinessQosPolicy();
+        public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy = new DDS.OwnershipQosPolicy();
+        public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy = new DDS.OwnershipStrengthQosPolicy();
+        public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy = new DDS.PartitionQosPolicy();
+        public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy = new DDS.PresentationQosPolicy();
+        public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy = new DDS.ReaderDataLifecycleQosPolicy();
+        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy = new DDS.ReliabilityQosPolicy();
+        public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy = new DDS.ResourceLimitsQosPolicy();
+        public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy = new DDS.TimeBasedFilterQosPolicy();
+        public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy = new DDS.TopicDataQosPolicy();
+        public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy = new DDS.TransportPriorityQosPolicy();
+        public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy = new DDS.UserDataQosPolicy();
+        public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy = new DDS.WriterDataLifecycleQosPolicy();
+        public static readonly DDS.DataWriterQos defaultDataWriterQos = new DDS.DataWriterQos();
+        public static readonly DDS.SubscriberQos defaultSubscriberQos = new DDS.SubscriberQos();
+        public static readonly DDS.DataReaderQos defaultDataReaderQos = new DDS.DataReaderQos();
+        public static readonly DDS.TopicQos defaultTopicQos = new DDS.TopicQos();
 
         static QosComparer()
         {

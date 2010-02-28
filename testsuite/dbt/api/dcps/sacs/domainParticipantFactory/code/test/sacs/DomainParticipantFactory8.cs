@@ -17,11 +17,11 @@ namespace test.sacs
             string expResult = "Default participantQos is used when PARTICIPANT_QOS_DEFAULT is specified.";
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
-            DDS.DomainParticipantQos pqosHolder2;
+			DDS.DomainParticipantQos pqosHolder = null;
+			DDS.DomainParticipantQos pqosHolder2 = null;
             DDS.ReturnCode returnCode;
             byte[] ud;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."
@@ -29,18 +29,18 @@ namespace test.sacs
                 return result;
             }
 
-            returnCode = factory.GetDefaultParticipantQos(out pqosHolder);
+            returnCode = factory.GetDefaultParticipantQos(ref pqosHolder);
             if (returnCode != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Default DomainParticipantQos could not be resolved ("
                      + returnCode + ").", expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            pqosHolder.EntityFactory.AutoEnableCreatedEntities = true;
+            pqosHolder.EntityFactory.AutoenableCreatedEntities = true;
             ud = new byte[1];
             ud[0] = System.Convert.ToByte("4");
             pqosHolder.UserData.Value = ud;
-            returnCode = factory.SetDefaultParticipantQos(ref pqosHolder);
+            returnCode = factory.SetDefaultParticipantQos(pqosHolder);
             if (returnCode != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Set default participant qos failed."
@@ -55,7 +55,7 @@ namespace test.sacs
                 return result;
             }
 
-            returnCode = participant.GetQos(out pqosHolder2);
+            returnCode = participant.GetQos(ref pqosHolder2);
             if (returnCode != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Resolving of ParticipantQos failed."
@@ -69,8 +69,8 @@ namespace test.sacs
                     expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            if (pqosHolder.EntityFactory.AutoEnableCreatedEntities != pqosHolder2
-                .EntityFactory.AutoEnableCreatedEntities)
+            if (pqosHolder.EntityFactory.AutoenableCreatedEntities != pqosHolder2
+                .EntityFactory.AutoenableCreatedEntities)
             {
                 result = new Test.Framework.TestResult(expResult, "Resolved entity_factory policy does not match the applied one."
                     , expVerdict, Test.Framework.TestVerdict.Fail);

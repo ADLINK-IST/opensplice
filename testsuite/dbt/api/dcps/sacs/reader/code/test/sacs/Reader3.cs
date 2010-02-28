@@ -29,18 +29,28 @@ namespace test.sacs
             t.long_2 = 1;
             t.long_3 = 1;
 
-            rc = writer.Write(t,0);
+            rc = writer.Write(t);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "write failed";
                 return result;
             }
+
+            // lookup instance with writer...
+            handle = writer.LookupInstance(t);
+            if (handle == 0)
+            {
+                result.Result = "writer LookupInstance, result == HANDLE_NIL";
+                return result;
+            }
+
             handle = reader.LookupInstance(t);
             if (handle == 0)
             {
-                result.Result = "result == HANDLE_NIL";
+                result.Result = "reader LookupInstance, result == HANDLE_NIL";
                 return result;
             }
+
             mod.tst[] data = new mod.tst[0];
             DDS.SampleInfo[] info = new DDS.SampleInfo[0];
             rc = reader.ReadInstance(ref data, ref info, 1, handle, DDS.SampleStateKind.Any, DDS.ViewStateKind.Any,

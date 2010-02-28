@@ -34,7 +34,7 @@ namespace test.sacs
             topQosHolder2 = new DDS.TopicQos();
             typeSupport.RegisterType(participant, "My_Type");
 
-            if (participant.GetDefaultTopicQos(out topQosHolder1) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref topQosHolder1) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Get default TopicQos failed (1).";
                 return result;
@@ -43,10 +43,10 @@ namespace test.sacs
             topQosHolder1.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             topQosHolder1.Liveliness.Kind = DDS.LivelinessQosPolicyKind.AutomaticLivelinessQos;
             topQosHolder1.Reliability.Kind = DDS.ReliabilityQosPolicyKind.ReliableReliabilityQos;
-            topQosHolder1.DestinationOrder.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationOrderQos;
+            topQosHolder1.DestinationOrder.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationorderQos;
             topQosHolder1.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             topQosHolder1.Ownership.Kind = DDS.OwnershipQosPolicyKind.SharedOwnershipQos;
-            participant.SetDefaultTopicQos(ref topQosHolder1);
+            participant.SetDefaultTopicQos(topQosHolder1);
             typeSupport = new mod.tstTypeSupport();
             returnCode = typeSupport.RegisterType(participant, "myTopicType");
             if (returnCode != DDS.ReturnCode.Ok)
@@ -60,7 +60,7 @@ namespace test.sacs
                 result.Result = "Create topic failed.";
                 return result;
             }
-            topic.GetQos(out topQosHolder2);
+            topic.GetQos(ref topQosHolder2);
             if (!test.sacs.QosComparer.TopicQosEquals(topQosHolder1, topQosHolder2))
             {
                 result.Result = "Default topicQos is not used when TOPIC_QOS_DEFAULT is specified.";

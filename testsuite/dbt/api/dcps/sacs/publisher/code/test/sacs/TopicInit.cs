@@ -16,7 +16,7 @@ namespace test.sacs
         public override Test.Framework.TestResult Run(Test.Framework.TestCase testCase)
         {
             DDS.IDomainParticipant participant;
-            DDS.TopicQos topQosHolder;
+			DDS.TopicQos topQosHolder = null;
             DDS.ITopic topic;
             mod.tstTypeSupport typeSupport = null;
             Test.Framework.TestResult result;
@@ -37,12 +37,12 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out topQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref topQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder);//, null, 0);
+            topic = participant.CreateTopic("my_topic", "my_type", topQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";

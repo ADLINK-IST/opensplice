@@ -18,12 +18,12 @@ namespace test.sacs
             string expResult = "Default publisherQos is used when PUBLISHER_QOS_DEFAULT is specified.";
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
-            DDS.PublisherQos pubQosHolder;
-            DDS.PublisherQos pubQosHolder2;
+			DDS.DomainParticipantQos pqosHolder = null;
+			DDS.PublisherQos pubQosHolder = null;
+			DDS.PublisherQos pubQosHolder2 = null;
             DDS.IPublisher pub;
             DDS.ReturnCode returnCode;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."
@@ -31,13 +31,13 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Default DomainParticipantQos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "Creation of DomainParticipant failed."
@@ -45,7 +45,7 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Publisher qos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
@@ -55,7 +55,7 @@ namespace test.sacs
             name[0] = "Publisher";
             name[1] = "QoS";
             pubQosHolder.Partition.Name = name;
-            returnCode = participant.SetDefaultPublisherQos(ref pubQosHolder);
+            returnCode = participant.SetDefaultPublisherQos(pubQosHolder);
             if (returnCode != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Setting default publisher QoS failed."
@@ -71,7 +71,7 @@ namespace test.sacs
                 return result;
             }
 
-            pub.GetQos(out pubQosHolder2);
+            pub.GetQos(ref pubQosHolder2);
             if (!pubQosHolder.Partition.Name[0].Equals(pubQosHolder.Partition.Name
                 [0]) || !pubQosHolder.Partition.Name[1].Equals(pubQosHolder.Partition
                 .Name[1]))

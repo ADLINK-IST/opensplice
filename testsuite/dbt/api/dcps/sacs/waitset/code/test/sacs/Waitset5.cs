@@ -199,7 +199,7 @@ namespace test.sacs
         {
             DDS.ReturnCode rc;
             DDS.RequestedDeadlineMissedStatus rdmsHolder = new DDS.RequestedDeadlineMissedStatus();
-            rc = reader.GetRequestedDeadlineMissedStatus(rdmsHolder);
+            rc = reader.GetRequestedDeadlineMissedStatus(ref rdmsHolder);
             DDS.RequestedDeadlineMissedStatus rdms = rdmsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -207,7 +207,7 @@ namespace test.sacs
                 return;
             }
             DDS.RequestedIncompatibleQosStatus riqsHolder = new DDS.RequestedIncompatibleQosStatus();
-            rc = reader.GetRequestedIncompatibleQosStatus(riqsHolder);
+            rc = reader.GetRequestedIncompatibleQosStatus(ref riqsHolder);
             DDS.RequestedIncompatibleQosStatus riqs = riqsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -215,7 +215,7 @@ namespace test.sacs
                 return;
             }
             DDS.SampleRejectedStatus srsHolder = new DDS.SampleRejectedStatus();
-            rc = reader.GetSampleRejectedStatus(srsHolder);
+            rc = reader.GetSampleRejectedStatus(ref srsHolder);
             DDS.SampleRejectedStatus srs = srsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -223,7 +223,7 @@ namespace test.sacs
                 return;
             }
             DDS.LivelinessChangedStatus lcsHolder = new DDS.LivelinessChangedStatus();
-            rc = reader.GetLivelinessChangedStatus(lcsHolder);
+            rc = reader.GetLivelinessChangedStatus(ref lcsHolder);
             DDS.LivelinessChangedStatus lcs = lcsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -231,7 +231,7 @@ namespace test.sacs
                 return;
             }
             DDS.SubscriptionMatchedStatus smsHolder = new DDS.SubscriptionMatchedStatus();
-            rc = reader.GetSubscriptionMatchedStatus(smsHolder);
+            rc = reader.GetSubscriptionMatchedStatus(ref smsHolder);
             DDS.SubscriptionMatchedStatus sms = smsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -239,7 +239,7 @@ namespace test.sacs
                 return;
             }
             DDS.SampleLostStatus slsHolder = new DDS.SampleLostStatus();
-            rc = reader.GetSampleLostStatus(slsHolder);
+            rc = reader.GetSampleLostStatus(ref slsHolder);
             DDS.SampleLostStatus sls = slsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {

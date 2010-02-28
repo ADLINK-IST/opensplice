@@ -21,8 +21,8 @@ namespace test.sacs
             DDS.IDomainParticipant participant2;
             DDS.ISubscriber subscriber;
             DDS.ISubscriber subscriber2;
-            DDS.SubscriberQos subscriberQos;
-            DDS.DataReaderQos qos;
+			DDS.SubscriberQos subscriberQos = null;
+			DDS.DataReaderQos qos = null;
             string expResult = "DataReader qos tests succeeded";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
@@ -31,7 +31,7 @@ namespace test.sacs
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             subscriberQos = (DDS.SubscriberQos)this.ResolveObject("subscriberQos");
-            if (subscriber.GetDefaultDataReaderQos(out qos) != DDS.ReturnCode.Ok)
+            if (subscriber.GetDefaultDataReaderQos(ref qos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos (1).";
                 return result;
@@ -52,7 +52,7 @@ namespace test.sacs
             //    return result;
             //}
             qos = test.sacs.QosComparer.defaultDataReaderQos;
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
+            subscriber2 = participant.CreateSubscriber(subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a subscriber (4).";
@@ -75,7 +75,7 @@ namespace test.sacs
                 result.Result = "Received RETCODE " + rc + " after deleting a subscriber (5).";
                 return result;
             }
-            rc = subscriber2.SetDefaultDataReaderQos(ref qos);
+            rc = subscriber2.SetDefaultDataReaderQos(qos);
             if (rc != DDS.ReturnCode.AlreadyDeleted)
             {
                 result.Result = "Received RETCODE " + rc + " after setting a qos on a already deleted Subscriber(5).";

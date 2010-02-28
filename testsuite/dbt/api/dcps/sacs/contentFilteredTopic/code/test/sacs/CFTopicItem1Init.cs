@@ -23,7 +23,7 @@ namespace test.sacs
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult("Initialization success", string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "DomainParticipantFactory could not be initialized.";
@@ -35,7 +35,7 @@ namespace test.sacs
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, pqos, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqos);//, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";

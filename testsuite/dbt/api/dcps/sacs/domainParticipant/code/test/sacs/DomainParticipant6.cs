@@ -18,8 +18,8 @@ namespace test.sacs
             DDS.IDomainParticipant participant2;
             DDS.DomainParticipantFactory factory;
             string expResult = "DomainParticipant Subscriber test succeeded.";
-            DDS.SubscriberQos subQosHolder;
-            DDS.DomainParticipantQos qos;
+			DDS.SubscriberQos subQosHolder = null;
+			DDS.DomainParticipantQos qos = null;
             DDS.ISubscriber subscriber;
             DDS.ISubscriber subscriber2;
             DDS.ReturnCode returnCode;
@@ -29,18 +29,18 @@ namespace test.sacs
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
 
-            if (participant.GetDefaultSubscriberQos(out subQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref subQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Get default SubscriberQos failed.";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
+            subscriber = participant.CreateSubscriber(subQosHolder, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Create Subscriber failed.";
                 return result;
             }
-            subscriber2 = participant.CreateSubscriber();
+            subscriber2 = participant.CreateSubscriber(null, null, 0);
             if (subscriber2 != null)
             {
                 this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See scdds213");
@@ -49,7 +49,7 @@ namespace test.sacs
                 result.Result = "Create Subscriber with BAD_PARAM succeeded.";
                 return result;
             }
-            participant2 = factory.CreateParticipant(null, ref qos, null, 0);
+            participant2 = factory.CreateParticipant(null, qos, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create Participant failed.";

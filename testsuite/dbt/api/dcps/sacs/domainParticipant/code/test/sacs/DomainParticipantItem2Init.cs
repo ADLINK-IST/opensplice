@@ -14,7 +14,7 @@ namespace test.sacs
         public override Test.Framework.TestResult Run(Test.Framework.TestCase testCase)
         {
             DDS.IDomainParticipant participant;
-            DDS.SubscriberQos subscriberQosHolder;
+			DDS.SubscriberQos subscriberQosHolder = null;
             DDS.ISubscriber subscriber;
             Test.Framework.TestResult result;
             DDS.ITopic topic;
@@ -29,12 +29,12 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out subscriberQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref subscriberQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "could not get default SubscriberQos";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subscriberQosHolder);//, null, DDS.StatusKind.Any);
+            subscriber = participant.CreateSubscriber(subscriberQosHolder);//, null, DDS.StatusKind.Any);
             if (subscriber == null)
             {
                 result.Result = "could create a Subscriber";

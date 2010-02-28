@@ -17,7 +17,7 @@ namespace test.sacs
         {
             string expResult = "register_typesupport tests pass";
             DDS.DomainParticipantFactory factory;
-            DDS.DomainParticipantQos participantQosHolder;
+            DDS.DomainParticipantQos participantQosHolder = null;
             DDS.IDomainParticipant participant;
             mod.tstTypeSupport typeSupport;
             mod.otherTypeTypeSupport otherTypeTypeSupport;
@@ -25,20 +25,19 @@ namespace test.sacs
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "DomainParticipantFactory.get_instance() did not return a factory (1)";
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out participantQosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref participantQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "factory.get_default_participant_qos() did not return a qos (2)";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref participantQosHolder
-                , null, 0);
+            participant = factory.CreateParticipant(string.Empty, participantQosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "factory.create_participant() did not return a participant (2)";

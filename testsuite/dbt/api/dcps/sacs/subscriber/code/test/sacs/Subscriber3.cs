@@ -24,15 +24,15 @@ namespace test.sacs
             DDS.IDomainParticipant participant;
             DDS.ISubscriber subscriber;
             DDS.ISubscriber subscriber2;
-            DDS.SubscriberQos subscriberQos;
-            DDS.DataReaderQos qos;
-            DDS.DataReaderQos qosHolder;
+			DDS.SubscriberQos subscriberQos = null;
+			DDS.DataReaderQos qos = null;
+			DDS.DataReaderQos qosHolder = null;
             DDS.IDataReader reader;
             DDS.IDataReader reader2;
             DDS.IDataReader reader3;
             DDS.ITopic topic;
             DDS.ITopic otherTopic;
-            DDS.TopicQos topicQos;
+			DDS.TopicQos topicQos = null;
             string expResult = "DataReader creation and deletion test succeeded";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
@@ -45,20 +45,20 @@ namespace test.sacs
             otherTopic = (DDS.ITopic)this.ResolveObject("otherTopic");
             topicQos = (DDS.TopicQos)this.ResolveObject("topicQos");
 
-            rc = subscriber.GetDefaultDataReaderQos(out qosHolder);
+            rc = subscriber.GetDefaultDataReaderQos(ref qosHolder);
             qos = qosHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos.";
                 return result;
             }
-            reader = subscriber.CreateDataReader(null, ref qos, null, 0);
+            reader = subscriber.CreateDataReader(null, qos);//, null, 0);
             if (reader != null)
             {
                 result.Result = "Created a DataReader without a Topic (1).";
                 return result;
             }
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
+            subscriber2 = participant.CreateSubscriber(subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a new Subscriber (2).";
@@ -70,13 +70,13 @@ namespace test.sacs
                 result.Result = "Could not delete a Subscriber (2).";
                 return result;
             }
-            reader = subscriber2.CreateDataReader(topic, ref qos, null, 0);
+            reader = subscriber2.CreateDataReader(topic, qos);//, null, 0);
             if (reader != null)
             {
                 result.Result = "Created a DataReader on a deleted Subscriber (2).";
                 return result;
             }
-            topic = participant.CreateTopic("subscriber3tc_topic", "my_type", ref topicQos);//, null
+            topic = participant.CreateTopic("subscriber3tc_topic", "my_type", topicQos);//, null
                 //, 0);
             if (topic == null)
             {
@@ -89,14 +89,14 @@ namespace test.sacs
                 result.Result = "Could not delete a Topic (3).";
                 return result;
             }
-            reader = subscriber.CreateDataReader(topic, ref qos, null, 0);
+            reader = subscriber.CreateDataReader(topic, qos);//, null, 0);
             if (reader != null)
             {
                 result.Result = "Created a DataReader with a deleted Topic (3).";
                 return result;
             }
             topic = (DDS.ITopic)this.ResolveObject("topic");
-            reader = subscriber.CreateDataReader(topic, ref qos, null, 0);
+            reader = subscriber.CreateDataReader(topic, qos);//, null, 0);
             if (reader == null)
             {
                 result.Result = "Could not create a DataReader (4).";
@@ -110,7 +110,7 @@ namespace test.sacs
             }
             qos.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             qos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
-            reader = subscriber.CreateDataReader(topic, ref qos, null, 0);
+            reader = subscriber.CreateDataReader(topic, qos);//, null, 0);
             if (reader == null)
             {
                 result.Result = "Could not create a DataReader with TRANSIENT DurabilityQosPolicy (6).";
@@ -118,20 +118,20 @@ namespace test.sacs
             }
             qos.History.Kind = DDS.HistoryQosPolicyKind.KeepLastHistoryQos;
             qos.Durability.Kind = DDS.DurabilityQosPolicyKind.PersistentDurabilityQos;
-            reader2 = subscriber.CreateDataReader(otherTopic, ref qos, null, 0);
+            reader2 = subscriber.CreateDataReader(otherTopic, qos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create a DataReader with PERSISTENT DurabilityQosPolicy (7).";
                 return result;
             }
             qos.Durability.Kind = DDS.DurabilityQosPolicyKind.VolatileDurabilityQos;
-            subscriber2 = participant.CreateSubscriber(ref subscriberQos);//, null, 0);
+            subscriber2 = participant.CreateSubscriber(subscriberQos);//, null, 0);
             if (subscriber2 == null)
             {
                 result.Result = "Could not create a Subscriber (8).";
                 return result;
             }
-            reader3 = subscriber2.CreateDataReader(otherTopic, ref qos, null, 0);
+            reader3 = subscriber2.CreateDataReader(otherTopic, qos);//, null, 0);
             if (reader3 == null)
             {
                 result.Result = "Could not create a DataReader (8).";

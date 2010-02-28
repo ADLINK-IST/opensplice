@@ -17,10 +17,10 @@ namespace test.sacs
             string expResult = "Setting/resolving default TopicQos succeeded.";
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
-            DDS.TopicQos tqosHolder;
+			DDS.DomainParticipantQos pqosHolder = null;
+			DDS.TopicQos tqosHolder = null;
             DDS.ReturnCode returnCode;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."
@@ -28,13 +28,13 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Default DomainParticipantQos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "Creation of DomainParticipant failed."
@@ -42,7 +42,7 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out tqosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref tqosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Topic qos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);

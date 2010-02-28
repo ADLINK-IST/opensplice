@@ -20,8 +20,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IPublisher publisher;
-            DDS.DataWriterQos dataWriterQos;
-            DDS.DataWriterQos qosHolder1;
+			DDS.DataWriterQos dataWriterQos = null;
+			DDS.DataWriterQos qosHolder1 = null;
             DDS.ITopic topic;
             string expResult = "copy_from_topic_qos rejects TOPIC_QOS_DEFAULT with correct code.";
             Test.Framework.TestResult result;
@@ -31,7 +31,7 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
-            if (publisher.GetDefaultDataWriterQos(out qosHolder1) != DDS.ReturnCode.Ok)
+            if (publisher.GetDefaultDataWriterQos(ref qosHolder1) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataWriterQos";
                 return result;
@@ -40,12 +40,12 @@ namespace test.sacs
             dataWriterQos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             dataWriterQos.History.Depth = 150;
 
-
-            // TODO: JLS, DDS.TopicQos.Default does not exist
-            //rc = publisher.CopyFromTopicQos(out qosHolder1, ref DDS.TopicQos.Default);
+            // TODO: JLS, Verify the intent of this BadParameter test.
+            DDS.TopicQos defaultTopicQos = null;
+            rc = publisher.CopyFromTopicQos(ref qosHolder1, defaultTopicQos);
             if (rc != DDS.ReturnCode.BadParameter)
             {
-                result.Result = "copy_from_topic_qos retuns wrong code (RETCODE = " + rc + ").";
+                result.Result = "copy_from_topic_qos returns wrong code (RETCODE = " + rc + ").";
                 return result;
             }
             result.Result = expResult;

@@ -22,9 +22,9 @@ namespace test.sacs
             DDS.DomainParticipantFactory[] factory = new DDS.DomainParticipantFactory[3];
             result = new Test.Framework.TestResult(expResult, expResult, expVerdict, expVerdict
                 );
-            factory[0] = DDS.DomainParticipantFactory.GetInstance();
-            factory[1] = DDS.DomainParticipantFactory.GetInstance();
-            factory[2] = DDS.DomainParticipantFactory.GetInstance();
+            factory[0] = DDS.DomainParticipantFactory.Instance;
+            factory[1] = DDS.DomainParticipantFactory.Instance;
+            factory[2] = DDS.DomainParticipantFactory.Instance;
             if (factory[0] != factory[1] || factory[1] != factory[2])
             {
                 result = new Test.Framework.TestResult(expResult, "Not all instances are the same"

@@ -64,7 +64,7 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topic = (DDS.ITopic)this.ResolveObject("topic");
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
-            reader = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref drQos, null, 0);
+            reader = (mod.tstDataReader)subscriber.CreateDataReader(topic, drQos);//, null, 0);
             if (reader == null)
             {
                 result.Result = "creating datareader failed.";

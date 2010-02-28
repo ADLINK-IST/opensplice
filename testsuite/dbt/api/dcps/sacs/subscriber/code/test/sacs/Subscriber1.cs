@@ -36,13 +36,13 @@ namespace test.sacs
             qos.Partition.Name[0] = "aap";
             qos.Partition.Name[1] = "noot";
             qos.Partition.Name[2] = "mies";
-            rc = subscriber.SetQos(ref qos);
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set SubsriberQos failed (2).";
                 return result;
             }
-            subscriber.GetQos(out subQosHolder);
+            subscriber.GetQos(ref subQosHolder);
             qos2 = subQosHolder;
             if (!test.sacs.SubscriberQosComparer.SubscriberQosEqual(qos, qos2))
             {
@@ -52,13 +52,13 @@ namespace test.sacs
             qos.GroupData.Value = new byte[2];
             qos.GroupData.Value[0] = 1;
             qos.GroupData.Value[1] = 2;
-            rc = subscriber.SetQos(ref qos);
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set SubsriberQos failed (3).";
                 return result;
             }
-            subscriber.GetQos(out subQosHolder);
+            subscriber.GetQos(ref subQosHolder);
             qos2 = subQosHolder;
             if (!test.sacs.SubscriberQosComparer.SubscriberQosEqual(qos, qos2))
             {
@@ -66,13 +66,13 @@ namespace test.sacs
                 return result;
             }
             qos.Presentation.AccessScope = DDS.PresentationQosPolicyAccessScopeKind.InstancePresentationQos;
-            rc = subscriber.SetQos(ref qos);
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set SubsriberQos failed (4).";
                 return result;
             }
-            subscriber.GetQos(out subQosHolder);
+            subscriber.GetQos(ref subQosHolder);
             qos2 = subQosHolder;
             if (!test.sacs.SubscriberQosComparer.SubscriberQosEqual(qos, qos2))
             {
@@ -80,13 +80,13 @@ namespace test.sacs
                 return result;
             }
             qos.Presentation.CoherentAccess = false;
-            rc = subscriber.SetQos(ref qos);
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set SubsriberQos failed (5).";
                 return result;
             }
-            subscriber.GetQos(out subQosHolder);
+            subscriber.GetQos(ref subQosHolder);
             qos2 = subQosHolder;
             if (!test.sacs.SubscriberQosComparer.SubscriberQosEqual(qos, qos2))
             {
@@ -94,13 +94,13 @@ namespace test.sacs
                 return result;
             }
             qos.Presentation.OrderedAccess = false;
-            rc = subscriber.SetQos(ref qos);
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set SubsriberQos failed (6).";
                 return result;
             }
-            subscriber.GetQos(out subQosHolder);
+            subscriber.GetQos(ref subQosHolder);
             qos2 = subQosHolder;
             if (!test.sacs.SubscriberQosComparer.SubscriberQosEqual(qos, qos2))
             {
@@ -108,8 +108,8 @@ namespace test.sacs
                 return result;
             }
             qos = (DDS.SubscriberQos)this.ResolveObject("subscriberQos");
-            qos.EntityFactory.AutoEnableCreatedEntities = false;
-            rc = subscriber.SetQos(ref qos);
+            qos.EntityFactory.AutoenableCreatedEntities = false;
+            rc = subscriber.SetQos(qos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Received returncode " + rc + " after setting an unsupported Qos (7).";

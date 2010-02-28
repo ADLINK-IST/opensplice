@@ -18,8 +18,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.ISubscriber subscriber;
-            DDS.DataReaderQos qosHolder;
-            DDS.TopicQos topicQos;
+			DDS.DataReaderQos qosHolder = null;
+			DDS.TopicQos topicQos = null;
             string expResult = "copy_from_topic_qos test succeeded";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
@@ -28,7 +28,7 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topicQos = (DDS.TopicQos)this.ResolveObject("topicQos");
 
-            rc = subscriber.CopyFromTopicQos(out qosHolder, ref topicQos);
+            rc = subscriber.CopyFromTopicQos(ref qosHolder, topicQos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "copy_from_topic_qos failed.";
@@ -84,14 +84,14 @@ namespace test.sacs
             tfp.MinimumSeparation = duration;
             qosHolder.TimeBasedFilter.MinimumSeparation = duration;
             DDS.ReaderDataLifecycleQosPolicy rlp = new DDS.ReaderDataLifecycleQosPolicy();
-            rlp.AutoPurgeDisposedSamplesDelay = duration;
-            rlp.AutoPurgeNoWriterSamplesDelay = duration;
+            rlp.AutopurgeDisposedSamplesDelay = duration;
+            rlp.AutopurgeNowriterSamplesDelay = duration;
             rlp.EnableInvalidSamples = true;
-            qosHolder.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay = duration;
-            qosHolder.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay = duration;
+            qosHolder.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay = duration;
+            qosHolder.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay = duration;
             qosHolder.ReaderDataLifecycle.EnableInvalidSamples = true;
 
-            rc = subscriber.CopyFromTopicQos(out qosHolder, ref topicQos);
+            rc = subscriber.CopyFromTopicQos(ref qosHolder, topicQos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "copy_from_topic_qos failed.";

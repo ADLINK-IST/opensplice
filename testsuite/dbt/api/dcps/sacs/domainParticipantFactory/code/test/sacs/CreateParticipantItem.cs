@@ -28,12 +28,12 @@ namespace test.sacs
         {
             Test.Framework.TestResult result;
             DDS.DomainParticipantFactory factory;
-            DDS.DomainParticipantQos qosHolder;
+			DDS.DomainParticipantQos qosHolder = null;
             DDS.IDomainParticipant participant1;
             DDS.ReturnCode rc;
             result = new Test.Framework.TestResult("newly created DomainParticipant", "newly created DomainParticipant"
                 , Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Pass);
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "failure creating a DomainParticipantFactory";
@@ -41,14 +41,14 @@ namespace test.sacs
                 return result;
             }
 
-            rc = factory.GetDefaultParticipantQos(out qosHolder);
+            rc = factory.GetDefaultParticipantQos(ref qosHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "failure resolving the default participant qos (" + rc + ").";
                 result.Verdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
-            participant1 = factory.CreateParticipant(string.Empty, ref qosHolder, null, 0);
+            participant1 = factory.CreateParticipant(string.Empty, qosHolder);//, null, 0);
             if (participant1 == null)
             {
                 result.Result = "failure creating a DomainParticipant using null as qos parameter";

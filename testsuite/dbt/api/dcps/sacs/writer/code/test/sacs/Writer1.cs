@@ -16,7 +16,7 @@ namespace test.sacs
             DDS.IDataWriter writer;
             DDS.DataWriterQos qos;
             DDS.DataWriterQos qos2;
-            DDS.DataWriterQos holder;
+			DDS.DataWriterQos holder = null;
             DDS.ReturnCode rc;
             Test.Framework.TestResult result;
             string expResult = "Writer test succeeded.";
@@ -25,7 +25,7 @@ namespace test.sacs
             writer = (DDS.IDataWriter)this.ResolveObject("datawriter");
             qos = (DDS.DataWriterQos)this.ResolveObject("datawriterQos");
 
-            if (writer.GetQos(out holder) != DDS.ReturnCode.Ok)
+            if (writer.GetQos(ref holder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Qos of DataWriter could not be resolved.";
                 return result;
@@ -48,14 +48,14 @@ namespace test.sacs
             qos2.UserData.Value = new byte[2];
             qos2.UserData.Value[0] = 2;
             qos2.UserData.Value[0] = 4;
-            rc = writer.SetQos(ref qos2);
+            rc = writer.SetQos(qos2);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "New Qos could not be applied.";
                 return result;
             }
 
-            if (writer.GetQos(out holder) != DDS.ReturnCode.Ok)
+            if (writer.GetQos(ref holder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Qos of DataWriter could not be resolved (2).";
                 return result;

@@ -12,48 +12,48 @@ namespace test.sacs
         {
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
-            DDS.SubscriberQos subQosHolder;
-            DDS.DataReaderQos drQosHolder;
+			DDS.DomainParticipantQos pqosHolder = null;
+			DDS.SubscriberQos subQosHolder = null;
+			DDS.DataReaderQos drQosHolder = null;
             DDS.ISubscriber subscriber;
-            DDS.PublisherQos pubQosHolder;
+			DDS.PublisherQos pubQosHolder = null;
             DDS.IPublisher publisher;
             mod.tstTypeSupport typeSupport;
-            DDS.TopicQos tQosHolder;
+			DDS.TopicQos tQosHolder = null;
             DDS.ITopic topic;
-            DDS.DataWriterQos dwQosHolder;
+			DDS.DataWriterQos dwQosHolder = null;
             mod.tstDataWriter datawriter;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             result = new Test.Framework.TestResult("Initialization success", string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "DomainParticipantFactory could not be initialized.";
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out subQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref subQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default SubscriberQos could not be resolved.";
                 return result;
             }
             subQosHolder.Partition.Name = new string[1];
             subQosHolder.Partition.Name[0] = "testPartition";
-            subscriber = participant.CreateSubscriber(ref subQosHolder);//, null, 0);
+            subscriber = participant.CreateSubscriber(subQosHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Subscriber could not be created.";
@@ -67,48 +67,48 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out tQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref tQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
             tQosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             tQosHolder.Reliability.Kind = DDS.ReliabilityQosPolicyKind.ReliableReliabilityQos;
-            topic = participant.CreateTopic("tst", "tstType", ref tQosHolder);//, null, 0);
+            topic = participant.CreateTopic("tst", "tstType", tQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";
                 return result;
             }
 
-            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default PublisherQos could not be resolved.";
                 return result;
             }
             pubQosHolder.Partition.Name = new string[1];
             pubQosHolder.Partition.Name[0] = "testPartition";
-            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
+            publisher = participant.CreatePublisher(pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Publisher could not be created.";
                 return result;
             }
 
-            if (publisher.CopyFromTopicQos(out dwQosHolder, ref tQosHolder) != DDS.ReturnCode.Ok)
+            if (publisher.CopyFromTopicQos(ref dwQosHolder, tQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataWriterQos could not be resolved.";
                 return result;
             }
-            dwQosHolder.WriterDataLifecycle.AutoDisposeUnregisteredInstances = true;
-            datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, ref dwQosHolder);//, null, 0);
+            dwQosHolder.WriterDataLifecycle.AutodisposeUnregisteredInstances = true;
+            datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, dwQosHolder);//, null, 0);
             if (datawriter == null)
             {
                 result.Result = "DataWriter could not be created.";
                 return result;
             }
 
-            if (subscriber.CopyFromTopicQos(out drQosHolder, ref tQosHolder) != DDS.ReturnCode.Ok)
+            if (subscriber.CopyFromTopicQos(ref drQosHolder, tQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataReaderQos could not be resolved.";
                 return result;

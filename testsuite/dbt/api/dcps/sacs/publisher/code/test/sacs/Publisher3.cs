@@ -19,14 +19,14 @@ namespace test.sacs
             DDS.IDomainParticipant participant;
             DDS.IPublisher publisher;
             DDS.IPublisher publisher2;
-            DDS.PublisherQos qos;
+			DDS.PublisherQos qos = null;
             DDS.IDataWriter writer;
             DDS.IDataWriter writer2;
-            DDS.DataWriterQos dataWriterQosHolder;
-            DDS.DataWriterQos dataWriterQos;
+			DDS.DataWriterQos dataWriterQosHolder = null;
+			DDS.DataWriterQos dataWriterQos = null;
             DDS.ITopic topic;
             DDS.ITopic topic2;
-            DDS.TopicQos defaultTopicQos;
+			DDS.TopicQos defaultTopicQos = null;
             mod.tstTypeSupport typeSupport;
             string expResult = "Successful creation and deletion of DataWriters";
             Test.Framework.TestResult result;
@@ -38,8 +38,8 @@ namespace test.sacs
             qos = (DDS.PublisherQos)this.ResolveObject("publisherQos");
             topic = (DDS.ITopic)this.ResolveObject("topic");
             defaultTopicQos = (DDS.TopicQos)this.ResolveObject("topicQos");
-            publisher.GetDefaultDataWriterQos(out dataWriterQosHolder);
-            writer = publisher.CreateDataWriter(topic, ref dataWriterQosHolder);//, null, 0);
+            publisher.GetDefaultDataWriterQos(ref dataWriterQosHolder);
+            writer = publisher.CreateDataWriter(topic, dataWriterQosHolder);//, null, 0);
             if (writer == null)
             {
                 result.Result = "could not create a writer (1).";
@@ -53,7 +53,7 @@ namespace test.sacs
             }
             try
             {
-                writer = publisher.CreateDataWriter(null, ref dataWriterQosHolder);//, null, 0);
+                writer = publisher.CreateDataWriter(null, dataWriterQosHolder);//, null, 0);
             }
             catch (System.NullReferenceException)
             {
@@ -76,20 +76,19 @@ namespace test.sacs
                 result.Result = "Register type failed.";
                 return result;
             }
-            publisher2 = participant.CreatePublisher(ref qos);//, null, 0);
+            publisher2 = participant.CreatePublisher(qos);//, null, 0);
             if (publisher2 == null)
             {
                 result.Result = "creation of a second publisher failed.";
                 return result;
             }
-            topic2 = participant.CreateTopic("my_other_topic", "my_other_type", ref defaultTopicQos
-                );//, null, 0);
+            topic2 = participant.CreateTopic("my_other_topic", "my_other_type", defaultTopicQos);//, null, 0);
             if (topic2 == null)
             {
                 result.Result = "Topic2 could not be created.";
                 return result;
             }
-            writer = publisher.CreateDataWriter(topic2, ref dataWriterQosHolder);//, null, 0);
+            writer = publisher.CreateDataWriter(topic2, dataWriterQosHolder);//, null, 0);
             if (writer == null)
             {
                 result.Result = "could not create a writer with another topic (4).";
@@ -131,7 +130,7 @@ namespace test.sacs
                 result.Result = "could not delete a topic (10).";
                 return result;
             }
-            writer = publisher.CreateDataWriter(topic2, ref dataWriterQosHolder);//, null, 0);
+            writer = publisher.CreateDataWriter(topic2, dataWriterQosHolder);//, null, 0);
             if (writer != null)
             {
                 result.Result = "could create a writer with an already deleted topic (11).";
@@ -140,7 +139,7 @@ namespace test.sacs
             dataWriterQos = dataWriterQosHolder;
             dataWriterQos.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
             dataWriterQos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
-            writer = publisher.CreateDataWriter(topic, ref dataWriterQos);//, null, 0);
+            writer = publisher.CreateDataWriter(topic, dataWriterQos);//, null, 0);
             if (writer == null)
             {
                 result.Result = "could not create a writer with TRANSIENT durabilityQosPolicy (12).";
@@ -153,7 +152,7 @@ namespace test.sacs
                 return result;
             }
             dataWriterQos.Durability.Kind = DDS.DurabilityQosPolicyKind.PersistentDurabilityQos;
-            writer = publisher.CreateDataWriter(topic, ref dataWriterQos);//, null, 0);
+            writer = publisher.CreateDataWriter(topic, dataWriterQos);//, null, 0);
             if (writer == null)
             {
                 result.Result = "could not create a writer with PERSISTENT durabilityQosPolicy (14).";

@@ -20,7 +20,7 @@ namespace test.sacs
         public override Test.Framework.TestResult Run(Test.Framework.TestCase testCase)
         {
             Test.Framework.TestResult result = null;
-            DDS.DomainParticipantFactory.GetInstance();
+            //DDS.DomainParticipantFactory.Instance;
             DDS.GuardCondition condition1 = new DDS.GuardCondition();
             DDS.GuardCondition condition2 = new DDS.GuardCondition();
             DDS.GuardCondition condition3 = new DDS.GuardCondition();

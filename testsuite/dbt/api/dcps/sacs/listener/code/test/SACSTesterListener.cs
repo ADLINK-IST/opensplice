@@ -1,3 +1,5 @@
+using System;
+
 namespace test
 {
     /// <date>Jun 8, 2005</date>

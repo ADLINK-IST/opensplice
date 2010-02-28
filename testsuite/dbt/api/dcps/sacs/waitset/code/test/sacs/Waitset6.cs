@@ -45,7 +45,7 @@ namespace test.sacs
                 result.Result = "Could not attach condition.";
                 return result;
             }
-            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref drQos, null, 0);
+            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, drQos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create datareader.";
@@ -90,32 +90,32 @@ namespace test.sacs
         private void PrintStatusses(DDS.IDataWriter writer)
         {
             DDS.ReturnCode rc;
-            DDS.OfferedDeadlineMissedStatus odsHolder;
-            rc = writer.GetOfferedDeadlineMissedStatus(out odsHolder);
+			DDS.OfferedDeadlineMissedStatus odsHolder = null;
+            rc = writer.GetOfferedDeadlineMissedStatus(ref odsHolder);
             DDS.OfferedDeadlineMissedStatus ods = odsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.OfferedIncompatibleQosStatus oisHolder;
-            rc = writer.GetOfferedIncompatibleQosStatus(out oisHolder);
+			DDS.OfferedIncompatibleQosStatus oisHolder = null;
+            rc = writer.GetOfferedIncompatibleQosStatus(ref oisHolder);
             DDS.OfferedIncompatibleQosStatus ois = oisHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.LivelinessLostStatus llsHolder;
-            rc = writer.GetLivelinessLostStatus(out llsHolder);
+			DDS.LivelinessLostStatus llsHolder = null;
+            rc = writer.GetLivelinessLostStatus(ref llsHolder);
             DDS.LivelinessLostStatus lls = llsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 System.Console.Error.WriteLine("Unable to resolve status!");
                 return;
             }
-            DDS.PublicationMatchedStatus pmsHolder;
-            rc = writer.GetPublicationMatchedStatus(out pmsHolder);
+			DDS.PublicationMatchedStatus pmsHolder = null;
+            rc = writer.GetPublicationMatchedStatus(ref pmsHolder);
             DDS.PublicationMatchedStatus pms = pmsHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
