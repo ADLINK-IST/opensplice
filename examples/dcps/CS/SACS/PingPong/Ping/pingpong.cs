@@ -28,7 +28,7 @@ namespace pingpong
     {
         public uint block;
         public uint count;
-        public string a_string = "";
+        public string a_string = string.Empty;
     };
     #endregion
 
@@ -49,7 +49,7 @@ namespace pingpong
         public float a_float;
         public double a_double;
         public bool a_boolean;
-        public string a_bstring = "";
+        public string a_bstring = string.Empty;
     };
     #endregion
 

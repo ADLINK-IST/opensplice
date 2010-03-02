@@ -498,7 +498,7 @@ namespace Chat
 
     }
     #endregion
-
+    
     #region ChatMessageDataWriter
     public class ChatMessageDataWriter : DDS.OpenSplice.DataWriter, IChatMessageDataWriter
     {
@@ -672,19 +672,15 @@ namespace Chat
 
         public ChatMessageTypeSupport()
             : base(typeof(ChatMessage),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public ChatMessageTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(ChatMessage),
-                    generator)
+        public ChatMessageTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(ChatMessage), generator, false)
         { }
 
-        public ChatMessageTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(ChatMessage),
-                    marshaler)
+        public ChatMessageTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(ChatMessage), marshaler)
         { }
 
         public override string TypeName
@@ -1213,7 +1209,7 @@ namespace Chat
 
     }
     #endregion
-
+    
     #region NameServiceDataWriter
     public class NameServiceDataWriter : DDS.OpenSplice.DataWriter, INameServiceDataWriter
     {
@@ -1387,19 +1383,15 @@ namespace Chat
 
         public NameServiceTypeSupport()
             : base(typeof(NameService),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public NameServiceTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(NameService),
-                    generator)
+        public NameServiceTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(NameService), generator, false)
         { }
 
-        public NameServiceTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(NameService),
-                    marshaler)
+        public NameServiceTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(NameService), marshaler)
         { }
 
         public override string TypeName
@@ -1928,7 +1920,7 @@ namespace Chat
 
     }
     #endregion
-
+    
     #region NamedMessageDataWriter
     public class NamedMessageDataWriter : DDS.OpenSplice.DataWriter, INamedMessageDataWriter
     {
@@ -2102,19 +2094,15 @@ namespace Chat
 
         public NamedMessageTypeSupport()
             : base(typeof(NamedMessage),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public NamedMessageTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(NamedMessage),
-                    generator)
+        public NamedMessageTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(NamedMessage), generator, false)
         { }
 
-        public NamedMessageTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(NamedMessage),
-                    marshaler)
+        public NamedMessageTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(NamedMessage), marshaler)
         { }
 
         public override string TypeName

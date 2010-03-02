@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{445D0F80-55E5-4553-97D9-784B99BDECFD}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -33,7 +33,7 @@
   <ItemGroup>
     <Reference Include="dcpssacs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\install\HDE\x86.win32-dev\lib\dcpssacs.dll</HintPath>
+      <HintPath>..\..\..\..\..\lib\dcpssacs.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -69,4 +69,9 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <PropertyGroup>
+    <PreBuildEvent>cd $(ProjectDir)\Data
+%25OSPL_HOME%25\bin\idlpp -S -o dds-types -l cs Chat.idl
+cd $(ProjectDir)</PreBuildEvent>
+  </PropertyGroup>
 </Project>

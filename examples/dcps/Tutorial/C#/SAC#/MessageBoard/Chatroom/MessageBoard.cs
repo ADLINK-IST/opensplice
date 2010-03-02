@@ -68,15 +68,19 @@ namespace Chatroom
             /* Narrow the normal participant to its extended representative */
             ExtDomainParticipant participant = new ExtDomainParticipant(parentDP);
 
+            /* Initialise QoS variables */
+            TopicQos reliableTopicQos = new TopicQos();
+            TopicQos settingTopicQos = new TopicQos();
+            SubscriberQos subQos = new SubscriberQos();
+
             /* Set the ReliabilityQosPolicy to RELIABLE. */
-            TopicQos reliableTopicQos;
-            status = participant.GetDefaultTopicQos(out reliableTopicQos);
+            status = participant.GetDefaultTopicQos(ref reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultTopicQos");
             reliableTopicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
 
             /* Make the tailored QoS the new default. */
-            status = participant.SetDefaultTopicQos(ref reliableTopicQos);
+            status = participant.SetDefaultTopicQos (reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.SetDefaultTopicQos");
 
@@ -84,14 +88,13 @@ namespace Chatroom
             ITopic chatMessageTopic = participant.CreateTopic(
                 "Chat_ChatMessage",
                 chatMessageTypeName,
-                ref reliableTopicQos);
+                reliableTopicQos);
             ErrorHandler.checkHandle(
                 chatMessageTopic,
                 "DDS.DomainParticipant.CreateTopic (ChatMessage)");
 
             /* Set the DurabilityQosPolicy to TRANSIENT. */
-            TopicQos settingTopicQos;
-            status = participant.GetDefaultTopicQos(out settingTopicQos);
+            status = participant.GetDefaultTopicQos(ref settingTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultTopicQos");
             settingTopicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
@@ -100,7 +103,7 @@ namespace Chatroom
             ITopic nameServiceTopic = participant.CreateTopic(
                 "Chat_NameService",
                 nameServiceTypeName,
-                ref settingTopicQos);
+                settingTopicQos);
             ErrorHandler.checkHandle(
                 nameServiceTopic,
                 "DDS.DomainParticipant.CreateTopic (NameService)");
@@ -118,17 +121,15 @@ namespace Chatroom
                 namedMessageTopic,
                 "ExtDomainParticipant.create_simulated_multitopic");
 
-            /* Adapt the default SubscriberQos to read from the
-           "ChatRoom" Partition. */
-            SubscriberQos subQos;
-            status = participant.GetDefaultSubscriberQos(out subQos);
+            /* Adapt the default SubscriberQos to read from the "ChatRoom" Partition. */
+            status = participant.GetDefaultSubscriberQos(ref subQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultSubscriberQos");
             subQos.Partition.Name = new string[1];
             subQos.Partition.Name[0] = partitionName;
 
             /* Create a Subscriber for the MessageBoard application. */
-            ISubscriber chatSubscriber = participant.CreateSubscriber(ref subQos);
+            ISubscriber chatSubscriber = participant.CreateSubscriber(subQos);
             ErrorHandler.checkHandle(
                 chatSubscriber, "DDS.DomainParticipant.CreateSubscriber");
 

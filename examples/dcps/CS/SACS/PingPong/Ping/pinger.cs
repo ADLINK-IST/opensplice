@@ -7,8 +7,6 @@
 using System;
 using DDS.OpenSplice;
 
-
-
 namespace PingPong
 {
     public class pinger
@@ -136,11 +134,11 @@ namespace PingPong
              * Create participant
              */
             dpf = DDS.DomainParticipantFactory.GetInstance();
-            dpf.GetDefaultParticipantQos(out dpQos);
-
+            dpf.GetDefaultParticipantQos(ref dpQos);
+            
             ErrorHandler.checkHandle(dpf, "DDS.DomainParticipantFactory.Instance");
 
-            dp = dpf.CreateParticipant(myDomain, ref dpQos);
+            dp = dpf.CreateParticipant(myDomain, dpQos);
             if (dp == null)
             {
                 System.Console.WriteLine("PING: ERROR - Splice Daemon not running");
@@ -150,33 +148,33 @@ namespace PingPong
             /*
               * Create PING publisher
               */
-            dp.GetDefaultPublisherQos(out pQos);
+            dp.GetDefaultPublisherQos(ref pQos);
             pQos.Partition.Name = new String[1];
             pQos.Partition.Name[0] = write_partition;
-            p = dp.CreatePublisher(ref pQos);
+            p = dp.CreatePublisher(pQos);
 
             /*
              * Create PONG subscriber
              */
-            dp.GetDefaultSubscriberQos(out sQos);
+            dp.GetDefaultSubscriberQos(ref sQos);
             sQos.Partition.Name = new String[1];
             sQos.Partition.Name[0] = read_partition;
-            s = dp.CreateSubscriber(ref sQos);
+            s = dp.CreateSubscriber(sQos);
 
             /*
              * Get default DataReader and DataWriter QoS settings
              */
-            p.GetDefaultDataWriterQos(out dwQos);
-            s.GetDefaultDataReaderQos(out drQos);
+            p.GetDefaultDataWriterQos(ref dwQos);
+            s.GetDefaultDataReaderQos(ref drQos);
 
             /*
              * Get default Topic Qos settings
              */
-            dp.GetDefaultTopicQos(out tQos);
+            dp.GetDefaultTopicQos(ref tQos);
 
             /*match data reader/writer qos with topic qos*/
-            p.CopyFromTopicQos(out dwQos, ref tQos);
-            s.CopyFromTopicQos(out drQos, ref tQos);
+            p.CopyFromTopicQos(ref dwQos, tQos);
+            s.CopyFromTopicQos(ref drQos, tQos);
 
             /*
              * PP_min_msg
@@ -184,13 +182,13 @@ namespace PingPong
             /* Create Topic */
             PP_min_dt = new pingpong.PP_min_msgTypeSupport();
             PP_min_dt.RegisterType(dp, "pingpong::PP_min_msg");
-            PP_min_topic = dp.CreateTopic("PP_min_topic", "pingpong::PP_min_msg", ref tQos);
+            PP_min_topic = dp.CreateTopic("PP_min_topic", "pingpong::PP_min_msg", tQos);
 
             /* Create datawriter */
-            PP_min_writer = p.CreateDataWriter(PP_min_topic, ref dwQos) as pingpong.PP_min_msgDataWriter;
+            PP_min_writer = p.CreateDataWriter(PP_min_topic, dwQos) as pingpong.PP_min_msgDataWriter;
 
             /* Create datareader */
-            PP_min_reader = s.CreateDataReader(PP_min_topic, ref drQos) as pingpong.PP_min_msgDataReader;
+            PP_min_reader = s.CreateDataReader(PP_min_topic, drQos) as pingpong.PP_min_msgDataReader;
 
             /* Add datareader statuscondition to waitset */
             PP_min_sc = PP_min_reader.StatusCondition;
@@ -206,13 +204,13 @@ namespace PingPong
             /* Create Topic */
             PP_seq_dt = new pingpong.PP_seq_msgTypeSupport();
             PP_seq_dt.RegisterType(dp, "pingpong::PP_seq_msg");
-            PP_seq_topic = dp.CreateTopic("PP_seq_topic", "pingpong::PP_seq_msg", ref tQos);
+            PP_seq_topic = dp.CreateTopic("PP_seq_topic", "pingpong::PP_seq_msg", tQos);
 
             /* Create datawriter */
-            PP_seq_writer = p.CreateDataWriter(PP_seq_topic, ref dwQos) as pingpong.PP_seq_msgDataWriter;
+            PP_seq_writer = p.CreateDataWriter(PP_seq_topic, dwQos) as pingpong.PP_seq_msgDataWriter;
 
             /* Create datareader */
-            PP_seq_reader = s.CreateDataReader(PP_seq_topic, ref drQos) as pingpong.PP_seq_msgDataReader;
+            PP_seq_reader = s.CreateDataReader(PP_seq_topic, drQos) as pingpong.PP_seq_msgDataReader;
 
             /* Add datareader statuscondition to waitset */
             PP_seq_sc = PP_seq_reader.StatusCondition;
@@ -229,13 +227,13 @@ namespace PingPong
             /* Create Topic */
             PP_string_dt = new pingpong.PP_string_msgTypeSupport();
             PP_string_dt.RegisterType(dp, "pingpong::PP_string_msg");
-            PP_string_topic = dp.CreateTopic("PP_string_topic", "pingpong::PP_string_msg", ref tQos);
+            PP_string_topic = dp.CreateTopic("PP_string_topic", "pingpong::PP_string_msg", tQos);
 
             /* Create datawriter */
-            PP_string_writer = p.CreateDataWriter(PP_string_topic, ref dwQos) as pingpong.PP_string_msgDataWriter;
+            PP_string_writer = p.CreateDataWriter(PP_string_topic, dwQos) as pingpong.PP_string_msgDataWriter;
 
             /* Create datareader */
-            PP_string_reader = s.CreateDataReader(PP_string_topic, ref drQos) as pingpong.PP_string_msgDataReader;
+            PP_string_reader = s.CreateDataReader(PP_string_topic, drQos) as pingpong.PP_string_msgDataReader;
 
             /* Add datareader statuscondition to waitset */
             PP_string_sc = PP_string_reader.StatusCondition;
@@ -253,13 +251,13 @@ namespace PingPong
             PP_fixed_dt = new pingpong.PP_fixed_msgTypeSupport();
             PP_fixed_dt.RegisterType(dp, "pingpong::PP_fixed_msg");
 
-            PP_fixed_topic = dp.CreateTopic("PP_fixed_topic", "pingpong::PP_fixed_msg", ref tQos);
+            PP_fixed_topic = dp.CreateTopic("PP_fixed_topic", "pingpong::PP_fixed_msg", tQos);
 
             /* Create datawriter */
-            PP_fixed_writer = p.CreateDataWriter(PP_fixed_topic, ref dwQos) as pingpong.PP_fixed_msgDataWriter;
+            PP_fixed_writer = p.CreateDataWriter(PP_fixed_topic, dwQos) as pingpong.PP_fixed_msgDataWriter;
 
             /* Create datareader */
-            PP_fixed_reader = s.CreateDataReader(PP_fixed_topic, ref drQos) as pingpong.PP_fixed_msgDataReader;
+            PP_fixed_reader = s.CreateDataReader(PP_fixed_topic, drQos) as pingpong.PP_fixed_msgDataReader;
 
             /* Add datareader statuscondition to waitset */
             PP_fixed_sc = PP_fixed_reader.StatusCondition;
@@ -275,14 +273,14 @@ namespace PingPong
             /* Create Topic */
             PP_array_dt = new pingpong.PP_array_msgTypeSupport();
             PP_array_dt.RegisterType(dp, "pingpong::PP_array_msg");
-            PP_array_topic = dp.CreateTopic("PP_array_topic", "pingpong::PP_array_msg", ref tQos);
+            PP_array_topic = dp.CreateTopic("PP_array_topic", "pingpong::PP_array_msg", tQos);
 
 
             /* Create datawriter */
-            PP_array_writer = p.CreateDataWriter(PP_array_topic, ref dwQos) as pingpong.PP_array_msgDataWriter;
+            PP_array_writer = p.CreateDataWriter(PP_array_topic, dwQos) as pingpong.PP_array_msgDataWriter;
 
             /* Create datareader */
-            PP_array_reader = s.CreateDataReader(PP_array_topic, ref drQos) as pingpong.PP_array_msgDataReader;
+            PP_array_reader = s.CreateDataReader(PP_array_topic, drQos) as pingpong.PP_array_msgDataReader;
 
             /* Add datareader statuscondition to waitset */
             PP_array_sc = PP_array_reader.StatusCondition;
@@ -300,10 +298,10 @@ namespace PingPong
             /* Create Topic */
             PP_quit_dt = new pingpong.PP_quit_msgTypeSupport();
             PP_quit_dt.RegisterType(dp, "pingpong::PP_quit_msg");
-            PP_quit_topic = dp.CreateTopic("PP_quit_topic", "pingpong::PP_quit_msg", ref tQos);
+            PP_quit_topic = dp.CreateTopic("PP_quit_topic", "pingpong::PP_quit_msg", tQos);
 
             /* Create datawriter */
-            PP_quit_writer = p.CreateDataWriter(PP_quit_topic, ref dwQos) as pingpong.PP_quit_msgDataWriter;
+            PP_quit_writer = p.CreateDataWriter(PP_quit_topic, dwQos) as pingpong.PP_quit_msgDataWriter;
 
             for (block = 0; block < nof_blocks; block++)
             {
@@ -415,7 +413,7 @@ namespace PingPong
                         while (!(timeout_flag || finish_flag))
                         {
                             DDS.ICondition[] conds = null;
-                            result = w.GetConditions(out conds);
+                            result = w.GetConditions(ref conds);
                             ErrorHandler.checkStatus(result, "getCondition did not work !");
 
                             result = w.Wait(ref conditionList, wait_timeout);
