@@ -20,6 +20,7 @@
 #include <os_heap.h>
 #include <os_report.h>
 #include <os_abstract.h>
+#include <os_stdlib.h>
 
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -36,8 +37,8 @@
 #define OS_PERMISSION \
         (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
-/** Defines the file prefix for the database file */
-static const char os_posix_key_file_prefix[] = "/tmp/spddskey_XXXXXX";
+/** Defines the file format for the database file */
+static const char os_posix_key_file_format[] = "spddskey_XXXXXX";
 
 static int
 os_posix_get_shmumask(void)
@@ -91,11 +92,11 @@ os_posix_matchKeyFile(
  *         to the identified shared memory
  *
  * \b os_posix_findKeyFile tries to find the key file related to \b name
- * in the \b /tmp directory. The key files are prefixed with \b
- * /tmp/spddskey_.
+ * in the \b temporary directory. The key files are prefixed with \b
+ * /<temporary directory>/spddskey_.
  *
- * \b os_posix_findKeyFile first opens the directory \b /tmp by calling
- * \b opendir. Then it reads all entries in serach for  any entry
+ * \b os_posix_findKeyFile first opens the directory \b temporary directory by
+ * calling \b opendir. Then it reads all entries in serach for  any entry
  * that starts with the name \b spddskey_ by reading the entry with
  * \b readdir. If the a matching entry is found, it calls os_posix_matchKeyFile
  * to check if the key file matches the identified \b name. If the
@@ -111,17 +112,23 @@ os_posix_findKeyFile(
 {
     DIR *key_dir;
     struct dirent *entry;
-    char key_file_name[sizeof(os_posix_key_file_prefix)+1];
     char *kfn = NULL;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    key_dir = opendir("/tmp");
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
     if (key_dir) {
         entry = readdir(key_dir);
         while (entry != NULL) {
             if (strncmp(entry->d_name, "spddskey_", 9) == 0) {
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
                 snprintf(key_file_name,
-                         sizeof(os_posix_key_file_prefix)+1,
-                         "/tmp/%s",
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
                          entry->d_name);
                 if (os_posix_matchKeyFile(key_file_name, name)) {
                     kfn = os_malloc(strlen(key_file_name) + 1);
@@ -132,6 +139,7 @@ os_posix_findKeyFile(
                 } else {
                     entry = readdir(key_dir);
                 }
+                os_free (key_file_name);
             } else {
                 entry = readdir(key_dir);
             }
@@ -155,7 +163,7 @@ os_posix_findKeyFile(
  * If the shared object identifier is found, it's name is returned.
  *
  * The name of the shared object is equal to the path of the related
- * key file except for the leading "/tmp/"
+ * key file except for the leading temporary directory path
  */
 
 static char *
@@ -166,6 +174,7 @@ os_posix_getShmObjName(
 {
     int key_file_fd;
     int cmask;
+    char * dir_name = NULL;
     char *key_file_name;
     unsigned int name_len;
     char *db_file_name;
@@ -174,10 +183,11 @@ os_posix_getShmObjName(
 
     key_file_name = os_posix_findKeyFile(name);
     if ((map_address != NULL) && (key_file_name == NULL)) {
-        name_len = strlen(os_posix_key_file_prefix) + 1;
+        dir_name = os_getTempDir();
+        name_len = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
         key_file_name = os_malloc(name_len);
         if (key_file_name != NULL) {
-            snprintf(key_file_name, name_len, "%s", os_posix_key_file_prefix);
+            snprintf(key_file_name, name_len, "%s/%s", dir_name, os_posix_key_file_format);
             key_file_fd = mkstemp(key_file_name);
             invalid_access = 0;
             cmask = os_posix_get_kfumask();

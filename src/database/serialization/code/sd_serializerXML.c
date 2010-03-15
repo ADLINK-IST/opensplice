@@ -696,7 +696,8 @@ sd_XMLCountCallback(
     end = buf;
     sd_XMLSerCallbackPre(name, type, objectPtr, &end, NULL, userData);
     sd_XMLSerCallbackPost(name, type, objectPtr, &end, NULL, userData);
-    *size += (C_ADDRESS(end)-C_ADDRESS(start));
+    *size += (C_ADDRESS(end)-C_ADDRESS(start)+10);
+    /* add extra 10 bytes for every xml object value to have extra space for number changes because the object may not be locked */
     os_free(buf);
 }
 
@@ -779,7 +780,12 @@ sd_serializerXMLSerializeTyped(
     *startPtr = 0;
     startPtr = &(startPtr[1]);
 
-    SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(result->data)) == size);
+    if ((C_ADDRESS(startPtr) - C_ADDRESS(result->data)) > size) {
+        OS_REPORT_3(OS_ERROR, "sd_serialize", 0,
+                          "Startptr: 0x%x result: 0x%x size: %d", startPtr,result->data,size);
+        }
+    SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(result->data)) <= size);
+
     return result;
 }
 
@@ -1567,8 +1573,12 @@ sd_XMLDeserCollection(
             case C_SEQUENCE:
                 SD_CONFIDENCE(c_typeIsRef(c_type(collectionType)));
                 sd_scanTaggedPrim("size", P_LONG, (c_object *)(&colSizePtr), dataPtrPtr, errorInfo);
+
                 SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-                *((c_array *)(*objectPtr)) = c_arrayNew(collectionType->subType, colSize);
+
+                /* This function will always return a bounded array, or an (potentially unbounded) empty array */
+           		*((c_array *)(*objectPtr)) = c_arrayNew_w_header(collectionType, colSize);
+
             break;
             case C_SET:
                 /* Scan the size */
@@ -1608,9 +1618,11 @@ sd_XMLDeserCollection(
             break;
             }
         } else {
+        	// Invalid reference
             *(c_object *)(*objectPtr) = NULL;
         }
     }
+
 /* QAC EXPECT 2006, 5101; more than one return path is justified here and cyclomatic complexity no problem */
 }
 

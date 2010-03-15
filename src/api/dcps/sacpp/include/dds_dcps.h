@@ -49,6 +49,8 @@ namespace DDS
    struct SchedulingClassQosPolicy;
    struct SchedulingPriorityQosPolicy;
    struct SchedulingQosPolicy;
+   struct ViewKeyQosPolicy;
+   struct DataReaderViewQos;
    struct DomainParticipantFactoryQos;
    struct DomainParticipantQos;
    struct TopicQos;
@@ -135,6 +137,13 @@ namespace DDS
    typedef DDS_DCPSInterface_out <DataReader> DataReader_out;
 
 
+   class SACPP_API DataReaderView;
+
+   typedef DataReaderView * DataReaderView_ptr;
+   typedef DDS_DCPSInterface_var <DataReaderView> DataReaderView_var;
+   typedef DDS_DCPSInterface_out <DataReaderView> DataReaderView_out;
+
+
    class SACPP_API Subscriber;
 
    typedef Subscriber * Subscriber_ptr;
@@ -194,6 +203,12 @@ namespace DDS
    typedef DomainParticipantListener * DomainParticipantListener_ptr;
    typedef DDS_DCPSInterface_var <DomainParticipantListener> DomainParticipantListener_var;
    typedef DDS_DCPSInterface_out <DomainParticipantListener> DomainParticipantListener_out;
+
+   class SACPP_API ExtDomainParticipantListener;
+
+   typedef ExtDomainParticipantListener * ExtDomainParticipantListener_ptr;
+   typedef DDS_DCPSInterface_var <ExtDomainParticipantListener> ExtDomainParticipantListener_var;
+   typedef DDS_DCPSInterface_out <ExtDomainParticipantListener> ExtDomainParticipantListener_out;
 
 
    class SACPP_API Condition;
@@ -563,7 +578,7 @@ namespace DDS
       static const char * _local_id;
       ExtTopicListener_ptr _this () { return this; }
 
-      virtual void on_all_data_disposed () = 0;
+      virtual void on_all_data_disposed ( Topic_ptr the_topic ) = 0;
 
    protected:
       ExtTopicListener () {};
@@ -718,6 +733,33 @@ namespace DDS
    private:
       DomainParticipantListener (const DomainParticipantListener &) {};
       DomainParticipantListener & operator = (const DomainParticipantListener &);
+   };
+
+   class SACPP_API ExtDomainParticipantListener
+   :
+      virtual public ExtTopicListener,
+      virtual public DomainParticipantListener
+   {
+   public:
+      typedef ExtDomainParticipantListener_ptr _ptr_type;
+      typedef ExtDomainParticipantListener_var _var_type;
+
+      static ExtDomainParticipantListener_ptr _duplicate (ExtDomainParticipantListener_ptr obj);
+      DDS::Boolean _local_is_a (const char * id);
+
+      static ExtDomainParticipantListener_ptr _narrow (DDS::Object_ptr obj);
+      static ExtDomainParticipantListener_ptr _unchecked_narrow (DDS::Object_ptr obj);
+      static ExtDomainParticipantListener_ptr _nil () { return NULL; }
+      static const char * _local_id;
+      ExtDomainParticipantListener_ptr _this () { return this; }
+
+
+   protected:
+      ExtDomainParticipantListener () {};
+      ~ExtDomainParticipantListener () {};
+   private:
+      ExtDomainParticipantListener (const ExtDomainParticipantListener &) {};
+      ExtDomainParticipantListener & operator = (const ExtDomainParticipantListener &);
    };
 
 
@@ -898,6 +940,7 @@ namespace DDS
       virtual ViewStateMask get_view_state_mask () = 0;
       virtual InstanceStateMask get_instance_state_mask () = 0;
       virtual DataReader_ptr get_datareader () = 0;
+      virtual DataReaderView_ptr get_datareaderview () = 0;
 
    protected:
       ReadCondition () {};
@@ -960,7 +1003,12 @@ namespace DDS
     const DDS::String TRANSPORTPRIORITY_QOS_POLICY_NAME = (DDS::String) "TransportPriority";
     const DDS::String LIFESPAN_QOS_POLICY_NAME = (DDS::String) "Lifespan";
     const DDS::String DURABILITYSERVICE_QOS_POLICY_NAME = (DDS::String) "DurabilityService";
+    const DDS::String SUBSCRIPTIONKEY_QOS_POLICY_NAME        = (DDS::String)"SubscriptionKey";
+    const DDS::String VIEWKEY_QOS_POLICY_NAME                = (DDS::String)"ViewKey";
+    const DDS::String READERLIFESPAN_QOS_POLICY_NAME         = (DDS::String)"ReaderLifespan";
+    const DDS::String SHARE_QOS_POLICY_NAME                  = (DDS::String)"Share";
     const DDS::String SCHEDULING_QOS_POLICY_NAME = (DDS::String) "Scheduling";
+
     const DDS::Long INVALID_QOS_POLICY_ID = (DDS::Long) 0UL;
     const DDS::Long USERDATA_QOS_POLICY_ID = (DDS::Long) 1UL;
     const DDS::Long DURABILITY_QOS_POLICY_ID = (DDS::Long) 2UL;
@@ -984,6 +1032,10 @@ namespace DDS
     const DDS::Long TRANSPORTPRIORITY_QOS_POLICY_ID = (DDS::Long) 20UL;
     const DDS::Long LIFESPAN_QOS_POLICY_ID = (DDS::Long) 21UL;
     const DDS::Long DURABILITYSERVICE_QOS_POLICY_ID = (DDS::Long) 22UL;
+    const DDS::Long SUBSCRIPTIONKEY_QOS_POLICY_ID       = (DDS::Long)23UL;
+    const DDS::Long VIEWKEY_QOS_POLICY_ID               = (DDS::Long)24UL;
+    const DDS::Long READERLIFESPAN_QOS_POLICY_ID        = (DDS::Long)25UL;
+    const DDS::Long SHARE_QOS_POLICY_ID                 = (DDS::Long)26UL;
     const DDS::Long SCHEDULING_QOS_POLICY_ID = (DDS::Long) 27UL;
    class SACPP_API Entity
    :
@@ -1486,6 +1538,11 @@ namespace DDS
       virtual ReturnCode_t wait_for_historical_data_w_condition (const DDS::Char* filter_expression, const StringSeq& filter_parameters, const Time_t& min_source_timestamp, const Time_t& max_source_timestamp, const ResourceLimitsQosPolicy& resource_limits, const Duration_t& max_wait) = 0;
       virtual ReturnCode_t get_matched_publications (InstanceHandleSeq& publication_handles) = 0;
       virtual ReturnCode_t get_matched_publication_data (PublicationBuiltinTopicData& publication_data, InstanceHandle_t publication_handle) = 0;
+      virtual DataReaderView_ptr create_view (const DataReaderViewQos& qos) = 0;
+      virtual ReturnCode_t delete_view (DataReaderView_ptr a_view) = 0;
+      virtual ReturnCode_t get_default_datareaderview_qos(DataReaderViewQos & qos) = 0;
+      virtual ReturnCode_t set_default_datareaderview_qos(const DataReaderViewQos & qos) = 0;
+
 
    protected:
       DataReader () {};
@@ -1551,7 +1608,34 @@ namespace DDS
       ErrorInfoInterface & operator = (const ErrorInfoInterface &);
    };
 
+   class DataReaderView
+   :
+   virtual public Entity
+   {
+   public:
+      typedef DataReaderView_ptr _ptr_type;
+      typedef DataReaderView_var _var_type;
 
+      static DataReaderView_ptr _duplicate (DataReaderView_ptr obj);
+      DDS::Boolean _local_is_a (const char * id);
+
+      static DataReaderView_ptr _narrow (DDS::Object_ptr obj);
+      static DataReaderView_ptr _unchecked_narrow (DDS::Object_ptr obj);
+      static DataReaderView_ptr _nil () { return 0; }
+      static const char * _local_id;
+      DataReaderView_ptr _this () { return this; }
+
+      virtual ReturnCode_t set_qos (const DataReaderViewQos& qos) = 0;
+      virtual ReturnCode_t get_qos (DataReaderViewQos& qos) = 0;
+      virtual DataReader_ptr get_datareader () = 0;
+
+   protected:
+      DataReaderView () {};
+      ~DataReaderView () {};
+   private:
+      DataReaderView (const DataReaderView &) {};
+      DataReaderView & operator = (const DataReaderView &);
+   };
 }
 template <>
 DDS::BuiltinTopicKey_t_slice* DDS_DCPS_ArrayHelper<DDS::BuiltinTopicKey_t, DDS::BuiltinTopicKey_t_slice, DDS::BuiltinTopicKey_t_uniq_>::alloc ();

@@ -11,7 +11,6 @@
  */
 #include "os_heap.h"
 #include "gapi_object.h"
-#include "gapi_domainParticipantStatus.h"
 #include "gapi_topic.h"
 #include "gapi_topicStatus.h"
 #include "gapi_kernel.h"

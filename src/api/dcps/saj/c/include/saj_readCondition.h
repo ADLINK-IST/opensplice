@@ -40,6 +40,14 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_ReadConditionImpl_jniGetInst
 JNIEXPORT jobject JNICALL Java_org_opensplice_dds_dcps_ReadConditionImpl_jniGetDatareader
   (JNIEnv *, jobject);
 
+/*
+ * Class:     org_opensplice_dds_dcps_ReadConditionImpl
+ * Method:    jniGetDatareaderView
+ * Signature: ()LDDS/DataReaderView;
+ */
+JNIEXPORT jobject JNICALL Java_org_opensplice_dds_dcps_ReadConditionImpl_jniGetDatareaderView
+  (JNIEnv *, jobject);
+
 #ifdef __cplusplus
 }
 #endif

@@ -11,9 +11,20 @@ BASE=`/bin/pwd`
 CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
-CURRENT_PL_SUNOS=`uname | grep SunOS`
-IS_WINDOWS_EXE="false"  
+CURRENT_PL_SUNOS=`uname | grep SunOS` 
+IS_WINDOWS_EXE="false"
+DO_DBMSCONNECT="false"
+AWK=""
 
+if [ "$CURRENT_PL_SUNOS" != "" ] ;then
+   AWK="/usr/xpg4/bin/awk"
+else
+   AWK="awk"
+fi
+
+IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
+
+IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
 
 cd ../../..
 
@@ -78,6 +89,7 @@ else
     fi
 
     echo "Installing..."
+
     SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
     if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.bin ]
     then
@@ -111,39 +123,35 @@ else
                   cd $WORKDIR/installed/ && \
                   unzip $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE.zip
                 )
+            else
+                if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe ]
+                then
+                  IS_WINDOWS_EXE="true"
+                  mkdir $WORKDIR/installed
+
+                  PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+                  export PATH
+
+                  XPATH_INSTALLDIR=`cygpath -w "$INSTALLERDIR"`
+                  XPATH_WORKDIR=`cygpath -w "$WORKDIR"`
+
+                  echo "exe file exists installing to $WORKDIR/installed ...."
+                  cmd.exe /C $XPATH_INSTALLDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe --mode unattended --prefix $XPATH_WORKDIR/installed/
+                fi                  
             fi
         fi
     fi
         
-    # If its a windows build with an exe file then the installation doesn't work with the exe file
-    # at the minute.  So use the HDE from the build/install directory instead    
-    if [ -f $INSTALLERDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe ]
+    echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
+    cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+
+    echo "DEP is $DEP....."
+
+    if [ "$DEP" != "none" ]
     then
-        IS_WINDOWS_EXE="true"
-        echo "Copying (1) $BASE/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/ ...."
-
-        cp -rp $BASE/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/
-
-        echo "DEP is $DEP....."
-
-        if [ "$DEP" != "none" ]
-        then
-            echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/ ...."  
-            cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $INSTALLERDIR/HDE/$SHORTSETUP/
-        fi                   
-    else 
-        echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
-
-        cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-
-        echo "DEP is $DEP....."
-
-        if [ "$DEP" != "none" ]
-        then
-            echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."  
-            cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-        fi
-    fi
+        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."  
+        cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    fi                   
 
     if [ $? = 0 ]
     then
@@ -152,19 +160,12 @@ else
         echo "ERROR: Install failed"
         exit 1
     fi
-    
+
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/    
+
     if check_platform
     then
-        cd $WORKDIR/installed/HDE/$SHORTSETUP/
         . ./release.com    
-    else
-       if [ "$IS_WINDOWS_EXE" = "true" ]
-       then 
-          echo "Windows exe file found changing to $INSTALLERDIR/HDE/$SHORTSETUP/"
-          cd $INSTALLERDIR/HDE/$SHORTSETUP/
-       else
-          cd $WORKDIR/installed/HDE/$SHORTSETUP/
-       fi
     fi
 
     cd examples
@@ -175,25 +176,24 @@ else
     fi
 
     # Do not do CORBA C++ and standalone C++ examples with AIX for now as the build fails
-    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    if [ "$CURRENT_PL_AIX" != "" ]
     then
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
     else
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
-
-        # DLRL examples are not included in an inner only build so only add them if doing an outer build and
-        # they shouldn't be tested if it's AIX either
+  
+        # DLRL and dbmsconnect examples are not included in an inner only build so only add them if doing an outer build
         if [ "$DEP" != "none" ]
         then
-            # There is a problem with the file name being too long if it's windows OSPLO build and 
-            # we are using the HDE from the build/install directory.  So don't do the JAVA DLRL 
-            # example for now if it's a windows OSPLO build
-            if [ "$IS_WINDOWS_EXE" = "false" ]
-            then
-                EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial "
-            fi
+            EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
 
-            EXAMPLES=$EXAMPLES" dlrl/standalone/C++/Tutorial "
+            # If it's windows don't build the dbmsconnect example and do not add for 64 bit linux either - see dds1869
+            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the 
+            # odbc.ini and odbc.inst files are not populated.
+            if [ "$IS_WINDOWS_EXE" = "false" -a "$IS_64_BIT" = "0" -a "$IS_STUDIO12" = "0" ]
+            then
+                EXAMPLES=$EXAMPLES" services/dbmsconnect/SQL/C++/ODBC "
+            fi
         fi
     fi
  
@@ -201,9 +201,11 @@ else
 
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
     SPECIAL_BUILD_FILES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
+
+    # services/dbmsconnect/SQL/C++/ODBC " - this should use a BUILD file but that doesn't work at the minute - see dds1869
     export SPECIAL_BUILD_FILES
 
-    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    if [ "$CURRENT_PL_AIX" != "" ]
     then
        PATH="/usr/vac/bin:/usr/vacpp/bin:$PATH"
     fi
@@ -222,22 +224,20 @@ else
 
         export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH
 
+        ODBCINI="$ODBCHOME/etc/odbc.ini"
+        ODBCINST="$ODBCHOME/etc/odbcinst.ini"
+        ODBC_MSSQL_SERVER="10.1.0.189"
+        ODBC_MYSQL_SERVER="10.1.0.191"
+        ODBCSYSINI="$ODBCHOME/etc"
+          
+        export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI
+
         sh $BASE/build_examples.sh
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
         export PATH
         
-        if [ "$DEP" != "none" ]
-        then
-            if [ "$IS_WINDOWS_EXE" = "true" ]
-            then
-                XPATH="$(cygpath -w $INSTALLERDIR/HDE/$SHORTSETUP)"
-            else
-               XPATH="$(cygpath -w $OSPL_HOME)"
-            fi
-        else
-            XPATH="$(cygpath -w $WORKDIR/installed/HDE/$SHORTSETUP)"
-        fi
+        XPATH=`cygpath -w "$WORKDIR/installed/HDE/$SHORTSETUP"`
 
         echo "set OSPL_HOME=$XPATH" > setenv.bat
         
@@ -246,6 +246,9 @@ else
 
         XPATH=`cygpath -w "$JACORB_HOME"`
         echo "set JACORB_HOME=$XPATH" >> setenv.bat
+
+        XPATH=`cygpath -w "$LOGDIR"`
+        echo "set LOGDIR=$XPATH" >> setenv.bat
 
         echo "set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> setenv.bat
         
@@ -260,7 +263,7 @@ else
             VS80DIR="C:\Program Files\Microsoft Visual Studio 8\Common7\Tools"
             echo "set VS80COMNTOOLS=$VS80DIR" >> setenv.bat
         else
-            if [ $HOSTNAME == "dds2-win2k3" ]
+            if [ $HOSTNAME == "dds2-win2k3" -o $HOSTNAME == "dds3-win2k3" ]
             then
                 VS90DIR="C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools"
                 echo "set VS90COMNTOOLS=$VS90DIR" >> setenv.bat
@@ -268,7 +271,10 @@ else
         fi
 
         XPATH=`cygpath -w "$BASE"`
-        cmd.exe /c $XPATH/build_examples.bat
+
+        # For some reason dds3-win2k3 likes uppercase C - this works on
+        # the other windows machines too
+        cmd.exe /C $XPATH/build_examples.bat
 
     fi
     exit $?

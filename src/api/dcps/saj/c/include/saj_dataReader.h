@@ -168,6 +168,38 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniGetMatched
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniGetMatchedPublicationData
   (JNIEnv *, jobject, jobject, jlong);
 
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniCreateView
+ * Signature: (LDDS/DataReaderViewQos;)LDDS/DataReaderView;
+ */
+JNIEXPORT jobject JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniCreateView
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniDeleteView
+ * Signature: (LDDS/DataReaderView;)I
+ */
+JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniDeleteView
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniGetDefaultDataReaderViewQos
+ * Signature: (LDDS/DataReaderViewQosHolder;)I
+ */
+JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniGetDefaultDataReaderViewQos
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniSetDefaultDataReaderViewQos
+ * Signature: (LDDS/DataReaderViewQos;)I
+ */
+JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DataReaderImpl_jniSetDefaultDataReaderViewQos
+  (JNIEnv *, jobject, jobject);
+
 #ifdef __cplusplus
 }
 #endif

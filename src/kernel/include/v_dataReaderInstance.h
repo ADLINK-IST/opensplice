@@ -71,6 +71,15 @@
 #define v_dataReaderInstanceNoWriters(_this) \
         (v_dataReaderInstanceStateTest(_this, L_NOWRITERS))
 
+/*
+ * Functions to set and get the datareaderInstance userdata field
+ */
+OS_API c_voidp v_dataReaderInstanceGetUserData
+						(v_dataReaderInstance _this);
+
+OS_API void v_dataReaderInstanceSetUserData
+						(v_dataReaderInstance _this, c_voidp userDataDataReaderInstance);
+
 #undef OS_API
 
 #endif

@@ -58,6 +58,10 @@ v_cacheNodeRemove (
     v_cacheNode node,
     v_cacheKind kind);
 
+OS_API c_bool
+v_cacheEmpty (
+    v_cache cache);
+
 #undef OS_API
 
 #endif

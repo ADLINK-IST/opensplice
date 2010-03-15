@@ -144,10 +144,8 @@ _PublisherNew (
     const gapi_statusMask mask,
     const _DomainParticipant participant)
 {
-    v_participantQos participantQos;
     v_publisherQos publisherQos;
     _Publisher newPublisher;
-    c_bool enable = TRUE;
 
     assert(uParticipant);
     assert(qos);
@@ -156,14 +154,10 @@ _PublisherNew (
     newPublisher = _PublisherAlloc();
 
     if ( newPublisher ) {
-        if ( u_entityQoS(u_entity(uParticipant), (v_qos*)&participantQos) == U_RESULT_OK ) {
-            enable = participantQos->entityFactory.autoenable_created_entities;
-            u_participantQosFree(participantQos);
-        }
         _DomainEntityInit (_DomainEntity(newPublisher),
                            participant,
                            _Entity(participant),
-                           enable);
+                           FALSE);
         gapi_dataWriterQosCopy (&gapi_dataWriterQosDefault,
                                 &newPublisher->_defDataWriterQos);
         if ( a_listener ) {
@@ -196,7 +190,7 @@ _PublisherNew (
         uPublisher = u_publisherNew (uParticipant,
                                      "publisher",
                                      publisherQos,
-                                     enable);
+                                     FALSE);
         u_publisherQosFree(publisherQos);
         if ( uPublisher ) {
             U_PUBLISHER_SET(newPublisher, uPublisher);

@@ -62,12 +62,14 @@ v_participantNew(
     /* do no use cast method on qos parameter,
      * it is most likely allocated on heap! */
     q = v_participantQosNew(kernel, (v_participantQos)qos);
+
     if (q == NULL) {
         OS_REPORT(OS_ERROR, "v_participantNew", 0,
                   "Participant not created: inconsistent qos");
         p = NULL;
     } else {
         p = v_participant(v_objectNew(kernel,K_PARTICIPANT));
+
         v_participantInit(p,name,q,s,enable);
         c_free(q);
         v_addParticipant(kernel,p);

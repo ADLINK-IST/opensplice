@@ -123,6 +123,10 @@ v_builtinNew(
                    v_topicNew(kernel, V_HEARTBEATINFO_NAME,
                               "kernelModule::v_heartbeatInfo",
                               "id.localId,id.systemId", NULL);
+            _this->topics[V_DELIVERYINFO_ID] =
+                   v_topicNew(kernel, V_DELIVERYINFO_NAME,
+                              "kernelModule::v_deliveryInfo",
+                              NULL, NULL);
             c_free(tQos);
 
             _this->participant = v_participantNew(kernel,
@@ -154,7 +158,7 @@ v_builtinNew(
                 wQos->lifecycle.autodispose_unregistered_instances = FALSE;
                 _this->writers[V_TOPICINFO_ID] =
                      v_writerNew(_this->publisher,
-                                 V_TOPICINFO_NAME "Writer",
+                                 V_TOPICINFO_NAME "TopicInfoWriter",
                                  _this->topics[V_TOPICINFO_ID],
                                  wQos, TRUE);
 
@@ -163,19 +167,19 @@ v_builtinNew(
                 if (kernel->qos->builtin.enabled) {
                     _this->writers[V_PUBLICATIONINFO_ID] =
                      v_writerNew(_this->publisher,
-                                 V_PUBLICATIONINFO_NAME "Writer",
+                                 V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
                                  _this->topics[V_PUBLICATIONINFO_ID],
                                  wQos, TRUE);
 
                     _this->writers[V_PARTICIPANTINFO_ID] =
                          v_writerNew(_this->publisher,
-                                     V_PARTICIPANTINFO_NAME "Writer",
+                                     V_PARTICIPANTINFO_NAME "ParticipantInfoWriter",
                                      _this->topics[V_PARTICIPANTINFO_ID],
                                      wQos, TRUE);
 
                     _this->writers[V_SUBSCRIPTIONINFO_ID] =
                          v_writerNew(_this->publisher,
-                                     V_SUBSCRIPTIONINFO_NAME "Writer",
+                                     V_SUBSCRIPTIONINFO_NAME "SubscriptionInfoWriter",
                                      _this->topics[V_SUBSCRIPTIONINFO_ID],
                                      wQos, TRUE);
                 } else {
@@ -185,9 +189,19 @@ v_builtinNew(
                 }
                 _this->writers[V_HEARTBEATINFO_ID] =
                      v_writerNew(_this->publisher,
-                                 V_HEARTBEATINFO_NAME "Writer",
+                                 V_HEARTBEATINFO_NAME "HeartbeatInfoWriter",
                                  _this->topics[V_HEARTBEATINFO_ID],
                                  NULL /* default qos */, TRUE);
+
+                wQos->durability.kind = V_DURABILITY_VOLATILE;
+                wQos->reliability.kind = V_RELIABILITY_RELIABLE;
+                wQos->lifecycle.autodispose_unregistered_instances = FALSE;
+
+                _this->writers[V_DELIVERYINFO_ID] =
+                     v_writerNew(_this->publisher,
+                                 V_DELIVERYINFO_NAME "DeliveryInfoWriter",
+                                 _this->topics[V_DELIVERYINFO_ID],
+                                 wQos, TRUE);
                 c_free(wQos);
                 /* We have to solve a bootstrapping problem here!
                  * The kernel entities created above have notified
@@ -393,7 +407,7 @@ v_builtinCreatePublicationInfo (
     v_topicQos topicQos;
     v_writerQos writerQos;
     c_char *str;
-    c_iter domains;
+    c_iter partitions;
     c_long i;
     c_long length;
 
@@ -422,18 +436,18 @@ v_builtinCreatePublicationInfo (
                 info->participant_key = v_publicGid(v_public(p));
             }
 
-            domains = c_splitString(publisher->qos->partition, ",");
-            length = c_iterLength(domains);
+            partitions = c_splitString(publisher->qos->partition, ",");
+            length = c_iterLength(partitions);
             type = c_string_t(base);
             if (length > 0) {
                 info->partition.name = c_arrayNew(type, length);
                 i = 0;
-                str = (c_char *)c_iterTakeFirst(domains);
+                str = (c_char *)c_iterTakeFirst(partitions);
                 while (str != NULL) {
                     assert(i < length);
                     info->partition.name[i++] = c_stringNew(base, str);
                     os_free(str);
-                    str = (c_char *)c_iterTakeFirst(domains);
+                    str = (c_char *)c_iterTakeFirst(partitions);
                 }
             } else {
                 length = 1;
@@ -441,7 +455,7 @@ v_builtinCreatePublicationInfo (
                 info->partition.name[0] = c_stringNew(base, "");
             }
             c_free(type);
-            c_iterFree(domains);
+            c_iterFree(partitions);
         }
 
         info->key = v_publicGid(v_public(writer));
@@ -524,7 +538,7 @@ v_builtinCreateSubscriptionInfo (
     c_base base;
     c_type type;
     c_char *str;
-    c_iter domains;
+    c_iter partitions;
     c_long i;
     c_long length;
 
@@ -547,25 +561,25 @@ v_builtinCreateSubscriptionInfo (
                 info->presentation = s->qos->presentation;
                 info->group_data.value = c_keep(s->qos->groupData.value);
 
-                domains = c_splitString(s->qos->partition, ",");
-                length = c_iterLength(domains);
+                partitions = c_splitString(s->qos->partition, ",");
+                length = c_iterLength(partitions);
                 type = c_string_t(base);
                 if (length > 0) {
                     info->partition.name = c_arrayNew(type, length);
                     i = 0;
-                    str = (c_char *)c_iterTakeFirst(domains);
+                    str = (c_char *)c_iterTakeFirst(partitions);
                     while (str != NULL) {
                         assert(i < length);
                         info->partition.name[i++] = c_stringNew(base, str);
                         os_free(str);
-                        str = (c_char *)c_iterTakeFirst(domains);
+                        str = (c_char *)c_iterTakeFirst(partitions);
                     }
                 } else {
                     length = 1;
                     info->partition.name = c_arrayNew(type, length);
                     info->partition.name[0] = c_stringNew(base, "");
                 }
-                c_iterFree(domains);
+                c_iterFree(partitions);
 
                 p = v_participant(s->participant);
                 if (p != NULL) {

@@ -1,17 +1,17 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__entry.h"
 #include "v_entity.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_topic.h"
 #include "v_reader.h"
 #include "v_writer.h"
@@ -32,7 +32,7 @@ v_entryInit(
     v_reader r)
 {
     v_kernel kernel;
-    
+
     assert(C_TYPECHECK(e,v_entry));
     assert(C_TYPECHECK(r,v_reader));
 
@@ -50,9 +50,9 @@ v_entryFree(
     c_iter proxies;
     v_proxy proxy;
     v_group group;
-    
+
     assert(C_TYPECHECK(entry,v_entry));
-    
+
     proxies = c_select(entry->groups, 0);
     proxy = c_iterTakeFirst(proxies);
     while (proxy != NULL) {
@@ -65,7 +65,7 @@ v_entryFree(
         proxy = c_iterTakeFirst(proxies);
     }
     c_iterFree(proxies);
-    
+
     /* No parent to call Free on */
 }
 
@@ -78,7 +78,7 @@ v_entryWrite(
     v_instance *instance)
 {
     v_writeResult writeResult;
-    
+
     assert(C_TYPECHECK(e,v_entry));
     assert(C_TYPECHECK(o,v_message));
 
@@ -108,7 +108,7 @@ v_entryResend(
     v_message o)
 {
     v_writeResult writeResult;
-    
+
     assert(C_TYPECHECK(e,v_entry));
     assert(C_TYPECHECK(o,v_message));
 
@@ -125,30 +125,37 @@ v_entryResend(
         assert(FALSE);
         return V_WRITE_UNDEFINED;
     }
-    
-    return writeResult;
-}    
 
-void
+    return writeResult;
+}
+
+c_bool
 v_entryAddGroup(
     v_entry entry,
     v_group group)
 {
     v_proxy proxy;
     v_proxy found;
-    
+    c_bool result;
+
     assert(C_TYPECHECK(entry,v_entry));
     assert(C_TYPECHECK(group,v_group));
 
     proxy = v_proxyNew(v_objectKernel(group),
                        v_publicHandle(v_public(group)), NULL);
     found = c_insert(entry->groups, proxy);
-    /* if the creation of the DataReader creates the group then
-     * the DataReader will also be notified about this group.
-     * In that case found will be different than proxy.
-     */
+    if(found != proxy){
+        /* The group was already available in the groupset. This can happen if
+         * the reader gets notified of the group it has just created. In that
+         * case the administration should not be updated. */
+        result = FALSE;
+    } else {
+        result = TRUE;
+    }
     c_free(proxy);
-}    
+
+    return result;
+}
 
 void
 v_entryRemoveGroup(

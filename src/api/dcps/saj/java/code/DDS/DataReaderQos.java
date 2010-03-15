@@ -27,12 +27,18 @@ public final class DataReaderQos
   public DDS.OwnershipQosPolicy ownership = null;
   public DDS.TimeBasedFilterQosPolicy time_based_filter = null;
   public DDS.ReaderDataLifecycleQosPolicy reader_data_lifecycle = null;
+  public DDS.ShareQosPolicy share = null;
+  public DDS.ReaderLifespanQosPolicy reader_lifespan = null;
+  public DDS.SubscriptionKeyQosPolicy subscription_keys = null;
 
+  /**
+   * Returns the default DataReaderQos.
+   */
   public DataReaderQos ()
   {
   } // ctor
 
-  public DataReaderQos (DDS.DurabilityQosPolicy _durability, DDS.DeadlineQosPolicy _deadline, DDS.LatencyBudgetQosPolicy _latency_budget, DDS.LivelinessQosPolicy _liveliness, DDS.ReliabilityQosPolicy _reliability, DDS.DestinationOrderQosPolicy _destination_order, DDS.HistoryQosPolicy _history, DDS.ResourceLimitsQosPolicy _resource_limits, DDS.UserDataQosPolicy _user_data, DDS.OwnershipQosPolicy _ownership, DDS.TimeBasedFilterQosPolicy _time_based_filter, DDS.ReaderDataLifecycleQosPolicy _reader_data_lifecycle)
+  public DataReaderQos (DDS.DurabilityQosPolicy _durability, DDS.DeadlineQosPolicy _deadline, DDS.LatencyBudgetQosPolicy _latency_budget, DDS.LivelinessQosPolicy _liveliness, DDS.ReliabilityQosPolicy _reliability, DDS.DestinationOrderQosPolicy _destination_order, DDS.HistoryQosPolicy _history, DDS.ResourceLimitsQosPolicy _resource_limits, DDS.UserDataQosPolicy _user_data, DDS.OwnershipQosPolicy _ownership, DDS.TimeBasedFilterQosPolicy _time_based_filter, DDS.ReaderDataLifecycleQosPolicy _reader_data_lifecycle, DDS.ShareQosPolicy _share, DDS.ReaderLifespanQosPolicy _reader_lifespan, DDS.SubscriptionKeyQosPolicy _subscription_keys)
   {
     durability = _durability;
     deadline = _deadline;
@@ -46,6 +52,9 @@ public final class DataReaderQos
     ownership = _ownership;
     time_based_filter = _time_based_filter;
     reader_data_lifecycle = _reader_data_lifecycle;
+    share = _share;
+    reader_lifespan = _reader_lifespan;
+    subscription_keys = _subscription_keys;
   } // ctor
 
 } // class DataReaderQos

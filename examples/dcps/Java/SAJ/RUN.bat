@@ -1,14 +1,15 @@
+ospl start
+
 set BLOKSIZE=100
 set BLOKCOUNT=100
 
 set SLEEP2=@ping -n 2 localhost
 set SLEEP4=@ping -n 4 localhost
+set SLEEP10=@ping -n 10 localhost
 
 CD bld
 
-ospl start
-
-%SLEEP4% >NUL
+%SLEEP10% >NUL
 
 start java -classpath ".;%OSPL_HOME%/jar/dcpssaj.jar" pong PongRead PongWrite
 
@@ -37,3 +38,5 @@ java -classpath ".;%OSPL_HOME%/jar/dcpssaj.jar" ping 1 10 t PongRead PongWrite
 CD ..
 
 ospl stop
+
+%SLEEP10% >NUL

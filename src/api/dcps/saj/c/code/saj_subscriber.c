@@ -81,6 +81,7 @@ SAJ_FUNCTION(jniCreateDatareader)(
                 rc = saj_LookupTypeSupportConstructorSignature(env, jtypeSupport, &signature);
 
                 if(rc == SAJ_RETCODE_OK){
+                    gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
                     rc = saj_construct_typed_java_object(env, dataReaderClassName,
                                                         (PA_ADDRCAST)reader,
                                                         &jreader, signature,
@@ -89,6 +90,15 @@ SAJ_FUNCTION(jniCreateDatareader)(
 
                     if(listener != NULL){
                         saj_write_java_listener_address(env, reader, listener->listener_data);
+                    }
+
+                    if(sqos){
+                        if(gapi_subscriber_get_qos(subscriber, sqos) == GAPI_RETCODE_OK){
+                            if(sqos->entity_factory.autoenable_created_entities) {
+                                gapi_entity_enable(reader);
+                            }
+                        }
+                        gapi_free(sqos);
                     }
                 }
             } else if(listener != NULL){

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -28,7 +28,7 @@ C_STRUCT(idl_typeSpec) {
     c_char	*name;
     c_bool      hasRef;
     c_type	def;
-};   
+};
 
 /** @brief set the idl_typeSpec type attribute
  *
@@ -162,7 +162,7 @@ C_STRUCT(idl_typeUser) {
     C_EXTENDS(idl_typeSpec);
     idl_scope	scope;
     c_char     *fileName;
-};   
+};
 
 /** @brief set the idl_typeUser file name attribute
  *
@@ -542,6 +542,28 @@ idl_typeDefRefered (
     idl_typeDef typeDef)
 {
     return idl_typeSpec(typeDef->referedType);
+}
+
+idl_typeSpec
+idl_typeDefResolveFully (
+    idl_typeSpec type)
+{
+    idl_typeSpec typeTMP;
+    idl_typeSpec retVal = NULL;
+
+    typeTMP = type;
+    while(typeTMP)
+    {
+        if(idl_typeSpecType(typeTMP) == idl_ttypedef)
+        {
+            typeTMP = idl_typeDefRefered(idl_typeDef(typeTMP));
+        } else
+        {
+            retVal = typeTMP;
+            typeTMP = NULL;
+        }
+    }
+    return retVal;
 }
 
 /***********************************************************

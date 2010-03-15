@@ -11,6 +11,7 @@
  */
 #include <os.h>
 #include <os_iterator.h>
+#include <os_report.h>
 
 #include <cfg_parser.h>
 #include <cf_config.h>
@@ -34,10 +35,12 @@ print_usage(
 {
     printf ("\nUsage:\n"
             "      ospl -h\n"
+            "      ospl -v\n"
             "      ospl [-f] start [URI]\n"
             "      ospl [[-d <domain> | -a] stop [URI]]\n"
             "      ospl list\n\n"
-            "      -h       Show this help\n\n");
+            "      -h       Show this help\n\n"
+            "      -v       Show the ospl version information\n\n");
     printf ("      start    Start the identified system\n\n"
             "               The system is identified and configured by the URI which is\n"
             "               defined by the environment variable OSPL_URI. This setting can\n"
@@ -88,7 +91,7 @@ static const char * const key_file_prefix = "osp";
 
 static void
 removeProcesses(
-    int pid)
+    os_procId pid)
 {
     os_result r;
     os_int32 procResult;
@@ -101,7 +104,7 @@ removeProcesses(
         printf (".");
         fflush(stdout);
         Sleep(1000);
-        r = os_procCheckStatus((os_procId)pid, &procResult);
+        r = os_procCheckStatus(pid, &procResult);
     }
 }
 
@@ -138,23 +141,34 @@ shutdownDDS(
     printf("\nShutting down domain \"%s\" ", domain_name);
     kf = fopen(key_file_name, "r");
     if (kf) {
-        fgets(uri, sizeof(uri), kf);
-        len = strlen(uri);
-        if (len > 0) {
-            uri[len-1] = 0;
-        }
-        fgets(map_address, sizeof(map_address), kf);
-        fgets(size, sizeof(size), kf);
-        fgets(implementation, sizeof(implementation), kf);
-        fgets(creator_pid, sizeof(creator_pid), kf);
-        fclose(kf);
-        printf("Signalling Shutdown\n\n");
+       HANDLE hProcess;
+       
+       fgets(uri, sizeof(uri), kf);
+       len = strlen(uri);
+       if (len > 0) {
+          uri[len-1] = 0;
+       }
+       fgets(map_address, sizeof(map_address), kf);
+       fgets(size, sizeof(size), kf);
+       fgets(implementation, sizeof(implementation), kf);
+       fgets(creator_pid, sizeof(creator_pid), kf);
+       fclose(kf);
+       printf("Signalling Shutdown\n\n");
+       
+       sscanf(creator_pid, "%d", &pid);
 
-        sscanf(creator_pid, "%d", &pid);
-        removeProcesses(pid);
-        removeKeyfile(key_file_name);
-    } else
-    {
+       hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+       
+       if (hProcess == INVALID_HANDLE_VALUE) {
+          int err = GetLastError(); 
+          printf("Access was denied for the process (%d) with error code (%d)", pid, err);
+          return os_resultFail;
+       }
+       else {
+          removeProcesses((os_procId)hProcess);
+          removeKeyfile(key_file_name);
+       }
+    } else {
         /* unrecoverable, can not read keyfile.*/
         retCode = OSPL_EXIT_CODE_UNRECOVERABLE_ERROR;
     }
@@ -195,7 +209,7 @@ static int
 findSpliceSystemAndRemove(
     const char *domain_name)
 {
-    HANDLE fileHandle;
+    HANDLE hFile;
     WIN32_FIND_DATA fileData;
     char key_file_name[MAX_PATH];
     int last = 0;
@@ -207,9 +221,9 @@ findSpliceSystemAndRemove(
     strcat(key_file_name, key_file_prefix);
     strcat(key_file_name, "*.tmp");
 
-    fileHandle = FindFirstFile(key_file_name, &fileData);
+    hFile = FindFirstFile(key_file_name, &fileData);
 
-    if (fileHandle != INVALID_HANDLE_VALUE)
+    if (hFile != INVALID_HANDLE_VALUE)
     {
         strcpy(key_file_name, key_file_path);
         strcat(key_file_name, "\\");
@@ -222,7 +236,7 @@ findSpliceSystemAndRemove(
                 free(shmName);
             }
 
-            if (FindNextFile(fileHandle, &fileData) == 0) {
+            if (FindNextFile(hFile, &fileData) == 0) {
                 last = 1;
             } else {
                 strcpy(key_file_name, key_file_path);
@@ -230,7 +244,7 @@ findSpliceSystemAndRemove(
                 strcat(key_file_name, fileData.cFileName);
             }
         }
-        FindClose(fileHandle);
+        FindClose(hFile);
     } else
     {
         retCode = OSPL_EXIT_CODE_UNRECOVERABLE_ERROR;
@@ -242,7 +256,7 @@ findSpliceSystemAndRemove(
 static int
 findSpliceSystemAndShow(void)
 {
-    HANDLE fileHandle;
+    HANDLE hFile;
     WIN32_FIND_DATA fileData;
     char key_file_name [MAX_PATH];
     char uri[512];
@@ -256,13 +270,13 @@ findSpliceSystemAndShow(void)
     strcat(key_file_name, key_file_prefix);
     strcat(key_file_name, "*.tmp");
 
-    fileHandle = FindFirstFile(key_file_name, &fileData);
+    hFile = FindFirstFile(key_file_name, &fileData);
 
-    if (fileHandle == INVALID_HANDLE_VALUE) {
+    if (hFile == INVALID_HANDLE_VALUE) {
         return -2;
     }
 
-      found_count = 0;
+    found_count = 0;
     strcpy(key_file_name, key_file_path);
     strcat(key_file_name, "\\");
     strcat(key_file_name, fileData.cFileName);
@@ -280,7 +294,7 @@ findSpliceSystemAndShow(void)
             }
         }
 
-        if (FindNextFile(fileHandle, &fileData) == 0) {
+        if (FindNextFile(hFile, &fileData) == 0) {
             last = 1;
         } else {
             fclose(key_file);
@@ -291,7 +305,7 @@ findSpliceSystemAndShow(void)
         }
     }
     fclose(key_file);
-    FindClose(fileHandle);
+    FindClose(hFile);
     return OSPL_EXIT_CODE_OK;
 }
 
@@ -299,7 +313,8 @@ static int
 spliceSystemRunning(
     char *domain)
 {
-    HANDLE fileHandle;
+    HANDLE hFile;
+    HANDLE hProcess;
     WIN32_FIND_DATA fileData;
     char key_file_name[MAX_PATH];
     int last = 0;
@@ -317,9 +332,9 @@ spliceSystemRunning(
     strcat(key_file_name, key_file_prefix);
     strcat(key_file_name, "*.tmp");
 
-    fileHandle = FindFirstFile(key_file_name, &fileData);
+    hFile = FindFirstFile(key_file_name, &fileData);
 
-    if (fileHandle == INVALID_HANDLE_VALUE) {
+    if (hFile == INVALID_HANDLE_VALUE) {
         return 0;
     }
 
@@ -341,14 +356,19 @@ spliceSystemRunning(
                     fgets(buf, sizeof(buf), key_file);
                     fgets(buf, sizeof(buf), key_file);
                     sscanf(buf, "%d", &pid);
-                    if (os_procCheckStatus((os_procId)pid, &procResult) == os_resultBusy) {
-                        FindClose(fileHandle);
-                        fclose(key_file);
-                        return 1;
+
+                    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+                    if (hProcess != NULL) {
+                        if (os_procCheckStatus((os_procId)hProcess, &procResult) == os_resultBusy) {
+                            FindClose(hFile);
+                            CloseHandle(hProcess);
+                            fclose(key_file);
+                            return 1;
+                        }
                     }
-                    FindClose(fileHandle);
+                    FindClose(hFile);
                     fclose(key_file);
-     /* try to delete the file in case applications/services were not terminated correctly! */
+                    /* try to delete the file in case applications/services were not terminated correctly! */
                     removeKeyfile(key_file_name);
                     search++;
                     /* restart search! */
@@ -356,8 +376,8 @@ spliceSystemRunning(
                     strcat(key_file_name, "\\");
                     strcat(key_file_name, key_file_prefix);
                     strcat(key_file_name, "*.tmp");
-                    fileHandle = FindFirstFile(key_file_name, &fileData);
-                    if (fileHandle == INVALID_HANDLE_VALUE) {
+                    hFile = FindFirstFile(key_file_name, &fileData);
+                    if (hFile == INVALID_HANDLE_VALUE) {
                         return 0;
                     }
 
@@ -370,7 +390,7 @@ spliceSystemRunning(
             }
         }
 
-        if (FindNextFile(fileHandle, &fileData) == 0) {
+        if (FindNextFile(hFile, &fileData) == 0) {
             last = 1;
         } else {
             fclose(key_file);
@@ -381,7 +401,7 @@ spliceSystemRunning(
         }
     }
     fclose(key_file);
-    FindClose(fileHandle);
+    FindClose(hFile);
 
     return found;
 }
@@ -515,21 +535,19 @@ main(
     uri = os_getenv("OSPL_URI");
 
     if (key_file_path == NULL) {
-        key_file_path = os_getenv("OSPL_TEMP");
-    }
-    if (key_file_path == NULL) {
-        key_file_path = os_getenv("TEMP");
-    }
-    if (key_file_path == NULL) {
-        key_file_path = os_getenv("TMP");
+        key_file_path = os_getTempDir();
     }
 
-    while ((opt = getopt(argc, argv, "hafd:")) != -1)
+    while ((opt = getopt(argc, argv, "hvafd:")) != -1)
     {
         switch (opt)
         {
         case 'h':
             print_usage(argv[0]);
+            exit(OSPL_EXIT_CODE_OK);
+            break;
+        case 'v':
+            printf ("OpenSplice version : %s\n", VERSION);
             exit(OSPL_EXIT_CODE_OK);
             break;
         case 'd':
@@ -630,6 +648,10 @@ main(
                 {
                     printf("\nStarting up domain \"%s\" and blocking.\n", domain_name);
                 }
+
+                /* Display locations of info and error files */
+                os_reportDisplayLogLocations();
+
                 if (uri == NULL)
                 {
                     uri = os_strdup("");
@@ -652,6 +674,7 @@ main(
                 {
                     Sleep(2000); /* take time to first show the license message from spliced */
                 }
+                CloseHandle (pi);
             } else
             {
                 printf("Splice System with domain name \"%s\" is found running, ignoring command\n",

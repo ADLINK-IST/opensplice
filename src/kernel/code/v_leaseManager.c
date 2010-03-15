@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__leaseManager.h"
@@ -104,7 +104,7 @@ determineNewHead(
     c_time leaseExpTime;
     v_lease lease = v_lease(o);
     v_leaseManager lm = v_leaseManager(arg);
-    
+
     if (lm->head == NULL) {
         lm->head = c_keep(lease);
     } else {
@@ -132,10 +132,10 @@ leaseManagerRemove(
     found = c_setRemove(lm->leases, lease,NULL,NULL);
     if (found == lease) {
         removed = TRUE;
-        
+
         if (lease == lm->head) {
             c_free(lm->head);
-            lm->head = NULL; 
+            lm->head = NULL;
             c_setWalk(lm->leases, determineNewHead, lm);
         }
         c_free(lease); /* delete local reference */
@@ -312,6 +312,7 @@ v_leaseManagerMain(
     v_lease lease;
     c_time waitTime = C_TIME_ZERO;
     c_time expTime;
+    v_duration duration;
     struct collectExpiredArg arg;
 
     assert(lm != NULL);
@@ -321,14 +322,19 @@ v_leaseManagerMain(
     arg.now = v_timeGet();
     while (lm->quit == FALSE) {
         if (lm->head != NULL) {
-            expTime = v_leaseExpiryTime(lm->head);
+            v_leaseGetExpiryAndDuration(lm->head, &expTime, &duration);
             if (c_timeCompare(expTime, C_TIME_INFINITE) != C_EQ) {
                 waitTime = c_timeSub(expTime, arg.now);
                 if (c_timeCompare(waitTime, C_TIME_ZERO) == C_GT) {
                     c_condTimedWait(&lm->cond, &lm->mutex, waitTime);
                 } else {
-                    OS_REPORT(OS_WARNING, "v_leaseManager", 0,
+                    /* If the duration specified with the lease is C_TIME_ZERO,
+                     * it is expected that the expiryTime lies in the past, so
+                     * only warn if an actual duration was specified. */
+                    if(c_timeCompare(duration, C_TIME_ZERO) != C_EQ){
+                        OS_REPORT(OS_WARNING, "v_leaseManager", 0,
                               "wait time has become negative!");
+                    }
                 }
             } else {
                 c_condWait(&lm->cond, &lm->mutex);
@@ -340,10 +346,10 @@ v_leaseManagerMain(
         /**
          * First walk through the collection of leases and record all
          * expired leases in an iterator. We cannot remove expired leases
-         * while walking through the set, since it interferes with the 
+         * while walking through the set, since it interferes with the
          * walk.
          */
-        arg.expiredLeases = NULL; 
+        arg.expiredLeases = NULL;
         arg.head = NULL;
         arg.now = v_timeGet();
         c_setWalk(lm->leases, collectExpired, &arg);

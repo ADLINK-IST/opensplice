@@ -229,7 +229,8 @@ module DDS {
 
     local interface ExtTopicListener : TopicListener {
     void
-    on_all_data_disposed ();
+    on_all_data_disposed (
+        in Topic the_topic);
     };
 
     local interface DataWriterListener : Listener {
@@ -300,6 +301,9 @@ module DDS {
     };
 
     local interface DomainParticipantListener : TopicListener, PublisherListener, SubscriberListener {
+    };
+
+    local interface ExtDomainParticipantListener : ExtTopicListener, DomainParticipantListener {
     };
 
     // ----------------------------------------------------------------------

@@ -10,7 +10,7 @@
  *
  */
 /* format:
- *   file name: /tmp/spddskey_*, mode: 600
+ *   file name: /<temporary directory>/spddskey_*, mode: 600
  *   line 1: <shm name>\0
  *   line 2: <shm base mapping address> [hex, printed in chars]
  *   line 3: <shm size>                 [hex, printed in chars]

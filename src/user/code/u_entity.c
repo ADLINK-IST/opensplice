@@ -13,7 +13,7 @@
 #include "u__handle.h"
 #include "u__types.h"
 #include "u__qos.h"
-#include "u_domain.h"
+#include "u_partition.h"
 #include "u_topic.h"
 #include "u_publisher.h"
 #include "u_subscriber.h"
@@ -33,7 +33,7 @@
 #include "v_publisher.h"
 #include "v_subscriber.h"
 #include "v_writer.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_group.h"
 #include "v_topic.h"
 #include "v_status.h"
@@ -74,13 +74,14 @@ u_entityNew(
     } e->kind = l
 
     switch(v_objectKind(ke)) {
-    case K_DOMAIN:         _NEW_(u_domain,U_DOMAIN);                  break;
+    case K_DOMAIN:         _NEW_(u_partition,U_PARTITION);                  break;
     case K_TOPIC:          _NEW_(u_topic, U_TOPIC);                   break;
     case K_GROUP:          _NEW_(u_group, U_GROUP);                   break;
     case K_PUBLISHER:      _NEW_(u_publisher, U_PUBLISHER);           break;
     case K_SUBSCRIBER:     _NEW_(u_subscriber, U_SUBSCRIBER);         break;
     case K_WRITER:         _NEW_(u_writer, U_WRITER);                 break;
     case K_DATAREADER:     _NEW_(u_dataReader, U_READER);             break;
+    case K_DELIVERYSERVICE:_NEW_(u_dataReader, U_READER);             break;
     case K_DATAVIEWQUERY:   /* is just a query, so no break here */
     case K_DATAREADERQUERY: /* is just a query, so no break here */
     case K_QUERY:          _NEW_(u_query, U_QUERY);                   break;
@@ -168,7 +169,7 @@ u_entityDeinit(
             case K_GROUPQUEUE:       _FREE_(v_groupQueue);
             case K_DATAVIEW:         _FREE_(v_dataView);
             case K_TOPIC:            _FREE_(v_topic);
-            case K_DOMAIN:           _FREE_(v_domain);
+            case K_DOMAIN:           _FREE_(v_partition);
             case K_GROUP:            _FREE_(v_group);
             case K_SERVICEMANAGER:   /* Is never freed! */
             break;
@@ -179,6 +180,7 @@ u_entityDeinit(
             case K_CMSOAP:           _FREE_(v_cmsoap);
             case K_SERVICESTATE:   /* Is never freed! */
             break;
+            case K_DELIVERYSERVICE:
             case K_KERNELSTATUS:
             case K_PARTICIPANTSTATUS:
             case K_DOMAINSTATUS:

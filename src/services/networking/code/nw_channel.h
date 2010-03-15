@@ -17,6 +17,8 @@
 #include "nw_commonTypes.h"   /* For nw_name */
 #include "nw_plugTypes.h"     /* For policy-kinds */
 #include "kernelModule.h"     /* For v_message and v_topic */
+#include "nw_plugSendChannel.h"
+#include "nw_plugReceiveChannel.h"
 
 /* 
  * All types have protected constructors
@@ -67,7 +69,8 @@ void nw_receiveChannelRead(
          v_message *messagePtr,
          v_networkReaderEntry *entryPtr,
          const nw_entryLookupAction entryLookupAction,
-         nw_entryLookupArg entryLookupArg);
+         nw_entryLookupArg entryLookupArg,
+         plugReceiveStatistics prs);
          
 /* sendChannel */
 
@@ -81,16 +84,19 @@ c_ulong nw_sendChannelWrite(
          nw_sendChannel sendChannel,
          v_networkReaderEntry entry,
          v_message message,
-         nw_signedLength *maxBytes);
+         nw_signedLength *maxBytes,
+         plugSendStatistics pss);
          
 nw_bool nw_sendChannelFlush(
             nw_sendChannel sendChannel,
             nw_bool all,
-            nw_signedLength *maxBytes);
+            nw_signedLength *maxBytes,
+            plugSendStatistics pss);
 
 void nw_sendChannelPeriodicAction(
          nw_sendChannel sendChannel,
-         nw_signedLength *maxBytes);
+         nw_signedLength *maxBytes,
+         plugSendStatistics pss);
 
 #endif /* NW_CHANNEL_H */
 

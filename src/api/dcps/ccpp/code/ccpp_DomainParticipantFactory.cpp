@@ -180,7 +180,24 @@ DDS::DomainParticipantFactory::create_participant (
           myUD = new ccpp_UserData(myParticipant, a_listener);
           if (myUD)
           {
+            gapi_domainParticipantFactoryQos *dpfqos = gapi_domainParticipantFactoryQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+            if(dpfqos){
+                if(gapi_domainParticipantFactory_get_qos(_gapi_self, dpfqos) == GAPI_RETCODE_OK){
+                    if(dpfqos->entity_factory.autoenable_created_entities) {
+                        gapi_entity_enable(handle);
+                    }
+                }
+                else
+                {
+                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain domainParticipantFactoryQos");
+                }
+                gapi_free(dpfqos);
+            }
+            else
+            {
+                OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+            }
           }
           else
           {
@@ -455,6 +472,12 @@ const DDS::DataReaderQos * const
 DDS::DomainParticipantFactory::datareader_qos_default (void)
 {
     return DDS::DefaultQos::DataReaderQosDefault;
+}
+
+const DDS::DataReaderViewQos * const
+DDS::DomainParticipantFactory::datareaderview_qos_default (void)
+{
+    return DDS::DefaultQos::DataReaderViewQosDefault;
 }
 
 const DDS::DataReaderQos * const 

@@ -45,12 +45,6 @@ OS_API void
 v_topicQosFree (
     v_topicQos q);
 
-OS_API c_bool
-v_topicQosEqual (
-    v_topicQos qos1,
-    v_topicQos qos2,
-    int reportType);
-
 #undef OS_API
 
 #if defined (__cplusplus)

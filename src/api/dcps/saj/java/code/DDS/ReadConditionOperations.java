@@ -19,4 +19,5 @@ public interface ReadConditionOperations  extends DDS.ConditionOperations
   int get_view_state_mask ();
   int get_instance_state_mask ();
   DDS.DataReader get_datareader ();
+  DDS.DataReaderView get_datareaderview ();
 } // interface ReadConditionOperations

@@ -34,14 +34,14 @@ C_STRUCT(_ListenerInterestInfo) {
 
 static void
 setListenerInitial(
-    _Status      status,
+    _Status status,
     gapi_boolean active,
     gapi_statusMask initmask
     );
 
 static long
 findListener(
-    _Status             status,
+    _Status status,
     gapi_statusMask mask);
     
 static void
@@ -51,7 +51,7 @@ findCommonInterest(
 
 static gapi_boolean
 setInterest (
-    _Status               status,
+    _Status status,
     _ListenerInterestInfo _info);
 
 static gapi_boolean
@@ -61,16 +61,16 @@ setEnabledMask(
 
 void
 _StatusInit(
-    _Status             status,
-    _Entity             entity,
-    _Status             parent,
-    long                depth,
-    _StatusKind         kind,
+    _Status status,
+    _Entity entity,
+    _Status parent,
+    long depth,
+    _StatusKind kind,
     gapi_statusMask valid,
     gapi_statusMask interest,
     gapi_statusMask initmask,
-    gapi_boolean        active,
-    ListenerAction      notify)
+    gapi_boolean active,
+    ListenerAction notify)
 {
     int i;
 
@@ -116,7 +116,7 @@ _StatusDeinit(
 
 static void
 setListenerInitial(
-    _Status      status,
+    _Status status,
     gapi_boolean active,
     gapi_statusMask initmask)
 {
@@ -131,7 +131,7 @@ setListenerInitial(
 
 gapi_boolean
 _StatusSetListener(
-    _Status             status,
+    _Status status,
     gapi_statusMask mask)
 {
     C_STRUCT(_ListenerInterestInfo) _info;
@@ -153,7 +153,7 @@ _StatusSetListener(
 
 gapi_boolean
 _StatusSetListenerInterest (
-    _Status               status,
+    _Status status,
     _ListenerInterestInfo _info)
 {
     gapi_boolean result;
@@ -164,7 +164,7 @@ _StatusSetListenerInterest (
 
 static gapi_boolean
 setInterest (
-    _Status               status,
+    _Status status,
     _ListenerInterestInfo _info)
 {
     gapi_boolean result = TRUE;
@@ -219,7 +219,7 @@ _StatusGetCurrentStatus(
 
 gapi_object
 _StatusFindTarget(
-    _Status             status,
+    _Status status,
     gapi_statusMask mask)
 {
     gapi_object result = NULL;
@@ -379,7 +379,7 @@ _StatusGetMaskStatus (
 
 void
 _StatusDefaultListener(
-    _Entity             entity,
+    _Entity entity,
     gapi_statusMask mask)
 {
 }

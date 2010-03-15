@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -26,9 +26,13 @@
 #include "nw_configuration.h" /* For NW_DEBUGGING */
 #include "nw_report.h"
 #include "nw_socketMisc.h" /* For helper function */
+#include "nw_security.h"
 #ifdef NW_DEBUGGING
 #include "os_time.h"
 #endif
+
+#define sendChannelStatisticsCounterInc(fieldName, entity, value) \
+		v_fullCounterSetValue(&(entity->fieldName),value);
 
 #define NW_PARTITIONID_DEFAULT (0)
 #define NW_PARTITIONID_NONE    (0xffffffff)
@@ -50,6 +54,7 @@
 /* helper function */
 
 #define ADDR_SIZE (16)
+static
 char *
 nw_addressToString(
     nw_address address)
@@ -201,6 +206,7 @@ NW_STRUCT(nw_plugReceivingPartition) {
 
     /* The id of this partition */
     nw_partitionId partitionId;
+    os_uint32 partitionHash;
 
     /* Data fieds for properly filling all sequence numbers for this
      * networking partition */
@@ -234,7 +240,8 @@ NW_STRUCT(nw_plugReceivingPartition) {
 
 static nw_plugReceivingPartition
 nw_plugReceivingPartitionNew(
-    nw_partitionId partitionId);
+    nw_partitionId partitionId,
+    os_uint32 hash);
 
 static void
 nw_plugReceivingPartitionFree(
@@ -251,7 +258,8 @@ nw_plugReceivingPartitionResendItemCreate(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev);
+    nw_resendItem *nextPrev,
+    nw_length bufferLength);
 
 /* --------------------- PartitionNode ---------------------- */
 
@@ -307,7 +315,8 @@ nw_plugPartitionNodeResendItemCreate(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev);
+    nw_resendItem *nextPrev,
+    nw_length bufferLength);
 
 static void
 nw_plugPartitionNodeResendItemClone(
@@ -320,12 +329,15 @@ static void
 nw_plugPartitionNodeDataSentReliably(
     nw_plugPartitionNode partitionNode,
     nw_seqNr packetNr,
-    nw_plugDataBuffer buffer);
+    nw_plugDataBuffer buffer,
+    nw_length bufferLength);
 
 static void
 nw_plugPartitionNodeDataReceivedReliably(
+    nw_plugChannel channel,
     nw_plugPartitionNode partitionNode,
-    nw_seqNr packetNr);
+    nw_seqNr packetNr,
+    nw_bool reconnectAllowed);
 
 static void
 nw_plugPartitionNodeAckMessageCreate(
@@ -356,6 +368,7 @@ NW_STRUCT(nw_resendItem) {
     nw_plugDataBuffer buffer;
     nw_resendItem next;
     nw_resendItem prev;
+    nw_length bufferLength;
 };
 static nw_resendItem
 nw_resendItemNew(void);
@@ -366,7 +379,8 @@ nw_resendItemInit(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev);
+    nw_resendItem *nextPrev,
+    nw_length bufferLength);
 
 static void
 nw_resendItemFree(
@@ -437,7 +451,7 @@ NW_STRUCT(nw_plugSendChannel) {
     /* A scratch buffer for writing control messages (acks) */
     nw_plugControlBuffer controlWriteBuffer;
     /* Caching the end of the buffer for fast calculation of remaining space */
-    nw_data controlWriteBufferEnd;
+    nw_data controlWriteBufferEnd; /* obsolete? */
 
     /* A count for the number of free buffers in the pool */
     nw_seqNr nofFreeRelBuffers;
@@ -485,10 +499,25 @@ NW_STRUCT(nw_plugSendChannel) {
     /* Resending statistics */
     nw_seqNr totalResendCount;
     nw_seqNr reportInterval;
+    plugSendStatistics pss;
+    nw_bool crc_check;
+
 #ifdef NW_DEBUGGING
     os_time nextPrintTime;
 #endif
+
+    NW_SECURITY_ENCODER_HOOK_DECL
 };
+
+
+/* static */
+/* nw_data */
+/* nw_plugSendChannelBufferEnd(nw_plugDataBuffer buffer,  */
+/*              nw_plugSendChannel sendChannel, */
+/*              ) */
+/* { */
+
+/* } */
 
 static void
 nw_plugSendChannelInitializeDataBuffer(
@@ -542,10 +571,15 @@ nw_plugSendChannelNew(
         result->flushableNewest = NULL;
         result->flushableOldest = NULL;
 
+        NW_SECURITY_ENCODER_INIT(result, nodeId, partitions);
+    
         result->controlWriteBuffer =
             (nw_plugControlBuffer)os_malloc(nw__plugChannelGetFragmentLength(nw_plugChannel(result)));
+        /* Same as writeBuffer, reserve space at end of buffer to hold any size
+         * of configured security header */
         result->controlWriteBufferEnd = (nw_data)(UI(result->controlWriteBuffer) +
-            nw__plugChannelGetFragmentLength(nw_plugChannel(result)));
+            nw__plugChannelGetFragmentLength(nw_plugChannel(result)) - 
+            NW_SECURITY_RESERVED_BUFFER_SPACE(result));
 
         result->receivingNodesHashSize = NW_RECEIVING_NODES_HASHSIZE;
         result->receivingNodesHash = (nw_plugReceivingNode *)os_malloc(
@@ -603,6 +637,10 @@ nw_plugSendChannelNew(
         result->currentPartition = NULL;
 
         nw_plugSendChannelDataBufferReliabilityAdminCreate(result);
+        /* crc check */
+        result->crc_check = NWCF_DEFAULTED_SUBPARAM(Bool, pathName, Tx, CrcCheck,NWCF_DEF_CrcCheck);
+
+
 #ifdef NW_DEBUGGING
         result->nextPrintTime = os_timeGet();
         result->nextPrintTime.tv_sec += SC_PRINT_EVERY;
@@ -655,6 +693,8 @@ nw_plugSendChannelFree(
         }
         os_free(sendChannel->receivingPartitions);
 
+        NW_SECURITY_ENCODER_DEINIT(sendChannel);
+
         /* inherited finalization */
         nw_plugChannelFinalize(channel);
         os_free(channel);
@@ -671,6 +711,7 @@ nw_plugSendChannelCreateReceivingPartitions(
     nw_partitionAddress partitionAddress;
     nw_bool found;
     nw_bool connected;
+    os_uint32 hash;
 
     NW_CONFIDENCE(sendChannel != NULL);
 
@@ -681,11 +722,12 @@ nw_plugSendChannelCreateReceivingPartitions(
          partitionId < NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, &connected);
-        NW_CONFIDENCE(found);
+            &found, &partitionAddress, NULL, &connected, &hash);
+
+		NW_CONFIDENCE(found);
         if (found) {
             NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId) =
-                nw_plugReceivingPartitionNew(partitionId);
+                nw_plugReceivingPartitionNew(partitionId, hash);
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(sendChannel)), partitionId, partitionAddress,
                 connected);
@@ -757,6 +799,10 @@ nw_plugSendChannelCreateReceivingNode(
     result = nw_plugReceivingNodeNew(sendingNodeId, sendingAddress,
         NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel),
         prevNextInHash, prevNextInList);
+
+    if (sendChannel->pss != NULL) {
+        sendChannel->pss->numberOfKnownNodes++;
+    }
 
     for (partitionId = 0;
          partitionId < NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel);
@@ -851,7 +897,8 @@ static void
 nw_plugReceivingPartitionDataSentReliably(
     nw_plugReceivingPartition receivingPartition,
     nw_seqNr packetSeqNr,
-    nw_plugDataBuffer dataBuffer)
+    nw_plugDataBuffer dataBuffer,
+    nw_length dataBufferLength)
 {
     nw_plugPartitionNode currentNode;
     nw_resendItem* prevNextPtr;
@@ -866,7 +913,8 @@ nw_plugReceivingPartitionDataSentReliably(
         prevNextPtr = &receivingPartition->lateJoiningResendListTail->next;
     }
     nw_plugReceivingPartitionResendItemCreate(receivingPartition, packetSeqNr,
-        dataBuffer, prevNextPtr, &receivingPartition->lateJoiningResendListTail);
+        dataBuffer, prevNextPtr, &receivingPartition->lateJoiningResendListTail,
+        dataBufferLength);
 
     /* Walk over all receiving partitionnodes and insert buffer */
     currentNode = receivingPartition->partitionNodesHead;
@@ -876,7 +924,7 @@ nw_plugReceivingPartitionDataSentReliably(
             /* Only administrate this if the node is known to be
               connected to this partition */
             nw_plugPartitionNodeDataSentReliably(currentNode,
-                packetSeqNr, dataBuffer);
+		 packetSeqNr, dataBuffer, dataBufferLength);
         }
         currentNode = currentNode->nextInPartition;
     }
@@ -889,7 +937,13 @@ nw_plugSendChannelInitializeDataBuffer(
     nw_plugDataBuffer buffer)
 {
     nw_bool reliable;
-
+    
+#ifdef NW_DEBUGGING
+    /* initialize buffer with known value, so that one can tell in visual debugger the 
+     * undefined space. */
+    memset((void*) buffer, 'X', nw__plugChannelGetFragmentLength(nw_plugChannel(sendChannel)));
+#endif
+    
     nw_plugBufferSetVersion(nw_plugBuffer(buffer),NW_CURRENT_PROTOCOL_VERSION);
     nw_plugBufferClearFlags(nw_plugBuffer(buffer));
     nw_plugBufferSetSendingNodeId(nw_plugBuffer(buffer),
@@ -925,6 +979,25 @@ nw_plugSendChannelInitializeControlBuffer(
     nw_plugControlBufferSetRecvBufferInUse(buffer,sendChannel->RecvBufferInUse);
 }
 
+/* Currently being used for encryption, but could also be used for
+   scrambling the buffer by permutations to protect against
+   re-engineering */
+static nw_bool
+nw_plugSendChannelBufferEncoding(nw_plugChannel channel,
+                 nw_partitionId partitionId,
+                 void *mesg,
+                 nw_length *mesgLength) /* in/out */
+{
+    nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+    /* read fragment length from channel-attribute */
+    const sk_length fragmentLength =
+             nw__plugChannelGetFragmentLength(channel);
+    nw_bool succeeded = OS_TRUE;
+    
+    NW_SECURITY_ENCODER_PROCESS(succeeded, sendChannel, partitionId, mesg, mesgLength, fragmentLength); 
+
+    return succeeded;
+}
 
 /* Do a flush of data messages to the network
  * The function returns true if all bytes were sent, false otherwise */
@@ -932,14 +1005,14 @@ nw_bool
 nw_plugSendChannelMessagesFlush(
     nw_plugChannel channel,
     nw_bool all,
-    nw_signedLength *bytesLeft /* in/out */)
+    nw_signedLength *bytesLeft, /* in/out */
+    plugSendStatistics pss)
 {
     nw_bool result = FALSE;
     c_ulong bytesSent;
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_bool reliable;
     nw_plugDataBufferReliabilityAdmin currentBuffer;
-    nw_plugDataBuffer buffer;
     nw_plugReceivingPartition partition;
     nw_seqNr packetSeqNr;
 
@@ -963,17 +1036,52 @@ nw_plugSendChannelMessagesFlush(
         bytesSent = 0;
         currentBuffer = nw_plugSendChannelFlushableBufferPop(sendChannel);
         while ((currentBuffer != NULL) && (*bytesLeft > 0)) {
-            buffer = REL_DATA(currentBuffer);
+
+            nw_plugDataBuffer buffer = REL_DATA(currentBuffer);
+
+            /* Read attributes from buffer before the buffer is encoded */
+
             NW_STAMP(buffer,NW_BUF_TIMESTAMP_FLUSH);
             bytesSent = nw_plugBufferGetLength(nw_plugBuffer(buffer));
-            /* Valid Partition so Send data to network */
 
-            /*partition = sendChannel->currentPartition;*/
-            partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel,nw_plugDataBufferGetPartitionId(buffer));
+			/** The packet sequence number must be read from byte buffer
+			 * before encrypted. */ 
+			packetSeqNr = nw_plugDataBufferGetPacketNr(buffer);
+			
+			/* read partitionId from buffer, it could be that there are still serialized buffers on 
+			 * the send stack that have not yet been sent, but that the channel is already serializing a message 
+			 * for another partition after it. */
+			partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel,nw_plugDataBufferGetPartitionId(buffer));
+			
+			/*partition id name to hash*/
+			buffer->partitionId = partition->partitionHash;
 
-            #ifdef NW_DEBUGGING
+			/* Encode the buffer before sent to network. If the encoding fails due to malicious configuration
+			 * the message will be dropped. If dealing with reliability, the message-buffer will not be resent. */
+			if (!nw_plugSendChannelBufferEncoding(channel, partition->partitionId, buffer, /* (void*) */
+												  (nw_length*)&bytesSent)) /* in/out, will increment length by header-size */
+			{ 
+			   /* silent dropping of buffer */
+			   NW_REPORT_WARNING("nw_plugSendChannelFlushSingleWriteBuffer",
+					 "encoding failure, dropping message buffer");
+			   bytesSent = 0;
+			} else {
+				/* never reached, if encoding failed */            
+
+				/* Valid Partition so Send data to network */
+
+
+
+            /* crc check */
+            if (sendChannel->crc_check) {
+            	nw_plugBuffer(buffer)->receivingNodeId = ut_crcCalculate(channel->crc,((os_char*)buffer)+sizeof(NW_STRUCT(nw_plugBuffer)),bytesSent-sizeof(NW_STRUCT(nw_plugBuffer)));
+            }
+
+
+#ifdef NW_DEBUGGING
             if (!(os_int)nw_configurationLoseSentMessage()) {
 #endif
+
                 /*
             	if (nw_plugDataBufferGetPartitionId(buffer) !=
                     partition->partitionId)
@@ -988,29 +1096,38 @@ nw_plugSendChannelMessagesFlush(
                     partition->partitionId,
                     buffer,
                     bytesSent);
+                if (pss != NULL) {
+                	pss->numberOfPacketsSent++;
+                	pss->numberOfBytesSent += bytesSent;
+                }
+
 #ifdef NW_DEBUGGING
-            }
+				}
 #endif
-            if (reliable) {
-                /* Insert data into resend admin */
-                packetSeqNr = nw_plugDataBufferGetPacketNr(buffer);
-                nw_plugReceivingPartitionDataSentReliably(partition,
-                                                          packetSeqNr,
-                                                          buffer);
-            }
+				if (reliable) {
+					/* Insert data into resend admin */              
+					nw_plugReceivingPartitionDataSentReliably(partition,
+															  packetSeqNr,
+															  buffer,
+															  bytesSent);
+				} 
+			}
+            
             /* Release current buffer */
             nw_plugDataBufferReliabilityAdminRelease(currentBuffer);
-
+            
             *bytesLeft -= bytesSent;
             if (*bytesLeft > 0) {
                 currentBuffer = nw_plugSendChannelFlushableBufferPop(sendChannel);
             }
         }
+        /* POST: bytesLeft <= 0 || currentBuffer == NULL */
+        
         if (*bytesLeft > 0) {
             result = TRUE;
         } else {
             result = (sendChannel->flushableNewest == NULL);
-        }
+        }      
     }
 
     if (result) {
@@ -1027,9 +1144,11 @@ nw_plugSendChannelMessageStart(
     nw_data *buffer,
     nw_length *length,
     nw_partitionId partitionId,
-    nw_signedLength *bytesLeft /* in/out */)
+    nw_signedLength *bytesLeft, /* in/out */
+    plugSendStatistics pss)
 {
-    nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+	/*null check for pss*/
+	nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_plugReceivingPartition partition;
     nw_length sendLength;
     nw_bool result = TRUE;
@@ -1040,12 +1159,14 @@ nw_plugSendChannelMessageStart(
     NW_CONFIDENCE(buffer != NULL);
     NW_CONFIDENCE(length != NULL);
 
+    sendChannel->pss = pss;
+
     if (sendChannel->currentPartition != NULL) {
         if (partitionId != sendChannel->currentPartition->partitionId) {
             /* Channel contains message(s) for another partition.
              * Flush the buffer and set new partition Id.
              */
-            nw_plugSendChannelMessagesFlush(channel,TRUE,bytesLeft);
+            nw_plugSendChannelMessagesFlush(channel,TRUE,bytesLeft, pss);
             partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId);
             if (partition == NULL) {
                 result = FALSE; /* no existing partition. */
@@ -1088,7 +1209,9 @@ nw_plugSendChannelMessageStart(
                      sendChannel->currentWriteBuffer,
                      sendChannel->currentFragmentsInMsgCount);
 
-                sendLength = nw__plugChannelGetFragmentLength(channel) - *length;
+                sendLength = nw__plugChannelGetFragmentLength(channel) - 
+                             *length -
+                             NW_SECURITY_RESERVED_BUFFER_SPACE(sendChannel);
 
                 nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendLength);
 
@@ -1102,6 +1225,9 @@ nw_plugSendChannelMessageStart(
             } else {
                 sendChannel->currentFragmentsInMsgCount++;
                 sendChannel->currentFragmentLength += NW_MESSAGEHOLDER_SIZE;
+                if (sendChannel->pss != NULL) {
+                    sendChannel->pss->numberOfMessagesPacked++;
+                }
             }
         }
         NW_CONFIDENCE(sendChannel->lastMessage != NULL);
@@ -1123,7 +1249,7 @@ void
 nw_plugSendChannelGetNextFragment(
     nw_plugChannel channel,
     nw_data *buffer,
-    nw_length *length)
+    nw_length *length) /* remaining Length in buffer */
 {
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_length messageLength;
@@ -1146,11 +1272,11 @@ nw_plugSendChannelGetNextFragment(
         NW_MESSAGEHOLDER_DATA(sendChannel->lastMessage), *buffer);
     /*nw_messageHolderSetLength(sendChannel->lastMessage, messageLength);*/
 
-    /* Note: Do not add padding bytes by aligning the messageLength value to 
-     * next higher multiple of 4, as this will cause faults on receiver side 
+    /* Note: Do not add padding bytes by aligning the messageLength value to
+     * next higher multiple of 4, as this will cause faults on receiver side
      * deserializing fragmented strings */
     nw_messageHolderSetLength(sendChannel->lastMessage, messageLength);
-    
+
     if (!sendChannel->fragmenting) {
         /* Not currently fragmenting a message */
         /* Increase fragmented seqnr for this partition */
@@ -1158,17 +1284,20 @@ nw_plugSendChannelGetNextFragment(
         /* Update current information for sendChannel */
         sendChannel->currentFragmentSeqNr = 1;
         sendChannel->fragmenting = TRUE;
+        if (sendChannel->pss != NULL) {
+              sendChannel->pss->numberOfMessagesFragmented++;
+        }
     } else {
         NW_CONFIDENCE(sendChannel->currentFragmentSeqNr > 0);
         sendChannel->currentFragmentSeqNr++;
     }
-    
-    /* Note: Do not add padding bytes by aligning the messageLength value to 
-     * next higher multiple of 4, as this will cause faults on receiver side 
+
+    /* Note: Do not add padding bytes by aligning the messageLength value to
+     * next higher multiple of 4, as this will cause faults on receiver side
      * deserializing fragmented strings */
-    sendChannel->currentFragmentLength = 
+    sendChannel->currentFragmentLength =
     	sendChannel->currentFragmentLength + messageLength;
-    
+
     nw_plugBufferSetLength(
         nw_plugBuffer(sendChannel->currentWriteBuffer),
         sendChannel->currentFragmentLength);
@@ -1190,7 +1319,9 @@ nw_plugSendChannelGetNextFragment(
         sendChannel->currentFragmentSeqNr);
 
     reliable = (nw__plugChannelGetReliabilityOffered(channel) == NW_REL_RELIABLE);
-    sendLength = nw__plugChannelGetFragmentLength(channel) - *length;
+    sendLength = nw__plugChannelGetFragmentLength(channel) - 
+                 *length -
+                 NW_SECURITY_RESERVED_BUFFER_SPACE(sendChannel);
 
     nw_plugSendChannelPushCurrentWriteBuffer(sendChannel, sendLength);
 
@@ -1214,9 +1345,10 @@ nw_plugSendChannelGetNextFragment(
 void
 nw_plugSendChannelMessageEnd(
     nw_plugChannel channel,
-    nw_data buffer)
+    nw_data buffer,
+    plugSendStatistics pss)
 {
-    nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+	nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_length messageLength;
     nw_plugReceivingPartition partition;
 
@@ -1225,6 +1357,7 @@ nw_plugSendChannelMessageEnd(
     NW_CONFIDENCE(sendChannel->inUse);
     NW_CONFIDENCE(sendChannel->processingMessage);
     NW_CONFIDENCE(sendChannel->lastMessage != NULL);
+    NW_CONFIDENCE(sendChannel->pss == pss);
 
     partition = sendChannel->currentPartition;
     NW_CONFIDENCE(partition != NULL);
@@ -1258,6 +1391,13 @@ nw_plugSendChannelMessageEnd(
         (nw_messageHolder)NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, buffer);
     sendChannel->currentFragmentLength = sendChannel->currentFragmentLength +
         NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, messageLength);
+
+    if (sendChannel->pss != NULL) {
+        sendChannel->pss->numberOfPacketsInResendBuffer = sendChannel->totNofRelBuffers- sendChannel->nofFreeRelBuffers;
+        sendChannel->pss->numberOfBytesInResendBuffer = sendChannel->pss->numberOfPacketsInResendBuffer * nw__plugChannelGetFragmentLength(channel);
+    }
+
+    sendChannel->pss = NULL;
 }
 
 
@@ -1274,14 +1414,15 @@ nw_plugSendChannelDataBufferReliabilityAdminCreate(
     NW_CONFIDENCE((sendChannel->nofFreeRelBuffers == 0) ==
                   (sendChannel->freeRelBufferList == NULL));
 
-    dataLength = nw__plugChannelGetFragmentLength(nw_plugChannel(sendChannel));
+    dataLength = nw__plugChannelGetFragmentLength(nw_plugChannel(sendChannel)) -
+                 NW_SECURITY_RESERVED_BUFFER_SPACE(sendChannel);
 
     if (sendChannel->freeRelBufferList != NULL) {
         admin = sendChannel->freeRelBufferList;
         sendChannel->freeRelBufferList = admin->next;
         sendChannel->nofFreeRelBuffers--;
     } else {
-        admin = (nw_plugDataBufferReliabilityAdmin)os_malloc(dataLength + REL_ADMIN_LENGTH);
+        admin = (nw_plugDataBufferReliabilityAdmin)os_malloc(dataLength + REL_ADMIN_LENGTH + NW_SECURITY_RESERVED_BUFFER_SPACE(sendChannel));
         sendChannel->totNofRelBuffers++;
     }
 
@@ -1570,7 +1711,8 @@ static void
 nw_plugPartitionNodeDataSentReliably(
     nw_plugPartitionNode partitionNode,
     nw_seqNr packetNr,
-    nw_plugDataBuffer buffer)
+    nw_plugDataBuffer buffer,
+    nw_length bufferLength)
 {
     nw_plugReceivingNode receivingNode;
     nw_resendItem *currentItemPtr;
@@ -1588,7 +1730,7 @@ nw_plugPartitionNodeDataSentReliably(
             if (currentItem->packetNr < packetNr) {
                 /* Yes, we have found it at the end */
                 nw_plugPartitionNodeResendItemCreate(partitionNode, packetNr,
-                    buffer, &currentItem->next,  currentItemPtr);
+                    buffer, &currentItem->next,  currentItemPtr, bufferLength);
             } else {
                 /* This should be impossible with the current design. */
                 NW_CONFIDENCE(FALSE);
@@ -1596,7 +1738,7 @@ nw_plugPartitionNodeDataSentReliably(
         } else {
             NW_CONFIDENCE(partitionNode->pendingResendListHead == NULL);
             nw_plugPartitionNodeResendItemCreate(partitionNode, packetNr, buffer,
-                &partitionNode->pendingResendListHead, currentItemPtr);
+                &partitionNode->pendingResendListHead, currentItemPtr, bufferLength);
 
         }
     }
@@ -1604,8 +1746,10 @@ nw_plugPartitionNodeDataSentReliably(
 
 static void
 nw_plugPartitionNodeDataReceivedReliably(
+    nw_plugChannel channel,
     nw_plugPartitionNode partitionNode,
-    nw_seqNr packetNr)
+    nw_seqNr packetNr,
+    nw_bool reconnectAllowed)
 {
     c_bool found = FALSE;
     nw_plugReceivingNode receivingNode;
@@ -1614,6 +1758,26 @@ nw_plugPartitionNodeDataReceivedReliably(
 
     receivingNode = partitionNode->owner;
     NW_CONFIDENCE(receivingNode != NULL);
+
+    if ((partitionNode->owner->state == NW_NODESTATE_NOT_RESPONDING)||
+        (partitionNode->owner->state == NW_NODESTATE_STOPPED)){
+
+        if (reconnectAllowed) {
+            /* We received Data from the node, so we will mark it as responding again. */
+            partitionNode->owner->state = NW_NODESTATE_RESPONDING;
+
+            {
+                nw_partitionId partitionId;
+                nw_plugPartitionNode locPartitionNode;
+
+                for (partitionId = 0; partitionId < partitionNode->owner->nofPartitions; partitionId++) {
+                    locPartitionNode = NW_RECEIVINGNODE_PARTITIONNODE_BY_ID(partitionNode->owner, partitionId);
+                    locPartitionNode->firstStartingNr = 0;
+                }
+            }
+        }
+    }
+
     if (receivingNode->state == NW_NODESTATE_RESPONDING) {
         /* Data has been received, insert an ack message into the list for this partition-node */
         currentMsgPtr = &partitionNode->pendingAckList;
@@ -1685,14 +1849,14 @@ nw_plugPartitionNodeAckReceived(
 
     if ((partitionNode->owner->state == NW_NODESTATE_NOT_RESPONDING)||
         (partitionNode->owner->state == NW_NODESTATE_STOPPED)){
-        
+
         if (reconnectAllowed) {
-            /* We received an ACK from the node, so we will mark it as responding again. */       
-            partitionNode->owner->state = NW_NODESTATE_RESPONDING;  
+            /* We received an ACK from the node, so we will mark it as responding again. */
+            partitionNode->owner->state = NW_NODESTATE_RESPONDING;
             {
                 nw_partitionId partitionId;
                 nw_plugPartitionNode tmpPartitionNode;
-                   
+
                 for (partitionId = 0; partitionId < partitionNode->owner->nofPartitions; partitionId++) {
                     tmpPartitionNode = NW_RECEIVINGNODE_PARTITIONNODE_BY_ID(partitionNode->owner, partitionId);
                     tmpPartitionNode->firstStartingNr = 0;
@@ -1805,13 +1969,15 @@ nw_plugPartitionNodeAckReceived(
 
 static nw_plugReceivingPartition
 nw_plugReceivingPartitionNew(
-    nw_partitionId partitionId)
+    nw_partitionId partitionId,
+    os_uint32 hash)
 {
     nw_plugReceivingPartition result = NULL;
 
     result = os_malloc(sizeof(*result));
     if (result != NULL) {
         result->partitionId = partitionId;
+        result->partitionHash = hash;
         result->fragmentedSeqNr = 0;
         result->packetSeqNr = 0;
 
@@ -1880,7 +2046,8 @@ nw_plugReceivingPartitionResendItemCreate(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev)
+    nw_resendItem *nextPrev,
+    nw_length bufferLength)
 {
     nw_resendItem item;
 
@@ -1895,10 +2062,9 @@ nw_plugReceivingPartitionResendItemCreate(
         receivingPartition->totalResendCount++;
     }
     if (item != NULL) {
-        nw_resendItemInit(item, packetNr, buffer, prevNext, nextPrev);
+        nw_resendItemInit(item, packetNr, buffer, prevNext, nextPrev, bufferLength);
     }
 }
-
 
 
 static void
@@ -1981,6 +2147,11 @@ nw_plugPartitionNodeFree(
             partitionNode->pendingResendCount--;
             nw_resendItemFree(resendItem);
         }
+        partitionNode->pendingResendListTail = NULL;
+        partitionNode->pendingAckCount = 0;
+        partitionNode->totalAckCount = 0;
+        partitionNode->pendingResendCount = 0;
+        partitionNode->firstStartingNr = 0;
     }
 }
 
@@ -2003,7 +2174,8 @@ nw_plugPartitionNodeResendItemCreate(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev)
+    nw_resendItem *nextPrev,
+    nw_length bufferLength)
 {
     /* The partitionNode at this moment does not contain its own freeResendList.
      * If that would be the case, the item would have been created here.
@@ -2013,7 +2185,7 @@ nw_plugPartitionNodeResendItemCreate(
     receivingPartition = partitionNode->receivingPartition;
     NW_CONFIDENCE(receivingPartition != NULL);
     nw_plugReceivingPartitionResendItemCreate(receivingPartition, packetNr,
-        buffer, prevNext, nextPrev);
+        buffer, prevNext, nextPrev, bufferLength);
     partitionNode->pendingResendCount++;
 }
 
@@ -2035,7 +2207,7 @@ nw_plugPartitionNodeResendItemClone(
     NW_CONFIDENCE(receivingPartition != NULL);
     nw_plugReceivingPartitionResendItemCreate(receivingPartition,
         resendItem->packetNr, resendItem->buffer,
-        prevNext, nextPrev);
+        prevNext, nextPrev, resendItem->bufferLength);
     partitionNode->pendingResendCount++;
 }
 
@@ -2096,8 +2268,9 @@ nw_plugPartitionNodeSerializeAndReleaseAcks(
         NW_CONFIDENCE(partitionNode->owner->state == NW_NODESTATE_RESPONDING);
         currentControlMessage = controlMessages[0];
         while ((partitionNode->pendingAckList != NULL) && (count < maxMsgCount)) {
+
             nw_plugControlMessageSetPartitionId(currentControlMessage,
-                partitionNode->receivingPartition->partitionId);
+            	partitionNode->receivingPartition->partitionHash);
             nw_plugControlMessageSetStartingNr(currentControlMessage,
                 partitionNode->pendingAckList->startingNr);
             nw_plugControlMessageSetClosingNr(currentControlMessage,
@@ -2137,7 +2310,8 @@ nw_resendItemInit(
     nw_seqNr packetNr,
     nw_plugDataBuffer buffer,
     nw_resendItem *prevNext,
-    nw_resendItem *nextPrev)
+    nw_resendItem *nextPrev,
+    nw_length bufferLength)
 {
     NW_CONFIDENCE(item != NULL);
     NW_CONFIDENCE(prevNext != NULL);
@@ -2151,6 +2325,7 @@ nw_resendItemInit(
     *prevNext = item;
     item->prev = *nextPrev;
     *nextPrev = item;
+    item->bufferLength = bufferLength;
 }
 
 static void
@@ -2224,7 +2399,11 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                         sendChannel, sendingNodeId, sendingAddress);
                     if (receivingNode != NULL) {
                         nw_plugReceivingNodeStopped(receivingNode);
+                        if (sendChannel->pss != NULL) {
+                           sendChannel->pss->numberOfKnownNodes--;
+                        }
                     }
+
                 break;
                 case NW_MBOX_NODE_DIED:
                     receivingNode = nw_plugSendChannelLookupReceivingNode(
@@ -2235,6 +2414,9 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                             "No heartbeats received from Node 0x%x (address %s)",
                             receivingNode->nodeId, addressString);
                         nw_plugReceivingNodeNotResponding(receivingNode);
+                        if (sendChannel->pss != NULL) {
+                           sendChannel->pss->numberOfKnownNodes--;
+                        }
                     }
                 break;
                 case NW_MBOX_UNDEFINED:
@@ -2260,16 +2442,20 @@ nw_periodicProcessIncomingAcks( nw_plugChannel channel )
     nw_seqNr closingNr;
     nw_length remoteRecvBuffer;
     nw_plugPartitionNode partitionNode;
+    c_ulong ackcounter;
 
     /* First get all ack messages from the buffer and update
      * the administratin correspondingly */
     interChannel = nw__plugChannelGetInterChannelComm(channel);
     NW_CONFIDENCE(interChannel != NULL);
+
+    ackcounter =0;
     do {
         done = !nw_plugInterChannelProcessAckReceivedMessage(interChannel,
                 &sendingNodeId, &sendingPartitionId, &sendingAddress,
                 &startingNr, &closingNr, &remoteRecvBuffer);
         if (!done) {
+        	ackcounter++;
             /* Lookup receivingNode object from hash */
             partitionNode = nw_plugSendChannelLookupOrCreatePartitionNode(
                 sendChannel, sendingNodeId, sendingPartitionId,
@@ -2282,6 +2468,8 @@ nw_periodicProcessIncomingAcks( nw_plugChannel channel )
                 nw__plugChannelGetName(channel),remoteRecvBuffer);
         }
     } while (!done);
+    sendChannelStatisticsCounterInc(adminQueueAcks,sendChannel->pss,ackcounter);
+    /* teller add adminQueueAcks */
 }
 
 static void
@@ -2383,6 +2571,7 @@ nw_autoThrottle( nw_plugChannel channel,nw_signedLength credits )
 
 }
 
+
 static void
 nw_periodicProcessReceivedData( nw_plugChannel channel )
 {
@@ -2395,26 +2584,31 @@ nw_periodicProcessReceivedData( nw_plugChannel channel )
     nw_seqNr packetNr;
     nw_length localRecvBuffer;
     nw_plugPartitionNode partitionNode;
+    c_ulong datacounter;
 
     interChannel = nw__plugChannelGetInterChannelComm(channel);
     NW_CONFIDENCE(interChannel != NULL);
     /* Now find out which data has been received and send the corresponding
      * acks to the sending node */
+    /* teller 0 */
+    datacounter =0;
     do {
         done = !nw_plugInterChannelProcessDataReceivedMessage(interChannel,
                 &sendingNodeId, &sendingPartitionId, &sendingAddress, &packetNr, &localRecvBuffer);
         if (!done) {
+        	datacounter++;
             /* Lookup receivingNode object from hash */
             partitionNode = nw_plugSendChannelLookupOrCreatePartitionNode(
                 sendChannel, sendingNodeId, sendingPartitionId,
                 sendingAddress);
             NW_CONFIDENCE(partitionNode != NULL);
-            nw_plugPartitionNodeDataReceivedReliably(partitionNode, packetNr);
+            nw_plugPartitionNodeDataReceivedReliably(channel, partitionNode, packetNr,channel->reconnectAllowed);
             sendChannel->RecvBufferInUse = localRecvBuffer;
         }
 
     } while (!done);
-
+    /* add adminQueueData fullcounters */
+    sendChannelStatisticsCounterInc(adminQueueData,sendChannel->pss,datacounter);
 
     NW_TRACE_2(Send, 4, "plugChannel %s: sendthread: sendACK MAX output: %d",
         nw__plugChannelGetName(channel),sendChannel->RecvBufferInUse);
@@ -2422,8 +2616,122 @@ nw_periodicProcessReceivedData( nw_plugChannel channel )
 
 
 
+/* As each network partitions are used to seperate information flow
+   from each other and per network partition a unique encrpytion key
+   may be used, the Acks must only be send according the network
+   partition the sender resides on. Send Acks per network-partitions,
+   do not bundle Acks for different network partitions into a single
+   messsage
+
+   This operation differs Acks that belong to different partitions. The Acks
+   that belong to the same partition are bundled, encoded with the specific
+   security-profile and pushed to the network socket.
+   In contrast the other nw_periodicSendAcksByBundled bundles Acks that belong
+   to the same receiving node, no matter what partition they belong to.
+*/
+
 static void
-nw_periodicSendAcks( nw_plugChannel channel,
+nw_periodicSendAcksBySecureFlows( nw_plugChannel channel,
+				  nw_plugReceivingNode receivingNode)
+{
+    nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+    nw_partitionId partitionId;
+    nw_plugPartitionNode partitionNode;
+    nw_plugControlBuffer controlBuffer;
+    nw_plugControlMessage firstMessage;
+    nw_length length;
+    nw_bool more;
+
+    /* Serialize all acks for this node and send them to the network */
+    /* printf("%d ack messages to be sent for receivingNode 0x%x\n",
+                   receivingNode->pendingAckCount, (unsigned int)receivingNode);
+     */
+    controlBuffer = nw_plugControlBuffer(sendChannel->controlWriteBuffer);
+    nw_plugSendChannelInitializeControlBuffer(sendChannel,
+        controlBuffer);
+    firstMessage = NW_PLUGCONTROLBUFFER_FIRSTMESSAGE(controlBuffer);
+
+    for (partitionId = 0;
+         partitionId < NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel);
+         partitionId++) {
+        partitionNode = NW_RECEIVINGNODE_PARTITIONNODE_BY_ID(receivingNode, partitionId);
+
+        NW_CONFIDENCE((partitionNode->pendingAckList == NULL) ==
+                      (partitionNode->pendingAckCount == 0));
+        if (partitionNode->pendingAckCount > 0) {
+		    nw_length remainingSize;
+		    nw_length maxNofMessages;
+		    nw_length totNofMessages;
+
+			remainingSize = UI(sendChannel->controlWriteBufferEnd) -
+			  UI(firstMessage);
+			maxNofMessages = remainingSize / NW_CONTROL_MESSAGE_SIZE;
+			totNofMessages = 0;
+
+            do {
+            	nw_length nofMessages;
+#ifdef NW_DEBUGGING
+                unsigned int pendingAckCount = partitionNode->pendingAckCount;
+#endif
+                nw_plugPartitionNodeSerializeAndReleaseAcks(partitionNode,
+                    &firstMessage, maxNofMessages,
+                    &nofMessages, &more);
+                NW_CONFIDENCE(nofMessages > 0);
+#ifdef NW_DEBUGGING
+                NW_CONFIDENCE(nofMessages <= pendingAckCount);
+#endif
+                totNofMessages += nofMessages;
+                maxNofMessages -= nofMessages;
+
+				/* Either the buffer is full or no more ACKs for this
+				 * network partition have got to be sent, in any case
+				 * push the buffer to the socket  */
+				{
+                    nw_plugControlBufferSetNrOfMessages(controlBuffer,
+                        totNofMessages);
+                    length = totNofMessages * NW_CONTROL_MESSAGE_SIZE +
+                        NW_PLUGCONTROLBUFFER_HEADERSIZE;
+                    NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
+                    
+					if (!nw_plugSendChannelBufferEncoding(
+					   channel,
+					   partitionId,
+					   controlBuffer,
+					   &length)) { /* in/out */
+						NW_REPORT_WARNING("nw_plugSendChannelControlFlush",
+							  "dropping control message");
+					}
+					else {
+						/* only reached if encoding has been successful,
+						 * the buffer contains the encoded data now and may be
+						 * written to network  */
+						nw_socketSendControlTo(nw__plugChannelGetSocket(channel),
+								   (sk_address)receivingNode->address,
+								   controlBuffer, length);
+					}
+		            /* reset the control-buffer with plain text data */
+					nw_plugSendChannelInitializeControlBuffer(sendChannel,
+						controlBuffer);
+
+                    firstMessage = NW_PLUGCONTROLBUFFER_FIRSTMESSAGE(controlBuffer);
+                    remainingSize = UI(sendChannel->controlWriteBufferEnd) -
+                        UI(firstMessage);
+                    maxNofMessages = remainingSize / NW_CONTROL_MESSAGE_SIZE;
+                    totNofMessages = 0;
+                }
+            } while (more);
+#ifdef NW_DEBUGGING
+            NW_CONFIDENCE(partitionNode->pendingAckCount == 0);
+            NW_CONFIDENCE(partitionNode->pendingAckList == NULL);
+#endif
+	    /* The control-write-buffer must not contain unsent messages */
+	    NW_CONFIDENCE(totNofMessages == 0);
+        }
+    }
+}
+
+static void
+nw_periodicSendAcksBundled( nw_plugChannel channel,
                      nw_plugReceivingNode receivingNode)
 {
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
@@ -2477,9 +2785,18 @@ nw_periodicSendAcks( nw_plugChannel channel,
                     length = totNofMessages * NW_CONTROL_MESSAGE_SIZE +
                         NW_PLUGCONTROLBUFFER_HEADERSIZE;
                     NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
+
+                    /*crc check*/
+                    if (sendChannel->crc_check) {
+						nw_plugBuffer(controlBuffer)->receivingNodeId = ut_crcCalculate(channel->crc,((os_char*)controlBuffer)+sizeof(NW_STRUCT(nw_plugBuffer)),length-sizeof(NW_STRUCT(nw_plugBuffer)));
+                    }
+                    nw_plugBufferSetLength(nw_plugBuffer(controlBuffer),length);
                     nw_socketSendControlTo(nw__plugChannelGetSocket(channel),
                         (sk_address)receivingNode->address,
                         controlBuffer, length);
+                    if (sendChannel->pss != NULL) {
+                    sendChannel->pss->numberOfAcksSent++;
+                    }
                     firstMessage = NW_PLUGCONTROLBUFFER_FIRSTMESSAGE(controlBuffer);
                     remainingSize = UI(sendChannel->controlWriteBufferEnd) -
                         UI(firstMessage);
@@ -2500,12 +2817,34 @@ nw_periodicSendAcks( nw_plugChannel channel,
         length = totNofMessages * NW_CONTROL_MESSAGE_SIZE +
             NW_PLUGCONTROLBUFFER_HEADERSIZE;
         NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
+
+        /* crc check */
+		if (sendChannel->crc_check) {
+			nw_plugBuffer(controlBuffer)->receivingNodeId = ut_crcCalculate(channel->crc,((os_char*)controlBuffer)+sizeof(NW_STRUCT(nw_plugBuffer)),length-sizeof(NW_STRUCT(nw_plugBuffer)));
+		}
+
+		nw_plugBufferSetLength(nw_plugBuffer(controlBuffer),length);
         nw_socketSendControlTo(nw__plugChannelGetSocket(channel),
             (sk_address)receivingNode->address,
             controlBuffer, length);
+        if (sendChannel->pss != NULL) {
+               sendChannel->pss->numberOfAcksSent++;
+        }
     }
 }
 
+static void nw_periodicSendAcks(nw_plugChannel channel,
+                                nw_plugReceivingNode receivingNode) {
+
+	nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
+
+	if (!NW_SECURITY_DISABLED && NW_SECURITY_ENCODER_HOOK(sendChannel)) { /* Quick check for security module */
+        nw_periodicSendAcksBySecureFlows(channel, receivingNode);
+    } else {
+        /* else-branch is the fast path */
+        nw_periodicSendAcksBundled(channel, receivingNode);
+    }
+}
 
 static void
 nw_periodicResend( nw_plugChannel channel,
@@ -2536,7 +2875,7 @@ nw_periodicResend( nw_plugChannel channel,
             resendItem = partitionNode->pendingResendListHead;
             if (resendItem->controlFlushPass >
                 sendChannel->recoveryFactor * sendChannel->maxRetries) {
-                
+
                 addressString = nw_addressToString(receivingNode->address);
                 NW_REPORT_WARNING_3("reliable protocol",
                     "Node 0x%x (address %s) has not acked message after %d retries",
@@ -2546,8 +2885,12 @@ nw_periodicResend( nw_plugChannel channel,
                 do {
                     resendItem->controlFlushPass++;
                     if ((resendItem->controlFlushPass % sendChannel->recoveryFactor) == 0) {
+                    	/* the buffer is encoded,
+                    	 *  we must not read or write the buffer anymore */
                         dataBuffer = resendItem->buffer;
-                        length = nw_plugBufferGetLength(nw_plugBuffer(dataBuffer));
+                        /*length = nw_plugBufferGetLength(nw_plugBuffer(dataBuffer));*/
+                        length = resendItem->bufferLength;
+
                         if ( *credits > 0 ){
                              *credits -= length;
 #ifdef NW_DEBUGGING
@@ -2555,9 +2898,14 @@ nw_periodicResend( nw_plugChannel channel,
 #endif
                                 /* Send data to network */
                                 NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
+
+                                /* data buffer has been attached to
+                                 * resend-queue being encoded */
+
                                 nw_socketSendDataTo(nw__plugChannelGetSocket(channel),
                                     (sk_address)receivingNode->address,
                                     dataBuffer, length);
+
                                 sendChannel->totalResendCount++;
                                 if ((sendChannel->totalResendCount % sendChannel->reportInterval) == 0) {
                                     NW_TRACE_2(Send, 2, "plugChannel %s: %u fragments resent",
@@ -2567,6 +2915,11 @@ nw_periodicResend( nw_plugChannel channel,
                                 NW_TRACE_2(Send, 4, "plugChannel %s: resending fragment to 0x%x",
                                     nw__plugChannelGetName(channel),
                                     (sk_address)receivingNode->address);
+
+                                if (sendChannel->pss != NULL) {
+                                    sendChannel->pss->numberOfBytesResent+= length;
+                                    sendChannel->pss->numberOfPacketsResent++;
+                                }
 #ifdef NW_DEBUGGING
                             }
 #endif
@@ -2662,7 +3015,8 @@ nw_updateCredits(
 void
 nw_plugSendChannelPeriodicAction(
     nw_plugChannel channel,
-    nw_signedLength *credits)
+    nw_signedLength *credits,
+    plugSendStatistics pss)
 {
     nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_plugReceivingNode receivingNode;
@@ -2671,6 +3025,8 @@ nw_plugSendChannelPeriodicAction(
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_SEND);
     NW_CONFIDENCE(!sendChannel->inUse);
+
+    sendChannel->pss = pss;
 
     /* Check for new messages from the network-discovery */
     nw_periodicCheckMessageBox(channel);
@@ -2711,6 +3067,7 @@ nw_plugSendChannelPeriodicAction(
          /* For best effort channels, the maxBurstSize budget is completely available for new data */
         *credits = sendChannel->currentPeriodBudget;
     }
+    sendChannel->pss = NULL;
 }
 
 #undef NW_CONTROL_MESSAGE_SIZE

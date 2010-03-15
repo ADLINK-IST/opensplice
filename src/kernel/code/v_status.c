@@ -102,8 +102,8 @@ v_statusInit(
     case K_SUBSCRIBERSTATUS:
     break;
     case K_DOMAINSTATUS:
-        v_domainStatus(s)->groupsChanged.totalCount = 0;
-        v_domainStatus(s)->groupsChanged.totalChanged = 0;
+        v_partitionStatus(s)->groupsChanged.totalCount = 0;
+        v_partitionStatus(s)->groupsChanged.totalChanged = 0;
     break;
     case K_WRITERSTATUS:
         v_writerStatus(s)->livelinessLost.totalCount = 0;

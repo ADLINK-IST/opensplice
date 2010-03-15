@@ -13,8 +13,8 @@
 #include "v__publisher.h"
 #include "v__publisherQos.h"
 #include "v_participant.h"
-#include "v__domain.h"
-#include "v__domainAdmin.h"
+#include "v__partition.h"
+#include "v__partitionAdmin.h"
 #include "v__writer.h"
 #include "v_group.h"
 #include "v_observable.h"
@@ -24,7 +24,7 @@
 #include "v_event.h"
 #include "v_proxy.h"
 #include "v_time.h"
-#include "v_domain.h"
+#include "v_partition.h"
 
 #include "q_expr.h"
 
@@ -40,7 +40,7 @@ publish(
     c_object o,
     c_voidp arg)
 {
-    v_domain d = (v_domain)o;
+    v_partition d = (v_partition)o;
     v_writer w = (v_writer)arg;
 
     return v_writerPublish(w,d);
@@ -51,7 +51,7 @@ unpublish(
     c_object o,
     c_voidp arg)
 {
-    v_domain d = (v_domain)o;
+    v_partition d = (v_partition)o;
     v_writer w = (v_writer)arg;
 
     return v_writerUnPublish(w,d);
@@ -107,7 +107,7 @@ v_publisherNew(
         if (q != NULL) {
             p = v_publisher(v_objectNew(kernel,K_PUBLISHER));
             v_observerInit(v_observer(p),name,NULL,enable);
-            p->domains     = v_domainAdminNew(kernel);
+            p->partitions  = v_partitionAdminNew(kernel);
             p->writers     = c_setNew(v_kernelType(kernel,K_WRITER));
             p->qos         = q;
             p->suspendTime = C_TIME_INFINITE;
@@ -216,13 +216,13 @@ v_publisherSetQos(
     v_result result;
     v_qosChangeMask cm;
     v_writerNotifyChangedQosArg arg;
-    v_domain d;
+    v_partition d;
     v_accessMode access;
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    arg.addedDomains = NULL;
-    arg.removedDomains = NULL;
+    arg.addedPartitions = NULL;
+    arg.removedPartitions = NULL;
 
     c_lockWrite(&p->lock);
 
@@ -246,22 +246,22 @@ v_publisherSetQos(
         result = v_publisherQosSet( p->qos, qos, v_entity(p)->enabled, &cm);
         if ((result == V_RESULT_OK) && (cm != 0)) {
             if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
-                v_domainAdminSet(p->domains, p->qos->partition, &arg.addedDomains, &arg.removedDomains);
+                v_partitionAdminSet(p->partitions, p->qos->partition, &arg.addedPartitions, &arg.removedPartitions);
             }
             c_walk(p->writers, qosChangedAction, &arg);
 
-            d = v_domain(c_iterTakeFirst(arg.addedDomains));
+            d = v_partition(c_iterTakeFirst(arg.addedPartitions));
             while (d != NULL) {
                 c_free(d);
-                d = v_domain(c_iterTakeFirst(arg.addedDomains));
+                d = v_partition(c_iterTakeFirst(arg.addedPartitions));
             }
-            c_iterFree(arg.addedDomains);
-            d = v_domain(c_iterTakeFirst(arg.removedDomains));
+            c_iterFree(arg.addedPartitions);
+            d = v_partition(c_iterTakeFirst(arg.removedPartitions));
             while (d != NULL) {
                 c_free(d);
-                d = v_domain(c_iterTakeFirst(arg.removedDomains));
+                d = v_partition(c_iterTakeFirst(arg.removedPartitions));
             }
-            c_iterFree(arg.removedDomains);
+            c_iterFree(arg.removedPartitions);
         }
     } else
     {
@@ -311,26 +311,28 @@ v_publisherConnectNewGroup(
     v_group g)
 {
     c_bool connect;
-    c_iter addedDomains;
-    v_domain d;
+    c_iter addedPartitions;
+    v_partition d;
 
     /* ES, dds1576: Only process this group event if the access rights to
      * the partition listed in the group is write or read_write.
      */
-    if(v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
-       v_groupDomainAccessMode(g) == V_ACCESS_MODE_WRITE)
+    if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
+       v_groupPartitionAccessMode(g) == V_ACCESS_MODE_WRITE)
     {
         c_lockWrite(&p->lock);
-        connect = v_domainAdminFitsInterest(p->domains, g->partition);
+        connect = v_partitionAdminFitsInterest(p->partitions, g->partition);
 
         if (connect) {
-            addedDomains = v_domainAdminAdd(p->domains,
+            addedPartitions = v_partitionAdminAdd(p->partitions,
                                             v_entityName(g->partition));
+            d = v_partition(c_iterTakeFirst(addedPartitions));
             while (d != NULL) {
                 c_free(d);
-                d = v_domain(c_iterTakeFirst(addedDomains));
+                d = v_partition(c_iterTakeFirst(addedPartitions));
             }
-            c_iterFree(addedDomains);
+            c_iterFree(addedPartitions);
+
             c_walk(p->writers, (c_action)v_writerPublishGroup, g);
         }/*else do not connect */
         c_lockUnlock(&p->lock);
@@ -341,11 +343,11 @@ v_publisherConnectNewGroup(
  * Public functions
  **************************************************************/
 static c_bool
-collectDomains(
+collectPartitions(
     c_object o,
     c_voidp arg)
 {
-    v_domain d = (v_domain)o;
+    v_partition d = (v_partition)o;
     c_iter iter = (c_iter)arg;
 
     iter = c_iterInsert(iter,c_keep(d));
@@ -357,7 +359,7 @@ v_publisherAddWriter(
     v_publisher p,
     v_writer w)
 {
-    v_domain d;
+    v_partition d;
     c_iter iter;
 
     assert(p != NULL);
@@ -367,7 +369,7 @@ v_publisherAddWriter(
 
     iter = c_iterNew(NULL);
     c_lockWrite(&p->lock);
-    v_domainAdminWalkDomains(p->domains, collectDomains, iter);
+    v_partitionAdminWalk(p->partitions, collectPartitions, iter);
     while ((d = c_iterTakeFirst(iter)) != NULL) {
         v_writerPublish(w,d);
         c_free(d);
@@ -396,11 +398,11 @@ v_publisherRemoveWriter(
 }
 
 c_bool
-v_publisherCheckDomainInterest(
+v_publisherCheckPartitionInterest(
     v_publisher p,
-    v_domain partition)
+    v_partition partition)
 {
-    return v_domainAdminFitsInterest(p->domains, partition);
+    return v_partitionAdminFitsInterest(p->partitions, partition);
 }
 
 void
@@ -408,17 +410,17 @@ v_publisherPublish(
     v_publisher p,
     const c_char *partitionExpr)
 {
-    v_domain d;
+    v_partition d;
     v_writerNotifyChangedQosArg arg;
     v_partitionPolicy old;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    arg.removedDomains = NULL;
+    arg.removedPartitions = NULL;
 
     c_lockWrite(&p->lock);
-    arg.addedDomains = v_domainAdminAdd(p->domains, partitionExpr);
+    arg.addedPartitions = v_partitionAdminAdd(p->partitions, partitionExpr);
 
     old = p->qos->partition;
     p->qos->partition = v_partitionPolicyAdd(old,
@@ -428,12 +430,12 @@ v_publisherPublish(
 
     c_walk(p->writers, qosChangedAction, &arg);
 
-    d = v_domain(c_iterTakeFirst(arg.addedDomains));
+    d = v_partition(c_iterTakeFirst(arg.addedPartitions));
     while (d != NULL) {
         c_free(d);
-        d = v_domain(c_iterTakeFirst(arg.addedDomains));
+        d = v_partition(c_iterTakeFirst(arg.addedPartitions));
     }
-    c_iterFree(arg.addedDomains);
+    c_iterFree(arg.addedPartitions);
 
     c_lockUnlock(&p->lock);
 }
@@ -443,17 +445,17 @@ v_publisherUnPublish(
     v_publisher p,
     const c_char *partitionExpr)
 {
-    v_domain d;
+    v_partition d;
     v_writerNotifyChangedQosArg arg;
     v_partitionPolicy old;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    arg.addedDomains = NULL;
+    arg.addedPartitions = NULL;
 
     c_lockWrite(&p->lock);
-    arg.removedDomains = v_domainAdminRemove(p->domains, partitionExpr);
+    arg.removedPartitions = v_partitionAdminRemove(p->partitions, partitionExpr);
 
     old = p->qos->partition;
     p->qos->partition = v_partitionPolicyRemove(old,
@@ -463,12 +465,12 @@ v_publisherUnPublish(
 
     c_walk(p->writers, qosChangedAction, &arg);
 
-    d = v_domain(c_iterTakeFirst(arg.removedDomains));
+    d = v_partition(c_iterTakeFirst(arg.removedPartitions));
     while (d != NULL) {
         c_free(d);
-        d = v_domain(c_iterTakeFirst(arg.removedDomains));
+        d = v_partition(c_iterTakeFirst(arg.removedPartitions));
     }
-    c_iterFree(arg.removedDomains);
+    c_iterFree(arg.removedPartitions);
 
     c_lockUnlock(&p->lock);
 }
@@ -500,7 +502,7 @@ v_publisherLookupWriters(
 }
 
 c_iter
-v_publisherLookupDomains(
+v_publisherLookupPartitions(
     v_publisher p,
     const c_char *partitionExpr)
 {
@@ -510,7 +512,7 @@ v_publisherLookupDomains(
     assert(C_TYPECHECK(p,v_publisher));
 
     c_lockRead(&p->lock);
-    list = v_domainAdminLookupDomains(p->domains, partitionExpr);
+    list = v_partitionAdminLookup(p->partitions, partitionExpr);
     c_lockUnlock(&p->lock);
 
     return list;

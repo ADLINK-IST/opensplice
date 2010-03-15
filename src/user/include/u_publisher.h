@@ -16,7 +16,7 @@
  * \brief The publisher class is responsible for data distribution.
  *
  * The data can be written to a publisher via associated typed u_writer objects.
- * A publisher will distribute the data to all domains associated to the publisher.
+ * A publisher will distribute the data to all partitions associated to the publisher.
  * The publisher also offers methods to control the distribution of data.
  * The distribution can be suspended or performed in a coherent manner.
  *
@@ -30,9 +30,9 @@
  *                                       v_publisherQos qos);
  * u_result    u_publisherFree          (u_publisher p);
  * u_result    u_publisherPublish       (u_publisher p,
- *                                       const c_char *domainExpr);
+ *                                       const c_char *partitionExpr);
  * u_result    u_publisherUnPublish     (u_publisher p,
- *                                       const c_char *domainExpr);
+ *                                       const c_char *partitionExpr);
  * u_result    u_publisherSuspend       (u_publisher p);
  * u_result    u_publisherResume        (u_publisher p);
  * u_result    u_publisherCoherentBegin (u_publisher p);
@@ -95,37 +95,37 @@ u_publisherFree (
 
 /** \brief Specifies an additional data distribution scope.
  *
- * Data is always distributed in domain (dds: partitions).
- * This method specifies via a domain expression which currently
- * known domains must be added to the publishers distribution scope.
+ * Data is always distributed in partition (dds: partitions).
+ * This method specifies via a partition expression which currently
+ * known partitions must be added to the publishers distribution scope.
  *
  * \param _this The publisher to operate on.
- * \param domainExpr The expression specifying the namespace of the domains that
+ * \param partitionExpr The expression specifying the namespace of the partitions that
  *        must be added to the publishers distribution scope. The expression
- *        specifies the domain name and may contain wildcards * and ?.
+ *        specifies the partition name and may contain wildcards * and ?.
  * \return U_RESULT_OK on a succesful operation.
  */
 OS_API u_result
 u_publisherPublish (
     u_publisher _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 /** \brief Specifies a substractable data distribution scope.
  *
- * Data is always distributed in domain (dds: partitions).
- * This method specifies via a domain expression which currently
- * known domains must be removed from the publishers distribution scope.
+ * Data is always distributed in partition (dds: partitions).
+ * This method specifies via a partition expression which currently
+ * known partitions must be removed from the publishers distribution scope.
  *
  * \param _this The publisher to operate on.
- * \param domainExpr The expression specifying the namespace of the domains that
+ * \param partitionExpr The expression specifying the namespace of the partitions that
  *        must be removed from the publishers distribution scope. The expression
- *        specifies the domain name and may contain wildcards * and ?.
+ *        specifies the partition name and may contain wildcards * and ?.
  * \return U_RESULT_OK on a succesful operation.
  */
 OS_API u_result
 u_publisherUnPublish (
     u_publisher _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 /** \brief Suspend data distribution until resume is called.
  *

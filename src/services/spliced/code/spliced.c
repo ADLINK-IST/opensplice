@@ -415,7 +415,7 @@ startTestServices(
                 os_threadAttrInit(&attr);
                 attr.stackSize = 10*1024*1024;
                 rv = os_threadCreate(&id, this->testServices[i]->name, &attr, mainWrapper, mwa);
-                this->testServices[i]->procId = (os_procId)id;
+                this->testServices[i]->procId = id;
                 OS_REPORT_1(OS_INFO,OSRPT_CNTXT_SPLICED,0, "Starting TestService: %s", argv[0]);
             }
         }

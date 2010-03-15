@@ -25,6 +25,7 @@
 #include "nw_misc.h"          /* for nw_stringDup */
 /* For helper function */
 #include "nw_socketMisc.h"
+#include "ut_crc.h"
 
 #define NW_PLUG_PROTOCOL_VERSION (1U)
 #define NW_MAX_CHANNEL_ID    (84U) /* resulting in 42 configurable channels for the networking service */
@@ -52,6 +53,7 @@ NW_STRUCT(nw_plugNetwork) {
     nw_seqNr nofCreatedChannels;
     nw_plugChannel *channels;                    /* [nofChannels] */
     nw_seqNr nofPaths;
+    ut_crc partitionCrc;						 /* partitionId crc hash object */
     NW_STRUCT(nw_pathUserData) *pathUserData;    /* [nofChannels] */
 };
 
@@ -102,6 +104,9 @@ nw_plugNetworkInitializePartitions(
     char *partitionAddress;
     sk_addressType addressType;
     
+    u_cfAttribute attrSecurityPolicy;
+    char *securityPolicy;
+    
     partitionList = nw_configurationGetElements(NWCF_ROOT(NWPartition));
     nofPartitions = (nw_partitionId)c_iterLength(partitionList) + 1 /* Do not forget the default partition */;
     partitions = nw_plugPartitionsNew(nofPartitions);
@@ -111,36 +116,67 @@ nw_plugNetworkInitializePartitions(
     partitionAddress = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
         NWPartitionAddress, NWCF_DEF(GlobalAddress), NWCF_DEF(GlobalAddress));
         
+    /* might return NULL */ 
+    securityPolicy = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
+        NWSecurityPolicy, NWCF_DEF(NWSecurityPolicy), NWCF_DEF(NWSecurityPolicy));
+
     addressType = sk_getAddressType(partitionAddress);
     if (addressType == SK_TYPE_UNKNOWN) {
         os_free(partitionAddress);
         partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
     }
 
-    nw_plugPartitionsSetDefaultPartition(partitions, partitionAddress);
+
+    nw_plugPartitionsSetDefaultPartition(partitions, partitionAddress,securityPolicy,
+    		ut_crcCalculate(plugNetwork->partitionCrc,"DefaultPartition",strlen("DefaultPartition"))
+           );
+
     os_free(partitionAddress);
+    os_free(securityPolicy);
     
     for (partitionId=1; partitionId<=(nofPartitions-1); partitionId++) {
         partitionElement = u_cfElement(c_iterTakeFirst(partitionList));
         attrConnected = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_Connected);
         if (attrConnected != NULL) {
             u_cfAttributeBoolValue(attrConnected,  &connected);
+	    u_cfAttributeFree(attrConnected);
         } else {
             connected = NWCF_DEF_Connected;
         }
         attrAddress = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionAddress);
         if (attrAddress != NULL) {
             u_cfAttributeStringValue(attrAddress, &partitionAddress);
+	    u_cfAttributeFree(attrAddress);
+
+	    attrSecurityPolicy = u_cfElementAttribute(partitionElement, 
+						      NWCF_ATTRIB(NWSecurityPolicy));
+	    
+	    securityPolicy = NULL; 	    
+	    if (attrSecurityPolicy!=NULL) {
+		u_cfAttributeStringValue(attrSecurityPolicy, &securityPolicy);
+		u_cfAttributeFree(attrSecurityPolicy);
+	    }
+
             nw_plugPartitionsSetPartition(partitions, partitionId,
-                partitionAddress, connected);
-            os_free(partitionAddress);
+                partitionAddress,
+                securityPolicy,
+                ut_crcCalculate(plugNetwork->partitionCrc,
+								(void *)u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName),
+								strlen((char *)u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName))),
+                connected);
+
+        os_free(partitionAddress);
+	    os_free(securityPolicy);
         } else {
             NW_REPORT_ERROR_1("plugNetwork initialization",
                 "Partition %d contains no address", partitionId);
         }
+	
+	u_cfElementFree(partitionElement);
     }
-}
 
+    c_iterFree(partitionList);    
+}
 
 static nw_plugNetwork
 nw_plugNetworkNew(
@@ -157,6 +193,7 @@ nw_plugNetworkNew(
         result->protocolVersion = (nw_protocolVersion)NW_PLUG_PROTOCOL_VERSION;
         result->nofCreatedChannels = 0;
         result->nofPaths = 0;
+        result->partitionCrc = ut_crcNew(UT_CRC_KEY);
         
         /* Initialize channeltable */
         result->channels = (nw_plugChannel *)os_malloc(

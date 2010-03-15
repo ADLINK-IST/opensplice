@@ -14,6 +14,7 @@
 
 #include "ccpp.h"
 #include "ccpp_DataReader_impl.h"
+#include "ccpp_DataReaderView_impl.h"
 #include "ccpp_Condition_impl.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
@@ -24,6 +25,7 @@ namespace DDS
       public ::DDS::Condition_impl
   {
     friend class ::DDS::DataReader_impl;
+    friend class ::DDS::DataReaderView_impl;
 
     protected:
         os_mutex rc_mutex;
@@ -42,6 +44,9 @@ namespace DDS
       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::DataReader_ptr get_datareader (
+      ) THROW_ORB_EXCEPTIONS;
+
+      virtual ::DDS::DataReaderView_ptr get_datareaderview(
       ) THROW_ORB_EXCEPTIONS;
   };
   typedef ReadCondition_impl* ReadCondition_impl_ptr;

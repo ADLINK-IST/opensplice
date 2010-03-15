@@ -24,6 +24,7 @@
 #include "nw_configurationDefs.h"
 #include "nw_report.h"
 #include "nw__confidence.h"
+#include "nw_security.h"
 /* For socket constructors */
 #include "nw_socketBroadcast.h"
 #include "nw_socketMulticast.h"
@@ -179,6 +180,8 @@ nw_plugChannelInitialize(
     
     /* Network fragment length */
     fragmentLength = NWCF_SIMPLE_PARAM(ULong, pathName, FragmentSize);
+
+    /* CHECKME, NWCF_MIN(FragmentSize) must be larger dealing with encryption */
     if (fragmentLength < NWCF_MIN(FragmentSize)) {
         NW_REPORT_WARNING_3("initializing network",
             "Channel \"%s\": requested value %u for fragment size is too small, "
@@ -186,11 +189,15 @@ nw_plugChannelInitialize(
             pathName, fragmentLength, NWCF_MIN(FragmentSize));
         fragmentLength = NWCF_MIN(FragmentSize);
     }
-    /* round to lowest NW_FRAG_BOUNDARY multiplication higher than fragmentLength */
-    channel->fragmentLength = NW_ALIGN(NW_PLUGDATABUFFER_ALIGNMENT, fragmentLength);
+    /* FIXME, this rounds up to multiple of 4, but it should round down to
+     * meet network constraints (??) */ 
+    /* round to lowest NW_FRAG_BOUNDARY multiplication higher than
+     * fragmentLength */
+    channel->fragmentLength = 
+	NW_ALIGN(NW_PLUGDATABUFFER_ALIGNMENT, fragmentLength);
 
-    /* What is the bsae adress of the socket wee need ? */
-    nw_plugPartitionsGetDefaultPartition(partitions, &defaultPartitionAddress);
+    /* What is the base adress of the socket wee need ? */
+    nw_plugPartitionsGetDefaultPartition(partitions, &defaultPartitionAddress, NULL /* SecurityProfile not of interest */ ); 
     
     switch (communication) {
     case NW_COMM_SEND:
@@ -221,6 +228,7 @@ nw_plugChannelInitialize(
 
     
     channel->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
+    channel->crc = ut_crcNew(UT_CRC_KEY);
 }
 
 
@@ -362,9 +370,12 @@ nw_plugChannelGetPartition(
     nw_partitionId partitionId,
     nw_bool *found,
     nw_partitionAddress *partitionAddress,
-    nw_bool *connected)
+    nw_networkSecurityPolicy *securityPolicy,
+    nw_bool *connected,
+    os_uint32 *hash)
 {
     nw_plugPartitionsGetPartition(channel->partitions, partitionId, found,
-        partitionAddress, connected);
+        partitionAddress, securityPolicy, connected, hash);
+
 }
 

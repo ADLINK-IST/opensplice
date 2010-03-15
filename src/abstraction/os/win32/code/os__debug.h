@@ -13,19 +13,19 @@
 #define __OS__DEBUG_H__
 
 #ifndef NDEBUG
-#include <stdio.h>
+#include <os_report.h>
 
-#define OS_DEBUG(msg)                   printf(msg "\n"); fflush(stdout)
-#define OS_DEBUG_1(msg, a1)             printf(msg "\n", a1); fflush(stdout)
-#define OS_DEBUG_2(msg, a1, a2)         printf(msg "\n", a1, a2); fflush(stdout)
-#define OS_DEBUG_3(msg, a1, a2, a3)     printf(msg "\n", a1, a2, a3); fflush(stdout)
-#define OS_DEBUG_4(msg, a1, a2, a3, a4) printf(msg "\n", a1, a2, a3, a4); fflush(stdout)
+#define OS_DEBUG(op, msg)                   OS_REPORT  (OS_INFO, op, 1, msg)
+#define OS_DEBUG_1(op, msg, a1)             OS_REPORT_1(OS_INFO, op, 1, "OS_DEBUG : " msg, a1)
+#define OS_DEBUG_2(op, msg, a1, a2)         OS_REPORT_2(OS_INFO, op, 1, "OS_DEBUG : " msg, a1, a2)
+#define OS_DEBUG_3(op, msg, a1, a2, a3)     OS_REPORT_3(OS_INFO, op, 1, "OS_DEBUG : " msg, a1, a2, a3)
+#define OS_DEBUG_4(op, msg, a1, a2, a3, a4) OS_REPORT_4(OS_INFO, op, 1, "OS_DEBUG : " msg, a1, a2, a3, a4)
 #else
-#define OS_DEBUG(msg)
-#define OS_DEBUG_1(msg, a1)
-#define OS_DEBUG_2(msg, a1, a2)
-#define OS_DEBUG_3(msg, a1, a2, a3)
-#define OS_DEBUG_4(msg, a1, a2, a3, a4)
+#define OS_DEBUG(op, msg)
+#define OS_DEBUG_1(op, msg, a1)
+#define OS_DEBUG_2(op, msg, a1, a2)
+#define OS_DEBUG_3(op, msg, a1, a2, a3)
+#define OS_DEBUG_4(op, msg, a1, a2, a3, a4)
 #endif
 
 void os_debugModeInit();

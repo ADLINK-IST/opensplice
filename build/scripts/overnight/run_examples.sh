@@ -5,12 +5,12 @@ FAIL=0
 RUN_SUMMARY_LOG=$LOGDIR/examples/run/run_results_summary.txt
 RUN_LOG=$LOGDIR/examples/run/run_results.txt
 SUMMARY_LOG=$LOGDIR/examples/run/overview.log
-CUR_PATH=`pwd`
 
+CUR_PATH=`pwd`
 echo " Begin running examples - `date`"
 
 for PROJECT in $EXAMPLES 
-do 
+do
     cd "$CUR_PATH/$PROJECT"
 
     run="yes"
@@ -31,15 +31,17 @@ do
         
         SUM=`expr $SUM + 1`
         if [ $status = 0 ]; then
-           if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error)' $CUR_PATH/$PROJECT/run.log`" ]
-           then
+           # ignore the print out from ospl describing the location of the error log
+           if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error)' $CUR_PATH/$PROJECT/run.log | grep -v '^Error log :'`" ]
+           then               
                FAIL=`expr $FAIL + 1`
+
+               ERROR=`grep -ci "error" $CUR_PATH/$PROJECT/run.log`
 
                SEGMENTATIONFAULTS=`grep -ci "segmentation" $CUR_PATH/$PROJECT/run.log`
                FILENOTFOUND=`grep -ci "file not found" $CUR_PATH/$PROJECT/run.log`
                ASSERTIONFAILED=`grep -ci "assertion failed" $CUR_PATH/$PROJECT/run.log`
                NOCLASSDEFFOUND=`grep -ci "NoClassDefFoundError" $CUR_PATH/$PROJECT/run.log`
-               ERROR=`grep -ci "error" $CUR_PATH/$PROJECT/run.log`
                CREATIONOFKERNEL=`grep -ci "creation of kernel failed" $CUR_PATH/$PROJECT/run.log`
                TIMEOUTS=`grep -ci "timeout" $CUR_PATH/$PROJECT/run.log`
                KILLED=`grep -ci "killed" $CUR_PATH/$PROJECT/run.log`
@@ -72,9 +74,16 @@ do
         echo " ### Project: $PROJECT End ### " >> run.log
         echo "" >> run.log
 
-        cat run.log  >> $RUN_LOG
-        sleep 10
+        # Copy the logs from the example run to the log directory so they are stored on the scoreboard
+        # This will include the run.log and any ospl info or error logs
+        EXAMPLELOGS=`echo $PROJECT | sed -e 's/standalone/SA/' -e 's/CORBA/C/' -e 's/Java/J/' -e 's/C++/CPP/' -e 's/JacORB//' -e 's/OpenFusion//' -e 's/\///g'`
 
+        mkdir $LOGDIR/examples/run/$EXAMPLELOGS
+
+        cp $CUR_PATH/$PROJECT/*.log $LOGDIR/examples/run/$EXAMPLELOGS
+
+#       cat run.log  >> $RUN_LOG
+        sleep 10
     else
         echo "Next Examples"
     fi

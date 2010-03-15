@@ -10,152 +10,154 @@ module DDS {
     typedef sequence<string> StringSeq;
 
     struct Duration_t {
-	long sec;
-	unsigned long nanosec;
+    long sec;
+    unsigned long nanosec;
     };
     
     struct Time_t {
-	long sec;
-	unsigned long nanosec;
+    long sec;
+    unsigned long nanosec;
     };
     
 
     struct UserDataQosPolicy {
-	sequence<octet> value;
+    sequence<octet> value;
     };
 
     struct TopicDataQosPolicy {
-	sequence<octet> value;
+    sequence<octet> value;
     };
 
     struct GroupDataQosPolicy {
-	sequence<octet> value;
+    sequence<octet> value;
     };
 
     struct TransportPriorityQosPolicy {
-	long value;
+    long value;
     };
 
     struct LifespanQosPolicy {
-	Duration_t duration;
+    Duration_t duration;
     };
 
     enum DurabilityQosPolicyKind {
-	VOLATILE_DURABILITY_QOS,
-	TRANSIENT_LOCAL_DURABILITY_QOS,
-	TRANSIENT_DURABILITY_QOS,
-	PERSISTENT_DURABILITY_QOS
+    VOLATILE_DURABILITY_QOS,
+    TRANSIENT_LOCAL_DURABILITY_QOS,
+    TRANSIENT_DURABILITY_QOS,
+    PERSISTENT_DURABILITY_QOS
     };
 
     struct DurabilityQosPolicy {
-	DurabilityQosPolicyKind kind;
+    DurabilityQosPolicyKind kind;
     };
 
     enum PresentationQosPolicyAccessScopeKind {
-	INSTANCE_PRESENTATION_QOS,
-	TOPIC_PRESENTATION_QOS,
-	GROUP_PRESENTATION_QOS
+    INSTANCE_PRESENTATION_QOS,
+    TOPIC_PRESENTATION_QOS,
+    GROUP_PRESENTATION_QOS
     };
 
     struct PresentationQosPolicy {
-	PresentationQosPolicyAccessScopeKind access_scope;
-	boolean coherent_access;
-	boolean ordered_access;
+    PresentationQosPolicyAccessScopeKind access_scope;
+    boolean coherent_access;
+    boolean ordered_access;
     };
 
     struct DeadlineQosPolicy {
-	Duration_t period;
+    Duration_t period;
     };
 
     struct LatencyBudgetQosPolicy {
-	Duration_t duration;
+    Duration_t duration;
     };
 
     enum OwnershipQosPolicyKind {
-	SHARED_OWNERSHIP_QOS,
-	EXCLUSIVE_OWNERSHIP_QOS
+    SHARED_OWNERSHIP_QOS,
+    EXCLUSIVE_OWNERSHIP_QOS
     };
 
     struct OwnershipQosPolicy {
-	OwnershipQosPolicyKind kind;
+    OwnershipQosPolicyKind kind;
     };
 
     struct OwnershipStrengthQosPolicy {
-	long value;
+    long value;
     };
 
     enum LivelinessQosPolicyKind {
-	AUTOMATIC_LIVELINESS_QOS,
-	MANUAL_BY_PARTICIPANT_LIVELINESS_QOS,
-	MANUAL_BY_TOPIC_LIVELINESS_QOS
+    AUTOMATIC_LIVELINESS_QOS,
+    MANUAL_BY_PARTICIPANT_LIVELINESS_QOS,
+    MANUAL_BY_TOPIC_LIVELINESS_QOS
     };
 
     struct LivelinessQosPolicy {
-	LivelinessQosPolicyKind kind;
-	Duration_t lease_duration;
+    LivelinessQosPolicyKind kind;
+    Duration_t lease_duration;
     };
 
     struct TimeBasedFilterQosPolicy {
-	Duration_t minimum_separation;
+    Duration_t minimum_separation;
     };
 
     struct PartitionQosPolicy {
-	StringSeq name;
+    StringSeq name;
     };
 
     enum ReliabilityQosPolicyKind {
-	BEST_EFFORT_RELIABILITY_QOS,
-	RELIABLE_RELIABILITY_QOS
+    BEST_EFFORT_RELIABILITY_QOS,
+    RELIABLE_RELIABILITY_QOS
     };
 
     struct ReliabilityQosPolicy {
-	ReliabilityQosPolicyKind kind;
-	Duration_t max_blocking_time;
+    ReliabilityQosPolicyKind kind;
+    Duration_t max_blocking_time;
         boolean synchronous;
     };
 
     enum DestinationOrderQosPolicyKind {
-	BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS,
-	BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS
+    BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS,
+    BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS
     };
 
     struct DestinationOrderQosPolicy {
-	DestinationOrderQosPolicyKind kind;
+    DestinationOrderQosPolicyKind kind;
     };
 
     enum HistoryQosPolicyKind {
-	KEEP_LAST_HISTORY_QOS,
-	KEEP_ALL_HISTORY_QOS
+    KEEP_LAST_HISTORY_QOS,
+    KEEP_ALL_HISTORY_QOS
     };
 
     struct HistoryQosPolicy {
-	HistoryQosPolicyKind kind;
-	long depth;
+    HistoryQosPolicyKind kind;
+    long depth;
     };
 
     struct ResourceLimitsQosPolicy {
-	long max_samples;
-	long max_instances;
-	long max_samples_per_instance;
+    long max_samples;
+    long max_instances;
+    long max_samples_per_instance;
     };
 
     struct EntityFactoryQosPolicy {
-	boolean autoenable_created_entities;
+    boolean autoenable_created_entities;
     };
 
     struct WriterDataLifecycleQosPolicy {
-	boolean autodispose_unregistered_instances;
+       boolean autodispose_unregistered_instances;
+       Duration_t autopurge_suspended_samples_delay;
+       Duration_t autounregister_instance_delay;
     };
 
     struct ReaderDataLifecycleQosPolicy {
-	Duration_t autopurge_nowriter_samples_delay;
-	Duration_t autopurge_disposed_samples_delay;
+    Duration_t autopurge_nowriter_samples_delay;
+    Duration_t autopurge_disposed_samples_delay;
         boolean enable_invalid_samples;
     };
     
     struct DurabilityServiceQosPolicy {
-	Duration_t service_cleanup_delay;
-	HistoryQosPolicyKind history_kind;
+    Duration_t service_cleanup_delay;
+    HistoryQosPolicyKind history_kind;
         long history_depth;
         long max_samples;
         long max_instances;
@@ -202,80 +204,90 @@ module DDS {
         long scheduling_priority;
     };
 
+    struct ViewKeyQosPolicy {
+        boolean use_key_list;
+        StringSeq key_list;
+    };
+    
+    struct DataReaderViewQos {
+        ViewKeyQosPolicy view_keys;
+    };
+
     struct DomainParticipantFactoryQos {
-	EntityFactoryQosPolicy entity_factory;
+    EntityFactoryQosPolicy entity_factory;
     };
     
     struct DomainParticipantQos {
-	UserDataQosPolicy user_data;
-	EntityFactoryQosPolicy entity_factory;
+    UserDataQosPolicy user_data;
+    EntityFactoryQosPolicy entity_factory;
         SchedulingQosPolicy watchdog_scheduling;
         SchedulingQosPolicy listener_scheduling;
     };
 
     struct TopicQos {
-	TopicDataQosPolicy topic_data;
-	DurabilityQosPolicy durability;
-	DurabilityServiceQosPolicy durability_service;
-	DeadlineQosPolicy deadline;
-	LatencyBudgetQosPolicy latency_budget;
-	LivelinessQosPolicy liveliness;
-	ReliabilityQosPolicy reliability;
-	DestinationOrderQosPolicy destination_order;
-	HistoryQosPolicy history;
-	ResourceLimitsQosPolicy resource_limits;
-	TransportPriorityQosPolicy transport_priority;
-	LifespanQosPolicy lifespan;
-	OwnershipQosPolicy ownership;
+    TopicDataQosPolicy topic_data;
+    DurabilityQosPolicy durability;
+    DurabilityServiceQosPolicy durability_service;
+    DeadlineQosPolicy deadline;
+    LatencyBudgetQosPolicy latency_budget;
+    LivelinessQosPolicy liveliness;
+    ReliabilityQosPolicy reliability;
+    DestinationOrderQosPolicy destination_order;
+    HistoryQosPolicy history;
+    ResourceLimitsQosPolicy resource_limits;
+    TransportPriorityQosPolicy transport_priority;
+    LifespanQosPolicy lifespan;
+    OwnershipQosPolicy ownership;
     };
 
     struct DataWriterQos {
-	DurabilityQosPolicy durability;
-	DeadlineQosPolicy deadline;
-	LatencyBudgetQosPolicy latency_budget;
-	LivelinessQosPolicy liveliness;
-	ReliabilityQosPolicy reliability;
-	DestinationOrderQosPolicy destination_order;
-	HistoryQosPolicy history;
-	ResourceLimitsQosPolicy resource_limits;
-	TransportPriorityQosPolicy transport_priority;
-	LifespanQosPolicy lifespan;
-	UserDataQosPolicy user_data;
-	OwnershipQosPolicy ownership;
-	OwnershipStrengthQosPolicy ownership_strength;
-	WriterDataLifecycleQosPolicy writer_data_lifecycle;
+        DurabilityQosPolicy durability;
+        DeadlineQosPolicy deadline;
+        LatencyBudgetQosPolicy latency_budget;
+        LivelinessQosPolicy liveliness;
+        ReliabilityQosPolicy reliability;
+        DestinationOrderQosPolicy destination_order;
+        HistoryQosPolicy history;
+        ResourceLimitsQosPolicy resource_limits;
+        TransportPriorityQosPolicy transport_priority;
+        LifespanQosPolicy lifespan;
+        UserDataQosPolicy user_data;
+        OwnershipQosPolicy ownership;
+        OwnershipStrengthQosPolicy ownership_strength;
+        WriterDataLifecycleQosPolicy writer_data_lifecycle;
     };
 
     struct PublisherQos {
-	PresentationQosPolicy presentation;
-	PartitionQosPolicy partition;
-	GroupDataQosPolicy group_data;
-	EntityFactoryQosPolicy entity_factory;
+    PresentationQosPolicy presentation;
+    PartitionQosPolicy partition;
+    GroupDataQosPolicy group_data;
+    EntityFactoryQosPolicy entity_factory;
     };
 
     struct DataReaderQos {
-	DurabilityQosPolicy durability;
-	DeadlineQosPolicy deadline;
-	LatencyBudgetQosPolicy latency_budget;
-	LivelinessQosPolicy liveliness;
-	ReliabilityQosPolicy reliability;
-	DestinationOrderQosPolicy destination_order;
-	HistoryQosPolicy history;
-	ResourceLimitsQosPolicy resource_limits;
-	UserDataQosPolicy user_data;
-	OwnershipQosPolicy ownership;
-	TimeBasedFilterQosPolicy time_based_filter;
-	ReaderDataLifecycleQosPolicy reader_data_lifecycle;
+        DurabilityQosPolicy durability;
+        DeadlineQosPolicy deadline;
+        LatencyBudgetQosPolicy latency_budget;
+        LivelinessQosPolicy liveliness;
+        ReliabilityQosPolicy reliability;
+        DestinationOrderQosPolicy destination_order;
+        HistoryQosPolicy history;
+        ResourceLimitsQosPolicy resource_limits;
+        UserDataQosPolicy user_data;
+        OwnershipQosPolicy ownership;
+        TimeBasedFilterQosPolicy time_based_filter;
+        ReaderDataLifecycleQosPolicy reader_data_lifecycle;
         SubscriptionKeyQosPolicy subscription_keys;
         ReaderLifespanQosPolicy reader_lifespan;
         ShareQosPolicy share;
     };
 
     struct SubscriberQos {
-	PresentationQosPolicy presentation;
-	PartitionQosPolicy partition;
-	GroupDataQosPolicy group_data;
-	EntityFactoryQosPolicy entity_factory;
+    PresentationQosPolicy presentation;
+    PartitionQosPolicy partition;
+    GroupDataQosPolicy group_data;
+    EntityFactoryQosPolicy entity_factory;
+    ShareQosPolicy share;
     };
 
     struct ParticipantBuiltinTopicData {

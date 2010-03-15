@@ -50,7 +50,8 @@ u_networkReaderCreateQueue(
     c_bool P2P,
     c_time resolution,
     c_bool useAsDefault,
-    c_ulong *queueId /* out */);
+    c_ulong *queueId, /* out */
+    const c_char *name);
     
 OS_API u_result        
 u_networkReaderTrigger(

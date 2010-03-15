@@ -16,6 +16,8 @@
 #include "v_networkReaderEntry.h"
 #include "nw_plugTypes.h"
 #include "nw_plugChannel.h"
+#include "nw_plugSendChannel.h"
+#include "nw_plugReceiveChannel.h"
 
 C_CLASS(nw_stream);
 
@@ -35,19 +37,24 @@ nw_bool
 nw_stream_writeBegin (
     nw_stream _this,
     v_networkPartitionId partitionId,
-    nw_signedLength *bytesLeft);
+    nw_signedLength *bytesLeft,
+    plugSendStatistics pss);
 
 void
 nw_stream_writeEnd  (
-    nw_stream _this);
+    nw_stream _this,
+    plugSendStatistics pss);
 
 c_bool
 nw_stream_readBegin (
-    nw_stream _this);
+    nw_stream _this,
+    nw_senderInfo senderAddress,
+    plugReceiveStatistics prs);
 
 void
 nw_stream_readEnd  (
-    nw_stream _this);
+    nw_stream _this,
+    plugReceiveStatistics prs);
 
 void
 nw_stream_close (

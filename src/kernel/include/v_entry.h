@@ -56,12 +56,12 @@ v_entryResend (
 OS_API c_bool
 v_entrySubscribe (
     v_entry _this,
-    v_domain d);
+    v_partition d);
 
 OS_API c_bool
 v_entryUnSubscribe (
     v_entry _this,
-    v_domain d);
+    v_partition d);
 
 #undef OS_API
 

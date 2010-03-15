@@ -16,6 +16,7 @@
 #include "v_readerStatistics.h"        /* For the cast v_readerStatistics() */
 #include "v_queryStatistics.h"         /* For the cast v_queryStatistics() */
 #include "v_writerStatistics.h"        /* For the cast v_writerStatistics() */
+#include "v_networkQueueStatistics.h"  /* For the cast v_networkQueueStatistics() */
 #include "v_networkReaderStatistics.h" /* For the cast v_networkReaderStatistics() */
 #include "v_networkingStatistics.h"    /* For the cast v_networkingStatistics() */
 #include "v_cmsoapStatistics.h"        /* For the cast v_cmsoapStatistics() */

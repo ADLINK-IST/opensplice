@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-#include "u_domainQos.h"
+#include "u_partitionQos.h"
 #include "u_participantQos.h"
 #include "u_topicQos.h"
 #include "u_writerQos.h"

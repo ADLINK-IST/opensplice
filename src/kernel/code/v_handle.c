@@ -71,6 +71,13 @@ static char* CHECK_REF_FILE = NULL;
   } while (0)
 #endif
 
+static void
+disableHandleServer(
+    c_voidp server)
+{
+    v_handleServerSuspend(server);
+}
+
 v_handleServer
 v_handleServerNew (
     c_base base)
@@ -83,13 +90,26 @@ v_handleServerNew (
     type = c_resolve(base,"kernelModule::v_handleServer");
     server = c_new(type);
     c_free(type);
-    type = c_resolve(base,"kernelModule::v_handleInfoList");
-    server->handleInfos = c_arrayNew(type,NROFCOL);
-    c_free(type);
-    server->firstFree = NOHANDLE;
-    server->lastIndex = NOHANDLE;
-    server->suspended = FALSE;
-    c_mutexInit(&server->mutex,SHARED_MUTEX);
+    if (server) {
+        type = c_resolve(base,"kernelModule::v_handleInfoList");
+        server->handleInfos = c_arrayNew(type,NROFCOL);
+        c_free(type);
+        if (server->handleInfos) {
+            server->firstFree = NOHANDLE;
+            server->lastIndex = NOHANDLE;
+            server->suspended = FALSE;
+            c_mutexInit(&server->mutex,SHARED_MUTEX);
+            c_baseOnOutOfMemory(base,disableHandleServer,server);
+        } else {
+            c_free(server);
+            server = NULL;
+            OS_REPORT(OS_ERROR,"v_handleServerNew",0,
+                      "Failed to allocate handle info records");
+        }
+    } else {
+        OS_REPORT(OS_ERROR,"v_handleServerNew",0,
+                  "Failed to allocate handle server");
+    }
     return server;
 }
 
@@ -198,10 +218,12 @@ v_handleServerInfo(
         *info = NULL;
         return V_HANDLE_ILLEGAL;
     }
+#if 0
     if(server->suspended == TRUE) {
         *info = NULL;
         return V_HANDLE_SUSPENDED;
     }
+#endif
     idx = handle.index;
     if ((idx < 0) || (idx > server->lastIndex)) {
         *info = NULL;
@@ -236,6 +258,16 @@ v_handleServerRegister(
     assert(C_TYPECHECK(server,v_handleServer));
     assert(o != NULL);
 
+    if(server->suspended == TRUE) {
+        /* For now the suspended state means that an unrecoverable error has
+         * occured. This implies that from now on any access to the kernel is
+         * unsafe and the result is undefined.
+         * So because of this and that registering new object are useless
+         * skip this action and return NULL.
+         */
+        return V_HANDLE_NIL;
+    }
+
     c_mutexLock(&server->mutex);
 
     if (server->firstFree != NOHANDLE) {
@@ -262,19 +294,28 @@ v_handleServerRegister(
             server->handleInfos[COL(idx)] = c_arrayNew(type,NROFROW);
         }
         block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
-        info = &block[row];
-        info->serial = SERIALSTART;
-        c_mutexInit(&info->mutex,SHARED_MUTEX);
+        if (block) {
+            info = &block[row];
+            info->serial = SERIALSTART;
+            c_mutexInit(&info->mutex,SHARED_MUTEX);
+        } else {
+            OS_REPORT(OS_ERROR,"v_handleServerRegister",0,
+                      "Failed to allocate a new list of handles");
+        }
     }
 
-    info->object   = c_keep(o);
-    info->nextFree = NOHANDLE;
-    info->count    = 0;
-    info->freed    = FALSE;
+    if (info) {
+        info->object   = c_keep(o);
+        info->nextFree = NOHANDLE;
+        info->count    = 0;
+        info->freed    = FALSE;
 
-    handle.server  = (c_address)server;
-    handle.serial  = info->serial;
-    handle.index   = idx;
+        handle.server  = (c_address)server;
+        handle.serial  = info->serial;
+        handle.index   = idx;
+    } else {
+        handle  = V_HANDLE_NIL;
+    }
 
     c_mutexUnlock(&server->mutex);
 
@@ -295,15 +336,17 @@ v_handleInvalidate (
 
     server = v_handleServer((c_object)handle.server);
     assert(C_TYPECHECK(server,v_handleServer));
-    c_mutexLock(&server->mutex);
-    info->nextFree = server->firstFree;
-    server->firstFree = handle.index;
-    info->serial = (info->serial + 1) % MAXSERIAL;
-    entity = info->object;
-    info->object = NULL;
-    c_mutexUnlock(&server->mutex);
-    c_mutexUnlock(&info->mutex);
-    v_publicDispose(v_public(entity));
+    if (server) {
+        c_mutexLock(&server->mutex);
+        info->nextFree = server->firstFree;
+        server->firstFree = handle.index;
+        info->serial = (info->serial + 1) % MAXSERIAL;
+        entity = info->object;
+        info->object = NULL;
+        c_mutexUnlock(&server->mutex);
+        c_mutexUnlock(&info->mutex);
+        v_publicDispose(v_public(entity));
+    }
 }
 
 v_handleResult
@@ -317,6 +360,11 @@ v_handleDeregister(
     if (result == V_HANDLE_OK) {
         assert(info != NULL);
         if (info->count > 0) {
+            /* The handle can not be invalidated yet because it is in use.
+             * so set the free attribute, the v_handleRelease method will
+             * check this flag and invalidate the handle as soon as it is
+             * no longer used.
+             */
             info->freed = TRUE;
             c_mutexUnlock(&info->mutex);
         } else {
@@ -334,6 +382,20 @@ v_handleClaim (
 {
     v_handleInfo *info;
     v_handleResult result;
+    v_handleServer server;
+
+    server = v_handleServer((c_object)handle.server);
+    if (server == NULL) {
+        return V_HANDLE_ILLEGAL;
+    }
+    if(server->suspended == TRUE) {
+        /* For now the suspended state means that an unrecoverable error has
+         * occured. This implies that from now on any access to the kernel is
+         * unsafe and the result is undefined.
+         * So because of this skip this action and return NULL.
+         */
+        return V_HANDLE_SUSPENDED;
+    }
 
     result = v_handleServerInfo(handle, &info);
     if (result != V_HANDLE_OK) {
@@ -380,6 +442,9 @@ v_handleRelease (
 #endif
         if (info->count == 0) {
             if (info->freed) {
+                /* at this point the handle was deregistered but could not
+                 * be invalidated because it was claimed, so it must be invalidated now.
+                 */
                 v_handleInvalidate(handle,info);
             } else {
                 c_mutexUnlock(&info->mutex);

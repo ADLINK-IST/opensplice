@@ -15,6 +15,7 @@
 
 #include "u_participant.h"
 #include "u_kernel.h"
+#include "os.h"
 
 u_result
 u_kernelClaim (
@@ -43,6 +44,10 @@ c_bool
 u_kernelCheckHandleServer (
     u_kernel _this,
     c_long serverId);
+
+os_sharedHandle
+u_kernelSharedMemoryHandle (
+    u_kernel kernel);
 
 #endif
 

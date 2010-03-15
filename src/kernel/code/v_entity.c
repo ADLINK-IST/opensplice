@@ -21,7 +21,7 @@
 #include "v_dataReaderEntry.h"
 #include "v__dataView.h"
 #include "v__reader.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v__topic.h"
 #include "v__topicQos.h"
 #include "v_query.h"
@@ -232,7 +232,7 @@ v_entityWalkEntities(
         c_lockRead(&v_publisher(e)->lock);
         r = c_setWalk(v_publisher(e)->writers,(c_action)action,arg);
         if (r == TRUE) {
-            r = c_tableWalk(v_publisher(e)->domains->domains,(c_action)action,arg);
+            r = c_tableWalk(v_publisher(e)->partitions->partitions,(c_action)action,arg);
         }
         c_lockUnlock(&v_publisher(e)->lock);
     break;
@@ -240,7 +240,7 @@ v_entityWalkEntities(
         c_lockRead(&v_subscriber(e)->lock);
         r = c_setWalk(v_subscriber(e)->readers,(c_action)action,arg);
         if (r == TRUE) {
-            r = c_tableWalk(v_subscriber(e)->domains->domains,(c_action)action,arg);
+            r = c_tableWalk(v_subscriber(e)->partitions->partitions,(c_action)action,arg);
         }
         c_lockUnlock(&v_subscriber(e)->lock);
     break;
@@ -253,7 +253,7 @@ v_entityWalkEntities(
         c_lockRead(&v_kernel(e)->lock);
         r = c_tableWalk(v_kernel(e)->topics,(c_action)action,arg);
         if (r == TRUE) {
-            r = c_tableWalk(v_kernel(e)->domains,(c_action)action,arg);
+            r = c_tableWalk(v_kernel(e)->partitions,(c_action)action,arg);
         }
         if (r == TRUE) {
             r = c_setWalk(v_kernel(e)->participants,(c_action)action,arg);
@@ -359,7 +359,7 @@ v_entityWalkDependantEntities(
 #ifdef DDS_269
                 entity2 = v_reader(entity)->subscriber;
                 c_lockRead(&v_subscriber(entity2)->lock);
-                r = c_tableWalk(v_subscriber(entity2)->domains->domains,(c_action)action,arg);
+                r = c_tableWalk(v_subscriber(entity2)->partitions->partitions,(c_action)action,arg);
                 c_lockUnlock(&v_subscriber(entity2)->lock);
 #endif
             }
@@ -379,7 +379,7 @@ v_entityWalkDependantEntities(
 #ifdef DDS_269
                 entity2 = v_writer(entity)->publisher;
                 c_lockRead(&v_publisher(entity2)->lock);
-                r = c_tableWalk(v_publisher(entity2)->domains->domains,(c_action)action,arg);
+                r = c_tableWalk(v_publisher(entity2)->partitions->partitions,(c_action)action,arg);
                 c_lockUnlock(&v_publisher(entity2)->lock);
 #endif
                }
@@ -390,7 +390,7 @@ v_entityWalkDependantEntities(
         }
     break;
     case K_DOMAIN:
-        iter = v_domainLookupPublishers(v_domain(e));
+        iter = v_partitionLookupPublishers(v_partition(e));
         entity = v_entity(c_iterTakeFirst(iter));
 #ifdef DDS_268
         iter3 = c_iterNew(NULL);
@@ -427,7 +427,7 @@ v_entityWalkDependantEntities(
         c_iterFree(iter);
 
         if (r == TRUE) {
-            iter = v_domainLookupSubscribers(v_domain(e));
+            iter = v_partitionLookupSubscribers(v_partition(e));
             entity = v_entity(c_iterTakeFirst(iter));
 
             while (entity != NULL) {

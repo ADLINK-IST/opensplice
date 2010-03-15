@@ -2178,7 +2178,7 @@ sd_deserXmlElement (
     if ( checkEnumLabel(name, parent->name, scope) ) {
         o = c_metaObject(c_metaDeclare(scope, name, M_CONSTANT));
         if ( o ) {
-            if ( valueDefined ) {
+            if ( valueDefined && c_constant(o)->operand == NULL) {
                 l = c_literal(c_metaDefine(scope, M_LITERAL));
                 l->value = c_longValue(value);
                 c_constant(o)->operand = c_operand(l);

@@ -100,7 +100,7 @@ getSem(
     } while((!result) && (lastError == ERROR_PIPE_BUSY));
 
     if (!result || (nRead != sizeof(reply))) {
-        OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
+        OS_DEBUG_4("getSem", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
         osr = os_resultFail;
     } else {
         if ((reply.result == os_resultSuccess) &&
@@ -140,7 +140,7 @@ returnSem(
         (reply.kind = OS_SRVMSG_DESTROY_SEMAPHORE)) {
         osr = os_resultSuccess;
     } else {
-        OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
+        OS_DEBUG_4("returnSem", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
         osr = os_resultFail;
     }
 
@@ -171,7 +171,7 @@ condTimedWait(
             OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_1("os_condWait OpenSemaphore failed %d", (int)GetLastError());
+            OS_DEBUG_1("condTimedWait", "OpenSemaphore failed %d", (int)GetLastError());
             assert(0);
             return os_resultFail;
         }
@@ -179,7 +179,7 @@ condTimedWait(
             OS_SERVICE_EVENT_NAME_PREFIX, mutex->id);
         hMtx = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
         if (hMtx == NULL) {
-            OS_DEBUG_1("os_condWait OpenEvent failed %d", (int)GetLastError());
+            OS_DEBUG_1("condTimedWait", "OpenEvent failed %d", (int)GetLastError());
             CloseHandle(hQueue);
             assert(0);
             return os_resultFail;
@@ -236,7 +236,7 @@ condSignal(
             OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_1("os_condWait OpenSemaphore failed %d", (int)GetLastError());
+            OS_DEBUG_1("condSignal", "OpenSemaphore failed %d", (int)GetLastError());
             assert(0);
             return os_resultFail;
         }

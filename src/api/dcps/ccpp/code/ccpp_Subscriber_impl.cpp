@@ -137,7 +137,25 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
                   myUD = new DDS::ccpp_UserData(DataReader,  a_listener);
                   if (myUD)
                   {
-                    gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD);
+                      gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
+                      gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD);
+                      if(sqos){
+                          if(gapi_subscriber_get_qos(_gapi_self, sqos) == GAPI_RETCODE_OK){
+                              if(sqos->entity_factory.autoenable_created_entities) {
+                                  gapi_entity_enable(reader_handle);
+                              }
+                          }
+                          else
+                          {
+                              OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain subscriber_qos");
+                          }
+                          gapi_free(sqos);
+                      }
+                      else
+                      {
+                          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                      }
+
                   }
                   else
                   {

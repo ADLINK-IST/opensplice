@@ -276,6 +276,71 @@ u_dataReaderRead(
     return result;
 }
 
+/* Get instance user data */
+u_result
+u_dataReaderGetInstanceUserData (
+		u_dataReader _this,
+		u_instanceHandle handle,
+		c_voidp* userData_out)
+{
+    v_dataReaderInstance instance;
+    v_dataReader reader;
+    u_result result;
+
+    if (!userData_out) {
+    	result = U_RESULT_ILL_PARAM;
+    }else
+    {
+		*userData_out = NULL;
+
+		result = u_dataReaderClaim(_this,&reader);
+		if (result == U_RESULT_OK) {
+			handle = u_instanceHandleFix(handle,v_collection(reader));
+			result = u_instanceHandleClaim(handle, &instance);
+			if (result == U_RESULT_OK) {
+				if (v_dataReaderContainsInstance(reader,instance)) {
+					*userData_out =
+							v_dataReaderInstanceGetUserData (instance);
+				} else {
+					result = U_RESULT_PRECONDITION_NOT_MET;
+				}
+				u_instanceHandleRelease(handle);
+			}
+			u_dataReaderRelease(_this);
+		}
+    }
+
+    return result;
+}
+
+/* Set instance user data */
+u_result
+u_dataReaderSetInstanceUserData (
+	    u_dataReader _this,
+	    u_instanceHandle handle,
+	    c_voidp userData)
+{
+    v_dataReaderInstance instance;
+    v_dataReader reader;
+    u_result result;
+
+    result = u_dataReaderClaim(_this,&reader);
+    if (result == U_RESULT_OK) {
+        handle = u_instanceHandleFix(handle,v_collection(reader));
+        result = u_instanceHandleClaim(handle, &instance);
+        if (result == U_RESULT_OK) {
+            if (v_dataReaderContainsInstance(reader,instance)) {
+                v_dataReaderInstanceSetUserData (instance, userData);
+            } else {
+                result = U_RESULT_PRECONDITION_NOT_MET;
+            }
+            u_instanceHandleRelease(handle);
+        }
+        u_dataReaderRelease(_this);
+    }
+    return result;
+}
+
 u_result
 u_dataReaderTake(
     u_dataReader _this,

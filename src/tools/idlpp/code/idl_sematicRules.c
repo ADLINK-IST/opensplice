@@ -239,7 +239,8 @@ typedef enum {
     idl_IllegalKeyFields,
     idl_InvalidKind,
     idl_IllegalKeyType,
-    idl_UnsupportedType
+    idl_UnsupportedType,
+    idl_UnsupportedKeyType
 } idl_errorIndex;
 
 struct unsupportedArg {
@@ -277,6 +278,7 @@ static char *errorText [] = {
     "The referenced identifier %s is of invalid type in it's context",
     "Key can only be specified for struct and union types",
     "Type '%s' (defined in %s) unsupported",
+    "Type '%s' of '%s' member is not supported for a key"
 };
 
 /*************************************************************************************************
@@ -1868,7 +1870,11 @@ idl_checkKeyListFieldName(
     char errorBuffer[IDL_MAX_ERRORSIZE];
     c_iter fields = NULL;
     c_specifier sp;
+    c_metaObject keyMetaObj;
     char *fieldName;
+    c_type type, subtype;
+    c_collectionType collType;
+    c_primitive primitiveType;
     int result = 0;
 
     /* Keylist field name consists of [<field>.]*<field> */
@@ -1879,24 +1885,94 @@ idl_checkKeyListFieldName(
     } else {
         fields = c_splitString(name, ".");
         fieldName = c_iterTakeFirst(fields);
+        /* find specificer (sp) corresponding to keylist field name */
+        keyMetaObj = scope;
         while (fieldName != NULL) {
-            if (scope) {
-                sp = c_specifier(c_metaFindByName(scope, fieldName, CQ_FIXEDSCOPE | CQ_MEMBER | CQ_CASEINSENSITIVE));
+            if (keyMetaObj) {
+                sp = c_specifier(c_metaFindByName(keyMetaObj, fieldName, CQ_FIXEDSCOPE | CQ_MEMBER | CQ_CASEINSENSITIVE));
                 if (sp) {
                     if (strcmp(sp->name, fieldName) != 0) {
                         result++;
                         snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_Spelling], fieldName);
                         rf(errorBuffer);
                     }
-                    scope = c_metaObject(sp->type);
+                    keyMetaObj = c_metaObject(sp->type);
                 } else {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UndeclaredDeclarator], fieldName);
                     rf(errorBuffer);
-                    scope = NULL;
+                    keyMetaObj = NULL;
                 }
             }
             fieldName = c_iterTakeFirst(fields);
+        }
+        
+        if (keyMetaObj != NULL) {
+            /* Now keyMetaObj contains the type of key. But it can be a typedef.
+             * So first determine the actual type.
+             */
+            type = c_typeActualType(c_type(keyMetaObj));
+            /* Check if type is acceptable for a key. 
+             * Enum and primitive are acceptable
+             */
+            if (!CQ_KIND_IN_MASK(type, CQ_ENUMERATION | CQ_PRIMITIVE)) {
+                /* only some M_COLLECTION types are acceptable */
+                if (c_baseObject(type)->kind == M_COLLECTION) {
+                    collType = c_collectionType(type);
+                    /* string or bounded string are acceptable collections */
+                    if (collType->kind != C_STRING) {
+                        /* now, char array and long array for builtin topics remains acceptable */
+                        subtype = c_typeActualType(collType->subType);
+                        if (collType->kind == C_ARRAY &&
+                            c_baseObject(subtype)->kind == M_PRIMITIVE)
+                        {
+                            primitiveType = c_primitive(subtype);
+                            if (primitiveType->kind != P_LONG &&
+                                primitiveType->kind != P_CHAR)
+                            {
+                                result++;
+                                snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UnsupportedKeyType], keyMetaObj->name, name);
+                                rf(errorBuffer);
+                            } 
+                            else if (primitiveType->kind == P_LONG) {
+                                /* check that type is 1 of the 4 builtin topics:
+                                 *   DDS.ParticipantBuiltinTopicData
+                                 *   DDS.TopicBuiltinTopicData
+                                 *   DDS.PublicationBuiltinTopicData
+                                 *   DDS.SubscriptionBuiltinTopicData
+                                 */
+                                if (!scope->definedIn                                            // if topic has no parent 
+                                    || scope->definedIn->name == 0                               // if topic parent has no name
+                                    || c_baseObject(scope->definedIn)->kind != M_MODULE          // if topic parent is not a module
+                                    || strcmp(scope->definedIn->name, "DDS") != 0                // if topic parent is not DDS module
+                                    || !scope->definedIn->definedIn                              // if DDS module has no parent (DDS module should have root element as parent)
+                                    || scope->definedIn->definedIn->definedIn                    // if DDS module has a grand-parent (meaning that DDS module is not in root element)
+                                    || (  strcmp(scope->name, "ParticipantBuiltinTopicData") != 0   // if topic is not DDS.ParticipantBuiltinTopicData
+                                       && strcmp(scope->name, "TopicBuiltinTopicData") != 0         // if topic is not DDS.TopicBuiltinTopicData
+                                       && strcmp(scope->name, "PublicationBuiltinTopicData") != 0   // if topic is not DDS.PublicationBuiltinTopicData
+                                       && strcmp(scope->name, "SubscriptionBuiltinTopicData") != 0  // if topic is not DDS.SubscriptionBuiltinTopicData
+                                       )
+                                    )
+                                {
+                                    result++;
+                                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UnsupportedKeyType], keyMetaObj->name, name);
+                                    rf(errorBuffer);
+                                }
+                            }
+                        } else {
+                            /* not array or non-primitive array */
+                            result++;
+                            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UnsupportedKeyType], keyMetaObj->name, name);
+                            rf(errorBuffer);
+                        }
+                    }
+                } else {
+                    /* not a collection */
+                    result++;
+                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UnsupportedKeyType], keyMetaObj->name, name);
+                    rf(errorBuffer);
+                }
+            }
         }
     }
     c_iterFree(fields);

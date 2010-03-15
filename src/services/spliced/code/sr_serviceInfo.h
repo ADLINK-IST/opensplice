@@ -31,7 +31,11 @@ typedef enum sr_restartRule {
 } sr_restartRule;
 
 C_STRUCT(sr_serviceInfo) {
+#ifdef OSPL_ENV_SHMT
+    os_threadId         procId;
+#else
     os_procId           procId;
+#endif
     char                *name;
 #ifndef INTEGRITY
     os_procAttr         procAttr;

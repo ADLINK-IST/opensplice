@@ -17,9 +17,9 @@
 #include "jni_reader.h"
 #include "jni_misc.h"
 #include "jni_topic.h"
-#include "jni_domain.h"
+#include "jni_partition.h"
 #include "v_topic.h"
-#include "u_domain.h"
+#include "u_partition.h"
 #include "u_entity.h"
 #include "c_stringSupport.h"
 #include "c_iterator.h"
@@ -58,7 +58,7 @@ jni_participantFree(
     jni_participant p)
 {
     jni_result r;
-    jni_domain partition;
+    jni_partition partition;
     
     r = JNI_RESULT_OK;
     
@@ -73,11 +73,11 @@ jni_participantFree(
             r = JNI_RESULT_PRECONDITION_NOT_MET;
         }
         else if((p->partitions != NULL) && (c_iterLength(p->partitions) != 0)){
-            partition = jni_domain(c_iterTakeFirst(p->partitions));
+            partition = jni_partition(c_iterTakeFirst(p->partitions));
             
             while((partition != NULL) && (r == JNI_RESULT_OK)){
-                r = jni_domainFree(partition);
-                partition = jni_domain(c_iterTakeFirst(p->partitions));
+                r = jni_partitionFree(partition);
+                partition = jni_partition(c_iterTakeFirst(p->partitions));
             }
         }
         else{
@@ -263,8 +263,8 @@ jni_getTopicKeyExpression(
     }
 }
 
-/**This function only works if the topic already exists in the Domain. In
- * the future this must be extended.
+/**This function only works if the topic already exists.
+ * In the future this must be extended.
  */
 jni_topic
 jni_createTopic(
@@ -370,38 +370,38 @@ jni_deleteTopic(
 jni_result
 jni_participantAddPartition(
     jni_participant p,
-    const c_char* domainName)
+    const c_char* partitionName)
 {
     jni_result r;
     c_iter partCopy;
-    jni_domain partition, partNew;
+    jni_partition partition, partNew;
     int found;
     
     r = JNI_RESULT_OK;
     
-    if((p == NULL) || (domainName == NULL)){
+    if((p == NULL) || (partitionName == NULL)){
         r = JNI_RESULT_BAD_PARAMETER;
     }
-    else if((strcmp(domainName, "*") == 0) ||
-            (strcmp(domainName, "") == 0)){
+    else if((strcmp(partitionName, "*") == 0) ||
+            (strcmp(partitionName, "") == 0)){
         /*DO NOTHING*/
     } 
     else{
-        /*Check if the domain already exists.*/
+        /*Check if the partitionName already exists.*/
         partCopy = c_iterCopy(p->partitions);
-        partition = jni_domain(c_iterTakeFirst(partCopy));
+        partition = jni_partition(c_iterTakeFirst(partCopy));
         found = 0;
         
         while((partition != NULL) && (!found)){
-            if(strcmp(partition->name, domainName) == 0){
+            if(strcmp(partition->name, partitionName) == 0){
                 found = 1;
             }
-            partition = jni_domain(c_iterTakeFirst(partCopy));
+            partition = jni_partition(c_iterTakeFirst(partCopy));
         }    
         c_iterFree(partCopy);
         
         if(!found){
-            partNew = jni_domainNew(p, domainName, NULL);
+            partNew = jni_partitionNew(p, partitionName, NULL);
             
             if(partNew == NULL){
                 r = JNI_RESULT_ERROR;
@@ -423,7 +423,7 @@ jni_deleteParticipantEntities(
     jni_publisher pub;
     jni_subscriber sub;
     jni_topic top;
-    jni_domain partition;
+    jni_partition partition;
     int proceed;
     
     assert(p != NULL);
@@ -506,16 +506,16 @@ jni_deleteParticipantEntities(
     }
     if((p->partitions != NULL) && proceed){
         partCopy = c_iterCopy(p->partitions);
-        partition = jni_domain(c_iterTakeFirst(partCopy));
+        partition = jni_partition(c_iterTakeFirst(partCopy));
         
         while((partition != NULL) && proceed){
-            r = jni_domainFree(partition);
+            r = jni_partitionFree(partition);
             
             if(r != JNI_RESULT_OK){
                 c_iterFree(partCopy);
                 proceed = 0;
             }
-            partition = jni_domain(c_iterTakeFirst(partCopy));
+            partition = jni_partition(c_iterTakeFirst(partCopy));
         }
         if(proceed){
             c_iterFree(partCopy);

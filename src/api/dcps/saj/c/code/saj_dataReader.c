@@ -746,4 +746,183 @@ SAJ_FUNCTION(jniGetMatchedPublicationData)(
     return jresult;
 }
 
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniCreateView
+ * Signature: (LDDS/DataReaderViewQos;)LDDS/DataReaderView;
+ */
+JNIEXPORT jobject JNICALL
+SAJ_FUNCTION(jniCreateView)(
+    JNIEnv * env,
+    jobject jdatareader,
+    jobject jqos)
+{
+
+
+    jobject jreaderview;
+    jobject jtypeSupport;
+    gapi_subscriber subscriber;
+    gapi_dataReader datareader;
+    gapi_dataReaderView readerview;
+    gapi_dataReaderViewQos* readerviewQos;
+    gapi_domainParticipant participant;
+    gapi_typeSupport typeSupport;
+    gapi_string typeName;
+    gapi_topicDescription description;
+    gapi_char* dataReaderViewClassName;
+    gapi_char* signature;
+    saj_returnCode rc;
+
+    readerview = GAPI_OBJECT_NIL;
+
+    datareader = (gapi_dataReader) saj_read_gapi_address(env, jdatareader);
+    subscriber = gapi_dataReader_get_subscriber(datareader);
+    participant = gapi_subscriber_get_participant(subscriber);
+    description = gapi_dataReader_get_topicdescription(datareader);
+
+    typeName = gapi_topicDescription_get_type_name(description);
+    typeSupport = gapi_domainParticipant_get_typesupport(participant, (const gapi_char*) typeName);
+    gapi_free(typeName);
+
+    jtypeSupport = saj_read_java_address((gapi_object)typeSupport);
+    rc = saj_LookupTypeSupportDataReaderView(env, jtypeSupport, &dataReaderViewClassName);
+
+    if(rc == SAJ_RETCODE_OK){
+        if ((*env)->IsSameObject (env, jqos, GET_CACHED(DATAREADERVIEW_QOS_DEFAULT)) == JNI_TRUE) {
+            readerviewQos = (gapi_dataReaderViewQos *)GAPI_DATAVIEW_QOS_DEFAULT;
+            rc = SAJ_RETCODE_OK;
+        } else {
+            readerviewQos = gapi_dataReaderViewQos__alloc();
+            rc = saj_DataReaderViewQosCopyIn(env, jqos, readerviewQos);
+        }
+
+        if(rc == SAJ_RETCODE_OK){
+            readerview = gapi_dataReader_create_view(datareader, readerviewQos);
+
+            if (readerview != GAPI_OBJECT_NIL){
+                rc = saj_LookupTypeSupportConstructorSignature(env, jtypeSupport, &signature);
+
+                if(rc == SAJ_RETCODE_OK){
+                    rc = saj_construct_typed_java_object(env, dataReaderViewClassName,
+                                                        (PA_ADDRCAST)readerview,
+                                                        &jreaderview, signature,
+                                                        jtypeSupport);
+                    gapi_free(signature);
+               }
+            }
+        }
+        if ((readerviewQos != (gapi_dataReaderViewQos *)GAPI_DATAVIEW_QOS_DEFAULT)) {
+            gapi_free(readerviewQos);
+        }
+
+        gapi_free(dataReaderViewClassName);
+    }
+
+    return jreaderview;
+}
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniDeleteView
+ * Signature: (LDDS/DataReaderView;)I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniDeleteView)(
+        JNIEnv *env,
+        jobject jdatareader,
+        jobject jdatareaderview)
+{
+    gapi_dataReader dataReader;
+    gapi_dataReaderView dataReaderView;
+    gapi_returnCode_t grc;
+    saj_userData ud;
+
+    dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdatareader);
+    dataReaderView = (gapi_dataReaderView) saj_read_gapi_address(env, jdatareaderview);
+
+    ud = saj_userData(gapi_object_get_user_data(dataReaderView));
+    grc = gapi_dataReader_delete_view(dataReader, dataReaderView);
+
+    if(grc == GAPI_RETCODE_OK){
+        saj_destroy_user_data(env, ud);
+    }
+    return (jint)grc;
+}
+
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniGetDefaultDataReaderViewQos
+ * Signature: (LDDS/DataReaderViewQosHolder;)I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniGetDefaultDataReaderViewQos)(
+    JNIEnv *env,
+    jobject jdatareader,
+    jobject jqosHolder)
+{
+    saj_returnCode rc;
+    jobject jqos;
+    gapi_dataReader datareader;
+    gapi_returnCode_t result;
+    gapi_dataReaderViewQos *qos;
+
+    jqos = NULL;
+    rc = SAJ_RETCODE_ERROR;
+
+    if(jqosHolder != NULL){
+        qos = gapi_dataReaderViewQos__alloc();
+
+        datareader = (gapi_dataReader)saj_read_gapi_address(env, jdatareader);
+        result = gapi_dataReader_get_default_datareaderview_qos(datareader, qos);
+
+        if(result == GAPI_RETCODE_OK){
+            rc = saj_DataReaderViewQosCopyOut(env, qos, &jqos);
+            gapi_free(qos);
+
+            if (rc == SAJ_RETCODE_OK){
+                (*env)->SetObjectField(env, jqosHolder,
+                                       GET_CACHED(dataReaderViewQosHolder_value_fid), jqos);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+            }
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+    return (jint)result;
+}
+
+
+/*
+ * Class:     org_opensplice_dds_dcps_DataReaderImpl
+ * Method:    jniSetDefaultDataReaderViewQos
+ * Signature: (LDDS/DataReaderViewQos;)I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniSetDefaultDataReaderViewQos)(
+    JNIEnv *env,
+    jobject jdatareader,
+    jobject jqos)
+{
+    gapi_dataReaderViewQos* qos;
+    gapi_dataReader datareader;
+    saj_returnCode rc;
+    jint result;
+
+    result = (jint)GAPI_RETCODE_ERROR;
+    qos = gapi_dataReaderViewQos__alloc();
+    rc = saj_DataReaderViewQosCopyIn(env, jqos, qos);
+
+    if (rc == SAJ_RETCODE_OK){
+        datareader = (gapi_dataReader)saj_read_gapi_address(env, jdatareader);
+        result = (jint)gapi_dataReader_set_default_datareaderview_qos(datareader, qos);
+    }
+    gapi_free(qos);
+
+    return result;
+}
+
+
+
 #undef SAJ_FUNCTION

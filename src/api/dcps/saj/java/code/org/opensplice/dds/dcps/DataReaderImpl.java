@@ -13,6 +13,10 @@
 
 package org.opensplice.dds.dcps;
 
+import DDS.DataReaderView;
+import DDS.DataReaderViewQos;
+import DDS.DataReaderViewQosHolder;
+
 /** 
  * Implementation of the {@link DDS.DataReader} interface. 
  */ 
@@ -117,6 +121,20 @@ public class DataReaderImpl extends EntityImpl implements DDS.DataReader {
         return jniGetMatchedPublicationData(publication_data, publication_handle);
     }
 
+    public DDS.DataReaderView create_view(DataReaderViewQos qos){
+        return jniCreateView(qos);
+    }
+    public int delete_view(DataReaderView a_view){
+        return jniDeleteView(a_view);
+    }
+    
+    public int get_default_datareaderview_qos(DataReaderViewQosHolder qos){
+        return jniGetDefaultDataReaderViewQos(qos);
+    }
+    
+    public int set_default_datareaderview_qos(DataReaderViewQos qos){
+        return jniSetDefaultDataReaderViewQos(qos);
+    }
 
     private native DDS.ReadCondition jniCreateReadcondition(int sample_states, int view_states, int instance_states);
     private native DDS.QueryCondition jniCreateQuerycondition(int sample_states, int view_states, int instance_states, String query_expression, String[] query_parameters);
@@ -138,4 +156,8 @@ public class DataReaderImpl extends EntityImpl implements DDS.DataReader {
     private native int jniWaitForHistoricalDataWCondition(String filter_expression, String[] expression_parameters, DDS.Time_t min_source_timestamp, DDS.Time_t max_source_timestamp, DDS.ResourceLimitsQosPolicy resource_limits, DDS.Duration_t max_wait);
     private native int jniGetMatchedPublications(DDS.InstanceHandleSeqHolder publication_handles);
     private native int jniGetMatchedPublicationData(DDS.PublicationBuiltinTopicDataHolder publication_data, long publication_handle);
+    private native DDS.DataReaderView jniCreateView(DDS.DataReaderViewQos qos);
+    private native int jniDeleteView(DataReaderView a_view);
+    private native int jniGetDefaultDataReaderViewQos(DataReaderViewQosHolder qos);
+    private native int jniSetDefaultDataReaderViewQos(DataReaderViewQos qos);
 }

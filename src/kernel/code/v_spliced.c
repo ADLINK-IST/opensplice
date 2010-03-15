@@ -71,6 +71,7 @@
 #include "v_statistics.h"
 #include "v__waitset.h"
 #include "v__messageQos.h"
+#include "v__deliveryService.h"
 
 #define HB_VIEW_NAME   "heartbeat view"
 #define HB_VIEW_EXPR   "select * from " V_HEARTBEATINFO_NAME " where id.systemId != %0;"
@@ -160,7 +161,7 @@ partitionNotMatched(
 {
     struct matchArg *matchArg = (struct matchArg *)arg;
     c_value match;
-    c_value domainName;
+    c_value partitionName;
     c_value expr;
     c_long i;
 
@@ -169,9 +170,9 @@ partitionNotMatched(
         match.is.Boolean = FALSE;
         i = 0;
         while ((match.is.Boolean == FALSE) && (i < c_arraySize(matchArg->partition))) {
-            domainName = c_stringValue(v_entityName(o));
+            partitionName = c_stringValue(v_entityName(o));
             expr = c_stringValue(matchArg->partition[i]);
-            match = c_valueStringMatch(expr, domainName);
+            match = c_valueStringMatch(expr, partitionName);
             i++;
         }
         matchArg->matched = match.is.Boolean;
@@ -191,6 +192,7 @@ readerWriterMatch(
     struct matchArg matchArg;
     v_gid gid;
     v_public publ;
+
     /**
      * If (w != NULL) then it is a local writer.
      */
@@ -230,7 +232,6 @@ readerWriterMatch(
             }
         }
     }
-
     return matchArg.matched;
 }
 
@@ -262,7 +263,7 @@ lookupMatchingReadersByTopic(
 
     return requestedMessages;
 }
-
+#if 0
 static c_iter
 lookupMatchingWritersByTopic(
     v_spliced spliced,
@@ -287,7 +288,48 @@ lookupMatchingWritersByTopic(
 
     return offeredMessages;
 }
+#else
 
+typedef struct getMatchingWriterArg_s {
+    c_iter iter;
+    c_char *topicName;
+    v_kernel kernel;
+} *getMatchingWriterArg;
+
+static c_bool
+getMatchingWriter(
+    c_object o,
+    c_voidp arg)
+{
+    getMatchingWriterArg a = (getMatchingWriterArg)arg;
+    struct v_publicationInfo *info = v_builtinPublicationInfoData(a->kernel->builtin,o);
+
+    if (o != NULL) {
+        if (strcmp(a->topicName, info->topic_name) == 0) {
+            a->iter = c_iterAppend(a->iter, c_keep(o));
+        }
+    }
+    return TRUE;
+}
+
+static c_iter
+lookupMatchingWritersByTopic(
+    v_spliced spliced,
+    struct v_subscriptionInfo *rInfo)
+{
+    struct getMatchingWriterArg_s arg;
+
+    arg.iter = NULL;
+    arg.topicName = rInfo->topic_name;
+    arg.kernel = v_objectKernel(spliced);
+
+    c_walk((c_collection)spliced->builtinData[V_PUBLICATIONINFO_ID],
+           (c_action)getMatchingWriter,
+           (c_voidp)&arg);
+
+    return arg.iter;
+}
+#endif
 static c_bool
 checkOfferedRequested(
     struct v_publicationInfo *oInfo,
@@ -456,8 +498,7 @@ checkTopicConsistency(
     c_bool consistent;
     v_kernel kernel;
     c_char *type_name;
-    v_topicQos localQos;
-    v_topicQos remoteQos;
+    v_topicQos qos1, qos2;
 
     assert(C_TYPECHECK(spliced,v_spliced));
     assert(C_TYPECHECK(topic,v_topic));
@@ -482,11 +523,100 @@ checkTopicConsistency(
             os_free(type_name);
         } else {
             /* check topicQos */
-            remoteQos = createTopicQos(kernel, info);
-            localQos = v_topicGetQos(topic);
-            consistent = v_topicQosEqual(remoteQos, localQos, OS_WARNING);
-            c_free(remoteQos);
-            c_free(localQos);
+            qos1 = createTopicQos(kernel, info);
+            qos2 = v_topicGetQos(topic);
+            if (qos1 && qos2) {
+                c_bool valid;
+                consistent = TRUE;
+                valid = v_durabilityPolicyEqual(qos1->durability, qos2->durability);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Durability' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_durabilityServicePolicyEqual(qos1->durabilityService, qos2->durabilityService);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'DurabilityService' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_deadlinePolicyEqual(qos1->deadline, qos2->deadline);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Deadline' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_latencyPolicyEqual(qos1->latency, qos2->latency);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Latency' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_livelinessPolicyEqual(qos1->liveliness, qos2->liveliness);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Liveliness' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_reliabilityPolicyEqual(qos1->reliability, qos2->reliability);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Reliability' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_orderbyPolicyEqual(qos1->orderby, qos2->orderby);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'OrderBy' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_historyPolicyEqual(qos1->history, qos2->history);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'History' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_resourcePolicyEqual(qos1->resource, qos2->resource);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Resource' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_transportPolicyEqual(qos1->transport, qos2->transport);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Transport' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_lifespanPolicyEqual(qos1->lifespan, qos2->lifespan);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Lifespan' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+                valid = v_ownershipPolicyEqual(qos1->ownership, qos2->ownership);
+                if (!valid) {
+                    OS_REPORT_1(OS_WARNING, "v_spliced", 0,
+                                "Detected Unmatching QoS Policy: 'Ownership' for Topic <%s>.",
+                                info->name);
+                    consistent = FALSE;
+                }
+            } else {
+                consistent = FALSE;
+            }
+            c_free(qos1);
+            c_free(qos2);
         }
     } else {
         consistent = FALSE;
@@ -579,28 +709,44 @@ v_splicedProcessSubscriptionInfo(
     v_policyId id;
     enum v_statusLiveliness newLivState;
     enum v_statusLiveliness oldLivState;
+    v_state state;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
     kernel = v_objectKernel(spliced);
 
+    /* Try to take one subscriptionInfo message from the built-in DataRaeder.
+     */
     rSample = NULL;
     if (spliced->readers[V_SUBSCRIPTIONINFO_ID] != NULL) {
-        (void)v_dataReaderTake(spliced->readers[V_SUBSCRIPTIONINFO_ID], takeOne, &rSample);
+        (void)v_dataReaderTake(spliced->readers[V_SUBSCRIPTIONINFO_ID],
+                               takeOne,
+                               &rSample);
     }
-    /* For every subscription check if the qos of a matching writer is compatible.
+    /* If a subscriptionInfo message exists then process it.
      */
     if (rSample != NULL) {
         result = 1;
-       /* Read all publicationInfo, with the same topic name, this way
-          all remote publications are also taken into account.
-        */
+
         msg = v_dataReaderSampleMessage(rSample);
         rInfo = v_builtinSubscriptionInfoData(kernel->builtin,msg);
-        r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+        state = v_readerSample(rSample)->sampleState;
 
+        /* Notify the nodal delivery service about any synchronous
+         * DataReader topology changes.
+         */
+        if (rInfo->reliability.synchronous) {
+            if (v_stateTest(state, L_DISPOSED)) {
+                v_deliveryServiceUnregister(kernel->deliveryService,msg);
+            } else {
+                v_deliveryServiceRegister(kernel->deliveryService,msg);
+            }
+        }
         if (v_stateTest(v_readerSample(rSample)->sampleState, L_DISPOSED)) {
+            /* The subscription is disposed so the following
+             * code will remove and free the registration.
+             */
             oldMsg = c_remove(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
                               msg, NULL, NULL);
             c_free(oldMsg);
@@ -609,11 +755,21 @@ v_splicedProcessSubscriptionInfo(
                                msg, NULL, NULL);
 
             if (oldMsg != NULL) {
+                /* An update of a registration. */
                 oldInfo = v_builtinSubscriptionInfoData(kernel->builtin,oldMsg);
             } else {
+                /* A new registration. */
                 oldInfo = NULL;
             }
 
+            r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+
+           /* Check if there are matching DataWriters i.e. with
+            * compatible qos policies.
+            */
+           /* Read all publicationInfo, with the same topic name, this way
+            * all remote publications are also taken into account.
+            */
             offeredMessages = lookupMatchingWritersByTopic(spliced, rInfo);
             offeredMsg = c_iterTakeFirst(offeredMessages);
             while (offeredMsg != NULL) {
@@ -679,9 +835,9 @@ v_splicedProcessSubscriptionInfo(
             if (oldMsg != msg) {
                 c_free(oldMsg);
             }
-        }
-        if (r != NULL) {
-            v_gidRelease(rInfo->key, kernel);
+            if (r != NULL) {
+                v_gidRelease(rInfo->key, kernel);
+            }
         }
         c_free(rSample); /* msg is freed here */
         rSample = NULL;
@@ -714,6 +870,8 @@ v_splicedProcessPublicationInfo
     enum v_statusLiveliness newLivState;
     enum v_statusLiveliness oldLivState;
     c_time curTime;
+    c_long disposeCount = 0;
+    c_long noWritersCount = 0;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
@@ -729,6 +887,7 @@ v_splicedProcessPublicationInfo
      * compatible.
      */
     if (oSample != NULL) {
+        v_dataReaderInstance sampleInstance;
         result = 1;
 
         /* Read all subscriptionInfo, with the same topic name, this way
@@ -737,6 +896,18 @@ v_splicedProcessPublicationInfo
         msg = v_dataReaderSampleMessage(oSample);
         oInfo = v_builtinPublicationInfoData(kernel->builtin,msg);
         w = v_writer(v_gidClaim(oInfo->key, kernel));
+
+        /* Obtain the disposed_generation_count and no_writers_generation_count variables
+         * so as to be able to determine the previous state of an instance that may have become
+         * ALIVE having been NOT_ALIVE.  The current state of the instance and previous samples
+         * of the instance are not enough to detect that. We need to be able to handle the case
+         * when an instance is disposed but that information is not receieved by the spliced
+         * before the instance is awoken by the creation of a new writer.
+         */
+
+        sampleInstance = v_dataReaderSampleInstance(oSample);
+        disposeCount = sampleInstance->disposeCount;
+        noWritersCount = sampleInstance->noWritersCount;
 
         if (v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) {
             oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID],
@@ -804,7 +975,17 @@ v_splicedProcessPublicationInfo
                 if (oldInfo != NULL) {
                     if (readerWriterMatch(kernel, rInfo, r, oldInfo, NULL)) {
                         if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                            oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
+                            if (disposeCount > 0 || noWritersCount > 0) {
+                                /* The DDS spec states that if an instance is changed from NOT_ALIVE to ALIVE
+                                 * then either the disposed_generation_count or no_writers_generation_count
+                                 * variables will have been incremented. Use the state of these variables to
+                                 * determine whether the previous state is NOT_ALIVE, in turn leading to
+                                 * the liveliness changed callback being invoked in the correct scenarios.
+                                 */
+                                oldLivState = V_STATUSLIVELINESS_NOTALIVE;
+                            } else {
+                                oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
+                            }
                         } else {
                             oldLivState = V_STATUSLIVELINESS_NOTALIVE;
                         }
@@ -1058,7 +1239,14 @@ v_splicedManageKernel(
     }
 
     _INIT_BUILTIN_DATA_(V_TOPICINFO_ID, V_TOPICINFO_NAME);
+
     v_readerQosFree(rQos);
+
+    kernel->deliveryService = v_deliveryServiceNew(
+                                      spliced->builtinSubscriber,
+                                      "deliveryService");
+
+    spliced->readers[V_DELIVERYINFO_ID] = c_keep(kernel->deliveryService);
 
     /* setup stuff for heartbeat protocol */
     /* Heartbeat period is first set to default, since configuration is not
@@ -1074,10 +1262,11 @@ v_splicedManageKernel(
     expr = q_parse(HB_VIEW_EXPR);
     params[0] = c_ulongValue(v_gidSystemId(spliced->hb.id));
 
-    spliced->readers[V_HEARTBEATINFO_ID] = v_dataReaderNew(spliced->builtinSubscriber,
-                                                           HB_READER_NAME,
-                                                           expr, params,
-                                                           NULL, TRUE);
+    spliced->readers[V_HEARTBEATINFO_ID] =
+                v_dataReaderNew(spliced->builtinSubscriber,
+                                HB_READER_NAME,
+                                expr, params,
+                                NULL, TRUE);
     q_dispose(expr);
     topic = v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID);
     str = messageKeyExpr(topic);
@@ -1196,11 +1385,13 @@ v_splicedHeartbeat(
     kernel = v_objectKernel(spliced);
     msg = v_topicMessageNew(v_builtinTopicLookup(kernel->builtin,
                                                  V_HEARTBEATINFO_ID));
-    hb = v_builtinHeartbeatInfoData(kernel->builtin,msg);
-    *hb = spliced->hb;
-    v_writerWrite(v_builtinWriterLookup(kernel->builtin,V_HEARTBEATINFO_ID),
-                  msg, v_timeGet(),NULL);
-    c_free(msg);
+    if (msg) {
+        hb = v_builtinHeartbeatInfoData(kernel->builtin,msg);
+        *hb = spliced->hb;
+        v_writerWrite(v_builtinWriterLookup(kernel->builtin,V_HEARTBEATINFO_ID),
+                      msg, v_timeGet(),NULL);
+        c_free(msg);
+    }
 }
 
 static c_bool alwaysTrue (v_readerSample sample, c_voidp arg) { return TRUE; }
@@ -1341,23 +1532,26 @@ cleanup(
 
     if (v_messageQos_isAutoDispose(regMsg->qos)) {
         msg = v_topicMessageNew(g->topic);
+        if (msg) {
+            v_topicMessageCopyKeyValues(g->topic, msg, regMsg);
+            v_nodeState(msg) = L_DISPOSED;
+            msg->qos = c_keep(regMsg->qos); /* since messageQos does not contain refs */
+            msg->writerGID = regMsg->writerGID; /* pretend this message comes from the original writer! */
+            msg->writeTime = *writeTime;
+            v_groupWrite(g, msg, NULL, V_NETWORKID_ANY);
+            c_free(msg);
+        }
+    }
+    msg = v_topicMessageNew(g->topic);
+    if (msg) {
         v_topicMessageCopyKeyValues(g->topic, msg, regMsg);
-        v_nodeState(msg) = L_DISPOSED;
+        v_nodeState(msg) = L_UNREGISTER;
         msg->qos = c_keep(regMsg->qos); /* since messageQos does not contain refs */
         msg->writerGID = regMsg->writerGID; /* pretend this message comes from the original writer! */
         msg->writeTime = *writeTime;
         v_groupWrite(g, msg, NULL, V_NETWORKID_ANY);
         c_free(msg);
     }
-    msg = v_topicMessageNew(g->topic);
-    v_topicMessageCopyKeyValues(g->topic, msg, regMsg);
-    v_nodeState(msg) = L_UNREGISTER;
-    msg->qos = c_keep(regMsg->qos); /* since messageQos does not contain refs */
-    msg->writerGID = regMsg->writerGID; /* pretend this message comes from the original writer! */
-    msg->writeTime = *writeTime;
-    v_groupWrite(g, msg, NULL, V_NETWORKID_ANY);
-    c_free(msg);
-
 }
 
 static void

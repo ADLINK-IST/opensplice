@@ -5465,7 +5465,7 @@ gapi_fooDataReaderView_get_key_value (
 OS_API gapi_instanceHandle_t
 gapi_fooDataReaderView_lookup_instance (
     gapi_fooDataReaderView _this,
-    gapi_foo * instance_data);
+    const gapi_foo * instance_data);
 
 /* ReturnCode_t
  * return_loan(

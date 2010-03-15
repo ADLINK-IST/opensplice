@@ -14,8 +14,6 @@
 #include "gapi.h"
 #include "gapi_entity.h"
 #include "gapi_domainEntity.h"
-#include "gapi_domainParticipant.h"
-#include "gapi_domainParticipantFactory.h"
 #include "gapi_status.h"
 #include "gapi_kernel.h"
 #include "gapi_builtin.h"

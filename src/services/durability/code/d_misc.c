@@ -16,7 +16,7 @@
 #include "v_entity.h"
 #include "v_group.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "os_report.h"
 #include "os_stdlib.h"
 

@@ -14,11 +14,20 @@ CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
 CURRENT_PL_SUNOS=`uname | grep SunOS`
+AWK=""
+
+if [ "$CURRENT_PL_SUNOS" != "" ] ;then
+   AWK="/usr/xpg4/bin/awk"
+else
+   AWK="awk"
+fi
+
+IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
+
+IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
 
 check_platform()
 {
-
-
    if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;
    then
      return 0
@@ -113,42 +122,31 @@ else
     cd examples
 
     # Do not do CORBA C++ or standalone C++ examples with AIX for now as the build fails and don't do
-    # dlrl either with AIX
+    # dlrl either with AIX Also the DBMSConnect example cannot be run under AIX for now due to the 
+    # fact that it needs the C++ example to be built.  Once the C++ example builds then we can run the
+    # DBMSConnect example.
     if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
     then
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
     else
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
     
-        # DLRL examples are not included in an inner only build so only add them if doing an outer build
+        # DLRL and DBMSConnect examples are not included in an inner only build so only add them if doing an outer build
         if [ "$DEP" != "none" ]
         then
             EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
+
+            # If it's 64 bit linux don't run the dbmsconnect example - see dds1869
+            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the 
+            # odbc.ini and odbc.inst files are not populated.
+            if [ "$IS_64_BIT" = "0" -a "$IS_STUDIO12" = "0" ]
+            then
+                EXAMPLES=$EXAMPLES" services/dbmsconnect/SQL/C++/ODBC "
+            fi
         fi
     fi 
 
     export EXAMPLES
-
-    #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    SPECIAL_BUILD_FILES="dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
-    export SPECIAL_BUILD_FILES
-
-    echo "Updating XML:"
-    echo "OSPL_URI before XMLFILE update is $OSPL_URI"
-
-    sleep 7200 &
-    UNIQID=$!
-    XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml/'`
-
-    echo "XMLFILE is $XMLFILE"
-
-    NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
-
-    echo "NEWXMLFILE is $NEWXMLFILE"
-    echo "UNIQID is $UNIQID"
-
-    sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
-    OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml/'`
 
     echo "Running Examples:"
     
@@ -169,6 +167,33 @@ else
 
         export PATH CLASSPATH
 
+        echo "Updating XML:"
+        echo "OSPL_URI before XMLFILE update is $OSPL_URI"
+
+        sleep 7200 &
+        UNIQID=$!
+        XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml/'`
+
+        echo "XMLFILE is $XMLFILE"
+        echo "OSPL_URI is $OSPL_URI"
+
+        NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
+
+        echo "NEWXMLFILE is $NEWXMLFILE"
+        echo "UNIQID is $UNIQID"
+
+        sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
+        OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml/'`
+
+        ODBCINI="$ODBCHOME/etc/odbc.ini"
+        ODBCINST="$ODBCHOME/etc/odbcinst.ini"
+        ODBC_MSSQL_SERVER="10.1.0.189"
+        ODBC_MYSQL_SERVER="10.1.0.191"
+        ODBCSYSINI="$ODBCHOME/etc"
+        LD_LIBRARY_PATH="$ODBCHOME/lib:$LD_LIBRARY_PATH"
+
+        export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI LD_LIBRARY_PATH
+
         sh $BASE/run_examples.sh
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
@@ -176,11 +201,8 @@ else
 
         XPATH="$(cygpath -w $BASE)";
 
-        echo "NOT Calling cmd.exe with $XPATH\run_examples.bat "
-# Do not run the examples yet as they hang and prevent other runs taking place
-#        cmd.exe /c $XPATH//run_examples.bat
-
-        mv $LOGDIR/examples/run/run_results.txt $LOGDIR/examples/run/overview.log
+        echo "Running examples "
+        cmd.exe /C $XPATH/run_examples.bat
     fi
     exit $?
 fi

@@ -237,26 +237,7 @@ _DataReaderNew (
     v_subscriberQos subscriberQos;
     gapi_string topicName;
     char dataReaderId[256];
-    c_bool enable = TRUE;
     c_bool noError = TRUE;
-
-    /* The following code copies the Qos from the subscriber just to
-     * retrieve the auto enable value.
-     * Is it really necessary to have it on this level or can it also
-     * be handled in the user layer internally?
-     * If it is required at this level then a dedicated get enable value
-     * would be more efficient than copying the whole qos and freeing it again.
-     * In addition if the retrieval of the qos fails the enable is set to
-     * TRUE by default without warning, this seems incorrect.
-     */
-    if (noError) {
-        uSubscriber = U_SUBSCRIBER_GET(subscriber);
-        uResult = u_entityQoS(u_entity(uSubscriber), (v_qos*)&subscriberQos);
-        if ( uResult == U_RESULT_OK ) {
-            enable = subscriberQos->entityFactory.autoenable_created_entities;
-            u_subscriberQosFree(subscriberQos);
-        }
-    }
 
     readerQos = u_readerQosNew(NULL);
     if ( readerQos != NULL ) {
@@ -288,7 +269,7 @@ _DataReaderNew (
                                       expr,
                                       params,
                                       readerQos,
-                                      enable);
+                                      FALSE);
             q_dispose(expr);
             os_free(params);
             noError = (uReader != NULL);
@@ -303,7 +284,7 @@ _DataReaderNew (
                                               a_listener,
                                               mask,
                                               uReader,
-                                              enable);
+                                              FALSE);
                     if (!noError) {
                         _DomainEntityDispose(_DomainEntity(_this));
                     }
@@ -608,7 +589,7 @@ gapi_dataReader_create_view (
 
     if ( datareader && _Entity(datareader)->enabled ) {
         if ( qos == GAPI_DATAVIEW_QOS_DEFAULT ) {
-            viewQos = (gapi_dataReaderViewQos *)&gapi_dataReaderViewQosDefault;
+            viewQos = (gapi_dataReaderViewQos *)&datareader->_defDataReaderViewQos;
         } else {
             viewQos = (gapi_dataReaderViewQos *)qos;
         }
@@ -1434,7 +1415,28 @@ gapi_dataReader_set_default_datareaderview_qos (
     gapi_dataReader _this,
     const gapi_dataReaderViewQos *qos)
 {
-  return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _DataReader dataReader = (_DataReader)_this;
+    gapi_context        context;
+
+    GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_DATAREADERVIEW_QOS);
+
+    dataReader = gapi_dataReaderClaim(_this, &result);
+
+    if ( dataReader ) {
+        if ( qos ) {
+            result = gapi_dataReaderViewQosIsConsistent(qos, &context);
+            if ( result == GAPI_RETCODE_OK ) {
+                gapi_dataReaderViewQosCopy (qos, &dataReader->_defDataReaderViewQos);
+            }
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+    }
+
+    _EntityRelease(dataReader);
+
+    return result;
 }
 
 gapi_returnCode_t
@@ -1442,7 +1444,16 @@ gapi_dataReader_get_default_datareaderview_qos (
     gapi_dataReader _this,
     gapi_dataReaderViewQos *qos)
 {
-  return GAPI_RETCODE_UNSUPPORTED;
+    _DataReader datareader;
+    gapi_returnCode_t result;
+
+    datareader = gapi_dataReaderClaim(_this, &result);
+
+    if ( datareader && qos ) {
+        gapi_dataReaderViewQosCopy (&datareader->_defDataReaderViewQos, qos);
+    }
+    _EntityRelease(datareader);
+    return result;
 }
 
 static c_bool

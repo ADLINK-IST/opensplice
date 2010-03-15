@@ -36,7 +36,7 @@ v_qosCreate(
 #define _CASE_(l,t) case l: type = c_resolve(base,t); break
 
     switch (kind) {
-    _CASE_(V_DOMAIN_QOS,        "kernelModule::v_domainQos");
+    _CASE_(V_PARTITION_QOS,        "kernelModule::v_partitionQos");
     _CASE_(V_PARTICIPANT_QOS,   "kernelModule::v_participantQos");
     _CASE_(V_TOPIC_QOS,         "kernelModule::v_topicQos");
     _CASE_(V_WRITER_QOS,        "kernelModule::v_writerQos");
@@ -58,7 +58,13 @@ v_qosCreate(
 
     qos = v_qos(c_new(type));
     c_free(type);
-    qos->kind = kind;
+    if (qos) {
+        qos->kind = kind;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_qosCreate",0,
+                  "Failed to allocate qos.");
+    }
 
     return qos;
 
@@ -72,7 +78,7 @@ v_qosKindImage (
 #define _CASE_(o) case o: return #o
 
     switch (kind) {
-    _CASE_(V_DOMAIN_QOS);
+    _CASE_(V_PARTITION_QOS);
     _CASE_(V_PARTICIPANT_QOS);
     _CASE_(V_TOPIC_QOS);
     _CASE_(V_WRITER_QOS);
@@ -115,7 +121,7 @@ v_qosFree(
         case V_SUBSCRIBER_QOS:
             v_subscriberQosFree(v_subscriberQos(qos));
         break;
-        case V_DOMAIN_QOS:
+        case V_PARTITION_QOS:
         case V_INDEX_QOS:
         case V_WRITERHISTORY_QOS:
         case V_GROUPHISTORY_QOS:

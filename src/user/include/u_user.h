@@ -56,7 +56,7 @@ extern "C" {
 #include "u_types.h"
 #include "u_time.h"
 
-#include "u_domainQos.h"
+#include "u_partitionQos.h"
 #include "u_participantQos.h"
 #include "u_topicQos.h"
 #include "u_writerQos.h"
@@ -68,7 +68,7 @@ extern "C" {
 #include "u_instanceHandle.h"
 
 #include "u_participant.h"
-#include "u_domain.h"
+#include "u_partition.h"
 #include "u_topic.h"
 
 #include "u_publisher.h"
@@ -131,6 +131,14 @@ OS_API u_result u_userProtect (u_entity e);
  * the protection against interrupts set by the method u_userProtect.
  */
 OS_API u_result u_userUnprotect (u_entity e);
+
+/** \brief Increases the refCount of the object only within the lifespan of the process.
+ */
+OS_API c_object u_userKeep(c_object o);
+
+/** \brief Decreases the refCount of the object.
+ */
+OS_API void u_userFree (c_object o);
 
 #undef OS_API
 

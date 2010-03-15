@@ -11,6 +11,7 @@
  */
 #include "v_policy.h"
 #include "v__messageQos.h"
+#include "os_report.h"
 #include "os_abstract.h" /* big or little endianness */
 
 #define v_messageQos_strengthSize(qos)   (v_messageQos_isExclusive(qos)?4:0)
@@ -138,47 +139,53 @@ v_messageQos_new(
 
     _this = c_newArray((c_collectionType)type,offset);
 
-    ((c_octet *)_this)[0] = byte0;
-    ((c_octet *)_this)[1] = byte1;
+    if (_this) {
+        ((c_octet *)_this)[0] = byte0;
+        ((c_octet *)_this)[1] = byte1;
 #ifdef _FAST_ACCESS_
-    ((c_octet *)_this)[2] = latency_offset;
-    ((c_octet *)_this)[3] = deadline_offset;
-    ((c_octet *)_this)[4] = liveliness_offset;
-    ((c_octet *)_this)[5] = lifespan_offset;
+        ((c_octet *)_this)[2] = latency_offset;
+        ((c_octet *)_this)[3] = deadline_offset;
+        ((c_octet *)_this)[4] = liveliness_offset;
+        ((c_octet *)_this)[5] = lifespan_offset;
 
-    src = (c_octet *)&wqos->transport.value;
-    dst = (c_octet *)&((c_octet *)_this)[6];
-    _COPY4_(dst,src);
+        src = (c_octet *)&wqos->transport.value;
+        dst = (c_octet *)&((c_octet *)_this)[6];
+        _COPY4_(dst,src);
 #else
-    src = (c_octet *)&wqos->transport.value;
-    dst = (c_octet *)&((c_octet *)_this)[2];
-    _COPY4_(dst,src);
+        src = (c_octet *)&wqos->transport.value;
+        dst = (c_octet *)&((c_octet *)_this)[2];
+        _COPY4_(dst,src);
 #endif
 
-    if (strength_offset) {
-        src = (c_octet *)&wqos->strength.value;
-        dst = (c_octet *)&((c_octet *)_this)[strength_offset];
-        _COPY4_(dst,src);
-    }
-    if (latency_offset) {
-        src = (c_octet *)&wqos->latency.duration;
-        dst = (c_octet *)&((c_octet *)_this)[latency_offset];
-        _COPY8_(dst,src);
-    }
-    if (deadline_offset) {
-        src = (c_octet *)&wqos->deadline.period;
-        dst = (c_octet *)&((c_octet *)_this)[deadline_offset];
-        _COPY8_(dst,src);
-    }
-    if (liveliness_offset) {
-        src = (c_octet *)&wqos->liveliness.lease_duration;
-        dst = (c_octet *)&((c_octet *)_this)[liveliness_offset];
-        _COPY8_(dst,src);
-    }
-    if (lifespan_offset) {
-        src = (c_octet *)&wqos->lifespan.duration;
-        dst = (c_octet *)&((c_octet *)_this)[lifespan_offset];
-        _COPY8_(dst,src);
+        if (strength_offset) {
+            src = (c_octet *)&wqos->strength.value;
+            dst = (c_octet *)&((c_octet *)_this)[strength_offset];
+            _COPY4_(dst,src);
+        }
+        if (latency_offset) {
+            src = (c_octet *)&wqos->latency.duration;
+            dst = (c_octet *)&((c_octet *)_this)[latency_offset];
+            _COPY8_(dst,src);
+        }
+        if (deadline_offset) {
+            src = (c_octet *)&wqos->deadline.period;
+            dst = (c_octet *)&((c_octet *)_this)[deadline_offset];
+            _COPY8_(dst,src);
+        }
+        if (liveliness_offset) {
+            src = (c_octet *)&wqos->liveliness.lease_duration;
+            dst = (c_octet *)&((c_octet *)_this)[liveliness_offset];
+            _COPY8_(dst,src);
+        }
+        if (lifespan_offset) {
+            src = (c_octet *)&wqos->lifespan.duration;
+            dst = (c_octet *)&((c_octet *)_this)[lifespan_offset];
+            _COPY8_(dst,src);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_messageQos_new",0,
+                  "Failed to allocate messageQos.");
     }
     return _this;
 }
@@ -203,8 +210,13 @@ v_messageQos_copy (
     }
 
     _this = c_newArray((c_collectionType)type,size);
-
-    memcpy(_this,src,size);
+    if (_this) {
+        memcpy(_this,src,size);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_messageQos_copy",0,
+                  "Failed to allocate messageQos.");
+    }
 
     return _this;
 }

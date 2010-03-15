@@ -45,18 +45,21 @@ c_ulong           nw_bridgeWrite(
                       v_networkHashValue hashValue,
                       const char *partitionName,
                       const char *topicName,
-                      nw_signedLength *bytesLeft);
+                      nw_signedLength *bytesLeft,
+                      plugSendStatistics pss);
                       
 nw_bool           nw_bridgeFlush(
                       nw_bridge bridge,
                       nw_seqNr channelId,
                       nw_bool all,
-                      nw_signedLength *bytesLeft);
+                      nw_signedLength *bytesLeft,
+                      plugSendStatistics pss);
                       
 void              nw_bridgePeriodicAction(
                       nw_bridge bridge,
                       nw_seqNr channelId,
-                      nw_signedLength *bytesLeft);
+                      nw_signedLength *bytesLeft,
+                      plugSendStatistics pss);
 
 typedef c_voidp nw_typeLookupArg;
 
@@ -74,7 +77,9 @@ void              nw_bridgeRead(
                       nw_seqNr channelId,
                       v_message *message,
                       const nw_typeLookupAction typeLookupAction,
-                      nw_typeLookupArg typeLookupArg);
+                      nw_typeLookupArg typeLookupArg,
+                      plugReceiveStatistics prs)
+;
 
 void              nw_bridgeTrigger(
                       nw_bridge bridge,

@@ -48,7 +48,7 @@ v_groupSetNew (
 OS_API v_group
 v_groupSetCreate (
     v_groupSet _this,
-    v_domain domain,
+    v_partition partition,
     v_topic topic);
 
 OS_API v_group
@@ -65,7 +65,7 @@ v_groupSetSelect (
 OS_API v_group
 v_groupSetGet (
     v_groupSet _this,
-    const c_char *domainName,
+    const c_char *partitionName,
     const c_char *topicName);
 
 OS_API c_iter

@@ -53,7 +53,7 @@ C_STRUCT(jni_participant){
  * 
  * This function should only be called by the jni_participantFactory.
  * 
- * @param kernel The Splice2v3 kernel that is associated with the DCPS Domain.
+ * @param kernel The kernel that is associated with the DCPS Domain.
  * The participant will be created within this kernel.
  * @param name The name of the participant.
  * @param domainId The id of the DCPS Domain.
@@ -61,10 +61,12 @@ C_STRUCT(jni_participant){
  * 
  * @return The newly created participant.
  */
-OS_API jni_participant jni_participantNew(             const c_char* uri,
-                                                const char* name,
-                                                long domainId,
-                                                v_qos qos);
+OS_API jni_participant
+jni_participantNew(
+    const c_char* uri,
+    const char* name,
+    long domainId,
+    v_qos qos);
 
 /**@brief Destroys the supplied participant. 
  * 
@@ -76,7 +78,9 @@ OS_API jni_participant jni_participantNew(             const c_char* uri,
  * 
  * @return JNI_RESULT_OK if succeeded, any other result otherwise.
  */
-OS_API jni_result      jni_participantFree(            jni_participant p);
+OS_API jni_result
+jni_participantFree(
+    jni_participant p);
 
 /**@brief Creates a new publisher within the supplied participant. 
  * 
@@ -87,8 +91,10 @@ OS_API jni_result      jni_participantFree(            jni_participant p);
  * 
  * @return The newly created publisher.
  */
-OS_API jni_publisher   jni_createPublisher(            jni_participant p, 
-                                                v_publisherQos qos);
+OS_API jni_publisher
+jni_createPublisher(
+    jni_participant p, 
+    v_publisherQos qos);
 
 /**@brief Deletes the supplied publisher and removes it from the supplied participant.
  * 
@@ -102,8 +108,10 @@ OS_API jni_publisher   jni_createPublisher(            jni_participant p,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_deletePublisher(            jni_participant p, 
-                                                jni_publisher pub);
+OS_API jni_result
+jni_deletePublisher(
+    jni_participant p, 
+    jni_publisher pub);
 
 /**@brief Creates a new subscriber within the supplied participant.
  * 
@@ -114,8 +122,10 @@ OS_API jni_result      jni_deletePublisher(            jni_participant p,
  * 
  * @return The newly created subscriber.
  */
-OS_API jni_subscriber  jni_createSubscriber(           jni_participant p, 
-                                                v_subscriberQos qos);
+OS_API jni_subscriber
+jni_createSubscriber(
+    jni_participant p, 
+    v_subscriberQos qos);
 
 /**@brief Deletes the supplied subscriber and removes it from the supplied participant.
  * 
@@ -129,12 +139,15 @@ OS_API jni_subscriber  jni_createSubscriber(           jni_participant p,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_deleteSubscriber(           jni_participant p, 
-                                                jni_subscriber sub);
+OS_API jni_result
+jni_deleteSubscriber(
+    jni_participant p, 
+    jni_subscriber sub);
 
 /**@brief Creates a new topic within the supplied participant. 
- * The created topic is stored in this participant. At this time the topic must
- * already exist in the Domain. The topic cannot be created otherwise.
+ * The created topic is stored in this participant.
+ * At this time the topic must already exist.
+ * The topic cannot be created otherwise.
  * 
  * @param p The participant to create the topic in.
  * @param name The name of the topic.
@@ -143,10 +156,12 @@ OS_API jni_result      jni_deleteSubscriber(           jni_participant p,
  * 
  * @return The newly created topic.
  */
-OS_API jni_topic       jni_createTopic(                jni_participant p,
-                                                const char* name,
-                                                const char* typeName,
-                                                v_topicQos qos);
+OS_API jni_topic
+jni_createTopic(
+    jni_participant p,
+    const char* name,
+    const char* typeName,
+    v_topicQos qos);
 
 /**@brief Looks up the topic with the supplied name within the supplied
  * participant.
@@ -157,8 +172,10 @@ OS_API jni_topic       jni_createTopic(                jni_participant p,
  * @return The topic with the supplied name. If the topic could not be
  * found, NULL is returned.
  */
-OS_API jni_topic       jni_lookupTopic(                jni_participant p,
-                                                const char* name);
+OS_API jni_topic
+jni_lookupTopic(
+    jni_participant p,
+    const char* name);
 
 /**@brief Removes the supplied topic from the supplied participant.
  * If the supplied participant does not contain the supplied topic,
@@ -169,8 +186,10 @@ OS_API jni_topic       jni_lookupTopic(                jni_participant p,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_deleteTopic(                jni_participant p,
-                                                jni_topic top);
+OS_API jni_result
+jni_deleteTopic(
+    jni_participant p,
+    jni_topic top);
                                   
 /**@brief Removes all entities within the supplied participant. 
  * 
@@ -181,7 +200,9 @@ OS_API jni_result      jni_deleteTopic(                jni_participant p,
  * @param p The participant to delete all entities of.
  * @return JNI_RESULT_OK if succeeded, any other result otherwise.
  */      
-OS_API jni_result      jni_deleteParticipantEntities(  jni_participant p);
+OS_API jni_result
+jni_deleteParticipantEntities(
+    jni_participant p);
 
 /**@brief Adds a partition to the supplied participant.
  * 
@@ -192,11 +213,13 @@ OS_API jni_result      jni_deleteParticipantEntities(  jni_participant p);
  * is returned.
  * 
  * @param p The participant to add the partition to.
- * @param domainName The name of the partition to add to the participant.
+ * @param partitionName The name of the partition to add to the participant.
  * @result JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_participantAddPartition(    jni_participant p,
-                                                const c_char* domainName);
+OS_API jni_result
+jni_participantAddPartition(
+    jni_participant p,
+    const c_char* partitionName);
 
 #undef OS_API
    

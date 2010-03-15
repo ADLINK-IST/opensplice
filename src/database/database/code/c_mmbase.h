@@ -67,6 +67,10 @@ void *c_mmBind    (c_mm mm, const c_char *name, void *memory);
 void  c_mmUnbind  (c_mm mm, const c_char *name);
 void *c_mmLookup  (c_mm mm, const c_char *name);
 
+typedef void (*c_mmOutOfMemoryAction) (c_voidp arg);
+
+void  c_mmOnOutOfMemory(c_mm mm, c_mmOutOfMemoryAction action, c_voidp arg);
+
 #undef OS_API
 
 #if defined (__cplusplus)

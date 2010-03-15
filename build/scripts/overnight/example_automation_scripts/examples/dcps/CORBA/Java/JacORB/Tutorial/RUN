@@ -5,17 +5,17 @@ ospl start
 sleep 10
 
 echo start MessageBoard
-java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.MessageBoard &
+java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.MessageBoard &
 
 sleep 2
 
 echo start Chatter
-java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.Chatter 
+java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter 
 
 sleep 4
 
 echo start Chatter with terminate message
-java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.Chatter -1
+java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter -1
 
 sleep 4
 

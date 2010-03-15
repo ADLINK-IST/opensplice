@@ -562,8 +562,8 @@ sd_deepwalkMetaUnion(
         sd_deepwalkMetaContextPost(context, name, c_type(v_union), objectPtr);
         SD_RETURN_ON_ERROR(context);
     } else {
-       /* No active case found, set error info in context */
-       SD_SET_ERROR(context, INVALID_SWITCHVALUE, name, NULL);
+        /* Not an active case. No data to walk in */
+        sd_deepwalkMetaContextPost(context, name, c_type(v_union), objectPtr);
     }        
 /* QAC EXPECT 2006; More than one return path is justified here */
 }

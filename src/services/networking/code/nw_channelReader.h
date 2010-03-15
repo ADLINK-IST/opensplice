@@ -22,7 +22,8 @@ NW_CLASS(nw_channelReader); /* extends from nw_channelUser */
 nw_channelReader  nw_channelReaderNew(
                       const char *pathName,
                       nw_receiveChannel receiveChannel,
-                      u_networkReader reader);
+                      u_networkReader reader,
+                      c_ulong stat_channel_id);
 
 #endif /* NW_CHANNELREADER_H */
 

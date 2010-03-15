@@ -69,6 +69,18 @@ DDS_DomainParticipantFactory_get_instance (
                     (gapi_domainParticipant) participant);
                 participant = NULL;
             }
+            else {
+                gapi_domainParticipantFactoryQos *dpfqos = gapi_domainParticipantFactoryQos__alloc();
+                if(dpfqos){
+                    if(gapi_domainParticipantFactory_get_qos(_this, dpfqos) == GAPI_RETCODE_OK){
+                        if(dpfqos->entity_factory.autoenable_created_entities) {
+                            gapi_entity_enable(participant);
+                        }
+                    }
+
+                    gapi_free(dpfqos);
+                }
+            }
         }
 
         return (DDS_DomainParticipant) participant;

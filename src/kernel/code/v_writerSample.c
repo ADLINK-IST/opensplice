@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -27,11 +27,11 @@ _v_writerSampleClear(
 {
     assert(sample);
     assert(C_TYPECHECK(sample,v_writerSample));
-    
+
     sample->resend = FALSE;
     sample->decayCount = 0;
 }
-    
+
 
 v_writerSample
 _v_writerSampleNew(
@@ -50,11 +50,19 @@ _v_writerSampleNew(
 #else
     sample = v_writerSample(c_new(writer->sampleField->type));
 #endif
-    v_writerSampleTemplate(sample)->message = c_keep(message);
-    sample->next = NULL;
-    sample->prev = NULL;
-    sample->sequenceNumber = 1;
-    v_writerSampleClear(sample);
+
+    if (sample) {
+        v_writerSampleTemplate(sample)->message = c_keep(message);
+        sample->next = NULL;
+        sample->prev = NULL;
+        sample->sequenceNumber = 1;
+        sample->sentBefore = FALSE;
+        v_writerSampleClear(sample);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_writerSampleNew",0,
+                  "Failed to allocate sample.");
+    }
 
     assert(C_TYPECHECK(sample,v_writerSample));
 
@@ -62,13 +70,13 @@ _v_writerSampleNew(
 }
 
 
-/* Precondition: protect the sample yourself */                  
+/* Precondition: protect the sample yourself */
 v_writerSampleStatus
 _v_writerSampleGetStatus(
     v_writerSample sample)
 {
     v_writerSampleStatus result;
-    
+
     assert(sample);
     assert(C_TYPECHECK(sample,v_writerSample));
 
@@ -82,25 +90,25 @@ _v_writerSampleGetStatus(
             result = V_SAMPLE_RELEASE;
         }
     }
-    
+
     return result;
 }
 
 
-/* Precondition: protect the sample yourself */                  
+/* Precondition: protect the sample yourself */
 void
 _v_writerSampleRelease(
     v_writerSample sample)
 {
     assert(sample);
     assert(C_TYPECHECK(sample,v_writerSample));
-    
+
     if (sample->decayCount > 0) {
        sample->decayCount--;
     }
 }
 
-    
+
 /* Precondition: protect the sample yourself */
 void
 _v_writerSampleKeep (
@@ -114,8 +122,8 @@ _v_writerSampleKeep (
     sample->decayCount = count;
 }
 
-    
-/* Precondition: protect the sample yourself */                  
+
+/* Precondition: protect the sample yourself */
 void
 _v_writerSampleResend (
     v_writerSample sample)
@@ -124,5 +132,25 @@ _v_writerSampleResend (
     assert(C_TYPECHECK(sample,v_writerSample));
 
     sample->resend = TRUE;
-}    
+}
 
+void
+_v_writerSampleSetSentBefore(
+    v_writerSample _this,
+    c_bool sentBefore)
+{
+    assert(_this);
+    assert(C_TYPECHECK(_this,v_writerSample));
+
+    _this->sentBefore = sentBefore;
+}
+
+c_bool
+_v_writerSampleHasBeenSentBefore(
+    v_writerSample _this)
+{
+    assert(_this);
+    assert(C_TYPECHECK(_this,v_writerSample));
+
+    return _this->sentBefore;
+}

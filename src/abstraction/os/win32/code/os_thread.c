@@ -80,7 +80,7 @@ os_threadMemInit(void)
         memset(tlsMemArray, 0, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
         result = TlsSetValue(tlsIndex, tlsMemArray);
         if (!result) {
-            OS_DEBUG("os_threadMemInit: Failed to set TLS"); 
+            OS_DEBUG("os_threadMemInit", "Failed to set TLS"); 
         }
     }
 }
@@ -131,7 +131,7 @@ os_threadModuleInit(void)
 {
    tlsIndex = TlsAlloc();
    if (tlsIndex == 0xFFFFFFFF) {
-      OS_DEBUG_1("Warning: could not allocate thread-local memory (System Error Code: %i)", GetLastError ());
+      OS_DEBUG_1("os_threadModuleInit", "Warning: could not allocate thread-local memory (System Error Code: %i)", GetLastError ());
    }
    os_threadHookInit();
 }
@@ -275,7 +275,7 @@ os_threadCreate(
         (LPVOID)threadContext,
         (DWORD)0, &threadIdent); 
     if (threadHandle == 0) {
-        OS_DEBUG_1("Thread creation failed with System Error Code: %i\n", GetLastError ());
+        OS_DEBUG_1("os_threadCreate", "Failed with System Error Code: %i\n", GetLastError ());
         return os_resultFail;
     }
 
@@ -315,10 +315,11 @@ os_threadCreate(
         }
     }
 	if (SetThreadPriority (threadHandle, effective_priority) == 0) {
-		OS_DEBUG_1("SetThreadPriority failed with %d", (int)GetLastError());
+		OS_DEBUG_1("os_threadCreate", "SetThreadPriority failed with %d", (int)GetLastError());
 	}
-    
-    return os_resultSuccess;
+
+   CloseHandle (threadHandle);
+   return os_resultSuccess;
 }
 
 /** \brief Return the thread ID of the calling thread
@@ -350,18 +351,18 @@ os_threadWaitExit(
     threadHandle = OpenThread(THREAD_QUERY_INFORMATION, FALSE, (DWORD)threadId);
     
     if(threadHandle == NULL){
-        OS_DEBUG_1("os_threadWaitExit: OpenThread Failed %d", (int)GetLastError());
+        OS_DEBUG_1("os_threadWaitExit", "OpenThread Failed %d", (int)GetLastError());
         return os_resultFail;
     }
     if (GetExitCodeThread(threadHandle, &tr) == 0) {
-        OS_DEBUG_1("os_threadWaitExit: GetExitCodeThread Failed %d", (int)GetLastError());
+        OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", (int)GetLastError());
         CloseHandle(threadHandle);
         return os_resultFail;
     } else {
         while (tr == STILL_ACTIVE) {
             Sleep(100);
             if (GetExitCodeThread(threadHandle, &tr) == 0) {
-                OS_DEBUG_1("os_threadWaitExit: GetExitCodeThread Failed %d", (int)GetLastError());
+                OS_DEBUG_1("os_threadWaitExit",  "GetExitCodeThread Failed %d", (int)GetLastError());
                 CloseHandle(threadHandle);
                 return os_resultFail;
             }
@@ -385,16 +386,11 @@ os_threadFigureIdentity(
     char *threadIdentity,
     os_uint threadIdentitySize)
 {
-   char *threadName = NULL;
    os_int32 size;
 
-   if (threadName != NULL) {
-      size = snprintf(threadIdentity, threadIdentitySize, "%s %u", threadName, GetCurrentThreadId());
-   } else {
-      size = snprintf(threadIdentity, threadIdentitySize, "%u", GetCurrentThreadId());
-   }
+   size = snprintf(threadIdentity, threadIdentitySize, "%u", GetCurrentThreadId());
 
-   return os_resultFail;
+   return size;
 }
 
 /** \brief Allocate thread private memory

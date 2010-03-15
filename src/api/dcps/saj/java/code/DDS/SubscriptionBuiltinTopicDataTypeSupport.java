@@ -9,7 +9,8 @@
  *   for full copyright notice and license terms.
  *
  */
- package DDS;
+
+package DDS;
 
 import org.opensplice.dds.dcps.Utilities;
 
@@ -23,10 +24,11 @@ public class SubscriptionBuiltinTopicDataTypeSupport extends org.opensplice.dds.
     public SubscriptionBuiltinTopicDataTypeSupport()
     {
         super("DDS/SubscriptionBuiltinTopicDataDataReaderImpl",
+                "DDS/SubscriptionBuiltinTopicDataDataReaderViewImpl",
             "DDS/SubscriptionBuiltinTopicDataDataWriterImpl",
             "(LDDS/SubscriptionBuiltinTopicDataTypeSupport;)V",
-            null,
-            null);
+            "null",
+            "null");
 
         int success = 0;
 

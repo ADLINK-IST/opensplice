@@ -69,11 +69,13 @@ OS_API C_STRUCT(jni_topic){
  * 
  * @return The newly created topic. If the operation failed, NULL is returned.
  */
-OS_API jni_topic   jni_topicNew(   jni_participant p,
-                            const char* name,
-                            const char* typeName,
-                            const char* keyList,
-                            v_topicQos qos);
+OS_API jni_topic
+jni_topicNew(
+    jni_participant p,
+    const char* name,
+    const char* typeName,
+    const char* keyList,
+    v_topicQos qos);
 
 /**@brief Removes the supplied topic from the participant. 
  * 
@@ -82,7 +84,9 @@ OS_API jni_topic   jni_topicNew(   jni_participant p,
  * 
  * @param topic The topic to remove.
  */
-OS_API jni_result  jni_topicFree(  jni_topic topic);
+OS_API jni_result
+jni_topicFree(
+    jni_topic topic);
 
 #undef OS_API
 

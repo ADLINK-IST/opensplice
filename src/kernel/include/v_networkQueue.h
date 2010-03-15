@@ -34,7 +34,8 @@ v_networkQueueNew(
     c_ulong priority,
     c_bool reliable,
     c_bool P2P,
-    c_time resolution);
+    c_time resolution,
+    v_networkQueueStatistics statistics);
 
 OS_API c_bool
 v_networkQueueWrite(

@@ -17,7 +17,7 @@
 #include "v__observable.h"
 #include "v_entity.h"
 #include "v_participant.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_publisher.h"
 #include "v_subscriber.h"
 #include "v__writer.h"
@@ -45,7 +45,7 @@
 #include "v__spliced.h"
 #include "v__leaseManager.h"
 #include "v__crc.h"
-#include "os.h"
+#include "os_report.h"
 
 #define __ERROR(m) printf(m); printf("\n");
 
@@ -65,22 +65,28 @@ v_new(
         return NULL;
     }
     o = c_new(type);
-    o->kernel = kernel;
-    t = type;
-    while (t != NULL) {
-        for (i=0;i<K_TYPECOUNT;i++) {
-            if (t == kernel->type[i]) {
-                o->kind = i;
-                return o;
+    if (o) {
+        o->kernel = kernel;
+        t = type;
+        while (t != NULL) {
+            for (i=0;i<K_TYPECOUNT;i++) {
+                if (t == kernel->type[i]) {
+                    o->kind = i;
+                    return o;
+                }
+            }
+            if (c_baseObject(t)->kind == M_CLASS) {
+                t = c_type(c_class(t)->extends);
+            } else {
+                t = NULL;
             }
         }
-        if (c_baseObject(t)->kind == M_CLASS) {
-            t = c_type(c_class(t)->extends);
-        } else {
-            t = NULL;
-        }
+        o->kind = K_OBJECT;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_new",0,
+                  "Failed to create kernel object.");
     }
-    o->kind = K_OBJECT;
     return o;
 }
 
@@ -94,9 +100,15 @@ v_objectNew(
     assert(C_TYPECHECK(kernel,v_kernel));
 
     o = c_new(v_kernelType(kernel,kind));
-    assert(C_TYPECHECK(o,v_object));
-    o->kind = kind;
-    o->kernel = kernel;
+    if (o) {
+        assert(C_TYPECHECK(o,v_object));
+        o->kind = kind;
+        o->kernel = kernel;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_objectNew",0,
+                  "Failed to create kernel object.");
+    }
     return o;
 }
 
@@ -170,6 +182,12 @@ v_kernelNew(
     loadkernelModule(base);
 
     kernel = (v_kernel)c_new(c_resolve(base,"kernelModule::v_kernel"));
+    if (!kernel) {
+        OS_REPORT(OS_ERROR,
+                  "v_kernelNew",0,
+                  "Failed to allocate kernel.");
+        return NULL;
+    }
     v_objectKind(kernel) = K_KERNEL;
     v_object(kernel)->kernel = (c_voidp)kernel;
     kernel->handleServer = v_handleServerNew(base);
@@ -178,10 +196,8 @@ v_kernelNew(
 
     INITTYPE(kernel,kernelModule::v_kernel,             K_KERNEL);
     INITTYPE(kernel,kernelModule::v_participant,        K_PARTICIPANT);
-    INITTYPE(kernel,kernelModule::v_handle,             K_HANDLE);
     INITTYPE(kernel,kernelModule::v_waitset,            K_WAITSET);
     INITTYPE(kernel,kernelModule::v_condition,          K_CONDITION);
-    INITTYPE(kernel,kernelModule::v_listener,           K_LISTENER);
     INITTYPE(kernel,kernelModule::v_query,              K_QUERY);
     INITTYPE(kernel,kernelModule::v_dataReaderQuery,    K_DATAREADERQUERY);
     INITTYPE(kernel,kernelModule::v_dataViewQuery,      K_DATAVIEWQUERY);
@@ -193,13 +209,12 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_dataReaderInstance, K_DATAREADERINSTANCE);
     INITTYPE(kernel,kernelModule::v_purgeListItem,      K_PURGELISTITEM);
     INITTYPE(kernel,kernelModule::v_groupPurgeItem,     K_GROUPPURGEITEM);
-    INITTYPE(kernel,kernelModule::v_node,               K_NODE);
     INITTYPE(kernel,kernelModule::v_dataReaderSample,   K_READERSAMPLE);
     INITTYPE(kernel,kernelModule::v_publisher,          K_PUBLISHER);
     INITTYPE(kernel,kernelModule::v_subscriber,         K_SUBSCRIBER);
-    INITTYPE(kernel,kernelModule::v_domain,             K_DOMAIN);
-    INITTYPE(kernel,kernelModule::v_domainInterest,     K_DOMAININTEREST);
-    INITTYPE(kernel,kernelModule::v_domainAdmin,        K_DOMAINADMIN);
+    INITTYPE(kernel,kernelModule::v_partition,             K_DOMAIN);
+    INITTYPE(kernel,kernelModule::v_partitionInterest,     K_DOMAININTEREST);
+    INITTYPE(kernel,kernelModule::v_partitionAdmin,        K_DOMAINADMIN);
     INITTYPE(kernel,kernelModule::v_reader,             K_READER);
     INITTYPE(kernel,kernelModule::v_writer,             K_WRITER);
     INITTYPE(kernel,kernelModule::v_group,              K_GROUP);
@@ -213,11 +228,12 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_groupQueue,         K_GROUPQUEUE);
     INITTYPE(kernel,kernelModule::v_groupQueueSample,   K_GROUPQUEUESAMPLE);
     INITTYPE(kernel,kernelModule::v_dataReader,         K_DATAREADER);
+    INITTYPE(kernel,kernelModule::v_deliveryService,    K_DELIVERYSERVICE);
     INITTYPE(kernel,kernelModule::v_index,              K_INDEX);
     INITTYPE(kernel,kernelModule::v_filter,             K_FILTER);
     INITTYPE(kernel,kernelModule::v_readerStatus,       K_READERSTATUS);
     INITTYPE(kernel,kernelModule::v_writerStatus,       K_WRITERSTATUS);
-    INITTYPE(kernel,kernelModule::v_domainStatus,       K_DOMAINSTATUS);
+    INITTYPE(kernel,kernelModule::v_partitionStatus,       K_DOMAINSTATUS);
     INITTYPE(kernel,kernelModule::v_topicStatus,        K_TOPICSTATUS);
     INITTYPE(kernel,kernelModule::v_subscriberStatus,   K_SUBSCRIBERSTATUS);
     INITTYPE(kernel,kernelModule::v_status,             K_PUBLISHERSTATUS);
@@ -232,8 +248,6 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_cmsoap,             K_CMSOAP);
     INITTYPE(kernel,kernelModule::v_leaseManager,       K_LEASEMANAGER);
     INITTYPE(kernel,kernelModule::v_groupSet,           K_GROUPSET);
-    INITTYPE(kernel,kernelModule::v_groupSetObserver,   K_GROUPSETOBSERVER);
-    INITTYPE(kernel,kernelModule::v_observer,           K_OBSERVER);
     INITTYPE(kernel,kernelModule::v_proxy,              K_PROXY);
     INITTYPE(kernel,kernelModule::v_waitsetEvent,       K_WAITSETEVENT);
     INITTYPE(kernel,kernelModule::v_waitsetEventHistoryDelete,  K_WAITSETEVENTHISTORYDELETE);
@@ -269,7 +283,7 @@ v_kernelNew(
         kernel->GID.systemId = time.tv_nsec;
     }
     kernel->participants = c_setNew(v_kernelType(kernel,K_PARTICIPANT));
-    kernel->domains = c_tableNew(v_kernelType(kernel,K_DOMAIN),"name");
+    kernel->partitions = c_tableNew(v_kernelType(kernel,K_DOMAIN),"name");
     kernel->topics = c_tableNew(v_kernelType(kernel,K_TOPIC),"name");
     kernel->groupSet = v_groupSetNew(kernel);
     kernel->serviceManager = v_serviceManagerNew(kernel);
@@ -287,6 +301,8 @@ v_kernelNew(
     kernel->crc = v_crcNew(kernel, V_CRC_KEY);
     kernel->builtin = v_builtinNew(kernel);
 
+    kernel->deliveryService = NULL;
+
     sd = v_splicedNew(kernel);
     c_free(sd);
 
@@ -296,47 +312,47 @@ v_kernelNew(
     return kernel;
 }
 
-v_domain
-v_addDomain(
+v_partition
+v_addPartition(
     v_kernel kernel,
-    v_domain domain)
+    v_partition partition)
 {
-    v_domain found;
+    v_partition found;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
-    assert(domain != NULL);
-    assert(C_TYPECHECK(domain,v_domain));
+    assert(partition != NULL);
+    assert(C_TYPECHECK(partition,v_partition));
 
     c_lockWrite(&kernel->lock);
-    found = c_insert(kernel->domains,domain);
+    found = c_insert(kernel->partitions,partition);
     c_lockUnlock(&kernel->lock);
 
-    if (found != domain) {
+    if (found != partition) {
         assert(v_objectKind(found) == K_DOMAIN);
         if (v_objectKind(found) != K_DOMAIN) {
-            domain = NULL;
+            partition = NULL;
         } else {
-            domain = found;
+            partition = found;
         }
     }
-    return domain;
+    return partition;
 }
 
-v_domain
-v_removeDomain(
+v_partition
+v_removePartition(
     v_kernel kernel,
-    v_domain domain)
+    v_partition partition)
 {
-    v_domain found;
+    v_partition found;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
-    assert(domain != NULL);
-    assert(C_TYPECHECK(domain,v_domain));
+    assert(partition != NULL);
+    assert(C_TYPECHECK(partition,v_partition));
 
     c_lockWrite(&kernel->lock);
-    found = c_remove(kernel->domains,domain,NULL,NULL);
+    found = c_remove(kernel->partitions,partition,NULL,NULL);
     c_lockUnlock(&kernel->lock);
     if (found == NULL) {
         return NULL;
@@ -531,7 +547,7 @@ v_resolveParticipants(
 }
 
 c_iter
-v_resolveDomains(
+v_resolvePartitions (
     v_kernel kernel,
     const c_char *name)
 {
@@ -545,7 +561,7 @@ v_resolveDomains(
 
     expr = (q_expr)q_parse("name like %0");
     params[0] = c_stringValue((char *)name);
-    q = c_queryNew(kernel->domains,expr,params);
+    q = c_queryNew(kernel->partitions,expr,params);
     q_dispose(expr);
     c_lockRead(&kernel->lock);
     list = c_select(q,0);

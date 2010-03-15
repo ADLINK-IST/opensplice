@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_groupInstance.h"
@@ -144,12 +144,36 @@ v_groupAllocInstance(
         type = c_subType(_this->instances);
         instance = v_groupInstance(c_new(type));
 #endif
-        kernel = v_objectKernel(_this);
-        v_object(instance)->kernel = kernel;
-        v_objectKind(instance) = K_GROUPINSTANCE;
-        instance->readerInstanceCache = v_groupCacheNew(kernel,
-                                                        V_CACHE_INSTANCE);
-        instance->group = (c_voidp)_this;
+        if (instance) {
+            kernel = v_objectKernel(_this);
+            instance->readerInstanceCache = v_groupCacheNew(kernel,
+                                                            V_CACHE_INSTANCE);
+            if (instance->readerInstanceCache) {
+                instance->synchronousInstanceCache = v_groupCacheNew(kernel,
+                                                                     V_CACHE_INSTANCE);
+                if (instance->synchronousInstanceCache) {
+                    v_object(instance)->kernel = kernel;
+                    v_objectKind(instance) = K_GROUPINSTANCE;
+                    instance->group = (c_voidp)_this;
+                } else {
+                    OS_REPORT(OS_ERROR,
+                              "v_groupAllocInstance",0,
+                              "Failed to allocate synchronousInstanceCache.");
+                    c_free(instance);
+                    instance = NULL;
+                }
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_groupAllocInstance",0,
+                          "Failed to allocate readerInstanceCache.");
+                c_free(instance);
+                instance = NULL;
+            }
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_groupAllocInstance",0,
+                      "Failed to allocate group instance.");
+        }
     } else {
         instance = _this->cachedInstance;
         _this->cachedInstance = NULL;
@@ -241,6 +265,7 @@ v_groupInstanceFree(
         instance->epoch = C_TIME_ZERO;
 
         v_cacheDeinit(v_cache(instance->readerInstanceCache));
+        v_cacheDeinit(v_cache(instance->synchronousInstanceCache));
         group = v_group(instance->group);
         if (group->cachedInstance == NULL) {
             /*
@@ -280,6 +305,7 @@ v_groupInstanceDisconnect(
 
     /* just tear-down the instance pipeline */
     v_cacheDeinit(v_cache(instance->readerInstanceCache));
+    v_cacheDeinit(v_cache(instance->synchronousInstanceCache));
 }
 
 static v_message
@@ -298,10 +324,12 @@ createRegistration(
          */
         topic = v_groupTopic(v_groupInstanceGroup(instance));
         regmsg = v_topicMessageNew(topic);
-        memcpy(regmsg, message, C_SIZEOF(v_message));
-        v_topicMessageCopyKeyValues(topic, regmsg, message);
-        regmsg->qos = c_keep(message->qos);
-        v_nodeState(regmsg) = L_REGISTER;
+        if (regmsg) {
+            memcpy(regmsg, message, C_SIZEOF(v_message));
+            v_topicMessageCopyKeyValues(topic, regmsg, message);
+            regmsg->qos = c_keep(message->qos);
+            v_nodeState(regmsg) = L_REGISTER;
+        }
     } else {
         regmsg = c_keep(message);
     }
@@ -395,11 +423,18 @@ v_groupInstanceRegister (
              */
             found = c_new(v_kernelType(v_objectKernel(instance),
                                        K_REGISTRATION));
-            found->message = createRegistration(instance,message);
-            found->next = instance->registrations;
-            instance->registrations = found;
-            *regMsg = c_keep(found->message);
-            result = V_WRITE_REGISTERED;
+            if (found) {
+                found->message = createRegistration(instance,message);
+                found->next = instance->registrations;
+                instance->registrations = found;
+                *regMsg = c_keep(found->message);
+                result = V_WRITE_REGISTERED;
+            } else {
+                OS_REPORT(OS_ERROR,
+                  "v_groupInstanceRegister",0,
+                  "Failed to register DataWriter.");
+                result = V_WRITE_PRE_NOT_MET;
+            }
         } else {
             /* if register message is newer than found and is explicitly
              * registered so replace the old one because the new one may
@@ -666,6 +701,7 @@ v_groupInstanceInsert(
     v_groupSample ptr;
     v_state state;
     c_equality equality;
+    v_topicQos topicQos;
 
     assert(message != NULL);
     assert(instance != NULL);
@@ -685,7 +721,11 @@ v_groupInstanceInsert(
     }
 
     group = v_group(instance->group);
+    topicQos = group->topic->qos;
     sample = v_groupSampleNew(group,message);
+    if (!sample) {
+        return V_WRITE_PRE_NOT_MET;
+    }
 
     if (v_stateTest(instance->state, L_EMPTY)) {
         assert(v_groupInstanceHead(instance) == NULL);
@@ -699,26 +739,37 @@ v_groupInstanceInsert(
         assert(v_groupInstanceHead(instance) != NULL);
         assert(v_groupInstanceTail(instance) != NULL);
         assert(instance->count != 0);
-        ptr = v_groupInstanceHead(instance);
-        equality = v_timeCompare(message->writeTime,
-                                 v_groupSampleMessage(ptr)->writeTime);
-        if (equality == C_LT) {
-            /* Received an older message, so need to find the right spot
-               in the instance. */
-            while (ptr->older != NULL) {
-                equality = v_timeCompare(message->writeTime,
-                                 v_groupSampleMessage(ptr->older)->writeTime);
-                if (equality != C_LT) {
-                    break;
-                }
-                ptr = ptr->older;
-            }
-            sample->newer = ptr;
-            sample->older = ptr->older;
-            ptr->older = c_keep(sample); /* added keep */
-        } else {
+
+        /* The transient store history must obey the destination order
+         * qos policy of the topic, so put in it the history as the
+         * last one in case of ordering by reception timestamp and
+         * put in the right location in the history otherwise.
+         */
+        if(topicQos->orderby.kind == V_ORDERBY_RECEPTIONTIME){
             sample->older = v_groupInstanceHead(instance);
-            v_groupInstanceSetHead(instance,sample);
+            v_groupInstanceSetHead(instance, sample);
+        } else {
+            ptr = v_groupInstanceHead(instance);
+            equality = v_timeCompare(message->writeTime,
+                                 v_groupSampleMessage(ptr)->writeTime);
+            if (equality == C_LT) {
+                /* Received an older message, so need to find the right spot
+                   in the instance. */
+                while (ptr->older != NULL) {
+                    equality = v_timeCompare(message->writeTime,
+                                 v_groupSampleMessage(ptr->older)->writeTime);
+                    if (equality != C_LT) {
+                        break;
+                    }
+                    ptr = ptr->older;
+                }
+                sample->newer = ptr;
+                sample->older = ptr->older;
+                ptr->older = c_keep(sample); /* added keep */
+            } else {
+                sample->older = v_groupInstanceHead(instance);
+                v_groupInstanceSetHead(instance,sample);
+            }
         }
     }
     assert(c_refCount(sample) == 2);
@@ -803,7 +854,13 @@ v_groupInstanceInsert(
             oldest->older = NULL;
             ptr->newer = NULL;
 
-            c_free(ptr); /* free the whole previous list. */
+            /* free the whole previous list, iterative and not recursive. */
+            while(ptr){
+                oldest = ptr->older;
+                ptr->older = NULL;
+                c_free(ptr);
+                ptr = oldest;
+            }
         }
     }
     if (v_messageStateTest(v_groupSampleMessage(v_groupInstanceHead(instance)), L_DISPOSED)) {

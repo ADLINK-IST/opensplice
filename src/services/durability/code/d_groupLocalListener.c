@@ -44,7 +44,7 @@
 #include "v_participant.h"
 #include "v_entity.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_group.h"
 #include "v_time.h"
 #include "c_time.h"
@@ -106,6 +106,7 @@ d_groupLocalListenerDeinit(
         listener = d_groupLocalListener(object);
         d_groupLocalListenerStop(listener);
         d_actionQueueFree(listener->actionQueue);
+        d_actionQueueFree(listener->masterMonitor);
         os_mutexDestroy(&(listener->masterLock));
     }
 }
@@ -276,6 +277,7 @@ doGroupsRequest(
     return;
 }
 
+/*
 struct nsMaster {
     d_nameSpace myNameSpace;
     d_networkAddress masterAddress;
@@ -308,13 +310,12 @@ findExistingMaster(
         } else if(!d_networkAddressIsUnaddressed(fellowMasterAddress)){
             nsm->masterAddress = fellowMasterAddress;
         } else {
-            /*Fellow hasn't determined a master yet*/
+            //Fellow hasn't determined a master yet
             d_networkAddressFree(fellowMasterAddress);
         }
     } else {
-        /* This might happen when the fellow has just been added and his
-         * namespaces are not complete yet.
-         */
+        // This might happen when the fellow has just been added and his
+        // namespaces are not complete yet.
         nsm->conflictsFound = TRUE;
     }
     return (!(nsm->conflictsFound));
@@ -327,20 +328,6 @@ struct nsNewMaster{
     d_serviceState bestFellowState;
 };
 
-/**
- * Find a new master for a specific namespace.
- * 1. Check if fellow is an aligner for the namespace. This is an absolute
- *    precondition to become a master at all. No alignment takes place for as
- *    long as there is no durability service in the system that has been
- *    configured to allow aligning others.
- * 2. If the fellow is an aligner, check if its state is already beyond the
- *    current selected one, but not terminat(ing)(ed). In case it is, that one
- *    becomes the master.
- * 3. If states are equal, compare the 'quality' of the data in the namespace.
- *    The one with the best quality becomes master.
- * 4. If the quality is equal, select the one with the highest id.
- *
- */
 static c_bool
 findNewMaster(
     d_fellow fellow,
@@ -358,6 +345,7 @@ findNewMaster(
     fellowNameSpace = d_fellowGetNameSpace(fellow, nsm->myNameSpace);
 
     if(fellowNameSpace){
+        state = d_fellowGetState(fellow);
         isAligner = d_nameSpaceIsAligner(fellowNameSpace);
         quality = d_nameSpaceGetInitialQuality(fellowNameSpace);
 
@@ -421,7 +409,7 @@ findMaster(
     d_adminFellowWalk(admin, findExistingMaster, &nsm);
 
     if((!d_networkAddressIsUnaddressed(nsm.masterAddress)) && (!nsm.conflictsFound)){
-        /*Existing master found and found no conflicts*/
+        //Existing master found and found no conflicts
         selectedMaster = nsm.masterAddress;
         d_printTimedEvent(durability, D_LEVEL_INFO,
                         D_THREAD_GROUP_LOCAL_LISTENER,
@@ -429,7 +417,14 @@ findMaster(
                         selectedMaster->systemId, d_nameSpaceGetName(nameSpace));
 
     } else {
-        /*Determine master for myself now*/
+        if(nsm.conflictsFound){
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                           D_THREAD_GROUP_LOCAL_LISTENER,
+                           "Found conflicting masters for nameSpace '%s', " \
+                           "determining the master for myself now.\n",
+                           d_nameSpaceGetName(nameSpace));
+        }
+        //Determine master for myself now
         d_networkAddressFree(nsm.masterAddress);
         nsnm.myNameSpace = nameSpace;
 
@@ -463,6 +458,578 @@ findMaster(
     }
     return selectedMaster;
 }
+*/
+/*****************************************************************************/
+
+struct addressList {
+    d_networkAddress address;
+    c_ulong count;
+    c_voidp next;
+};
+
+struct masterInfo {
+    d_nameSpace nameSpace;
+    d_networkAddress master;
+    d_quality masterQuality;
+    c_bool conflicts;
+    d_serviceState masterState;
+    d_durability durability;
+    c_bool conflictsAllowed;
+    struct addressList* list;
+};
+
+static void
+addMajorityMaster(
+    struct masterInfo* info,
+    d_networkAddress address)
+{
+    struct addressList *list, *prevList;
+    c_bool found;
+
+    assert(info);
+
+    found = FALSE;
+
+    if(info->list){
+        list = info->list;
+
+        while(list && !found){
+            prevList = list;
+            if(d_networkAddressEquals(address, list->address)){
+                found = TRUE;
+                list->count++;
+            }
+            list = list->next;
+        }
+        if(!found){
+            prevList->next = (struct addressList*)(os_malloc(sizeof(struct addressList)));
+            list = prevList->next;
+        }
+    } else {
+        info->list = (struct addressList*)(os_malloc(sizeof(struct addressList)));
+        list = info->list;
+    }
+
+    if(!found){
+        list->address = d_networkAddressNew(address->systemId, address->localId, address->lifecycleId);
+        list->count = 1;
+        list->next = NULL;
+    }
+    return;
+}
+
+static void
+removeMajorityMaster(
+    struct masterInfo* info,
+    d_networkAddress address)
+{
+    struct addressList *list, *prev;
+    c_bool found;
+
+    assert(info);
+
+    prev = NULL;
+    list = info->list;
+
+    while(list && !found){
+        if(d_networkAddressEquals(list->address, address)){
+            if(prev){
+                prev->next = list->next;
+            } else {
+                info->list = list->next;
+            }
+            d_networkAddressFree(list->address);
+            os_free(list);
+            found = TRUE;
+        }
+        prev = list;
+        list = list->next;
+    }
+    return;
+}
+
+static d_networkAddress
+getMajorityMaster(
+    struct masterInfo* info)
+{
+    d_networkAddress master;
+    c_ulong count;
+    c_bool replace;
+    struct addressList* list;
+
+    assert(info);
+
+    if(info->list){
+        master = d_networkAddressNew(info->list->address->systemId,
+                info->list->address->localId, info->list->address->lifecycleId);
+        count = info->list->count;
+
+        list = (struct addressList*)(info->list->next);
+
+        while(list){
+            replace = FALSE;
+
+            if(list->count > count){
+                replace = TRUE;
+            } else if (list->count == count){
+                if(d_networkAddressCompare(list->address, master) > 0){
+                    replace = TRUE;
+                }
+            }
+
+            if(replace){
+                d_networkAddressFree(master);
+                master = d_networkAddressNew(list->address->systemId,
+                        list->address->localId, list->address->lifecycleId);
+                count = list->count;
+            }
+            list = (struct addressList*)list->next;
+        }
+    } else {
+        master = d_networkAddressUnaddressed();
+    }
+    return master;
+}
+
+static void
+freeMajorityMasters(
+    struct masterInfo* info)
+{
+    struct addressList *list, *prevList;
+
+    assert(info);
+
+    list = info->list;
+
+    while(list){
+        d_networkAddressFree(list->address);
+        prevList = list;
+        list = list->next;
+        os_free(prevList);
+    }
+    return;
+}
+
+static c_bool
+determineExistingMaster(
+    d_fellow fellow,
+    c_voidp userData)
+{
+    struct masterInfo* m;
+    d_nameSpace fellowNameSpace;
+    d_networkAddress fellowMaster, fellowAddress;
+    c_bool result;
+
+    m = (struct masterInfo*)userData;
+    fellowNameSpace = d_fellowGetNameSpace(fellow, m->nameSpace);
+
+    /*Check if fellow has compatible nameSpace. If not go to the next one */
+    if(fellowNameSpace){
+        fellowMaster = d_nameSpaceGetMaster(fellowNameSpace);
+
+        /* If I haven't found a potential master so far, check whether the
+         * fellow determined a (potential) master already. If so, conform
+         * to the selected master.
+         */
+        if(d_networkAddressIsUnaddressed(m->master)){
+            if(!d_networkAddressIsUnaddressed(fellowMaster)){
+                d_networkAddressFree(m->master);
+                m->master = d_networkAddressNew(
+                        fellowMaster->systemId,
+                        fellowMaster->localId,
+                        fellowMaster->lifecycleId);
+                addMajorityMaster(m, fellowMaster);
+            }
+        } else if(!d_networkAddressIsUnaddressed(fellowMaster)){
+            /* If the fellow has determined a (potential) master
+             * that doesn't match my current one, there's a conflict and
+             * I need to drop out of this function.
+             */
+            if(!d_networkAddressEquals(m->master, fellowMaster)){
+                m->conflicts = TRUE;
+
+                fellowAddress = d_fellowGetAddress(fellow);
+                d_printTimedEvent(m->durability, D_LEVEL_INFO,
+                    D_THREAD_GROUP_LOCAL_LISTENER,
+                    "Fellow '%d' reports master '%d' for nameSpace '%s'. " \
+                    "while I found master '%d'.\n",
+                    fellowAddress->systemId,
+                    fellowMaster->systemId,
+                    d_nameSpaceGetName(m->nameSpace),
+                    m->master->systemId);
+                d_networkAddressFree(fellowAddress);
+            }
+            addMajorityMaster(m, fellowMaster);
+        }
+        d_networkAddressFree(fellowMaster);
+    }
+    if(m->conflictsAllowed){
+        result = TRUE;
+    } else {
+        result = !(m->conflicts);
+    }
+
+    return result;
+}
+
+static c_bool
+determineNewMaster(
+    d_fellow fellow,
+    c_voidp userData)
+{
+    struct masterInfo* m;
+    d_nameSpace fellowNameSpace;
+    d_networkAddress fellowAddress;
+    c_bool isAligner, replace;
+    d_quality quality;
+    d_serviceState fellowState;
+
+    m = (struct masterInfo*)userData;
+    replace = FALSE;
+    fellowNameSpace = d_fellowGetNameSpace(fellow, m->nameSpace);
+
+    if(fellowNameSpace){
+        isAligner = d_nameSpaceIsAligner(fellowNameSpace);
+        quality = d_nameSpaceGetInitialQuality(fellowNameSpace);
+        fellowState = d_fellowGetState(fellow);
+
+        if(isAligner){
+            if(d_networkAddressIsUnaddressed(m->master)){
+                replace = TRUE;
+            } else if((m->masterState <= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState > D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                replace = TRUE;
+            } else if((m->masterState > D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState <= D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                replace = FALSE;
+            } else if(quality.seconds > m->masterQuality.seconds){
+                replace = TRUE;
+            } else if(quality.seconds == m->masterQuality.seconds){
+                if(quality.nanoseconds > m->masterQuality.nanoseconds){
+                    replace = TRUE;
+                } else if(quality.nanoseconds == m->masterQuality.nanoseconds){
+                    fellowAddress = d_fellowGetAddress(fellow);
+
+                    if(d_networkAddressCompare(fellowAddress, m->master) > 0){
+                        replace = TRUE;
+                    }
+                    d_networkAddressFree(fellowAddress);
+                }
+            }
+        }
+    }
+
+    if(replace){
+        if(m->master){
+            d_networkAddressFree(m->master);
+        }
+        m->master = d_fellowGetAddress(fellow);
+        m->masterQuality.seconds = quality.seconds;
+        m->masterQuality.nanoseconds = quality.nanoseconds;
+        m->masterState = fellowState;
+    }
+    return TRUE;
+}
+
+/*
+ * PRECONDTION: listener->masterLock is locked
+ *
+ * @return Returns TRUE if I have become a master for one or more nameSpaces.
+ */
+static c_bool
+d_groupLocalListenerDetermineMasters(
+    d_groupLocalListener listener,
+    c_iter nameSpaces)
+{
+    d_admin admin;
+    d_durability durability;
+    d_configuration configuration;
+    c_long length, i;
+    d_nameSpace nameSpace;
+    d_subscriber subscriber;
+    d_nameSpacesRequestListener nsrListener;
+    d_networkAddress unaddressed, myAddress, master, lastMaster;
+    struct masterInfo mastership;
+    os_time sleepTime, endTime;
+    c_bool nsComplete, proceed, conflicts, firstTime, cont;
+    d_quality myQuality;
+    c_bool iAmAMaster;
+    d_serviceState myState, fellowState;
+    d_fellow fellow;
+    c_ulong tries, maxTries;
+
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
+    configuration = d_durabilityGetConfiguration(durability);
+    length = c_iterLength(nameSpaces);
+    subscriber = d_adminGetSubscriber(admin);
+    nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
+    unaddressed = d_networkAddressUnaddressed();
+    myAddress = d_adminGetMyAddress(admin);
+    firstTime = TRUE;
+    iAmAMaster = FALSE;
+    maxTries = 4;
+    tries = 0;
+
+    /*100ms*/
+    sleepTime.tv_sec = 0;
+    sleepTime.tv_nsec = 100000000;
+    mastership.durability = durability;
+
+    do {
+        conflicts = FALSE;
+        tries++;
+
+        /*Check if namespaces still have the same master*/
+        for(i=0; i<length; i++){
+            nameSpace = d_nameSpace(c_iterObject(nameSpaces, i));
+
+            /* Remember the last master I selected. If the 'existing'
+             * one I find now is different, I need to do this whole loop again.
+             */
+            if(firstTime){
+                lastMaster = d_networkAddressUnaddressed();
+            } else {
+                lastMaster = d_nameSpaceGetMaster(nameSpace);
+            }
+            /*
+             * Always use un-addressed as my master when looking for an
+             * existing master.
+             */
+            d_nameSpaceSetMaster(nameSpace, unaddressed);
+
+            mastership.nameSpace = nameSpace;
+            mastership.master = d_nameSpaceGetMaster(nameSpace);
+            mastership.conflicts = FALSE;
+            mastership.list = NULL;
+
+            if(tries >= maxTries){
+                mastership.conflictsAllowed = TRUE;
+            } else {
+                mastership.conflictsAllowed = FALSE;
+            }
+
+            /*Walk over all fellows that are approved*/
+            d_adminFellowWalk(admin, determineExistingMaster, &mastership);
+
+            if((!mastership.conflicts) && (!d_networkAddressIsUnaddressed(mastership.master))){
+                /*Check whether the found fellow is still alive and kicking.*/
+
+                /*Some node(s) could already have chosen me as master */
+                if(!d_networkAddressEquals(mastership.master, myAddress)){
+                    fellow = d_adminGetFellow(admin, mastership.master);
+
+                    /*Fellow may be gone already or is currently terminating*/
+                    if(!fellow){
+                        d_networkAddressFree(mastership.master);
+                        mastership.master = d_networkAddressUnaddressed();
+                    } else {
+                        fellowState = d_fellowGetState(fellow);
+
+                        if((fellowState == D_STATE_TERMINATING) || (fellowState == D_STATE_TERMINATED)){
+                            d_networkAddressFree(mastership.master);
+                            mastership.master = d_networkAddressUnaddressed();
+                        } else if(!d_networkAddressEquals(lastMaster, mastership.master)){
+                            /* Check whether I determined an master already
+                             * in the previous loop.
+                             */
+                            if(!d_networkAddressIsUnaddressed(lastMaster)) {
+                                /* Existing master is not the same as the one I found before
+                                 * so make sure I'll check once more.
+                                 */
+                                conflicts = TRUE;
+                                d_printTimedEvent(durability, D_LEVEL_INFO,
+                                    D_THREAD_GROUP_LOCAL_LISTENER,
+                                    "The existing master '%d' I found now for nameSpace '%s'. " \
+                                    "doesn't match the one '%d' I found before. " \
+                                    "Waiting for confirmation...",
+                                    mastership.master->systemId,
+                                    d_nameSpaceGetName(nameSpace),
+                                    lastMaster->systemId);
+                            }
+                        }
+                        d_fellowFree(fellow);
+                    }
+                }
+            } else if(mastership.conflictsAllowed){
+                cont = TRUE;
+                mastership.conflicts = FALSE;
+
+                while(cont){
+                    if(mastership.master){
+                        d_networkAddressFree(mastership.master);
+                    }
+                    mastership.master = getMajorityMaster(&mastership);
+
+                    if(!d_networkAddressIsUnaddressed(mastership.master)){
+                        fellow = d_adminGetFellow(admin, mastership.master);
+
+                        /*Fellow may be gone already or is currently terminating*/
+                        if(!fellow){
+                            removeMajorityMaster(&mastership, mastership.master);
+                        } else {
+                            fellowState = d_fellowGetState(fellow);
+
+                            if((fellowState == D_STATE_TERMINATING) || (fellowState == D_STATE_TERMINATED)){
+                                removeMajorityMaster(&mastership, mastership.master);
+                            } else {
+                                d_printTimedEvent(durability, D_LEVEL_INFO,
+                                    D_THREAD_GROUP_LOCAL_LISTENER,
+                                    "Found majority master '%d' for nameSpace '%s'.\n",
+                                    mastership.master->systemId,
+                                    d_nameSpaceGetName(nameSpace));
+                                cont = FALSE;
+                            }
+                            d_fellowFree(fellow);
+                        }
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                            D_THREAD_GROUP_LOCAL_LISTENER,
+                            "Tried to find majority master for nameSpace '%s', but found none.\n",
+                            d_nameSpaceGetName(nameSpace));
+                        cont = FALSE;
+                    }
+                }
+            }
+            freeMajorityMasters(&mastership);
+
+            if((mastership.conflicts) || d_networkAddressIsUnaddressed(mastership.master)){
+                if(mastership.conflicts){
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Found conflicting masters for nameSpace '%s'. " \
+                        "Determining new master now...\n",
+                        d_nameSpaceGetName(nameSpace));
+                    conflicts = TRUE;
+                    mastership.conflicts = FALSE;
+                } else {
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Found no existing master for nameSpace '%s'. " \
+                        "Determining new master now...\n",
+                        d_nameSpaceGetName(nameSpace));
+                }
+                d_networkAddressFree(mastership.master);
+
+                if(d_nameSpaceIsAligner(nameSpace)){
+                    myQuality = d_nameSpaceGetInitialQuality(nameSpace);
+                    mastership.master = d_adminGetMyAddress(admin);
+                    mastership.masterQuality.seconds = myQuality.seconds;
+                    mastership.masterQuality.nanoseconds = myQuality.nanoseconds;
+                    mastership.masterState = d_durabilityGetState(durability);
+                } else {
+                    mastership.master = d_networkAddressUnaddressed();
+                    mastership.masterQuality.seconds = 0;
+                    mastership.masterQuality.nanoseconds = 0;
+                    mastership.masterState = D_STATE_INIT;
+                }
+                /*7. Walk over all fellows that are approved again.*/
+                d_adminFellowWalk(admin, determineNewMaster, &mastership);
+
+                if(d_networkAddressIsUnaddressed(mastership.master)){
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                       D_THREAD_GROUP_LOCAL_LISTENER,
+                       "There's no new master available for nameSpace '%s'. " \
+                       "Awaiting availability of a new master...\n",
+                       d_nameSpaceGetName(nameSpace));
+                } else if(d_networkAddressEquals(mastership.master, myAddress)){
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                       D_THREAD_GROUP_LOCAL_LISTENER,
+                       "I want to be the new master for nameSpace '%s'. " \
+                       "Waiting for confirmation...\n",
+                       d_nameSpaceGetName(nameSpace));
+                } else {
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "I want fellow '%d' to be the new master for nameSpace '%s'. " \
+                        "Waiting for confirmation...\n",
+                        mastership.master->systemId,
+                        d_nameSpaceGetName(nameSpace));
+                }
+            } else {
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                    D_THREAD_GROUP_LOCAL_LISTENER,
+                    "Found existing master '%d' for nameSpace '%s'. " \
+                    "Waiting for confirmation...\n",
+                    mastership.master->systemId,
+                    d_nameSpaceGetName(nameSpace));
+            }
+            d_nameSpaceSetMaster(nameSpace, mastership.master);
+            d_networkAddressFree(mastership.master);
+            d_networkAddressFree(lastMaster);
+        }
+        d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
+
+        /* Do the same thing again if there were conflicts.
+         * Since this step must be taken at least once (even if there are
+         * no conflicts), 'firstTime' is checked also.
+         */
+        if(conflicts || firstTime){
+            if(firstTime){
+                firstTime = FALSE;
+                /*To make sure the do-while is done at least once more: */
+                conflicts = TRUE;
+            }
+            /*Wait twice the heartbeat period*/
+            endTime = os_timeGet();
+            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
+            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
+
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                       D_THREAD_GROUP_LOCAL_LISTENER,
+                       "Waiting twice the heartbeat period: 2*%f seconds.\n",
+                       os_timeToReal(configuration->heartbeatUpdateInterval));
+
+            nsComplete = TRUE;
+            proceed = TRUE;
+
+            while(d_durabilityMustTerminate(durability) == FALSE && proceed ){
+                os_nanoSleep(sleepTime);
+
+                if(os_timeCompare(os_timeGet(), endTime) > 0){
+                    proceed = FALSE;
+                    d_adminFellowWalk(admin, checkNameSpaces, &nsComplete);
+                    proceed = !nsComplete;
+                }
+            }
+        } else if(d_durabilityMustTerminate(durability) == FALSE){
+            assert(conflicts == FALSE);
+            /*No more conflicts; all masters have been confirmed*/
+            for(i=0; i<length; i++){
+                nameSpace = d_nameSpace(c_iterObject(nameSpaces, i));
+                master = d_nameSpaceGetMaster(nameSpace);
+
+                if(d_networkAddressEquals(master, myAddress)){
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                       D_THREAD_GROUP_LOCAL_LISTENER,
+                       "Confirming master: I am the master for nameSpace '%s'.\n",
+                       d_nameSpaceGetName(nameSpace));
+                    iAmAMaster = TRUE;
+                } else {
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                           D_THREAD_GROUP_LOCAL_LISTENER,
+                           "Confirming master: Fellow '%d' is the master for nameSpace '%s'.\n",
+                           master->systemId,
+                           d_nameSpaceGetName(nameSpace));
+                }
+                d_networkAddressFree(master);
+            }
+        }
+    } while ((conflicts == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
+
+    os_mutexUnlock(&listener->masterLock);
+
+    d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
+    myState = d_durabilityGetState(durability);
+
+    if(myState != D_STATE_COMPLETE){
+        doGroupsRequest(listener, nameSpaces, iAmAMaster);
+    }
+    d_networkAddressFree(unaddressed);
+    d_networkAddressFree(myAddress);
+
+    return iAmAMaster;
+}
+
+/*****************************************************************************/
 
 static void
 initPersistentData(
@@ -578,6 +1145,9 @@ initPersistentData(
     }
 }
 
+/*
+ * PRECONDTION: listener->masterLock is locked
+ */
 static void
 initMasters(
     d_groupLocalListener listener)
@@ -585,134 +1155,21 @@ initMasters(
     d_admin admin;
     d_durability durability;
     d_configuration configuration;
-    c_long i, length;
-    c_bool reportAgain, proceed, nsComplete, iAmAMaster, fellowGroupsKnown, terminate;
-    os_time sleepTime, endTime;
-    d_nameSpace nameSpace;
-    d_networkAddress master, newMaster, myAddress;
-    d_subscriber subscriber;
-    d_nameSpacesRequestListener nsrListener;
+    c_bool fellowGroupsKnown, terminate;
+    os_time sleepTime;
 
-    admin         = d_listenerGetAdmin(d_listener(listener));
-    durability    = d_adminGetDurability(admin);
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
     configuration = d_durabilityGetConfiguration(durability);
-    length        = c_iterLength(configuration->nameSpaces);
-    subscriber    = d_adminGetSubscriber(admin);
-    nsrListener   = d_subscriberGetNameSpacesRequestListener(subscriber);
-    myAddress     = d_adminGetMyAddress(admin);
-    iAmAMaster    = FALSE;
 
-    for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
-        nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-        master = findMaster(listener, nameSpace);
-        d_nameSpaceSetMaster(nameSpace, master);
+    d_groupLocalListenerDetermineMasters(listener, configuration->nameSpaces);
 
-        if(d_networkAddressEquals(master, myAddress)){
-            d_printTimedEvent(durability, D_LEVEL_INFO,
-                        D_THREAD_GROUP_LOCAL_LISTENER,
-                        "I want to be master for nameSpace '%s'. " \
-                        "Waiting for confirmation...\n", d_nameSpaceGetName(nameSpace));
-        } else if(d_networkAddressIsUnaddressed(master)){
-            d_printTimedEvent(durability, D_LEVEL_INFO,
-                                            D_THREAD_GROUP_LOCAL_LISTENER,
-                                            "No master could be found for nameSpace '%s' so far.\n",
-                                            d_nameSpaceGetName(nameSpace));
-        } else {
-            d_printTimedEvent(durability, D_LEVEL_INFO,
-                                D_THREAD_GROUP_LOCAL_LISTENER,
-                                "I want fellow '%d' to be the master for nameSpace '%s'. " \
-                                "Waiting for confirmation...\n",
-                                master->systemId,
-                                d_nameSpaceGetName(nameSpace));
-        }
-        d_networkAddressFree(master);
-    }
-    d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
-
-    reportAgain = TRUE;
-
-    while(reportAgain){
-        /*100ms*/
-        sleepTime.tv_sec = 0;
-        sleepTime.tv_nsec = 100000000;
-
-        /*Now wait twice the heartbeatUpdateInterval*/
-        endTime = os_timeGet();
-        endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
-        endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
-        nsComplete = TRUE;
-        proceed = TRUE;
-
-        while(d_durabilityMustTerminate(durability) == FALSE && proceed ){
-            os_nanoSleep(sleepTime);
-
-            if(os_timeCompare(os_timeGet(), endTime) > 0){
-                proceed = FALSE;
-                d_adminFellowWalk(admin, checkNameSpaces, &nsComplete);
-                proceed = !nsComplete;
-            }
-        }
-        /*Check if namespaces still have the same master*/
-        reportAgain = FALSE;
-
-        for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
-            nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-            master = d_nameSpaceGetMaster(nameSpace);
-            newMaster = findMaster(listener, nameSpace);
-
-            if(!d_networkAddressEquals(master, newMaster)){
-                d_nameSpaceSetMaster(nameSpace, newMaster);
-                reportAgain = TRUE;
-            }
-
-            if(d_networkAddressEquals(newMaster, myAddress)){
-                if(!reportAgain){
-                    d_printTimedEvent(durability, D_LEVEL_INFO,
-                        D_THREAD_GROUP_LOCAL_LISTENER,
-                        "I am the master for nameSpace '%s'.\n",
-                        d_nameSpaceGetName(nameSpace));
-                    iAmAMaster = TRUE;
-                }
-            } else if(d_networkAddressIsUnaddressed(newMaster)){
-                if(!reportAgain){
-                    d_printTimedEvent(durability, D_LEVEL_INFO,
-                                            D_THREAD_GROUP_LOCAL_LISTENER,
-                                            "No master could be found for nameSpace '%s'.\n",
-                                            d_nameSpaceGetName(nameSpace));
-                }
-            } else {
-                if(!reportAgain){
-                    d_printTimedEvent(durability, D_LEVEL_INFO,
-                                D_THREAD_GROUP_LOCAL_LISTENER,
-                                "Fellow '%d' is the master for nameSpace '%s'.\n",
-                                newMaster->systemId,
-                                d_nameSpaceGetName(nameSpace));
-                }
-            }
-
-            if(reportAgain){
-                d_printTimedEvent(durability, D_LEVEL_INFO,
-                            D_THREAD_GROUP_LOCAL_LISTENER,
-                            "Could not agree on the master for nameSpace '%s'. Trying again...\n",
-                            d_nameSpaceGetName(nameSpace));
-            }
-            d_networkAddressFree(master);
-            d_networkAddressFree(newMaster);
-        }
-        if(reportAgain){
-            d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
-        }
-    }
-    d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
-    d_networkAddressFree(myAddress);
-    doGroupsRequest(listener, configuration->nameSpaces, iAmAMaster);
-
-    /*now wait for completion of groups*/
-    terminate         = d_durabilityMustTerminate(durability);
     fellowGroupsKnown = FALSE;
     sleepTime.tv_sec  = 0;
     sleepTime.tv_nsec = 100000000; /* 100 ms */
+    terminate = d_durabilityMustTerminate(durability);
 
+    /*now wait for completion of groups*/
     while((fellowGroupsKnown == FALSE) && (!terminate) && (d_adminGetFellowCount(admin) > 0)){
         d_adminFellowWalk(admin, checkFellowGroupsKnown, &fellowGroupsKnown);
         os_nanoSleep(sleepTime);
@@ -721,6 +1178,45 @@ initMasters(
     if(!terminate){
         d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN, "Fellow groups complete.\n");
     }
+}
+
+struct masterHelper {
+    d_groupLocalListener listener;
+    c_iter nameSpaces;
+};
+
+static c_bool
+determineNewMastersAction(
+    d_action action,
+    c_bool terminate)
+{
+    struct masterHelper* helper;
+    d_groupLocalListener listener;
+    c_bool tryChains;
+
+    helper = (struct masterHelper*)(d_actionGetArgs(action));
+
+    if(terminate == FALSE){
+        listener = helper->listener;
+
+        if(d_objectIsValid(d_object(listener), D_LISTENER)){
+            os_mutexLock(&listener->masterLock);
+
+            if(c_iterLength(helper->nameSpaces) > 0){
+                tryChains = d_groupLocalListenerDetermineMasters(listener, helper->nameSpaces);
+            }
+
+            os_mutexUnlock(&listener->masterLock);
+
+            if(tryChains){
+                d_sampleChainListenerTryFulfillChains(listener->sampleChainListener, NULL);
+            }
+        }
+    }
+    c_iterFree(helper->nameSpaces);
+    os_free(helper);
+
+    return FALSE;
 }
 
 static c_bool
@@ -732,16 +1228,15 @@ notifyFellowRemoved(
 {
     d_groupLocalListener listener;
     d_admin admin;
-    d_serviceState state;
     d_durability durability;
     d_configuration configuration;
     c_long length, i;
     d_nameSpace nameSpace;
-    c_bool aMasterChanged = FALSE;
-    c_bool iAmAMaster = FALSE;
-    c_bool tryChains = FALSE;
-    d_networkAddress masterAddress, fellowAddress, unaddressed, myAddress;
+    d_action masterAction;
+    os_time sleepTime;
+    d_networkAddress masterAddress, fellowAddress;
     c_iter nameSpaces;
+    struct masterHelper *helper;
 
     if(event == D_FELLOW_REMOVED){
         listener      = d_groupLocalListener(userData);
@@ -750,16 +1245,12 @@ notifyFellowRemoved(
         configuration = d_durabilityGetConfiguration(durability);
         length        = c_iterLength(configuration->nameSpaces);
         fellowAddress = d_fellowGetAddress(fellow);
-        myAddress     = d_adminGetMyAddress(admin);
-        unaddressed   = d_networkAddressUnaddressed();
         nameSpaces    = c_iterNew(NULL);
 
         d_printTimedEvent(durability, D_LEVEL_INFO,
                     D_THREAD_GROUP_LOCAL_LISTENER,
                     "Fellow '%d' removed, checking whether new master must be determined.\n",
                     fellowAddress->systemId);
-
-        os_mutexLock(&listener->masterLock);
 
         for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
             nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
@@ -768,49 +1259,34 @@ notifyFellowRemoved(
             if((d_networkAddressEquals(masterAddress, fellowAddress)) ||
                (d_networkAddressIsUnaddressed(masterAddress)))
             {
-                d_networkAddressFree(masterAddress);
-                d_nameSpaceSetMaster(nameSpace, unaddressed);
-                masterAddress = findMaster(listener, nameSpace);
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Need to find a new master for nameSpace '%s'.\n",
+                                d_nameSpaceGetName(nameSpace));
 
-                if(d_networkAddressEquals(masterAddress, myAddress)){
-                    d_printTimedEvent(durability, D_LEVEL_INFO,
-                                    D_THREAD_GROUP_LOCAL_LISTENER,
-                                    "I am the new master for nameSpace '%s'.\n",
-                                    d_nameSpaceGetName(nameSpace));
-                    tryChains = TRUE;
-                    iAmAMaster = TRUE;
-                }
-                d_nameSpaceSetMaster(nameSpace, masterAddress);
-                aMasterChanged = TRUE;
                 nameSpaces = c_iterInsert(nameSpaces, nameSpace);
-                d_networkAddressFree(masterAddress);
-
             } else {
                 d_printTimedEvent(durability, D_LEVEL_INFO,
                                 D_THREAD_GROUP_LOCAL_LISTENER,
                                 "Master '%d' still available for nameSpace '%s'.\n",
                                 masterAddress->systemId, d_nameSpaceGetName(nameSpace));
-                d_networkAddressFree(masterAddress);
             }
+            d_networkAddressFree(masterAddress);
         }
-        d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
-        os_mutexUnlock(&listener->masterLock);
+        length = c_iterLength(nameSpaces);
 
-        d_networkAddressFree(unaddressed);
-        d_networkAddressFree(myAddress);
+        if(length > 0){
+            helper = (struct masterHelper*)(os_malloc(sizeof(struct masterHelper)));
+            helper->listener = listener;
+            helper->nameSpaces = nameSpaces;
+            sleepTime.tv_sec = 0;
+            sleepTime.tv_nsec = 100000000;
+            masterAction = d_actionNew(os_timeGet(), sleepTime, determineNewMastersAction, helper);
+            d_actionQueueAdd(listener->masterMonitor, masterAction);
+        } else {
+            c_iterFree(nameSpaces);
+        }
         d_networkAddressFree(fellowAddress);
-
-        if(tryChains){
-            d_sampleChainListenerTryFulfillChains(listener->sampleChainListener, NULL);
-        }
-        if(aMasterChanged){
-            state = d_durabilityGetState(durability);
-
-            if(state != D_STATE_COMPLETE){
-                doGroupsRequest(listener, nameSpaces, iAmAMaster);
-            }
-        }
-        c_iterFree(nameSpaces);
     }
     return TRUE;
 
@@ -838,6 +1314,10 @@ d_groupLocalListenerInit(
     listener->actionQueue                = d_actionQueueNew(
                                                 "groupLocalListenerActionQueue",
                                                 sleepTime, ta);
+
+    listener->masterMonitor              = d_actionQueueNew(
+                                                "masterMonitor",
+                                                 sleepTime, ta);
     os_mutexAttrInit(&attr);
     attr.scopeAttr = OS_SCOPE_PRIVATE;
     os_mutexInit(&(listener->masterLock), &attr);

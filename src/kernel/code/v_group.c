@@ -13,7 +13,7 @@
 #include "v_kernel.h"
 #include "v_policy.h"
 #include "v__entry.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v__topic.h"
 #include "v_message.h"
 #include "v__messageQos.h"
@@ -32,7 +32,7 @@
 #include "v__lifespanAdmin.h"
 #include "v_networkReaderEntry.h"
 #include "v_time.h"
-#include "v_builtin.h"
+#include "v__builtin.h"
 #include "c_time.h"
 #include "c_extent.h"
 
@@ -53,27 +53,29 @@ v_groupSampleNew (
     assert(C_TYPECHECK(group,v_group));
 
     sample = v_groupSample(c_extentCreate(group->sampleExtent));
-    v_groupSampleSetMessage(sample,msg);
-    sample->older = NULL;
-    sample->newer = NULL;
+    if (sample) {
+        v_groupSampleSetMessage(sample,msg);
+        sample->older = NULL;
+        sample->newer = NULL;
 
 
-    if (v_messageQos_isInfiniteLifespan(msg->qos)) {
-        v_lifespanSample(sample)->expiryTime = C_TIME_INFINITE;
-    } else {
-        c_time lifespan;
+        if (v_messageQos_isInfiniteLifespan(msg->qos)) {
+            v_lifespanSample(sample)->expiryTime = C_TIME_INFINITE;
+        } else {
+            c_time lifespan;
 
-        lifespan = v_messageQos_getLifespanPeriod(msg->qos);
+            lifespan = v_messageQos_getLifespanPeriod(msg->qos);
 #ifdef _NAT_
-        v_lifespanSample(sample)->expiryTime = c_timeAdd(v_timeGet(),
-                                                         lifespan);
+            v_lifespanSample(sample)->expiryTime = c_timeAdd(v_timeGet(),
+                                                             lifespan);
 #else
-        v_lifespanSample(sample)->expiryTime = c_timeAdd(msg->allocTime,
-                                                         lifespan);
+            v_lifespanSample(sample)->expiryTime = c_timeAdd(msg->allocTime,
+                                                             lifespan);
 #endif
-    }
-    if (v_messageStateTest(msg,L_WRITE)) {
-        group->count++;
+        }
+        if (v_messageStateTest(msg,L_WRITE)) {
+            group->count++;
+        }
     }
     return sample;
 }
@@ -200,6 +202,7 @@ doRegister (
 {
     v_instance instance;
     struct doRegisterArg *a = (struct doRegisterArg *)arg;
+    v_groupCache cache;
     v_groupCacheItem item;
     struct instanceUnknownArg unknownArg;
 
@@ -208,18 +211,28 @@ doRegister (
     instance = NULL;
     v_entryWrite(a->proxy->entry,r->message,V_NETWORKID_LOCAL,&instance);
     if (instance != NULL) {
+        if (v_reader(a->proxy->entry->reader)->qos->reliability.synchronous) {
+            cache = a->instance->synchronousInstanceCache;
+        } else {
+            cache = a->instance->readerInstanceCache;
+        }
         unknownArg.instance = instance;
         unknownArg.cacheItem = NULL;
-        v_groupCacheWalk(a->instance->readerInstanceCache,
-                         instanceUnknown, &unknownArg);
+        v_groupCacheWalk(cache, instanceUnknown, &unknownArg);
         if (unknownArg.cacheItem == NULL) {
             /* Instance is not yet cached.
              * So insert the instance in the cache.
              */
             item = v_groupCacheItemNew(a->instance,instance);
-            v_groupCacheInsert(a->proxy->readerInstanceCache,item);
-            v_groupCacheInsert(a->instance->readerInstanceCache,item);
-            c_free(item);
+            if (item) {
+                v_groupCacheInsert(a->proxy->readerInstanceCache,item);
+                v_groupCacheInsert(cache,item);
+                c_free(item);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_group::doRegister",0,
+                          "Failed to register instance");
+            }
         } else {
             /* Instance is already cached.
              * So increase the registration count.
@@ -489,6 +502,8 @@ updatePurgeList(
 }
 #undef MAX_PURGECOUNT
 
+#define v_groupEntryEmpty(set) (set.firstEntry == NULL)
+
 static void
 v_groupEntrySetInit (
     struct v_groupEntrySet *set)
@@ -508,13 +523,24 @@ v_groupEntrySetAdd (
     type = c_resolve(c_getBase(e),"kernelModule::v_groupEntry");
     proxy = c_new(type);
     c_free(type);
-    proxy->entry = c_keep(e);
-    proxy->sequenceNumber = set->lastSequenceNumber;
-    proxy->next = set->firstEntry;
-    proxy->readerInstanceCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_OWNER);
-    set->firstEntry = proxy; /* Transfer refCount */
-    set->lastSequenceNumber++;
-
+    if (proxy) {
+        proxy->readerInstanceCache = v_groupCacheNew(v_objectKernel(e),V_CACHE_OWNER);
+        if (proxy->readerInstanceCache) {
+            proxy->entry = c_keep(e);
+            proxy->sequenceNumber = set->lastSequenceNumber;
+            proxy->next = set->firstEntry;
+            set->firstEntry = proxy; /* Transfer refCount */
+            set->lastSequenceNumber++;
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_groupEntrySetAdd",0,
+                      "Failed to allocate reader instance cache.");
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_groupEntrySetAdd",0,
+                  "Failed to allocate reader proxy.");
+    }
     return c_keep(proxy);
 }
 
@@ -623,7 +649,7 @@ createInstanceKeyExpr (
 static void
 v_groupInit(
     v_group group,
-    v_domain partition,
+    v_partition partition,
     v_topic topic,
     c_long id)
 {
@@ -657,6 +683,7 @@ v_groupInit(
     group->lifespanAdmin = v_lifespanAdminNew(kernel);
     group->purgeListEmpty = c_listNew(v_kernelType(kernel, K_GROUPPURGEITEM));
     v_groupEntrySetInit(&group->topicEntrySet);
+    v_groupEntrySetInit(&group->synchronousEntrySet);
     v_groupEntrySetInit(&group->networkEntrySet);
     v_groupEntrySetInit(&group->variantEntrySet);
 
@@ -716,14 +743,14 @@ v_groupInit(
     /* ES, dds1576: For each new group, determine the access mode for the
      * partition involved in this group.
      */
-    group->domainAccessMode = v_kernelPartitionAccessMode(kernel, v_partitionName(partition));
+    group->partitionAccessMode = v_kernelPartitionAccessMode(kernel, v_partitionName(partition));
 }
 
 
 
 v_group
 v_groupNew(
-    v_domain partition,
+    v_partition partition,
     v_topic topic,
     c_long id)
 {
@@ -731,7 +758,7 @@ v_groupNew(
     v_group group;
 
     assert(partition != NULL);
-    assert(C_TYPECHECK(partition,v_domain));
+    assert(C_TYPECHECK(partition,v_partition));
     assert(topic != NULL);
     assert(C_TYPECHECK(topic,v_topic));
 
@@ -869,15 +896,33 @@ v_groupAddEntry(
 
     updatePurgeList(g, v_timeGet());
     /* doubly linked connection */
-    v_entryAddGroup(e, g);
-    if (v_objectKind(e) == K_NETWORKREADERENTRY) {
-        c_free(v_groupEntrySetAdd(&g->networkEntrySet,e));
-    } else if (v_reader(v_entry(e)->reader)->qos->userKey.enable) {
-        c_free(v_groupEntrySetAdd(&g->variantEntrySet,e));
-    } else {
-        proxy = v_groupEntrySetAdd(&g->topicEntrySet,e);
-        c_tableWalk(g->instances,registerInstance,proxy);
-        c_free(proxy);
+    if (v_entryAddGroup(e, g))
+    {
+       if (v_objectKind(e) == K_NETWORKREADERENTRY) {
+          c_free(v_groupEntrySetAdd(&g->networkEntrySet,e));
+       } else if (v_reader(v_entry(e)->reader)->qos->userKey.enable) {
+          c_free(v_groupEntrySetAdd(&g->variantEntrySet,e));
+       } else if (v_reader(v_entry(e)->reader)->qos->reliability.synchronous) {
+          proxy = v_groupEntrySetAdd(&g->synchronousEntrySet,e);
+          if (proxy) {
+             c_tableWalk(g->instances,registerInstance,proxy);
+             c_free(proxy);
+          } else {
+             OS_REPORT(OS_ERROR,
+                       "v_groupAddEntry",0,
+                       " Failed to register instance in synchronousEntrySet");
+          }
+       } else {
+          proxy = v_groupEntrySetAdd(&g->topicEntrySet,e);
+          if (proxy) {
+             c_tableWalk(g->instances,registerInstance,proxy);
+             c_free(proxy);
+          } else {
+             OS_REPORT(OS_ERROR,
+                       "v_groupAddEntry",0,
+                       " Failed to register instance in topicEntrySet");
+          }
+       }
     }
     c_mutexUnlock(&g->mutex);
 }
@@ -899,6 +944,11 @@ v_groupRemoveEntry(
         proxy = v_groupEntrySetRemove(&g->networkEntrySet,e);
     } else if (v_reader(v_entry(e)->reader)->qos->userKey.enable) {
         proxy = v_groupEntrySetRemove(&g->variantEntrySet,e);
+    } else if (v_reader(v_entry(e)->reader)->qos->reliability.synchronous) {
+        proxy = v_groupEntrySetRemove(&g->synchronousEntrySet,e);
+        if (proxy != NULL) {
+            v_groupCacheWalk(proxy->readerInstanceCache, doUnregister, NULL);
+        }
     } else {
         proxy = v_groupEntrySetRemove(&g->topicEntrySet,e);
         if (proxy != NULL) {
@@ -1137,17 +1187,40 @@ v_groupFlushAction(
 }
 
 
-C_STRUCT(v_entryWriteArg) {
+C_STRUCT(v_entryRegisterArg) {
     v_message message;
     v_groupInstance instance;
-    v_networkId writingNetworkId;
+    v_writeResult writeResult;
+};
+
+C_CLASS(v_entryRegisterArg);
+
+C_STRUCT(v_instanceWriteArg) {
+    v_message message;
     v_writeResult writeResult;
     c_iter deadCacheItems;
-    v_entry entry;
     c_bool resend; /* indicates if called from resend */
 };
 
+C_CLASS(v_instanceWriteArg);
+
+C_STRUCT(v_entryWriteArg) {
+    v_message message;
+    v_networkId networkId;
+    v_writeResult writeResult;
+    v_entry entry;
+};
+
 C_CLASS(v_entryWriteArg);
+
+C_STRUCT(v_nwEntryWriteArg) {
+    v_message message;
+    v_networkId networkId;
+    v_writeResult writeResult;
+    v_entry entry;
+};
+
+C_CLASS(v_nwEntryWriteArg);
 
 static c_bool
 entryRegister(
@@ -1155,8 +1228,9 @@ entryRegister(
     c_voidp arg)
 {
     v_writeResult result;
-    v_entryWriteArg writeArg = (v_entryWriteArg)arg;
+    v_entryRegisterArg writeArg = (v_entryRegisterArg)arg;
     v_instance instance;
+    v_groupCache cache;
     v_groupCacheItem item;
     struct instanceUnknownArg unknownArg;
 
@@ -1175,17 +1249,26 @@ entryRegister(
            - the reader has a filter which rejects the message.
         */
         if (instance != NULL) {
+            if (v_reader(proxy->entry->reader)->qos->reliability.synchronous) {
+                cache = writeArg->instance->synchronousInstanceCache;
+            } else {
+                cache = writeArg->instance->readerInstanceCache;
+            }
             /* first check whether instance is already cached */
             unknownArg.instance = instance;
             unknownArg.cacheItem = NULL;
-            v_groupCacheWalk(writeArg->instance->readerInstanceCache,
-                             instanceUnknown,
-                             &unknownArg);
+            v_groupCacheWalk(cache, instanceUnknown, &unknownArg);
             if (unknownArg.cacheItem == NULL) {
                 item = v_groupCacheItemNew(writeArg->instance,instance);
-                v_groupCacheInsert(proxy->readerInstanceCache,item);
-                v_groupCacheInsert(writeArg->instance->readerInstanceCache,item);
-                c_free(item);
+                if (item) {
+                    v_groupCacheInsert(proxy->readerInstanceCache,item);
+                    v_groupCacheInsert(cache,item);
+                    c_free(item);
+                } else {
+                    OS_REPORT(OS_ERROR,
+                              "v_group::entryRegister",0,
+                              "Failed to register instance");
+                }
             } else {
                 unknownArg.cacheItem->registrationCount++;
                 assert(unknownArg.cacheItem->registrationCount <=
@@ -1205,21 +1288,24 @@ nwEntryWrite(
     c_voidp arg)
 {
     v_writeResult result;
-    v_entryWriteArg writeArg = (v_entryWriteArg)arg;
+    v_nwEntryWriteArg writeArg = (v_nwEntryWriteArg)arg;
 
-    if(writeArg->entry){
-        if(writeArg->entry == proxy->entry){
-            result = v_networkReaderEntryWrite(v_networkReaderEntry(proxy->entry),
-                                               writeArg->message,
-                                               writeArg->writingNetworkId);
-        } else {
-            result = V_WRITE_SUCCESS;
-        }
-    } else {
-        result = v_networkReaderEntryWrite(v_networkReaderEntry(proxy->entry),
-                                           writeArg->message,
-                                           writeArg->writingNetworkId);
+    if ((writeArg->entry) && (writeArg->entry != proxy->entry)) {
+        /* The message was not addressed to this network.
+         */
+        result = V_WRITE_SUCCESS;
+    } else {  
+        result = v_networkReaderEntryWrite(
+                     v_networkReaderEntry(proxy->entry),
+                     writeArg->message,
+                     writeArg->networkId);
     }
+
+    /* This method is used in a walk method and visits all network
+     * interfaces. The callee expects the writeResult to indecate if
+     * a reject has occured so the result will only be set if a message
+     * is rejected.
+     */
     if (result == V_WRITE_REJECTED) {
         writeArg->writeResult = result;
     } else if (result != V_WRITE_SUCCESS) {
@@ -1240,21 +1326,22 @@ entryWrite(
     v_entryWriteArg writeArg = (v_entryWriteArg)arg;
     v_instance instance = NULL;
 
-    if(writeArg->entry){
-        if(writeArg->entry == proxy->entry){
-            result = v_entryWrite(proxy->entry,
-                                  writeArg->message,
-                                  writeArg->writingNetworkId,
-                                  &instance);
-        } else {
-            result = V_WRITE_SUCCESS;
-        }
-    } else {
+    if ((writeArg->entry) && (writeArg->entry != proxy->entry)) {
+        /* The message was not addressed to this entry.
+         */
+        result = V_WRITE_SUCCESS;
+    } else {  
         result = v_entryWrite(proxy->entry,
                               writeArg->message,
-                              writeArg->writingNetworkId,
+                              writeArg->networkId,
                               &instance);
     }
+
+    /* This method is used in a walk method and visits all network
+     * interfaces. The callee expects the writeResult to indecate if
+     * a reject has occured so the result will only be set if a message
+     * is rejected.
+     */
     if (result == V_WRITE_REJECTED) {
         writeArg->writeResult = result;
     } else if (result != V_WRITE_SUCCESS) {
@@ -1295,7 +1382,7 @@ instanceWrite(
 {
     v_groupCacheItem item;
     v_writeResult result = V_WRITE_SUCCESS;
-    v_entryWriteArg writeArg = (v_entryWriteArg)arg;
+    v_instanceWriteArg writeArg = (v_instanceWriteArg)arg;
 
     item = v_groupCacheItem(node);
 
@@ -1305,8 +1392,12 @@ instanceWrite(
         if (v_objectKind(item->instance) == K_DATAREADERINSTANCE) {
             assert(item->registrationCount <=
                    v_dataReaderInstance(item->instance)->liveliness);
-            result = v_dataReaderInstanceWrite(v_dataReaderInstance(item->instance),
-                                               writeArg->message);
+            result = v_dataReaderInstanceWrite(
+                         v_dataReaderInstance(item->instance),
+                         writeArg->message);
+            if (result != V_WRITE_SUCCESS) {
+                writeArg->writeResult = result;
+            }
         } else {
             result = V_WRITE_PRE_NOT_MET;
         }
@@ -1321,14 +1412,144 @@ instanceWrite(
             assert(item->registrationCount <=
                    v_dataReaderInstance(item->instance)->liveliness);
         } else {
-            writeArg->writeResult = result;
-            /* only increase pendingResends, when not called from instanceResend */
+            /* only increase pendingResends,
+             * when not called from instanceResend.
+             */
             if (!writeArg->resend) {
                 item->pendingResends++;
             }
         }
     }
     return TRUE;
+}
+
+v_writeResult
+v_groupAckWriter(
+    v_group _this,
+    v_message message)
+{
+    C_STRUCT(v_nwEntryWriteArg) writeArg;
+    struct v_deliveryInfo *info;
+    v_message msg;
+    v_topic topic;
+    v_kernel kernel;
+
+    writeArg.writeResult = V_WRITE_SUCCESS;
+
+synch_printf("v_groupAckWriter Enter\n");
+    if (_this != NULL) {
+        kernel = v_objectKernel(_this);
+        topic = v_builtinTopicLookup(kernel->builtin, V_DELIVERYINFO_ID);
+        if (topic) {
+            msg = v_topicMessageNew(topic);
+            if (msg != NULL) {
+                info = v_builtinDeliveryInfoData(kernel->builtin,msg);
+                info->writerGID         = message->writerGID;
+                info->writerInstanceGID = message->writerInstanceGID;
+                info->sequenceNumber    = message->sequenceNumber;
+synch_printf("data source systemId = %d, %d\n",message->writerGID.systemId, message->writerInstanceGID.systemId);
+                writeArg.message        = msg;
+                writeArg.networkId      = V_NETWORKID_LOCAL;
+                writeArg.entry          = NULL; /* NULL = all network entries. */
+
+                v_deliveryServiceWrite(kernel->deliveryService,msg);
+
+synch_printf("v_groupAckWriter ack to network\n");
+                v_groupEntrySetWalk(&_this->networkEntrySet,
+                                    nwEntryWrite,
+                                    &writeArg);
+                c_free(msg);
+            } else {
+                OS_REPORT(OS_WARNING, "v_builtin", 0,
+                          "Failed to produce built-in delivery message");
+            }
+        } else {
+            /* Valid use-case (topic == NULL) */
+        }
+    }
+synch_printf("v_groupAckWriter Exit\n");
+
+    return writeArg.writeResult;
+}
+
+static v_writeResult
+forwardMessageToNetwork (
+    v_groupInstance instance,
+    v_message message,
+    v_networkId writingNetworkId,
+    v_entry entry)
+{
+    C_STRUCT(v_nwEntryWriteArg) writeArg;
+    v_group group;
+
+    assert(C_TYPECHECK(instance,v_groupInstance));
+
+    if (!v_messageStateTest(message,L_REGISTER)) {
+        if (writingNetworkId == V_NETWORKID_LOCAL) {
+            writeArg.message     = message;
+            writeArg.networkId   = writingNetworkId;
+            writeArg.writeResult = V_WRITE_SUCCESS;
+            writeArg.entry       = entry;
+
+            group = v_groupInstanceOwner(instance);
+
+            v_groupEntrySetWalk(&group->networkEntrySet,
+                                nwEntryWrite,
+                                &writeArg);
+        }
+    }
+    return writeArg.writeResult;
+}
+
+static v_writeResult
+forwardRegisterMessage (
+    v_groupInstance instance,
+    v_message message)
+{
+    C_STRUCT(v_entryRegisterArg) registerArg;
+    v_group group;
+
+    assert(C_TYPECHECK(instance,v_groupInstance));
+
+    /* A register message indicated that a new instance is created
+     * by a DataWriter.
+     * Register messages are only used local node. This means that
+     * it will only be sent to local DataReaders for optimization.
+     * I.e. the DataReader will create an instance and return the
+     * instance handle to build the local instance pipeline.
+     */
+    if (v_messageStateTest(message,L_REGISTER)) {
+
+        registerArg.message     = message;
+        registerArg.writeResult = V_WRITE_SUCCESS;
+        registerArg.instance    = instance;
+
+        group = v_groupInstanceOwner(instance);
+
+        /* A connection update occured, so all readers must be addressed
+         * to guarantee cache consistency
+         */
+        if (!v_groupEntryEmpty(group->synchronousEntrySet)) {
+            v_groupEntrySetWalk(&group->synchronousEntrySet,
+                                entryRegister,
+                                &registerArg);
+            if (registerArg.writeResult == V_WRITE_SUCCESS) {
+                /* When a message is successfully inserted into all
+                 * synchronous DataReaders an acknoledgment will be sent to
+                 * the DataWriter.
+                 * If a message could not be delivered then the DataWriter
+                 * will try to resend the message, in the future DataReaders
+                 * may actively request the rejected data when resources become
+                 * available.
+                 */
+                 registerArg.writeResult = v_groupAckWriter(group, message);
+            }
+        }
+        v_groupEntrySetWalk(&group->topicEntrySet,
+                            entryRegister,
+                            &registerArg);
+    }
+    return registerArg.writeResult;
 }
 
 static v_writeResult
@@ -1339,60 +1560,96 @@ forwardMessage (
     v_entry entry)
 {
     C_STRUCT(v_entryWriteArg) writeArg;
+    C_STRUCT(v_instanceWriteArg) instanceArg;
     v_group group;
     v_groupCacheItem item;
 
     assert(C_TYPECHECK(instance,v_groupInstance));
 
-    writeArg.message          = message;
-    writeArg.writingNetworkId = writingNetworkId;
-    writeArg.writeResult      = V_WRITE_SUCCESS;
-    writeArg.instance         = instance;
-    writeArg.deadCacheItems   = NULL;
-    writeArg.entry            = entry;
-    writeArg.resend           = FALSE;
+    writeArg.writeResult = V_WRITE_SUCCESS;
 
-    group = v_groupInstanceOwner(instance);
-
+    /* A register message indecated that a new instance is created
+     * by a DataWriter.
+     * Register messages are only used local node. This means that
+     * it will only be sent to local DataReaders for optimization.
+     * I.e. the DataReader will create an instance and return the
+     * instance handle to build the local instance pipeline.
+     */
     if (v_messageStateTest(message,L_REGISTER)) {
-        /* A connection update occured, so all readers must be addressed
-           to guarantee cache consistency
-         */
-        v_groupEntrySetWalk(&group->topicEntrySet,
-                            entryRegister,
-                            &writeArg);
+        forwardRegisterMessage(instance, message);
     } else {
-        if (writingNetworkId == V_NETWORKID_LOCAL) {
-            v_groupEntrySetWalk(&group->networkEntrySet,
-                                nwEntryWrite,
-                                &writeArg);
-        }
+        writeArg.message   = message;
+        writeArg.networkId = writingNetworkId;
+        writeArg.entry     = entry;
+
+        group = v_groupInstanceOwner(instance);
+
         if(!entry){
+            instanceArg.message        = message;
+            instanceArg.writeResult    = V_WRITE_SUCCESS;
+            instanceArg.deadCacheItems = NULL;
+            instanceArg.resend         = FALSE;
+
             /* No connection updates, so forward the messages via the cached
                instances.
              */
+            if (v_groupCacheEmpty(instance->synchronousInstanceCache) > 0) {
+                v_groupCacheWalk(instance->synchronousInstanceCache,
+                                 instanceWrite,
+                                 &instanceArg);
+
+                if (instanceArg.writeResult == V_WRITE_SUCCESS) {
+                    /* When a message is successfully inserted into all
+                     * synchronous DataReaders an acknoledgment will be sent to
+                     * the DataWriter.
+                     * If a message could not be delivered then the DataWriter
+                     * will try to resend the message, in the future DataReaders
+                     * may actively request the rejected data when resources become
+                     * available.
+                     */
+                     instanceArg.writeResult = v_groupAckWriter(group, message);
+                }
+            }
             v_groupCacheWalk(instance->readerInstanceCache,
                              instanceWrite,
-                             &writeArg);
+                             &instanceArg);
+
+            if (instanceArg.deadCacheItems) {
+                item = v_groupCacheItem(c_iterTakeFirst(instanceArg.deadCacheItems));
+                while (item != NULL) {
+                    v_groupCacheItemRemove(item, V_CACHE_ANY);
+                    item = v_groupCacheItem(c_iterTakeFirst(instanceArg.deadCacheItems));
+                }
+                c_iterFree(instanceArg.deadCacheItems);
+            }
+            writeArg.writeResult = instanceArg.writeResult;
         } else {
+            if (!v_groupEntryEmpty(group->synchronousEntrySet)) {
+                v_groupEntrySetWalk(&group->synchronousEntrySet,
+                                    entryWrite,
+                                    &writeArg);
+                if (writeArg.writeResult == V_WRITE_SUCCESS) {
+                    /* When a message is successfully inserted into all
+                     * synchronous DataReaders an acknoledgment will be sent to
+                     * the DataWriter.
+                     * If a message could not be delivered then the DataWriter
+                     * will try to resend the message, in the future DataReaders
+                     * may actively request the rejected data when resources become
+                     * available.
+                     */
+                     writeArg.writeResult = v_groupAckWriter(group, message);
+                }
+            }
             /*special case to handle writing to one specific entry*/
             v_groupEntrySetWalk(&group->topicEntrySet,
                                         entryWrite,
                                         &writeArg);
         }
-    }
-    if (v_messageStateTest(message,L_WRITE)) {
-        v_groupEntrySetWalk(&group->variantEntrySet,
-                            entryWrite,
-                            &writeArg);
-    }
-    if (writeArg.deadCacheItems) {
-        item = v_groupCacheItem(c_iterTakeFirst(writeArg.deadCacheItems));
-        while (item != NULL) {
-            v_groupCacheItemRemove(item, V_CACHE_ANY);
-            item = v_groupCacheItem(c_iterTakeFirst(writeArg.deadCacheItems));
+        if (v_messageStateTest(message,L_WRITE)) {
+            v_groupEntrySetWalk(&group->variantEntrySet,
+                                entryWrite,
+                                &writeArg);
         }
-        c_iterFree(writeArg.deadCacheItems);
     }
     return writeArg.writeResult;
 }
@@ -1452,7 +1709,6 @@ groupWrite (
     qos = v_topicQosRef(group->topic);
 
     if ((instancePtr == NULL) || (*instancePtr == NULL)) {
-#if 1
         messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
         nrOfKeys = c_arraySize(messageKeyList);
         for (i=0;i<nrOfKeys;i++) {
@@ -1468,14 +1724,6 @@ groupWrite (
         for (i=0;i<nrOfKeys;i++) {
             c_valueFreeRef(keyValues[i]);
         }
-#else
-        instance = v_groupInstanceNew(group,msg);
-        found = c_tableInsert(group->instances,instance);
-        if (found != instance) {
-            v_groupInstanceFree(instance);
-            instance = c_keep(found);
-        }
-#endif
         regMsg = NULL;
         result = v_groupInstanceRegister(instance,msg, &regMsg);
         if (result == V_WRITE_REGISTERED){
@@ -1493,7 +1741,7 @@ groupWrite (
                  * So this register message must be forwarded, so readers can
                  * update liveliness counts.
                  */
-                result = forwardMessage(instance, regMsg, writingNetworkId, entry);
+                result = forwardRegisterMessage(instance, regMsg);
             }
             c_free(regMsg);
             if (!v_stateTest(instance->state, L_DISPOSED)) {
@@ -1543,6 +1791,12 @@ groupWrite (
         }
     }
 
+    /* Now forward the message to all networks. */
+    result = forwardMessageToNetwork(instance,msg,writingNetworkId, entry);
+    if (result == V_WRITE_REJECTED) {
+        rejected = TRUE;
+    }
+
     /* Now forward the message to all subscribers. */
     result = forwardMessage(instance,msg,writingNetworkId, entry);
     if (result == V_WRITE_REJECTED) {
@@ -1589,13 +1843,19 @@ groupWrite (
                         if (!v_timeIsInfinite(delay)) {
                             purgeItem = c_new(v_kernelType(v_objectKernel(group),
                                               K_GROUPPURGEITEM));
-                            purgeItem->instance = c_keep(instance);
-                            purgeItem->insertionTime = now;
-                            v_groupInstanceSetEpoch(instance,
-                                                    purgeItem->insertionTime);
-                            v_groupInstanceDisconnect(instance);
-                            c_append(group->disposedInstances, purgeItem);
-                            c_free(purgeItem);
+                            if (purgeItem) {
+                                purgeItem->instance = c_keep(instance);
+                                purgeItem->insertionTime = now;
+                                v_groupInstanceSetEpoch(instance,
+                                                        purgeItem->insertionTime);
+                                v_groupInstanceDisconnect(instance);
+                                c_append(group->disposedInstances, purgeItem);
+                                c_free(purgeItem);
+                            } else {
+                                OS_REPORT(OS_ERROR,
+                                          "v_groupWrite",0,
+                                          "Failed to purge instance.");
+                            }
                         }
                     }
                 }
@@ -1603,13 +1863,19 @@ groupWrite (
                     assert(v_groupInstanceStateTest(instance,L_EMPTY));
                     purgeItem = c_new(v_kernelType(v_objectKernel(group),
                                       K_GROUPPURGEITEM));
-                    purgeItem->instance = c_keep(instance);
-                    purgeItem->insertionTime = now;
-                    v_groupInstanceSetEpoch(instance,
-                                            purgeItem->insertionTime);
-                    v_groupInstanceDisconnect(instance);
-                    c_append(group->purgeListEmpty, purgeItem);
-                    c_free(purgeItem);
+                    if (purgeItem) {
+                        purgeItem->instance = c_keep(instance);
+                        purgeItem->insertionTime = now;
+                        v_groupInstanceSetEpoch(instance,
+                                                purgeItem->insertionTime);
+                        v_groupInstanceDisconnect(instance);
+                        c_append(group->purgeListEmpty, purgeItem);
+                        c_free(purgeItem);
+                    } else {
+                        OS_REPORT(OS_ERROR,
+                                  "v_groupWrite",0,
+                                  "Failed to purge instance.");
+                    }
                 }
             }
             if(stream == TRUE) {
@@ -1628,18 +1894,24 @@ groupWrite (
              v_groupInstanceStateTest(instance,L_NOWRITERS))) {
             purgeItem = c_new(v_kernelType(v_objectKernel(group),
                               K_GROUPPURGEITEM));
-            purgeItem->instance = c_keep(instance);
-            purgeItem->insertionTime = now;
-            v_groupInstanceSetEpoch(instance,
+            if (purgeItem) {
+                purgeItem->instance = c_keep(instance);
+                purgeItem->insertionTime = now;
+                v_groupInstanceSetEpoch(instance,
                                     purgeItem->insertionTime);
-            v_groupInstanceDisconnect(instance);
-            if ((qos->durability.kind != V_DURABILITY_VOLATILE) &&
-                v_groupInstanceStateTest(instance,L_DISPOSED)) {
-                c_append(group->disposedInstances, purgeItem);
+                v_groupInstanceDisconnect(instance);
+                if ((qos->durability.kind != V_DURABILITY_VOLATILE) &&
+                    v_groupInstanceStateTest(instance,L_DISPOSED)) {
+                    c_append(group->disposedInstances, purgeItem);
+                } else {
+                    c_append(group->purgeListEmpty, purgeItem);
+                }
+                c_free(purgeItem);
             } else {
-                c_append(group->purgeListEmpty, purgeItem);
+                OS_REPORT(OS_ERROR,
+                          "v_groupWrite",0,
+                          "Failed to purge instance.");
             }
-            c_free(purgeItem);
         }
     }
     if (rejected) {
@@ -1762,7 +2034,7 @@ instanceResend(
 {
     v_groupCacheItem item;
     c_bool result;
-    v_entryWriteArg writeArg = (v_entryWriteArg)arg;
+    v_instanceWriteArg writeArg = (v_instanceWriteArg)arg;
 
     item = v_groupCacheItem(node);
 
@@ -1791,7 +2063,6 @@ v_groupResend (
     v_groupInstance *instancePtr,
     v_networkId writingNetworkId)
 {
-    C_STRUCT(v_entryWriteArg) writeArg;
     v_groupInstance instance;
     v_groupCacheItem item;
     v_topicQos qos;
@@ -1805,7 +2076,7 @@ v_groupResend (
              v_messageStateTest(msg, L_IMPLICIT));
 
 
-    result = V_WRITE_UNDEFINED;
+    result = V_WRITE_SUCCESS;
 
     c_mutexLock(&group->mutex);
     updatePurgeList(group, v_timeGet());
@@ -1837,37 +2108,74 @@ v_groupResend (
         }
     }
 
-    writeArg.message = msg;
-    writeArg.writingNetworkId = writingNetworkId;
-    writeArg.writeResult = V_WRITE_SUCCESS;
-    writeArg.instance = instance;
-    writeArg.deadCacheItems = NULL;
-    writeArg.entry = NULL;
-    writeArg.resend = TRUE;
+    {
+        C_STRUCT(v_nwEntryWriteArg) arg;
 
-    v_groupEntrySetWalk(&group->networkEntrySet,
-                        nwEntryWrite,
-                        &writeArg);
+        arg.message     = msg;
+        arg.networkId   = writingNetworkId;
+        arg.writeResult = result;
+        arg.entry       = NULL;
+
+        v_groupEntrySetWalk(&group->networkEntrySet, nwEntryWrite, &arg);
+
+        result = arg.writeResult;
+    }
 
     /* Only forward the message when the WRITE bit is set!
      * So only write and writedispose messages are forwarded to readers
      * with own storage spectrum.
      */
     if (v_messageStateTest(msg,L_WRITE)) {
-        v_groupEntrySetWalk(&group->variantEntrySet,variantEntryResend,&writeArg);
+        C_STRUCT(v_entryWriteArg) arg;
+
+        arg.message     = msg;
+        arg.networkId   = writingNetworkId;
+        arg.writeResult = result;
+        arg.entry       = NULL;
+
+        v_groupEntrySetWalk(&group->variantEntrySet, variantEntryResend, &arg);
+
+        result = arg.writeResult;
     }
-    v_groupCacheWalk(instance->readerInstanceCache,
-                     instanceResend,
-                     &writeArg);
-    item = v_groupCacheItem(c_iterTakeFirst(writeArg.deadCacheItems));
-    while (item != NULL) {
-        v_groupCacheItemRemove(item, V_CACHE_ANY);
-        item = v_groupCacheItem(c_iterTakeFirst(writeArg.deadCacheItems));
+    {
+        C_STRUCT(v_instanceWriteArg) arg;
+
+        arg.message        = msg;
+        arg.writeResult    = result;
+        arg.deadCacheItems = NULL;
+        arg.resend         = TRUE; /* indicates if called from resend */
+
+        if (v_groupCacheEmpty(instance->synchronousInstanceCache) > 0) {
+            v_groupCacheWalk(instance->synchronousInstanceCache,
+                             instanceResend,
+                             &arg);
+            if (arg.writeResult == V_WRITE_SUCCESS) {
+                /* When a message is successfully inserted into all
+                 * synchronous DataReaders an acknoledgment will be sent to
+                 * the DataWriter.
+                 * If a message could not be delivered then the DataWriter
+                 * will try to resend the message, in the future DataReaders
+                 * may actively request the rejected data when resources become
+                 * available.
+                 */
+                arg.writeResult = v_groupAckWriter(group, msg);
+            }
+        }
+        v_groupCacheWalk(instance->readerInstanceCache,
+                         instanceResend,
+                         &arg);
+        item = v_groupCacheItem(c_iterTakeFirst(arg.deadCacheItems));
+        while (item != NULL) {
+            v_groupCacheItemRemove(item, V_CACHE_ANY);
+            item = v_groupCacheItem(c_iterTakeFirst(arg.deadCacheItems));
+        }
+        c_iterFree(arg.deadCacheItems);
+
+        result = arg.writeResult;
     }
-    c_iterFree(writeArg.deadCacheItems);
 
     c_mutexUnlock(&group->mutex);
-    return writeArg.writeResult;
+    return result;
 }
 
 c_bool
@@ -1972,6 +2280,10 @@ v_groupWalkEntries(
                                  walkEntryAction,&proxyAction);
     if (result == TRUE) {
         result = v_groupEntrySetWalk(&g->variantEntrySet,
+                                     walkEntryAction,&proxyAction);
+    }
+    if (result == TRUE) {
+        result = v_groupEntrySetWalk(&g->synchronousEntrySet,
                                      walkEntryAction,&proxyAction);
     }
     if (result == TRUE) {

@@ -103,7 +103,9 @@ namespace DDS
     };
 
     static const DDS::WriterDataLifecycleQosPolicy DEFAULT_WRITERDATALIFECYCLE_QOSPOLICY= {
-        true
+        true,
+        {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC},
+        {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC}
     };
 
     static const DDS::ReaderDataLifecycleQosPolicy DEFAULT_READERDATALIFECYCLE_QOSPOLICY= {
@@ -131,6 +133,11 @@ namespace DDS
 	static const DDS::ShareQosPolicy DEFAULT_SHARE_QOSPOLICY= {
 		"",
 		false
+	};
+
+	static const DDS::ViewKeyQosPolicy DEFAULT_VIEWKEY_QOSPOLICY= {
+	    false,
+	    DDS::StringSeq()
 	};
 
 
@@ -192,6 +199,7 @@ namespace DDS
         qos->partition              = DEFAULT_PARTITION_QOSPOLICY;
         qos->group_data             = DEFAULT_GROUPDATA_QOSPOLICY;
         qos->entity_factory         = DEFAULT_ENTITYFACTORY_QOSPOLICY;
+        qos->share                  = DEFAULT_SHARE_QOSPOLICY;
         return qos;
     }
 
@@ -217,6 +225,14 @@ namespace DDS
         return qos;
     }
 
+    static const DDS::DataReaderViewQos * const
+    initializeDataReaderViewQos()
+    {
+        DDS::DataReaderViewQos *qos = new DDS::DataReaderViewQos();
+        qos->view_keys = DEFAULT_VIEWKEY_QOSPOLICY;
+        return qos;
+    }
+
     static const DDS::DataWriterQos * const 
     initializeDataWriterQos()
     {
@@ -232,6 +248,7 @@ namespace DDS
         qos->transport_priority     = DEFAULT_TRANSPORTPRIORITY_QOSPOLICY;
         qos->lifespan               = DEFAULT_LIFESPAN_QOSPOLICY;
         qos->user_data              = DEFAULT_USERDATA_QOSPOLICY;
+        qos->ownership              = DEFAULT_OWNERSHIP_QOSPOLICY;
         qos->ownership_strength     = DEFAULT_OWNERSHIPSTRENGTH_QOSPOLICY;
         qos->writer_data_lifecycle  = DEFAULT_WRITERDATALIFECYCLE_QOSPOLICY;
         return qos;
@@ -246,6 +263,7 @@ namespace DDS
     const DDS::SubscriberQos        * const DDS::DefaultQos::SubscriberQosDefault       = DDS::initializeSubscriberQos();
     const DDS::DataReaderQos        * const DDS::DefaultQos::DataReaderQosDefault       = DDS::initializeDataReaderQos();
     const DDS::DataReaderQos        * const DDS::DefaultQos::DataReaderQosUseTopicQos   = DDS::initializeDataReaderQos();
+    const DDS::DataReaderViewQos    * const DDS::DefaultQos::DataReaderViewQosDefault   = DDS::initializeDataReaderViewQos();
     const DDS::DataWriterQos        * const DDS::DefaultQos::DataWriterQosDefault       = DDS::initializeDataWriterQos();
     const DDS::DataWriterQos        * const DDS::DefaultQos::DataWriterQosUseTopicQos   = DDS::initializeDataWriterQos();
 
@@ -466,6 +484,8 @@ void DDS::ccpp_WriterDataLifecycleQosPolicy_copyIn( const DDS::WriterDataLifecyc
         gapi_writerDataLifecycleQosPolicy &to)
 {
   to.autodispose_unregistered_instances = from.autodispose_unregistered_instances;
+  DDS::ccpp_Duration_copyIn( from.autopurge_suspended_samples_delay, to.autopurge_suspended_samples_delay);
+  DDS::ccpp_Duration_copyIn( from.autounregister_instance_delay, to.autounregister_instance_delay);
 }
 
 void DDS::ccpp_PresentationQosPolicy_copyIn( const DDS::PresentationQosPolicy & from, 
@@ -699,6 +719,8 @@ void DDS::ccpp_WriterDataLifecycleQosPolicy_copyOut( const gapi_writerDataLifecy
         DDS::WriterDataLifecycleQosPolicy &to)
 {
   to.autodispose_unregistered_instances = from.autodispose_unregistered_instances;
+  ccpp_Duration_copyOut(from.autopurge_suspended_samples_delay, to.autopurge_suspended_samples_delay);
+  ccpp_Duration_copyOut(from.autounregister_instance_delay, to.autounregister_instance_delay);
 }
 
 void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyOut( const gapi_readerDataLifecycleQosPolicy &from,
@@ -775,7 +797,10 @@ void DDS::ccpp_ShareQosPolicy_copyIn (
      const DDS::ShareQosPolicy &from,
      gapi_shareQosPolicy &to )
 {
+    const char *value = from.name;
+
     to.enable = from.enable;
+    to.name = gapi_string_dup(value);
 }
 
 void DDS::ccpp_ShareQosPolicy_copyOut (
@@ -783,6 +808,7 @@ void DDS::ccpp_ShareQosPolicy_copyOut (
     DDS::ShareQosPolicy &to )
 {
     to.enable = from.enable;
+    to.name = CORBA::string_dup(reinterpret_cast<const char *>(from.name));
 }
 
 void DDS::ccpp_SchedulingClassQosPolicy_copyIn ( const DDS::SchedulingClassQosPolicy &from,
@@ -1016,8 +1042,6 @@ void DDS::ccpp_DataReaderQos_copyIn( const DDS::DataReaderQos &from,
   DDS::ccpp_OwnershipQosPolicy_copyIn(from.ownership, to.ownership);
   DDS::ccpp_TimeBasedFilterQosPolicy_copyIn(from.time_based_filter, to.time_based_filter);
   DDS::ccpp_ReaderDataLifecycleQosPolicy_copyIn(from.reader_data_lifecycle, to.reader_data_lifecycle);
-//  to.subscription_keys.use_key_list = false;;
-//  ccpp_sequenceInitialize<gapi_stringSeq>(to.subscription_keys.key_list);
   DDS::ccpp_SubscriptionKeyQosPolicy_copyIn(from.subscription_keys, to.subscription_keys);
   DDS::ccpp_ReaderLifespanQosPolicy_copyIn(from.reader_lifespan, to.reader_lifespan);
   DDS::ccpp_ShareQosPolicy_copyIn(from.share, to.share);
@@ -1048,6 +1072,7 @@ void DDS::ccpp_SubscriberQos_copyIn( const DDS::SubscriberQos &from,
   DDS::ccpp_PartitionQosPolicy_copyIn( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyIn( from.group_data, to.group_data);
   DDS::ccpp_EntityFactoryQosPolicy_copyIn( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_ShareQosPolicy_copyIn(from.share, to.share);
 }
 
 void DDS::ccpp_SubscriberQos_copyOut( const gapi_subscriberQos &from, 
@@ -1057,6 +1082,7 @@ void DDS::ccpp_SubscriberQos_copyOut( const gapi_subscriberQos &from,
   DDS::ccpp_PartitionQosPolicy_copyOut( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyOut( from.group_data, to.group_data);
   DDS::ccpp_EntityFactoryQosPolicy_copyOut( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_ShareQosPolicy_copyOut(from.share, to.share);
 }
 
 void DDS::ccpp_OfferedIncompatibleQosStatus_copyOut( 
@@ -1175,3 +1201,32 @@ void DDS::ccpp_PublicationMatchedStatus_copyOut(
   to.last_subscription_handle = (DDS::InstanceHandle_t)from.last_subscription_handle;
 }
 
+void DDS::ccpp_DataReaderViewQos_copyIn(
+        const DDS::DataReaderViewQos &from,
+        gapi_dataReaderViewQos &to)
+{
+    DDS::ccpp_ViewKeyQosPolicy_copyIn( from.view_keys, to.view_keys);
+}
+
+void DDS::ccpp_DataReaderViewQos_copyOut(
+        const gapi_dataReaderViewQos &from,
+        DDS::DataReaderViewQos &to)
+{
+    DDS::ccpp_ViewKeyQosPolicy_copyOut( from.view_keys, to.view_keys);
+}
+
+void DDS::ccpp_ViewKeyQosPolicy_copyIn(
+        const DDS::ViewKeyQosPolicy &from,
+        gapi_viewKeyQosPolicy &to)
+{
+    to.use_key_list = from.use_key_list;
+    DDS::ccpp_sequenceCopyIn(from.key_list, to.key_list);
+}
+
+void DDS::ccpp_ViewKeyQosPolicy_copyOut(
+        const gapi_viewKeyQosPolicy &from,
+        DDS::ViewKeyQosPolicy &to)
+{
+    to.use_key_list = from.use_key_list;
+    DDS::ccpp_sequenceCopyOut(from.key_list, to.key_list);
+}

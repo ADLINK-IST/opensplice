@@ -27,7 +27,7 @@
 #include "v_entity.h"
 #include "v_groupSet.h"
 #include "v_group.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_topic.h"
 #include "v_participant.h"
 #include "os_heap.h"

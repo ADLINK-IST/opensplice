@@ -77,7 +77,7 @@ setCrtMode(
         reportFile = CreateFile(fullFileName, GENERIC_WRITE, FILE_SHARE_WRITE,
                          NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
         if (reportFile == INVALID_HANDLE_VALUE) {
-            OS_DEBUG_1("Unable to open file \"%s\" for debug reports.", fullFileName);
+            OS_DEBUG_1("setCrtMode", "Unable to open file \"%s\" for debug reports.", fullFileName);
         }
         os_free(fullFileName);
     }
@@ -86,11 +86,12 @@ setCrtMode(
         result = os_malloc(sizeof(*result));
         result->mode = _CrtSetReportMode(modeKind, _CRTDBG_MODE_FILE);
         if (result->mode == _CRTDBG_MODE_ERROR) {
-            OS_DEBUG("_CrtSetReportMode failed, unable to set report mode to FILE");
+            OS_DEBUG("setCrtMode", "_CrtSetReportMode failed, unable to set report mode to FILE");
         } else {
             result->file = _CrtSetReportFile(_CRT_WARN, reportFile);
             if (result->file == _CRTDBG_HFILE_ERROR) {
-                OS_DEBUG_1("_CrtSetReportFile failed, unable to set report file to \"%s\"", fileName);
+                OS_DEBUG_1("setCrtMode",
+                           "_CrtSetReportFile failed, unable to set report file to \"%s\"", fileName);
             }
         }
     }

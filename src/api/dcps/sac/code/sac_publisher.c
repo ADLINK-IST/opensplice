@@ -21,15 +21,15 @@
  *         in DataWriterQos qos,
  *         in DataWriterListener a_listener);
  */
-     DDS_DataWriter
-     DDS_Publisher_create_datawriter (
-         DDS_Publisher this,
-         const DDS_Topic a_topic,
-         const DDS_DataWriterQos *qos,
-         const struct DDS_DataWriterListener *a_listener,
-        const DDS_StatusMask mask
-         )
+DDS_DataWriter
+DDS_Publisher_create_datawriter (
+    DDS_Publisher this,
+    const DDS_Topic a_topic,
+    const DDS_DataWriterQos *qos,
+    const struct DDS_DataWriterListener *a_listener,
+    const DDS_StatusMask mask)
 {
+    DDS_DataWriter writer;
     struct gapi_dataWriterListener gListener;
     struct gapi_dataWriterListener *pListener = NULL;
 
@@ -38,14 +38,28 @@
         pListener = &gListener;
     }
     
-    return (DDS_DataWriter)
-	gapi_publisher_create_datawriter (
-	    (gapi_publisher)this,
-	    (gapi_topic)a_topic,
-	    (const gapi_dataWriterQos *)qos,
-	    (const struct gapi_dataWriterListener *)pListener,
-	    (gapi_statusMask) mask
-	);
+    writer = gapi_publisher_create_datawriter (
+                    (gapi_publisher)this,
+                    (gapi_topic)a_topic,
+                    (const gapi_dataWriterQos *)qos,
+                    (const struct gapi_dataWriterListener *)pListener,
+                    (gapi_statusMask) mask
+                );
+
+    if(writer){
+        gapi_publisherQos *pqos = gapi_publisherQos__alloc();
+        if(pqos){
+            if(gapi_publisher_get_qos(this, pqos) == GAPI_RETCODE_OK){
+                if(pqos->entity_factory.autoenable_created_entities) {
+                    gapi_entity_enable(writer);
+                }
+            }
+            gapi_free(pqos);
+        }
+    }
+
+
+    return writer;
 }
 
 /*     ReturnCode_t
@@ -55,14 +69,12 @@
 DDS_ReturnCode_t
 DDS_Publisher_delete_datawriter (
     DDS_Publisher this,
-    const DDS_DataWriter a_datawriter
-    )
+    const DDS_DataWriter a_datawriter)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_delete_datawriter (
 	    (gapi_publisher)this,
-	    (gapi_dataWriter)a_datawriter
-	);
+	    (gapi_dataWriter)a_datawriter);
 }
 
 /*     DataWriter
@@ -72,14 +84,12 @@ DDS_Publisher_delete_datawriter (
 DDS_DataWriter
 DDS_Publisher_lookup_datawriter (
     DDS_Publisher this,
-    const DDS_char *topic_name
-    )
+    const DDS_char *topic_name)
 {
     return (DDS_DataWriter)
 	gapi_publisher_lookup_datawriter (
 	    (gapi_publisher)this,
-	    (const gapi_char *)topic_name
-	);
+	    (const gapi_char *)topic_name);
 }
 
 /*     ReturnCode_t
@@ -87,13 +97,11 @@ DDS_Publisher_lookup_datawriter (
  */
 DDS_ReturnCode_t
 DDS_Publisher_delete_contained_entities (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_delete_contained_entities (
-	    (gapi_publisher)this, NULL, NULL
-	);
+	    (gapi_publisher)this, NULL, NULL);
 }
 
 /*     ReturnCode_t
@@ -103,14 +111,12 @@ DDS_Publisher_delete_contained_entities (
 DDS_ReturnCode_t
 DDS_Publisher_set_qos (
     DDS_Publisher this,
-    const DDS_PublisherQos *qos
-    )
+    const DDS_PublisherQos *qos)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_set_qos (
 	    (gapi_publisher)this,
-	    (const gapi_publisherQos *)qos
-	);
+	    (const gapi_publisherQos *)qos);
 }
 
 /*     ReturnCode_t
@@ -120,14 +126,12 @@ DDS_Publisher_set_qos (
 DDS_ReturnCode_t
 DDS_Publisher_get_qos (
     DDS_Publisher this,
-    DDS_PublisherQos *qos
-    )
+    DDS_PublisherQos *qos)
 {
     return (DDS_ReturnCode_t)
     gapi_publisher_get_qos (
 	(gapi_publisher)this,
-	(gapi_publisherQos *)qos
-    );
+	(gapi_publisherQos *)qos);
 }
 
 /*     ReturnCode_t
@@ -139,8 +143,7 @@ DDS_ReturnCode_t
 DDS_Publisher_set_listener (
     DDS_Publisher this,
     const struct DDS_PublisherListener *a_listener,
-    const DDS_StatusMask mask
-    )
+    const DDS_StatusMask mask)
 {
     struct gapi_publisherListener gListener;
     struct gapi_publisherListener *pListener = NULL;
@@ -154,8 +157,7 @@ DDS_Publisher_set_listener (
 	gapi_publisher_set_listener (
 	    (gapi_publisher)this,
 	    (const struct gapi_publisherListener *)pListener,
-	    (gapi_statusMask)mask
-	);
+	    (gapi_statusMask)mask);
 }
 
 /*     PublisherListener
@@ -163,8 +165,7 @@ DDS_Publisher_set_listener (
  */
 struct DDS_PublisherListener
 DDS_Publisher_get_listener (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     struct DDS_PublisherListener d;
     struct gapi_publisherListener s;
@@ -180,13 +181,11 @@ DDS_Publisher_get_listener (
  */
 DDS_ReturnCode_t
 DDS_Publisher_suspend_publications (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_suspend_publications (
-	    (gapi_publisher)this
-	);
+	    (gapi_publisher)this);
 }
 
 /*     ReturnCode_t
@@ -194,13 +193,11 @@ DDS_Publisher_suspend_publications (
  */
 DDS_ReturnCode_t
 DDS_Publisher_resume_publications (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_resume_publications (
-	    (gapi_publisher)this
-	);
+	    (gapi_publisher)this);
 }
 
 /*     ReturnCode_t
@@ -208,13 +205,11 @@ DDS_Publisher_resume_publications (
  */
 DDS_ReturnCode_t
 DDS_Publisher_begin_coherent_changes (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_begin_coherent_changes (
-	    (gapi_publisher)this
-	);
+	    (gapi_publisher)this);
 }
 
 /*     ReturnCode_t
@@ -222,13 +217,11 @@ DDS_Publisher_begin_coherent_changes (
  */
 DDS_ReturnCode_t
 DDS_Publisher_end_coherent_changes (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_end_coherent_changes (
-	    (gapi_publisher)this
-	);
+	    (gapi_publisher)this);
 }
 
 /* ReturnCode_t 
@@ -238,8 +231,7 @@ DDS_Publisher_end_coherent_changes (
 DDS_ReturnCode_t
 DDS_Publisher_wait_for_acknowledgments (
     DDS_Publisher _this,
-    const DDS_Duration_t *max_wait
-    )
+    const DDS_Duration_t *max_wait)
 {
     return (DDS_ReturnCode_t)
     gapi_publisher_wait_for_acknowledgments(
@@ -253,13 +245,11 @@ DDS_Publisher_wait_for_acknowledgments (
  */
 DDS_DomainParticipant
 DDS_Publisher_get_participant (
-    DDS_Publisher this
-    )
+    DDS_Publisher this)
 {
     return (DDS_DomainParticipant)
 	gapi_publisher_get_participant (
-	    (gapi_publisher)this
-	);
+	    (gapi_publisher)this);
 }
 
 /*     ReturnCode_t
@@ -269,14 +259,12 @@ DDS_Publisher_get_participant (
 DDS_ReturnCode_t
 DDS_Publisher_set_default_datawriter_qos (
     DDS_Publisher this,
-    const DDS_DataWriterQos *qos
-    )
+    const DDS_DataWriterQos *qos)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_set_default_datawriter_qos (
 	    (gapi_publisher)this,
-	    (const gapi_dataWriterQos *)qos
-	);
+	    (const gapi_dataWriterQos *)qos);
 }
 
 /*     ReturnCode_t
@@ -286,14 +274,12 @@ DDS_Publisher_set_default_datawriter_qos (
 DDS_ReturnCode_t
 DDS_Publisher_get_default_datawriter_qos (
     DDS_Publisher this,
-    DDS_DataWriterQos *qos
-    )
+    DDS_DataWriterQos *qos)
 {
     return (DDS_ReturnCode_t)
     gapi_publisher_get_default_datawriter_qos (
 	(gapi_publisher)this,
-	(gapi_dataWriterQos *)qos
-    );
+	(gapi_dataWriterQos *)qos);
 }
 
 /*     ReturnCode_t
@@ -305,14 +291,12 @@ DDS_ReturnCode_t
 DDS_Publisher_copy_from_topic_qos (
     DDS_Publisher this,
     DDS_DataWriterQos *a_datawriter_qos,
-    const DDS_TopicQos *a_topic_qos
-    )
+    const DDS_TopicQos *a_topic_qos)
 {
     return (DDS_ReturnCode_t)
 	gapi_publisher_copy_from_topic_qos (
 	    (gapi_publisher)this,
 	    (gapi_dataWriterQos *)a_datawriter_qos,
-	    (const gapi_topicQos *)a_topic_qos
-	);
+	    (const gapi_topicQos *)a_topic_qos);
 }
 

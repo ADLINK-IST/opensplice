@@ -82,3 +82,33 @@ DDS::DataReader_ptr DDS::ReadCondition_impl::get_datareader (
   return dataReader;
 }
 
+DDS::DataReaderView_ptr DDS::ReadCondition_impl::get_datareaderview(
+) THROW_ORB_EXCEPTIONS
+{
+    gapi_dataReaderView handle = NULL;
+    DDS::DataReaderView_ptr dataReaderView = NULL;
+
+    handle = gapi_readCondition_get_datareaderview(_gapi_self);
+    if (handle)
+    {
+        ccpp_UserData_ptr drUD = NULL;
+        drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        if (drUD)
+        {
+          dataReaderView = dynamic_cast<DDS::DataReaderView_ptr>(drUD->ccpp_object);
+          if (dataReaderView)
+          {
+            DDS::DataReaderView::_duplicate(dataReaderView);
+          }
+          else
+          {
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Data Reader");
+          }
+        }
+        else
+        {
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+        }
+    }
+    return dataReaderView;
+}

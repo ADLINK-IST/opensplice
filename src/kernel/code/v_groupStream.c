@@ -111,7 +111,7 @@ v_groupStreamNotify(
     struct groupConnected data;
     c_iter partitions;
     c_bool interested;
-    v_domain partition, found;
+    v_partition partition, found;
 
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
@@ -135,10 +135,10 @@ v_groupStreamNotify(
              * determine whether the groupActionStream should connect to the new
              * group or if it is already connected.
              */
-            partitions = v_subscriberLookupDomains(v_reader(stream)->subscriber,
+            partitions = v_subscriberLookupPartitions(v_reader(stream)->subscriber,
                                                    v_partitionName(partition));
             interested = FALSE;
-            found = v_domain(c_iterTakeFirst(partitions));
+            found = v_partition(c_iterTakeFirst(partitions));
 
             while(found){
                 if(interested == FALSE){
@@ -148,7 +148,7 @@ v_groupStreamNotify(
                     }
                 }
                 c_free(found);
-                found = v_domain(c_iterTakeFirst(partitions));
+                found = v_partition(c_iterTakeFirst(partitions));
             }
             c_iterFree(partitions);
 
@@ -266,7 +266,7 @@ v_groupStreamFree(
 c_bool
 v_groupStreamSubscribe(
     v_groupStream stream,
-    v_domain partition)
+    v_partition partition)
 {
     c_iter list;
     v_kernel kernel;
@@ -313,14 +313,14 @@ v_groupStreamSubscribeGroup(
 c_bool
 v_groupStreamUnSubscribe(
     v_groupStream stream,
-    v_domain partition)
+    v_partition partition)
 {
     c_iter list;
     v_group group;
     c_bool result;
 
     assert(C_TYPECHECK(stream, v_groupStream));
-    assert(C_TYPECHECK(partition, v_domain));
+    assert(C_TYPECHECK(partition, v_partition));
 
     list = c_select(stream->groups, 0);
     group = c_iterTakeFirst(list);

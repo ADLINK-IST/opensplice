@@ -54,8 +54,10 @@ C_STRUCT(jni_publisher){
  * 
  * @return The newly created publisher.
  */
-OS_API jni_publisher   jni_publisherNew(               jni_participant p, 
-                                                v_publisherQos qos);
+OS_API jni_publisher
+jni_publisherNew(
+    jni_participant p, 
+    v_publisherQos qos);
 
 /**@brief Deletes a publisher. 
  * 
@@ -68,7 +70,9 @@ OS_API jni_publisher   jni_publisherNew(               jni_participant p,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_publisherFree(              jni_publisher p);
+OS_API jni_result
+jni_publisherFree(
+    jni_publisher p);
 
 /**@brief Deletes all contained entities of the supplied publisher. 
  * 
@@ -76,7 +80,9 @@ OS_API jni_result      jni_publisherFree(              jni_publisher p);
  * 
  * @param pub The publisher to delete the entities of.
  */
-OS_API jni_result      jni_deletePublisherEntities(    jni_publisher pub);
+OS_API jni_result
+jni_deletePublisherEntities(
+    jni_publisher pub);
 
 /**@brief Creates a writer that writes instances of the supplied topic into
  * the supplied publisher.
@@ -88,9 +94,11 @@ OS_API jni_result      jni_deletePublisherEntities(    jni_publisher pub);
  * @return The newly created writer. If the operation did not succeed, NULL is
  * returned.
  */
-OS_API jni_writer      jni_createWriter(               jni_publisher pub,
-                                                jni_topic top,
-                                                v_writerQos qos);
+OS_API jni_writer
+jni_createWriter(
+    jni_publisher pub,
+    jni_topic top,
+    v_writerQos qos);
 
 /**@brief Deletes the supplied writer from the supplied publisher. 
  * 
@@ -102,17 +110,21 @@ OS_API jni_writer      jni_createWriter(               jni_publisher pub,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_deleteWriter(               jni_publisher pub,
-                                                jni_writer wri);
+OS_API jni_result
+jni_deleteWriter(
+    jni_publisher pub,
+    jni_writer wri);
 
-/**@brief Attaches publisher ro the domains associated with the supplied expression.
+/**@brief Attaches publisher to the partitions associated with the supplied expression.
  * 
- * @param pub The publisher where the domains will be attached to.
- * @param domainExpr The expression which contains the query for domains.
+ * @param pub The publisher where the partitions will be attached to.
+ * @param partitionExpr The expression which contains the query for partitions.
  * @return JNI_RESULT_OK if succeeded, any other result otherwise.
  */
-OS_API jni_result      jni_publisherPublish(           jni_publisher pub,
-                                                const c_char* domainExpr);
+OS_API jni_result
+jni_publisherPublish(
+    jni_publisher pub,
+    const c_char* partitionExpr);
 
 /**@brief Looks up the DataWriter associated with the supplied topic within
  * the supplied Publisher.
@@ -126,8 +138,10 @@ OS_API jni_result      jni_publisherPublish(           jni_publisher pub,
  * @return A DataWriter that is associated with the supplied Topic, or NULL if 
  * it could not be found.
  */
-OS_API jni_writer      jni_publisherLookupWriter(      jni_publisher pub,
-                                                const c_char* topicName);
+OS_API jni_writer
+jni_publisherLookupWriter(
+    jni_publisher pub,
+    const c_char* topicName);
 
 #undef OS_API
    

@@ -25,6 +25,7 @@ import org.opensplice.cm.statistics.FullCounter;
 import org.opensplice.cm.statistics.Statistics;
 import org.opensplice.cm.statistics.TimedValue;
 import org.opensplice.cm.statistics.Value;
+import org.opensplice.cm.statistics.StringValue;
 import org.opensplice.common.CommonException;
 
 /**
@@ -180,7 +181,7 @@ public class StatisticsTableModel extends DefaultTableModel{
                             this.setValueAt(Long.toString(min.getValue()), index++, 2);
                             this.setValueAt(this.getTimeString(min.getLastUpdate()), index++, 2);
                             
-                            TimedValue max = ((FullCounter)counter).getMin();
+                            TimedValue max = ((FullCounter)counter).getMax();
                             this.setValueAt(Long.toString(max.getValue()), index++, 2);
                             this.setValueAt(this.getTimeString(max.getLastUpdate()), index++, 2);
                             
@@ -191,6 +192,8 @@ public class StatisticsTableModel extends DefaultTableModel{
                     } else if(counter instanceof AvgValue){
                         this.setValueAt(Float.toString(((AvgValue)counter).getValue()), index++, 2);
                         this.setValueAt(Long.toString(((AvgValue)counter).getCount()), index++, 2);
+                    } else if(counter instanceof StringValue){
+                        this.setValueAt(((StringValue)counter).getValue(), index++, 2);
                     }
                 }
                 
@@ -275,7 +278,7 @@ public class StatisticsTableModel extends DefaultTableModel{
                     data[2] = this.getTimeString(min.getLastUpdate());
                     this.addRow(data);
                     
-                    TimedValue max = ((FullCounter)counters[i]).getMin();
+                    TimedValue max = ((FullCounter)counters[i]).getMax();
                     data[1] = "max.value";
                     data[2] = Long.toString(max.getValue());
                     this.addRow(data);
@@ -303,6 +306,11 @@ public class StatisticsTableModel extends DefaultTableModel{
                 } else if(counters[i] instanceof Value){
                     data[1] = "";
                     data[2] = Long.toString(((Value)counters[i]).getValue());
+                    this.addRow(data);
+                    
+                } else if(counters[i] instanceof StringValue){
+                    data[1] = "";
+                    data[2] = ((StringValue)counters[i]).getValue();
                     this.addRow(data);
                     
                 }

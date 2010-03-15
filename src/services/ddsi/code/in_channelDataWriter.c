@@ -131,7 +131,8 @@ in_channelDataWriterInit(
             FALSE, /* p2p */
             resolution,
             in_configDataChannelGetIsDefault(in_configDataChannel(config)),
-            &_this->queueId);
+            &_this->queueId,
+            in_configDataChannelGetName(in_configDataChannel(config)));
         if (ures != U_RESULT_OK)
         {
             success = OS_FALSE;

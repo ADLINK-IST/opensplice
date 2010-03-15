@@ -103,7 +103,7 @@ C_STRUCT(u_group) {
     C_EXTENDS(u_entity);
 };
 
-C_STRUCT(u_domain) {
+C_STRUCT(u_partition) {
     C_EXTENDS(u_entity);
 };
 

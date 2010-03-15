@@ -229,8 +229,9 @@
 /* Additional methods */
 #define GAPI_METHOD_CREATE_VIEW                                             129
 #define GAPI_METHOD_DELETE_VIEW                                             130
+#define GAPI_METHOD_SET_DEFAULT_DATAREADERVIEW_QOS                          131
 
-#define GAPI_METHOD_MAX                                                     131
+#define GAPI_METHOD_MAX                                                     132
 #define GAPI_ERRORCODE_MAX                                                   22
 
 

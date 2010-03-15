@@ -21,6 +21,7 @@
 #ifdef _EXTENT_
 #include "c_extent.h"
 #endif
+#include "os_report.h"
 
 #define PRINT_REFCOUNT(functionName, sample)
 
@@ -53,19 +54,25 @@ v_dataViewSampleNew(
 #else
     sample = v_dataViewSample(c_new(dataView->sampleType));
 #endif
-    v_readerSample(sample)->instance = (c_voidp)instance;
+    if (sample) {
+        v_readerSample(sample)->instance = (c_voidp)instance;
 #if 0
-    /* must be a bug because NEW is an instance state and
-     * not a sample state. */
+        /* must be a bug because NEW is an instance state and
+         * not a sample state. */
 
-    v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
+        v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
 #else
-    v_readerSample(sample)->sampleState = 0;
+        v_readerSample(sample)->sampleState = 0;
 #endif
-    v_dataViewSampleList(sample)->next = NULL;
-    v_dataViewSampleList(sample)->prev = NULL;
-    sample->prev = NULL;
-    v_dataViewSampleTemplate(sample)->sample = c_keep(masterSample);
+        v_dataViewSampleList(sample)->next = NULL;
+        v_dataViewSampleList(sample)->prev = NULL;
+        sample->prev = NULL;
+        v_dataViewSampleTemplate(sample)->sample = c_keep(masterSample);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_dataViewSampleNew",0,
+                  "Failed to allocate v_dataViewSample.");
+    }
     return sample;
 }
 

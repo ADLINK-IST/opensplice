@@ -285,10 +285,15 @@ v_dataViewNew(
         }
     }
     dataView = v_dataView(c_new(v_dataView_t));
-    v_object(dataView)->kernel = kernel;
-    v_objectKind(dataView) = K_DATAVIEW;
-    v_dataViewInit(dataView, dataReader, name, qos, enable);
-
+    if (dataView) {
+        v_object(dataView)->kernel = kernel;
+        v_objectKind(dataView) = K_DATAVIEW;
+        v_dataViewInit(dataView, dataReader, name, qos, enable);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_dataViewNew",0,
+                  "Failed to create a v_dataReaderView.");
+    }
     return dataView;
 }
 

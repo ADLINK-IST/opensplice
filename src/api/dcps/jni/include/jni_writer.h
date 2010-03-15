@@ -12,7 +12,7 @@
 
 /**@file api/dcps/jni/include/jni_writer.h
  * 
- * @brief The jni_writer object writes instances of topics into a specific Domain.
+ * @brief The jni_writer object writes instances of topics.
  * It maps to the DCPS DataWriter object.
  */
  
@@ -56,11 +56,14 @@ C_STRUCT(jni_writer){
  * @param top The topic that the writer must write instances of.
  * @param qos The desired QoS policies.
  * 
- * @return The newly created writer. If the operation failed, NULL is returned.
+ * @return The newly created writer.
+ *         If the operation failed, NULL is returned.
  */
-OS_API jni_writer  jni_writerNew       (jni_publisher pub,
-                                 jni_topic top,
-                                 v_writerQos qos);
+OS_API jni_writer
+jni_writerNew (
+    jni_publisher pub,
+    jni_topic top,
+    v_writerQos qos);
 
 /**@brief Deletes the supplied writer. 
  * 
@@ -71,7 +74,9 @@ OS_API jni_writer  jni_writerNew       (jni_publisher pub,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result  jni_writerFree      (jni_writer wri);
+OS_API jni_result
+jni_writerFree (
+    jni_writer wri);
 
 /**Writes userData to the writer.
  * 
@@ -80,8 +85,10 @@ OS_API jni_result  jni_writerFree      (jni_writer wri);
  * @param wri The writer to write to.
  * @param xmlUserData The data to write (in XML format).
  */
-OS_API jni_result  jni_writerWrite     (jni_writer wri, 
-                                 const c_char* xmlUserData);
+OS_API jni_result
+jni_writerWrite (
+    jni_writer wri, 
+    const c_char* xmlUserData);
 
 #undef OS_API
    

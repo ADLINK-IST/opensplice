@@ -77,7 +77,7 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
         v_topic(v_group(_this)->topic)
 
 #define v_groupPartition(_this)\
-        v_domain(v_group(_this)->partition)
+        v_partition(v_group(_this)->partition)
 
 #define v_groupSampleMessage(_this) \
         (v_groupSampleTemplate(_this)->message)
@@ -85,8 +85,8 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 #define v_groupSampleSetMessage(_this,_message) \
         (v_groupSampleTemplate(_this)->message = c_keep(_message))
 
-#define v_groupDomainAccessMode(_this)\
-        (v_group(_this)->domainAccessMode)
+#define v_groupPartitionAccessMode(_this)\
+        (v_group(_this)->partitionAccessMode)
 
 OS_API void
 v_groupFree (

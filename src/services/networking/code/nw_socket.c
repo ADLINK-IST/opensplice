@@ -69,6 +69,8 @@ NW_STRUCT(nw_socket) {
     os_int loopsback;
     /* List of alternative addresses for sending data */
     nw_socketPartitions partitions;
+    sk_bool multicastSupported;
+    sk_bool multicastInitialized;
 };
 
 
@@ -434,8 +436,8 @@ nw_socketBind(
 {
     os_int result = SK_TRUE;
     os_result retVal = os_resultSuccess;
-    os_int optVal;
-    socklen_t optLen;
+    os_int optVal = 0;
+    socklen_t optLen = 0;
     struct sockaddr_in bindAddress;
 
     if (sock != NULL) {
@@ -519,6 +521,7 @@ nw_socketAddPartition(
             address = nw_socketBroadcastAddress(sock);
         } else {
             address = sk_stringToAddress(currentAddress, NULL);
+
         }
         /* Ignore invalid addresses and our own address */
         if (!address) {
@@ -576,6 +579,29 @@ nw_socketPrimaryAddressCompare(
     return result;
 }
 
+sk_bool
+nw_socketGetMulticastInitialized(
+		nw_socket sock)
+{
+	return sock->multicastInitialized;
+}
+
+sk_bool
+nw_socketGetMulticastSupported(
+		nw_socket sock)
+{
+	return sock->multicastSupported;
+}
+
+void
+nw_socketSetMulticastInitialized(
+		nw_socket sock,
+		sk_bool mi)
+{
+	sock->multicastInitialized = mi;
+}
+
+
 /* ------------------------------- constructor ------------------------------ */
 
 
@@ -626,6 +652,9 @@ nw_socketNew(
         } else {
             result->maxSockfd = result->socketData;
         }
+        result->multicastSupported = SK_FALSE;
+        result->multicastInitialized = SK_FALSE;
+
         FD_ZERO(&result->sockSet);
 
         interfaceLookingFor = NWCF_SIMPLE_PARAM(String, NWCF_ROOT(General), Interface);
@@ -634,24 +663,39 @@ nw_socketNew(
             case SK_TYPE_UNKNOWN:
             case SK_TYPE_UNICAST:
             case SK_TYPE_BROADCAST:
-                nw_socketGetDefaultBroadcastInterface(interfaceLookingFor,
-                    result->socketData, &result->sockAddrPrimary,
-                    &result->sockAddrBroadcast);
-                result->sockAddrData = result->sockAddrBroadcast;
-                /* Broadcast sockets usually loop back and can not be stopped
-                 * from that */
-                result->loopsback = SK_TRUE;
-                NW_TRACE_1(Test, 4, "Using broadcast address %s for default partition",
-                    inet_ntoa(result->sockAddrData.sin_addr));
-            break;
             case SK_TYPE_MULTICAST:
-                nw_socketGetDefaultMulticastInterface(interfaceLookingFor,
-                    result->socketData, &result->sockAddrPrimary,
-                    &result->sockAddrBroadcast);
-                result->sockAddrData.sin_addr.s_addr = sk_stringToAddress(
-                    defaultNetworkAddress, NWCF_DEF(Address));
-                /* We can stop multicasting from looping back though */
-                result->loopsback = SK_FALSE;
+            	if (nw_socketGetDefaultMulticastInterface(interfaceLookingFor,
+				result->socketData, &result->sockAddrPrimary,
+				&result->sockAddrBroadcast)  != SK_TRUE) {
+
+            		if (defaultAddressType == SK_TYPE_MULTICAST) {
+            			NW_REPORT_ERROR("socketNew", "No multicastinterface available");
+            		}
+            		else {
+						if (nw_socketGetDefaultBroadcastInterface(interfaceLookingFor,
+						result->socketData, &result->sockAddrPrimary,
+						&result->sockAddrBroadcast) != SK_TRUE) {
+							NW_REPORT_ERROR("socketNew", "No networkinterface available");
+						}
+            		}
+            	} else {
+            		result->multicastSupported = SK_TRUE;
+            	}
+
+            	if (defaultAddressType == SK_TYPE_MULTICAST) {
+            		result->sockAddrData.sin_addr.s_addr = sk_stringToAddress(
+						defaultNetworkAddress, NWCF_DEF(Address));
+					/* We can stop multicasting from looping back though */
+					result->loopsback = SK_FALSE;
+            	} else {
+            		result->sockAddrData = result->sockAddrBroadcast;
+
+					/* Broadcast sockets usually loop back and can not be stopped
+					 * from that */
+					result->loopsback = SK_TRUE;
+					NW_TRACE_1(Test, 4, "Using broadcast address %s for default partition",
+						inet_ntoa(result->sockAddrData.sin_addr));
+            	}
             break;
             case SK_TYPE_LOOPBACK:
                 nw_socketGetDefaultLoopbackAddress(result->socketData,
@@ -706,7 +750,7 @@ nw_socketNew(
             /* Set option for avoiding routing to other interfaces */
 #ifndef OS_VXWORKS_DEFS_H
             /* Set options for DONT_ROUTE flag in IP header */
-            DontRouteRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Tx, DontRoute);
+            DontRouteRequested = NWCF_SIMPLE_SUBPARAM(Bool, name, Tx, DontRoute);
             success = success && nw_socketSetDontRouteOption(result, DontRouteRequested);
 #endif
             /* Set options for DONT_FRAG flag in IP header */
@@ -740,10 +784,19 @@ nw_socketNew(
         switch (defaultAddressType) {
             case SK_TYPE_BROADCAST:
             case SK_TYPE_UNKNOWN:
-            case SK_TYPE_UNICAST: nw_socketBroadcastInitialize(result, receiving); break;
-            case SK_TYPE_MULTICAST: nw_socketMulticastInitialize(result, receiving); break;
-            default: break;
+            case SK_TYPE_UNICAST:
+            	nw_socketBroadcastInitialize(result, receiving);
+            	if (result->multicastSupported) {
+            	        nw_socketMulticastInitialize(result, receiving);
+            	}
+            	break;
+            case SK_TYPE_MULTICAST:
+            	nw_socketMulticastInitialize(result, receiving);
+            	break;
+            default:
+            	break;
         }
+
 
     }
     nw_stringListFree(defaultAddressNameList);
@@ -1090,8 +1143,12 @@ nw_socketReceive(
 #ifdef NW_LOOPBACK
                 if (nw_configurationUseLoopback()) {
                     /* Loopback always simulates that data comes from the network */
+                	SK_REPORT_SOCKFUNC(2, os_resultSuccess, /* TODO increase level */
+                			"UseLoopback", "true");
                     ownMessage = SK_FALSE;
                 } else {
+                	SK_REPORT_SOCKFUNC(2, os_resultSuccess, /* TODO increase level */
+                			"UseLoopback", "false");
                     ownMessage = (memcmp(&sockAddr.sin_addr,
                                          &sock->sockAddrPrimary.sin_addr,
                                          (os_uint32)sizeof(sockAddr.sin_addr)) == 0);

@@ -18,181 +18,254 @@
 
 #define MAX_KERNEL (128)
 
+#define u_user(u) ((C_STRUCT(u_user) *)(u))
+
 C_CLASS(u_kernelAdmin);
 C_STRUCT(u_kernelAdmin) { /* protected by global user lock */
     c_long refCount;
     u_kernel kernel;
+    /* The keepList holds all kernel references issues by u_userKeep().
+     * This list will keep the objects alive until the objects are removed by
+     * u_userFree() or when the kernel is detached from the process
+     * e.g. when a process terminates.
+     */
+    c_iter keepList;
+    /* The lower and upper address bounds of the kernels memory segment.
+     * These values are used to identify if an object belongs to the kernel.
+     */
+    c_address lowerBound;
+    c_address upperBound;
 };
-
-#define u_user(u) ((C_STRUCT(u_user) *)(u))
-
-#define u__userUnlock()     u__unlock(u_user(user))
 
 C_CLASS(u_user);
 C_STRUCT(u_user) {
-    os_mutex                mutex;
+    /* The following mutex implements the global user lock.
+     * all access to user info is under control of this lock.
+     */
+    os_mutex mutex;
+    /*
+     * The kernelList attribute holds information about all connected kernels.
+     * The kernelCount attribute specifies the max index in the kernelList.
+     * So any search range on the list can be limited to 0..kernelCount.
+     * kernels that are detached are removed from the list and the entry in the
+     * list is never used again.
+     * The reason why kernel entries are never reused and why kernelCount is not
+     * the actual number of kernels connected is unclear, it would be more intuitive,
+     * maintainable and flexible if entries in the kernelList could be reused and the
+     * kernelCount would reflect the actual number of connected kernels.
+     * So this is a subject for future improvement.
+     */
     C_STRUCT(u_kernelAdmin) kernelList[MAX_KERNEL];
-    c_long                  kernelCount;
+    c_long kernelCount;
     /* Should only be modified by pa_(in/de)crement! */
-    os_uint32               protectCount;
+    os_uint32 protectCount;
     /* The detachThreadId will have to be set by the detaching thread while
      * holding the user->mutex and be re-set to NULL before releasing the
      * lock. A lock-boundary should thus never be crossed with detachThreadId
      * set to a different value than when the lock was acquired! */
-    os_threadId             detachThreadId;
+    os_threadId detachThreadId;
 };
 
-/** \brief Detached the user-layer (optionally forced).
- * Normally the detach will be call-counted paired with the user initialize.
- * However, on process-exit, proper cleanup should always be performed. If force
- * is set to TRUE, the detach will be executed, no matter what the reference-
- * count is. Otherwise the detach will do proper call-counting.
+/** \brief Counter that keeps track of number of times user-layer is initialized.
+ *
+ * The main purpose of this counter is to ensure that the user-layer is
+ * initialized only once.
  */
-static u_result                 u__userDetach(c_bool force);
+static os_uint32 _ospl_userInitCount = 0;
 
-/** \brief Counter that keeps track of number of times user-layer is initialized */
-static os_uint32                _ospl_userInitCount = 0;
+/** \brief Reference to heap user-layer admin object.
+ *
+ * This reference is only initialized once and implements the root to
+ * all user (process) specific information.
+ */
+void *user = NULL;
 
-/** \brief Reference to heap user-layer admin object.  */
-void *                          user = NULL;
-
-
-static void
-u_userExit(void)
-{
-    os_uint32 initCount;
-
-    initCount = _ospl_userInitCount;
-
-    if(initCount > 0){
-        OS_REPORT_2(OS_WARNING, "u_userExit", 0,
-              "Forcing user-layer detach while still referenced %d time%s.",
-              initCount,
-              (initCount > 1) ? "s" : "");
-        u__userDetach(TRUE);
-    }
-}
-
+/* This method will lock the user-layer and return the reference to the user-layer object if successful.
+ * If this method returns NULL then the user-layer is either not initialized or
+ * the process is detaching (process termination).
+ */
 static u_user
 u__userLock(void)
 {
     u_user u;
     os_result r = os_resultFail;
-    c_bool detaching = FALSE;
 
     u = u_user(user);
     if (u) {
-        if(u->detachThreadId == 0){
-            r = os_mutexLock(&u->mutex);
-        } else if (u->detachThreadId == os_threadIdSelf()){
-            detaching = TRUE;
-        }
-        /* While waiting on the mutex, a detach can have invalidated the
-         * user-admin, so if the reference is still valid, then all went OK,
-         * otherwise the lock should be released again and FALSE returned. */
-        if(r == os_resultSuccess || detaching){
-            if (!user){
-                if(r == os_resultSuccess){
-                    /* Lock acquired, but user-layer object invalidated, release lock */
-                    os_mutexUnlock(&u->mutex);
-                }
-                /* User-layer object invalidated, return NULL */
-                u = NULL;
-            }
-        } else {
-            /* Could not acquire lock, or user-layer is detaching, return NULL */
+        r = os_mutexLock(&u->mutex);
+        if (r != os_resultSuccess) {
+            /* The mutex is not valid so apparently the user-layer is either
+             * destroyed or in process of destruction. */
+            u = NULL;
+        } else if ((u->detachThreadId != 0) &&
+                   (u->detachThreadId != os_threadIdSelf()))
+        {
+            /* Another thread is busy destroying the user-layer or the user-
+             * layer is already destroyed. No access is allowed (anymore).
+             * The user-layer object will be unlocked and will return null.
+             */
+            os_mutexUnlock(&u->mutex);
             u = NULL;
         }
-
-    } /* Else the user-layer is not available, so return NULL */
+    } else {
+      /* The user-layer is not created or destroyed i.e. non existent, therefore return null.
+       */
+    }
     return u;
 }
 
+/* This method will unlock the user-layer.
+ */
 static void
-u__unlock(u_user u)
+u__userUnlock(void)
 {
-    if (u != NULL) {
-        /* Following check is valid, because while locked, the detachThreadId
-         * may not be modified, so iff the condition passed in u__userLock() ,
-         * then it will pass too here.
-         * Of course the precondition is that the detachThreadId should never be
-         * modified across lock boundaries! */
-        if(u->detachThreadId == 0){
+    u_user u;
+
+    u = u_user(user);
+    if (u) {
+        if ((u->detachThreadId == 0) ||
+            (u->detachThreadId == os_threadIdSelf())) {
             os_mutexUnlock(&u->mutex);
         }
     }
 }
 
-static u_result
-u__userDetach(c_bool force)
+static void
+u_userExit(void)
 {
     u_user u;
-    u_result r = U_RESULT_OK;
-    os_result mr = os_resultFail;
     u_kernel kernel;
-    os_uint32 initCount;
+    os_result mr = os_resultFail;
     c_long i;
 
-    initCount = pa_decrement(&_ospl_userInitCount);
+    u = u__userLock();
+    if (u) {
+        /* Disable access to user-layer for all other threads except for this thread.
+         * Any following user access from other threads is gracefully
+         * aborted.
+         */
+        u->detachThreadId = os_threadIdSelf();
+        /* Unlock the user-layer
+         * Part of following code requires to unlock the user object
+         * This is allowed now all other threads will abort when
+         * trying to claim the lock
+         */
+        u__userUnlock();
 
-    if(initCount == 0 || force){
-        u = u__userLock();
-        if (u) {
-            /* Ever only one thread detaching the user-layer */
-            assert(u->detachThreadId == 0);
-            u->detachThreadId = os_threadIdSelf();
-            for (i = 1; (i <= u->kernelCount); i++) {
-                kernel = u->kernelList[i].kernel;
-                if (kernel) {
-                    u_kernelDetachParticipants(kernel);
-                    u_userKernelClose(kernel);
-                }
+        for (i = 1; (i <= u->kernelCount); i++) {
+            kernel = u->kernelList[i].kernel;
+            if (kernel) {
+                u_kernelDetachParticipants(kernel);
+                u_userKernelClose(kernel);
             }
+        }
 
-            /* Disable access to user-layer. */
-            user = NULL;
+        user = NULL;
 
-            u->detachThreadId = 0;
-
-            /* Unlock the user-layer */
-            u__unlock(u);
-
-            /* Destroy the user-layer mutex */
-            mr = os_mutexDestroy(&u->mutex);
-            if(mr != os_resultSuccess){
-                OS_REPORT_1(OS_WARNING,"u_userDetach",0,
+        /* Destroy the user-layer mutex */
+        mr = os_mutexDestroy(&u->mutex);
+        if(mr != os_resultSuccess){
+            OS_REPORT_1(OS_WARNING,"u_userExit",0,
                         "User-layer mutex destroy failed: os_result == %d.",
                         mr);
-            }
-
-            /* Free the user-object */
-            os_free(u);
-
-            /* De-init the OS-abstraction layer */
-            os_osExit();
-        } else {
-            OS_REPORT_2(OS_WARNING,"u_userDetach",0,
-                  "User-layer should be initialized (initCount was %d), but user == NULL%s.",
-                  initCount + 1,
-                  force ? " (forced detach)" : "");
-
         }
-    } else if ((initCount + 1) < initCount){
-        /* The 0 boundary is passed, so u_userDetach() is called more often than
-         * u_userInitialise(). Therefore undo decrement as nothing happened and
-         * warn. */
-        initCount = pa_increment(&_ospl_userInitCount);
-        OS_REPORT(OS_WARNING, "u_userDetach", 1, "User layer not initialized");
-        r = U_RESULT_INTERNAL_ERROR;
-    }
 
-    return r;
+        /* Free the user-object */
+        os_free(u);
+
+        /* De-init the OS-abstraction layer */
+        os_osExit();
+    }
 }
 
+/* This method registers a database object to be managed by the user-layer.
+ * Once a process has registered an object it can free its reference.
+ * The user-layer will keep the registered object alive until it is deregistered
+ * using the u_userFree method.
+ * The user-layer will free all references of registered objects on process
+ * termination via the installed exit handler (u_userExit).
+ */
+c_object
+u_userKeep(
+    c_object o)
+{
+    u_user u;
+    u_kernelAdmin ka;
+    c_long i;
+
+    if (o) {
+        u = u__userLock();
+        if (u) {
+            /* the user-layer object exists so now find the kernel that holds
+             * the given object.
+             */
+            for (i=1; i <= u->kernelCount; i++) {
+                ka = &u->kernelList[i];
+                if (ka->kernel) {
+                    /* A valid kernel admin exists, now check if the objects
+                     * address is in the kernels address range.
+                     */
+                    if (((c_address)o >= ka->lowerBound) &&
+                        ((c_address)o <= ka->upperBound))
+                    {
+                        c_keep(o);
+                        ka->keepList = c_iterInsert(ka->keepList,o);
+                        i = u->kernelCount + 1; /* jump out of the loop */
+                    }
+                }
+            }
+            u__userUnlock();
+        }
+    }
+    return o;
+}
+
+void
+u_userFree (
+    c_object o)
+{
+    u_user u;
+    u_kernelAdmin ka;
+    c_object found;
+    c_long i;
+
+    if (o) {
+        u = u__userLock();
+        if (u) {
+            for (i=1; i <= u->kernelCount; i++) {
+                ka = &u->kernelList[i];
+                if (ka->kernel) {
+                    if (((c_address)o >= ka->lowerBound) &&
+                        ((c_address)o <= ka->upperBound))
+                    {
+                        /* o is in the address range of this kernel.
+                         * so take it from the keepList.
+                         * and free it only if it is actually found in the keepList.
+                         */
+                        found = c_iterTake(ka->keepList,o);
+                        if (found) {
+                            c_free(found);
+                        } else {
+                            OS_REPORT_1(OS_WARNING,"u_userFree",0,
+                                       "User tries to free non existing object == 0x%x.",
+                                        found);
+                        }
+                        i = u->kernelCount + 1; /* jump out of the loop */
+                    }
+                }
+            }
+            u__userUnlock();
+        }
+    }
+}
+
+/* This method is depricated, it is only here untill all
+ * usage of this method is re3moved from all other files.
+ */
 u_result
 u_userDetach()
 {
-    return u__userDetach(FALSE);
+    return U_RESULT_OK;
 }
 
 u_result
@@ -241,7 +314,7 @@ u_userInitialise()
         }
     } else {
         OS_REPORT_1(OS_INFO, "u_userInitialise", 1,
-                "User-layer initialization called %d times", initCount);
+                    "User-layer initialization called %d times", initCount);
         if(user == NULL){
             os_time sleep = {0, 100000}; /* 100ms */
             /* Another thread is currently initializing the user-layer. Since
@@ -384,28 +457,39 @@ u_userKernelNew(
     u_kernel _this = NULL;
     u_kernelAdmin ka;
     u_user u;
+    os_sharedHandle shm;
 
-    u = u_user(user);
-
-    if(u){
-        if (u->kernelCount + 1 < MAX_KERNEL) {
-            _this = u_kernelNew(uri);
-            if (_this != NULL) {
+    _this = u_kernelNew(uri);
+    if(_this) {
+        u = u__userLock();
+        if(u){
+            if (u->kernelCount + 1 < MAX_KERNEL) {
+                shm = u_kernelSharedMemoryHandle(_this);
                 u->kernelCount++;
                 ka = &u->kernelList[u->kernelCount];
                 ka->kernel = _this;
                 ka->refCount = 1;
+                /* The keepList holds all kernel references issues by u_userKeep().
+                 * This list will keep the objects alive until the objects are removed by
+                 * u_userFree() or when the kernel is detached from the process
+                 * e.g. when a process terminates.
+                 */
+                ka->keepList = NULL;
+                ka->lowerBound = (c_address)os_sharedAddress(shm);
+                os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                ka->upperBound += ka->lowerBound;
+            } else {
+                OS_REPORT_1(OS_ERROR,
+                        "u_userKernelNew",0,
+                        "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
             }
+            u__userUnlock();
         } else {
-            OS_REPORT_1(OS_ERROR,
+            OS_REPORT(OS_ERROR,
                     "u_userKernelNew",0,
-                    "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
+                    "User layer not initialized");
         }
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userKernelNew",0,
-                "User layer not initialized");
-    }
+    } /* Fail already reported by u_kernelNew */
 
     return _this;
 }
@@ -421,7 +505,8 @@ u_userKernelOpen(
     u_user u;
     u_kernel result;
     u_kernelAdmin ka;
-    c_long i;
+    os_sharedHandle shm;
+    c_long i, firstFreeIndex;
 
     result = NULL;
 
@@ -435,21 +520,38 @@ u_userKernelOpen(
            return the kernel object.
            Otherwise open the kernel and add to the administration */
         ka = NULL;
+        firstFreeIndex = 0;
         for (i=1; i<=u->kernelCount; i++) {
             if (compareAdminUri(u->kernelList[i].kernel,(void *)uri)) {
                 ka = &u->kernelList[i];
                 ka->refCount++;
                 result = ka->kernel;
+            } else if ((firstFreeIndex == 0) && (u->kernelList[i].kernel == NULL)) {
+                firstFreeIndex = i;
             }
         }
         if (ka == NULL) {
-            if (u->kernelCount + 1 < MAX_KERNEL) {
+            if ((firstFreeIndex != 0) || (u->kernelCount + 1 < MAX_KERNEL)) {
                 result = u_kernelOpen(uri, timeout);
                 if (result != NULL) {
-                    u->kernelCount++;
-                    ka = &u->kernelList[u->kernelCount];
+                    shm = u_kernelSharedMemoryHandle(result);
+                    if (firstFreeIndex != 0) {
+                        ka = &u->kernelList[firstFreeIndex];
+                    } else {
+                        u->kernelCount++;
+                        ka = &u->kernelList[u->kernelCount];
+                    }
                     ka->kernel = result;
                     ka->refCount = 1;
+                    /* The keepList holds all kernel references issues by u_userKeep().
+                     * This list will keep the objects alive until the objects are removed by
+                     * u_userFree() or when the kernel is detached from the process
+                     * e.g. when a process terminates.
+                     */
+                    ka->keepList = NULL;
+                    ka->lowerBound = (c_address)os_sharedAddress(shm);
+                    os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                    ka->upperBound += ka->lowerBound;
                 } else {
                     /* If timeout = -1, don't report */
                     if (timeout >= 0) {
@@ -488,6 +590,7 @@ u_userKernelClose(
     u_kernelAdmin ka;
     u_user u;
     u_result r;
+    c_object object;
     c_long i;
     c_bool detach = FALSE;
 
@@ -499,6 +602,13 @@ u_userKernelClose(
             if (ka->kernel == kernel) {
                 ka->refCount--;
                 if (ka->refCount == 0) {
+                    object = c_iterTakeFirst(ka->keepList);
+                    while (object) {
+                        c_free(object);
+                        object = c_iterTakeFirst(ka->keepList);
+                    }
+                    c_iterFree(ka->keepList);
+                    ka->keepList = NULL;
                     u->kernelList[i].kernel = NULL;
                     detach = TRUE;
                 }
@@ -568,18 +678,22 @@ u_userServerId(
     v_public o)
 {
     v_kernel kernel;
-    c_long i, id;
+    c_long i, id = 0;
     u_user u;
 
-    u = u_user(user);
-    if (u != NULL) {
+    u = u__userLock();
+    if ( u ) {
         kernel = v_objectKernel(o);
-        id = 0;
         for (i=1; i<=u->kernelCount; i++) {
             if (u_kernelAddress(u->kernelList[i].kernel) == kernel) {
                 id = i << 24;
             }
         }
+        u__userUnlock();
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userServerId",0,
+                "User layer not initialized");
     }
     return id;
 }
@@ -593,14 +707,19 @@ u_userServer(
     c_address server;
     u_user u;
 
-    u = u_user(user);
     kernel = NULL;
     server = 0;
-    if (u != NULL) {
+    u = u__userLock();
+    if ( u ) {
         idx = id >> 24;
         if ((idx > 0) && (idx <= u->kernelCount)) {
             kernel = u->kernelList[idx].kernel;
         }
+        u__userUnlock();
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userServer",0,
+                "User layer not initialized");
     }
     if (kernel) {
         server = u_kernelHandleServer(kernel);

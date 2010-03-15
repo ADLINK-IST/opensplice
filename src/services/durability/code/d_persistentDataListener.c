@@ -30,7 +30,7 @@
 #include "v_group.h"
 #include "v_topic.h"
 #include "v_message.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_groupQueue.h"
 #include "v_event.h"
 #include "v_state.h"

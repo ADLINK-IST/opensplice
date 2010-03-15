@@ -711,7 +711,16 @@ install_hde_target ()
     if [ -d "${release}" ]
     then
         mkdir -p ${HDE_dir}/bin
-        install_bin_file ${release} ${HDE_dir} bin osplconf${suffix_script}
+		  install_ascii_file "${release}/osplconf${suffix_script}" "${HDE_dir}/bin"
+        if [ "${host}" = "x86.win32" ] 
+        then
+		      install_ascii_file "${release}/osplctrl${suffix_script}" "${HDE_dir}/bin"
+		      install_ascii_file "${release}/run.vbs" "${HDE_dir}/bin"
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ] 
+            then
+		          install_ascii_file "${release}/osplmmstat${suffix_script}" "${HDE_dir}/bin"
+            fi
+        fi
     else
         echo "* ##    No script files detected"
     fi
@@ -800,6 +809,26 @@ install_hde_target ()
     install_ascii_fileset "${OSPL_HOME}/src/kernel/include/v_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/user/include/u_*.h" "${HDE_dir}/include/sys"
     install_ascii_file "${OSPL_HOME}/src/include/kernelModule.h" "${HDE_dir}/include/sys"
+
+    if [ "${target_os}" = "vxworks" ]
+    then
+            case ${os} in
+                vxworks6*)
+                    if [ -d "${OSPL_HOME}/src/abstraction/os/$os/include/" ]
+                    then
+                        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/$os/include/*.h" "${HDE_dir}/include"
+                    fi
+                    ;;
+                *)
+                    if [ -d "${OSPL_HOME}/src/abstraction/os/$os/include/vxworks/" ]
+                    then
+                        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/$os/include/vxworks/*.h" "${HDE_dir}/include"
+                        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/$os/include/vxworks/sys/*.h" "${HDE_dir}/include/sys"
+                    fi
+                    ;;
+            esac
+    fi
+
 
     #
     # Copy C&M related include files
@@ -1418,7 +1447,7 @@ install_hde_target ()
         echo "Ready"
     fi
 
-    if [ "${target}" != "x86.win32" ]
+    if [ "${host}" != "x86.win32" ]
     then
         printf "*     Prepare default release.com ... "
         RELF=${HDE_dir}/release.com
@@ -1576,6 +1605,15 @@ install_rts_target ()
     then
         mkdir -p ${RTS_dir}/bin
         install_bin_file $release ${RTS_dir} bin osplconf${suffix_script}
+        if [ "${host}" = "x86.win32" ] 
+        then
+            install_bin_file $release ${RTS_dir} bin osplctrl${suffix_script}
+            install_bin_file $release ${RTS_dir} bin run.vbs
+            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ] 
+            then
+                install_bin_file $release ${RTS_dir} bin osplmmstat${suffix_script}
+            fi
+        fi
     else
         echo "* ##    No script files detected"
     fi

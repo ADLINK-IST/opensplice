@@ -156,14 +156,15 @@ nw_socketBroadcastInitialize(
     nw_socket socket,
     sk_bool receiving)
 {
-    
+    /* scdds1980 dontroute not always true anymore
     if (! receiving) {
 #if ! defined OS_VXWORKS_DEFS_H && ! defined INTEGRITY
-       /* Set option for avoiding routing to other interfaces */
+       // Set option for avoiding routing to other interfaces
        nw_socketSetDontRouteOption(socket, SK_TRUE);
 #endif
        
     }
+    */
     nw_socketSetBroadcastOption(socket, SK_TRUE);
 }
 

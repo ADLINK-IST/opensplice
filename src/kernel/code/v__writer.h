@@ -83,8 +83,8 @@
 
 typedef struct v_writerNotifyChangedQosArg_s {
     /* the following fields are set when the partitionpolicy has changed. */
-    c_iter addedDomains;
-    c_iter removedDomains;
+    c_iter addedPartitions;
+    c_iter removedPartitions;
 } v_writerNotifyChangedQosArg;
 
 c_bool
@@ -161,5 +161,18 @@ void
 v_writerResumePublication (
     v_writer _this,
     c_time *suspendTime);
+
+void
+v_writerNotifyDelivery(
+    v_writer _this,
+    v_deliveryInfoTemplate msg);
+
+typedef c_bool (*v_writerGroupAction) (v_group group, c_voidp arg);
+
+c_bool
+v_writerGroupWalk(
+    v_writer w,
+    v_writerGroupAction action,
+    c_voidp arg);
 
 #endif

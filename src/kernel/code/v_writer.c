@@ -26,8 +26,10 @@
 #include "v__builtin.h"
 #include "v__participant.h"
 #include "v__messageQos.h"
+#include "v__deliveryGuard.h"
+#include "v__deliveryWaitList.h"
 
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_groupSet.h"
 #include "v_time.h"
 #include "v_state.h"
@@ -101,11 +103,18 @@ v_writerGroupSetAdd (
 
     type = v_writerGroup_t(c_getBase(g));
     proxy = c_new(type);
-    proxy->group = c_keep(g);
-    proxy->next = set->firstGroup;
-    proxy->groupInstanceCache = v_writerCacheNew(v_objectKernel(g),
+    if (proxy) {
+        proxy->group = c_keep(g);
+        proxy->next = set->firstGroup;
+        proxy->groupInstanceCache = v_writerCacheNew(v_objectKernel(g),
                                                  V_CACHE_OWNER);
-    set->firstGroup = proxy;
+        set->firstGroup = proxy;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_writerGroupSetAdd",0,
+                  "Failed to allocate proxy.");
+    }
+
     return c_keep(proxy);
 }
 
@@ -144,6 +153,23 @@ v_writerGroupSetWalk(
     proxy = s->firstGroup;
     while ((proceed) && (proxy != NULL)) {
         proceed = action(proxy,arg);
+        proxy = proxy->next;
+    }
+    return proceed;
+}
+
+c_bool
+v_writerGroupWalk(
+    v_writer w,
+    v_writerGroupAction action,
+    c_voidp arg)
+{
+    v_writerGroup proxy;
+    c_bool proceed = TRUE;
+
+    proxy = w->groupSet.firstGroup;
+    while ((proceed) && (proxy != NULL)) {
+        proceed = action(proxy->group,arg);
         proxy = proxy->next;
     }
     return proceed;
@@ -350,9 +376,13 @@ connectInstance(
     groupWrite(proxy, &grouparg);
     if (grouparg.result == V_WRITE_INTRANSIT) {
         sample = v_writerSampleNew(w, message);
-        found = v_writerInstanceInsert(i, sample);
-        c_free(found);
-        c_free(sample);
+
+        if (sample) {
+            found = v_writerInstanceInsert(i, sample);
+            v_writerSampleSetSentBefore(found, TRUE);
+            c_free(found);
+            c_free(sample);
+        }
     }
     c_free(message);
 
@@ -449,9 +479,13 @@ disconnectInstance(
         v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
         if (grouparg.keep) {
             sample = v_writerSampleNew(w, message);
-            found = v_writerInstanceInsert(i, sample);
-            c_free(found);
-            c_free(sample);
+
+            if (sample) {
+                found = v_writerInstanceInsert(i, sample);
+                v_writerSampleSetSentBefore(found, TRUE);
+                c_free(found);
+                c_free(sample);
+            }
         }
 
         c_free(message);
@@ -476,9 +510,13 @@ disconnectInstance(
         v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
         if (grouparg.keep) {
             sample = v_writerSampleNew(w, message);
-            found = v_writerInstanceInsert(i, sample);
-            c_free(found);
-            c_free(sample);
+
+            if (sample) {
+                found = v_writerInstanceInsert(i, sample);
+                v_writerSampleSetSentBefore(found, TRUE);
+                c_free(found);
+                c_free(sample);
+            }
         }
 
         c_free(message);
@@ -512,8 +550,10 @@ writerResend(
             v_stateSet(instance->state, L_SUSPENDED);
         }
         sample = v_writerSampleNew(writer,message);
-        keepSample(writer, instance, sample);
-        c_free(sample);
+        if (sample) {
+            keepSample(writer, instance, sample);
+            c_free(sample);
+        }
         result = V_WRITE_SUCCESS;
     } else {
         grouparg.message = message;
@@ -529,14 +569,21 @@ writerResend(
         result = grouparg.result;
         if (result == V_WRITE_INTRANSIT) {
             sample = v_writerSampleNew(writer,message);
-            v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
-            keepSample(writer,instance,sample);
-            c_free(sample);
+
+            if (sample) {
+                v_writerSampleSetSentBefore(sample, TRUE);
+                v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
+                keepSample(writer,instance,sample);
+                c_free(sample);
+            }
         } else if (result == V_WRITE_REJECTED) {
             sample = v_writerSampleNew(writer,message);
-            v_writerSampleResend(sample);
-            keepSample(writer,instance,sample);
-            c_free(sample);
+            if (sample) {
+                v_writerSampleSetSentBefore(sample, TRUE);
+                v_writerSampleResend(sample);
+                keepSample(writer,instance,sample);
+                c_free(sample);
+            }
         }
     }
 
@@ -572,8 +619,10 @@ writerWrite(
             v_stateSet(instance->state, L_SUSPENDED);
         }
         sample = v_writerSampleNew(writer,message);
-        keepSample(writer, instance, sample);
-        c_free(sample);
+        if (sample) {
+            keepSample(writer, instance, sample);
+            c_free(sample);
+        }
         result = V_WRITE_SUCCESS;
     } else {
         if (v_writerInstanceTestState(instance, L_EMPTY)) {
@@ -586,20 +635,31 @@ writerWrite(
             result = grouparg.result;
             if (result == V_WRITE_INTRANSIT) {
                 sample = v_writerSampleNew(writer,message);
-                v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
-                keepSample(writer,instance,sample);
-                c_free(sample);
+
+                if (sample) {
+                    v_writerSampleSetSentBefore(sample, TRUE);
+                    v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
+                    keepSample(writer,instance,sample);
+                    c_free(sample);
+                }
             } else if (result == V_WRITE_REJECTED) {
                 sample = v_writerSampleNew(writer,message);
+
+                if (sample) {
+                    v_writerSampleSetSentBefore(sample, TRUE);
+                    v_writerSampleResend(sample);
+                    keepSample(writer,instance,sample);
+                    c_free(sample);
+                }
+            }
+        } else {
+            sample = v_writerSampleNew(writer,message);
+
+            if (sample) {
                 v_writerSampleResend(sample);
                 keepSample(writer,instance,sample);
                 c_free(sample);
             }
-        } else {
-            sample = v_writerSampleNew(writer,message);
-            v_writerSampleResend(sample);
-            keepSample(writer,instance,sample);
-            c_free(sample);
             result = V_WRITE_REJECTED;
         }
     }
@@ -765,7 +825,6 @@ writerDispose(
             if(result == V_WRITE_TIMEOUT){
                 v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
             }
-            v_observerUnlock(v_observer(w));
             return result;
         }
     }
@@ -960,10 +1019,12 @@ writerUnregister(
             }
         } else {
             sample = v_writerSampleNew(w,message);
-            v_writerSampleResend(sample);
-            keepSample(w,instance,sample);
-            v_writerInstanceUnregister(instance);
-            UPDATE_WRITER_STATISTICS(w, instance, oldState);
+            if (sample) {
+                v_writerSampleResend(sample);
+                keepSample(w,instance,sample);
+                v_writerInstanceUnregister(instance);
+                UPDATE_WRITER_STATISTICS(w, instance, oldState);
+            }
         }
     }
 
@@ -1026,10 +1087,10 @@ v_writerAssertByPublisher(
 
 static void
 publish(
-    void *domain,
+    void *partition,
     void *writer)
 {
-    v_domain d = v_domain(domain);
+    v_partition d = v_partition(partition);
     v_writer w = v_writer(writer);
     v_kernel kernel;
     v_writerGroup proxy;
@@ -1045,10 +1106,10 @@ publish(
 
 static void
 unpublish(
-    void *domain,
+    void *partition,
     void *writer)
 {
-    v_domain d = v_domain(domain);
+    v_partition d = v_partition(partition);
     v_writer w = v_writer(writer);
     v_kernel kernel;
     c_value params[2];
@@ -1228,7 +1289,8 @@ v_writerNew(
      * access to the topic is allowed. We can accomplish this by checking the
      * access mode of the topic.
      */
-    if(v_topicAccessMode(topic) == V_ACCESS_MODE_WRITE || v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
+    if(v_topicAccessMode(topic) == V_ACCESS_MODE_WRITE ||
+       v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
     {
         q = v_writerQosNew(kernel,qos);
         if (q != NULL) {
@@ -1304,7 +1366,6 @@ v_writerInit(
     os_free(keyExpr);
     sampleType = createWriterSampleType(topic);
     writer->messageField = c_metaResolveProperty(sampleType,"message");
-
 #ifdef _EXTENT_
 #define _COUNT_ (32)
     writer->instanceExtent = c_extentNew(instanceType,_COUNT_);
@@ -1326,8 +1387,7 @@ v_writerInit(
      * Special values are -1 (no auto unregister delay specified) and
      * 1 (no deadline specified).
      */
-    if ((c_timeCompare(unregister, C_TIME_INFINITE) == C_EQ) ||
-        (c_timeCompare(unregister, C_TIME_ZERO) == C_EQ))
+    if ((c_timeCompare(unregister, C_TIME_INFINITE) == C_EQ))
     {
         writer->deadlineCountLimit = -1;
     } else {
@@ -1432,6 +1492,12 @@ v_writerEnable(
             } /* else liveliness also determined by liveliness of node */
         }
 
+        if (qos->reliability.synchronous) {
+            writer->deliveryGuard = v_deliveryGuardNew(kernel->deliveryService,writer);
+        } else {
+            writer->deliveryGuard = NULL;
+        }
+
         initMsgQos(writer);
         builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, writer);
         v_observerUnlock(v_observer(writer));
@@ -1493,6 +1559,11 @@ v_writerFree(
     v_observerUnlock(v_observer(w));
 
     p = v_publisher(w->publisher);
+
+    if (w->deliveryGuard) {
+        v_deliveryGuardFree(w->deliveryGuard);
+        w->deliveryGuard = NULL;
+    }
 
     v_leaseManagerDeregister(kernel->livelinessLM, w->livelinessLease);
 
@@ -1635,15 +1706,15 @@ v_writerNotifyChangedQos(
 
     v_observerLock(v_observer(w));
     if ((arg != NULL) &&
-        ((arg->addedDomains != NULL) || (arg->removedDomains != NULL))) {
+        ((arg->addedPartitions != NULL) || (arg->removedPartitions != NULL))) {
       /* partition policy has changed */
 /**
  * Now the builtin topic is published, after all connections are updated.
  * Depending on the outcome of the RTPS protocol standardisation, this
  * solution is subject to change.
  */
-        c_iterWalk(arg->addedDomains, publish, w);
-        c_iterWalk(arg->removedDomains, unpublish, w);
+        c_iterWalk(arg->addedPartitions, publish, w);
+        c_iterWalk(arg->removedPartitions, unpublish, w);
     }
     kernel = v_objectKernel(w);
     builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
@@ -1876,6 +1947,7 @@ v_writerWrite(
     c_ulong blocked; /* Used for statistics */
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
+    v_deliveryWaitList waitlist;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -1886,7 +1958,7 @@ v_writerWrite(
     v_observerLock(v_observer(w));
 
     v_statisticsULongValueInc(v_writer, numberOfWrites, w);
-    /* only autpurge if publisher is suspended */
+    /* only autopurge if publisher is suspended */
     autoPurgeSuspendedSamples(w);
 
     v_nodeState(message) = L_WRITE;
@@ -1982,11 +2054,22 @@ v_writerWrite(
 
     V_MESSAGE_STAMP(message,writerLookupTime);
 
+    waitlist = NULL;
+
     if (result == V_WRITE_SUCCESS) {
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
+        if (w->deliveryGuard != NULL) {
+            /* Collect all currently known connected synchronous DataReaders */
+            waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
+        }
         result = writerWrite(instance,message,implicit);
+        if (result == V_WRITE_SUCCESS) {
+            /* Successful delivered to all so no need to wait. */
+            v_deliveryWaitListFree(waitlist);
+            waitlist = NULL;
+        }
         v_stateClear(instance->state, L_DISPOSED);
         deadlineUpdate(w, instance);
         UPDATE_WRITER_STATISTICS(w, instance, oldState);
@@ -2005,8 +2088,24 @@ v_writerWrite(
         event.userData = NULL;
         v_observableNotify(v_observable(w), &event);
     }
+
+    if (waitlist) {
+        /* The existance of a waitlist implies the writer is synchronous. */
+        /* Apparently not all synchronous DataReaders have acknoledged delivery
+         * so now call wait on the waitlist.
+         */
+        v_writeResult r = v_deliveryWaitListWait(waitlist,w->qos->reliability.max_blocking_time);
+        switch(r) {
+        case V_RESULT_OK:      result = V_WRITE_SUCCESS; break;
+        case V_RESULT_TIMEOUT: result = V_WRITE_TIMEOUT; break;
+        default:               result = V_WRITE_PRE_NOT_MET; break;
+        }
+        v_deliveryWaitListFree(waitlist);
+    }
+
     return result;
 }
+
 v_writeResult
 v_writerDispose(
     v_writer _this,
@@ -2015,15 +2114,35 @@ v_writerDispose(
     v_writerInstance instance)
 {
     v_writeResult result = V_WRITE_SUCCESS;
+    v_deliveryWaitList waitlist;
 
     assert(message != NULL);
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_writer));
     assert(C_TYPECHECK(message,v_message));
 
+    waitlist = NULL;
     v_observerLock(v_observer(_this));
+    if (_this->deliveryGuard != NULL) {
+        waitlist = v_deliveryWaitListNew(_this->deliveryGuard,message);
+    }
     result = writerDispose(_this,message,timestamp,instance);
+    if (result == V_WRITE_SUCCESS) {
+        v_deliveryWaitListFree(waitlist);
+        waitlist = NULL;
+    }
     v_observerUnlock(v_observer(_this));
+
+    if (waitlist) {
+        /* This implies the writer is synchronous. */
+        v_writeResult r = v_deliveryWaitListWait(waitlist,_this->qos->reliability.max_blocking_time);
+        switch(r) {
+        case V_RESULT_OK:      result = V_WRITE_SUCCESS; break;
+        case V_RESULT_TIMEOUT: result = V_WRITE_TIMEOUT; break;
+        default:               result = V_WRITE_PRE_NOT_MET; break;
+        }
+        v_deliveryWaitListFree(waitlist);
+    }
 
     return result;
 }
@@ -2042,6 +2161,7 @@ v_writerWriteDispose(
     c_bool implicit = FALSE;
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
+    v_deliveryWaitList waitlist;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -2128,13 +2248,22 @@ v_writerWriteDispose(
         }
     }
 
+    waitlist = NULL;
+
     if (result == V_WRITE_SUCCESS) {
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
         deadlineUpdate(w, instance);
         v_stateSet(instance->state, L_DISPOSED);
+        if (w->deliveryGuard != NULL) {
+            waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
+        }
         result = writerWrite(instance,message,implicit);
+        if (result == V_WRITE_SUCCESS) {
+            v_deliveryWaitListFree(waitlist);
+            waitlist = NULL;
+        }
         UPDATE_WRITER_STATISTICS(w, instance, oldState);
     }
 
@@ -2149,17 +2278,29 @@ v_writerWriteDispose(
         event.userData = NULL;
         v_observableNotify(v_observable(w), &event);
     }
+
+    if (waitlist) {
+        /* This implies the writer is synchronous. */
+        v_writeResult r = v_deliveryWaitListWait(waitlist,w->qos->reliability.max_blocking_time);
+        switch(r) {
+        case V_RESULT_OK:      result = V_WRITE_SUCCESS; break;
+        case V_RESULT_TIMEOUT: result = V_WRITE_TIMEOUT; break;
+        default:               result = V_WRITE_PRE_NOT_MET; break;
+        }
+        v_deliveryWaitListFree(waitlist);
+    }
+
     return result;
 }
 
 c_bool
 v_writerPublish(
     v_writer w,
-    v_domain d)
+    v_partition d)
 {
     assert(C_TYPECHECK(w,v_writer));
     assert(d != NULL);
-    assert(C_TYPECHECK(d,v_domain));
+    assert(C_TYPECHECK(d,v_partition));
 
     v_observerLock(v_observer(w));
 
@@ -2173,11 +2314,11 @@ v_writerPublish(
 c_bool
 v_writerUnPublish(
     v_writer w,
-    v_domain d)
+    v_partition d)
 {
     assert(C_TYPECHECK(w,v_writer));
     assert(d != NULL);
-    assert(C_TYPECHECK(d,v_domain));
+    assert(C_TYPECHECK(d,v_partition));
 
     v_observerLock(v_observer(w));
 
@@ -2193,29 +2334,23 @@ v_writerWaitForAcknowledgments(
 	v_writer w,
 	v_duration timeout)
 {
-	v_result result;
-	c_time curTime, endTime, waitTime;
-	c_ulong flags;
+    v_result result;
+    c_time curTime, endTime, waitTime;
+    c_ulong flags;
 
-	assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(w,v_writer));
 
-	if(w){
-		v_observerLock(v_observer(w));
+    if(w){
+        v_observerLock(v_observer(w));
 
-		if(c_tableCount(w->resendInstances) > 0){
-		    if(c_timeIsInfinite(timeout)){
-		    	result = V_RESULT_UNDEFINED;
-		    	do {
-					flags = v__observerWait(v_observer(w));
-
-					if(c_tableCount(w->resendInstances) == 0){
-						result = V_RESULT_OK;
-					} else if (flags & V_EVENT_OBJECT_DESTROYED) {
-                        result = V_RESULT_ILL_PARAM;
-                   }
-		    	} while (result == V_RESULT_UNDEFINED);
-
-
+        if(c_tableCount(w->resendInstances) > 0){
+            if (c_timeIsInfinite(timeout)) {
+                flags = v__observerWait(v_observer(w));
+                if(c_tableCount(w->resendInstances) == 0){
+                    result = V_RESULT_OK;
+                } else {
+                    result = V_RESULT_ILL_PARAM;
+                }
             } else {
                 curTime = v_timeGet();
                 endTime = c_timeAdd(curTime, timeout);
@@ -2239,13 +2374,13 @@ v_writerWaitForAcknowledgments(
                 } while( (c_tableCount(w->resendInstances) > 0) &&
                          (c_timeCompare(curTime, endTime) == C_LT));
             }
-		} else {
-		    result = V_RESULT_OK;
-		}
-		v_observerUnlock(v_observer(w));
-	} else {
-	    result = V_RESULT_ILL_PARAM;
-	}
+        } else {
+            result = V_RESULT_OK;
+        }
+        v_observerUnlock(v_observer(w));
+    } else {
+        result = V_RESULT_ILL_PARAM;
+    }
     return result;
 }
 
@@ -2292,9 +2427,18 @@ resendInstance(
                     grouparg.instance = instance;
                     grouparg.message = message;
                     grouparg.result = V_WRITE_SUCCESS;
-                    v_writerCacheWalk(instance->groupInstanceCache,
+
+                    if(v_writerSampleHasBeenSentBefore(sample)){
+                        v_writerCacheWalk(instance->groupInstanceCache,
                                       groupInstanceResend,
                                       &grouparg);
+                    } else {
+                        v_writerCacheWalk(instance->groupInstanceCache,
+                                      groupInstanceWrite,
+                                      &grouparg);
+
+                        v_writerSampleSetSentBefore(sample, TRUE);
+                    }
                     if (grouparg.result == V_WRITE_REJECTED) {
                         v_writerSampleResend(sample);
                         /* The sample could not be delivered because
@@ -2717,3 +2861,4 @@ v_writerResumePublication(
     c_tableWalk(writer->instances, instanceResume, (c_voidp)suspendTime);
     v_observerUnlock(v_observer(writer));
 }
+

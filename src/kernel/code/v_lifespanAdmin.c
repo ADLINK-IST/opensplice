@@ -11,6 +11,7 @@
  */
 #include "v__lifespanAdmin.h"
 #include "v_time.h"
+#include "os_report.h"
 
 /**************************************************************
  * Private functions
@@ -32,6 +33,10 @@ v_lifespanAdminNew(
         admin->sampleCount = 0;
         admin->head = NULL;
         admin->tail = NULL;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_lifespanAdminNew",0,
+                  "Failed to allocate lifespan admin.");
     }
     return admin;
 }

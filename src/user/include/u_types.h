@@ -74,13 +74,15 @@ typedef enum {
     U_SERVICE_CMSOAP,
     U_SERVICE_SPLICED,
     U_SERVICE_INCOGNITO,
-    U_SERVICE_DDSI /* appending new service type add ends  */
+    U_SERVICE_DDSI,
+    U_SERVICE_SNETWORKING
+    /* appending new service type add ends  */
 } u_serviceKind;
 
 typedef enum {
     U_ENTITY, U_PARTICIPANT, U_PUBLISHER, U_WRITER, U_SERVICE,
     U_SERVICEMANAGER, U_SUBSCRIBER, U_READER, U_NETWORKREADER,
-    U_GROUPQUEUE, U_QUERY, U_DATAVIEW, U_DOMAIN, U_TOPIC,
+    U_GROUPQUEUE, U_QUERY, U_DATAVIEW, U_PARTITION, U_TOPIC,
     U_GROUP, U_VIEW, U_WAITSET,
     U_COUNT
 } u_kind;
@@ -90,7 +92,7 @@ C_CLASS(u_entity);
 C_CLASS(u_dispatcher);
 C_CLASS(u_kernel);
 C_CLASS(u_group);
-C_CLASS(u_domain);
+C_CLASS(u_partition);
 C_CLASS(u_topic);
 C_CLASS(u_waitset);
 C_CLASS(u_participant);

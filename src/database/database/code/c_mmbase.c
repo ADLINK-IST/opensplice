@@ -36,9 +36,6 @@
 #define MAX_LISTS                 (32*1024)
 #define TRESHOLD                  (0)
 
-#define MAPLOCKCLUSTERS       (8)
-#define MAPLOCKCLUSTERINDEX(size) ((size/8)&0x7)
-
 #define GETMAX(a,b)               (((a)>(b))?(a):(b))
 
 #define MmSize                    (sizeof(struct c_mm_s))
@@ -58,6 +55,11 @@
 
 #define SizeToMapIndex(size)      (size/ALIGNMENT)
 #define SizeToListIndex(size)     (size%MAX_LISTS)
+
+/* if a memory claim fails due to insufficient memory the memory management will call the
+ *outOfMemoryAction if the amount of available memory is less than this HighWaterMark.
+ */
+#define HighWaterMark             (10000)
 
 typedef struct c_mmChunk   *c_mmChunk;
 typedef struct c_mmBinding *c_mmBinding;
@@ -84,28 +86,20 @@ struct c_mm_s {
     c_ulong      size;
     c_ulong      fails;
     c_mmCacheHeader cacheList; /* protect with cacheListLock */
-#if MAPLOCKCLUSTERS > 1
-    c_mutex      mapLock[MAPLOCKCLUSTERS];
-#ifdef MAPLOCKCLUSTERCOUNTER
-    c_ulong      mapLockClaimCount[MAPLOCKCLUSTERS];
-#endif
-#else
     c_mutex      mapLock;
-#endif
     c_mutex      listLock;
     c_mutex      cacheListLock;
     c_mutex      bindLock;
-#if MAPLOCKCLUSTERS > 1
-    struct mmStatus_s chunkMapStatus[MAPLOCKCLUSTERS]; /* protect with mapLock[<cluster-index>] */
-#else
     struct mmStatus_s chunkMapStatus; /* protect with mapLock */
-#endif
     struct mmStatus_s chunkListStatus; /* protect with listLock */
     c_bool       shared;
 #ifdef CHECK_FREEING
     c_long       chunkCount[ALIGN_COUNT(MAX_BUCKET)];
 #endif /* CHECK_FREEING */
     c_ulong      initialized;
+
+    c_mmOutOfMemoryAction outOfMemoryAction;
+    c_voidp               outOfMemoryActionArg;
 };
 
 struct c_mmChunk {
@@ -250,9 +244,6 @@ c_mmMalloc(
     c_mmChunk  remnant;
     c_long     mapIndex, listIndex;
     c_ulong    chunkSize;
-#if MAPLOCKCLUSTERS > 1
-    c_ulong    mapClusterIndex;
-#endif
 
     if (size == 0) {
         assert(size != 0);
@@ -267,57 +258,39 @@ c_mmMalloc(
 
     if (size <= MAX_BUCKET_SIZE) {
         mapIndex = SizeToMapIndex(size);
-#if MAPLOCKCLUSTERS > 1
-    mapClusterIndex = MAPLOCKCLUSTERINDEX(size);
-        c_mutexLock(&mm->mapLock[mapClusterIndex]);
-#ifdef MAPLOCKCLUSTERCOUNTER
-    mm->mapLockClaimCount[mapClusterIndex]++;
-#endif
-#else
         c_mutexLock(&mm->mapLock);
-#endif
         if (mm->chunkMap[mapIndex] != NULL) {
             chunk = mm->chunkMap[mapIndex];
             mm->chunkMap[mapIndex] = chunk->next;
-#if MAPLOCKCLUSTERS > 1
-            mm->chunkMapStatus[mapClusterIndex].garbage -= chunkSize;
-#else
             mm->chunkMapStatus.garbage -= chunkSize;
-#endif
 #ifdef CHECK_FREEING
             mm->chunkCount[mapIndex]--;
 #endif
-    } else {
-        c_mutexLock(&mm->listLock);
-        if (mm->listEnd >= (mm->mapEnd + chunkSize)) {
-                chunk = (c_mmChunk)mm->mapEnd;
-        mm->mapEnd  = mm->mapEnd + chunkSize;
-        chunk->size = size;
-        chunk->index = mapIndex;
-        } else {
-                pa_increment(&mm->fails);
-                c_mutexUnlock(&mm->listLock);
-                OS_REPORT_2(OS_ERROR,"c_mmbase",0,
+        } else if (mm->listEnd >= (mm->mapEnd + chunkSize)) {
+            chunk = (c_mmChunk)mm->mapEnd;
+            mm->mapEnd  = mm->mapEnd + chunkSize;
+            chunk->size = size;
+            chunk->index = mapIndex;
+	} else {
+            pa_increment(&mm->fails);
+            c_mutexUnlock(&mm->mapLock);
+            OS_REPORT_2(OS_ERROR,"c_mmbase",0,
                         "Memory claim denied: required size (%d) "
                         "exceeds available resources (%d)!",
                          chunkSize,
                          (mm->listEnd + chunkSize - mm->mapEnd));
-                return NULL;
-        }
-        c_mutexUnlock(&mm->listLock);
-        }
-#if MAPLOCKCLUSTERS > 1
-        mm->chunkMapStatus[mapClusterIndex].used   += chunkSize;
-        mm->chunkMapStatus[mapClusterIndex].maxUsed = GETMAX(mm->chunkMapStatus[mapClusterIndex].used,
-                                            mm->chunkMapStatus[mapClusterIndex].maxUsed);
-        mm->chunkMapStatus[mapClusterIndex].count++;
-        c_mutexUnlock(&mm->mapLock[mapClusterIndex]);
-#else
+	    if (chunkSize <= HighWaterMark) {
+                if (mm->outOfMemoryAction) {
+		    mm->outOfMemoryAction(mm->outOfMemoryActionArg);
+		}
+	    }
+            return NULL;
+	}
         mm->chunkMapStatus.used   += chunkSize;
         mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used,
                                             mm->chunkMapStatus.maxUsed);
+        mm->chunkMapStatus.count++;
         c_mutexUnlock(&mm->mapLock);
-#endif
     } else {
         prvChunk = NULL;
         remnant = NULL;
@@ -335,9 +308,9 @@ c_mmMalloc(
                     if (CoreSize(mm) < chunkSize) {
                         /* No resources left in core memory.
                          * But have found a significant bigger freed block so will split the block.
-             * Unlocking and re-locking is not efficient but at this point
-             * the operational state must be considered degraded.
-             */
+			 * Unlocking and re-locking is not efficient but at this point
+			 * the operational state must be considered degraded.
+			 */
                         remnant = c_mmSplitChunk(mm,chunk,size);
                         c_mutexUnlock( &mm->listLock );
                         c_mmFree(mm,ChunkAddress(remnant));
@@ -365,21 +338,29 @@ c_mmMalloc(
 #endif
             mm->chunkListStatus.garbage -= chunkSize;
         } else {
-            mm->listEnd -= chunkSize;
-            if (mm->listEnd < mm->mapEnd) {
+            c_mutexLock(&mm->mapLock);
+            if (mm->listEnd < (mm->mapEnd + chunkSize)) {
                 pa_increment(&mm->fails);
+                c_mutexUnlock(&mm->mapLock);
                 c_mutexUnlock(&mm->listLock);
                 OS_REPORT_2(OS_ERROR,"c_mmbase",0,
                             "Memory claim denied: "
                             "required size (%d) exceeds available resources (%d)!",
                              chunkSize,
                              (mm->listEnd + chunkSize - mm->mapEnd));
+	        if (chunkSize <= HighWaterMark) {
+                    if (mm->outOfMemoryAction) {
+		        mm->outOfMemoryAction(mm->outOfMemoryActionArg);
+		    }
+	        }
                 return NULL;
             }
+            mm->listEnd -= chunkSize;
             chunk = (c_mmChunk)mm->listEnd;
             chunk->size = size;
             chunk->index = listIndex;
-    }
+            c_mutexUnlock(&mm->mapLock);
+	}
         mm->chunkListStatus.used += chunkSize;
         mm->chunkListStatus.maxUsed = GETMAX(mm->chunkListStatus.used,
                                              mm->chunkListStatus.maxUsed);
@@ -482,7 +463,6 @@ c_mmFreeCache(
 }
 
 #ifdef MM_CLUSTER
-#if MAPLOCKCLUSTERS < 2
 static c_mmChunk
 c_mmCluster(
     c_mm mm,
@@ -521,7 +501,6 @@ c_mmCluster(
     return chunk;
 }
 #endif
-#endif
 
 /**
  * Free a piece of memory.
@@ -539,9 +518,6 @@ c_mmFree(
     c_mmChunk  prvChunk;
     c_long     mapIndex, listIndex;
     c_ulong chunkSize;
-#if MAPLOCKCLUSTERS > 1
-    c_ulong    mapClusterIndex;
-#endif
 
     assert(mm != NULL);
 
@@ -579,22 +555,13 @@ c_mmFree(
 
     if (chunk->size <= MAX_BUCKET_SIZE) {
         mapIndex = chunk->index;
-#if MAPLOCKCLUSTERS > 1
-    mapClusterIndex = MAPLOCKCLUSTERINDEX(chunk->size);
-        c_mutexLock(&mm->mapLock[mapClusterIndex]);
-#else
         c_mutexLock(&mm->mapLock);
-#endif
 #ifdef CHECK_FREEING
         mm->chunkCount[mapIndex]++;
         curChunk = mm->chunkMap[mapIndex];
         while (curChunk != NULL) {
             if (curChunk == chunk) {
-#if MAPLOCKCLUSTERS > 1
-                c_mutexUnlock(&mm->mapLock[mapClusterIndex]);
-#else
                 c_mutexUnlock(&mm->mapLock);
-#endif
                 printf( "Trying to free the same pointer twice!" );
                 return;
             }
@@ -609,19 +576,11 @@ c_mmFree(
 #endif
         chunk->next = mm->chunkMap[mapIndex];
         mm->chunkMap[mapIndex] = chunk;
-#if MAPLOCKCLUSTERS > 1
-        mm->chunkMapStatus[mapClusterIndex].garbage += chunkSize;
-        mm->chunkMapStatus[mapClusterIndex].used -= chunkSize;
-        mm->chunkMapStatus[mapClusterIndex].count--;
-        assert(mm->chunkMapStatus[mapClusterIndex].used >= 0);
-        c_mutexUnlock(&mm->mapLock[mapClusterIndex]);
-#else
         mm->chunkMapStatus.garbage += chunkSize;
         mm->chunkMapStatus.used -= chunkSize;
         mm->chunkMapStatus.count--;
         assert(mm->chunkMapStatus.used >= 0);
         c_mutexUnlock(&mm->mapLock);
-#endif
     } else {
         prvChunk = NULL;
         listIndex = chunk->index;
@@ -636,7 +595,7 @@ c_mmFree(
         }
 
         if (curChunk == chunk) {
-            c_mutexUnlock(&mm->listLock);
+            c_mutexUnlock(&mm->mapLock);
             printf( "Trying to free the same pointer twice!" );
             assert(curChunk != chunk);
             return;
@@ -681,19 +640,10 @@ c_mmDestroy (
     c_mm mm )
 {
     c_mmBinding temp;
-#if MAPLOCKCLUSTERS > 1
-    c_ulong mapClusterIndex;
-#endif
 
     if ( mm->size == 0 ) {
         c_mutexUnlock( &mm->bindLock );
-#if MAPLOCKCLUSTERS > 1
-        for (mapClusterIndex = 0; mapClusterIndex < MAPLOCKCLUSTERS; mapClusterIndex++) {
-            c_mutexUnlock( &mm->mapLock[mapClusterIndex] );
-        }
-#else
         c_mutexUnlock( &mm->mapLock );
-#endif
         c_mutexUnlock( &mm->listLock );
         c_mutexUnlock( &mm->cacheListLock );
 
@@ -717,9 +667,6 @@ c_mmAdminInit (
     c_long size )
 {
     c_long mapIndex, listIndex;
-#if MAPLOCKCLUSTERS > 1
-    c_ulong mapClusterIndex;
-#endif
 
     /* Determine the start of our memory managed block, without the admin
      * data, rounding it up to the next alignment boundary */
@@ -752,19 +699,10 @@ c_mmAdminInit (
     mm->size = size - AdminSize;
     mm->fails = 0;
 
-#if MAPLOCKCLUSTERS > 1
-    for (mapClusterIndex = 0; mapClusterIndex < MAPLOCKCLUSTERS; mapClusterIndex++) {
-        mm->chunkMapStatus[mapClusterIndex].used    = 0;
-        mm->chunkMapStatus[mapClusterIndex].maxUsed = 0;
-        mm->chunkMapStatus[mapClusterIndex].garbage = 0;
-        mm->chunkMapStatus[mapClusterIndex].count   = 0;
-    }
-#else
     mm->chunkMapStatus.used    = 0;
     mm->chunkMapStatus.maxUsed = 0;
     mm->chunkMapStatus.garbage = 0;
     mm->chunkMapStatus.count   = 0;
-#endif
 
     mm->chunkListStatus.used    = 0;
     mm->chunkListStatus.maxUsed = 0;
@@ -773,14 +711,12 @@ c_mmAdminInit (
 
     c_mutexInit(&mm->cacheListLock, SHARED_MUTEX);
     c_mutexInit(&mm->listLock,SHARED_MUTEX);
-#if MAPLOCKCLUSTERS > 1
-    for (mapClusterIndex = 0; mapClusterIndex < MAPLOCKCLUSTERS; mapClusterIndex++) {
-        c_mutexInit(&(mm->mapLock[mapClusterIndex]),SHARED_MUTEX);
-    }
-#else
     c_mutexInit(&mm->mapLock,SHARED_MUTEX);
-#endif
     c_mutexInit(&mm->bindLock,SHARED_MUTEX);
+
+    mm->outOfMemoryAction = NULL;
+    mm->outOfMemoryActionArg = NULL;
+
     mm->initialized = C_MM_INITIALIZED;
 }
 
@@ -936,35 +872,16 @@ c_mmMapState (
     c_mm mm)
 {
     c_mmStatus s;
-#if MAPLOCKCLUSTERS > 1
-    int mapClusterIndex;
-#endif
 
     s.fails = mm->fails;
     s.size = CoreSize(mm);
 
-#if MAPLOCKCLUSTERS > 1
-    s.used = 0;
-    s.maxUsed = 0;
-    s.garbage = 0;
-    s.count = 0;
-
-    for (mapClusterIndex = 0; mapClusterIndex < MAPLOCKCLUSTERS; mapClusterIndex++) {
-        c_mutexLock(&mm->mapLock[mapClusterIndex]);
-        s.used += mm->chunkMapStatus[mapClusterIndex].used;
-        s.maxUsed += mm->chunkMapStatus[mapClusterIndex].maxUsed;
-        s.garbage += mm->chunkMapStatus[mapClusterIndex].garbage;
-        s.count += mm->chunkMapStatus[mapClusterIndex].count;
-        c_mutexUnlock(&mm->mapLock[mapClusterIndex]);
-    }
-#else
     c_mutexLock(&mm->mapLock);
     s.used    = mm->chunkMapStatus.used;
     s.maxUsed = mm->chunkMapStatus.maxUsed;
     s.garbage = mm->chunkMapStatus.garbage;
     s.count   = mm->chunkMapStatus.count;
     c_mutexUnlock(&mm->mapLock);
-#endif
 
     return s;
 }
@@ -995,39 +912,20 @@ c_mmState (
 {
     c_mmStatus s;
     c_mmCacheHeader ch;
-#if MAPLOCKCLUSTERS > 1
-    int mapClusterIndex;
-#endif
 
     s.fails = mm->fails;
     s.size = mm->size;
 
-#if MAPLOCKCLUSTERS > 1
-    s.used = 0;
-    s.maxUsed = 0;
-    s.garbage = 0;
-    s.count = 0;
-
-    for (mapClusterIndex = 0; mapClusterIndex < MAPLOCKCLUSTERS; mapClusterIndex++) {
-        c_mutexLock(&mm->mapLock[mapClusterIndex]);
-        s.used += mm->chunkMapStatus[mapClusterIndex].used;
-        s.maxUsed += mm->chunkMapStatus[mapClusterIndex].maxUsed;
-        s.garbage += mm->chunkMapStatus[mapClusterIndex].garbage;
-        s.count += mm->chunkMapStatus[mapClusterIndex].count;
-        c_mutexUnlock(&mm->mapLock[mapClusterIndex]);
-    }
-#else
     c_mutexLock(&mm->mapLock);
     s.used = mm->chunkMapStatus.used;
     s.maxUsed = mm->chunkMapStatus.maxUsed;
     s.garbage = mm->chunkMapStatus.garbage;
     s.count = mm->chunkMapStatus.count;
     c_mutexUnlock(&mm->mapLock);
-#endif
 
     c_mutexLock(&mm->listLock);
     s.used += mm->chunkListStatus.used;
-    s.maxUsed += mm->chunkListStatus.maxUsed;
+    s.maxUsed = s.maxUsed + mm->chunkListStatus.maxUsed;
     s.garbage += mm->chunkListStatus.garbage;
     s.count += mm->chunkListStatus.count;
     c_mutexUnlock(&mm->listLock);
@@ -1053,4 +951,15 @@ c_mmState (
     return s;
 }
 
+void
+c_mmOnOutOfMemory(
+    c_mm _this,
+    c_mmOutOfMemoryAction action,
+    c_voidp arg)
+{
+    if (_this) {
+        _this->outOfMemoryAction = action;
+	_this->outOfMemoryActionArg = arg;
+    }
+}
 

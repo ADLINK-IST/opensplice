@@ -769,6 +769,7 @@ cleanup_checks ()
     unset gawk_check
     unset csharp_check
     unset jacorb_check
+    unset openssl_check
     unset PATHCHECK_FOUND
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION REAL_VERSION
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR

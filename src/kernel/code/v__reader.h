@@ -36,12 +36,12 @@ v_readerFree(
 c_bool
 v_readerSubscribe(
     v_reader _this,
-    v_domain d);
+    v_partition d);
 
 c_bool
 v_readerUnSubscribe(
     v_reader _this,
-    v_domain d);
+    v_partition d);
 
 c_bool
 v_readerSubscribeGroup (

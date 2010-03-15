@@ -111,112 +111,130 @@ static FILE * open_socket (char *host, unsigned short port)
    return file;
 }
 
-static FILE * os_open_info_file (void)
+static FILE *
+os_open_file (char * file_name)
 {
-   FILE *logfile=NULL;
-   char *file_dir;
-   char *file_name;
-   char file_path[2048];
-   char host[256];
-   unsigned short port;
-   int len;
+    FILE *logfile=NULL;
+    char host[256];
+    unsigned short port;
 
-   file_dir = os_getenv("OSPL_LOGPATH");
-   if (file_dir == NULL) 
-   {
-#ifdef VXWORKS_RTP
-      file_dir = "/tgtsvr/";
-#else
-      file_dir = "./";
-#endif
-   }
-   file_name = os_getenv("OSPL_INFOFILE");
-   if (file_name == NULL) 
-   {
-      file_name = "ospl-info.log";
-   }
-   if (strcmp(file_name, "<stderr>") != 0) 
-   {
-      if (strcmp(file_name, "<stdout>") == 0) 
-      {
-         logfile = stdout;
-      } 
-      else if (sscanf (file_name, "%255[^:]:%hd", host, &port) == 2)
-      {
-         logfile = open_socket (host, port);
-      }
-      else 
-      {
-         len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
-         /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
-         if ( len < (int)sizeof(file_path) && len > -1 ) 
-         {
-            char * filename = os_fileNormalize(file_path);
-            logfile = fopen(filename, "a");
-            os_free(filename);
-         }
-      }
-   }
-   if ( logfile == NULL ) 
-   {
-      logfile = stderr;
-   }
-   return( logfile );
+    if (strcmp(file_name, "<stderr>") != 0)
+    {
+        if (strcmp(file_name, "<stdout>") == 0)
+        {
+            logfile = stdout;
+        }
+        else if (sscanf (file_name, "%255[^:]:%hd", host, &port) == 2)
+        {
+            logfile = open_socket (host, port);
+        }
+        else
+        {
+            logfile = fopen(file_name, "a");
+        }
+    }
+    if ( logfile == NULL )
+    {
+        logfile = stderr;
+    }
+    return logfile;
 }
 
-static FILE * os_open_error_file (void)
+/* The result of os_report_file_path must be freed with os_free */
+static char *
+os_report_file_path(char * default_file, char * override_variable)
 {
-   FILE *logfile=NULL;
-   char *file_dir;
-   char *file_name;
-   char file_path[2048];
-   char host[256];
-   unsigned short port;
-   int len;
+    char *file_dir;
+    char *file_name;
+    char file_path[2048];
+    char host[256];
+    unsigned short port;
+    int len;
 
-   file_dir = os_getenv("OSPL_LOGPATH");
-   if (file_dir == NULL) 
-   {
+    file_dir = os_getenv("OSPL_LOGPATH");
+    if (file_dir == NULL)
+    {
 #ifdef VXWORKS_RTP
-      file_dir = "/tgtsvr/";
+        file_dir = "/tgtsvr";
 #else
-      file_dir = "./";
+        file_dir = ".";
 #endif
-   }
-   file_name = os_getenv("OSPL_ERRORFILE");
-   if (file_name == NULL) 
-   {
-      file_name = "ospl-error.log";
-   }
-   if (strcmp(file_name, "<stderr>") != 0) 
-   {
-      if (strcmp(file_name, "<stdout>") == 0) 
-      {
-         logfile = stdout;
-      } 
-      else if (sscanf (file_name, "%255[^:]:%hd", host, &port) == 2)
-      {
-         logfile = open_socket (host, port);
-      }
-      else 
-      {
-         len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
-         /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
-         if ( len < (int)sizeof(file_path) && len > -1 ) 
-         {
-            char * filename;
-            filename = os_fileNormalize(file_path);
-            logfile = fopen(filename, "a");
-            os_free(filename);
-         }
-      }
-   }
-   if ( logfile == NULL ) 
-   {
-      logfile = stderr;    
-   }
-   return(logfile);
+    }
+    if (override_variable != NULL)
+    {
+        file_name = os_getenv(override_variable);
+    }
+    if (file_name == NULL)
+    {
+        file_name = default_file;
+    }
+
+    if (strcmp(file_name, "<stderr>") != 0 && strcmp(file_name, "<stdout>") != 0)
+    {
+        if (sscanf (file_name, "%255[^:]:%hd", host, &port) != 2)
+        {
+            len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
+            /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
+            if ( len < (int)sizeof(file_path) && len > -1 )
+            {
+                return os_fileNormalize(file_path);
+            }
+        }
+    }
+
+    return os_strdup (file_name);
 }
+
+char *
+os_reportGetInfoFileName()
+{
+    return os_report_file_path ("ospl-info.log", "OSPL_INFOFILE");
+}
+
+char *
+os_reportGetErrorFileName()
+{
+    return os_report_file_path ("ospl-error.log", "OSPL_ERRORFILE");
+}
+
+static FILE *
+os_open_info_file (void)
+{
+    char * name;
+    FILE * file;
+
+    name = os_reportGetInfoFileName();
+    file = os_open_file(name);
+    os_free (name);
+    return file;
+}
+
+static FILE *
+os_open_error_file (void)
+{
+    char * name;
+    FILE * file;
+
+    name = os_reportGetErrorFileName();
+    file = os_open_file(name);
+    os_free (name);
+    return file;
+}
+
+void
+os_reportDisplayLogLocations()
+{
+    char * infoFileName;
+    char * errorFileName;
+
+    infoFileName = os_reportGetInfoFileName();
+    errorFileName = os_reportGetErrorFileName();
+    printf ("\nInfo  log : %s\n", infoFileName);
+    printf ("Error log : %s\n", errorFileName);
+    os_free (infoFileName);
+    os_free (errorFileName);
+}
+
 #endif
 
 static void
@@ -236,9 +254,6 @@ os_defaultReport(
     char node[64];
     char date_time[128];
     FILE *log;
-    const char *file_name = fileName;
-    const char *ptr;
-
 
     switch (reportType) {
     case OS_INFO:
@@ -281,12 +296,6 @@ os_defaultReport(
     os_procFigureIdentity(procIdentity, sizeof (procIdentity)-1);
     procIdentity[sizeof (procIdentity)-1] = '\0';
 
-    for (ptr=fileName; *ptr!=0; ptr++) {
-        if (*ptr == '/') {
-            file_name = (char *)((long)ptr+1);
-        }
-    }
-
 #ifdef INTEGRITY
     os_logprintf( log,
 #else
@@ -308,7 +317,7 @@ os_defaultReport(
             threadIdentity,
             VERSION,
             reportContext,
-            file_name,
+            fileName,
             lineNo,
             reportCode,
             ostime.tv_nsec);
@@ -329,25 +338,39 @@ os_report(
 {
     va_list args;
     os_int32 i;
+    const char *file_name = fileName;
+    const char *ptr;
+
+#ifdef WIN32
+    char file_separator = '\\';
+#else
+    char file_separator = '/';
+#endif
+
+    for (ptr=fileName; *ptr!=0; ptr++) {
+        if (*ptr == file_separator) {
+            file_name = (char *)((long)ptr+1);
+        }
+    }
 
     va_start(args, description);
     if (os_reportServicesCount != 0) {
         for (i = 0; i < OS_REPORTSERVICES_MAX; i++) {
             if (os_reportServices[i].os_reportContext != 0) {
                 os_reportServices[i].os_reportService(os_reportServices[i].os_reportContext,
-                    reportType, reportContext, fileName, lineNo, reportCode,
+                    reportType, reportContext, file_name, lineNo, reportCode,
                     description, args);
             }
         }
     } else {
-        os_defaultReport(reportType, reportContext, fileName, lineNo, reportCode, description, args);
+        os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);
     }
     va_end(args);
     va_start(args, description);
     if (reportType == OS_API_INFO) {
         char sourceLine[512];
 
-        snprintf(sourceLine, sizeof(sourceLine), "%s::%d", fileName, lineNo);
+        snprintf(sourceLine, sizeof(sourceLine), "%s::%d", file_name, lineNo);
         sourceLine[sizeof(sourceLine)-1] = '\0';
         os_reportSetApiInfoRec(reportContext, sourceLine, NULL, reportCode,
              description, args);

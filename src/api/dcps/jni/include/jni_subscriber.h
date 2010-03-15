@@ -54,15 +54,19 @@ C_STRUCT(jni_subscriber){
  * 
  * @return The newly created subscriber. If failed, NULL is returned.
  */
-OS_API jni_subscriber  jni_subscriberNew(              jni_participant p,
-                                                v_subscriberQos qos);
+OS_API jni_subscriber
+jni_subscriberNew(
+    jni_participant p,
+    v_subscriberQos qos);
 
 /**@brief Deletes the supplied subscriber. This function sould only be called
  * by the jni_participant object (jni_deleteDubscriber).
  * 
  * @param s The subscriber to delete.
  */
-OS_API jni_result      jni_subscriberFree(             jni_subscriber s);
+OS_API jni_result
+jni_subscriberFree(
+    jni_subscriber s);
 
 /**@brief Deletes all entities within the supplied subscriber. 
  * 
@@ -73,7 +77,9 @@ OS_API jni_result      jni_subscriberFree(             jni_subscriber s);
  * 
  * @return JNI_RESULT_OK if succeeded, anty other jni_result otherwise.
  */
-OS_API jni_result      jni_deleteSubscriberEntities(   jni_subscriber sub);
+OS_API jni_result
+jni_deleteSubscriberEntities(
+    jni_subscriber sub);
 
 /**@brief Creates a new reader within the supplied subscriber.
  * 
@@ -83,9 +89,11 @@ OS_API jni_result      jni_deleteSubscriberEntities(   jni_subscriber sub);
  * 
  * @return The newly created reader.
  */
-OS_API jni_reader      jni_createReader(               jni_subscriber sub,
-                                                jni_topicDescription top,
-                                                v_readerQos qos);
+OS_API jni_reader
+jni_createReader(
+    jni_subscriber sub,
+    jni_topicDescription top,
+    v_readerQos qos);
  
 /**@brief Deletes the supplied reader from the supplied subscriber.
  * 
@@ -99,18 +107,22 @@ OS_API jni_reader      jni_createReader(               jni_subscriber sub,
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result      jni_deleteReader(               jni_subscriber sub,
-                                                jni_reader reader);
+OS_API jni_result
+jni_deleteReader(
+    jni_subscriber sub,
+    jni_reader reader);
 
 
-/**@brief Attaches the supplied Subscriber to the domains to match the supplied
+/**@brief Attaches the supplied Subscriber to the partitions to match the supplied
  * expression.
  * 
- * @param sub The subscriber where to attach the domains to.
- * @param domainExpr The domain expression.
+ * @param sub The subscriber where to attach the partitions to.
+ * @param partitionExpr The partition expression.
  */
-OS_API jni_result      jni_subscriberSubscribe(        jni_subscriber sub,
-                                                const c_char* domainExpr);
+OS_API jni_result
+jni_subscriberSubscribe(
+    jni_subscriber sub,
+    const c_char* partitionExpr);
 
 /**@brief Looks up a DataReader, that is associated with the
  * supplied Topic, in the supplied Subscriber.
@@ -123,8 +135,10 @@ OS_API jni_result      jni_subscriberSubscribe(        jni_subscriber sub,
  * @result The reader that reads data of the supplied topic, or NULL if it cannot
  * be found.
  */
-OS_API jni_reader      jni_subscriberLookupReader(     jni_subscriber sub, 
-                                                const c_char* topicName);
+OS_API jni_reader
+jni_subscriberLookupReader(
+    jni_subscriber sub, 
+    const c_char* topicName);
 
 
 #undef OS_API

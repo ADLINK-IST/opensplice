@@ -41,19 +41,19 @@ extern "C" {
 #define OS_OS_PATHSEPCHAR ';'
 #define OS_OS_EXESUFFIX   ".exe"
 
-#define OS_ROK (_S_IFMT & _S_IREAD)
-#define OS_WOK (_S_IFMT & _S_IWRITE)
-#define OS_XOK (_S_IFMT & _S_IEXEC)
-#define OS_FOK (_S_IFMT & _S_IREAD)
+#define OS_ROK (_S_IREAD)
+#define OS_WOK (_S_IWRITE)
+#define OS_XOK (_S_IEXEC)
+#define OS_FOK (0)
 
 #define OS_ISDIR(mode) (mode & _S_IFDIR)
 #define OS_ISREG(mode) (mode & _S_IFREG)
 #define OS_ISLNK(mode) (0) /* not supported on this platform */
 
 /* on this platform these permission masks are don't cares! */
-#define S_IRWXU (0x1)
-#define S_IRWXG (0x2)
-#define S_IRWXO (0x4)
+#define S_IRWXU 00700
+#define S_IRWXG 00070
+#define S_IRWXO 00007
 
 /* The value _POSIX_PATH_MAX is defined in limits.h, however you have
  * to define _POSIX_ during compilation.This again will remove the

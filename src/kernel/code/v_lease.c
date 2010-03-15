@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -26,7 +26,7 @@
 
 
 /* WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!! WARNING!!!
- * 
+ *
  * The lease itself may never take its lock during the execution of
  * the action routine. The entity of the lease has the responsability
  * that the entity is not locked, while changing the lease during
@@ -67,9 +67,9 @@ writerResend(
 {
     v_object writer;
     v_handleResult r;
-    
+
     assert(v_lease(lease) != NULL);
-    
+
     r = v_handleClaim(lease->object, &writer);
     if (r == V_HANDLE_OK) {
         v_writerResend(v_writer(writer));
@@ -80,7 +80,7 @@ writerResend(
 
 static void
 readerDeadlineMissed(
-    v_lease lease, 
+    v_lease lease,
     c_time now)
 {
     v_object o;
@@ -253,6 +253,27 @@ v_leaseUpdate(
 
         c_mutexLock(&lease->mutex);
         lease->expiryTime = c_timeAdd(v_timeGet(), lease->duration);
+        c_mutexUnlock(&lease->mutex);
+    }
+}
+
+void
+v_leaseGetExpiryAndDuration(
+    v_lease lease,
+    c_time *expiryTime,
+    v_duration *duration)
+{
+    assert(lease != NULL);
+    assert(C_TYPECHECK(lease, v_lease));
+
+    if(expiryTime || duration){
+        c_mutexLock(&lease->mutex);
+        if(expiryTime){
+            *expiryTime = lease->expiryTime;
+        }
+        if(duration){
+            *duration = lease->duration;
+        }
         c_mutexUnlock(&lease->mutex);
     }
 }

@@ -9,8 +9,6 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <c_typebase.h>
-#include <c_iterator.h>
 
 #include "idl_scope.h"
 #include "idl_keyDef.h"
@@ -24,17 +22,6 @@
    helper functions.
 */
 
-C_CLASS(idl_keyMap);
-
-C_STRUCT(idl_keyDef) {
-    c_iter keyList;
-};
-
-C_STRUCT(idl_keyMap) {
-    c_metaObject scope;	/* Type scope stack */
-    c_char *typeName;	/* Type Name */
-    c_char *keyList;	/* Defined key list */
-};
 
 /* Contains the list of key definitions */
 static idl_keyDef idl_keyDefinitions;

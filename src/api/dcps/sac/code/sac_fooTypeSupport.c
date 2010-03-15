@@ -43,13 +43,13 @@ DDS__FooTypeSupport__alloc (
 DDS_ReturnCode_t
 DDS__FooTypeSupport_register_type (
     DDS_TypeSupport this,
-    DDS_DomainParticipant domain,
+    DDS_DomainParticipant participant,
     const DDS_string name)
 {
     return (DDS_ReturnCode_t)
         gapi_fooTypeSupport_register_type(
             (gapi_typeSupport)this,
-            (gapi_domainParticipant)domain,
+            (gapi_domainParticipant)participant,
             (gapi_string)name);
 }
 

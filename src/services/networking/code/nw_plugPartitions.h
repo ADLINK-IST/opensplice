@@ -28,11 +28,15 @@ nw_plugPartitionsGetPartition(
     nw_partitionId partitionId,
     nw_bool *found,
     nw_partitionAddress *partitionAddress,
-    nw_bool *connected);
+    nw_networkSecurityPolicy *securityPolicy,
+    nw_bool *connected,
+    os_uint32* hash);
+
 
 nw_bool
 nw_plugPartitionsGetDefaultPartition(
     nw_plugPartitions plugPartitions,
-    nw_partitionAddress *partitionAddress);
+    nw_partitionAddress *partitionAddress,
+    nw_networkSecurityPolicy *securityPolicy);
     
 #endif /*NW_PLUGPARTITIONS_H_*/

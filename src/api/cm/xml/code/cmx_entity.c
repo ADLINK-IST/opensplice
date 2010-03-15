@@ -36,7 +36,7 @@
 #include "u_networkReader.h"
 #include "u_topic.h"
 #include "u_groupQueue.h"
-#include "u_domain.h"
+#include "u_partition.h"
 #include "u_query.h"
 #include "u_publisher.h"
 #include "u_subscriber.h"
@@ -79,10 +79,9 @@ cmx_entityNewFromWalk(
         proxy = arg->entity;
         
     }
-    
     if((proxy != NULL) || (arg->create == FALSE)){
         special = cmx_entityInit(entity, proxy, arg->create);
-        
+
         if(special != NULL){
             if(entity->enabled){
                 enabled = "TRUE";
@@ -185,11 +184,13 @@ cmx_entityInit(
             result = cmx_queryInit((v_query)entity);                
         break;
         case K_DOMAIN:          
-            result = cmx_domainInit((v_domain)entity);              
+            result = cmx_domainInit((v_partition)entity);              
         break;
         case K_NETWORKREADER: 
             /*fallthrough on purpose.*/
         case K_DATAREADER:      
+            /*fallthrough on purpose.*/
+        case K_DELIVERYSERVICE:      
             /*fallthrough on purpose.*/
         case K_GROUPQUEUE:      
             result = cmx_readerInit((v_reader)entity);              
@@ -270,7 +271,7 @@ cmx_entityFreeUserEntity(
                 u_dataReaderFree(u_dataReader(entity));
                 break;
             case K_DOMAIN:
-                u_domainFree(u_domain(entity));
+                u_partitionFree(u_partition(entity));
                 break;
             case K_QUERY:
             case K_DATAREADERQUERY:
@@ -434,10 +435,9 @@ cmx_entityWalkAction(
                         v_object(e)->kind);
         break;
         }
-    }    
+    }
     if(add == TRUE){
         proceed = cmx_entityNewFromWalk(e, arg->entityArg);
-        
         if(proceed == TRUE){
             xmlEntity = arg->entityArg->result;
             

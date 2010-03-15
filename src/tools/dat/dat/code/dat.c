@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -23,7 +23,7 @@
 
 
 // Title:
-#define APPL_TITLE           "SPLICE-DDS Database Analyse Tool"
+#define APPL_TITLE           "SPLICE-DDS Database Analysis Tool"
 
 // Defaults:
 #define D_HEXDUMP_FILENAME   "dat.out"
@@ -32,7 +32,6 @@
 #define D_HEXDUMP_GROUPWIDTH  8
 #define D_SHMNAME_DEFAULT    "The default Domain"
 #define D_DBNAME_DEFAULT     "c_base_A02"
-#define D_KEYFILE_DIR        "/tmp"
 #define D_KEYFILE_MASK       "spddskey_"
 
 // Actions (commands):
@@ -454,7 +453,7 @@ datParseCmdline(
 			case '?':
 			case 'h': context->actions |= A_HELP;                break;
 			case 'J':
-			case 'T': context->actions |= A_TEST;                break;  // undocumented  ;-) 
+			case 'T': context->actions |= A_TEST;                break;  // undocumented  ;-)
 			case 'i': context->actions |= A_INFO;                break;
 			case 'x': context->actions |= A_HEXDUMP;             break;
 			case 'y': context->actions |= A_HEXDUMP_WIPED;       break;
@@ -540,23 +539,23 @@ datCheckExclusions(
 	datContext context)
 {
 	int result = 1;
-	
+
 	// prohibit loading and saving in one run:
 	if ((context->actions & A_MEM_SAVE_TO_FILE) && (context->options & O_MEM_LOAD_FROM_FILE)) {
 		fprintf(stderr, "Cannot use -l and -s at the same time. Aborting...\n");
 		result = 0;
 	}
-	
+
 	// detect if no commands have been specified:
 	if (!context->actions) {
 		context->actions |= A_UNDEFINED;
 	}
-	
+
 	// -a implies -u -c -b -m -d:
 	if (context->actions & A_DUMP_ALL) {
 		context->actions |= (A_DUMP_UNDF | A_DUMP_CLSS | A_DUMP_BASE | A_DUMP_META | A_DUMP_DATA);
 	}
-	
+
 	return result;
 }
 
@@ -763,25 +762,25 @@ datDumpApiObject(
 	fprintf(out, " 0x%8.8X", (unsigned int)apiObject->objectAddress);
 	fprintf(out, " %5ld",    apiObject->referenceCount);
 	fprintf(out, " %1s",     apiObject->objectKind ? apiObject->objectKind : " ");
-	
+
 	if (apiObject->typeRefsCount) {
 		fprintf(out, " %5ld", apiObject->typeRefsCount);
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->dataRefsCount) {
 		fprintf(out, " %5ld", apiObject->dataRefsCount);
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->unknRefsCount) {
 		fprintf(out, " %5ld", apiObject->unknRefsCount);
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->occurrencesCount) {
 		fprintf(out, ":%5ld", apiObject->occurrencesCount);
 	} else {
@@ -792,31 +791,31 @@ datDumpApiObject(
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->refsToTypeCount) {
 		fprintf(out, ":%5ld", apiObject->refsToTypeCount);
 	} else {
 		fprintf(out, ":%5s",  "");
 	}
-	
+
 	if (apiObject->refsToDataCount) {
 		fprintf(out, " %5ld", apiObject->refsToDataCount);
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->refsToUnknCount) {
 		fprintf(out, " %5ld", apiObject->refsToUnknCount);
 	} else {
 		fprintf(out, " %5s",  "");
 	}
-	
+
 	if (apiObject->refsDifference) {
 		fprintf(out, ":%5ld", apiObject->refsDifference);
 	} else {
 		fprintf(out, ":%5s",  "");
 	}
-	
+
 	fprintf(out, " %-30s",   apiObject->objectName ? apiObject->objectName : "");
 	fprintf(out, " %-25s",   apiObject->typeName ? apiObject->typeName : "");
 	fprintf(out, " %2ld",    apiObject->alignment);
@@ -832,7 +831,7 @@ typedef struct datRefsCallbackContext {
 	a_apiRefsKind refsKind;
 	FILE *out;
 } *datRefsCallbackContext;
-	
+
 
 
 /* Prints an address, with the appropriate prefix or suffix
@@ -896,11 +895,11 @@ datIncCounters(
 	int result = 0;
 	if (listTotals && apiObject) {
 		const long diff  = apiObject->refsDifference;
-		
+
 //		const long diff  = apiObject->referenceCount - apiObject->typeRefsCount
 //							- apiObject->dataRefsCount - apiObject->unknRefsCount;
 //		const long odiff = occrs - apiObject->typeRefsCount - apiObject->dataRefsCount - apiObject->unknRefsCount;
-		
+
 		listTotals->objs++;
 		listTotals->refC   += apiObject->referenceCount;
 
@@ -1105,7 +1104,7 @@ datDumpFreeSpaceStats(
 	}
 	return result;
 }
-	
+
 
 
 
@@ -1127,7 +1126,7 @@ datBriefInfoCallback(
 	if (infoData && out) {   // just to be sure, avoiding null pointers
 		long totlObjects = infoData->undfObjs + infoData->clssObjs + infoData->baseObjs + infoData->metaObjs + infoData->dataObjs;
 		long percUsedMem = infoData->mmSize ? ((infoData->dataSize * 100) / infoData->mmSize) : -1;
-		
+
 		fprintf(out, "%-30s: %s\n", "Shared Memory Name", infoData->shmName ? infoData->shmName : "?");
 		fprintf(out, "%-30s: %s\n", "Database Name", infoData->dbName ? infoData->dbName : "?");
 		fprintf(out, "%-30s: 0x%X\n", "Start Address Shared Memory", (unsigned int)infoData->shmAddress);
@@ -1151,7 +1150,7 @@ datBriefInfoCallback(
 		}
 		fprintf(out, "%-30s: %10ld\n", "  #Total Objects", totlObjects);
 		fprintf(out, "%-30s: %10ld (%ld%%)\n", "  Memory used by all objects", infoData->dataSize, percUsedMem);
-		
+
 		result = 1;
 	} else {
 		fprintf(context->err, "?Null pointer returned, check a_api.c\n");
@@ -1179,7 +1178,7 @@ datBriefInfo(
 
 
 /****************************************************************
- DO YOUR DAT STUFF   ;-) 
+ DO YOUR DAT STUFF   ;-)
  ****************************************************************/
 
 
@@ -1205,9 +1204,10 @@ datDo(
 		datDisplayHelp(argv0);
 		result++;
 	} else {
-		context->apiContext = a_apiInit(context->out, context->err, context->shmName, context->dbName,
-			D_KEYFILE_DIR, D_KEYFILE_MASK, options & O_SHOW_ANALYSE_OUTPUT, options & O_SHOW_VERBOSE_OUTPUT);
 		char *fname;
+		char * dir_name = os_getTempDir();
+		context->apiContext = a_apiInit(context->out, context->err, context->shmName, context->dbName,
+			dir_name, D_KEYFILE_MASK, options & O_SHOW_ANALYSE_OUTPUT, options & O_SHOW_VERBOSE_OUTPUT);
 		if ( (actions & A_MEM_SAVE_TO_FILE) || (options & O_MEM_LOAD_FROM_FILE) ) {
 			fname = context->memoryFilename;
 		} else {
@@ -1218,7 +1218,7 @@ datDo(
 		if (result) {
 
 			result = a_apiAnalyse(context->apiContext);
-			
+
 			if (actions & A_INFO) {
 				result = datBriefInfo(context);
 			}
@@ -1234,7 +1234,7 @@ datDo(
 			if (datDumpRequested(context)) {
 				result = datDumpEntries(context);
 			}
-			
+
 			if (actions & A_HEXDUMP_WIPED) {
 				result = a_apiHexdumpWiped(context->apiContext, context->hexdumpWidth, context->hexdumpGroupwidth);
 			}
@@ -1274,13 +1274,13 @@ main(
 	if (!internalErrorLevel) {
 		externalErrorLevel = 1;
 	}
-	
+
 	if (!externalErrorLevel) {
 //		printf("\nNormal program end\n");
 	} else {
 		printf("\nAbnormal program end with errorlevel: %d\n", externalErrorLevel);
 	}
-	
+
 	return(externalErrorLevel);
 }
 

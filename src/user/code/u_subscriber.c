@@ -177,14 +177,14 @@ u_subscriberDeinit(
 u_result
 u_subscriberSubscribe(
     u_subscriber _this,
-    const c_char *domainExpr)
+    const c_char *partitionExpr)
 {
     v_subscriber ks = NULL;
     u_result result;
 
     result = u_subscriberClaim(_this,&ks);
     if ((result == U_RESULT_OK) && (ks != NULL)) {
-        v_subscriberSubscribe(ks,domainExpr);
+        v_subscriberSubscribe(ks,partitionExpr);
         result = u_subscriberRelease(_this);
     } else {
         OS_REPORT(OS_WARNING, "u_subscriberSubscribe", 0, 
@@ -196,14 +196,14 @@ u_subscriberSubscribe(
 u_result
 u_subscriberUnSubscribe(
     u_subscriber _this,
-    const c_char *domainExpr)
+    const c_char *partitionExpr)
 {
     v_subscriber ks = NULL;
     u_result result;
 
     result= u_subscriberClaim(_this,&ks);
     if ((result == U_RESULT_OK) && (ks != NULL)) {
-        v_subscriberUnSubscribe(ks,domainExpr);
+        v_subscriberUnSubscribe(ks,partitionExpr);
         result = u_subscriberRelease(_this);
     } else {
         OS_REPORT(OS_WARNING, "u_subscriberUnSubscribe", 0, 

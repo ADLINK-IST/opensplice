@@ -31,12 +31,12 @@ gapi_fooDataWriter_register_instance (
     gapi_instanceHandle_t handle = GAPI_HANDLE_NIL;
 
     if ( instance_data ) {
-        datawriter = gapi_dataWriterClaim(_this, NULL);
+        datawriter = gapi_dataWriterReadClaim(_this, NULL);
         if ( datawriter ) {
             handle = _DataWriterRegisterInstance(datawriter,
                                                  instance_data,
                                                  u_timeGet());
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
         }
     }
     return handle;
@@ -54,7 +54,7 @@ gapi_fooDataWriter_register_instance_w_timestamp (
     gapi_instanceHandle_t handle = GAPI_HANDLE_NIL;
 
     if ( instance_data ) {
-        datawriter = gapi_dataWriterClaim(_this, NULL);
+        datawriter = gapi_dataWriterReadClaim(_this, NULL);
         if ( datawriter ) {
             result = kernelCopyInTime(source_timestamp, &timestamp);
             if (result == GAPI_RETCODE_OK) {
@@ -62,7 +62,7 @@ gapi_fooDataWriter_register_instance_w_timestamp (
                                                      instance_data,
                                                      timestamp);
             }
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
         }
     }
     return handle;
@@ -78,13 +78,13 @@ gapi_fooDataWriter_unregister_instance (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     if ( instance_data || handle ) {
-        datawriter = gapi_dataWriterClaim(_this, &result);
+        datawriter = gapi_dataWriterReadClaim(_this, &result);
         if ( datawriter ) {
             result = _DataWriterUnregisterInstance(datawriter,
                                                    instance_data,
                                                    handle,
                                                    u_timeGet());
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
         }
     } else {
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
@@ -104,7 +104,7 @@ gapi_fooDataWriter_unregister_instance_w_timestamp (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     if ( instance_data || handle ) {
-        datawriter = gapi_dataWriterClaim(_this, &result);
+        datawriter = gapi_dataWriterReadClaim(_this, &result);
         if ( datawriter ) {
             result = kernelCopyInTime(source_timestamp, &timestamp);
             if ( result == GAPI_RETCODE_OK ) {
@@ -113,7 +113,7 @@ gapi_fooDataWriter_unregister_instance_w_timestamp (
                                                        handle,
                                                        timestamp);
             }
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
         }
     } else {
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
@@ -133,7 +133,7 @@ gapi_fooDataWriter_lookup_instance (
     gapi_instanceHandle_t handle = GAPI_HANDLE_NIL;
 
     if (instance_data) {
-        datawriter = gapi_dataWriterClaim(_this, NULL);
+        datawriter = gapi_dataWriterReadClaim(_this, NULL);
         if (datawriter) {
             data.writer = datawriter;
             data.data = (void *)instance_data;
@@ -141,7 +141,7 @@ gapi_fooDataWriter_lookup_instance (
             uResult = u_writerLookupInstance(U_WRITER_GET(datawriter),
                                              &data,
                                              &handle);
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
         }
     }
 
@@ -160,7 +160,7 @@ gapi_fooDataWriter_write (
     u_result r;
 
     if ( instance_data != NULL ) {
-        datawriter = gapi_dataWriterClaim(_this, &result);
+        datawriter = gapi_dataWriterReadClaim(_this, &result);
         if ( datawriter != NULL ) {
             data.writer = datawriter;
             data.data = (void *)instance_data;
@@ -168,7 +168,7 @@ gapi_fooDataWriter_write (
                                &data,
                                C_TIME_ZERO,
                                handle);
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);
         }
     }
@@ -191,7 +191,7 @@ gapi_fooDataWriter_write_w_timestamp (
     if ( instance_data != NULL ) {
         result = kernelCopyInTime(source_timestamp, &timestamp);
         if ( result == GAPI_RETCODE_OK ) {
-            datawriter = gapi_dataWriterClaim(_this, &result);
+            datawriter = gapi_dataWriterReadClaim(_this, &result);
             if ( datawriter != NULL ) {
                 data.writer = datawriter;
                 data.data = (void *)instance_data;
@@ -200,7 +200,7 @@ gapi_fooDataWriter_write_w_timestamp (
                                    &data,
                                    timestamp,
                                    handle);
-                _EntityRelease(datawriter);
+                _EntityReadRelease(datawriter);
                 result = kernelResultToApiResult(r);
             }
         }
@@ -221,7 +221,7 @@ gapi_fooDataWriter_dispose (
     u_result r;
 
     if ( instance_data != NULL ) {
-        datawriter = gapi_dataWriterClaim(_this, &result);
+        datawriter = gapi_dataWriterReadClaim(_this, &result);
         if ( datawriter != NULL ) {
             data.writer = datawriter;
             data.data = (void *)instance_data;
@@ -230,7 +230,7 @@ gapi_fooDataWriter_dispose (
                                  &data,
                                  C_TIME_ZERO,
                                  handle);
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);
         }
     }
@@ -254,7 +254,7 @@ gapi_fooDataWriter_dispose_w_timestamp (
     if ( instance_data != NULL ) {
         result = kernelCopyInTime(source_timestamp, &timestamp);
         if ( result == GAPI_RETCODE_OK ) {
-            datawriter = gapi_dataWriterClaim(_this, &result);
+            datawriter = gapi_dataWriterReadClaim(_this, &result);
             if ( datawriter != NULL ) {
                 data.writer = datawriter;
                 data.data = (void *)instance_data;
@@ -284,7 +284,7 @@ gapi_fooDataWriter_writedispose (
     u_result r;
 
     if ( instance_data != NULL ) {
-        datawriter = gapi_dataWriterClaim(_this, &result);
+        datawriter = gapi_dataWriterReadClaim(_this, &result);
         if ( datawriter != NULL ) {
             data.writer = datawriter;
             data.data = (void *)instance_data;
@@ -293,7 +293,7 @@ gapi_fooDataWriter_writedispose (
                                      &data,
                                      C_TIME_ZERO,
                                      handle);
-            _EntityRelease(datawriter);
+            _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);
         }
     }
@@ -318,7 +318,7 @@ gapi_fooDataWriter_writedispose_w_timestamp (
     if ( instance_data != NULL ) {
         result = kernelCopyInTime(source_timestamp, &timestamp);
         if ( result == GAPI_RETCODE_OK ) {
-            datawriter = gapi_dataWriterClaim(_this, &result);
+            datawriter = gapi_dataWriterReadClaim(_this, &result);
             if ( datawriter != NULL ) {
                 data.writer = datawriter;
                 data.data = (void *)instance_data;
@@ -327,7 +327,7 @@ gapi_fooDataWriter_writedispose_w_timestamp (
                                           &data,
                                           timestamp,
                                           handle);
-                _EntityRelease(datawriter);
+                _EntityReadRelease(datawriter);
                 result = kernelResultToApiResult(r);
             }
         }
@@ -345,7 +345,7 @@ gapi_fooDataWriter_get_key_value (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DataWriter datawriter;
 
-    datawriter = gapi_dataWriterClaim(_this, &result);
+    datawriter = gapi_dataWriterReadClaim(_this, &result);
 
     if ( datawriter ) {
         if ( (key_holder == NULL) || (handle == GAPI_HANDLE_NIL) ) {
@@ -355,7 +355,7 @@ gapi_fooDataWriter_get_key_value (
         }
     }
 
-    _EntityRelease(datawriter);
+    _EntityReadRelease(datawriter);
 
     return result;
 }

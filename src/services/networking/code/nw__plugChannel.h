@@ -16,6 +16,8 @@
 #include "nw_plugPartitions.h"
 #include "nw_plugInterChannel.h"
 #include "nw_socket.h"
+#include "nw_partitions.h"
+#include "ut_crc.h"
 
 
 #define nw_plugChannel(o) ((nw_plugChannel)(o))
@@ -50,6 +52,7 @@ NW_STRUCT(nw_plugChannel) {
     c_voidp onFatalUsrData;
     /* Allow reconnection after a remote node has died or stopped earlier */
     nw_bool reconnectAllowed;
+    ut_crc crc;
 };    
   
 /* Protected functions for descendants */
@@ -97,7 +100,9 @@ void    nw_plugChannelGetPartition(
          nw_partitionId partitionId,
          nw_bool *found,
          nw_partitionAddress *partitionAddress,
-         nw_bool *connected);
+         nw_networkSecurityPolicy *securityPolicy,
+         nw_bool *connected,
+         os_uint32 *hash);
 
 #endif /* NW__PLUGCHANNEL_H */
 

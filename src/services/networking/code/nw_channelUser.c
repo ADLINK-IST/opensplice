@@ -18,7 +18,7 @@
 #include "v_entity.h"         /* for v_entity() */
 #include "v_group.h"          /* for v_group() */
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_networkReader.h"
 #include "nw__confidence.h"
 #include "nw_commonTypes.h"

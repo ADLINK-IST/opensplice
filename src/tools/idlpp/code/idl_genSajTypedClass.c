@@ -347,6 +347,7 @@ idl_structureOpen(
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         idl_genInterface(scope, name, "TypeSupport", idl_typeSpec(structSpec), FALSE);
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(structSpec), TRUE);
+        idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(structSpec), TRUE);
         idl_genInterface(scope, name, "DataWriter", idl_typeSpec(structSpec), TRUE);
         idl_genTypeSeqHolder(scope, name, idl_typeSpec(structSpec));
     }
@@ -363,6 +364,7 @@ idl_unionOpen(
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         idl_genInterface(scope, name, "TypeSupport", idl_typeSpec(unionSpec), FALSE);
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(unionSpec), TRUE);
+        idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(unionSpec), TRUE);
         idl_genInterface(scope, name, "DataWriter", idl_typeSpec(unionSpec), TRUE);
         idl_genTypeSeqHolder(scope, name, idl_typeSpec(unionSpec));
     }
@@ -381,6 +383,7 @@ idl_typedefOpenClose(
         if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
             idl_genInterface(scope, name, "TypeSupport", idl_typeSpec(defSpec), FALSE);
             idl_genInterface(scope, name, "DataReader", idl_typeSpec(defSpec), TRUE);
+            idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(defSpec), TRUE);
             idl_genInterface(scope, name, "DataWriter", idl_typeSpec(defSpec), TRUE);
             idl_genTypeSeqHolder(scope, name, idl_typeDefActual(defSpec));
         }

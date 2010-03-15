@@ -6,7 +6,7 @@ TARGET_EXEC	:= networking
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-LDLIBS += $(LDLIBS_NW) -l$(DDS_USER) -l$(DDS_CONF) -l$(DDS_CONFPARSER) 
+LDLIBS += $(LDLIBS_NW) -l$(DDS_USER) -l$(DDS_CONF) -l$(DDS_CONFPARSER)
 LDLIBS += -l$(DDS_UTIL) -l$(DDS_KERNEL) -l$(DDS_SERIALIZATION) 
 LDLIBS += -l$(DDS_DATABASE) -l$(DDS_OS_NET) -l$(DDS_OS)
 
@@ -20,6 +20,7 @@ CINCS += -I$(OSPL_HOME)/src/user/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
+CINCS += -I$(OSPL_HOME)/src/utilities/include
 
 -include $(DEPENDENCIES)
 
@@ -45,6 +46,7 @@ CINCS += -I$(OSPL_HOME)/src/user/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
+CINCS += -I$(OSPL_HOME)/src/utilities/include
 
 
 -include $(DEPENDENCIES)

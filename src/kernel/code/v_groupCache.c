@@ -13,6 +13,7 @@
 
 #include "v_groupCache.h"
 #include "v_cache.h"
+#include "os_report.h"
 
 static c_type _v_groupCache_t = NULL;
 static c_type _v_groupCacheItem_t = NULL;
@@ -52,8 +53,14 @@ v_groupCacheNew (
     type = v_groupCache_t(base);
     cache = c_new(type);
     c_free(type);
-    cache->itemType = v_groupCacheItem_t(base);
-    v_cacheInit(v_cache(cache),kind);
+    if (cache) {
+        cache->itemType = v_groupCacheItem_t(base);
+        v_cacheInit(v_cache(cache),kind);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_groupCacheNew",0,
+                  "Failed to allocate group cache.");
+    }
 
     assert(C_TYPECHECK(cache,v_groupCache));
 
@@ -103,11 +110,17 @@ v_groupCacheItemNew (
 
     cache = groupInstance->readerInstanceCache;
     item = c_new(cache->itemType);
-    item->instance = c_keep(instance);
-    item->groupInstance = groupInstance;
-    item->registrationCount = 1;
-    item->pendingResends = 0;
-    v_cacheNodeInit(v_cacheNode(item));
+    if (item) {
+        item->instance = c_keep(instance);
+        item->groupInstance = groupInstance;
+        item->registrationCount = 1;
+        item->pendingResends = 0;
+        v_cacheNodeInit(v_cacheNode(item));
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_groupCacheItemNew",0,
+                  "Failed to allocate group cache item.");
+    }
 
     assert(C_TYPECHECK(item,v_groupCacheItem));
 

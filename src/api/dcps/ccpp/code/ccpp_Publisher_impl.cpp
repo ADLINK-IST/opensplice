@@ -138,7 +138,24 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
                   myUD = new DDS::ccpp_UserData(DataWriter,  a_listener);
                   if (myUD)
                   {
+                    gapi_publisherQos *pqos = gapi_publisherQos__alloc();
                     gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD);
+                    if(pqos){
+                        if(gapi_publisher_get_qos(_gapi_self, pqos) == GAPI_RETCODE_OK){
+                            if(pqos->entity_factory.autoenable_created_entities) {
+                                gapi_entity_enable(writer_handle);
+                            }
+                        }
+                        else
+                        {
+                            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain publisher_qos");
+                        }
+                        gapi_free(pqos);
+                    }
+                    else
+                    {
+                        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                    }
                   }
                   else
                   {

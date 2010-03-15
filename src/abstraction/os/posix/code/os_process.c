@@ -48,14 +48,44 @@ static struct sigaction _SIGNALVECTOR_(SIGQUIT);
 static struct sigaction _SIGNALVECTOR_(SIGHUP);
 static struct sigaction _SIGNALVECTOR_(SIGTERM);
 
+static struct sigaction _SIGNALVECTOR_(SIGILL);
+static struct sigaction _SIGNALVECTOR_(SIGABRT);
+static struct sigaction _SIGNALVECTOR_(SIGFPE);
+static struct sigaction _SIGNALVECTOR_(SIGSEGV);
+static struct sigaction _SIGNALVECTOR_(SIGPIPE);
+static struct sigaction _SIGNALVECTOR_(SIGALRM);
+static struct sigaction _SIGNALVECTOR_(SIGUSR1);
+static struct sigaction _SIGNALVECTOR_(SIGUSR2);
+static struct sigaction _SIGNALVECTOR_(SIGTSTOP);
+static struct sigaction _SIGNALVECTOR_(SIGTTIN);
+static struct sigaction _SIGNALVECTOR_(SIGTTOUT);
+
+
 #define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
 #define OSPL_SIGNALHANDLERTHREAD_EXIT      2 /* Instruct thread to call exit() */
 
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
 static int _ospl_signalpipe[2] = { 0, 0};
+static int installSignalHandler = 1;
 
 /* private functions */
+static int
+isSignallingSafe(
+    int reportReason)
+{
+
+    if(!installSignalHandler && reportReason){
+        OS_REPORT(OS_WARNING, "OS abstraction layer", 0,
+                  "Did not install signal handlers to cleanup resources.\n"\
+                  "              To ensure cleanup for Java applications, the path to the 'jsig' library\n"\
+                  "              (libjsig.so) must be set in the LD_PRELOAD environment variable.\n"\
+                  "              This library is part of your Java distribution.\n"\
+                  "              To ensure proper cleanup set this before starting your application.");
+    }
+    return installSignalHandler;
+}
+
 static void
 signalHandler(
     int sig,
@@ -68,8 +98,14 @@ signalHandler(
 
     if (_ospl_termHandler) {
         switch (sig) {
-        default:
+		case SIGINT:
+		case SIGQUIT:
+		case SIGHUP:
+		case SIGTERM:
             reason = OS_TERMINATION_NORMAL;
+		break;
+        default:
+			reason = OS_TERMINATION_ERROR;
         break;
         }
         terminate = _ospl_termHandler(reason);
@@ -104,7 +140,6 @@ signalHandlerThread(
     while (result == -1) {
         result = read(_ospl_signalpipe[0], &sig, sizeof(int));
     }
-
     /* first call previous signal handler, iff not default */
     switch (sig) {
     case -1: /* used for terminating this thread! */
@@ -134,7 +169,75 @@ signalHandlerThread(
             _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
         }
     break;
-    default:
+    case SIGILL:
+        if ((_SIGNALVECTOR_(SIGILL).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGILL).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGILL).sa_handler(SIGILL);
+        }
+    break;
+    case SIGABRT:
+        if ((_SIGNALVECTOR_(SIGABRT).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGABRT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGABRT).sa_handler(SIGABRT);
+        }
+    break;
+    case SIGFPE:
+        if ((_SIGNALVECTOR_(SIGFPE).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGFPE).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGFPE).sa_handler(SIGFPE);
+        }
+    break;
+    case SIGSEGV:
+        if ((_SIGNALVECTOR_(SIGSEGV).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGSEGV).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGSEGV).sa_handler(SIGSEGV);
+        }
+    break;
+    case SIGPIPE:
+        if ((_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGPIPE).sa_handler(SIGPIPE);
+        }
+    break;
+    case SIGALRM:
+        if ((_SIGNALVECTOR_(SIGALRM).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGALRM).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGALRM).sa_handler(SIGALRM);
+        }
+    break;
+    case SIGUSR1:
+        if ((_SIGNALVECTOR_(SIGUSR1).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGUSR1).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGUSR1).sa_handler(SIGUSR1);
+        }
+    break;
+    case SIGUSR2:
+        if ((_SIGNALVECTOR_(SIGUSR2).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGUSR2).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGUSR2).sa_handler(SIGUSR2);
+        }
+    break;
+/*  Only in newer POSIX versions, ignoring for now
+    case SIGTSTOP:
+        if ((_SIGNALVECTOR_(SIGTSTOP).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGTSTOP).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGTSTOP).sa_handler(SIGTSTOP);
+        }
+    break;
+*/    case SIGTTIN:
+        if ((_SIGNALVECTOR_(SIGTTIN).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGTTIN).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGTTIN).sa_handler(SIGTTIN);
+        }
+    break;
+/*  Only in newer POSIX versions, ignoring for now
+    case SIGTTOUT:
+        if ((_SIGNALVECTOR_(SIGTTOUT).sa_handler != SIG_DFL) &&
+            (_SIGNALVECTOR_(SIGTTOUT).sa_handler != SIG_IGN)) {
+            _SIGNALVECTOR_(SIGTTOUT).sa_handler(SIGTTOUT);
+        }
+    break;
+*/    default:
         assert(0);
     }
     if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
@@ -162,24 +265,109 @@ os_processModuleInit(void)
     pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
     pthread_create(&_ospl_signalHandlerThreadId, &thrAttr, signalHandlerThread, (void*)0);
 
+
     /* install signal handlers */
     action.sa_handler = 0;
     action.sa_sigaction = signalHandler;
     sigfillset(&action.sa_mask); /* block all signals during handling of a signal */
     action.sa_flags = SA_SIGINFO;
 
+
     _SIGCURRENTACTION_(SIGINT);
-    _SIGACTION_(SIGINT);
 
+    /* If the user has set a signal handler or explicitly told the system to
+     * ignore the signal, we don't set a handler ourselves. It's the
+     * responsibility of the user to make sure exit() is called to
+     * terminate the application to make sure all shared memory resources
+     * are properly cleaned up. This is on a per signal basis.
+     */
+    if ((_SIGNALVECTOR_(SIGINT).sa_handler == SIG_DFL) ||
+        (_SIGNALVECTOR_(SIGINT).sa_handler == SIG_IGN)) {
+        _SIGACTION_(SIGINT);
+    }
     _SIGCURRENTACTION_(SIGQUIT);
-    _SIGACTION_(SIGQUIT);
 
+    if ((_SIGNALVECTOR_(SIGQUIT).sa_handler == SIG_DFL) ||
+        (_SIGNALVECTOR_(SIGQUIT).sa_handler == SIG_IGN)) {
+        _SIGACTION_(SIGQUIT);
+    }
     _SIGCURRENTACTION_(SIGHUP);
-    _SIGACTION_(SIGHUP);
 
+    if ((_SIGNALVECTOR_(SIGHUP).sa_handler == SIG_DFL) ||
+        (_SIGNALVECTOR_(SIGHUP).sa_handler == SIG_IGN)) {
+        _SIGACTION_(SIGHUP);
+    }
     _SIGCURRENTACTION_(SIGTERM);
-    _SIGACTION_(SIGTERM);
 
+    if ((_SIGNALVECTOR_(SIGTERM).sa_handler == SIG_DFL) ||
+        (_SIGNALVECTOR_(SIGTERM).sa_handler == SIG_IGN)) {
+        _SIGACTION_(SIGTERM);
+    }
+
+    if(isSignallingSafe(1)){
+        _SIGCURRENTACTION_(SIGILL);
+
+        if ((_SIGNALVECTOR_(SIGILL).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGILL).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGILL);
+        }
+        _SIGCURRENTACTION_(SIGABRT);
+
+        if ((_SIGNALVECTOR_(SIGABRT).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGABRT).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGABRT);
+        }
+        _SIGCURRENTACTION_(SIGFPE);
+
+        if ((_SIGNALVECTOR_(SIGFPE).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGFPE).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGFPE);
+        }
+        _SIGCURRENTACTION_(SIGSEGV);
+
+        if ((_SIGNALVECTOR_(SIGSEGV).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGSEGV).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGSEGV);
+        }
+        _SIGCURRENTACTION_(SIGPIPE);
+
+        if ((_SIGNALVECTOR_(SIGPIPE).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGPIPE).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGPIPE);
+        }
+        _SIGCURRENTACTION_(SIGALRM);
+
+        if ((_SIGNALVECTOR_(SIGALRM).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGALRM).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGALRM);
+        }
+        _SIGCURRENTACTION_(SIGUSR1);
+
+        if ((_SIGNALVECTOR_(SIGUSR1).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGUSR1).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGUSR1);
+        }
+        _SIGCURRENTACTION_(SIGUSR2);
+
+        if ((_SIGNALVECTOR_(SIGUSR2).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGUSR2).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGUSR2);
+        }
+        /* Only in newer POSIX versions, ignoring for now
+        _SIGCURRENTACTION_(SIGTSTOP);
+        _SIGACTION_(SIGTSTOP);
+        */
+        _SIGCURRENTACTION_(SIGTTIN);
+
+        if ((_SIGNALVECTOR_(SIGTTIN).sa_handler == SIG_DFL) ||
+            (_SIGNALVECTOR_(SIGTTIN).sa_handler == SIG_IGN)) {
+            _SIGACTION_(SIGTTIN);
+        }
+        /* Only in newer POSIX versions, ignoring for now
+        _SIGCURRENTACTION_(SIGTTOUT);
+        _SIGACTION_(SIGTTOUT);
+        */
+    }
 #endif
 }
 
@@ -201,6 +389,18 @@ os_processModuleExit(void)
     _SIGACTION_(SIGHUP);
     _SIGACTION_(SIGTERM);
 
+
+    if(isSignallingSafe(0)){
+        _SIGACTION_(SIGILL);
+        _SIGACTION_(SIGABRT);
+        _SIGACTION_(SIGFPE);
+        _SIGACTION_(SIGSEGV);
+        _SIGACTION_(SIGPIPE);
+        _SIGACTION_(SIGALRM);
+        _SIGACTION_(SIGUSR1);
+        _SIGACTION_(SIGUSR2);
+        _SIGACTION_(SIGTTIN);
+    }
     _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
     if (pthread_self() != _ospl_signalHandlerThreadId) {
         write(_ospl_signalpipe[1], &sig, sizeof(sig));
@@ -237,6 +437,19 @@ os_procAtExit(
     assert (function != NULL);
     atexit (function);
     return;
+}
+
+void
+os_procSetSignalHandlingEnabled(
+    os_uint enabled)
+{
+#ifndef INTEGRITY
+    if(enabled == 0){
+        installSignalHandler = 0;
+    } else {
+        installSignalHandler = 1;
+    }
+#endif
 }
 
 /** \brief Terminate the process and return the status
@@ -479,6 +692,17 @@ os_procCheckStatus(
     return rv;
 }
 #endif
+
+/** \brief Return the integer representation of the given process ID
+ *
+ * Possible Results:
+ * - returns the integer representation of the given process ID
+ */
+os_int
+os_procIdToInteger(os_procId id)
+{
+   return (os_int)id;
+}
 
 /** \brief Return the process ID of the calling process
  *

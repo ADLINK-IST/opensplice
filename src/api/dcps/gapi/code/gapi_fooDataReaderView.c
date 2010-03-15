@@ -1237,7 +1237,7 @@ _DataReaderViewCopyIn (
 gapi_instanceHandle_t
 gapi_fooDataReaderView_lookup_instance (
     gapi_fooDataReaderView _this,
-    gapi_foo *instance_data)
+    const gapi_foo *instance_data)
 {
     _DataReaderView datareaderview;
     gapi_instanceHandle_t handle = GAPI_HANDLE_NIL;

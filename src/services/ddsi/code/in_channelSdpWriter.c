@@ -17,7 +17,7 @@
 #include "v_service.h"
 #include "v_group.h"
 #include "v_networkReader.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_topic.h"
 #include "v_networkReaderEntry.h"
 #include "v_writer.h"

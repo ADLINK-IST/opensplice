@@ -87,12 +87,10 @@ jni_createParticipant(
     if((pf != NULL) && (pf == participantFactory)){    
         uri = jni_nameServiceResolveURI(domainId);
                 
-        if(uri != NULL){
-            p = jni_participantNew(uri, "Java DCPS participant", domainId, qos);
-            
-            if(p != NULL){
-                participantFactory->participants = c_iterInsert(participantFactory->participants, p);
-            }
+        p = jni_participantNew(uri, "Java DCPS participant", domainId, qos);
+
+        if(p != NULL){
+            participantFactory->participants = c_iterInsert(participantFactory->participants, p);
         }
     }
     return p;

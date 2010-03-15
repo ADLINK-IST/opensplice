@@ -287,13 +287,17 @@ TestAndList(
                          *                  gapi_entity_get_status_changes(entity) &
                          *                  statuscondition->enabledStatusMask;
                          */
-                        if (cd->getTriggerValue(cd)) {
-                            if (a->conditions->_maximum == a->conditions->_length) {
-                                gapi_sequence_replacebuf(a->conditions,
-                                                         (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
-                                                         a->waitset->length);
+                        getTriggerValue = cd->getTriggerValue;
+
+                        if (_ObjectIsValid(_Object(cd))) {
+                            if (getTriggerValue(cd)) {
+                                if (a->conditions->_maximum == a->conditions->_length) {
+                                    gapi_sequence_replacebuf(a->conditions,
+                                                             (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
+                                                             a->waitset->length);
+                                }
+                                a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
                             }
-                            a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
                         }
                     }
                 }
@@ -349,6 +353,22 @@ gapi_waitSet_wait(
     args.conditions = conditions;
     args.waitset = waitset;
 
+    /* If timeout is not infinite, calculate the absolute time
+     * for the timeout.
+     */
+    if(!((timeout->sec == GAPI_DURATION_INFINITE_SEC) &&
+    	(timeout->nanosec == GAPI_DURATION_INFINITE_NSEC)))
+    {
+    	os_time osTimeOut;
+
+    	osTimeMax = os_timeGet();
+		osTimeOut.tv_sec  = (os_timeSec)timeout->sec;
+		osTimeOut.tv_nsec = (os_int32)timeout->nanosec;
+
+		osTimeMax = os_timeAdd(osTimeMax, osTimeOut);
+    }
+
+
     do {
         gapi_sequence_replacebuf(conditions,
                              (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
@@ -381,11 +401,6 @@ gapi_waitSet_wait(
             if ((timeout->sec     == GAPI_DURATION_INFINITE_SEC) &&
                 (timeout->nanosec == GAPI_DURATION_INFINITE_NSEC)) {
                 infinite = TRUE;
-            } else {
-                os_time osTimeOut;
-                osTimeOut.tv_sec  = (os_timeSec)timeout->sec;
-                osTimeOut.tv_nsec = (os_int32)timeout->nanosec;
-                osTimeMax = os_timeAdd (os_timeGet(), osTimeOut);
             }
 
             if (waitset->multidomain) {

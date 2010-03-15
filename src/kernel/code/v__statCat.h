@@ -16,6 +16,7 @@
 #define V_STATCAT_READER        "reader"
 #define V_STATCAT_WRITER        "writer"
 #define V_STATCAT_DURABILITY    "durability"
+#define V_STATCAT_NETWORKING    "networking"
 
 #endif /* V__STATCAT_H */
 

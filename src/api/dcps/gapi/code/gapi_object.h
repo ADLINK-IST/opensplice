@@ -66,6 +66,7 @@ typedef enum {
 
 
 #define _Object(o) ((_Object)o)
+#define _RWLOCK_
 
 C_CLASS(_ObjectRegistry);
 C_CLASS(_Object);
@@ -91,6 +92,25 @@ gapi_objectPeek (
     gapi_object handle,
     _ObjectKind kind);
 
+#ifdef _RWLOCK_
+OS_API _Object
+gapi_objectReadClaim (
+    gapi_object handle,
+    _ObjectKind kind,
+    gapi_returnCode_t *result);
+
+_Object
+gapi_objectReadClaimNB (
+    gapi_object handle,
+    _ObjectKind kind,
+    gapi_returnCode_t *result);
+
+_Object
+gapi_objectReadPeek (
+    gapi_object handle,
+    _ObjectKind kind);
+#endif
+
 gapi_object
 _ObjectToHandle (
     _Object object);
@@ -102,7 +122,13 @@ gapi_objectPeekUnchecked (
 gapi_object
 gapi_objectRelease (
     gapi_object handle);
-    
+
+#ifdef _RWLOCK_
+gapi_object
+gapi_objectReadRelease (
+    gapi_object handle);
+#endif
+
 void
 gapi_objectClearBusy (
     gapi_object handle);
@@ -145,6 +171,20 @@ _ObjectClaimNotBusy (
 OS_API gapi_object
 _ObjectRelease (
     _Object);
+
+#ifdef _RWLOCK_
+OS_API void
+_ObjectReadClaim (
+    _Object object);
+
+void
+_ObjectReadClaimNotBusy (
+    _Object object);
+
+OS_API gapi_object
+_ObjectReadRelease (
+    _Object);
+#endif
 
 gapi_boolean
 _ObjectIsValid (

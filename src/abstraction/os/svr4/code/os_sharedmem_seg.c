@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/svr4/code/os_sharedmem_seg.c
@@ -18,6 +18,7 @@
 
 #include <os_heap.h>
 #include <os_abstract.h>
+#include <os_stdlib.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -35,13 +36,13 @@
 #define OS_PERMISSION \
         (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
-/** Defines the file prefix for the key file
+/** Defines the file format for the key file
  *
  * The key file defines on line 1 the identification of the shared memory
  * On line 2 the virtual address of the area is defined.
  * On the third line, the size of the shared memory is stored
  */
-static const char os_svr4_key_file_prefix[] = "/tmp/spddskey_XXXXXX";
+static const char os_svr4_key_file_format[] = "spddskey_XXXXXX";
 
 static int os_destroyKey(const char *name);
 
@@ -97,11 +98,11 @@ os_svr4_matchKey(
  *         to the identified shared memory
  *
  * \b os_svr4_findKeyFile tries to find the key file related to \b name
- * in the \b /tmp directory. The key files are prefixed with \b
- * /tmp/spddskey_.
+ * in the \b temporary directory directory. The key files are prefixed with \b
+ * /<temporay directory>/spddskey_.
  *
- * \b os_svr4_findKeyFile first opens the directory \b /tmp by calling
- * \b opendir. Then it reads all entries in serach for  any entry
+ * \b os_svr4_findKeyFile first opens the directory \b temporary directory by
+ * calling \b opendir. Then it reads all entries in serach for  any entry
  * that starts with the name \b spddskey_ by reading the entry with
  * \b readdir. If the a matching entry is found, it calls os_svr4_matchKey
  * to check if the key file matches the identified \b name. If the
@@ -117,17 +118,23 @@ os_svr4_findKeyFile(
 {
     DIR *key_dir;
     struct dirent *entry;
-    char key_file_name[sizeof(os_svr4_key_file_prefix)+1];
     char *kfn = NULL;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    key_dir = opendir("/tmp");
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
     if (key_dir) {
         entry = readdir(key_dir);
         while (entry != NULL) {
             if (strncmp(entry->d_name, "spddskey_", 9) == 0) {
+                key_file_name_size = strlen(dir_name) + strlen(os_svr4_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
                 snprintf(key_file_name,
-                         sizeof(os_svr4_key_file_prefix)+1,
-                         "/tmp/%s",
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
                          entry->d_name);
                 if (os_svr4_matchKey(key_file_name, name)) {
                     kfn = os_malloc(strlen(key_file_name) + 1);
@@ -138,6 +145,7 @@ os_svr4_findKeyFile(
                 } else {
                     entry = readdir(key_dir);
                 }
+                os_free (key_file_name);
             } else {
                 entry = readdir(key_dir);
             }
@@ -276,13 +284,15 @@ os_svr4_getKey(
     key_t key;
     int cmask;
     int invalid_access;
+    char * dir_name = NULL;
 
     key_file_name = os_svr4_findKeyFile(name);
     if ((map_address != NULL) && (key_file_name == NULL)) {
-        name_len = strlen(os_svr4_key_file_prefix) + 1;
+        dir_name = os_getTempDir();
+        name_len = strlen(dir_name) + strlen(os_svr4_key_file_format) + 2;
         key_file_name = os_malloc(name_len);
         if (key_file_name != NULL) {
-            snprintf(key_file_name, name_len, "%s", os_svr4_key_file_prefix);
+            snprintf(key_file_name, name_len, "%s/%s", dir_name, os_svr4_key_file_format);
             key_file_fd = mkstemp(key_file_name);
             invalid_access = 0;
             cmask = os_svr4_get_kfumask();
@@ -611,10 +621,11 @@ os_svr4_sharedMemoryAttach(
     void **mapped_address)
 {
     key_t key;
-    int shmid;
+    int shmid, success;
     void *map_address;
     void *request_address;
     os_result rv;
+    char errorBuf[128];
 
     key = os_svr4_getKey(name, NULL, 0);
     if (key == -1) {
@@ -628,21 +639,30 @@ os_svr4_sharedMemoryAttach(
                         "shmget failed with error %d (%s)",
                         errno, name);
             rv = os_resultFail;
-        } else if ((map_address = shmat(shmid, request_address, 0)) != request_address) {
-            if (map_address != (void *)-1) {
-                OS_REPORT_2 (OS_ERROR,
+        }
+        else if ((map_address = shmat(shmid, request_address, SHM_RND)) != request_address) {
+            rv = os_resultFail;
+            if (map_address == (void *)-1) {
+                memset(errorBuf, 0, 128);
+                success = strerror_r(errno, errorBuf, 128);
+
+                if(success == 1){
+                    sprintf(errorBuf, "Unkown error");
+                }
+                OS_REPORT_3 (OS_ERROR,
                              "os_svr4_sharedMemoryAttach", 1,
-                             "shmat failed with error %d (%s)",
-                             errno, name);
+                             "shmat failed for %s with errno %d (%s)",
+                             name, errno, errorBuf);
                 shmdt(map_address);
 	    } else {
-                OS_REPORT_1 (OS_ERROR,
-                             "os_svr4_sharedMemoryAttach", 2,
+                OS_REPORT_3 (OS_WARNING,
+                             "os_svr4_sharedMemoryAttach", 1,
                              "mapped address does not match requested address "
-                             "(%s)",
-                             name);
+                             "(%s). requested address "PA_ADDRFMT" is not aligned using "PA_ADDRFMT" instead",
+                             name,request_address,map_address);
+                *mapped_address = map_address;
+                rv = os_resultSuccess;
 	    }
-	    rv = os_resultFail;
 	} else {
             *mapped_address = map_address;
             rv = os_resultSuccess;

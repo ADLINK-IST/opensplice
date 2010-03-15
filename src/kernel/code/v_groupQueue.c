@@ -184,18 +184,24 @@ v_groupQueueWrite(
         } else {
             kernel         = v_objectKernel(queue);
             sample         = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
-            sample->action = c_keep(action);
-            sample->next   = NULL;
+            if (sample) {
+                sample->action = c_keep(action);
+                sample->next   = NULL;
             
-            if(queue->tail){
-                queue->tail->next = sample;
-                queue->tail = sample;
+                if(queue->tail){
+                    queue->tail->next = sample;
+                    queue->tail = sample;
+                } else {
+                    queue->head = sample;
+                    queue->tail = sample;
+                }
+                queue->size++;
+                v_groupStreamNotifyDataAvailable(v_groupStream(queue));
             } else {
-                queue->head = sample;
-                queue->tail = sample;
+                OS_REPORT(OS_ERROR,
+                          "v_groupQueueWrite",0,
+                          "Failed to allocate sample.");
             }
-            queue->size++;
-            v_groupStreamNotifyDataAvailable(v_groupStream(queue));
         }
     break;
     default:

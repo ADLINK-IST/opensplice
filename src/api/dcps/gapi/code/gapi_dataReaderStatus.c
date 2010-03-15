@@ -12,7 +12,6 @@
 
 #include "os_heap.h"
 #include "gapi_object.h"
-#include "gapi_domainParticipantStatus.h"
 #include "gapi_subscriberStatus.h"
 #include "gapi_subscriber.h"
 #include "gapi_dataReaderStatus.h"

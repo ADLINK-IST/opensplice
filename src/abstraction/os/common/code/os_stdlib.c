@@ -458,3 +458,18 @@ os_fsync(
     return r;
 }
 
+char *
+os_getTempDir()
+{
+    char * dir_name = NULL;
+
+    dir_name = os_getenv("OSPL_TEMP");
+
+    /* if OSPL_TEMP is not defined the default is /tmp */
+    if (dir_name == NULL || (strcmp (dir_name, "") == 0)) {
+       dir_name = "/tmp";
+    }
+
+    return dir_name;
+}
+

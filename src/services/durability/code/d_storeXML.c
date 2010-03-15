@@ -23,7 +23,7 @@
 #include "u_user.h"
 #include "u_group.h"
 #include "u_entity.h"
-#include "u_domain.h"
+#include "u_partition.h"
 #include "u_topic.h"
 #include "v_public.h"
 #include "v_entity.h"
@@ -31,7 +31,7 @@
 #include "v_topicQos.h"
 #include "v_topic.h"
 #include "v_message.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_state.h"
 #include "sd_serializer.h"
 #include "sd_serializerXML.h"
@@ -1224,9 +1224,10 @@ storeTopicMetadata(
 
 
         filename = os_fileNormalize(fileStorePath);
-        fdes = fopen(filename, "w+");
-        os_free(filename);
-
+        if(filename){
+            fdes = fopen(filename, "w+");
+            os_free(filename);
+        }
         if (fdes == NULL) {
             d_storeReport(d_store(persistentStore),
                           D_LEVEL_SEVERE,
@@ -1677,15 +1678,17 @@ processTopic(
     /* QAC EXPECT 1253,1277; */
     if (OS_ISREG(status->stat_mode)) {
         char * filename = os_fileNormalize(path);
-        fDes = fopen(filename, "r");
-        os_free(filename);
-
-        if (fDes == NULL) {
-            /* (INACCESSABLE */
-        } else {
-            /* (REGULAR_FILE */
-            processFile(persistentStore, fDes, partition, topic, status);
-            fclose (fDes);
+        
+        if(filename){
+            fDes = fopen(filename, "r");
+            os_free(filename);
+            if (fDes == NULL) {
+                /* (INACCESSABLE */
+            } else {
+                /* (REGULAR_FILE */
+                processFile(persistentStore, fDes, partition, topic, status);
+                fclose (fDes);
+            }
         }
     }
 }
@@ -2225,12 +2228,13 @@ getStoreFile(
         fdes = result->fdes;
     } else {
         char * filename = os_fileNormalize(path);
-        fdes = fopen(filename, mode);
-        os_free(filename);
-
-        if(fdes && (persistentStore->sessionAlive == TRUE)){
-            result = d_storeFileNew(path, fdes, mode);
-            d_tableInsert(persistentStore->openedFiles, result);
+        if(filename){
+            fdes = fopen(filename, mode);
+            os_free(filename);
+            if(fdes && (persistentStore->sessionAlive == TRUE)){
+                result = d_storeFileNew(path, fdes, mode);
+                d_tableInsert(persistentStore->openedFiles, result);
+            }
         }
     }
     return fdes;
@@ -3889,8 +3893,8 @@ d_storeGroupInjectXML(
     d_topicMetadata metadata;
     u_topic utopic;
     u_group ugroup;
-    u_domain udomain;
-    v_domainQos domainQos;
+    u_partition upartition;
+    v_partitionQos partitionQos;
     v_duration timeout;
     c_char* typeName;
 
@@ -3920,13 +3924,13 @@ d_storeGroupInjectXML(
                                         metadata->keyList, metadata->qos);
                     if(utopic) {
                         d_storeReport(store, D_LEVEL_FINE, "Topic %s created.\n", metadata->name);
-                        domainQos = u_domainQosNew(NULL);
+                        partitionQos = u_partitionQosNew(NULL);
 
-                        if(domainQos) {
+                        if(partitionQos) {
                             d_storeReport(store, D_LEVEL_FINE, "PartitionQoS created.\n");
-                            udomain = u_domainNew(participant, partition, domainQos);
+                            upartition = u_partitionNew(participant, partition, partitionQos);
 
-                            if(udomain) {
+                            if(upartition) {
                                 d_storeReport(store, D_LEVEL_FINE, "Partition %s created.\n", partition);
                                 timeout.seconds = 0;
                                 timeout.nanoseconds = 0;
@@ -3945,11 +3949,11 @@ d_storeGroupInjectXML(
                                 } else {
                                     d_storeReport(store, D_LEVEL_SEVERE, "Group %s.%s could NOT be created.\n", partition, metadata->name);
                                 }
-                                u_domainFree(udomain);
+                                u_partitionFree(upartition);
                             }  else {
                                 d_storeReport(store, D_LEVEL_SEVERE, "Partition %s could NOT be created.\n", partition);
                             }
-                            u_domainQosFree(domainQos);
+                            u_partitionQosFree(partitionQos);
                         }  else {
                             d_storeReport(store, D_LEVEL_SEVERE, "PartitionQos could NOT be created.\n");
                         }

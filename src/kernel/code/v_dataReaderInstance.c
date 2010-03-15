@@ -354,10 +354,12 @@ v_dataReaderInstanceInsert(
                                      * at nest read or take operation.
                                      */
                                     sample = v_dataReaderSampleNew(_this,message);
-                                    v_dataReaderInstanceStateClear(_this, L_EMPTY);
-                                    v_dataReaderInstanceSetHead(_this,sample);
-                                    v_dataReaderInstanceSetTail(_this,sample);
-                                    v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                                    if (sample) {
+                                        v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                                        v_dataReaderInstanceSetHead(_this,sample);
+                                        v_dataReaderInstanceSetTail(_this,sample);
+                                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                                    }
                                 }
                             }
                     	}
@@ -467,18 +469,20 @@ v_dataReaderInstanceInsert(
         if (_this->sampleCount == 0) {
             v_dataReaderInstanceStateSet(_this, L_DISPOSED);
             /* No valid nor invalid samples exist,
-             * so if invalid samples are applicable then there is a need toi
-             * create an invalid sample as sample info carier to pass the
+             * so if invalid samples are applicable then there is a need to
+             * create an invalid sample as sample info carrier to pass the
              * state change at next read or take operation.
              */
             if (!v_stateTest(messageState,L_WRITE)) {
                 if (qos->lifecycle.enable_invalid_samples) {
                     if (v_dataReaderInstanceEmpty(_this)) {
                         sample = v_dataReaderSampleNew(_this,message);
-                        v_dataReaderInstanceStateClear(_this, L_EMPTY);
-                        v_dataReaderInstanceSetHead(_this,sample);
-                        v_dataReaderInstanceSetTail(_this,sample);
-                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                        if (sample) {
+                            v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                            v_dataReaderInstanceSetHead(_this,sample);
+                            v_dataReaderInstanceSetTail(_this,sample);
+                            v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                        }
                     }
                 }
             }
@@ -493,18 +497,14 @@ v_dataReaderInstanceInsert(
                 m = v_dataReaderSampleMessage(s);
                 if (c_timeCompare(message->writeTime, m->writeTime) != C_LT) {
                     v_dataReaderInstanceStateSet(_this, L_DISPOSED);
-                    if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
-                        if (qos->lifecycle.enable_invalid_samples) {
-                            v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
-                        }
+                    if (qos->lifecycle.enable_invalid_samples) {
+                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
                     }
                 }
             } else {
                 v_dataReaderInstanceStateSet(_this, L_DISPOSED);
-                if (!v_dataReaderInstanceStateTest(_this, L_NOWRITERS)) {
-                    if (qos->lifecycle.enable_invalid_samples) {
-                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
-                    }
+                if (qos->lifecycle.enable_invalid_samples) {
+                    v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
                 }
             }
         }
@@ -528,8 +528,8 @@ v_dataReaderInstanceInsert(
                 assert(v_dataReaderInstanceEmpty(_this));
             } else {
                 /* An invalid data sample exist.
-                 * Remove it as the incomming sample will provide
-                 * a sample info carier for read and take operations.
+                 * Remove it as the incoming sample will provide
+                 * a sample info carrier for read and take operations.
                  */
                 s = v_dataReaderInstanceHead(_this);
                 assert(s);
@@ -538,10 +538,12 @@ v_dataReaderInstanceInsert(
                 v_dataReaderSampleFree(s);
             }
             sample = v_dataReaderSampleNew(_this,message);
-            v_dataReaderInstanceStateClear(_this, L_EMPTY);
-            v_dataReaderInstanceSetHead(_this,sample);
-            v_dataReaderInstanceSetTail(_this,sample);
-            _this->sampleCount = 1;
+            if (sample) {
+                v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                v_dataReaderInstanceSetHead(_this,sample);
+                v_dataReaderInstanceSetTail(_this,sample);
+                _this->sampleCount = 1;
+            }
         } else {
             depth = reader->depth;
             assert(_this->sampleCount <= depth);
@@ -584,27 +586,7 @@ v_dataReaderInstanceInsert(
                          */
                         if (_this->sampleCount < depth) {
                             sample = v_dataReaderSampleNew(_this,message);
-                            /* Insert after s. */
-                            if (s->prev) {
-                                assert(v_dataReaderSample(s->prev)->next == s);
-                                v_dataReaderSample(s->prev)->next = sample;
-                            } else {
-                                /* s = tail */
-                                v_dataReaderInstanceSetTail(_this,sample);
-                            }
-                            sample->next = s;
-                            sample->prev = s->prev;
-                            s->prev = sample;
-
-                            /* update internal instance state. */
-                            _this->sampleCount++;
-                            v_dataReaderInstanceStateClear(_this, L_EMPTY);
-                            proceed = FALSE;
-                        } else {
-                            if (qos->history.kind == V_HISTORY_KEEPALL) {
-                                return V_DATAREADER_INSTANCE_FULL;
-                            } else {
-                                sample = v_dataReaderSampleNew(_this,message);
+                            if (sample) {
                                 /* Insert after s. */
                                 if (s->prev) {
                                     assert(v_dataReaderSample(s->prev)->next == s);
@@ -617,44 +599,68 @@ v_dataReaderInstanceInsert(
                                 sample->prev = s->prev;
                                 s->prev = sample;
 
-                                /* Push out the oldest sample in the history
-                                 * until we've at least removed one L_WRITE
-                                 * message, because only those ones are taken
-                                 * into account for depth (called
-                                 * sampleCount here).
-                                 */
-                                do {
-                                    oldest = v_dataReaderInstanceHead(_this);
-                                    v_dataReaderInstanceSetHead(_this,
-                                                            oldest->prev);
-                                    if (oldest->prev) {
-                                        oldest->prev->next = oldest->next;
+                                /* update internal instance state. */
+                                _this->sampleCount++;
+                                v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                            }
+                            proceed = FALSE;
+                        } else {
+                            if (qos->history.kind == V_HISTORY_KEEPALL) {
+                                return V_DATAREADER_INSTANCE_FULL;
+                            } else {
+                                sample = v_dataReaderSampleNew(_this,message);
+                                if (sample) {
+                                    /* Insert after s. */
+                                    if (s->prev) {
+                                        assert(v_dataReaderSample(s->prev)->next == s);
+                                        v_dataReaderSample(s->prev)->next = sample;
                                     } else {
-                                        /* oldest = tail */
-                                        /* in this use case always set to NULL. */
-                                        v_dataReaderInstanceSetTail(_this,
-                                                                oldest->next);
+                                        /* s = tail */
+                                        v_dataReaderInstanceSetTail(_this,sample);
                                     }
-                                    oldest->prev = NULL;
-                                    oldest->next = NULL;
-                                    v_dataReaderSampleWipeViews(oldest);
+                                    sample->next = s;
+                                    sample->prev = s->prev;
+                                    s->prev = sample;
 
-                                    if (sample == oldest) {
-                                        sample = NULL;
-                                        proceed = FALSE;
-                                    } else if (
-                                        v_dataReaderSampleMessageStateTest(oldest,
-                                            L_WRITE))
-                                    {
-                                        proceed = FALSE;
-                                    }
-                                    v_dataReaderSampleRemoveFromLifespanAdmin(oldest);
-                                    v_dataReaderSampleFree(oldest);
-                                } while(proceed);
+                                    /* Push out the oldest sample in the history
+                                     * until we've at least removed one L_WRITE
+                                     * message, because only those ones are taken
+                                     * into account for depth (called
+                                     * sampleCount here).
+                                     */
+                                    do {
+                                        oldest = v_dataReaderInstanceHead(_this);
+                                        v_dataReaderInstanceSetHead(_this,
+                                                                oldest->prev);
+                                        if (oldest->prev) {
+                                            oldest->prev->next = oldest->next;
+                                        } else {
+                                            /* oldest = tail */
+                                            /* in this use case always set to NULL. */
+                                            v_dataReaderInstanceSetTail(_this,
+                                                                    oldest->next);
+                                        }
+                                        oldest->prev = NULL;
+                                        oldest->next = NULL;
+                                        v_dataReaderSampleWipeViews(oldest);
 
-                                v_statisticsULongValueInc(v_reader,
-                                                          numberOfSamplesDiscarded,
-                                                          reader);
+                                        if (sample == oldest) {
+                                            sample = NULL;
+                                            proceed = FALSE;
+                                        } else if (
+                                            v_dataReaderSampleMessageStateTest(oldest,
+                                                L_WRITE))
+                                        {
+                                            proceed = FALSE;
+                                        }
+                                        v_dataReaderSampleRemoveFromLifespanAdmin(oldest);
+                                        v_dataReaderSampleFree(oldest);
+                                    } while(proceed);
+
+                                    v_statisticsULongValueInc(v_reader,
+                                                              numberOfSamplesDiscarded,
+                                                              reader);
+                                }
                             }
                         }
                     } else {
@@ -665,13 +671,15 @@ v_dataReaderInstanceInsert(
                         } else {
                             if (_this->sampleCount < depth) {
                                 sample = v_dataReaderSampleNew(_this,message);
-                                /* Insert before s. */
-                                s->next = sample;
-                                sample->prev = s;
-                                sample->next = NULL;
-                                v_dataReaderInstanceSetHead(_this,sample);
-                                /* update internal instance state. */
-                                _this->sampleCount++;
+                                if (sample) {
+                                    /* Insert before s. */
+                                    s->next = sample;
+                                    sample->prev = s;
+                                    sample->next = NULL;
+                                    v_dataReaderInstanceSetHead(_this,sample);
+                                    /* update internal instance state. */
+                                    _this->sampleCount++;
+                                }
                             }  else { /* incoming message is oldest and no history space left, so discard */
                                 sample = NULL; /* prevent instance state update later on */
                                 v_statisticsULongValueInc(v_reader,
@@ -695,16 +703,18 @@ v_dataReaderInstanceInsert(
 
         if (sample != NULL) {
             if (v_dataReaderInstanceStateTest(_this, L_DISPOSED) &&
-                !v_stateTest(messageState, L_DISPOSED) &&
-                !v_stateTest(messageState, L_UNREGISTER)) {
-                /* only when message state has not L_DISPOSED set
-                   (dispose message with data) the administration must be updated
+                v_stateTestOr(messageState, L_WRITE | L_REGISTER))
+            {
+                /*  In case this is a WRITE_DISPOSE message, the instance state
+                 *  will be DISPOSED after this message, so don't clear the
+                 *  disposed flag.
                  */
-                v_dataReaderInstanceStateClear(_this, L_DISPOSED);
+                if(v_stateTestNot(messageState, L_DISPOSED)){
+                    v_dataReaderInstanceStateClear(_this, L_DISPOSED);
+                }
                 _this->disposeCount++;
                 v_dataReaderInstanceStateSet(_this, L_NEW);
             }
-
             sample->disposeCount = _this->disposeCount;
             sample->noWritersCount = _this->noWritersCount;
         }
@@ -739,7 +749,7 @@ v_dataReaderInstanceInsert(
     /* reader internal state of the data has been modified.
      * so increase readers update count.
      * This value is used by queries to determine if a query
-     * needs to be reëvaluated.
+     * needs to be re-evaluated.
      */
     v_dataReader(reader)->updateCnt++;
 
@@ -1080,13 +1090,12 @@ v_dataReaderSampleTake(
     /* reader internal state of the data has been modified.
      * so increase readers update count.
      * This value is used by queries to determine if a query
-     * needs to be reëvaluated.
+     * needs to be re-evaluated.
      */
     v_dataReader(r)->updateCnt++;
 
     if (r->triggerValue) {
-        c_free(v_readerSample(r->triggerValue)->instance);
-        v_dataReaderSampleFree(r->triggerValue);
+        v_dataReaderTriggerValueFree(r->triggerValue);
         r->triggerValue = NULL;
     }
 
@@ -1168,10 +1177,13 @@ v_dataReaderInstancePurge(
     c_long disposedCount,
     c_long noWritersCount)
 {
-    v_dataReaderSample sample, next;
+    v_dataReaderSample sample;
+    v_dataReaderSample prev = NULL;
     v_dataReader r;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
+    /* Algorithm doesn't handle scanning for disposed- AND nowriterscount */
+    assert(disposedCount < 0 || noWritersCount < 0);
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
@@ -1179,10 +1191,11 @@ v_dataReaderInstancePurge(
 
     if ((_this != NULL) && !v_dataReaderInstanceEmpty(_this)) {
         r = v_dataReaderInstanceReader(_this);
-        sample = v_dataReaderInstanceHead(_this);
+        /* Start with the oldest generation, so begin with tail (head is newest) */
+        sample = v_dataReaderInstanceTail(_this);
+
         if (disposedCount >= 0) {
-            next = NULL;
-            while ((sample != NULL) && (sample->disposeCount == disposedCount)) {
+            while ((sample != NULL) && (sample->disposeCount <= disposedCount)) {
                 if (_this->sampleCount) {
                     /* Do not decrease sample count on invalid sample */
                     _this->sampleCount--;
@@ -1193,12 +1206,16 @@ v_dataReaderInstancePurge(
                 if (r->views != NULL) {
                     v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
                 }
-                next = sample;
-                sample = sample->prev;
+
+                v_dataReaderSampleRemoveFromLifespanAdmin(sample);
+
+                prev = sample;
+                sample = sample->next;
             }
         }
+
         if (noWritersCount >= 0) {
-            while ((sample != NULL) && (sample->noWritersCount == noWritersCount)) {
+            while ((sample != NULL) && (sample->noWritersCount <= noWritersCount)) {
                 if (_this->sampleCount) {
                     /* Do not decrease sample count on invalid sample */
                     _this->sampleCount--;
@@ -1209,8 +1226,11 @@ v_dataReaderInstancePurge(
                 if (r->views != NULL) {
                     v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
                 }
-                next = sample;
-                sample = sample->prev;
+
+                v_dataReaderSampleRemoveFromLifespanAdmin(sample);
+
+                prev = sample;
+                sample = sample->next;
             }
         }
         /* now next points to the sample in the history from where
@@ -1219,7 +1239,6 @@ v_dataReaderInstancePurge(
         if (sample == NULL) { /* instance becomes empty, purge all */
             assert(_this->sampleCount == 0);
             sample = v_dataReaderInstanceHead(_this);
-            v_dataReaderSampleRemoveFromLifespanAdmin(sample);
             v_dataReaderSampleFree(sample);
             v_dataReaderInstanceSetHead(_this,NULL);
             v_dataReaderInstanceSetTail(_this,NULL);
@@ -1235,21 +1254,21 @@ v_dataReaderInstancePurge(
             v_dataReader(r)->updateCnt++;
 
             if (r->triggerValue) {
-                v_dataReaderSampleFree(r->triggerValue);
+                v_dataReaderTriggerValueFree(r->triggerValue);
                 r->triggerValue = NULL;
             }
         } else {
-           if (next != NULL) {
-               v_dataReaderInstanceSetHead(_this, sample);
-               /* break link */
-               sample->next = NULL;
-               next->prev = NULL; /* ref kept by local var. next */
-               v_dataReaderSampleRemoveFromLifespanAdmin(next);
-               v_dataReaderSampleFree(next);
-               /* The instance state is in correct state,
-                * so no update needed.
-                */
-           } /* else nothing to purge! */
+            /* Everything older then (including) prev can be purged */
+            if (prev != NULL) {
+               v_dataReaderInstanceSetTail(_this, sample);
+               /* Next is voidp, but break link anyway */
+               prev->next = NULL;
+               sample->prev = NULL; /* reference transfered to prev */
+               /* Free prev (and all older samples, since prev-pointers are man-
+                * aged */
+               v_dataReaderSampleFree(prev);
+               /* The instance state is in correct state, so no update needed. */
+            } /* else nothing to purge! */
         }
     }
 

@@ -1,7 +1,4 @@
 @ECHO OFF
-set SLEEP2=@ping -n 2 localhost
-set SLEEP4=@ping -n 4 localhost
-set SLEEP10=@ping -n 10 localhost
 
 REM start OpenSplice
 
@@ -15,31 +12,42 @@ IF NOT EXIST "Chatter\Chatter.exe" (
    GOTO error
 )
 
+ECHO Starting ospl
+SET LEVEL=Starting ospl
 ospl start 
+if %ERRORLEVEL% NEQ 0 ECHO An error occurred starting ospl %ERRORLEVEL%
 
-%SLEEP10% >NUL
+sleep 4
 
-REM start MessageBoard
+ECHO Starting MessageBoard
+SET LEVEL=Starting MessageBoard
 start "Messageboard" .\MessageBoard\MessageBoard.exe
+if %ERRORLEVEL% NEQ 0 ECHO An error occurred starting MessageBoard %ERRORLEVEL%
 
-%SLEEP4% >NUL
+sleep 4
 
-ECHO start Chatter
+ECHO Starting Chatter
+SET LEVEL=Staring Chatter
 call .\Chatter\Chatter.exe
+if %ERRORLEVEL% NEQ 0 GOTO error
 
-%SLEEP2% >NUL
+sleep 4
 
-ECHO start Chatter with terminate message
+ECHO Starting Chatter with terminate message
+SET LEVEL=Starting Chatter with -1
 call .\Chatter\Chatter.exe -1
-
-%SLEEP4% >NUL
-
-ospl stop
+if %ERRORLEVEL% NEQ 0 GOTO error
 
 GOTO end
 
 :error
-ECHO An error occurred, exiting in 4 seconds...
-%SLEEP4% >NUL
-EXIT 1
+ECHO An error occurred %LEVEL%, exiting example ...
+REM Do not exit as this prevents the test run reporting correctly
+GOTO end
+
 :end
+
+ospl stop
+if %ERRORLEVEL% NEQ 0 ECHO Error stopping ospl
+
+sleep 4

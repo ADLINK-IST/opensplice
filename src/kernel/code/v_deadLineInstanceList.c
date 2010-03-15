@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__deadLineInstanceList.h"
@@ -36,13 +36,19 @@ v_deadLineInstanceListNew(
     assert(type);
     list = c_new(type);
     c_free(type);
-    v_objectKind(list) = K_DEADLINEINSTANCE;
-    v_instanceInit(v_instance(list));
-    list->leaseManager = c_keep(leaseManager);
-    list->leaseDuration = leaseDuration;
-    list->deadlineLease = NULL;
-    list->actionObject = o; /* no keep, since actionObject is onwer of v_deadLineInstanceList */
-    list->actionId = actionId;
+    if (list) {
+        v_objectKind(list) = K_DEADLINEINSTANCE;
+        v_instanceInit(v_instance(list));
+        list->leaseManager = c_keep(leaseManager);
+        list->leaseDuration = leaseDuration;
+        list->deadlineLease = NULL;
+        list->actionObject = o; /* no keep, since actionObject is onwer of v_deadLineInstanceList */
+        list->actionId = actionId;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_deadLineInstanceListNew",0,
+                  "Failed to allocate v_deadLineInstanceList.");
+    }
 
     return list;
 }
@@ -69,8 +75,7 @@ v_deadLineInstanceListSetDuration(
 
     list->leaseDuration = duration;
     if (list->deadlineLease != NULL) {
-        if ((c_timeCompare(duration, C_TIME_ZERO) != C_EQ) &&
-            (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ)) {
+        if (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ) {
             v_leaseRenew(list->deadlineLease,duration);
         } else {
             v_leaseManagerDeregister(list->leaseManager, list->deadlineLease);
@@ -79,7 +84,6 @@ v_deadLineInstanceListSetDuration(
         }
     } else {
         if ((v_objectKind(v_instance(list)->prev) != K_DEADLINEINSTANCE) &&  /* not in list */
-            (c_timeCompare(duration, C_TIME_ZERO) != C_EQ) &&
             (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ)) { /* new instance */
             list->deadlineLease = v_leaseManagerRegister(list->leaseManager,
                                                          v_public(list->actionObject),
@@ -110,8 +114,7 @@ v_deadLineInstanceListInsertInstance(
     v_instanceUpdate(instance); /* Updates instance checkTime */
     v_instanceAppend(head,instance);
     if (list->deadlineLease == NULL) {
-        if ((c_timeCompare(list->leaseDuration, C_TIME_ZERO) != C_EQ) &&
-            (c_timeCompare(list->leaseDuration, C_TIME_INFINITE) != C_EQ)) {
+        if (c_timeCompare(list->leaseDuration, C_TIME_INFINITE) != C_EQ) {
             list->deadlineLease = v_leaseManagerRegister(list->leaseManager,
                                                          v_public(list->actionObject),
                                                          list->leaseDuration,
@@ -206,7 +209,7 @@ v_deadLineInstanceListCheckDeadlineMissed(
              */
             expiryTime = deadlineTime;
         } else {
-            /* 
+            /*
              * The new lease duration can be calculated:
              * lastCheckTime + deadlineTime = next expiry time
              * next expiry time - now = lease duration

@@ -27,7 +27,7 @@
 #include "v__networkReader.h" /* Friend class */
 #include "v_public.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_writerInstance.h"
 
 #ifdef __VERBOSE__

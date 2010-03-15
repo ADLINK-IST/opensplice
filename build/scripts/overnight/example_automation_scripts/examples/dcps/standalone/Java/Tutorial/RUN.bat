@@ -1,27 +1,43 @@
 @ECHO OFF
-set SLEEP2=@ping -n 2 localhost
-set SLEEP4=@ping -n 4 localhost
-set SLEEP10=@ping -n 10 localhost
 
 REM start OpenSplice
 
+ECHO Starting ospl
+SET LEVEL=Starting ospl
 ospl start 
+if %ERRORLEVEL% NEQ 0 ECHO An error occurred starting ospl %ERRORLEVEL%
 
-%SLEEP10% >NUL
+sleep 4
 
-REM start MessageBoard
+ECHO Starting MessageBoard
+SET LEVEL=Starting MessageBoard
 start java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;bld" chatroom.MessageBoard 
+if %ERRORLEVEL% NEQ 0 ECHO An error occurred starting MessageBoard %ERRORLEVEL%
 
-%SLEEP4% >NUL
+sleep 4
 
-ECHO start Chatter
+ECHO Starting Chatter
+SET LEVEL=Starting Chatter
 call java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;bld" chatroom.Chatter
+if %ERRORLEVEL% NEQ 0 GOTO error
 
-%SLEEP2% >NUL
+sleep 4
 
-ECHO start Chatter with terminate message
+ECHO Starting Chatter with terminate message
+SET LEVEL=Starting Chatter with -1
 call java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;bld" chatroom.Chatter -1
+if %ERRORLEVEL% NEQ 0 GOTO error
 
-%SLEEP4% >NUL
+GOTO end
+
+:error
+ECHO An error occurred %LEVEL%, exiting example ...
+REM Do not exit as this prevents the test run reporting correctly
+GOTO end
+
+:end
 
 ospl stop
+if %ERRORLEVEL% NEQ 0 ECHO Error stopping ospl
+
+sleep 4

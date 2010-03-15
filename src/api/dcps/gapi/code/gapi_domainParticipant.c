@@ -357,12 +357,11 @@ _DomainParticipantNew (
     v_participantQos participantQos = NULL;
     u_participant uParticipant;
     char participantId[256];
-    c_bool enable = TRUE;
 
     newParticipant = allocateParticipant();
 
     if (newParticipant != NULL) {
-        _EntityInit (_Entity(newParticipant), NULL, NULL, enable);
+        _EntityInit (_Entity(newParticipant), NULL, NULL, FALSE);
         if ( domainId ) {
             newParticipant->_DomainId = gapi_strdup(domainId);
         } else {
@@ -405,9 +404,11 @@ _DomainParticipantNew (
     }
 
     if (newParticipant != NULL) {
+        int id = os_procIdToInteger (os_procIdSelf());
+
         snprintf (participantId, sizeof (participantId), "DPCS Appl %d_%d_"PA_ADDRFMT,
-            (int)os_procIdSelf(), (int)os_threadIdSelf(), (PA_ADDRCAST)newParticipant);
-        uParticipant = u_participantNew (domainId, 1, participantId, (v_qos)participantQos, enable);
+            id, (int)os_threadIdSelf(), (PA_ADDRCAST)newParticipant);
+        uParticipant = u_participantNew (domainId, 1, participantId, (v_qos)participantQos, FALSE);
         if ( uParticipant != NULL ) {
              U_PARTICIPANT_SET(newParticipant, uParticipant);
         } else {

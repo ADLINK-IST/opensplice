@@ -330,28 +330,28 @@ preprocessor_directive(char *str)
 {
     int lineNumber, length;
     char *fileName, *ptr;
-    c_iter keyListItems;
+    c_iter pragmaItems;
     char *pragmaName, *typeName, *fieldName, *newFieldName;
-    char keyListString[1000];
+    char valueString[1000];
     c_metaObject mo;
 
     str++; /* skip # */
     if (strncmp(str, "pragma", 6) == 0) {
         str += 7;
-        keyListItems = c_splitString(str, " ,\t\r\n");
-        pragmaName = c_iterTakeFirst(keyListItems);
+        pragmaItems = c_splitString(str, " ,\t\r\n");
+        pragmaName = c_iterTakeFirst(pragmaItems);
         if (pragmaName && strcmp(pragmaName, "keylist") == 0) {
-            typeName = c_iterTakeFirst(keyListItems);
+            typeName = c_iterTakeFirst(pragmaItems);
             if (typeName) {
                 if (idl_checkKeyListTypeName(scope, typeName, yyerror) == 0) {
                     mo = c_metaObject(c_metaFindByName (scope, typeName, CQ_METAOBJECTS));
                 } else {
                     mo = NULL;
                 }
-                keyListString[0] = '\0';
+                valueString[0] = '\0';
                 if (mo) {
-                    while (c_iterLength(keyListItems)) {
-                        fieldName = c_iterTakeFirst(keyListItems);
+                    while (c_iterLength(pragmaItems)) {
+                        fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
                             newFieldName = (char *)os_malloc(strlen(fieldName));
                             strcpy(newFieldName, &(fieldName[1]));
@@ -359,13 +359,40 @@ preprocessor_directive(char *str)
                             fieldName = newFieldName;
                         }
                         idl_checkKeyListFieldName(mo, fieldName, yyerror);
-                        strcat(keyListString, fieldName);
-                        if (c_iterLength(keyListItems)) {
-                            strcat(keyListString, ",");
+                        strcat(valueString, fieldName);
+                        if (c_iterLength(pragmaItems)) {
+                            strcat(valueString, ",");
                         }
                     }
                 }
-                idl_keyDefAdd (idl_keyDefDefGet(), scope, typeName, keyListString);
+                idl_keyDefAdd (idl_keyDefDefGet(), scope, typeName, valueString);
+            }
+        } else if(pragmaName && strcmp(pragmaName, "cats") == 0) {
+            typeName = c_iterTakeFirst(pragmaItems);
+            if (typeName) {
+                if (idl_checkKeyListTypeName(scope, typeName, yyerror) == 0) {
+                    mo = c_metaObject(c_metaFindByName (scope, typeName, CQ_METAOBJECTS));
+                } else {
+                    mo = NULL;
+                }
+                valueString[0] = '\0';
+                if (mo) {
+                    while (c_iterLength(pragmaItems)) {
+                        fieldName = c_iterTakeFirst(pragmaItems);
+                        if (fieldName[0] == '_') { /* escape character, which must be removed */
+                            newFieldName = (char *)os_malloc(strlen(fieldName));
+                            strcpy(newFieldName, &(fieldName[1]));
+                            os_free(fieldName);
+                            fieldName = newFieldName;
+                        }
+                        idl_checkKeyListFieldName(mo, fieldName, yyerror);
+                        strcat(valueString, fieldName);
+                        if (c_iterLength(pragmaItems)) {
+                            strcat(valueString, ",");
+                        }
+                    }
+                }
+                idl_catsDefAdd (idl_catsDefDefGet(), scope, typeName, valueString);
             }
         }
     }

@@ -142,6 +142,9 @@ OS_API os_int32
 os_unregisterReportService(
     os_IReportService_s reportServiceContext);
 
+OS_API void
+os_reportDisplayLogLocations();
+
 #undef OS_API
 
 #if defined (__cplusplus)

@@ -25,11 +25,17 @@
 #include "v_entity.h"      /* for v_entity()     */
 #include "v_group.h"       /* for v_groupWrite() */
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "u_networkReader.h"
 #include "v_networkReader.h"
 #include "v_networkReaderEntry.h"
+#include "v_networkingStatistics.h"
+#include "v_networking.h"
+#include "v_subscriber.h"
 #include "nw_report.h"
+#include "nw_statistics.h"
+#include "nw_security.h"
+
 
 
 /* ------------------------------- Private ---------------------------------- */
@@ -44,6 +50,8 @@ C_STRUCT(nw_channelReader){
     nw_writer writer;
     /* Tracing parameter */
     c_ulong reportInterval;
+    c_ulong stat_channel_id;
+    nw_ReceiveChannelStatistics rcs;
 };
 
 typedef c_voidp nw_channelOnNewGroupArg;
@@ -142,6 +150,18 @@ onLookupEntryAction(
     return result;
 }
 
+void nw_updatePlugReceiveStatistics(plugReceiveStatistics prs, nw_channelReader channelReader) {
+	channelReader->rcs->numberOfMessagesReceived = prs->numberOfMessagesReceived;
+	channelReader->rcs->numberOfBytesDelivered = prs->numberOfBytesDelivered;
+	channelReader->rcs->numberOfBytesNotInterested = prs->numberOfBytesNotInterested;
+	channelReader->rcs->numberOfBytesReceived = prs->numberOfBytesReceived;
+	channelReader->rcs->numberOfMessagesDelivered = prs->numberOfMessagesDelivered;
+	channelReader->rcs->numberOfMessagesNotInterested = prs->numberOfMessagesNotInterested;
+	channelReader->rcs->numberOfPacketsLost = prs->numberOfPacketsLost;
+	channelReader->rcs->numberOfPacketsReceived = prs->numberOfPacketsReceived;
+	channelReader->rcs->nofFreePacketBuffers = prs->nofFreePacketBuffers;
+	channelReader->rcs->nofUsedPacketBuffers = prs->nofUsedPacketBuffers;
+}
 
 static void
 nw_channelReaderMain(
@@ -155,21 +175,59 @@ nw_channelReaderMain(
     struct nw_endpointInfo endpointInfo = {0, {0,0,0}, FALSE, {0,0,0}}; /*p2p preparation*/
     c_ulong messagesReceived;
     c_ulong messagesReceivedReport;
+    v_networking n;
+    v_subscriber sub;
+    v_reader r;
+    os_time nextupdate = {0,0};
+    os_time now;
+    os_time period = {0,20e6}; /* todo resolution time */
+    NW_STRUCT(plugReceiveStatistics) prs = {0};
 
     reader = v_networkReader(e);
     channelReader = (nw_channelReader)arg;
     messagesReceived = 0;
     messagesReceivedReport = 0;
 
+
     while (!(int)nw_runnableTerminationRequested((nw_runnable)channelReader)) {
 
+        /* lastupdate time compare to resolution time
+         * lastupdate > resolution = update statsistics
+         */
+    	 now = os_hrtimeGet();
+         if (os_timeCompare(now,nextupdate) == OS_MORE) {
+        		 nextupdate = now;
+        		 nextupdate = os_timeAdd(nextupdate,period);
+        		 r = v_reader(reader);
+				 sub = v_subscriber(r->subscriber);
+				 n = v_networking(sub->participant);
+				 nw_updatePlugReceiveStatistics(&prs,channelReader);
+				 if (v_entity(n)->statistics) {
+					 nw_ReceiveChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelReader->stat_channel_id],channelReader->rcs);
+				 }
+         }
+
+  	
         /* Read messages from the network */
         nw_receiveChannelRead(channelReader->receiveChannel,
                               &message,
                               &entry,
                               onLookupEntryAction,
-                              channelReader);
+                              channelReader,
+                              &prs);
+
+       
+        if (entry != NULL &&
+    		   !(NW_SECURITY_CHECK_FOR_SUBSCRIBE_PERMISSION_OF_RECEIVER(entry))) {
+       
+    	   /* drop the message */ 
+    	   c_free(message);
+    	   message = NULL;
+    	   entry = NULL; 
+        } 
+    
         if (entry != NULL) {
+
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')
 
             /* Do not trace for internal partitions */
@@ -259,7 +317,8 @@ nw_channelReader
 nw_channelReaderNew(
     const char *pathName,
     nw_receiveChannel receiveChannel,
-    u_networkReader reader)
+    u_networkReader reader,
+    c_ulong stat_channel_id)
 {
     nw_channelReader result = NULL;
     char *tmpPath;
@@ -296,6 +355,8 @@ nw_channelReaderNew(
                 result->reportInterval, pathName, NWCF_MIN(ReportInterval));
             result->reportInterval = NWCF_MIN(ReportInterval);
         }
+        result->rcs = nw_ReceiveChannelStatisticsNew();
+        result->stat_channel_id = stat_channel_id;
         os_free(tmpPath);
 
         tmpPathSize =  strlen(pathName) + strlen(NWCF_SEP) +

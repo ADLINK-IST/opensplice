@@ -11,6 +11,7 @@
  */
 #include "v_historicalDataRequest.h"
 #include "v_policy.h"
+#include "os_report.h"
 
 v_historicalDataRequest
 v_historicalDataRequestNew(
@@ -29,30 +30,36 @@ v_historicalDataRequestNew(
 
     request = c_new(v_kernelType(kernel,K_HISTORICALDATAREQUEST));
 
-    if(filter){
-        base            = c_getBase(kernel);
-        request->filter = c_stringNew(base, filter);
+    if (request) {
+        if(filter){
+            base            = c_getBase(kernel);
+            request->filter = c_stringNew(base, filter);
 
-        if(params){
-            type                  = c_string_t(base);
-            request->filterParams = c_arrayNew(type, nofParams);
+            if(params){
+                type                  = c_string_t(base);
+                request->filterParams = c_arrayNew(type, nofParams);
 
-            for(i=0; i<nofParams; i++){
-                request->filterParams[i] = c_stringNew(base, params[i]);
+                for(i=0; i<nofParams; i++){
+                    request->filterParams[i] = c_stringNew(base, params[i]);
+                }
+            } else {
+                request->filterParams = NULL;
             }
         } else {
+            request->filter       = NULL;
             request->filterParams = NULL;
         }
-    } else {
-        request->filter       = NULL;
-        request->filterParams = NULL;
-    }
-    request->minSourceTimestamp  = minSourceTime;
-    request->maxSourceTimestamp  = maxSourceTime;
+        request->minSourceTimestamp  = minSourceTime;
+        request->maxSourceTimestamp  = maxSourceTime;
 
-    request->resourceLimits.max_samples              = resourceLimits->max_samples;
-    request->resourceLimits.max_instances            = resourceLimits->max_instances;
-    request->resourceLimits.max_samples_per_instance = resourceLimits->max_samples_per_instance;
+        request->resourceLimits.max_samples              = resourceLimits->max_samples;
+        request->resourceLimits.max_instances            = resourceLimits->max_instances;
+        request->resourceLimits.max_samples_per_instance = resourceLimits->max_samples_per_instance;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_historicalDataRequestNew",0,
+                  "Failed to allocate request.");
+    }
 
     return request;
 }

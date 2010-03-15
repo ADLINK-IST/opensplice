@@ -50,7 +50,8 @@ C_STRUCT(jni_participantFactory){
  * 
  * @return The participant factory instance.
  */
-OS_API jni_participantFactory  jni_getParticipantFactoryInstance   ();
+OS_API jni_participantFactory
+jni_getParticipantFactoryInstance ();
 
 /**@brief Explicitly deletes the participant factory. 
  * 
@@ -58,7 +59,8 @@ OS_API jni_participantFactory  jni_getParticipantFactoryInstance   ();
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-OS_API jni_result              jni_deleteParticipantFactory        ();
+OS_API jni_result
+jni_deleteParticipantFactory ();
 
 /**@brief Creates a new participant in a specified Domain.
  * 
@@ -69,9 +71,11 @@ OS_API jni_result              jni_deleteParticipantFactory        ();
  * @return The newly created participant. If the operation failed, NULL is 
  * returned.
  */
-OS_API jni_participant         jni_createParticipant           (jni_participantFactory pf,
-                                                                long domainId, 
-                                                                v_qos qos);
+OS_API jni_participant
+jni_createParticipant (
+    jni_participantFactory pf,
+    long domainId, 
+    v_qos qos);
 
 /**@brief Deletes a participant. 
  * 
@@ -83,7 +87,9 @@ OS_API jni_participant         jni_createParticipant           (jni_participantF
  * 
  * @return JNI_RESULT_OK of succeeded, any other jni_result otherwise.
  */
-OS_API jni_result              jni_deleteParticipant               (jni_participant p);
+OS_API jni_result
+jni_deleteParticipant (
+    jni_participant p);
 
 
 #undef OS_API

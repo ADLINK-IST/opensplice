@@ -46,10 +46,17 @@ C_STRUCT(watchSplicedAdmin) {
 static os_int32
 serviceTermHandler(os_terminationType reason)
 {
-    OS_REPORT_1(OS_WARNING, "serviceTermHandler", 0,
-                "Caught termination request: %d. Please use 'ospl stop' for termination.",
-                reason);
-    return 0; /* stop termination process */
+    os_int32 result = 0;
+
+	if (reason == OS_TERMINATION_NORMAL){
+        OS_REPORT_1(OS_WARNING, "serviceTermHandler", 0,
+                    "Caught termination request: %d. Please use 'ospl stop' for termination.",
+                    reason);
+		result = 0;  /* stop termination process */
+	} else {   /* OS_TERMINATION_ERROR */
+	    result = 1;  /* continue termination process */
+	}
+    return result; 
 }
 
 static u_result
@@ -209,6 +216,7 @@ u_serviceNew(
         return NULL;
     }
 
+	
     s = NULL;
     if (k != NULL) {
         r = u_kernelClaim(k,&kk);
@@ -293,6 +301,7 @@ u_serviceFree(
     u_kernel kernel;
 
     if (service != NULL) {
+
         if (u_entity(service)->flags & U_ECREATE_INITIALISED) {
             kernel = u_participant(service)->kernel;
             r = u_serviceDeinit(service);
@@ -300,7 +309,7 @@ u_serviceFree(
             u_userKernelClose(kernel);
         } else {
             r = u_entityFree(u_entity(service));
-	}
+		}
     } else {
         OS_REPORT(OS_WARNING,"u_serviceFree",0,
                   "The specified Service = NIL>");
@@ -317,7 +326,6 @@ u_serviceInit(
 {
     u_result r;
     watchSplicedAdmin admin;
-
 
     if ((service != NULL) && (kernel != NULL)) {
         admin = watchSplicedAdmin(os_malloc((os_uint32)C_SIZEOF(watchSplicedAdmin)));
@@ -355,6 +363,7 @@ u_serviceDeinit(
     u_result r;
     watchSplicedAdmin admin;
     if (service != NULL) {
+
         u_dispatcherRemoveListener(u_dispatcher(service),
                                    u_serviceSpliceListener);
         admin = watchSplicedAdmin(service->privateData);

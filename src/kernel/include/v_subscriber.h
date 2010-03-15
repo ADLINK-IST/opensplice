@@ -18,7 +18,7 @@ extern "C" {
 
 #include "v_kernel.h"
 #include "v_entity.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_reader.h"
 #include "v_participant.h"
 #include "v_subscriberQos.h"
@@ -63,22 +63,22 @@ v_subscriberDeinit(
 OS_API void
 v_subscriberSubscribe(
     v_subscriber _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API void
 v_subscriberUnSubscribe(
     v_subscriber _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API c_iter
-v_subscriberLookupDomains(
+v_subscriberLookupPartitions(
     v_subscriber _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API c_bool
-v_subscriberCheckDomainInterest(
+v_subscriberCheckPartitionInterest(
     v_subscriber _this,
-    v_domain domain);
+    v_partition partition);
 
 OS_API void
 v_subscriberAddReader(

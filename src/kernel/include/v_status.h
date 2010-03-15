@@ -32,7 +32,7 @@
  */
 #define v_status(s)            (C_CAST(s,v_status))
 #define v_kernelStatus(s)      (C_CAST(s,v_kernelStatus))
-#define v_domainStatus(s)      (C_CAST(s,v_domainStatus))
+#define v_partitionStatus(s)      (C_CAST(s,v_partitionStatus))
 #define v_topicStatus(s)       (C_CAST(s,v_topicStatus))
 #define v_writerStatus(s)      (C_CAST(s,v_writerStatus))
 #define v_readerStatus(s)      (C_CAST(s,v_readerStatus))

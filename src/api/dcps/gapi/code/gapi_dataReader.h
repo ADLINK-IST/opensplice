@@ -69,6 +69,7 @@ C_STRUCT(_DataReader) {
     gapi_set                        conditionSet;
     gapi_set                        viewSet;
     gapi_loanRegistry               loanRegistry;
+    gapi_dataReaderViewQos          _defDataReaderViewQos;
 };
 
 typedef enum {

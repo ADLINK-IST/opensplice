@@ -26,6 +26,7 @@
 #define PUBLISHER_QOS_DEFAULT           (*::DDS::DomainParticipantFactory::publisher_qos_default())
 #define SUBSCRIBER_QOS_DEFAULT          (*::DDS::DomainParticipantFactory::subscriber_qos_default())
 #define DATAREADER_QOS_DEFAULT          (*::DDS::DomainParticipantFactory::datareader_qos_default())
+#define DATAREADERVIEW_QOS_DEFAULT      (*::DDS::DomainParticipantFactory::datareaderview_qos_default())
 #define DATAREADER_QOS_USE_TOPIC_QOS    (*::DDS::DomainParticipantFactory::datareader_qos_use_topic_qos())
 #define DATAWRITER_QOS_DEFAULT          (*::DDS::DomainParticipantFactory::datawriter_qos_default())
 #define DATAWRITER_QOS_USE_TOPIC_QOS    (*::DDS::DomainParticipantFactory::datawriter_qos_use_topic_qos())

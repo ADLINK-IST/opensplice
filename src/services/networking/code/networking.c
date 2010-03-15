@@ -22,6 +22,14 @@
 #include <include/os_getRSObjects.h>
 #endif
 
+#include "os.h"
+
+
+static nw_controller controller = NULL;
+static u_service service = NULL;
+c_bool f_exit = FALSE;
+
+
 static void
 nw_splicedaemonListener(
     v_serviceStateKind spliceDaemonState,
@@ -44,10 +52,28 @@ nw_splicedaemonListener(
 static void
 controller_onfatal(c_voidp usrData)
 {
-    c_bool *terminate = (c_bool *)usrData;
+    c_bool *fatal = (c_bool *)usrData;
 
     NW_REPORT_ERROR("controller_termination", "Terminated due to a Fatal Error");
-    *terminate = TRUE;
+    *fatal = TRUE;
+}
+
+
+static void
+on_exit_handler(void)
+{
+    v_duration leasePeriod;
+	if (controller) {
+		NW_REPORT_ERROR("controller_termination", "Terminated due to a signal");
+		
+		NW_TRACE(Mainloop, 1, "Networking exit handler");
+		nw_controllerStop(controller);
+		leasePeriod.seconds = -1;
+		leasePeriod.nanoseconds = 0;
+		u_participantRenewLease(u_participant(service), leasePeriod);
+		f_exit = TRUE;
+	}
+	
 }
 
 
@@ -79,11 +105,10 @@ nw_serviceMain(
     const char *serviceName,
     const char *URI)
 {
-    u_service service;
     u_serviceManager serviceManager;
-    nw_controller controller;
     os_time sleepTime;
     c_bool terminate = FALSE;
+	c_bool fatal = FALSE;
     v_duration leasePeriod;
 
      /* Create networking service with kernel */
@@ -97,12 +122,14 @@ nw_serviceMain(
 
     /* Create the controller which starts the updating */
     /* and calls the listener on a fatal error */
-    controller = nw_controllerNew(service,controller_onfatal,&terminate);
+    controller = nw_controllerNew(service,controller_onfatal,&fatal);
 
     if (controller) {
+		os_procAtExit(on_exit_handler);
         /* Start the actual engine */
         NW_REPORT_INFO(1, "Networking started");
         NW_TRACE(Mainloop, 1, "Networking started");
+		
         nw_controllerStart(controller);
         /* Change state for spliced */
         u_serviceChangeState(service, STATE_INITIALISING);
@@ -114,7 +141,7 @@ nw_serviceMain(
         /* Loop until termination is requested */
         u_serviceWatchSpliceDaemon(service, nw_splicedaemonListener,
                                    &terminate);
-        while (!(int)terminate) {
+        while ((!(int)terminate) && (!(int)fatal) && (!(int)f_exit)) {
             /* Assert my liveliness and the Splicedaemon's liveliness*/
             u_participantRenewLease(u_participant(service), leasePeriod);
             /* Check if anybody is still remotely interested */
@@ -123,37 +150,40 @@ nw_serviceMain(
             os_nanoSleep(sleepTime);
 /* QAC EXPECT 2467; Control variable, terminate, not modified inside loop. That is correct, it is modified by another thread */
         }
-        leasePeriod.seconds = 20;
-        leasePeriod.nanoseconds = 0;
-        u_participantRenewLease(u_participant(service), leasePeriod);
-        u_serviceChangeState(service, STATE_TERMINATING);
-        nw_controllerStop(controller);
-        nw_controllerFree(controller);
-        NW_REPORT_INFO(1, "Networking stopped");
-        NW_TRACE(Mainloop, 1, "Networking stopped");
-    }
-    nw_configurationFinalize();
+		/* keep process here waiting for the exit processing */
+		while ((int)f_exit){os_nanoSleep(sleepTime);}
+		
+		if (!(int)fatal ) {
+			leasePeriod.seconds = 20;
+			leasePeriod.nanoseconds = 0;
+			u_participantRenewLease(u_participant(service), leasePeriod);
+	        u_serviceChangeState(service, STATE_TERMINATING);
 
-    /* Clean up */
-    u_serviceChangeState(service, STATE_TERMINATED);
-    u_serviceManagerFree(serviceManager);
-    u_serviceFree(service);
+	        nw_controllerStop(controller);
+	        nw_controllerFree(controller);
+			controller = NULL;
+	        NW_REPORT_INFO(1, "Networking stopped");
+	        NW_TRACE(Mainloop, 1, "Networking stopped");
+		}
+    }
+	if (!(int)fatal ) {
+	    nw_configurationFinalize();
+
+	    /* Clean up */
+	    u_serviceChangeState(service, STATE_TERMINATED);
+		u_serviceManagerFree(serviceManager);
+			
+		u_serviceFree(service);
+	}
 }
 
 #undef NW_SERVICE_NAME
 #define NW_ATTACH_TIMEOUT (30)
-
-#ifdef OSPL_ENV_SHMT
+ 
 int
 ospl_main(
     int argc,
     char *argv[])
-#else
-int
-main(
-    int argc,
-    char *argv[])
-#endif
 {
     u_result retVal;
     char *name;
@@ -221,4 +251,50 @@ main(
     return 0;
 
 }
+/*
+struct updateStatistics {
+	nw_networkingStatisticsCallback callback;
+    c_voidp userData;
+};
+
+static void
+nw_networkingUpdateStatisticsCallback(
+    v_entity entity,
+    c_voidp args)
+{
+    struct updateStatistics* update;
+
+
+    if(entity->statistics){
+        update = (struct updateStatistics*)args;
+        update->callback(v_networkingStatistics(entity->statistics), update->userData);
+    }
+    return;
+}
+
+void
+nw_networkingUpdateStatistics(
+	nw_networking networking,
+	nw_networkingStatisticsCallback callback,
+    c_voidp args)
+{
+    struct updateStatistics update;
+
+    update.callback = callback;
+    update.userData = args;
+
+    u_entityAction(u_entity(networking->service), v_networkingUpdateStatisticsCallback, &update);
+}*/
+
+
+#if ( !(defined(OSPL_ENV_SHMT)  || defined(NW_SECURITY)))
+int
+main(
+    int argc,
+    char *argv[])
+{
+    return ospl_main(argc, argv);
+}
+#endif
+
 

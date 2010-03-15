@@ -23,19 +23,29 @@ typedef os_uint32     nw_address;
 typedef os_char      *nw_name;
 typedef os_boolean    nw_bool;
 
-typedef void (*nw_onFatalCallBack)(c_voidp usrData);
+/*
+ * SenderInfo contains all information about a message sender. 
+ * This may be used for for authentication (subject lookup) but used for 
+ * other things too
+ */
+NW_CLASS(nw_senderInfo);
+NW_STRUCT(nw_senderInfo) {
+    nw_address ipAddress;
+    const char* dn; /* reference, does not take ownership*/
+};
 
 #define NW_STRING_TERMINATOR ((char)'\0')
 
-#ifdef FALSE
-#undef FALSE
+typedef void (*nw_onFatalCallBack)(c_voidp usrData);
+
+#ifndef FALSE 
+#define FALSE              (0)
 #endif
 
+/*windows.h defines TRUE to 1*/
 #ifdef TRUE
 #undef TRUE
 #endif
-
-#define FALSE              (0)
 #define TRUE               (!FALSE)
 
 #ifdef NULL
@@ -46,6 +56,8 @@ typedef void (*nw_onFatalCallBack)(c_voidp usrData);
 
 #define NW_ID_UNDEFINED    (0U)
 
+
+typedef enum nw_eq_e {NW_UNDEFINED, NW_LT, NW_EQ, NW_GT} nw_eq;
 
 
 #endif /* NW_COMMONTYPES_H */

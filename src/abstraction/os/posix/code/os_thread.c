@@ -440,6 +440,7 @@ os_threadFigureIdentity (
     return size;
 }
 
+#ifndef VXWORKS_RTP
 /** \brief Wait for the termination of the identified thread
  *
  * \b os_threadWaitExit wait for the termination of the
@@ -456,7 +457,7 @@ os_threadWaitExit (
 
     assert (threadId);
     result = pthread_join (threadId, thread_result);
-    if (result) {
+    if (result != 0) {
         OS_REPORT_1 (OS_ERROR, "os_threadWaitExit", 2, "pthread_join failed with error %d", result);
         rv = os_resultFail;
     } else {
@@ -464,6 +465,7 @@ os_threadWaitExit (
     }
     return rv;
 }
+#endif
 
 /** \brief Allocate thread private memory
  *

@@ -16,6 +16,7 @@
 #include "v__entry.h"
 #include "v_query.h"
 #include "v__dataReader.h"
+#include "v__deliveryService.h"
 #include "v__groupStream.h"
 #include "v__networkReader.h"
 #include "v_entity.h"
@@ -27,7 +28,7 @@
 #include "v_time.h"
 #include "v_proxy.h"
 #include "v_policy.h"
-#include "v__domain.h"
+#include "v__partition.h"
 #include "v_observable.h"
 #include "v_historicalDataRequest.h"
 
@@ -198,8 +199,8 @@ v_readerSubscribeGroup(
          * the access rights are correct. No subscriptions may be made onto
          * groups which have a v_accessMode of write only.
          */
-        if(v_groupDomainAccessMode(group) == V_ACCESS_MODE_READ_WRITE ||
-           v_groupDomainAccessMode(group) == V_ACCESS_MODE_READ)
+        if(v_groupPartitionAccessMode(group) == V_ACCESS_MODE_READ_WRITE ||
+           v_groupPartitionAccessMode(group) == V_ACCESS_MODE_READ)
         {
             result = v_dataReaderSubscribeGroup(v_dataReader(_this), group);
             readerGetHistoricalData(_this);
@@ -296,6 +297,24 @@ v_readerWalkEntries(
     return result;
 }
 
+c_iter
+v_readerCollectEntries(
+    v_reader r)
+{
+    c_iter result;
+
+    assert(C_TYPECHECK(r,v_reader));
+
+    if(r){
+        v_readerEntrySetLock(r);
+        result = c_select(r->entrySet.entries, 0);
+        v_readerEntrySetUnlock(r);
+    } else {
+        result = NULL;
+    }
+    return result;
+}
+
 v_entry
 v_readerAddEntry(
     v_reader r,
@@ -335,7 +354,7 @@ v_readerRemoveEntry(
 c_bool
 v_readerSubscribe(
     v_reader r,
-    v_domain d)
+    v_partition d)
 {
     c_bool result;
 
@@ -344,6 +363,9 @@ v_readerSubscribe(
     switch(v_objectKind(r)) {
     case K_DATAREADER:
         result = v_dataReaderSubscribe(v_dataReader(r),d);
+    break;
+    case K_DELIVERYSERVICE:
+        result = v_deliveryServiceSubscribe(v_deliveryService(r),d);
     break;
     case K_GROUPQUEUE:
         result = v_groupStreamSubscribe(v_groupStream(r),d);
@@ -367,13 +389,15 @@ v_readerSubscribe(
 c_bool
 v_readerUnSubscribe(
     v_reader r,
-    v_domain d)
+    v_partition d)
 {
     assert(C_TYPECHECK(r,v_reader));
 
     switch(v_objectKind(r)) {
     case K_DATAREADER:
         return v_dataReaderUnSubscribe(v_dataReader(r),d);
+    case K_DELIVERYSERVICE:
+        return v_deliveryServiceUnSubscribe(v_deliveryService(r),d);
     case K_GROUPQUEUE:
         return v_groupStreamUnSubscribe(v_groupStream(r),d);
     case K_NETWORKREADER:

@@ -15,7 +15,6 @@
 #include "u__usrClock.h"
 #include "v_kernel.h"
 #include "v_entity.h"
-#include "os.h"
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "c_iterator.h"
@@ -656,25 +655,29 @@ u_kernelOpen(
     domainCfg.prioInherEnabled = FALSE;
 
     os_sharedAttrInit(&shm_attr);
-    if ((uri != NULL) && (strlen(uri) > 0)) {
-        s = cfg_parse_ospl(uri, &processConfig);
-        if (s == CFGPRS_OK) {
-            u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
-    	    u_usrClockInit (processConfig);
-            if (domainCfg.prioInherEnabled) {
-                os_mutexSetPriorityInheritanceMode(OS_TRUE);
+    if (uri != NULL) {
+        if (strlen(uri) > 0) {
+            s = cfg_parse_ospl(uri, &processConfig);
+            if (s == CFGPRS_OK) {
+                u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+    	        u_usrClockInit (processConfig);
+                if (domainCfg.prioInherEnabled) {
+                    os_mutexSetPriorityInheritanceMode(OS_TRUE);
+                }
+                shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
+            } else {
+                /* assume that the uri is the domain id */
+                shm = os_sharedCreateHandle(uri, &shm_attr);
+            }
+            if (processConfig != NULL) {
+                cf_elementFree(processConfig);
             }
         } else {
-            if (timeout >= 0) {
-                OS_REPORT_1(OS_ERROR, "u_kernelOpen", 0,
-                            "Cannot read configuration from URI: \"%s\".",uri);
-            }
+            shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
         }
-        if (processConfig != NULL) {
-            cf_elementFree(processConfig);
-        }
+    } else {
+        shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
     }
-    shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
     if (shm == NULL) {
         if (timeout >= 0) {
             OS_REPORT(OS_ERROR,"u_kernelOpen",0,
@@ -989,7 +992,7 @@ c_address
 u_kernelHandleServer(
     u_kernel kernel)
 {
-    return (c_long)kernel->kernel->handleServer;
+    return (c_address)kernel->kernel->handleServer;
 }
 
 c_voidp
@@ -1005,3 +1008,15 @@ u_kernelAddress(
     }
     return address;
 }
+
+os_sharedHandle
+u_kernelSharedMemoryHandle (
+    u_kernel kernel)
+{
+    if (kernel) {
+        return kernel->shm;
+    } else {
+        return NULL;
+    }
+}
+

@@ -4,7 +4,7 @@
 module DDS {
     typedef BUILTIN_TOPIC_KEY_TYPE_NATIVE BuiltinTopicKey_t[3];
 	typedef sequence<string> StringSeq;
-	
+
     struct Duration_t {
 		long sec;
 		unsigned long nanosec;
@@ -128,7 +128,7 @@ module DDS {
 		long max_instances;
 		long max_samples_per_instance;
     };
-    
+
     struct DurabilityServiceQosPolicy {
 	Duration_t service_cleanup_delay;
 	HistoryQosPolicyKind history_kind;

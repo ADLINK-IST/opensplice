@@ -105,7 +105,20 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
           myUD = new ccpp_UserData(publisher, a_listener);
           if (myUD)
           {
+            gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+            if(dpqos){
+                if(gapi_domainParticipant_get_qos(_gapi_self, dpqos) == GAPI_RETCODE_OK){
+                    if(dpqos->entity_factory.autoenable_created_entities) {
+                        gapi_entity_enable(handle);
+                    }
+                }
+                else
+                {
+                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain domainParticipantQos");
+                }
+                gapi_free(dpqos);
+            }
           }
           else
           {
@@ -238,7 +251,20 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
           myUD = new ccpp_UserData(subscriber, a_listener);
           if (myUD)
           {
+            gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+            if(dpqos){
+                if(gapi_domainParticipant_get_qos(_gapi_self, dpqos) == GAPI_RETCODE_OK){
+                    if(dpqos->entity_factory.autoenable_created_entities) {
+                        gapi_entity_enable(handle);
+                    }
+                }
+                else
+                {
+                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain domainParticipantQos");
+                }
+                gapi_free(dpqos);
+            }
           }
           else
           {
@@ -989,13 +1015,8 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_subscription (
 char * DDS::DomainParticipant_impl::get_domain_id (
 ) THROW_ORB_EXCEPTIONS
 {
-  char * gapi_name;
-  char * name;
-
-  gapi_name = gapi_domainParticipant_get_domain_id(_gapi_self);
-  name = CORBA::string_dup(gapi_name);
-  gapi_free(gapi_name);
-  return name;
+  CORBA::String_var the_domain_id = gapi_domainParticipant_get_domain_id(_gapi_self);
+  return the_domain_id._retn ();
 }
 
 DDS::ReturnCode_t DDS::DomainParticipant_impl::assert_liveliness (

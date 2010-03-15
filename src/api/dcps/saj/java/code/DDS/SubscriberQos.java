@@ -19,17 +19,19 @@ public final class SubscriberQos
   public DDS.PartitionQosPolicy partition = null;
   public DDS.GroupDataQosPolicy group_data = null;
   public DDS.EntityFactoryQosPolicy entity_factory = null;
-
+  public DDS.ShareQosPolicy share = null;
+  
   public SubscriberQos ()
   {
   } // ctor
 
-  public SubscriberQos (DDS.PresentationQosPolicy _presentation, DDS.PartitionQosPolicy _partition, DDS.GroupDataQosPolicy _group_data, DDS.EntityFactoryQosPolicy _entity_factory)
+  public SubscriberQos (DDS.PresentationQosPolicy _presentation, DDS.PartitionQosPolicy _partition, DDS.GroupDataQosPolicy _group_data, DDS.EntityFactoryQosPolicy _entity_factory, DDS.ShareQosPolicy _share)
   {
     presentation = _presentation;
     partition = _partition;
     group_data = _group_data;
     entity_factory = _entity_factory;
+    share = _share;
   } // ctor
 
 } // class SubscriberQos

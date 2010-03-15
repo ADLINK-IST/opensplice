@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IDL_TYPESPECIFIER_H
@@ -195,7 +195,7 @@ C_CLASS(idl_typeDef);
 
 idl_typeDef
 idl_typeDefNew (
-    idl_typeSpec referedType, 
+    idl_typeSpec referedType,
     idl_typeSpec actualType);
 
 void
@@ -210,6 +210,10 @@ idl_typeSpec
 idl_typeDefRefered (
     idl_typeDef typeDef);
 
+idl_typeSpec
+idl_typeDefResolveFully (
+    idl_typeSpec type);
+
 /***********************************************************
  * idl_typeUnion
  ***********************************************************/
@@ -220,7 +224,7 @@ C_CLASS(idl_typeUnion);
 
 idl_typeUnion
 idl_typeUnionNew (
-    idl_typeSpec switchKind, 
+    idl_typeSpec switchKind,
     c_long noCases);
 
 void

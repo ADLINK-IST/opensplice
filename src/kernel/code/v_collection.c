@@ -52,7 +52,17 @@ v_collectionFree(
 
     q = v_query(c_take(c->queries));
     while (q != NULL) {
+    	/* The v_publicFree shouldn't be here, because it should be the
+    	 * responsibility of the 'creator' of the query to have this
+    	 * knowledge and perform the v_publicFree. The only thing that should be
+		 * required here is freeing the reference to the query by doing a
+		 * c_free.
+		 *
+		 * Because it is not exactly clear where the v_publicFree should be
+		 * performed, it is performed here for now.
+		 */
         v_publicFree(v_public(q));
+        c_free(q);
         q = v_query(c_take(c->queries));
     }
     v_observerFree(v_observer(c));

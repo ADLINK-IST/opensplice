@@ -21,7 +21,7 @@
 #include "os.h"
 #include "c_iterator.h"
 
-#define U_DOMAIN_GET(t)       u_domain(U_ENTITY_GET(t))
+#define U_PARTITION_GET(t)       u_partition(U_ENTITY_GET(t))
 
 
 C_STRUCT(_DomainParticipantFactory) {
@@ -37,27 +37,27 @@ static os_uint TheFactoryInitialized = 0;
 
 static void factoryCleanup ( void );
 
-static v_domainQos
+static v_partitionQos
 newParticipantFactoryQos (
     void)
 {
-    v_domainQos ParticipantFactoryQos;
-    ParticipantFactoryQos = u_domainQosNew(NULL);
+    v_partitionQos ParticipantFactoryQos;
+    ParticipantFactoryQos = u_partitionQosNew(NULL);
     return ParticipantFactoryQos;
 }
 
 static void
 freeParticipantFactoryQos (
-    v_domainQos ParticipantFactoryQos)
+    v_partitionQos ParticipantFactoryQos)
 {
-    u_domainQosFree(ParticipantFactoryQos);
+    u_partitionQosFree(ParticipantFactoryQos);
 }
 
 #ifdef _RP_
 static gapi_boolean
 copyParticipantFactoryQosIn (
     const gapi_domainParticipantFactoryQos *srcQos,
-    v_domainQos dstQos)
+    v_partitionQos dstQos)
 {
     dstQos->entityFactory.autoenable_created_entities =
              srcQos->entity_factory.autoenable_created_entities;
@@ -68,7 +68,7 @@ copyParticipantFactoryQosIn (
 
 static gapi_boolean
 copyParticipantFactoryQosOut (
-    const v_domainQos  srcQos,
+    const v_partitionQos  srcQos,
     gapi_domainParticipantFactoryQos *dstQos)
 {
     assert(srcQos);
@@ -78,42 +78,6 @@ copyParticipantFactoryQosOut (
              srcQos->entityFactory.autoenable_created_entities;
 
     return TRUE;
-}
-
-
-static _DomainParticipantFactory
-_DomainParticipantFactoryNew(
-    void)
-{
-    os_mutexAttr attr;
-    _DomainParticipantFactory _this = _DomainParticipantFactoryAlloc();
-
-    if (_this != NULL) {
-        _this->DomainParticipantList = c_iterNew (NULL);
-        memset (&_this->defaultQos, 0,
-                sizeof(_this->defaultQos));
-        gapi_domainParticipantQosCopy (&gapi_domainParticipantQosDefault,
-                                       &_this->defaultQos);
-        if (u_userInitialise() != U_RESULT_OK) {
-            c_iterFree (_this->DomainParticipantList);
-            _EntityDelete(_this);
-            _this = NULL;
-        } else {
-            os_mutexAttrInit(&attr);
-            attr.scopeAttr = OS_SCOPE_PRIVATE;
-            os_mutexInit(&_this->mtx, &attr);
-        }
-    }
-
-    if ( _this ) {
-        _this->registry = _ObjectRegistryNew();
-    }
-
-    gapi_expressionInitParser();
-
-    os_procAtExit(factoryCleanup);
-
-    return _this;
 }
 
 void
@@ -135,16 +99,16 @@ _DomainParticipantFactoryGetQos (
     gapi_domainParticipantFactoryQos *qos)
 {
 #ifdef _RP_
-    v_domainQos domainQos;
-    u_domain uDomain;
+    v_partitionQos partitionQos;
+    u_partition uDomain;
 
     assert(_this);
 
-    uDomain = U_DOMAIN_GET(_this);
+    uDomain = U_PARTITION_GET(_this);
 
-    if ( u_entityQoS(u_entity(uDomain), (v_qos*)&domainQos) == U_RESULT_OK ) {
-        copyParticipantFactoryQosOut(domainQos,  qos);
-        u_domainQosFree(domainQos);
+    if ( u_entityQoS(u_entity(uDomain), (v_qos*)&partitionQos) == U_RESULT_OK ) {
+        copyParticipantFactoryQosOut(partitionQos,  qos);
+        u_partitionQosFree(partitionQos);
 
     }
 
@@ -176,8 +140,26 @@ gapi_domainParticipantFactory_get_instance(
 
     safecount = pa_increment(&TheFactoryInitialized);
     if ((safecount == 1) && (TheFactory == NULL)) {
-        TheFactory = _DomainParticipantFactoryNew();
-        _EntityRelease(TheFactory);
+        TheFactory = _DomainParticipantFactoryAlloc();
+        if (TheFactory != NULL) {
+            if (u_userInitialise() != U_RESULT_OK) {
+                _EntityDelete(TheFactory);
+                TheFactory = NULL;
+            } else {
+                os_mutexAttr attr;
+                TheFactory->DomainParticipantList = c_iterNew (NULL);
+                memset(&TheFactory->defaultQos, 0, sizeof(TheFactory->defaultQos));
+                gapi_domainParticipantQosCopy (&gapi_domainParticipantQosDefault,
+                                               &TheFactory->defaultQos);
+                os_mutexAttrInit(&attr);
+                attr.scopeAttr = OS_SCOPE_PRIVATE;
+                os_mutexInit(&TheFactory->mtx, &attr);
+                TheFactory->registry = _ObjectRegistryNew();
+                gapi_expressionInitParser();
+                os_procAtExit(factoryCleanup);
+                _EntityRelease(TheFactory);
+            }
+        }
     } else { /* wait for the factory to become initialized */
         if (TheFactory == NULL) {
             count = 0;
@@ -693,6 +675,8 @@ factoryCleanup(void)
         TheFactory->registry = NULL;
         _ObjectRegistryFree(registry);
 
+#if 0
         u_userDetach();
+#endif
     }
 }

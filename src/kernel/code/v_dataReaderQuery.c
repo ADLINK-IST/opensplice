@@ -197,6 +197,7 @@ v_dataReaderQueryNew (
     query->sampleMask   = q_exprGetSampleState(predicate);
     query->viewMask     = q_exprGetViewState(predicate);
     query->triggerValue = NULL;
+    query->walkRequired = TRUE;
     query->updateCnt    = 0;
 
     /* Normilize the query to the disjunctive form. */
@@ -397,7 +398,15 @@ void
 v_dataReaderQueryFree (
     v_dataReaderQuery _this)
 {
+    v_dataReaderQuery drQ;
+
     assert(C_TYPECHECK(_this,v_dataReaderQuery));
+    drQ = v_dataReaderQuery(_this);
+    if (drQ->triggerValue) {
+        v_dataReaderTriggerValueFree(drQ->triggerValue);
+        drQ->triggerValue = NULL;
+    }
+
     v_queryFree(v_query(_this));
 }
 
@@ -512,6 +521,20 @@ v_dataReaderQueryTest(
     return pass;
 }
 
+static c_bool
+v_instanceContainsSample(
+        v_dataReaderInstance instance,
+        v_dataReaderSample sample)
+{
+    v_dataReaderSample head = v_dataReaderInstanceHead(instance);
+    v_dataReaderSample tail = v_dataReaderInstanceTail(instance);
+    while (head != sample && head != tail) {
+        head = head->prev;
+    }
+    return (head == sample);
+
+}
+
 c_bool
 v_dataReaderQueryTriggerTest(
     v_dataReaderQuery _this)
@@ -532,16 +555,12 @@ v_dataReaderQueryTriggerTest(
         if (v_objectKind(src) == K_DATAREADER) {
             r = v_dataReader(src);
             v_dataReaderLock(r);
-            if (r->updateCnt == _this->updateCnt) {
-                pass = _this->lastResult;
-            } else {
-                instanceSet = r->index->notEmptyList;
-                if (c_tableCount(instanceSet) > 0) {
-                    if ((r->triggerValue != NULL) &&
-                        (r->triggerValue == _this->triggerValue))
-                    {
-                        v_dataReaderInstance instance;
-                        instance = v_dataReaderInstance(v_readerSample(r->triggerValue)->instance);
+            instanceSet = r->index->notEmptyList;
+            if (c_tableCount(instanceSet) > 0) {
+                if (_this->triggerValue) {
+                    v_dataReaderInstance instance;
+                    instance = v_dataReaderInstance(v_readerSample(_this->triggerValue)->instance);
+                    if (v_instanceContainsSample(instance, _this->triggerValue)) {
                         /* This part should be moved to the notify method
                          * as part of the producer query evaluation.
                          */
@@ -563,24 +582,48 @@ v_dataReaderQueryTriggerTest(
                                 }
                             }
                         }
-                    } else {
-                        len = c_arraySize(_this->instanceQ);
-                        i = 0;
-                        while ((i<len) && (pass == FALSE)) {
-                            argument.query = _this->sampleQ[i];
-                            if (_this->instanceQ[i] != NULL) {
-                                c_readAction(_this->instanceQ[i],
-                                             testAction,&argument);
-                            } else {
-                                c_readAction(instanceSet, testAction, &argument);
-                            }
-                            pass = argument.result;
-                            i++;
+                        if (!pass) {
+                            /* The trigger_value no longer satisfies the Query.
+                             * It can therefore be reset.
+                             */
+                            v_dataReaderTriggerValueFree(_this->triggerValue);
+                            _this->triggerValue = NULL;
                         }
+                    } else {
+                        /* The trigger value is no longer available in the DataReader.
+                         * It can therefore be reset.
+                         */
+                        v_dataReaderTriggerValueFree(_this->triggerValue);
+                        _this->triggerValue = NULL;
+                    }
+                }
+                /* If the trigger value does not satisfy the Query, but other
+                 * available samples could, then walk over all available samples
+                 * until one is found that does satisfy the Query.
+                 */
+                if (_this->triggerValue == NULL && _this->walkRequired) {
+                    len = c_arraySize(_this->instanceQ);
+                    i = 0;
+                    while ((i<len) && (pass == FALSE)) {
+                        argument.query = _this->sampleQ[i];
+                        if (_this->instanceQ[i] != NULL) {
+                            c_readAction(_this->instanceQ[i],
+                                         testAction,&argument);
+                        } else {
+                            c_readAction(instanceSet, testAction, &argument);
+                        }
+                        pass = argument.result;
+                        i++;
+                    }
+                    if (!pass) {
+                        /* None of the available samples satisfy the Query.
+                         * That means the next query evaluation no longer
+                         * requires us to walk over all samples.
+                         */
+                        _this->walkRequired = FALSE;
                     }
                 }
                 _this->updateCnt = r->updateCnt;
-                _this->lastResult = pass;
             }
             if ( !pass ) {
                 _this->state = V_STATE_INITIAL;
@@ -651,52 +694,51 @@ v_dataReaderQueryRead (
 #ifdef _MAXPURGE_
             v_dataReaderUpdatePurgeLists(r);
 #endif
-            if ((r->triggerValue != NULL) &&
-                (r->triggerValue == _this->triggerValue)) {
-                instanceSet = r->index->notEmptyList;
-                if (c_tableCount(instanceSet) > 0) {
-                    v_dataReaderInstance instance;
-                    c_bool pass = FALSE;
-                    instance = v_dataReaderInstance(v_readerSample(r->triggerValue)->instance);
+            if (_this->walkRequired == FALSE) {
+                if (_this->triggerValue != NULL) {
+                    instanceSet = r->index->notEmptyList;
+                    if (c_tableCount(instanceSet) > 0) {
+                        v_dataReaderInstance instance;
+                        c_bool pass = FALSE;
+                        instance = v_dataReaderInstance(v_readerSample(_this->triggerValue)->instance);
+                        if (v_instanceContainsSample(instance, _this->triggerValue)) {
 
-                    /* This part should be moved to the notify method
-                     * as part of the producer query evaluation.
-                     */
-                    len = c_arraySize(_this->instanceQ);
-                    for (i=0;(i<len) && !pass;i++) {
-                        pass = TRUE;
-                        if (_this->instanceQ[i] != NULL) {
-                            pass = c_queryEval(_this->instanceQ[i],instance);
-                        }
-                        if ((_this->sampleQ[i] != NULL) && pass) {
-                            v_dataReaderSample head;
-                            head = v_dataReaderInstanceHead(instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                            /* This part should be moved to the notify method
+                             * as part of the producer query evaluation.
+                             */
+                            len = c_arraySize(_this->instanceQ);
+                            for (i=0;(i<len) && !pass;i++) {
+                                pass = TRUE;
+                                if (_this->instanceQ[i] != NULL) {
+                                    pass = c_queryEval(_this->instanceQ[i],instance);
+                                }
+                                if ((_this->sampleQ[i] != NULL) && pass) {
+                                    v_dataReaderSample head;
+                                    head = v_dataReaderInstanceHead(instance);
+                                    if (_this->triggerValue != head) {
+                                        v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                    }
+                                    pass = c_queryEval(_this->sampleQ[i],instance);
+                                    if (_this->triggerValue != head) {
+                                        v_dataReaderInstanceSetHead(instance,head);
+                                    }
+                                }
                             }
-                            pass = c_queryEval(_this->sampleQ[i],instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,head);
-                            }
                         }
-                    }
 
-                    if (pass) {
-                        if (instance->sampleCount == 0) {
-                        /* No valid samples exist,
-                         * so there must be one invalid sample.
-                         * Dcps-Spec. demands a Desctructive read -> v_dataReaderSampleTake()
-                         */
-                        assert(v_dataReaderInstanceStateTest(instance, L_STATECHANGED));
-                        proceed = v_dataReaderSampleTake(_this->triggerValue,action,arg);
-                        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
-                        } else {
+                        if (pass) {
                             proceed = v_dataReaderSampleRead(_this->triggerValue,
                                                              action,arg);
+                        } else {
+                            /* The trigger_value no longer satisfies the Query.
+                             * It can therefore be reset.
+                             */
+                            v_dataReaderTriggerValueFree(_this->triggerValue);
+                            _this->triggerValue = NULL;
                         }
                     }
-                    proceed = FALSE;
                 }
+                proceed = FALSE;
             } else {
 
                 argument.action = action;
@@ -718,11 +760,6 @@ v_dataReaderQueryRead (
                     }
                 }
 
-            }
-            if (_this->triggerValue) {
-                c_free(v_readerSample(_this->triggerValue)->instance);
-                v_dataReaderSampleFree(_this->triggerValue);
-                _this->triggerValue = NULL;
             }
             v_statisticsULongValueInc(v_query, numberOfReads, _this);
 
@@ -994,44 +1031,52 @@ v_dataReaderQueryTake(
 #ifdef _MAXPURGE_
             v_dataReaderUpdatePurgeLists(r);
 #endif
-            if ((r->triggerValue != NULL) &&
-                (r->triggerValue == _this->triggerValue)) {
-                instanceSet = r->index->notEmptyList;
-                if (c_tableCount(instanceSet) > 0) {
-                    c_bool pass = FALSE;
-                    instance = v_dataReaderInstance(v_readerSample(r->triggerValue)->instance);
+            if (_this->walkRequired == FALSE) {
+                if (_this->triggerValue != NULL) {
+                    instanceSet = r->index->notEmptyList;
+                    if (c_tableCount(instanceSet) > 0) {
+                        c_bool pass = FALSE;
+                        instance = v_dataReaderInstance(v_readerSample(_this->triggerValue)->instance);
+                        if (v_instanceContainsSample(instance, _this->triggerValue)) {
 
-                    /* This part should be moved to the notify method
-                     * as part of the producer query evaluation.
-                     */
-                    len = c_arraySize(_this->instanceQ);
-                    for (i=0;(i<len) && !pass;i++) {
-                        pass = TRUE;
-                        if (_this->instanceQ[i] != NULL) {
-                            pass = c_queryEval(_this->instanceQ[i],instance);
-                        }
-                        if ((_this->sampleQ[i] != NULL) && pass) {
-                            v_dataReaderSample head;
-                            head = v_dataReaderInstanceHead(instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                            /* This part should be moved to the notify method
+                             * as part of the producer query evaluation.
+                             */
+                            len = c_arraySize(_this->instanceQ);
+                            for (i=0;(i<len) && !pass;i++) {
+                                pass = TRUE;
+                                if (_this->instanceQ[i] != NULL) {
+                                    pass = c_queryEval(_this->instanceQ[i],instance);
+                                }
+                                if ((_this->sampleQ[i] != NULL) && pass) {
+                                    v_dataReaderSample head;
+                                    head = v_dataReaderInstanceHead(instance);
+                                    if (_this->triggerValue != head) {
+                                        v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                    }
+                                    pass = c_queryEval(_this->sampleQ[i],instance);
+                                    if (_this->triggerValue != head) {
+                                        v_dataReaderInstanceSetHead(instance,head);
+                                    }
+                                }
                             }
-                            pass = c_queryEval(_this->sampleQ[i],instance);
-                            if (_this->triggerValue != head) {
-                                v_dataReaderInstanceSetHead(instance,head);
-                            }
                         }
-                    }
 
-                    if (pass) {
-                        proceed = v_dataReaderSampleTake(_this->triggerValue,
-                                                         action,arg);
-                        if (v_dataReaderInstanceEmpty(instance)) {
-                            v_dataReaderRemoveInstance(r,instance);
+                        if (pass) {
+                            proceed = v_dataReaderSampleTake(_this->triggerValue,
+                                                             action,arg);
+                            if (v_dataReaderInstanceEmpty(instance)) {
+                                v_dataReaderRemoveInstance(r,instance);
+                            }
                         }
+                        /* The trigger_value no longer satisfies the Query or
+                         * has been taken. It can therefore be reset.
+                         */
+                        v_dataReaderTriggerValueFree(_this->triggerValue);
+                        _this->triggerValue = NULL;
                     }
-                    proceed = FALSE;
                 }
+                proceed = FALSE;
             } else {
                 instanceSet = r->index->notEmptyList;
                 if (c_tableCount(instanceSet) > 0) {
@@ -1067,11 +1112,6 @@ v_dataReaderQueryTake(
                                                   v_dataReaderInstanceCount(r));
                     }
                 }
-            }
-            if (_this->triggerValue) {
-                c_free(v_readerSample(_this->triggerValue)->instance);
-                v_dataReaderSampleFree(_this->triggerValue);
-                _this->triggerValue = NULL;
             }
             v_statisticsULongValueInc(v_query, numberOfTakes, _this);
 
@@ -1322,16 +1362,18 @@ v_dataReaderQueryNotifyDataAvailable(
     v_observerLock(v_observer(_this));
     /* Only store the trigger value and notify observers if no
      * trigger value is set before.
-     * The trigger value is reset after a modification of the state
-     * of the data in the reader history.
-     * Query Read and Take operations can compare the trigger value
-     * with the DataReader's last trigger value to decide to use the
-     * trigger value instead of executing the query.
+     * The trigger value is reset when it no longer satisfies the Query.
+     * Query Read and Take operations can examine the walkRequired value
+     * to decide to use the trigger value instead of executing the query.
+     * If a trigger value was already selected, inserting a new sample
+     * no longer allows you use just the trigger value: when executing the
+     * query you will need to do a full walk.
      */
     if (e->userData) {
         if (_this->triggerValue == NULL) {
-            c_keep(v_readerSample(e->userData)->instance);
-            _this->triggerValue = c_keep(v_dataReaderSample(e->userData));
+            _this->triggerValue = v_dataReaderTriggerValueKeep(e->userData);
+        } else {
+            _this->walkRequired = TRUE;
         }
         _this->state |= V_STATE_DATA_AVAILABLE;
         v_observableNotify(v_observable(_this),e);

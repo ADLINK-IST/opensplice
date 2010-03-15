@@ -317,8 +317,22 @@ getDefaultCcppOrbPath()
     const char* api = "OSPL_ORB_PATH=CCPP";
     const char* filesep = os_fileSep();
 
-    ccppOrbPath = (char*)(os_malloc(strlen(api) + strlen(filesep) + strlen(DEFAULT_ORB) + 1));
-    sprintf(ccppOrbPath, "%s%s%s", api, filesep, DEFAULT_ORB);
+    char* splice_orb;
+
+     /* The env setup scripts define SPLICE_ORB to indicate the CPP ORB - this
+    is more appropriate than a hardcode default. */
+    if ((splice_orb = os_getenv ("SPLICE_ORB")) == NULL)
+    {
+        /* Not defined - fall back on the hard code default. */
+        ccppOrbPath = (char*)(os_malloc(strlen(api) + strlen(filesep) + strlen(DEFAULT_ORB) + 1));
+        sprintf(ccppOrbPath, "%s%s%s", api, filesep, DEFAULT_ORB);
+    }
+    else
+    {
+        /* Defined - use as default */
+        ccppOrbPath = (char*)(os_malloc(strlen(api) + strlen(filesep) + strlen(splice_orb) + 1));
+        sprintf(ccppOrbPath, "%s%s%s", api, filesep, splice_orb);
+    }
 
     return ccppOrbPath;
 }

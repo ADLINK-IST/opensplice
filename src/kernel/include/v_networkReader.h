@@ -46,12 +46,12 @@ v_networkReaderFree(
 OS_API c_bool
 v_networkReaderSubscribe(
     v_networkReader reader,
-    v_domain domain);
+    v_partition partition);
 
 OS_API c_bool          
 v_networkReaderUnSubscribe(
     v_networkReader reader,
-    v_domain domain);
+    v_partition partition);
 
 OS_API void
 v_networkReaderDeinit(
@@ -105,7 +105,8 @@ v_networkReaderCreateQueue(
     c_bool reliable,
     c_bool P2P,
     c_time resolution,
-    c_bool useAsDefault);
+    c_bool useAsDefault,
+    const c_char *name);
     
 OS_API v_networkReaderEntry
 v_networkReaderLookupEntry(

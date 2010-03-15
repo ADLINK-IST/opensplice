@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_fooDataReader.h"
@@ -37,6 +37,18 @@ C_STRUCT(_FooDataReader) {
     C_EXTENDS(_DataReader);
 };
 
+C_CLASS(instanceField);
+C_STRUCT(instanceField){
+    v_readerSample lastSample;
+    c_ulong sampleIndex;
+};
+
+C_CLASS(instanceBuffer);
+C_STRUCT(instanceBuffer){
+    C_STRUCT(instanceField) instances[READBUFFERSIZE];
+    instanceBuffer next;
+};
+
 C_CLASS(readBuffer);
 C_STRUCT(readBuffer) {
         v_readerSample samples[READBUFFERSIZE];
@@ -48,6 +60,17 @@ C_STRUCT (readStack) {
         c_ulong length;
         C_STRUCT(readBuffer) buffer;
         readBuffer last;
+        c_ulong nextReadIndex;
+        readBuffer lastReadBuffer;
+
+        c_ulong instanceLength;
+        C_STRUCT(instanceBuffer) instanceBuffer;
+        instanceBuffer lastInstanceBuffer;
+        v_readerSample prevSample;
+        v_dataReaderInstance lastInstance;
+        c_ulong nextIndexInstance;
+        instanceBuffer lastReadBufferInstance;
+        c_ulong lastSampleIndex;
 };
 
 typedef struct readerActionArg_s {
@@ -62,6 +85,7 @@ typedef struct readerActionArg_s {
 #define readStackPush(_this,sample) \
 { \
     c_long index; \
+    c_long indexInstance; \
  \
     index = _this->length % READBUFFERSIZE; \
     if ((index == 0) && (_this->length > 0)) { \
@@ -73,12 +97,41 @@ typedef struct readerActionArg_s {
     _this->last->samples[index] = c_keep(sample); \
     _this->length++; \
     c_keep(sample->instance); \
+ \
+    if(_this->lastInstance != sample->instance) { \
+        indexInstance = _this->instanceLength % READBUFFERSIZE; \
+        if ((indexInstance == 0) && (_this->instanceLength > 0)) { \
+            /* Need a new buffer */ \
+            _this->lastInstanceBuffer->next = os_malloc(sizeof(C_STRUCT(instanceBuffer))); \
+            _this->lastInstanceBuffer = _this->lastInstanceBuffer->next; \
+            _this->lastInstanceBuffer->next = NULL; \
+        } \
+        if(_this->prevSample){ \
+            _this->lastInstanceBuffer->instances[indexInstance].lastSample = _this->prevSample; \
+            _this->lastInstanceBuffer->instances[indexInstance].sampleIndex = _this->lastSampleIndex; \
+            _this->instanceLength++; \
+        } \
+        _this->lastInstance = sample->instance; \
+    } \
+    _this->lastSampleIndex = _this->length - 1; \
+    _this->prevSample = sample; \
 }
 
 #define readStackInit(_this) \
         { ((readStack)_this)->length = 0; \
           ((readStack)_this)->last = &((readStack)_this)->buffer; \
-          ((readStack)_this)->last->next = NULL; }
+          ((readStack)_this)->last->next = NULL; \
+          ((readStack)_this)->nextReadIndex = 0; \
+          ((readStack)_this)->lastReadBuffer = NULL; \
+          ((readStack)_this)->instanceLength = 0; \
+          ((readStack)_this)->lastInstanceBuffer = &((readStack)_this)->instanceBuffer; \
+          ((readStack)_this)->lastInstanceBuffer->next = NULL; \
+          ((readStack)_this)->nextIndexInstance = 0; \
+          ((readStack)_this)->prevSample = NULL; \
+          ((readStack)_this)->lastInstance = NULL; \
+          ((readStack)_this)->lastSampleIndex = 0; \
+          ((readStack)_this)->lastReadBufferInstance = NULL; }
+
 
 v_readerSample
 readStackSample(
@@ -92,15 +145,105 @@ readStackSample(
     return v_readerSample(buf->samples[index % READBUFFERSIZE]);
 }
 
+v_readerSample
+readStackNextSample(
+    readStack _this)
+{
+    v_readerSample sample;
+    c_long bufnum;
+    readBuffer buf = &_this->buffer;
+
+    if(_this->lastReadBuffer == NULL){
+        if(_this->length == 0){
+            sample = NULL;
+        } else {
+            sample = v_readerSample(buf->samples[0]);
+            _this->lastReadBuffer = buf;
+        }
+    } else {
+        if(_this->nextReadIndex < _this->length){
+            bufnum = _this->nextReadIndex % READBUFFERSIZE;
+
+            if(bufnum == 0){
+                _this->lastReadBuffer = _this->lastReadBuffer->next;
+            }
+            sample = v_readerSample(_this->lastReadBuffer->samples[bufnum]);
+        } else {
+            sample = NULL;
+        }
+    }
+    _this->nextReadIndex++;
+
+    return sample;
+}
+
+C_STRUCT(instanceField)
+readStackLastSampleForInstance(
+    readStack _this,
+    v_dataReaderInstance instance)
+{
+    instanceBuffer buf;
+    C_STRUCT(instanceField) field;
+    c_long bufnum = _this->nextIndexInstance % READBUFFERSIZE;
+
+    assert(_this->nextIndexInstance <= _this->instanceLength);
+
+    if(bufnum == 0){
+        if(_this->nextIndexInstance == 0){
+            _this->lastReadBufferInstance = &_this->instanceBuffer;
+        } else {
+            _this->lastReadBufferInstance = _this->lastReadBufferInstance->next;
+        }
+    }
+    buf = _this->lastReadBufferInstance;
+
+    if(_this->nextIndexInstance < _this->instanceLength){
+        field = buf->instances[bufnum];
+        assert(field.lastSample->instance == instance);
+    } else {
+        assert(_this->nextIndexInstance == _this->instanceLength);
+        field.lastSample = _this->prevSample;
+        field.sampleIndex = _this->lastSampleIndex;
+        assert(field.lastSample->instance == instance);
+    }
+    _this->nextIndexInstance++;
+
+    return field;
+}
+
+#define readStackFreeContents(_this) \
+{ \
+    readBuffer buf = &(((readStack)_this)->buffer); \
+    c_ulong curIndex = 0; \
+    c_ulong index; \
+ \
+    while(curIndex < ((readStack)_this)->length) { \
+        index = curIndex % READBUFFERSIZE; \
+        if ((index == 0) && (curIndex > 0)) { \
+            buf = buf->next; \
+        } \
+        c_free((buf->samples[index])->instance); \
+        c_free(buf->samples[index]); \
+        curIndex++; \
+    } \
+}
+
 #define readStackFree(_this) \
 { \
     readBuffer next,del; \
+    instanceBuffer nextInstance,delInstance; \
  \
     next = ((readStack)_this)->buffer.next; \
     while (next) { \
         del = next; \
         next = del->next; \
         os_free(del); \
+    } \
+    nextInstance = ((readStack)_this)->instanceBuffer.next; \
+    while (nextInstance) { \
+        delInstance = nextInstance; \
+        nextInstance = delInstance->next; \
+        os_free(delInstance); \
     } \
 }
 
@@ -121,14 +264,22 @@ determineSampleInfo (
     gapi_viewStateKind   vs;
     gapi_long            count;
     gapi_instanceStateKind instance_state;
+    C_STRUCT(instanceField) field;
 
     /* The samples sequence now contains all samples read,
      * Now determine the sample info for each sample.
      */
+    mrsicDisposed = 0;
+    mrsDisposed = 0;
+    last = 0;
+    vs = GAPI_NEW_VIEW_STATE;
+    instance_state = GAPI_ALIVE_INSTANCE_STATE;
+
     instance = NULL;
     length = samples->length;
     for (i=0; i<length; i++) {
-        sample   = readStackSample(samples,i);
+        sample = readStackNextSample(samples);
+
         if (instance != sample->instance) {
             /* A new instance starts with this sample.
              * Now determine the instance related sampleInfo needed for each
@@ -136,12 +287,9 @@ determineSampleInfo (
              */
             first = i;
             instance = sample->instance;
-            /* Now find the last sample belonging to this instance. */
-            last = first;
-            while ((last < (length-1)) &&
-                   (instance == readStackSample(samples,(last+1))->instance))
-            { last++; }
-            lastSample = v_dataReaderSample(readStackSample(samples,last));
+            field = readStackLastSampleForInstance(samples, instance);
+            lastSample = v_dataReaderSample(field.lastSample);
+            last = field.sampleIndex;
 
             /* Now all information is available to determine the instance related
              * sampleInfo information.
@@ -312,7 +460,7 @@ gapi_fooDataReader_read (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
+                /*v_readerSample sample;*/
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -336,11 +484,14 @@ gapi_fooDataReader_read (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -414,7 +565,6 @@ gapi_fooDataReader_take (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -438,11 +588,14 @@ gapi_fooDataReader_take (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -503,7 +656,6 @@ gapi_fooDataReader_read_w_condition (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -527,11 +679,14 @@ gapi_fooDataReader_read_w_condition (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -594,7 +749,6 @@ gapi_fooDataReader_take_w_condition (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -617,11 +771,14 @@ gapi_fooDataReader_take_w_condition (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -719,7 +876,6 @@ gapi_fooDataReader_read_instance (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -747,11 +903,14 @@ gapi_fooDataReader_read_instance (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -829,7 +988,6 @@ gapi_fooDataReader_take_instance (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -857,11 +1015,14 @@ gapi_fooDataReader_take_instance (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -937,7 +1098,6 @@ gapi_fooDataReader_read_next_instance (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -965,11 +1125,14 @@ gapi_fooDataReader_read_next_instance (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -1045,7 +1208,6 @@ gapi_fooDataReader_take_next_instance (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -1073,11 +1235,14 @@ gapi_fooDataReader_take_next_instance (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -1148,7 +1313,6 @@ gapi_fooDataReader_read_next_instance_w_condition (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -1176,11 +1340,14 @@ gapi_fooDataReader_read_next_instance_w_condition (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }
@@ -1251,7 +1418,6 @@ gapi_fooDataReader_take_next_instance_w_condition (
                 gapi_dataSample initialBuffer[INITIALBUFFER_SIZE];
                 u_result r;
                 gapi_unsigned_long i;
-                v_readerSample sample;
 
                 arg.dataSamples._buffer  = (void *)&initialBuffer;
                 arg.dataSamples._length  = 0;
@@ -1279,11 +1445,14 @@ gapi_fooDataReader_take_next_instance_w_condition (
                 if (arg.dataSamples._buffer != (void *)&initialBuffer) {
                     os_free(arg.dataSamples._buffer);
                 }
+                /*
                 for ( i = 0; i < samples.length; i++ ) {
                     sample = readStackSample(&samples,i);
                     c_free(sample->instance);
                     c_free(sample);
                 }
+                */
+                readStackFreeContents(&samples);
             }
             readStackFree(&samples);
         }

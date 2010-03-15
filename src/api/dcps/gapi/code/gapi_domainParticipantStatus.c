@@ -74,10 +74,9 @@ _DomainParticipantStatusFree (
 
 gapi_boolean
 _DomainParticipantStatusSetListener(
-    _DomainParticipantStatus       _this,
+    _DomainParticipantStatus _this,
     const struct gapi_domainParticipantListener *_listener,
-    gapi_statusMask            mask
-    )
+    gapi_statusMask mask)
 {
     gapi_boolean result = FALSE;
     _Status status = _Status(_this);

@@ -1,12 +1,14 @@
+
+ospl start
+
 set BLOKSIZE=100
 set BLOKCOUNT=100
 
 set SLEEP2=@ping -n 2 localhost
 set SLEEP4=@ping -n 4 localhost
+set SLEEP10=@ping -n 10 localhost
 
-ospl start
-
-%SLEEP4% >NUL
+%SLEEP10% >NUL
 
 start Pong\pong.exe PongRead PongWrite
 
@@ -33,3 +35,5 @@ Ping\ping.exe 1  10 t PongRead PongWrite
 %SLEEP4% >NUL
 
 ospl stop
+
+%SLEEP10% >NUL

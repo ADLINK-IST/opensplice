@@ -246,27 +246,27 @@ cmx_participantDomainsAction(
     c_voidp args)
 {
     cmx_walkEntityArg arg;
-    c_iter domains;
-    v_entity domain;
+    c_iter partitions;
+    v_entity partition;
     c_bool proceed;
     c_char* xmlEntity;
 
     arg = cmx_walkEntityArg(args);
-    domains = v_resolveDomains(v_objectKernel(e), "*");
-    domain = v_entity(c_iterTakeFirst(domains));
+    partitions = v_resolvePartitions(v_objectKernel(e), "*");
+    partition = v_entity(c_iterTakeFirst(partitions));
 
-    while(domain != NULL){
-        proceed = cmx_entityNewFromWalk(domain, arg->entityArg);
+    while(partition != NULL){
+        proceed = cmx_entityNewFromWalk(partition, arg->entityArg);
 
         if(proceed == TRUE){
             xmlEntity = arg->entityArg->result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
-        c_free(domain);
-        domain = v_entity(c_iterTakeFirst(domains));
+        c_free(partition);
+        partition = v_entity(c_iterTakeFirst(partitions));
     }
-    c_iterFree(domains);
+    c_iterFree(partitions);
 }
 
 const c_char*

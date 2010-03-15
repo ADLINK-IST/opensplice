@@ -23,7 +23,7 @@ extern "C" {
 
 v_group
 v_groupNew (
-    v_domain domain,
+    v_partition partition,
     v_topic topic,
     c_long id);
 

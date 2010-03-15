@@ -18,6 +18,7 @@
 
 #include "idl_parser.h"
 #include "idl_unsupported.h"
+#include "idl_databaseValidation.h"
 
 c_base 
 idl_parseFile(
@@ -39,6 +40,13 @@ idl_parseFile(
         /* Parse the IDL input file */
         /* QAC EXPECT 3416; No side effects here */
         if (idl_idlparse(filename /* , traceInput */) != 0) {
+            /* In case of an error, base is set to NULL to prevent further processing */
+            base = NULL;
+        }
+    }
+    if (base != NULL) {
+        /* check resulting database is valid */
+        if (!idl_validateDatabase(base, filename)) {
             /* In case of an error, base is set to NULL to prevent further processing */
             base = NULL;
         }

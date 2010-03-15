@@ -89,4 +89,28 @@ SAJ_FUNCTION(jniGetDatareader)(
     return jdataReader;
 }
  
+/**
+ * Class:     org_opensplice_dds_dcps_ReadConditionImpl
+ * Method:    jniGetDatareaderView
+ * Signature: ()LDDS/DataReaderView;
+ */
+JNIEXPORT jobject JNICALL
+SAJ_FUNCTION(jniGetDatareaderView)(
+    JNIEnv *env,
+    jobject jreadCondition)
+{
+    gapi_readCondition readCondition;
+    gapi_dataReaderView dataReaderView;
+    jobject jdataReaderView;
+
+    jdataReaderView = NULL;
+    readCondition = (gapi_readCondition) saj_read_gapi_address(env, jreadCondition);
+    dataReaderView = gapi_readCondition_get_datareaderview(readCondition);
+
+    if(dataReaderView != NULL){
+        jdataReaderView = saj_read_java_address(dataReaderView);
+    }
+    return jdataReaderView;
+}
+
 #undef SAJ_FUNCTION

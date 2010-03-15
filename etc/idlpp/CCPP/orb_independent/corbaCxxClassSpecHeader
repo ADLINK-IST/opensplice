@@ -6,5 +6,6 @@
 #include "ccpp_TypeSupport_impl.h"
 #include "ccpp_DataWriter_impl.h"
 #include "ccpp_DataReader_impl.h"
+#include "ccpp_DataReaderView_impl.h"
 $(DLL_IMPORTEXPORT_INCLUDE)
 

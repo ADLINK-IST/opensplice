@@ -39,6 +39,9 @@
 #include "c_collection.h"
 #include "nw_plugSendChannel.h"
 #include "nw_plugReceiveChannel.h"
+#include "nw_report.h"
+
+#include <ctype.h> /* debug: isalnum*/
 
 #ifdef PA_BIG_ENDIAN
 #define _COPY_KIND_ CM_COPY
@@ -159,8 +162,8 @@ C_STRUCT(nw_stream) {
 #define nw_stream_renew(stream) \
         nw_stream(stream)->action(nw_stream(stream)->channel, \
                                   &nw_stream(stream)->bufferPtr, \
-                                  &nw_stream(stream)->length);
-
+                                  &nw_stream(stream)->length); 
+		
 nw_plugChannel
 nw_stream_channel (
     nw_stream _this)
@@ -751,7 +754,7 @@ nw_stream_writeUnion(
     if (!activeCase) {
         activeCase = deflt;
     }
-    assert(activeCase);
+
     if (activeCase) {
         if (c_type(utype)->alignment >= switchType->size) {
             length = c_type(utype)->alignment;
@@ -985,14 +988,16 @@ nw_bool
 nw_stream_writeBegin (
     nw_stream _this,
     v_networkPartitionId partitionId,
-    nw_signedLength *bytesLeft)
+    nw_signedLength *bytesLeft,
+    plugSendStatistics pss)
 {
     _this->bytesLeft = bytesLeft;
     return nw_plugSendChannelMessageStart(_this->channel,
                                           &_this->bufferPtr,
                                           &_this->length,
                                           partitionId,
-                                          bytesLeft);
+                                          bytesLeft,
+                                          pss);
 }
 
 c_ulong
@@ -1011,10 +1016,12 @@ nw_stream_write (
 
 void
 nw_stream_writeEnd  (
-    nw_stream _this)
+    nw_stream _this,
+    plugSendStatistics pss)
 {
     nw_plugSendChannelMessageEnd(_this->channel,
-                                 _this->bufferPtr);
+                                 _this->bufferPtr,
+                                 pss);
 }
 
 /* ------------ nw_readStream implementation ------------ */
@@ -1167,6 +1174,7 @@ nw_stream_readOpaq(
         memcpy(dstPtr, srcPtr, copySize);
         dstPtr = &(dstPtr[copySize]);
     }
+    
     return data;
 }
 
@@ -1214,6 +1222,7 @@ nw_stream__readPrim(
             dstPtr[i] = srcPtr[i];
         }
     }
+
     return data;
 }
 
@@ -1262,6 +1271,7 @@ nw_stream__readPrimSwapped(
             dst[max-i] = srcPtr[i];
         }
     }
+
     return data;
 }
 
@@ -1284,7 +1294,7 @@ nw_stream__readPrimArray(
 
     rest = length*dataSize;
     dstPtr = (c_octet *)data;
-
+    
     while (rest) {
         srcPtr = nw_stream_head(stream);
         avail = nw_stream_available(stream);
@@ -1322,6 +1332,7 @@ nw_stream__readPrimArray(
             dstPtr = C_DISPLACE(dstPtr,size);
         }
     }
+
     return data;
 }
 
@@ -1346,7 +1357,7 @@ nw_stream__readPrimArraySwapped(
 
     restElements = length;
     dstPtr = (c_octet *)data;
-
+    
     while (restElements) {
         /* Determine the maximum number of elements
          * that can be copied at once.
@@ -1406,6 +1417,7 @@ nw_stream__readPrimArraySwapped(
             }
         }
     }
+
     return data;
 }
 
@@ -1431,8 +1443,12 @@ nw_stream_readString(
     c_ulong saveLen;
     c_bool isValidRef;
     c_bool isReady;
-
+    
     nw_stream_readPrim(stream, 1, &isValidRef);
+    
+    /* assert(isValidRef==0 || isValidRef == 1);  paranoid check for boolean value */
+    NW_REPORT_INFO_1(5, "nw_stream__readString ?/%d", stream->length);
+   
     if (isValidRef) {
         stringStart = (c_char *)nw_stream_head(stream);
         copyPtr = stringStart;
@@ -1465,7 +1481,7 @@ nw_stream_readString(
             }
             totalLength += size;
         } while (!isReady);
-
+        
         if (c_iterLength(fragments)) {
             if (type) {
                 str = c_stringMalloc(c_getBase(type), totalLength);
@@ -1482,18 +1498,21 @@ nw_stream_readString(
                 os_free(fragment);
                 fragment = c_iterTakeFirst(fragments);
             }
-            c_iterFree(fragments);
+            // c_iterFree(fragments); // TODO FIXME, "fragments" still pointing onto first element which has been free-ed already !!
             assert(totalLength > 0);
+            assert(stringStart[totalLength-1] == '\0');
             memcpy(copyPtr,stringStart,totalLength);
         } else {
             if (type) {
                 str = c_stringNew(c_getBase(type), stringStart);
             } else {
                 str = os_malloc(totalLength);
+                assert(stringStart[totalLength-1] == '\0');
                 memcpy(str,stringStart,totalLength);
             }
         }
     }
+    
     *(c_string *)data = str;
     return str;
 }
@@ -1537,7 +1556,7 @@ nw_stream_readStructure (
     c_member member;
     c_ulong size, i;
     c_voidp o;
-
+    
     size = c_arraySize(_this->members);
     for (i=0; i<size; i++) {
         member = _this->members[i];
@@ -1546,6 +1565,7 @@ nw_stream_readStructure (
                            c_typeActualType(c_specifier(member)->type),
                            o);
     }
+
     return data;
 }
 
@@ -1561,7 +1581,7 @@ nw_stream_readClass (
     c_ulong n;
     c_bool isValidRef;
     struct PropertyActionArg arg;
-
+    
     nw_stream_readPrim(stream, 1, &isValidRef);
     if (isValidRef) {
         if (data) {
@@ -1589,7 +1609,7 @@ nw_stream_readClass (
     } else {
         result = NULL;
     }
-
+    
     return result;
 }
 
@@ -1609,14 +1629,13 @@ nw_stream_readUnion (
     c_value switchValue;
     c_literal label;
     c_ulong n;
-
+    
     /* action for the union itself */
     /* No action, but separate actions for the switch and the data */
     /* action(c_type(utype), object, actionArg); */
     /* action for the switch */
     switchType = c_typeActualType(utype->switchType);
     nw_stream_readType(stream, switchType, data);
-
 
     /* Determine value of the switch field */
     switch (c_baseObjectKind(switchType)) {
@@ -1647,7 +1666,7 @@ nw_stream_readUnion (
         assert(FALSE);
     break;
     }
-
+    
     /* Determine the label corresponding to this field */
 
     activeCase = NULL;
@@ -1671,17 +1690,19 @@ nw_stream_readUnion (
     if (!activeCase) {
         activeCase = deflt;
     }
-    assert(activeCase);
+
     if (activeCase) {
         if (c_type(utype)->alignment >= utype->switchType->size) {
             length = c_type(utype)->alignment;
         } else {
             length = utype->switchType->size;
         }
+        
         o = C_DISPLACE(data, (c_address)length);
         caseType = c_typeActualType(c_specifierType(activeCase));
         nw_stream_readType(stream, caseType, o);
     }
+
     return data;
 }
 
@@ -1709,6 +1730,7 @@ nw_stream_readArray (
         nw_stream_readPrim(stream, 1, &isValidRef);
         if (isValidRef) {
             nw_stream_readPrim(stream, sizeof(c_ulong), &length);
+                     
 #if 0
             if (*(c_voidp *)data) {
                 array = *(c_voidp *)data;
@@ -1717,11 +1739,13 @@ nw_stream_readArray (
                 *(c_voidp *)data = array;
             }
 #else
+         
             array = c_newArray(ctype,length);
             *(c_voidp *)data = array;
 #endif
         }
     }
+
     if (array) {
         actualType = c_typeActualType(ctype->subType);
 
@@ -1742,6 +1766,7 @@ nw_stream_readArray (
             }
         }
     }
+
     return array;
 }
 
@@ -1799,6 +1824,7 @@ nw_stream_readSequence (
             }
         }
     }
+
     return array;
 }
 
@@ -1815,6 +1841,7 @@ nw_stream_readSet (
     c_object o, inserted;
 
     nw_stream_readPrim(stream, 1, &isValidRef);
+
     if (isValidRef) {
         set = c_setNew(ctype->subType);
 
@@ -1831,6 +1858,7 @@ nw_stream_readSet (
             c_free(o);
         }
     }
+
     return (c_voidp)set;
 }
 
@@ -1891,14 +1919,35 @@ nw_stream_readOpen (
 
 c_bool
 nw_stream_readBegin (
-    nw_stream _this)
+    nw_stream _this,
+    nw_senderInfo sender,
+    plugReceiveStatistics prs)
 {
-    nw_address senderAddress;
-
-    return nw_plugReceiveChannelMessageStart(_this->channel,
+	
+    c_bool result = nw_plugReceiveChannelMessageStart(_this->channel,
                                              &_this->bufferPtr,
                                              &_this->length,
-                                             &senderAddress);
+                                             sender,
+                                             prs);
+    
+    {
+    	os_uint32 i=0;
+    	os_uchar buffer[2048];
+    	int start = _this->length > 150 ? _this->length-150 : 0;
+    	memset(buffer, 'Z', sizeof(buffer));
+    	
+    	for (i=start; i<_this->length; ++i) {
+    		int c =  (int)_this->bufferPtr[i];
+    		if (isalnum(c)) {
+    			buffer[i-start] = _this->bufferPtr[i];
+    		} else {
+    			buffer[i-start] = '.';
+    		}
+    	}
+    	buffer[i-start] = '\0';
+    }
+    
+    return result;
 }
 
 c_object
@@ -1907,7 +1956,7 @@ nw_stream_read (
     c_type type)
 {
     c_object object = NULL;
-
+    
     if (type) {
         if (c_typeIsRef(type)) {
             object = c_new(type);
@@ -1922,13 +1971,15 @@ nw_stream_read (
     } else {
         nw_plugReceiveChannelMessageIgnore(stream->channel);
     }
+
     return object;
 }
 
 void
 nw_stream_readEnd  (
-    nw_stream _this)
+    nw_stream _this,
+    plugReceiveStatistics prs)
 {
-    nw_plugReceiveChannelMessageEnd(_this->channel);
+    nw_plugReceiveChannelMessageEnd(_this->channel,prs);
 }
 

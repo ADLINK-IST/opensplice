@@ -2,11 +2,19 @@ function set_var
 {
     found=0
     i=0
+    eval x="\$OVERRIDE_${1}"
+    if [ -n "$x" ]
+    then
+        value=$x
+    else
+        value=$2
+    fi
+
     while [ "$i" -lt "${#varkeys[@]}" ]
     do
        if [ "$1" = "${varkeys[$i]}" ]
        then
-          varvals[$i]="$2"
+          varvals[$i]="$value"
           found=1
        fi
        (( i=i+1 )) 
@@ -14,10 +22,10 @@ function set_var
     if [ "$found" != 1 ]
     then
         varkeys[$i]="$1"
-        varvals[$i]="$2"
+        varvals[$i]="$value"
     fi
     # Set value in this shell for later comparisons.
-    export $1="$2"
+    export $1="$value"
 }
 
 function unset_var                  

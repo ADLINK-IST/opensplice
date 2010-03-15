@@ -9,10 +9,12 @@
  *   for full copyright notice and license terms. 
  *
  */
+
+/**
  * This file contains the operations for reading the
- * /tmp/spddskey_* files. For now, this is the only way to retrieve
- * information about the currently attached shared memory, like its
- * name and size.\n
+ * /<temporary directory>/spddskey_* files. For now, this is the only
+ * way to retrieve information about the currently attached shared
+ * memory, like its name and size.\n
  * \a key \a files that ca not be read (no access) are considered
  * not interesting for AAPI purposes and will be skipped.\n
  *

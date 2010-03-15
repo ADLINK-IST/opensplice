@@ -104,6 +104,14 @@
 #define NWCF_ROOT_Multicast           "Multicast"
 /* The enabled attribute and default value is defined under Channels/Channel  */
 
+/* ---------------- Channels/Channel/Cipher ---------------------- */
+#define NWCF_NAME_Cipher             "Cipher"                       /* string */
+#define NWCF_DEF_Cipher              "disabled"
+
+/* ---------------- Channels/Channel/CipherKey ---------------------- */
+#define NWCF_NAME_CipherKey          "CipherKey"                   /* string */
+#define NWCF_DEF_CipherKey           ""
+
 /* ---------------- Channels/Channel/Multicast/Address ---------------------- */
 #define NWCF_NAME_Address             "Address"                       /* string */
 #define NWCF_DEF_Address              "230.0.0.1"
@@ -154,6 +162,11 @@
 #define NWCF_NAME_MaxReliabBacklog        "MaxReliabBacklog"                   /* ulong */
 #define NWCF_DEF_MaxReliabBacklog         (1000U)
 #define NWCF_MIN_MaxReliabBacklog         (100U)
+
+/* ------------------ Channels/Channel/Receiving/CrcCheck ---------------------- */
+#define NWCF_NAME_CrcCheck			      "CrcCheck"                   /* ubool */
+#define NWCF_DEF_CrcCheck         		  (FALSE)
+
 
 /* ----------------------- Channels/Channel/Sending ------------------------------ */
 #define NWCF_ROOT_Tx                  "Sending"
@@ -211,7 +224,7 @@
 
 /* ------------- Channels/Channel/Discovery/Sending/Interval ---------------- */
 #define NWCF_NAME_Interval            "Interval"                       /* ulong */
-#define NWCF_DEF_Interval             (1000U)
+#define NWCF_DEF_Interval             (333U)
 #define NWCF_MIN_Interval             (100U)
 
 /* ----------- Channels/Channel/Discovery/Sending/SafetyFactor -------------- */
@@ -244,8 +257,15 @@
 #define NWCF_ATTRIB_NWPartitionName    "Name"
 #define NWCF_ATTRIB_NWPartitionAddress "Address"
 #define NWCF_ATTRIB_Connected          "Connected"
+#define NWCF_ATTRIB_NWSecurity         "Security"
+#define NWCF_ATTRIB_NWSecurityPolicy   "SecurityProfile"
+#define NWCF_ATTRIB_Authentication     "Authentication"
+#define NWCF_ATTRIB_X509Authentication "X509Authentication"
+#define NWCF_ATTRIB_Credentials        "Credentails"
+#define NWCF_ATTRIB_AccessControl      "AccessControl"
 #define NWCF_DEF_NWPartitionAddress    ""
 #define NWCF_DEF_Connected             (TRUE)
+#define NWCF_DEF_NWSecurityPolicy      (NULL)
 
 /* ------------------------- Partitioning/PartitionMappings ----------------- */
 #define NWCF_ROOT_PartitionMappings   NWCF_SUBROOT(NWCF_ROOT_Partitioning, "PartitionMappings")

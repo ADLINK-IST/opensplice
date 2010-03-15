@@ -36,20 +36,23 @@ gapi_fooTypeSupport__alloc (
 {
     _TypeSupport typesupport;
 
-    typesupport =  _TypeSupportNew(type_name, type_keys, type_def, type_load,
-	                           copy_in, copy_out, alloc_size, alloc_buffer,
-	                           reader_copy, writer_copy, create_datareader,
-                                   create_datawriter);
+    typesupport = _TypeSupportNew(type_name, type_keys,
+                                  type_def, type_load,
+	                          copy_in, copy_out,
+                                  alloc_size, alloc_buffer,
+	                          reader_copy, writer_copy,
+                                  create_datareader,
+                                  create_datawriter);
     return (gapi_fooTypeSupport)_EntityRelease(typesupport);
 }
 
 gapi_returnCode_t
 gapi_fooTypeSupport_register_type (
     gapi_typeSupport _this,
-    gapi_domainParticipant domain,
+    gapi_domainParticipant dp,
     gapi_string name
     )
 {
-    return gapi_typeSupport_register_type (_this, domain, name);
+    return gapi_typeSupport_register_type (_this, dp, name);
 }
 

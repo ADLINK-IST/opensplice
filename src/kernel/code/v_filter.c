@@ -121,11 +121,17 @@ v_filterNew(
         return NULL;
     }
     filter = c_new(v_kernelType(kernel, K_FILTER));
-    filter->topic = c_keep(t);
-    filter->predicate = c_filterNew(type,e,params);
-    if (filter->predicate == NULL) {
-        c_free(filter);
-        filter = NULL;
+    if (filter) {
+        filter->topic = c_keep(t);
+        filter->predicate = c_filterNew(type,e,params);
+        if (filter->predicate == NULL) {
+            c_free(filter);
+            filter = NULL;
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_filterNew",0,
+                  "Failed to allocate a filter.");
     }
     return filter;
 }

@@ -40,22 +40,28 @@ C_STRUCT(jni_nameService){
  * 
  * @return The newly created name service.
  */
-jni_nameService jni_nameServiceNew  ();
+jni_nameService
+jni_nameServiceNew ();
 
 /**@brief Frees the memory allocated for the name service.
  * 
  * @return JNI_RESULT_OK if succeeded, any other jni_result otherwise.
  */
-jni_result      jni_nameServiceFree ();
+jni_result
+jni_nameServiceFree ();
 
 /**@brief Looks up the kernel URI that is associated with the supplied Domain.
  * 
  * @param domainId The Domain to look for.
  * @return The associated kernel URI, or NULL if it could not be found.
  */
-const c_char*   jni_nameServiceResolveURI   (c_long domainId);
+const c_char*
+jni_nameServiceResolveURI (
+    c_long domainId);
 
-c_bool jni_nameServiceAddDomain             (const c_char* uri);
+c_bool
+jni_nameServiceAddDomain (
+    const c_char* uri);
 
 
 #if defined (__cplusplus)

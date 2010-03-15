@@ -37,6 +37,7 @@ extern "C" {
 #define V_TOPICINFO_NAME         "DCPSTopic"
 #define V_PUBLICATIONINFO_NAME   "DCPSPublication"
 #define V_SUBSCRIPTIONINFO_NAME  "DCPSSubscription"
+#define V_DELIVERYINFO_NAME      "DCPSDelivery"
 #define V_HEARTBEATINFO_NAME     "DCPSHeartbeat"
 
 /**

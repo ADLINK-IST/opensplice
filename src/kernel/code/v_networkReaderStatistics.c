@@ -39,12 +39,22 @@ v_networkReaderStatistics v_networkReaderStatisticsNew(v_kernel k)
 
 void v_networkReaderStatisticsInit(v_networkReaderStatistics nrs)
 {
-    assert(nrs != NULL);
+	v_kernel kernel;
+	os_uint32 i;
+	assert(nrs != NULL);
     assert(C_TYPECHECK(nrs,v_networkReaderStatistics));
-
+    kernel = v_objectKernel(nrs);
     v_statisticsInit(v_statistics(nrs));
     nrs->queuesCount = 0; /* better to get the actual value from networking */
-    nrs->queues = NULL;
+    //nrs->queues = NULL;
+    //for now length is 32
+
+    nrs->queues = c_arrayNew(c_resolve(c_getBase(kernel), "kernelModule::v_networkQueueStatistics"),64);
+   /*
+    for (i=0;i<32;i++) {
+        	nrs->queues[i] = NULL;
+        }
+        */
 }
 
 c_bool v_networkReaderStatisticsReset(v_networkReaderStatistics nrs, const c_char* fieldName)

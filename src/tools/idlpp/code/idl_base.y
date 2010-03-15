@@ -9,6 +9,7 @@
 #include "c_module.h"
 #include "idl_fileMap.h"
 #include "idl_keyDef.h"
+#include "idl_catsDef.h"
 #include "idl_sematicRules.h"
 #include "idl_unsupported.h"
 #include "dds_cpp.h"
@@ -58,7 +59,7 @@ c_metaObject scope;
 #define P_OBJECT  (c_type)metaResolve(scope, "c_object")
 #define P_INTEGER (c_type)metaResolve(scope, "c_longlong")
 #define P_FLOAT   (c_type)metaResolve(scope, "c_double")
-#define P_CHAR    (c_type)metaResolve(scope, "c_char")
+/*#define P_CHAR    (c_type)metaResolve(scope, "c_char")*/
 #define P_BOOL    (c_type)metaResolve(scope, "c_bool")
 #define P_STRING  (c_type)metaResolve(scope, "c_string")
 #define P_VOID    (NULL)
@@ -1639,6 +1640,7 @@ idl_idlinit(c_module schema)
 {
     idl_fileMap fileMap;
     idl_keyDef keyDef;
+    idl_catsDef catsDef;
 
     topLevel = schema;
     scope = topLevel;
@@ -1646,6 +1648,8 @@ idl_idlinit(c_module schema)
     idl_fileMapDefSet(fileMap);
     keyDef = idl_keyDefNew();
     idl_keyDefDefSet(keyDef);
+    catsDef = idl_catsDefNew();
+    idl_catsDefDefSet(catsDef);
 }
 
 int
@@ -1733,9 +1737,15 @@ declareIfArray(
 
 static void
 declareMemberIfArray(
-    c_member member,
-    c_metaObject scope)
+    void *o, 
+    c_iterActionArg arg)
 {
+    c_member member;
+    c_metaObject scope;
+
+    member = c_member(o);
+    scope = c_metaObject(arg);
+
     declareIfArray(scope, c_specifier(member)->type);
 }
     

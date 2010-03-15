@@ -16,78 +16,32 @@ insert_header_and_move()
 
     printf "Generating %s..." $file
     cat $OUT_DIR/header.txt >$OUT_DIR/tmp.txt
-    cat $OUT_DIR/$file >> $OUT_DIR/tmp.txt
+    cat $OUT_DIR/DDS/$file >> $OUT_DIR/tmp.txt
     if $cygwin; then
         dos2unix $OUT_DIR/tmp.txt # remove spurious ^M's
     fi
-    rm -f $OUT_DIR/$file
-    mv $OUT_DIR/tmp.txt $OUT_DIR/code/$file
+    rm -f $OUT_DIR/DDS/$file
+    mv $OUT_DIR/tmp.txt $OUT_DIR/code/DDS/$file
     printf "done\n"
 }
 
 cd $OUT_DIR
 idlpp -l java -S code/dds_builtinTopics.idl
 
-FILES="\
-    DDS/ParticipantBuiltinTopicData.java \
-    DDS/ParticipantBuiltinTopicDataHolder.java \
-    DDS/ParticipantBuiltinTopicDataMetaHolder.java \
-    DDS/ParticipantBuiltinTopicDataTypeSupport.java \
-    DDS/ParticipantBuiltinTopicDataTypeSupportHolder.java \
-    DDS/ParticipantBuiltinTopicDataTypeSupportHelper.java \
-    DDS/ParticipantBuiltinTopicDataTypeSupportOperations.java \
-    DDS/ParticipantBuiltinTopicDataDataReader.java \
-    DDS/ParticipantBuiltinTopicDataDataReaderHolder.java \
-    DDS/ParticipantBuiltinTopicDataDataReaderHelper.java \
-    DDS/ParticipantBuiltinTopicDataDataReaderOperations.java \
-    DDS/ParticipantBuiltinTopicDataDataReaderImpl.java \
-    DDS/ParticipantBuiltinTopicDataSeqHolder.java \
-    DDS/TopicBuiltinTopicData.java \
-    DDS/TopicBuiltinTopicDataHolder.java \
-    DDS/TopicBuiltinTopicDataMetaHolder.java \
-    DDS/TopicBuiltinTopicDataTypeSupport.java \
-    DDS/TopicBuiltinTopicDataTypeSupportHolder.java \
-    DDS/TopicBuiltinTopicDataTypeSupportHelper.java \
-    DDS/TopicBuiltinTopicDataTypeSupportOperations.java \
-    DDS/TopicBuiltinTopicDataDataReader.java \
-    DDS/TopicBuiltinTopicDataDataReaderHolder.java \
-    DDS/TopicBuiltinTopicDataDataReaderHelper.java \
-    DDS/TopicBuiltinTopicDataDataReaderOperations.java \
-    DDS/TopicBuiltinTopicDataDataReaderImpl.java \
-    DDS/TopicBuiltinTopicDataSeqHolder.java \
-    DDS/PublicationBuiltinTopicData.java \
-    DDS/PublicationBuiltinTopicDataHolder.java \
-    DDS/PublicationBuiltinTopicDataMetaHolder.java \
-    DDS/PublicationBuiltinTopicDataTypeSupport.java \
-    DDS/PublicationBuiltinTopicDataTypeSupportHolder.java \
-    DDS/PublicationBuiltinTopicDataTypeSupportHelper.java \
-    DDS/PublicationBuiltinTopicDataTypeSupportOperations.java \
-    DDS/PublicationBuiltinTopicDataDataReader.java \
-    DDS/PublicationBuiltinTopicDataDataReaderHolder.java \
-    DDS/PublicationBuiltinTopicDataDataReaderHelper.java \
-    DDS/PublicationBuiltinTopicDataDataReaderOperations.java \
-    DDS/PublicationBuiltinTopicDataDataReaderImpl.java \
-    DDS/PublicationBuiltinTopicDataSeqHolder.java \
-    DDS/SubscriptionBuiltinTopicData.java \
-    DDS/SubscriptionBuiltinTopicDataHolder.java \
-    DDS/SubscriptionBuiltinTopicDataMetaHolder.java \
-    DDS/SubscriptionBuiltinTopicDataTypeSupport.java \
-    DDS/SubscriptionBuiltinTopicDataTypeSupportHolder.java \
-    DDS/SubscriptionBuiltinTopicDataTypeSupportHelper.java \
-    DDS/SubscriptionBuiltinTopicDataTypeSupportOperations.java \
-    DDS/SubscriptionBuiltinTopicDataDataReader.java \
-    DDS/SubscriptionBuiltinTopicDataDataReaderHolder.java \
-    DDS/SubscriptionBuiltinTopicDataDataReaderHelper.java \
-    DDS/SubscriptionBuiltinTopicDataDataReaderOperations.java \
-    DDS/SubscriptionBuiltinTopicDataDataReaderImpl.java \
-    DDS/SubscriptionBuiltinTopicDataSeqHolder.java"
+cd DDS
 
-for i in $FILES; do
+for i in *.java; do
     insert_header_and_move $i
 done
 
-# LOOK !!!!!!!!   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-printf "If you're seeing this message THIS HASN'T BEEN FIXED.\n"
+cd ..
 
-rm -rf $OUT_DIR/DDS/*.java
 rmdir $OUT_DIR/DDS
+
+if test -d $OUT_DIR/DDS
+then
+        echo -e "\n\nSomething has gone wrong; $OUT_DIR/DDS still exists!!\n"
+else
+        echo -e "\n\nAll done!\n"
+fi
+

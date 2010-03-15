@@ -34,6 +34,7 @@ serviceMonitorMain(
     c_iter diedServices;
     c_char *name;
     os_result procCreateResult;
+    os_int32 dummy;
     sr_serviceInfo info;
     c_char *args;
     int argc;
@@ -63,9 +64,19 @@ serviceMonitorMain(
                 }
                 OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> restart", info->name);
+
+                {
+                    os_time sleepTime;
+                    sleepTime.tv_sec = 2;
+                    sleepTime.tv_nsec = 0;
+                    os_nanoSleep(sleepTime);
+                }
 #if !defined OS_WIN32_DEFS_H && !defined INTEGRITY
                 os_procDestroy(info->procId, SIGKILL);
 #endif
+                os_procCheckStatus(info->procId, &dummy);
+
+
                 procCreateResult = os_procCreate(info->command,
                     info->name, args,
                     &info->procAttr, &info->procId);

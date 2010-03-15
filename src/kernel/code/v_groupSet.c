@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_groupSet.h"
@@ -54,7 +54,7 @@ alwaysFalse(
 v_group
 v_groupSetCreate(
     v_groupSet set,
-    v_domain partition,
+    v_partition partition,
     v_topic topic)
 {
     v_group group, found;
@@ -67,7 +67,7 @@ v_groupSetCreate(
     assert(partition != NULL);
     assert(topic != NULL);
     assert(C_TYPECHECK(set,v_groupSet));
-    assert(C_TYPECHECK(partition,v_domain));
+    assert(C_TYPECHECK(partition,v_partition));
     assert(C_TYPECHECK(topic,v_topic));
 
     c_lockWrite(&set->lock);
@@ -93,19 +93,18 @@ v_groupSetCreate(
         assert(found == group);
         set->sequenceNumber++;
         kernel = v_objectKernel(set);
-/* Keep groupset locked while triggering observers, otherwise
-   another process can already attach to the group concurrently,
-   but will also receive a notification, causing a reader to be
-   attached twice!
-*/
+
+        c_lockUnlock(&set->lock);
+
         /* Update the status of the observers */
         /* And trigger the waiting observers */
         event.kind = V_EVENT_NEW_GROUP;
         event.source = v_publicHandle(v_public(kernel));
         event.userData = group;
         v_observableNotify(v_observable(kernel),&event);
+    } else {
+        c_lockUnlock(&set->lock);
     }
-    c_lockUnlock(&set->lock);
 
     return found;
 }
@@ -160,6 +159,19 @@ v_groupSetSelect(
     q_dispose(expr);
 
     return list;
+}
+
+c_bool
+v_groupSetWalk (
+    v_groupSet set,
+    c_action action,
+    c_voidp arg)
+{
+    c_bool result;
+    c_lockRead(&set->lock);
+    result = c_walk(set->groups,action,arg);
+    c_lockUnlock(&set->lock);
+    return result;
 }
 
 static c_bool

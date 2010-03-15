@@ -97,8 +97,14 @@ v_mappingNew(
     os_free(resultFieldName);
 
     rule = c_new(v_kernelType(kernel, K_MAPPING));
-    rule->source = sourceField;
-    rule->destination = resultField;
+    if (rule) {
+        rule->source = sourceField;
+        rule->destination = resultField;
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_mappingNew",0,
+                  "Failed to allocate mapping rule.");
+    }
     return rule;
 }
 
@@ -228,8 +234,14 @@ v_projectionNew(
     p = v_projection(v_objectNew(kernel,K_PROJECTION));
     */
     p = c_new(v_kernelType(kernel, K_PROJECTION));
-    p->rules = (c_array)rules;
-    p->resultType = resultType; /* transfer refcount */
+    if (p) {
+        p->rules = (c_array)rules;
+        p->resultType = resultType; /* transfer refcount */
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_projectionNew",0,
+                  "Failed to allocate projection.");
+    }
 
     return p;
 }

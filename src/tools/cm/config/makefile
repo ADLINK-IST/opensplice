@@ -10,8 +10,8 @@ endif
 CONFIG_DIR       =$(OSPL_HOME)/src/tools/cm/config
 META_SRC_DIR     =$(CONFIG_DIR)/code
 META_BLD_DIR     =$(CONFIG_DIR)/bld/$(SPLICE_TARGET)
-META_FILE        =splice_metaconfig_4.1.xml
-META_XSD_FILE    =splice_metaconfig_4.1.xsd
+META_FILE        =splice_metaconfig_5.1.xml
+META_XSD_FILE    =splice_metaconfig_5.1.xsd
 META_FILES       =$(META_BLD_DIR)/$(META_FILE)
 META_FILES      +=$(META_BLD_DIR)/$(META_XSD_FILE)
 

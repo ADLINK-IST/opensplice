@@ -37,9 +37,14 @@ public class ReadConditionImpl extends ConditionImpl implements DDS.ReadConditio
     public DDS.DataReader get_datareader () {
         return jniGetDatareader();
     }
+    
+    public DDS.DataReaderView get_datareaderview(){
+        return jniGetDatareaderView();
+    }
 
     private native int jniGetSampleStateMask();
     private native int jniGetViewStateMask();
     private native int jniGetInstanceStateMask();
     private native DDS.DataReader jniGetDatareader();
+    private native DDS.DataReaderView jniGetDatareaderView();
 }

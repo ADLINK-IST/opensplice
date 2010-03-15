@@ -82,16 +82,28 @@ SAJ_FUNCTION(jniCreateDatawriter)(
                 rc = saj_LookupTypeSupportConstructorSignature(env, jtypeSupport, &signature);
                 
                 if(rc == SAJ_RETCODE_OK){
+                    gapi_publisherQos *pqos = gapi_publisherQos__alloc();
                     rc = saj_construct_typed_java_object(env, 
                                                         dataWriterClassName, 
                                                         (PA_ADDRCAST)writer, 
                                                         &jwriter, signature,
                                                         jtypeSupport);
+
                     gapi_free(signature);
                     
                     if(listener != NULL){
                         saj_write_java_listener_address(env, writer, listener->listener_data);
                     }
+
+                    if(pqos){
+                        if(gapi_publisher_get_qos(publisher, pqos) == GAPI_RETCODE_OK){
+                            if(pqos->entity_factory.autoenable_created_entities) {
+                                gapi_entity_enable(writer);
+                            }
+                        }
+                        gapi_free(pqos);
+                    }
+
                 }
             } else if(listener != NULL){
                 saj_listenerDataFree(env, saj_listenerData(listener->listener_data));

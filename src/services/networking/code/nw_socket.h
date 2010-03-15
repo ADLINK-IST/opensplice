@@ -46,7 +46,15 @@ nw_socket   nw_socketReceiveNew(
 
 void        nw_socketFree(
                 nw_socket sock);
+sk_bool		nw_socketGetMulticastSupported(
+				nw_socket sock);
 
+sk_bool		nw_socketGetMulticastInitialized(
+				nw_socket sock);
+
+void		nw_socketSetMulticastInitialized(
+				nw_socket sock,
+				sk_bool mi);
 
 sk_bool     nw_socketLoopsback(
                 nw_socket sock);

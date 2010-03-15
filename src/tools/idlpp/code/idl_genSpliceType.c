@@ -28,6 +28,7 @@
 #include "idl_tmplExp.h"
 #include "idl_dependencies.h"
 #include "idl_dll.h"
+#include "idl_catsDef.h"
 
 #include <ctype.h>
 #include <os_stdlib.h>
@@ -118,12 +119,6 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
     idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    /* Generate inclusion of standard SPLICE-DDS type definition files */
-    idl_fileOutPrintf(idl_fileCur(), "#include <c_base.h>\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include <c_misc.h>\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
-    idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
     if(!test_mode)
     {
         idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", includeFile);
@@ -132,6 +127,14 @@ idl_fileOpen(
             idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
         }
     }
+
+    /* Generate inclusion of standard SPLICE-DDS type definition files */
+    idl_fileOutPrintf(idl_fileCur(), "#include <c_base.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <c_misc.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
+
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
@@ -390,28 +393,78 @@ idl_structureMemberOpenClose(
         idl_typeSpecType(typeSpec) == idl_tenum ||
         idl_typeSpecType(typeSpec) == idl_tstruct ||
         idl_typeSpecType(typeSpec) == idl_tunion ||
-        idl_typeSpecType(typeSpec) == idl_tbasic) {
-        /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "%s %s;\n",
-            idl_scopedSplTypeIdent(typeSpec),
-            idl_languageId(name));
-    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        /* generate code for an array mapping */
-        idl_printIndent(indent_level);
-        if (idl_typeSpecType(idl_typeArrayActual (idl_typeArray(typeSpec))) != idl_tseq) {
+        idl_typeSpecType(typeSpec) == idl_tbasic)
+    {
+        os_boolean catsRequested = OS_FALSE;
+        idl_typeSpec typeSpecTMP;
+        if(idl_typeSpecType(typeSpec) == idl_ttypedef)
+        {
+            typeSpecTMP = idl_typeDefResolveFully(idl_typeDef(typeSpec));
+            if((idl_typeSpecType(typeSpecTMP) == idl_tarray))
+            {
+                idl_basicType basic;
+                idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpecTMP)));
+                if(idl_typeSpecType(subType) == idl_tbasic)
+                {
+                    idl_scope tmpScope = idl_scopeDup(scope);
+                    os_char* containingElement;
+
+                    basic = idl_typeBasicType(idl_typeBasic(subType));
+                    containingElement = idl_scopeElementName(idl_scopeCur (scope));
+                    idl_scopePop(tmpScope);
+                    catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+                }
+            }
+        }
+        if(!catsRequested)
+        {
+            /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
+            idl_printIndent(indent_level);
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "%s %s",
-                idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))),
+                "%s %s;\n",
+                idl_scopedSplTypeIdent(typeSpec),
                 idl_languageId(name));
-        } else {
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+        } else
+        {
+            idl_structureMemberOpenClose(scope, name, typeSpecTMP, userData);
         }
-        idl_arrayDimensions(idl_typeArray(typeSpec));
-        idl_fileOutPrintf(idl_fileCur(), ";\n");
+    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
+        /* generate code for an array mapping */
+        os_boolean catsRequested = OS_FALSE;
+        idl_basicType basic;
+        idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpec)));
+        if(idl_typeSpecType(subType) == idl_tbasic)
+        {
+            idl_scope tmpScope = idl_scopeDup(scope);
+            os_char* containingElement;
+
+            basic = idl_typeBasicType(idl_typeBasic(subType));
+            containingElement = idl_scopeElementName(idl_scopeCur (scope));
+            idl_scopePop(tmpScope);
+            catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+        }
+        if(catsRequested && basic == idl_char)
+        {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "c_string %s;\n", idl_languageId(name));
+        } else
+        {
+            idl_printIndent(indent_level);
+            if (idl_typeSpecType(idl_typeArrayActual (idl_typeArray(typeSpec))) != idl_tseq)
+            {
+                idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "%s %s",
+                    idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))),
+                    idl_languageId(name));
+            } else
+            {
+                idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+            }
+            idl_arrayDimensions(idl_typeArray(typeSpec));
+            idl_fileOutPrintf(idl_fileCur(), ";\n");
+        }
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
 	/* generate code for a sequence mapping */
         idl_printIndent(indent_level);

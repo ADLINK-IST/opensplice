@@ -219,6 +219,7 @@ STATIC void saj_cacheDoubleBuild (c_primitive o, saj_context context);
 STATIC void saj_cacheArrBooleanBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheArrByteBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheArrCharBuild (c_collectionType o, saj_context context);
+STATIC void saj_cacheArrCharToBStringBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheArrShortBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheArrIntBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheArrLongBuild (c_collectionType o, saj_context context);
@@ -690,6 +691,20 @@ saj_cacheStructBuild (
     saj_copyCacheUpdateSize (context.copyCache, headerIndex);
 }
 
+STATIC c_baseObject
+saj_copyCacheResolveTypeDef(
+    c_baseObject obj)
+{
+    c_baseObject object;
+
+    object = obj;
+    while(object->kind == M_TYPEDEF)
+    {
+        object = c_baseObject(c_typeDef(object)->alias);
+    }
+    return object;
+}
+
 STATIC void
 saj_cacheStructMember (
     c_member o,
@@ -697,13 +712,38 @@ saj_cacheStructMember (
 {
     sajCopyStructMember member;
     char fieldDescriptor[512];
+    os_boolean bstringToCArray = OS_FALSE;
+    c_baseObject baseObject;
 
     fieldDescriptor[0] = '\0';
     saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor), ctx->copyCache);
-
     member.memberOffset = o->offset;
     member.javaFID = (*ctx->javaEnv)->GetFieldID (
-	ctx->javaEnv, ctx->javaClass, saj_dekeyedId(c_specifier(o)->name), fieldDescriptor);
+	    ctx->javaEnv,
+        ctx->javaClass,
+        saj_dekeyedId(c_specifier(o)->name),
+        fieldDescriptor);
+    if((*ctx->javaEnv)->ExceptionOccurred(ctx->javaEnv))
+    {
+        baseObject = saj_copyCacheResolveTypeDef(c_baseObject(o));
+        baseObject = saj_copyCacheResolveTypeDef(c_baseObject(c_specifier(baseObject)->type));
+        if (baseObject->kind == M_COLLECTION &&
+            c_collectionType(baseObject)->kind == C_STRING &&
+            c_collectionType(baseObject)->maxSize > 0)
+        {
+            (*ctx->javaEnv)->ExceptionClear(ctx->javaEnv);
+            fieldDescriptor[0] = '[';
+            fieldDescriptor[1] = 'C';
+            fieldDescriptor[2] = '\0';
+            member.javaFID = (*ctx->javaEnv)->GetFieldID (
+                ctx->javaEnv,
+                ctx->javaClass,
+                saj_dekeyedId(c_specifier(o)->name),
+                fieldDescriptor);
+            (*ctx->javaEnv)->ExceptionDescribe(ctx->javaEnv);
+            bstringToCArray = OS_TRUE;
+        }
+    }
     saj_exceptionCheck (ctx->javaEnv);
 #if JNI_TRACE
     printf ("JNI: GetFieldID (0x%x) = %d\n", ctx->javaClass, member.javaFID);
@@ -711,10 +751,18 @@ saj_cacheStructMember (
 
     TRACE (printf ("    Struct Member @ %d\n", member.memberOffset));
     TRACE (printf ("        Java field descriptor = %s, Field name = %s, Java FID = %x\n",
-	fieldDescriptor, saj_dekeyedId(c_specifier(o)->name), (int)member.javaFID));
+	    fieldDescriptor,
+        saj_dekeyedId(c_specifier(o)->name),
+        (int)member.javaFID));
 
     saj_copyCacheWrite (ctx->copyCache, &member, sizeof(member));
-    saj_metaObject (c_specifier(o)->type, ctx);
+    if(!bstringToCArray)
+    {
+        saj_metaObject (c_specifier(o)->type, ctx);
+    } else
+    {
+        saj_cacheArrCharToBStringBuild (c_collectionType(c_specifier(o)->type), ctx);
+    }
 }
 
 STATIC void
@@ -1189,6 +1237,19 @@ saj_cacheArrCharBuild (
 
     TRACE (printf ("Char Array\n"));
     saj_cacheHeader ((sajCopyHeader *)&charHeader, sajArrChar, sizeof(charHeader));
+    charHeader.size = o->maxSize;
+    saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
+}
+
+STATIC void
+saj_cacheArrCharToBStringBuild (
+    c_collectionType o,
+    saj_context ctx)
+{
+    sajCopyArray charHeader;
+
+    TRACE (printf ("Char Array To BString\n"));
+    saj_cacheHeader ((sajCopyHeader *)&charHeader, sajArrCharToBString, sizeof(charHeader));
     charHeader.size = o->maxSize;
     saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
 }
@@ -1723,7 +1784,7 @@ saj_substitute(
         os_char* before;
         os_char* after;
 
-        before = os_malloc(ptr - tmp);
+        before = os_malloc(ptr - tmp+1);
         *ptr = '\0';
         strcpy(before, tmp);
         ptr = ptr+strlen(searchFor);
@@ -2214,6 +2275,9 @@ cacheDump (
 	break;
     case sajArrChar:
 	printf ("  ArrChar\n");
+	break;
+    case sajArrCharToBString:
+	printf ("  sajArrCharToBString\n");
 	break;
     case sajArrShort:
 	printf ("  ArrShort\n");

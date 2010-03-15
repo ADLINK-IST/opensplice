@@ -49,11 +49,17 @@ v_writerInstanceNew(
         instance = v_writerInstance(c_new(type));
         c_free(type);
 #endif
-        v_object(instance)->kernel = v_objectKernel(writer);
-        v_objectKind(instance) = K_WRITERINSTANCE;
-        instance->writer = (c_voidp)writer;
-        instance->groupInstanceCache = v_writerCacheNew(v_objectKernel(writer),
-                                                        V_CACHE_INSTANCE);
+        if (instance) {
+            v_object(instance)->kernel = v_objectKernel(writer);
+            v_objectKind(instance) = K_WRITERINSTANCE;
+            instance->writer = (c_voidp)writer;
+            instance->groupInstanceCache = v_writerCacheNew(v_objectKernel(writer),
+                                                            V_CACHE_INSTANCE);
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_writerInstanceNew",0,
+                      "Failed to allocate instance.");
+        }
     }
     v_writerInstanceInit(instance,message);
     return instance;

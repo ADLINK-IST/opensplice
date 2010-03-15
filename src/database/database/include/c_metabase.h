@@ -153,7 +153,7 @@ typedef enum c_direction {
 /* Search Types Directive */
 #define CQ_TYPEOBJECTS \
         (CQ_COLLECTION | CQ_ENUMERATION | CQ_PRIMITIVE | \
-         CQ_STRUCTURE | CQ_TYPEDEF | CQ_UNION)
+         CQ_STRUCTURE | CQ_TYPEDEF | CQ_UNION | CQ_INTERFACE)
 
 /* Search Operands Directive */
 #define CQ_OPERANDS \

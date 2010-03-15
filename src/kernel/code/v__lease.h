@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -49,6 +49,23 @@ OS_API void
 v_leaseUpdate (
     v_lease _this);
 
+/**
+ * Stores the expiryTime and duration of the lease in the provided pointers.
+ * This values are acquired within a lock, so both values will match each other.
+ * Only non-NULL pointers will be filled.
+ *
+ * @param lease The lease to get the properties from
+ * @param expiryTime If not NULL, the pointer will be filled with the
+ *                   expiryTime of lease (out-param)
+ * @param duration   If not NULL, the pointer will be filled with the
+ *                   duration of lease (out-param)
+ */
+OS_API void
+v_leaseGetExpiryAndDuration(
+    v_lease lease,
+    c_time *expiryTime,
+    v_duration *duration);
+
 OS_API c_time
 v_leaseExpiryTime (
     v_lease _this);
@@ -71,7 +88,7 @@ v_leaseRepeatCount(
     v_lease _this);
 
 #undef OS_API
-   
+
 #if defined (__cplusplus)
 }
 #endif

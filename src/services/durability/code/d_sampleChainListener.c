@@ -36,7 +36,7 @@
 #include "d_message.h"
 #include "v_group.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_time.h"
 #include "v_entry.h"
 #include "v_entity.h"

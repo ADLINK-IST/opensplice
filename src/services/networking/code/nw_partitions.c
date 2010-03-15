@@ -34,6 +34,7 @@ NW_STRUCT(nw_networkPartition) {
     v_networkPartitionId id;
     nw_networkPartitionName name;
     nw_networkPartitionAddress address; /* Not really needed here */
+    nw_networkSecurityPolicy securityPolicy;
     nw_bool connected;
     nw_networkPartition next;
 };
@@ -43,6 +44,7 @@ nw_networkPartitionNew(
     v_networkPartitionId id,
     const nw_networkPartitionName name,
     const nw_networkPartitionAddress address,
+    const nw_networkSecurityPolicy securityPolicy,
     nw_bool connected,
     nw_networkPartition *prevNext)
 {
@@ -56,7 +58,9 @@ nw_networkPartitionNew(
         result->id = id;
         result->name = nw_stringDup(name);
         result->address = nw_stringDup(address);
+	result->securityPolicy = securityPolicy ? nw_stringDup(securityPolicy) : NULL;
         result->connected = connected;
+
         result->next = NULL;
         *prevNext = result;
     }
@@ -75,6 +79,9 @@ nw_networkPartitionFree(
         *prevNext = networkPartition->next;
         os_free(networkPartition->name);
         os_free(networkPartition->address);
+        if (networkPartition->securityPolicy) {
+	    os_free(networkPartition->securityPolicy);
+	}
         os_free(networkPartition);
     }
 }
@@ -138,8 +145,79 @@ typedef enum nw_mappingMatch_e {
     NW_MATCH_EXACT    = 3
 } nw_mappingMatch;
 
+static nw_mappingMatch
+nw_WildcardMatching(
+    c_string str,
+    c_string pattern )
+{
+    c_bool   stop = FALSE;
+    nw_mappingMatch   matches = NW_MATCH_EXACT;
+    c_string strRef = NULL;
+    c_string patternRef = NULL;
+    /* c_string t1 = str; */
+    /* c_string t2 = pattern; */
+
+    /* QAC EXPECT 2106,2100; */
+    while ((*str != 0) && (*pattern != 0) && (stop == FALSE)) {
+        /* QAC EXPECT 2106,3123; */
+        if (*pattern == '*') {
+        	matches = NW_MATCH_WILDCARD;
+            /* QAC EXPECT 0489; */
+            pattern++;
+            /* QAC EXPECT 2106; */
+            while ((*str != 0) && (*str != *pattern)) {
+                /* QAC EXPECT 0489; */
+                str++;
+            }
+            /* QAC EXPECT 2106; */
+            if (*str != 0) {
+                /* QAC EXPECT 0489; */
+                strRef = str+1; /* just behind the matching char */
+                patternRef = pattern-1; /* on the '*' */
+            }
+        /* QAC EXPECT 2106,3123; */
+        } else if (*pattern == '?') {
+        	matches = NW_MATCH_WILDCARD;
+            /* QAC EXPECT 0489; */
+            pattern++;
+            /* QAC EXPECT 0489; */
+            str++;
+        /* QAC EXPECT 2004,3401,0489,2106; */
+        } else if (*pattern++ != *str++) {
+            if (strRef == NULL) {
+                matches = NW_MATCH_NONE;
+                stop = TRUE;
+            } else {
+                str = strRef;
+                pattern = patternRef;
+                strRef = NULL;
+            }
+        }
+    }
+    /* QAC EXPECT 3892,2106,2100; */
+    if ((*str == (char)0) && (stop == FALSE)) {
+        /* QAC EXPECT 2106,3123; */
+        while (*pattern == '*') {
+            /* QAC EXPECT 0489; */
+            pattern++;
+        }
+        /* QAC EXPECT 3892,2106; */
+        if (*pattern != (char)0) {
+             matches = NW_MATCH_NONE;
+        }
+    } else {
+        matches = NW_MATCH_NONE;
+    }
+    /*
+    NW_REPORT_WARNING_3("match result",
+                "Pattern: %s String: %s Match: %d",
+                t2, t1, matches);*/
+    return matches;
+    /* QAC EXPECT 5101; */
+}
+
 /* Mapping result:
- * 
+ *
  *    Partition match |   Topic match  |   result
  * ---------------------------------------------------
  * 1) EXACT           |   EXACT        |   EXACT
@@ -151,7 +229,7 @@ typedef enum nw_mappingMatch_e {
  * 7) NONE            |   EXACT        |   NONE
  * 8) NONE            |   WILDCARD     |   NONE
  * 9) NONE            |   NONE         |   NONE
- * 
+ *
  */
 
 static nw_mappingMatch
@@ -162,37 +240,22 @@ nw_partitionMappingMatch(
 {
     nw_mappingMatch result = NW_MATCH_NONE;
     nw_mappingMatch partitionMatch;
-    
+
     if (partitionMapping != NULL) {
-        if (strcmp(NW_PARTITIONS_WILDCARD, partitionMapping->dcpsPartitionExpression) == 0) {
-            partitionMatch = NW_MATCH_WILDCARD;
-        } else if (strcmp(dcpsPartitionName, partitionMapping->dcpsPartitionExpression) == 0) {
-            partitionMatch = NW_MATCH_EXACT;
-        } else {
-            partitionMatch = NW_MATCH_NONE;
-        }
-        
+
+        partitionMatch = nw_WildcardMatching(dcpsPartitionName, partitionMapping->dcpsPartitionExpression);
         if (partitionMatch != NW_MATCH_NONE) {
-            if (strcmp(NW_PARTITIONS_WILDCARD, partitionMapping->dcpsTopicExpression) == 0) {
-                if (partitionMatch == NW_MATCH_WILDCARD) {
-                    result = NW_MATCH_WILDCARD; /* 5 */
-                } else {
-                    result = NW_MATCH_PARTIAL;  /* 4 */
-                }
-            } else if (strcmp(dcpsTopicName, partitionMapping->dcpsTopicExpression) == 0) {
-                if (partitionMatch == NW_MATCH_WILDCARD) {
-                    result = NW_MATCH_PARTIAL;  /* 2 */
-                } else {
-                    result = NW_MATCH_EXACT;     /* 1 */
-                }
-            } else {
-                result = NW_MATCH_NONE; /* 3 or 6 */
+            result = nw_WildcardMatching(dcpsTopicName, partitionMapping->dcpsTopicExpression);
+
+            if((partitionMatch == NW_MATCH_WILDCARD && result == NW_MATCH_EXACT) ||
+                 (partitionMatch == NW_MATCH_EXACT && result == NW_MATCH_WILDCARD)) {
+                 result = NW_MATCH_PARTIAL;
             }
         } else {
-            result = NW_MATCH_NONE; /* 7 or 8 or 9 */
+            result = NW_MATCH_NONE;
         }
+
     }
-    
     return result;
 }
 
@@ -219,7 +282,7 @@ nw_partitionsNew() {
         result->mappingsHead = NULL;
         result->mappingsTail = NULL;
         nw_partitionsAddPartition(result, V_NETWORKPARTITIONID_LOCALHOST,
-            NW_LOCALPARTITION_NAME, NULL, TRUE);
+	  NW_LOCALPARTITION_NAME, NULL, NULL /* securityPolicy*/, TRUE);
     }
     
     return result;
@@ -273,6 +336,7 @@ nw_partitionsAddPartition(
     v_networkPartitionId networkPartitionId,
     const nw_networkPartitionName partitionName,
     const nw_networkPartitionAddress partitionAddress,
+    const nw_networkSecurityPolicy securityPolicy,
     nw_bool connected)
 {
     nw_networkPartitionName usedName = NULL;
@@ -301,7 +365,7 @@ nw_partitionsAddPartition(
                 prevNext = &(partitions->partitionsHead);
             }
             networkPartition = nw_networkPartitionNew(networkPartitionId,
-                usedName, partitionAddress, connected, prevNext);
+                usedName, partitionAddress, securityPolicy, connected, prevNext);
             partitions->partitionsTail = networkPartition;
         }
     }
@@ -347,9 +411,10 @@ nw_partitionsAddMapping(
 void
 nw_partitionsSetGlobalPartition(
     nw_partitions partitions,
-    const nw_networkPartitionAddress partitionAddress)
+    const nw_networkPartitionAddress partitionAddress,
+    const nw_networkSecurityPolicy   securityPolicy)
 {
-    nw_partitionsAddPartition(partitions, 0, NW_GLOBALPARTITION_NAME, partitionAddress, TRUE);
+    nw_partitionsAddPartition(partitions, 0, NW_GLOBALPARTITION_NAME, partitionAddress, securityPolicy, TRUE);
     nw_partitionsAddMapping(partitions, NW_PARTITIONS_WILDCARD,
         NW_PARTITIONS_WILDCARD, NW_GLOBALPARTITION_NAME);
 }

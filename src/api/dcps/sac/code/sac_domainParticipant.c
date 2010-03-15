@@ -29,6 +29,7 @@ DDS_DomainParticipant_create_publisher (
     const DDS_StatusMask mask
     )
 {
+    DDS_Publisher publisher;
     struct gapi_publisherListener gListener;
     struct gapi_publisherListener *pListener = NULL;
 
@@ -37,13 +38,26 @@ DDS_DomainParticipant_create_publisher (
         pListener = &gListener;
     }
 
-    return (DDS_Publisher)
-        gapi_domainParticipant_create_publisher (
-            (gapi_domainParticipant)this,
-            (const gapi_publisherQos *)qos,
-            (const struct gapi_publisherListener *)pListener,
-            (gapi_statusMask) mask
-        );
+     publisher = gapi_domainParticipant_create_publisher (
+                            (gapi_domainParticipant)this,
+                            (const gapi_publisherQos *)qos,
+                            (const struct gapi_publisherListener *)pListener,
+                            (gapi_statusMask) mask
+                        );
+
+     if(publisher){
+         gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
+         if(dpqos){
+             if(gapi_domainParticipant_get_qos(this, dpqos) == GAPI_RETCODE_OK){
+                 if(dpqos->entity_factory.autoenable_created_entities) {
+                     gapi_entity_enable(publisher);
+                 }
+             }
+             gapi_free(dpqos);
+         }
+     }
+
+     return publisher;
 }
 
 /*     ReturnCode_t
@@ -76,6 +90,7 @@ DDS_DomainParticipant_create_subscriber (
     const DDS_StatusMask mask
     )
 {
+    DDS_Subscriber subscriber;
     struct gapi_subscriberListener gListener;
     struct gapi_subscriberListener *pListener = NULL;
 
@@ -84,13 +99,26 @@ DDS_DomainParticipant_create_subscriber (
         pListener = &gListener;
     }
 
-    return (DDS_Subscriber)
-        gapi_domainParticipant_create_subscriber (
-            (gapi_domainParticipant)this,
-            (const gapi_subscriberQos *)qos,
-            (const struct gapi_subscriberListener *)pListener,
-            (gapi_statusMask) mask
-        );
+    subscriber = gapi_domainParticipant_create_subscriber (
+                            (gapi_domainParticipant)this,
+                            (const gapi_subscriberQos *)qos,
+                            (const struct gapi_subscriberListener *)pListener,
+                            (gapi_statusMask) mask
+                        );
+
+    if(subscriber){
+        gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
+        if(dpqos){
+            if(gapi_domainParticipant_get_qos(this, dpqos) == GAPI_RETCODE_OK){
+                if(dpqos->entity_factory.autoenable_created_entities) {
+                    gapi_entity_enable(subscriber);
+                }
+            }
+            gapi_free(dpqos);
+        }
+    }
+
+    return subscriber;
 }
 
 /*     ReturnCode_t

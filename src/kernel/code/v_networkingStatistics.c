@@ -28,23 +28,27 @@ v_networkingStatistics v_networkingStatisticsNew(v_kernel k)
         networkingStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkingStatistics");
     }
     _this = v_networkingStatistics(v_new(k, networkingStatisticsType));
-    v_networkingStatisticsInit(_this);
+    v_networkingStatisticsInit(_this,k);
     return _this;
 }
 
-void v_networkingStatisticsInit(v_networkingStatistics _this)
+void v_networkingStatisticsInit(v_networkingStatistics _this, v_kernel k)
 {
-    v_kernel kernel;
-
+	v_networkChannelStatistics ncs;
+	int i;
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
 
     v_statisticsInit(v_statistics(_this));
-    kernel = v_objectKernel(_this);
 
     _this->numberOfErrors = 0;
     _this->channelsCount = 0;
-    _this->channels = NULL;
+    //_this->channels =NULL;
+    _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(k)),"kernelModule::v_networkChannelStatistics"),64);
+    /*
+    for (i=0;i<64;i++) {
+    	_this->channels[i] = NULL;
+    }*/
 }
 
 void v_networkingStatisticsDeinit(v_networkingStatistics _this)

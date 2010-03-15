@@ -115,7 +115,7 @@ cmx_qosKernelQosFromKind(
                 qosType = c_resolve(base, "kernelModule::v_topicQos");
             break;
             case K_DOMAIN:
-                qosType = c_resolve(base, "kernelModule::v_domainQos");
+                qosType = c_resolve(base, "kernelModule::v_partitionQos");
             break;
             default:
             break;

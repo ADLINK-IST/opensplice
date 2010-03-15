@@ -13,8 +13,8 @@
 #include "cmx__domain.h"
 #include "cmx_domain.h"
 #include "cmx__entity.h"
-#include "u_domain.h"
-#include "v_domain.h"
+#include "u_partition.h"
+#include "v_partition.h"
 #include "u_participant.h"
 #include "u_entity.h"
 #include "os_heap.h"
@@ -27,7 +27,7 @@ cmx_domainNew(
     const c_char* name)
 {
     u_participant par;
-    u_domain dom;
+    u_partition dom;
     c_char* result;
     cmx_entityArg arg;
     u_result ur;
@@ -36,7 +36,7 @@ cmx_domainNew(
     par = u_participant(cmx_entityUserEntity(participant));
     
     if(par != NULL){
-        dom = u_domainNew(par, name, NULL);
+        dom = u_partitionNew(par, name, NULL);
     
         if(dom != NULL){
             cmx_registerEntity(u_entity(dom));
@@ -58,12 +58,12 @@ cmx_domainNew(
 
 c_char*
 cmx_domainInit(
-    v_domain entity)
+    v_partition entity)
 {
     char buf[512];
-    v_domain domain;
+    v_partition partition;
     
-    domain = v_domain(entity);
+    partition = v_partition(entity);
     sprintf(buf, "<kind>DOMAIN</kind>");
     
     return (c_char*)(os_strdup(buf));

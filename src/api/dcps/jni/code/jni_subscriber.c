@@ -164,15 +164,15 @@ jni_deleteReader(
 jni_result
 jni_subscriberSubscribe(
     jni_subscriber sub,
-    const c_char* domainExpr)
+    const c_char* partitionExpr)
 {
     jni_result r;
     
-    if((sub == NULL) || (sub->usubscriber == NULL) || (domainExpr == NULL)){
+    if((sub == NULL) || (sub->usubscriber == NULL) || (partitionExpr == NULL)){
         r = JNI_RESULT_BAD_PARAMETER;
     } 
     else {
-        r = jni_convertResult(u_subscriberSubscribe(sub->usubscriber, domainExpr));
+        r = jni_convertResult(u_subscriberSubscribe(sub->usubscriber, partitionExpr));
     }
     return r;
 }

@@ -24,6 +24,7 @@ namespace DDS
       public ::DDS::ReadCondition_impl
     {
     friend class ::DDS::DataReader_impl;
+    friend class ::DDS::DataReaderView_impl;
 
     private:
         QueryCondition_impl(gapi_queryCondition handle);

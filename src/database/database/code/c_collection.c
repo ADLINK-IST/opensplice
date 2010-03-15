@@ -176,6 +176,40 @@ c_listRemove (
     return found;
 }
 
+c_object
+c_listTemplateRemove (
+    c_list _this,
+    c_action condition,
+    c_voidp arg)
+{
+    C_STRUCT(c_list) *l = (C_STRUCT(c_list) *)_this;
+    c_listNode n,p;
+    c_object found;
+
+    p = NULL;
+    n = l->head;
+    while ((n != NULL) && (!condition(n->object,arg))) {
+        p = n;
+        n = n->next;
+    }
+    if (n == NULL) return NULL;
+
+    found = n->object;
+
+    if (p != NULL) {
+        p->next = n->next;
+    } else {
+        l->head = n->next;
+    }
+    if (n == l->tail) {
+        l->tail = p;
+    }
+    c_mmCacheFree(l->cache,n);
+    l->count--;
+
+    return found;
+}
+
 static c_object
 c_listReplace (
     c_list _this,
@@ -285,6 +319,7 @@ c_listTake (
         o = c_listTakeOne(_this,q);
         if (o != NULL) {
             proceed = action(o,arg);
+            c_free(o);
         } else {
             proceed = FALSE;
         }
@@ -2764,6 +2799,26 @@ c_arrayNew(
     }
 
     return _this;
+}
+
+/**
+ * Always create new array regardless of length. Functionality is only required in serializer context
+ */
+c_array
+c_arrayNew_w_header(
+    c_collectionType arrayType,
+    c_long length)
+{
+    c_array _this = NULL;
+
+    if (length == 0)
+    {
+    	_this = c_newArray (arrayType, length);
+    }else {
+    	_this = c_arrayNew (arrayType->subType, length);
+    }
+
+	return _this;
 }
 
 #define C_LIST_ANONYMOUS_NAME "LIST<******>"

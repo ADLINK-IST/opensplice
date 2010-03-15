@@ -16,7 +16,7 @@
 #include "v_dataReader.h"
 #include "v_subscriber.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_kernel.h"
 #include "v_handle.h"
 #include "os_heap.h"
@@ -63,7 +63,7 @@ d_readerRequestNew(
     v_handleResult handleResult;
     v_reader vreader;
     c_iter partitions;
-    v_domain partition;
+    v_partition partition;
     v_topic topic;
     d_group dgroup;
     c_char *topicName;
@@ -108,8 +108,8 @@ d_readerRequestNew(
             if(v_object(vreader)->kind == K_DATAREADER){
                 topic      = v_dataReaderGetTopic(v_dataReader(vreader));
                 topicName  = v_entity(topic)->name;
-                partitions = c_select(v_subscriber(vreader->subscriber)->domains->domains, 0);
-                partition  = v_domain(c_iterTakeFirst(partitions));
+                partitions = c_select(v_subscriber(vreader->subscriber)->partitions->partitions, 0);
+                partition  = v_partition(c_iterTakeFirst(partitions));
 
                 while(partition){
                     quality.seconds = 0;
@@ -121,7 +121,7 @@ d_readerRequestNew(
                                 quality);
                     d_tableInsert(request->groups, dgroup);
                     c_free(partition);
-                    partition  = v_domain(c_iterTakeFirst(partitions));
+                    partition  = v_partition(c_iterTakeFirst(partitions));
                 }
                 c_free(topic);
             } else {

@@ -122,10 +122,11 @@ class v_queryStatistics extends v_statistics {
 };
 
 class v_networkQueueStatistics { /* Reachable via v_networkReaderStatistics only */
+    attribute c_string           name;
     attribute c_ulong            numberOfSamplesArrived;
     attribute c_ulong            numberOfSamplesInserted;
     attribute c_ulong            numberOfSamplesRejected;
-    attribute c_ulong            numberOfSamplesWaiting;
+    attribute v_fullCounter      numberOfSamplesWaiting;
     attribute c_ulong            numberOfSamplesTaken;
 };
 
@@ -135,6 +136,7 @@ class v_networkReaderStatistics extends v_statistics {
 };
 
 class v_networkChannelStatistics { /* Reachable via v_networkingStatistics only */
+    attribute c_string           name;
     attribute c_ulong            numberOfMessagesSent;
     attribute c_ulong            numberOfBytesSent;
     attribute c_ulong            numberOfPacketsSent;
@@ -160,6 +162,11 @@ class v_networkChannelStatistics { /* Reachable via v_networkingStatistics only 
     attribute c_ulong            numberOfBytesDelivered;
     attribute c_ulong            numberOfMessagesNotInterested;
     attribute c_ulong            numberOfBytesNotInterested;
+    attribute c_ulong            nofFreePacketBuffers;
+    attribute c_ulong            nofUsedPacketBuffers;
+    attribute v_fullCounter      adminQueueAcks;
+    attribute v_fullCounter      adminQueueData;
+    
 };
 
 class v_networkingStatistics extends v_statistics  {
@@ -288,13 +295,12 @@ typedef struct v_handle_s {
 
 enum v_kind {
     K_KERNEL,            K_OBJECT,             K_ENTITY,
-    K_GROUPSET,          K_GROUPSETOBSERVER,
-    K_SENDQUEUE,         K_SENDITEM,
-    K_WAITSET,           K_CONDITION,          K_LISTENER,
+    K_GROUPSET,
+    K_WAITSET,           K_CONDITION,
     K_QUERY,             K_DATAREADERQUERY,    K_DATAVIEW,
     K_PROJECTION,        K_MAPPING,            K_FILTER,
     K_DEADLINEINSTANCE,
-    K_MESSAGE,           K_NODE,
+    K_MESSAGE,
     K_WRITERINSTANCE,    K_WRITERSAMPLE,
     K_GROUPINSTANCE,     K_GROUPSAMPLE,
     K_DATAREADERINSTANCE,K_READERSAMPLE,
@@ -303,24 +309,23 @@ enum v_kind {
     K_PUBLISHER,         K_SUBSCRIBER,
     K_DOMAIN,            K_DOMAININTEREST,     K_DOMAINADMIN,
     K_READER,            K_WRITER,
-    K_ENTRY,             K_DATAREADERENTRY,
+    K_ENTRY,             K_DATAREADERENTRY,    K_DELIVERYSERVICEENTRY,
     K_GROUP,             K_CACHE,
     K_GROUPACTION,       K_GROUPSTREAM,
     K_GROUPQUEUE,        K_GROUPQUEUESAMPLE,
-    K_DATAREADER,        K_PARTICIPANT,
+    K_DATAREADER,        K_DELIVERYSERVICE,          K_PARTICIPANT,
     K_PURGELISTITEM,     K_GROUPPURGEITEM,
     K_INDEX,
     K_READERSTATUS,      K_WRITERSTATUS,
     K_PUBLISHERSTATUS,   K_SUBSCRIBERSTATUS,
     K_DOMAINSTATUS,      K_TOPICSTATUS,
     K_PARTICIPANTSTATUS, K_KERNELSTATUS,
-    K_HANDLE,            K_PROXY,              K_WAITSETEVENT,
+    K_PROXY,             K_WAITSETEVENT,
     K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
     K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
     K_LEASEMANAGER,      K_LEASE,
     K_SPLICED,
-    K_OBSERVER,
     K_CONFIGURATION,
     K_REGISTRATION,
     /* Networking types */
@@ -331,10 +336,6 @@ enum v_kind {
     K_HISTORICALDATAREQUEST,
     /* This constant must always be the last */
     K_TYPECOUNT
-};
-
-class v_listener {
-    attribute c_long                         pid;
 };
 
 class v_object {
@@ -406,8 +407,8 @@ class v_dataReaderQuery extends v_query {
     attribute c_string               expression;
     attribute c_string               params;
     attribute v_dataReaderSample     triggerValue;
+    attribute c_bool                 walkRequired;
     attribute c_ulong                updateCnt;
-    attribute c_bool                 lastResult;
 };
 
 typedef v_dataReaderQuery v_dataViewQuery;
@@ -435,6 +436,7 @@ class v_waitset extends v_observer {
     /* The eventlist for the waitset is stored as eventData in v_observer */
     attribute c_voidp participant;
     attribute v_waitsetEvent eventCache;
+    attribute SET<v_proxy> observables;
 };
 
 enum v_leaseActionId {
@@ -551,7 +553,7 @@ class v_kernelStatus extends v_status {
     attribute v_servicesChangedInfo          servicesInfo;
 };
 
-class v_domainStatus extends v_status {
+class v_partitionStatus extends v_status {
     attribute v_groupsChangedInfo            groupsChanged;
 };
 
@@ -841,7 +843,7 @@ struct v_builtinTopicPolicy {
 };
 
 enum v_qosKind {
-    V_DOMAIN_QOS,
+    V_PARTITION_QOS,
     V_PARTICIPANT_QOS,
     V_TOPIC_QOS,
     V_WRITER_QOS,
@@ -865,7 +867,7 @@ class v_kernelQos extends v_qos {
     attribute v_builtinTopicPolicy      builtin;
 };
 
-class v_domainQos extends v_qos {
+class v_partitionQos extends v_qos {
     attribute v_simulationPolicy        simulation;
     attribute v_userDataPolicy          userData;
     attribute v_entityFactoryPolicy     entityFactory;
@@ -1000,10 +1002,10 @@ class v_filter {
 };
 
 /* -------------------------------------------------------------------------- */
-/* Domain implementation
+/* Partition implementation
 /* -------------------------------------------------------------------------- */
 
-class v_domain extends v_entity {
+class v_partition extends v_entity {
     attribute v_qos                         qos;
 };
 
@@ -1025,28 +1027,17 @@ class v_deadLineInstanceList extends v_instance {
     attribute v_leaseActionId                actionId;
 };
 
-class v_domainInterest {
+class v_partitionInterest {
     /* attribute c_long                         index; */
     /* attribute c_bool                         interested; */
     attribute c_string                       expression;
 };
 
-class v_domainAdmin extends v_object { /* only used by v_publisher and v_subscriber */
+class v_partitionAdmin extends v_object { /* only used by v_publisher and v_subscriber */
     attribute c_mutex                        mutex;
-    attribute SET<v_domain>                  domains;
-    attribute SET<v_domainInterest>          domainInterests;
+    attribute SET<v_partition>               partitions;
+    attribute SET<v_partitionInterest>       partitionInterests;
 };
-
-/* -------------------------------------------------------------------------- */
-/* Sample list implementation                                                 */
-/* -------------------------------------------------------------------------- */
-
-struct v_sampleList {
-    c_long                         count;
-    c_voidp                        firstSample; /* v_sample, not counted */
-    c_voidp                        lastSample;  /* v_sample, not counted */
-};
-
 
 /* -------------------------------------------------------------------------- */
 /* Message implementation                                                     */
@@ -1290,6 +1281,7 @@ class v_groupInstance extends v_object {
     attribute c_voidp                        group;
     attribute c_voidp                        oldest;
     attribute v_groupCache                   readerInstanceCache;
+    attribute v_groupCache                   synchronousInstanceCache;
     attribute v_registration                 registrations;
     attribute v_registration                 unregisterMessages;
     attribute c_time                         epoch;
@@ -1333,13 +1325,14 @@ class v_group extends v_entity {
 
     /* Group meta description */
     attribute v_topic                        topic;
-    attribute v_domain                       partition;
+    attribute v_partition                    partition;
     attribute c_long                         depth;
-    attribute v_accessMode             domainAccessMode;
+    attribute v_accessMode                   partitionAccessMode;
     /* Group associated Reader Entries */
     attribute v_groupEntrySet topicEntrySet;   /* Normal dataReader entries. */
     attribute v_groupEntrySet networkEntrySet; /* Network interface entries. */
     attribute v_groupEntrySet variantEntrySet; /* Variant keyed dataReader entries. */
+    attribute v_groupEntrySet synchronousEntrySet; /* synchronous dataReader entries. */
     attribute SET<v_groupStream> streams; /* Streams interested in all actions */
 
     /* Group process control. */
@@ -1382,6 +1375,7 @@ class v_writerSample {
     attribute c_ulong                        sequenceNumber;
     attribute c_long                         decayCount;
     attribute c_bool                         resend;
+    attribute c_bool                         sentBefore;
 };
 
 class v_writerSampleTemplate extends v_writerSample {
@@ -1425,6 +1419,29 @@ struct v_writerGroupSet {
     v_writerGroup                            firstGroup;
 };
 
+class v_deliveryWaitList {
+    attribute v_gid          writerGID;
+    attribute v_gid          writerInstanceGID;
+    attribute c_ulong        sequenceNumber;
+    attribute c_mutex        mutex;
+    attribute c_cond         cv;
+    attribute ARRAY<c_ulong> systemIds;
+    attribute c_voidp        guard;
+};
+
+class v_deliveryPublisher {
+    attribute c_ulong systemId;
+    attribute c_ulong count;
+};
+
+class v_deliveryGuard {
+    attribute v_gid writerGID;
+    attribute c_voidp owner;
+    attribute SET<v_deliveryPublisher> publications;
+    attribute SET<v_deliveryWaitList> waitlists;
+};
+
+
 class v_writer extends v_observer {
     attribute v_topic                        topic;
     attribute v_writerGroupSet               groupSet;
@@ -1453,6 +1470,8 @@ class v_writer extends v_observer {
 
     attribute v_writerInstance               cachedInstance;
 
+    attribute v_deliveryGuard                deliveryGuard;
+
 #ifdef PROFILER
 /* PROFILER attributes */
     attribute c_voidp                        t1;
@@ -1469,7 +1488,7 @@ class v_writer extends v_observer {
 /* -------------------------------------------------------------------------- */
 
 class v_subscriber extends v_observer {
-    attribute v_domainAdmin                  domains;
+    attribute v_partitionAdmin               partitions;
     attribute SET<v_reader>                  readers;
     attribute c_mutex                        sharesMutex;
     attribute SET<v_reader>                  shares;
@@ -1480,7 +1499,7 @@ class v_subscriber extends v_observer {
 };
 
 class v_publisher extends v_observer {
-    attribute v_domainAdmin                  domains;
+    attribute v_partitionAdmin               partitions;
     attribute SET<v_writer>                  writers;
     attribute c_lock                         lock;
     attribute c_voidp                        participant;
@@ -1599,6 +1618,7 @@ enum v_infoId {
     V_PUBLICATIONINFO_ID,
     V_SUBSCRIPTIONINFO_ID,
     V_HEARTBEATINFO_ID,
+    V_DELIVERYINFO_ID,
     V_INFO_ID_COUNT
 };
 
@@ -1701,6 +1721,20 @@ struct v_subscriptionInfo {
     v_readerLifespanPolicy                   lifespan;
 };
 
+class v_subscriptionInfoTemplate extends v_message {
+    attribute v_subscriptionInfo userData;
+};
+
+struct v_deliveryInfo {
+    v_gid   writerGID;
+    v_gid   writerInstanceGID;
+    c_ulong sequenceNumber;
+};
+
+class v_deliveryInfoTemplate extends v_message {
+    attribute v_deliveryInfo userData;
+};
+
 struct v_heartbeatInfo {
     v_gid      id;
     v_duration period;
@@ -1786,6 +1820,7 @@ class v_dataReader extends v_reader {
 #endif
     attribute v_projection                   projection;
     attribute v_dataReaderSample             triggerValue;
+    attribute c_bool                         walkRequired;
     attribute c_ulong                        updateCnt;
     /* This Count is the read/take sequence number of the reader.
      * Any read or take operation will increment this value and mark
@@ -1817,6 +1852,18 @@ class v_dataReader extends v_reader {
     attribute v_laptime                      nwReceiveTime[2];
     attribute v_laptime                      nwInsertTime[2];
 #endif
+};
+
+/* v_deliveryService is a nodal service that provides
+ * a wait for delivery acknowledgements method.
+ */
+class v_deliveryService extends v_reader {
+    attribute SET<v_subscriptionInfoTemplate> subscriptions;
+    attribute SET<v_deliveryGuard> guards;
+};
+
+class v_deliveryServiceEntry extends v_entry {
+    attribute v_topic topic;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1934,6 +1981,7 @@ class v_networkQueue {
     attribute c_time                         nextWakeup;
     attribute c_mutex                        mutex;
     attribute c_cond                         cv;
+    attribute v_networkQueueStatistics       statistics;
 };
 
 class v_networkReader extends v_reader {
@@ -1980,7 +2028,7 @@ class v_kernel extends v_observable {
     attribute v_gid                          GID;
     attribute SET<v_participant>             participants;
     attribute SET<v_topic>                   topics;
-    attribute SET<v_domain>                  domains;
+    attribute SET<v_partition>               partitions;
     attribute v_groupSet                     groupSet;
     attribute c_type                         type[K_TYPECOUNT];
     attribute c_lock                         lock;
@@ -1988,6 +2036,7 @@ class v_kernel extends v_observable {
     attribute v_kernelQos                    qos;
     attribute v_serviceManager               serviceManager;
     attribute v_leaseManager                 livelinessLM;
+    attribute v_deliveryService              deliveryService;
     attribute v_configuration                configuration;
     attribute c_ulong                        userCount;
 

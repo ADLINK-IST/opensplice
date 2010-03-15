@@ -165,16 +165,22 @@ purgeListInsert(
     v_purgeListItem item;
 
     item = c_new(v_kernelType(v_objectKernel(instance),K_PURGELISTITEM));
-    item->instance = c_keep(instance);
-    item->insertionTime = v_timeGet();
-    if (v_dataReaderInstanceStateTest(instance, L_DISPOSED)) {
-        item->genCount = instance->disposeCount;
+    if (item) {
+        item->instance = c_keep(instance);
+        item->insertionTime = v_timeGet();
+        if (v_dataReaderInstanceStateTest(instance, L_DISPOSED)) {
+            item->genCount = instance->disposeCount;
+        } else {
+            item->genCount = instance->noWritersCount;
+        }
+        c_append(purgeList,item);
+        instance->purgeInsertionTime = item->insertionTime;
+        c_free(item);
     } else {
-        item->genCount = instance->noWritersCount;
+        OS_REPORT(OS_ERROR,
+                  "v_dataReaderEntry",0,
+                  "Failed to insert instance in purge list");
     }
-    c_append(purgeList,item);
-    instance->purgeInsertionTime = item->insertionTime;
-    c_free(item);
 }
 
 static void
@@ -188,7 +194,7 @@ doInstanceAutoPurge(
 
     if (!v_dataReaderInstanceEmpty(instance)) {
         /* Remove all samples from the instance, where
-	   sample->disposedCount == disposedCount
+	   sample->disposed-/noWritersCount <= disposed-/noWritersCount
         */
         sampleCount = v_dataReaderInstanceSampleCount(instance);
         v_dataReaderInstancePurge(instance, disposedCount, noWritersCount);
@@ -214,7 +220,6 @@ v_dataReaderEntryUpdatePurgeLists(
     v_purgeListItem purgeListItem, testItem;
     v_dataReaderInstance purgeInstance;
     v_readerQos qos;
-    c_equality eq;
     v_dataReader reader;
     c_ulong count, delta; /* statistics */
 
@@ -246,7 +251,7 @@ v_dataReaderEntryUpdatePurgeLists(
 
         /* update statistics */
         if (v_statisticsValid(reader)) {
-	    delta = count - reader->sampleCount;
+            delta = count - reader->sampleCount;
             if (delta) {
                 assert(delta > 0);
                 *(v_statisticsGetRef(v_reader,
@@ -261,86 +266,77 @@ v_dataReaderEntryUpdatePurgeLists(
     qos = v_reader(reader)->qos;
     purgeList = entry->purgeListNotEmpty;
     if (c_listCount(purgeList) > 0) {
-        eq = c_timeCompare(now, qos->lifecycle.autopurge_nowriter_samples_delay);
-        if (eq == C_GT) {
-            timestamp = c_timeSub(now, qos->lifecycle.autopurge_nowriter_samples_delay);
-            count = reader->sampleCount; /* statistics */
-            purgeListItem = c_removeAt(purgeList, 0);
-            while (purgeListItem != NULL) {
-                if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
-                    purgeInstance = purgeListItem->instance;
-#if 0
-                    if (v_timeCompare(purgeListItem->insertionTime,
-                                      purgeInstance->purgeInsertionTime) == C_EQ){
-                        doInstanceAutoPurge(reader, purgeInstance, -1, purgeListItem->genCount);
-                    }
-#else
+        timestamp = c_timeSub(now, qos->lifecycle.autopurge_nowriter_samples_delay);
+        count = reader->sampleCount; /* statistics */
+        purgeListItem = c_removeAt(purgeList, 0);
+        while (purgeListItem != NULL) {
+            if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
+                purgeInstance = purgeListItem->instance;
+
+                if (v_timeCompare(purgeListItem->insertionTime,
+                                  purgeInstance->purgeInsertionTime) == C_EQ){
                     doInstanceAutoPurge(reader, purgeInstance, -1, purgeListItem->genCount);
-#endif
-                    c_free(purgeListItem);
-                    purgeListItem = c_removeAt(purgeList, 0);
-                } else {
-                   /* the taken instance was not old enough yet and is
-                    * therefore re-inserted.
-                    */
-                   testItem = c_listInsert(purgeList, purgeListItem);
-                   assert(testItem == purgeListItem);
-                   c_free(purgeListItem);
-                   purgeListItem = NULL;
                 }
+
+                c_free(purgeListItem);
+                purgeListItem = c_removeAt(purgeList, 0);
+            } else {
+               /* the taken instance was not old enough yet and is
+                * therefore re-inserted.
+                */
+               testItem = c_listInsert(purgeList, purgeListItem);
+               assert(testItem == purgeListItem);
+               c_free(purgeListItem);
+               purgeListItem = NULL;
             }
-            /* Update statistics */
-            if (v_statisticsValid(reader)) {
-	        delta = count - reader->sampleCount;
-                if (delta) {
-                    assert(delta > 0);
-                    *(v_statisticsGetRef(v_reader,
-                                         numberOfSamplesPurgedByNoWriters,
-                                         reader)) += delta;
-                }
+        }
+        /* Update statistics */
+        if (v_statisticsValid(reader)) {
+        delta = count - reader->sampleCount;
+            if (delta) {
+                assert(delta > 0);
+                *(v_statisticsGetRef(v_reader,
+                                     numberOfSamplesPurgedByNoWriters,
+                                     reader)) += delta;
             }
         }
     }
+
     purgeList = entry->purgeListDisposed;
     if (c_listCount(purgeList) > 0) {
-        eq = c_timeCompare(now, qos->lifecycle.autopurge_disposed_samples_delay);
-        if (eq == C_GT) {
-            timestamp = c_timeSub(now, qos->lifecycle.autopurge_disposed_samples_delay);
-            count = reader->sampleCount; /* statistics */
-            purgeListItem = c_removeAt(purgeList, 0);
-            while (purgeListItem != NULL) {
-                if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
-                    purgeInstance = purgeListItem->instance;
-#if 0
-                    if (v_timeCompare(purgeListItem->insertionTime,
-                                      purgeInstance->purgeInsertionTime) == C_EQ){
-                        doInstanceAutoPurge(reader, purgeInstance, purgeListItem->genCount, -1);
-                    }
-#else
+        timestamp = c_timeSub(now, qos->lifecycle.autopurge_disposed_samples_delay);
+        count = reader->sampleCount; /* statistics */
+        purgeListItem = c_removeAt(purgeList, 0);
+        while (purgeListItem != NULL) {
+            if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
+                purgeInstance = purgeListItem->instance;
+
+                if (v_timeCompare(purgeListItem->insertionTime,
+                                  purgeInstance->purgeInsertionTime) == C_EQ){
                     doInstanceAutoPurge(reader, purgeInstance, purgeListItem->genCount, -1);
-#endif
-                    c_free(purgeListItem);
-                    purgeListItem = c_removeAt(purgeList, 0);
-                } else {
-                   /* the taken instance was not old enough yet and is
-                    * therefore re-inserted.
-                    */
-                   testItem = c_listInsert(purgeList, purgeListItem);
-                   assert(testItem == purgeListItem);
-                   c_free(purgeListItem);
-                   purgeListItem = NULL;
                 }
+
+                c_free(purgeListItem);
+                purgeListItem = c_removeAt(purgeList, 0);
+            } else {
+               /* the taken instance was not old enough yet and is
+                * therefore re-inserted.
+                */
+               testItem = c_listInsert(purgeList, purgeListItem);
+               assert(testItem == purgeListItem);
+               c_free(purgeListItem);
+               purgeListItem = NULL;
             }
-            /* Update statistics. */
-            if (v_statisticsValid(reader)) {
-                delta = count - reader->sampleCount;
-                if (delta) {
-                    assert(delta > 0);
-                    v_statisticsULongValueAdd(v_reader,
-                                              numberOfSamplesPurgedByDispose,
-                                              reader,
-                                              delta);
-                }
+        }
+        /* Update statistics. */
+        if (v_statisticsValid(reader)) {
+            delta = count - reader->sampleCount;
+            if (delta) {
+                assert(delta > 0);
+                v_statisticsULongValueAdd(v_reader,
+                                          numberOfSamplesPurgedByDispose,
+                                          reader,
+                                          delta);
             }
         }
     }
@@ -399,6 +395,9 @@ v_dataReaderEntryWrite(
     reader = v_entryReader(_this);
     v_observerLock(v_observer(reader));
 
+    /* Purge samples */
+    v_dataReaderEntryUpdatePurgeLists(_this);
+
     qos = reader->qos;
     state = v_nodeState(message);
 
@@ -448,11 +447,7 @@ v_dataReaderEntryWrite(
         }
     }
 
-    /*** Try to free resources and check the max samples limit.
-         If no resources then report message rejected. ***/
-
-    v_dataReaderEntryUpdatePurgeLists(_this);
-
+    /* Check the max samples limit. If no resources then report message rejected. */
     maxSamples = qos->resource.max_samples;
     count = v_dataReader(reader)->sampleCount;
     assert(count >= 0);

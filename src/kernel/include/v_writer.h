@@ -142,12 +142,12 @@ v_writerCreateInstanceMessage(
 OS_API c_bool
 v_writerPublish(
     v_writer w,
-    v_domain d);
+    v_partition d);
 
 OS_API c_bool
 v_writerUnPublish(
     v_writer w,
-    v_domain d);
+    v_partition d);
 
 OS_API void
 v_writerResend(

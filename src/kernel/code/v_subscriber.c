@@ -18,10 +18,11 @@
 #include "v__subscriber.h"
 #include "v__subscriberQos.h"
 #include "v_participant.h"
-#include "v__domain.h"
+#include "v__partition.h"
 #include "v_topic.h"
-#include "v__domainAdmin.h"
+#include "v__partitionAdmin.h"
 #include "v__reader.h"
+#include "v__deliveryService.h"
 #include "v_group.h"
 #include "v__observer.h"
 #include "v_observable.h"
@@ -36,7 +37,7 @@
 #include "v__dataReader.h"
 #include "v__policy.h"
 #include "v__kernel.h"
-#include "v_domain.h"
+#include "v_partition.h"
 
 
 /* ----------------------------------- Private ------------------------------ */
@@ -98,11 +99,11 @@ v_subscriberNew(
                 v_lockShares(kernel);
                 found = v_addShareUnsafe(kernel,v_entity(s));
                 if (found != v_entity(s)) {
-                    /* Make sure to set the domain list to NULL, because
+                    /* Make sure to set the partition list to NULL, because
                      * v_publicFree will cause a crash in the v_subscriberDeinit
                      * otherwise.
                      */
-                    s->domains = NULL;
+                    s->partitions = NULL;
                     /*v_publicFree to free reference held by the handle server.*/
                     v_publicFree(v_public(s));
                     /*Now free the local reference as well.*/
@@ -117,7 +118,7 @@ v_subscriberNew(
                 s->shares = NULL;
             }
             s->shareCount  = 1;
-            s->domains     = v_domainAdminNew(kernel);
+            s->partitions  = v_partitionAdminNew(kernel);
             s->readers     = c_setNew(v_kernelType(kernel,K_READER));
 
             if (q->share.enable) {
@@ -207,6 +208,9 @@ v_subscriberFree(
             case K_DATAREADER:
                 v_dataReaderFree(v_dataReader(o));
             break;
+            case K_DELIVERYSERVICE:
+                v_deliveryServiceFree(v_deliveryService(o));
+            break;
             case K_GROUPQUEUE:
                 v_groupQueueFree(v_groupQueue(o));
             break;
@@ -244,11 +248,11 @@ v_subscriberDeinit(
 }
 
 static c_bool
-collectDomains(
+collectPartitions(
     c_object o,
     c_voidp arg)
 {
-    v_domain d = (v_domain)o;
+    v_partition d = (v_partition)o;
     c_iter iter = (c_iter)arg;
 
     iter = c_iterInsert(iter,c_keep(d));
@@ -261,7 +265,7 @@ v_subscriberAddReader(
     v_reader r)
 {
     v_reader found;
-    v_domain d;
+    v_partition d;
     c_iter iter;
 
     assert(s != NULL);
@@ -269,7 +273,7 @@ v_subscriberAddReader(
 
     iter = c_iterNew(NULL);
     c_lockWrite(&s->lock);
-    v_domainAdminWalkDomains(s->domains,collectDomains,iter);
+    v_partitionAdminWalk(s->partitions,collectPartitions,iter);
     while ((d = c_iterTakeFirst(iter)) != NULL) {
         v_readerSubscribe(r,d);
         c_free(d);
@@ -291,7 +295,7 @@ v_subscriberRemoveReader(
     v_reader r)
 {
     v_reader found;
-    v_domain d;
+    v_partition d;
     c_iter iter;
 
     assert(s != NULL);
@@ -301,14 +305,14 @@ v_subscriberRemoveReader(
 
     c_lockWrite(&s->lock);
     found = c_remove(s->readers,r,NULL,NULL);
-    v_domainAdminWalkDomains(s->domains,collectDomains,iter);
+    v_partitionAdminWalk(s->partitions,collectPartitions,iter);
     while ((d = c_iterTakeFirst(iter)) != NULL) {
-        /* ES, dds1576: The unsubscribe here is performed for all domains,
-         * however for the K_DATAREADER class not all domains were
-         * actually subscribed too. Instead of verifying if a domain was
+        /* ES, dds1576: The unsubscribe here is performed for all partitions,
+         * however for the K_DATAREADER class not all partitions were
+         * actually subscribed too. Instead of verifying if a partition was
          * subscribed too or not, the unsubscribe is just executed every time
          * as this is 'cheaper' then performing the access check again.
-         * If a domain was not subscribed too then the unsubcribe will have no
+         * If a partition was not subscribed too then the unsubcribe will have no
          * effect.
          */
         v_readerUnSubscribe(r,d);
@@ -362,11 +366,11 @@ v_subscriberRemoveShare(
 
 
 c_bool
-v_subscriberCheckDomainInterest(
+v_subscriberCheckPartitionInterest(
     v_subscriber s,
-    v_domain partition)
+    v_partition partition)
 {
-    return v_domainAdminFitsInterest(s->domains, partition);
+    return v_partitionAdminFitsInterest(s->partitions, partition);
 }
 
 void
@@ -374,28 +378,28 @@ v_subscriberSubscribe(
     v_subscriber s,
     const c_char *partitionExpr)
 {
-    v_domain d;
+    v_partition d;
     v_dataReaderConnectionChanges arg;
     v_partitionPolicy old;
 
     assert(s != NULL);
 
-    arg.removedDomains = NULL;
+    arg.removedPartitions = NULL;
 
     c_lockWrite(&s->lock);
-    arg.addedDomains = v_domainAdminAdd(s->domains, partitionExpr);
+    arg.addedPartitions = v_partitionAdminAdd(s->partitions, partitionExpr);
     old = s->qos->partition;
     s->qos->partition = v_partitionPolicyAdd(old, partitionExpr,
                                              c_getBase(c_object(s)));
     c_free(old);
 
     c_setWalk(s->readers, qosChangedAction, &arg);
-    d = v_domain(c_iterTakeFirst(arg.addedDomains));
+    d = v_partition(c_iterTakeFirst(arg.addedPartitions));
     while (d != NULL) {
         c_free(d);
-        d = v_domain(c_iterTakeFirst(arg.addedDomains));
+        d = v_partition(c_iterTakeFirst(arg.addedPartitions));
     }
-    c_iterFree(arg.addedDomains);
+    c_iterFree(arg.addedPartitions);
     c_lockUnlock(&s->lock);
 }
 
@@ -405,30 +409,30 @@ v_subscriberUnSubscribe(
     v_subscriber s,
     const c_char *partitionExpr)
 {
-    v_domain d;
+    v_partition d;
     v_dataReaderConnectionChanges arg;
     v_partitionPolicy old;
 
     assert(s != NULL);
     assert(C_TYPECHECK(s,v_subscriber));
 
-    arg.addedDomains = NULL;
+    arg.addedPartitions = NULL;
 
     c_lockWrite(&s->lock);
 
-    arg.removedDomains = v_domainAdminRemove(s->domains, partitionExpr);
+    arg.removedPartitions = v_partitionAdminRemove(s->partitions, partitionExpr);
     old = s->qos->partition;
     s->qos->partition = v_partitionPolicyRemove(old, partitionExpr,
                                                 c_getBase(c_object(s)));
     c_free(old);
     c_setWalk(s->readers, qosChangedAction, &arg);
 
-    d = v_domain(c_iterTakeFirst(arg.removedDomains));
+    d = v_partition(c_iterTakeFirst(arg.removedPartitions));
     while (d != NULL) {
         c_free(d);
-        d = v_domain(c_iterTakeFirst(arg.removedDomains));
+        d = v_partition(c_iterTakeFirst(arg.removedPartitions));
     }
-    c_iterFree(arg.removedDomains);
+    c_iterFree(arg.removedPartitions);
 
     c_lockUnlock(&s->lock);
 }
@@ -504,7 +508,7 @@ v_subscriberLookupReadersByTopic(
 }
 
 c_iter
-v_subscriberLookupDomains(
+v_subscriberLookupPartitions(
     v_subscriber s,
     const c_char *partitionExpr)
 {
@@ -513,7 +517,7 @@ v_subscriberLookupDomains(
     assert(s != NULL);
 
     c_lockRead(&s->lock);
-    list = v_domainAdminLookupDomains(s->domains, partitionExpr);
+    list = v_partitionAdminLookup(s->partitions, partitionExpr);
     c_lockUnlock(&s->lock);
 
     return list;
@@ -542,13 +546,13 @@ v_subscriberSetQos(
     v_result result;
     v_qosChangeMask cm;
     v_dataReaderConnectionChanges arg;
-    v_domain d;
+    v_partition d;
     v_accessMode access;
 
     assert(s != NULL);
 
-    arg.addedDomains = NULL;
-    arg.removedDomains = NULL;
+    arg.addedPartitions = NULL;
+    arg.removedPartitions = NULL;
 
     c_lockWrite(&s->lock);
 
@@ -573,24 +577,24 @@ v_subscriberSetQos(
         if ((result == V_RESULT_OK) && (cm != 0)) {
             c_lockUnlock(&s->lock); /* since creation builtin topic might lock subscriber again. */
             if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
-                v_domainAdminSet(s->domains, s->qos->partition,
-                                 &arg.addedDomains, &arg.removedDomains);
+                v_partitionAdminSet(s->partitions, s->qos->partition,
+                                 &arg.addedPartitions, &arg.removedPartitions);
             }
 
             c_setWalk(s->readers, qosChangedAction, &arg);
 
-            d = v_domain(c_iterTakeFirst(arg.addedDomains));
+            d = v_partition(c_iterTakeFirst(arg.addedPartitions));
             while (d != NULL) {
                 c_free(d);
-                d = v_domain(c_iterTakeFirst(arg.addedDomains));
+                d = v_partition(c_iterTakeFirst(arg.addedPartitions));
             }
-            c_iterFree(arg.addedDomains);
-            d = v_domain(c_iterTakeFirst(arg.removedDomains));
+            c_iterFree(arg.addedPartitions);
+            d = v_partition(c_iterTakeFirst(arg.removedPartitions));
             while (d != NULL) {
                 c_free(d);
-                d = v_domain(c_iterTakeFirst(arg.removedDomains));
+                d = v_partition(c_iterTakeFirst(arg.removedPartitions));
             }
-            c_iterFree(arg.removedDomains);
+            c_iterFree(arg.removedPartitions);
         } else {
             c_lockUnlock(&s->lock);
         }
@@ -636,21 +640,21 @@ v_subscriberConnectNewGroup(
     v_group g)
 {
     c_bool connect;
-    c_iter addedDomains;
-    v_domain d;
+    c_iter addedPartitions;
+    v_partition d;
 
     c_lockWrite(&s->lock);
-    connect = v_domainAdminFitsInterest(s->domains, g->partition);
+    connect = v_partitionAdminFitsInterest(s->partitions, g->partition);
     if (connect) {
-        addedDomains = v_domainAdminAdd(s->domains,
+        addedPartitions = v_partitionAdminAdd(s->partitions,
                                         v_partitionName(g->partition));
-        d = v_domain(c_iterTakeFirst(addedDomains));
+        d = v_partition(c_iterTakeFirst(addedPartitions));
         while (d != NULL) {
             c_free(d);
 
-            d = v_domain(c_iterTakeFirst(addedDomains));
+            d = v_partition(c_iterTakeFirst(addedPartitions));
         }
-        c_iterFree(addedDomains);
+        c_iterFree(addedPartitions);
         c_setWalk(s->readers, (c_action)v_readerSubscribeGroup, g);
     } else {
         /*
@@ -667,7 +671,7 @@ v_subscriberConnectNewGroup(
          * determine whether the groupActionStream should connect to the new
          * group or if it is already connected.
          */
-        if (v_domainAdminDomainExists(s->domains, v_partitionName(g->partition))) {
+        if (v_partitionAdminExists(s->partitions, v_partitionName(g->partition))) {
             c_setWalk(s->readers, (c_action)notifyGroupQueues, g);
         }
     }

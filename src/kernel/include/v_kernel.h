@@ -65,6 +65,8 @@ extern "C" {
 
 #define v_kernelType(_this,_kind) (v_kernel(_this)->type[_kind])
 
+#define synch_printf //
+
 typedef enum {
     V_RESULT_UNDEFINED,
     V_RESULT_OK,
@@ -102,18 +104,18 @@ OS_API c_long
 v_kernelUserCount (
     v_kernel _this);
 
-OS_API v_domain
-v_addDomain (
+OS_API v_partition
+v_addPartition (
     v_kernel _this,
-    v_domain d);
+    v_partition p);
 
-OS_API v_domain
-v_removeDomain (
+OS_API v_partition
+v_removePartition (
     v_kernel _this,
-    v_domain d);
+    v_partition p);
 
 OS_API c_iter
-v_resolveDomains (
+v_resolvePartitions (
     v_kernel _this,
     const c_char *name);
 

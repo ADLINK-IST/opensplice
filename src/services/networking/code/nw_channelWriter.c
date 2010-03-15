@@ -23,7 +23,7 @@
 #include "v_entry.h" /* for casting */
 #include "v_group.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_networkQueue.h"
 #include "v_networkReader.h"
 #include "v_networkReaderEntry.h"
@@ -31,6 +31,13 @@
 #include "nw_configuration.h"
 #include "nw_report.h"
 #include "nw__confidence.h"
+#include "v_networking.h"
+#include "v_subscriber.h"
+#include "v_networkingStatistics.h"
+#include "nw_statistics.h"
+#include "nw_plugSendChannel.h"
+#include "nw_security.h"
+#include "nw_statistics.h"
 
 #ifdef NW_LOOPBACK
 #include "v_group.h"/* for casting */
@@ -47,13 +54,31 @@ C_STRUCT(nw_channelWriter){
     /* Tracing parameter */
     c_ulong reportInterval; /* In messages */
     c_char* serviceName;
+    c_ulong stat_channel_id;
+    nw_SendChannelStatistics scs;
 };
+
 
 #define NW_READER_ID_IS_VALID(channelReader, id) \
         (id < channelReader->nofGroups)
 
 #define NW_READER_BY_GROUP_ID(channelReader, id) \
         (channelReader->proxyReaders[id])
+
+void nw_updatePlugSendStatistics(plugSendStatistics pss, nw_channelWriter channelWriter) {
+	channelWriter->scs->numberOfBytesInResendBuffer = pss->numberOfBytesInResendBuffer;
+	channelWriter->scs->numberOfBytesResent = pss->numberOfBytesResent;
+	channelWriter->scs->numberOfKnownNodes = pss->numberOfKnownNodes;
+	channelWriter->scs->numberOfMessagesFragmented = pss->numberOfMessagesFragmented;
+	channelWriter->scs->numberOfMessagesPacked = pss->numberOfMessagesPacked;
+	channelWriter->scs->numberOfPacketsInResendBuffer = pss->numberOfPacketsInResendBuffer;
+	channelWriter->scs->numberOfPacketsResent = pss->numberOfPacketsResent;
+	channelWriter->scs->numberOfPacketsSent = pss->numberOfPacketsSent;
+	channelWriter->scs->numberOfBytesSent = pss->numberOfBytesSent;
+	channelWriter->scs->numberOfAcksSent = pss->numberOfAcksSent;
+	channelWriter->scs->adminQueueAcks = pss->adminQueueAcks;
+	channelWriter->scs->adminQueueData = pss->adminQueueData;
+}
 
 
 static void
@@ -89,9 +114,14 @@ nw_channelWriterMain(
     c_bool slowingDown;
     c_ulong timeoutCount;
     nw_signedLength credits;
+    v_networking n;
+    NW_STRUCT(plugSendStatistics) pss = {0};
+    v_fullCounterInit(&(pss.adminQueueAcks));
+    v_fullCounterInit(&(pss.adminQueueData));
 
     reader = v_networkReader(e);
     channelWriter = (nw_channelWriter)arg;
+
 
     /* This line is needed as long as the discovery channel is not yet implemented */
     writtenCountBytesThisBurst = 0;
@@ -149,7 +179,7 @@ nw_channelWriterMain(
              * This will also update the credits, for the amount of bandwidth
              * available in the coming period.
              */
-            nw_sendChannelPeriodicAction(channelWriter->sendChannel,&credits);
+            nw_sendChannelPeriodicAction(channelWriter->sendChannel,&credits,&pss); /*struc call*/
             /* A flush is needed if we are slowing down. */
             if (slowingDown) {
                 /* The return value is true is all data has been sent.
@@ -158,7 +188,15 @@ nw_channelWriterMain(
                  * We are using a special flush function here that flushes full
                  * buffers only */
                 slowingDown = !nw_sendChannelFlush(channelWriter->sendChannel,
-                                                   FALSE, &credits);
+                                                   FALSE, &credits, &pss);
+            }
+            /*stat update routine */
+            n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+            /* sync plug stats */
+            nw_updatePlugSendStatistics(&pss,channelWriter);
+            /* update statistics */
+            if (v_entity(n)->statistics) {
+            	nw_SendChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelWriter->stat_channel_id],channelWriter->scs);
             }
         }
         if ((waitResult & V_WAITRESULT_MSGWAITING) && !slowingDown) {
@@ -175,8 +213,18 @@ nw_channelWriterMain(
                 NW_CONFIDENCE(message != NULL);
                 NW_CONFIDENCE(entry != NULL);
 
-                bytesWritten = nw_sendChannelWrite(channelWriter->sendChannel,
-                                                   entry, message, &credits);
+
+		if (!(NW_SECURITY_CHECK_FOR_PUBLISH_PERMISSION_OF_SENDER_ON_SENDER_SIDE(entry))) {
+				bytesWritten = 0; /* indicates that nothing has been written */
+
+				NW_REPORT_WARNING_2(
+						"nw_channelWriterMain",
+						"Channel \"%s\" could not deliver message 0x%x : message dropped!",
+						((nw_runnable)channelWriter)->name,
+						message);
+		} else {
+				bytesWritten = nw_sendChannelWrite(channelWriter->sendChannel,
+                                                   entry, message, &credits ,&pss); /* stat struc plug vars */
                 if (bytesWritten == 0) {
                     NW_REPORT_WARNING_2(
                         "nw_channelWriterMain",
@@ -184,14 +232,19 @@ nw_channelWriterMain(
                          ((nw_runnable)channelWriter)->name,
                          message);
                 }
-                assert(bytesWritten>0);
+                /*numberOfMessagesSent stats*/
+                channelWriter->scs->numberOfMessagesSent++;
+                assert( bytesWritten > 0); /* if permission grantedm the value must be greater 0 */
 
+                }
+                
                 writtenCountBytesThisBurst += bytesWritten;
 
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')
 
                 /* Do not trace for internal partitions */
-                if (!NW_IS_BUILTIN_DOMAINNAME(
+                if (bytesWritten>0 && /* might be 0 if access control refuses write permission */
+                	!NW_IS_BUILTIN_DOMAINNAME(
                     v_partitionName(v_groupPartition(entry->group)))) {
 #undef NW_IS_BUILTIN_DOMAINNAME
                     writtenCountBytes += bytesWritten;
@@ -216,7 +269,7 @@ nw_channelWriterMain(
                 c_free(entry);
             }
             slowingDown = !nw_sendChannelFlush(channelWriter->sendChannel,
-                                               TRUE, &credits);
+                                               TRUE, &credits, &pss);
         } 
     }
     NW_TRACE_3(Send, 2,
@@ -274,7 +327,8 @@ nw_channelWriterNew(
     const char *serviceName,
     const char *pathName,
     nw_sendChannel sendChannel,
-    u_networkReader reader)
+    u_networkReader reader,
+    c_ulong stat_channel_id)
 {
     nw_channelWriter result = NULL;
     c_ulong queueSize;
@@ -287,6 +341,7 @@ nw_channelWriterNew(
     c_time resolution;
     char *tmpPath;
     size_t tmpPathSize;
+    char* name;
 
     result = (nw_channelWriter)os_malloc((os_uint32)sizeof(*result));
 
@@ -315,6 +370,7 @@ nw_channelWriterNew(
         priority = NWCF_SIMPLE_ATTRIB(ULong, pathName, priority);
         reliable = NWCF_SIMPLE_ATTRIB(Bool, pathName, reliable);
         useAsDefault = NWCF_SIMPLE_ATTRIB(Bool, pathName, default);
+        name = NWCF_DEFAULTED_ATTRIB(String, pathName, ChannelName,"unnamed","unnamed");
         if (useAsDefault) {
             if (defaultDefined) {
                 NW_REPORT_WARNING_1(
@@ -326,6 +382,8 @@ nw_channelWriterNew(
                 defaultDefined = TRUE;
             }
         }
+        result->scs = nw_SendChannelStatisticsNew();
+        result->stat_channel_id = stat_channel_id;
         resolutionMsecs = NWCF_SIMPLE_PARAM(ULong, pathName, Resolution);
         if (resolutionMsecs < NWCF_MIN(Resolution)) {
             NW_REPORT_WARNING_3(
@@ -364,7 +422,9 @@ nw_channelWriterNew(
                                           FALSE,
                                           resolution,
                                           useAsDefault,
-                                          &result->queueId);
+                                          &result->queueId,
+                                          name);
+        os_free(name);
         if (ures != U_RESULT_OK) {
             NW_REPORT_ERROR_1(
                 "initializing network",

@@ -35,12 +35,34 @@
 #define v_waitsetWakeup(_this,event,userData) \
         v_observerNotify(v_observer(_this),event,userData)
 
+typedef struct findProxyArgument {
+    v_handle observable;
+    v_proxy proxy;
+} findProxyArgument;
+
+static c_bool
+findProxy(
+    c_object o,
+    c_voidp arg)
+{
+    v_proxy proxy = (v_proxy)o;
+    findProxyArgument *a = (findProxyArgument *)arg;
+
+    if (v_handleIsEqual(proxy->source,a->observable)) {
+        a->proxy = proxy;
+        return FALSE;
+    } else {
+        return TRUE;
+    }
+}
+
 v_waitset
 v_waitsetNew(
     v_participant p)
 {
     v_waitset _this;
     v_kernel kernel;
+    c_type proxyType;
 
     assert(C_TYPECHECK(p,v_participant));
 
@@ -50,9 +72,13 @@ v_waitsetNew(
         v_observerInit(v_observer(_this),"Waitset", NULL, TRUE);
         _this->participant = p;
         _this->eventCache = NULL;
+        proxyType = v_proxy_t(p);
+        _this->observables = c_setNew(proxyType);
+        c_free(proxyType);
         v_observerSetEventData(v_observer(_this), NULL);
         v_participantAdd(p, v_entity(_this));
     }
+
     return _this;
 }
 
@@ -80,12 +106,29 @@ v_waitsetDeinit(
    v_waitset _this)
 {
     v_waitsetEvent event;
+    v_observable o;
+    v_proxy found;
+    findProxyArgument arg;
+    v_handleResult result;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_waitset));
     if (_this == NULL) {
         return;
     }
-    assert(C_TYPECHECK(_this,v_waitset));
-
     v_waitsetLock(_this);
+
+    found = c_take(_this->observables);
+    while (found) {
+        result = v_handleClaim(found->source,(v_object *)&o);
+        if (result == V_HANDLE_OK) {
+            v_observableRemoveObserver(o,v_observer(_this));
+            result = v_handleRelease(found->source);
+        }
+        c_free(found);
+        found = c_take(_this->observables);
+    }
+    /* wakeup blocking threads to evaluate new condition. */
     /* remove all events */
     while (v_waitsetEvent(v_waitsetEventList(_this)) != NULL) {
         event = v_waitsetEvent(v_waitsetEventList(_this));
@@ -111,6 +154,12 @@ v_waitsetEventNew(
     } else {
         k = v_objectKernel(_this);
         event = c_new(v_kernelType(k,K_WAITSETEVENT));
+
+        if (!event) {
+            OS_REPORT(OS_ERROR,
+                      "v_waitsetEventNew",0,
+                      "Failed to allocate event.");
+        }
     }
     return event;
 }
@@ -326,8 +375,21 @@ v_waitsetAttach (
     c_voidp userData)
 {
     c_bool result;
+    v_proxy proxy;
+    findProxyArgument arg;
+
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
+
+    arg.observable = v_publicHandle(v_public(o));
+    arg.proxy = NULL;
+    c_setWalk(_this->observables, findProxy,&arg);
+    if (arg.proxy == NULL) { /* no proxy to the observer exists */
+        proxy = v_proxyNew(v_objectKernel(_this),
+                           arg.observable, userData);
+        c_insert(_this->observables,proxy);
+        c_free(proxy);
+    }
     result = v_observableAddObserver(o,v_observer(_this), userData);
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
@@ -342,10 +404,29 @@ v_waitsetDetach (
     v_observable o)
 {
     c_bool result;
+    v_proxy found;
+    findProxyArgument arg;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
+    arg.observable = v_publicHandle(v_public(o));
+    arg.proxy = NULL;
+    c_setWalk(_this->observables,findProxy,&arg);
+    if (arg.proxy != NULL) { /* proxy to the observer found */
+        found = c_remove(_this->observables,arg.proxy,NULL,NULL);
+        assert(found == arg.proxy);
+        c_free(found);
+    }
+
+    arg.observable = v_publicHandle(v_public(o));
+    arg.proxy = NULL;
+    c_setWalk(_this->observables,findProxy,&arg);
+    if (arg.proxy != NULL) { /* proxy to the observer found */
+        found = c_remove(_this->observables,arg.proxy,NULL,NULL);
+        assert(found == arg.proxy);
+        c_free(found);
+    }
     result = v_observableRemoveObserver(o,v_observer(_this));
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {

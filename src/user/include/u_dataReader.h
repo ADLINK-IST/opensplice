@@ -122,6 +122,18 @@ u_dataReaderLookupInstance(
     u_copyIn copyIn,
     u_instanceHandle *handle);
 
+OS_API u_result
+u_dataReaderGetInstanceUserData (
+		u_dataReader _this,
+		u_instanceHandle handle,
+		c_voidp* userData_out);
+
+OS_API u_result
+u_dataReaderSetInstanceUserData (
+	    u_dataReader _this,
+	    u_instanceHandle handle,
+	    c_voidp userData);
+
 #if 1
 
 /* Deprecated */

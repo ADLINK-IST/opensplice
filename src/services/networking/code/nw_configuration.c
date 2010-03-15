@@ -871,11 +871,13 @@ nw_configurationInitialize(
     if (configuration) {
         /* Get the networkingelement and store it */
         topLevelElement = u_participantGetConfiguration(u_participant(service));
+
         /* Get element with tagname NetworkingService and corresponding name attribute*/
         path = os_malloc(strlen(NWCF_ROOT_NetworkingService)+strlen(NW_SERV_NAME_ATTR)+strlen(serviceName));
         sprintf(path, NW_SERV_NAME_ATTR, NWCF_ROOT_NetworkingService, serviceName);
         nw_configurationGetElementInternal(topLevelElement, NULL, path, &configuration->networkingElement);
         nw_configurationGetElementInternal(topLevelElement, NULL, NWCF_ROOT_Domain, &configuration->domainElement);
+
         os_free(path);
         u_cfElementFree(topLevelElement);
         nw_configurationInitializeConditionals(configuration);
@@ -972,6 +974,7 @@ nw_configurationGetBoolParameter(
     c_bool defaultValue)
 {
     c_bool result;
+    c_ulong longresult;
     c_bool success = FALSE;
     u_cfData data;
 
@@ -983,10 +986,19 @@ nw_configurationGetBoolParameter(
                        "Retrieved parameter %s/%s, using value %s",
                        parameterPath, parameterName, (result ? "TRUE" : "FALSE"));
         } else {
+        	/* also accept integer values */
+        	success = u_cfDataULongValue(data, &longresult);
+        	if (success) {
+        		result = (c_bool)longresult;
+        		NW_TRACE_3(Configuration, 1,
+							   "Retrieved parameter %s/%s, using value %s",
+							   parameterPath, parameterName, (result ? "TRUE" : "FALSE"));
+        	} else {
             NW_REPORT_WARNING_3("retrieving configuration parameters",
-                                "incorrect format for boolean parameter %s,  "
+                                "incorrect format for boolean parameter %s/%s,  "
                                 "switching to default value %s",
                                 parameterPath, parameterName, (defaultValue ? "TRUE" : "FALSE"));
+        	}
         }
         u_cfDataFree(data);
     }

@@ -109,12 +109,26 @@ typedef struct jni_cache_t {
     jfieldID transportPriorityQosPolicy_value_fid;
     jfieldID userDataQosPolicy_value_fid;
     jfieldID writerDataLifecycleQosPolicy_autodisposeUnregisteredInstances_fid;
+    jfieldID writerDataLifecycleQosPolicy_autopurgeSuspendedSamplesDelay_fid;
+    jfieldID writerDataLifecycleQosPolicy_autounregisterInstanceDelay_fid;
     jfieldID schedulingClassQosPolicy_kind_fid;
     jfieldID schedulingPriorityQosPolicy_kind_fid;
     jfieldID schedulingQosPolicy_schedulingClass_fid;
     jfieldID schedulingQosPolicy_schedulingPriorityKind_fid;
     jfieldID schedulingQosPolicy_schedulingPriority_fid;
     
+    jfieldID shareQosPolicy_enable_fid;
+    jfieldID shareQosPolicy_name_fid;
+
+    jfieldID readerLifespanQosPolicy_useLifespan_fid;
+    jfieldID readerLifespanQosPolicy_duration_fid;
+
+    jfieldID subscriptionKeyQosPolicy_useKeyList_fid;
+    jfieldID subscriptionKeyQosPolicy_keyList_fid;
+
+    jfieldID viewKeyQosPolicy_useKeyList_fid;
+    jfieldID viewKeyQosPolicy_keyList_fid;
+
     /* caching the field id's for the DomainParticipantFactoryQos */
     jfieldID domainParticipantFactoryQos_entityFactory_fid;
     
@@ -137,7 +151,13 @@ typedef struct jni_cache_t {
     jfieldID dataReaderQos_ownership_fid;
     jfieldID dataReaderQos_timeBasedFilter_fid;
     jfieldID dataReaderQos_readerDataLifecycle_fid;
+    jfieldID dataReaderQos_share_fid;
+    jfieldID dataReaderQos_readerLifespan_fid;
+    jfieldID dataReaderQos_subscriptionKeys_fid;
     
+    /* caching the field id's for the DataReaderViewQos */
+    jfieldID dataReaderViewQos_viewKeys_fid;
+
     /* caching the field id's for the DataWriterQos */
     jfieldID dataWriterQos_durability_fid;
     jfieldID dataWriterQos_deadline_fid;
@@ -180,11 +200,13 @@ typedef struct jni_cache_t {
     jfieldID subscriberQos_partition_fid;
     jfieldID subscriberQos_groupData_fid;
     jfieldID subscriberQos_entityFactory_fid;
+    jfieldID subscriberQos_share_fid;
     
     /* caching the field id of the attribute 'value' for the Qos Holder classes */
     jfieldID domainParticipantFactoryQosHolder_value_fid;
     jfieldID conditionSeqHolder_value_fid;
     jfieldID dataReaderQosHolder_value_fid;
+    jfieldID dataReaderViewQosHolder_value_fid;
     jfieldID dataReaderSeqHolder_value_fid;
     jfieldID dataWriterQosHolder_value_fid;
     jfieldID domainParticipantQosHolder_value_fid;
@@ -273,6 +295,7 @@ typedef struct jni_cache_t {
     /*Caching Typesupport*/
     jclass    typeSupport_class;
     jfieldID  typeSupportDataReader_fid;
+    jfieldID  typeSupportDataReaderView_fid;
     jfieldID  typeSupportDataWriter_fid;
     jfieldID  typeSupportConstructorSignature_fid;
     
@@ -310,6 +333,7 @@ typedef struct jni_cache_t {
     jobject SUBSCRIBER_QOS_DEFAULT;
     jobject DATAWRITER_QOS_DEFAULT;
     jobject DATAREADER_QOS_DEFAULT;
+    jobject DATAREADERVIEW_QOS_DEFAULT;
     jobject DATAWRITER_QOS_USE_TOPIC_QOS;
     jobject DATAREADER_QOS_USE_TOPIC_QOS;
 
@@ -761,6 +785,11 @@ saj_LookupTypeSupportDataReader(
     jobject jtypeSupport,
     gapi_char** result);
     
+saj_returnCode
+saj_LookupTypeSupportDataReaderView(
+    JNIEnv* env,
+    jobject jtypeSupport,
+    gapi_char** result);
 
 saj_returnCode
 saj_LookupTypeSupportDataWriter(

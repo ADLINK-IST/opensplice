@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -26,7 +26,16 @@ void
 v_entryFree (
     v_entry _this);
 
-void
+/**
+ * Adds the group to the entry. Returns TRUE if the entry was not yet connected
+ * to the group and the group has thus been added. Returns FALSE otherwise.
+ *
+ * @param   _this   The entry to add the group to
+ * @param   g       The group to be added to the entry
+ * @return          TRUE if the group was added, FALSE if the group was already
+ *                  in the entry
+ */
+c_bool
 v_entryAddGroup (
     v_entry _this,
     v_group g);

@@ -295,6 +295,22 @@ namespace DDS
                   const gapi_subscriberQos &from,
                   ::DDS::SubscriberQos &to);
 
+    OS_DCPS_API void ccpp_DataReaderViewQos_copyIn(
+                   const ::DDS::DataReaderViewQos &from,
+                   gapi_dataReaderViewQos &to);
+
+    OS_DCPS_API void ccpp_ViewKeyQosPolicy_copyIn(
+            const ::DDS::ViewKeyQosPolicy &from,
+            gapi_viewKeyQosPolicy &to);
+
+    OS_DCPS_API void ccpp_DataReaderViewQos_copyOut(
+            const gapi_dataReaderViewQos &from,
+            ::DDS::DataReaderViewQos &to);
+
+    OS_DCPS_API void ccpp_ViewKeyQosPolicy_copyOut(
+            const gapi_viewKeyQosPolicy &from,
+            ::DDS::ViewKeyQosPolicy &to);
+
     OS_DCPS_API void ccpp_OfferedIncompatibleQosStatus_copyOut(
                   const gapi_offeredIncompatibleQosStatus & from,
                   ::DDS::OfferedIncompatibleQosStatus &to);
@@ -362,6 +378,7 @@ namespace DDS
         static const ::DDS::DataReaderQos               * const DataReaderQosUseTopicQos;
         static const ::DDS::DataWriterQos               * const DataWriterQosDefault;
         static const ::DDS::DataWriterQos               * const DataWriterQosUseTopicQos;
+        static const ::DDS::DataReaderViewQos           * const DataReaderViewQosDefault;
     };
 
 }

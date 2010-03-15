@@ -38,7 +38,7 @@ v_networkingStatisticsNew(
 
 OS_API void
 v_networkingStatisticsInit(
-    v_networkingStatistics _this);
+    v_networkingStatistics _this, v_kernel k);
 
 OS_API void
 v_networkingStatisticsDeinit(

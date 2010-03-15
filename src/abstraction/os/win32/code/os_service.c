@@ -13,7 +13,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include <code/os__debug.h>
 #include <code/os__service.h>
 #include <sys/timeb.h>
 #include <time.h>
@@ -21,6 +20,8 @@
 
 #include <stdio.h>
 #include <assert.h>
+
+#include "os__debug.h"
 
 #define _PIPE_STATE_CONNECTING 0
 #define _PIPE_STATE_READING    1
@@ -199,12 +200,12 @@ poolRelease(
         block = block->prev;
     }
     if (block->entity[idxInBlock].id < 0) {
-        OS_DEBUG_1("osService: releasing event %d", id);
+        OS_DEBUG_1("poolRelease", "Releasing event %d", id);
         block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
         pool->inuse--;
         result = 0; /* success */
     } else {
-        OS_DEBUG_1("osService: Trying to destroy incorrect mutex %d", id);
+        OS_DEBUG_1("poolRelease", "Trying to destroy incorrect mutex %d", id);
         result = 1;
     }
 
@@ -232,7 +233,7 @@ ConnectToNewClient(
 
     /* Overlapped ConnectNamedPipe should return zero.*/
     if (fConnected) {
-        OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
+        OS_DEBUG_1("ConnectToNewClient", "ConnectNamedPipe failed with %d.\n", GetLastError());
         return 0;
     }
 
@@ -243,12 +244,12 @@ ConnectToNewClient(
     break;
     case ERROR_PIPE_CONNECTED: /* Client is already connected, so signal an event. */
         if (!SetEvent(lpo->hEvent)) {
-            OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
+            OS_DEBUG_1("ConnectToNewClient", "ConnectNamedPipe failed with %d.\n", GetLastError());
             fPendingIO = FALSE;
         }
     break;
     default: /* If an error occurs during the connect operation... */
-        OS_DEBUG_1("osService: ConnectNamedPipe failed with %d.\n", GetLastError());
+        OS_DEBUG_1("ConnectToNewClient", "ConnectNamedPipe failed with %d.\n", GetLastError());
         fPendingIO = FALSE;
     break;
     }
@@ -268,7 +269,7 @@ DisconnectAndReconnect(
 
     /* Disconnect the pipe instance. */
     if (!DisconnectNamedPipe(pipe->hPipeInst) ) {
-        OS_DEBUG_1("mutexManager: DisconnectNamedPipe failed with %d.\n", GetLastError());
+        OS_DEBUG_1("DisconnectAndReconnect", "DisconnectNamedPipe failed with %d.\n", GetLastError());
     }
     /* connect to new client */
     pipe->fPendingIO = ConnectToNewClient(
@@ -334,7 +335,7 @@ handleRequest(
     case OS_SRVMSG_COUNT:
     default:
         pipe->reply.result = os_resultFail;
-        OS_DEBUG_1("osService: Incorrect msg kind in request %d", pipe->request.kind);
+        OS_DEBUG_1("handleRequest", "Incorrect msg kind in request %d", pipe->request.kind);
     }
 }
 
@@ -380,7 +381,8 @@ osServiceThread(
                                 _PIPE_DEFAULT_TIMEOUT,   // client time-out
                                 NULL);                   // default security attributes
         if (pipe[i].hPipeInst == INVALID_HANDLE_VALUE) {
-            OS_DEBUG_2("Failed to create named pipe %s %d", _ospl_servicePipeName, GetLastError());
+            OS_DEBUG_2("osServiceThread", "Failed to create named pipe %s %d",
+                       _ospl_servicePipeName, GetLastError());
         }
         // Call the subroutine to connect to the new client
         memset(&pipe[i].oOverlap, 0, sizeof(OVERLAPPED));
@@ -443,7 +445,7 @@ osServiceThread(
                     continue;
                 }
                 if (!fSuccess || (cbRet == 0)) {
-                    OS_DEBUG_4("[%d] pending READ: failure %d %d %d", i, fSuccess, cbRet, GetLastError());
+                    OS_DEBUG_4("osServiceThread", "[%d] pending READ: failure %d %d %d", i, fSuccess, cbRet, GetLastError());
                     assert(0);
                     DisconnectAndReconnect(&pipe[i]);
                     continue;
@@ -453,14 +455,14 @@ osServiceThread(
             /* Pending write operation */
             case _PIPE_STATE_WRITING:
                 if (!fSuccess || (cbRet != sizeof(pipe[i].reply))) {
-                    OS_DEBUG_2("[%d] pending WRITE: failure %d", i, GetLastError());
+                    OS_DEBUG_2("osServiceThread", "[%d] pending WRITE: failure %d", i, GetLastError());
                     DisconnectAndReconnect(&pipe[i]);
                     continue;
                 }
                 pipe[i].dwState = _PIPE_STATE_READING;
             break;
             default:
-                OS_DEBUG("osService: Invalid pipe state.");
+                OS_DEBUG("osServiceThread", "Invalid pipe state.");
             }
         }
 
@@ -490,7 +492,7 @@ osServiceThread(
                 pipe[i].fPendingIO = TRUE;
                 continue;
             }
-            OS_DEBUG_2("[%d] READ: failure %d", i, GetLastError());
+            OS_DEBUG_2("osServiceThread", "[%d] READ: failure %d", i, GetLastError());
             /* An error occurred; disconnect from the client. */
             assert(0);
             DisconnectAndReconnect(&pipe[i]);
@@ -519,7 +521,7 @@ osServiceThread(
                 continue;
             }
             /* Whether an error occurred on not, just disconnect from the client */
-            OS_DEBUG_2("[%d] WRITE: failure %d", i, GetLastError());
+            OS_DEBUG_2("osServiceThread", "[%d] WRITE: failure %d", i, GetLastError());
             assert(0);
             DisconnectAndReconnect(&pipe[i]);
         break;
@@ -648,13 +650,13 @@ os_serviceStop(void)
         osr = os_resultFail;
     } else {
         if (GetExitCodeThread(_ospl_serviceThreadId, &nRead) == 0) {
-            OS_DEBUG_1("GetExitCodeThread Failed %d", (int)GetLastError());
+            OS_DEBUG_1("serviceStop", "GetExitCodeThread Failed %d", (int)GetLastError());
            osr = os_resultFail;
         } else {
             while (nRead == STILL_ACTIVE) {
                 Sleep(100);
                 if (GetExitCodeThread(_ospl_serviceThreadId, &nRead) == 0) {
-                    OS_DEBUG_1("GetExitCodeThread Failed %d", (int)GetLastError());
+                    OS_DEBUG_1("serviceStop", "GetExitCodeThread Failed %d", (int)GetLastError());
                     osr = os_resultFail;
                     nRead = 0; /* break loop */
                 }

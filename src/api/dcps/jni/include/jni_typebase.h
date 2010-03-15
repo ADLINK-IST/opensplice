@@ -55,7 +55,7 @@ C_CLASS(jni_topicDescription);
 C_CLASS(jni_topic);
 C_CLASS(jni_writer);
 C_CLASS(jni_reader);
-C_CLASS(jni_domain);
+C_CLASS(jni_partition);
 
 /**@brief Base class for all jni entities.
  */

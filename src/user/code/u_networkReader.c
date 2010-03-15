@@ -184,7 +184,8 @@ u_networkReaderCreateQueue(
     c_bool P2P,
     c_time resolution,
     c_bool useAsDefault,
-    c_ulong *queueId)
+    c_ulong *queueId,
+    const c_char *name)
 {
     v_networkReader kn;
     u_result result = U_RESULT_OK;
@@ -194,7 +195,7 @@ u_networkReaderCreateQueue(
         if ((result == U_RESULT_OK) && (kn != NULL)) {
             *queueId = v_networkReaderCreateQueue(kn,queueSize, priority,
                                                   reliable, P2P,
-                                                  resolution, useAsDefault);
+                                                  resolution, useAsDefault, name);
         } else {
             OS_REPORT(OS_WARNING, "u_networkReaderCreateQueue", 0,
                       "Claim networkReader failed.");

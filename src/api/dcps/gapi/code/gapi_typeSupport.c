@@ -12,7 +12,6 @@
 #include "gapi_typeSupport.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_domainParticipant.h"
-//#include "gapi_entityValidity.h"
 #include "gapi_kernel.h"
 #include "gapi_error.h"
 #include "gapi_builtin.h"
@@ -349,7 +348,7 @@ setDefaultBuiltinSettings (
 gapi_returnCode_t
 gapi_typeSupport_register_type (
     gapi_typeSupport _this,
-    gapi_domainParticipant domain,
+    gapi_domainParticipant dp,
     gapi_string name
     )
 {
@@ -376,7 +375,7 @@ gapi_typeSupport_register_type (
     }
 
     if ( result == GAPI_RETCODE_OK ) {
-        participant = gapi_domainParticipantClaim(domain, NULL);
+        participant = gapi_domainParticipantClaim(dp, NULL);
         if ( !participant ) {
             result = GAPI_RETCODE_BAD_PARAMETER;
         }

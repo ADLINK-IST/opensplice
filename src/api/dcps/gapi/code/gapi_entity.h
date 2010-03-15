@@ -39,6 +39,7 @@
 #define _EntityClaim(e)             _ObjectClaim((_Object)e)
 #define _EntityClaimNotBusy(e)      _ObjectClaimNotBusy((_Object)e)
 #define _EntityRelease(e)           _ObjectRelease((_Object)e)
+#define _EntityReadRelease(e)       _ObjectReadRelease((_Object)e)
 #define gapi_entityRelease(h) gapi_objectRelease(h)
 #define _EntityHandle(e)            _ObjectToHandle((_Object)e)
 #define _EntitySetBusy(e)           _ObjectSetBusy((_Object)e)

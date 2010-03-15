@@ -191,6 +191,28 @@ v_cacheInsert (
 }
 
 c_bool
+v_cacheEmpty (
+    v_cache cache)
+{
+    v_cacheNode node;
+
+    assert(C_TYPECHECK(cache,v_cache));
+
+    switch (cache->kind) {
+    case V_CACHE_OWNER:
+        node = v_cacheNode(cache)->owner.next;
+    break;
+    case V_CACHE_INSTANCE:
+        node = v_cacheNode(cache)->instance.next;
+    break;
+    default:
+        node = NULL;
+    break;
+    }
+    return (c_bool)(node != NULL);
+}
+
+c_bool
 v_cacheWalk (
     v_cache cache,
     v_cacheWalkAction action,

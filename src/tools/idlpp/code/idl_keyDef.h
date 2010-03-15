@@ -13,9 +13,23 @@
 #define IDL_KEYDEF_H
 
 #include <c_metabase.h>
+#include <c_typebase.h>
+#include <c_iterator.h>
 #include <idl_scope.h>
 
 C_CLASS(idl_keyDef);
+
+C_CLASS(idl_keyMap);
+
+C_STRUCT(idl_keyDef) {
+    c_iter keyList;
+};
+
+C_STRUCT(idl_keyMap) {
+    c_metaObject scope;	/* Type scope stack */
+    c_char *typeName;	/* Type Name */
+    c_char *keyList;	/* Defined key list */
+};
 
 idl_keyDef idl_keyDefNew (void);
 

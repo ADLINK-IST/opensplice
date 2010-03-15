@@ -23,7 +23,7 @@
 #include "v_group.h"
 #include "v_groupSet.h"
 #include "v_participant.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_kernel.h"
 
 #include "os_report.h"
@@ -103,7 +103,7 @@ u_groupNew(
     v_participant kparticipant;
     v_kernel kernel;
     v_topic ktopic;
-    v_domain kdomain;
+    v_partition kpartition;
     v_group kgroup;
     c_iter topics;
     os_time delay;
@@ -131,9 +131,9 @@ u_groupNew(
                 }
                 ktopic = c_iterTakeFirst(topics);
                 if (ktopic != NULL) {
-                    kdomain = v_domainNew(kernel, partitionName, NULL);
-                    if (kdomain != NULL) {
-                        kgroup = v_groupSetCreate(kernel->groupSet, kdomain, ktopic);
+                    kpartition = v_partitionNew(kernel, partitionName, NULL);
+                    if (kpartition != NULL) {
+                        kgroup = v_groupSetCreate(kernel->groupSet, kpartition, ktopic);
                         if (kgroup != NULL) {
                             group = u_groupCreate(kgroup, participant);
                             if (group == NULL) {
@@ -149,7 +149,7 @@ u_groupNew(
                                         "For Partition <%s> and Topic <%s>.",
                                         partitionName, topicName);
                         }
-                        c_free(kdomain);
+                        c_free(kpartition);
                     } else {
                         OS_REPORT_2(OS_ERROR,"u_groupNew", 0,
                                     "Failed to create partition. "

@@ -496,6 +496,26 @@ os_fsync(
     return r;
 }
 
+char *
+os_getTempDir()
+{
+    char * dir_name = NULL;
+
+    dir_name = os_getenv("OSPL_TEMP");
+
+    /* if OSPL_TEMP is not defined use the TEMP variable */
+    if (dir_name == NULL || (strcmp (dir_name, "") == 0)) {
+        dir_name = os_getenv("TEMP");
+    }
+
+    /* if TEMP is not defined use the TMP variable */
+    if (dir_name == NULL || (strcmp (dir_name, "") == 0)) {
+        dir_name = os_getenv("TMP");
+    }
+
+    return dir_name;
+}
+
 int snprintf(char *s, size_t n, const char *format, ...)
 {
     va_list args;

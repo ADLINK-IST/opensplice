@@ -20,7 +20,7 @@ extern "C" {
 /* include OS specific PLATFORM definition file */
 #include <endian.h>
 
-#if __BYTE_ORDER ==__LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define PA__LITTLE_ENDIAN
 #else
 #define PA__BIG_ENDIAN

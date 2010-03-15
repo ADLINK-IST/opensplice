@@ -73,8 +73,14 @@ v_serviceStateNew(
             }
 #endif
             s = v_serviceState(c_new(type));
-            v_objectKind(s) = K_SERVICESTATE;
-            v_object(s)->kernel = k;
+            if (s) {
+                v_objectKind(s) = K_SERVICESTATE;
+                v_object(s)->kernel = k;
+            } else {
+                OS_REPORT(OS_ERROR,
+                  "v_serviceStateNew",0,
+                  "Failed to allocate service state.");
+            }
         } else {
             s = NULL;
         }

@@ -17,7 +17,7 @@
 #define CMX__DOMAIN_H
 
 #include "c_typebase.h"
-#include "v_domain.h"
+#include "v_partition.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
  * @param entity The entity to create a XML representation of.
  * @return The domain specific part of the XML representation of the entity.
  */
-c_char* cmx_domainInit  (v_domain entity);
+c_char* cmx_domainInit  (v_partition entity);
 
 #if defined (__cplusplus)
 }

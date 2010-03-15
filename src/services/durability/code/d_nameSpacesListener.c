@@ -238,8 +238,9 @@ d_nameSpacesListenerAction(
 
     d_printTimedEvent         (durability, D_LEVEL_FINE,
                                D_THREAD_NAMESPACES_LISTENER,
-                               "Received nameSpaces from fellow %d.\n",
-                               message->senderAddress.systemId);
+                               "Received nameSpace from fellow %d (his master: %d).\n",
+                               message->senderAddress.systemId,
+                               d_nameSpaces(message)->master.systemId);
 
     sender = d_networkAddressNew(message->senderAddress.systemId,
                                message->senderAddress.localId,

@@ -18,8 +18,9 @@
 #include "v_subscriber.h"
 #include "v_writer.h"
 #include "v__dataReader.h"
+#include "v__networkReader.h"
 #include "v__reader.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v__group.h"
 #include "v__groupQueue.h"
 #include "v__topic.h"
@@ -34,6 +35,7 @@
 #include "os_report.h"
 #include "v__dataReaderInstance.h"
 #include "v__dataView.h"
+#include "v__deliveryService.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
 #include "v_dataViewInstance.h"
@@ -74,12 +76,13 @@ v_publicDispose(
     case K_SUBSCRIBER:     v_subscriberDeinit(v_subscriber(o));         break;
     case K_WRITER:         v_writerDeinit(v_writer(o));                 break;
     case K_DATAREADER:     v_dataReaderDeinit(v_dataReader(o));         break;
-    case K_NETWORKREADER:
+    case K_DELIVERYSERVICE:v_deliveryServiceDeinit(v_deliveryService(o)); break;
+    case K_NETWORKREADER:  v_networkReaderDeinit(v_networkReader(o));   break;
     case K_READER:         v_readerDeinit(v_reader(o));                 break;
     case K_GROUPQUEUE:     v_groupQueueDeinit(v_groupQueue(o));         break;
     case K_TOPIC:          v_topicDeinit(v_topic(o));                   break;
     case K_ENTITY:                                                      break;
-    case K_DOMAIN:         v_domainDeinit(v_domain(o));                 break;
+    case K_DOMAIN:         v_partitionDeinit(v_partition(o));           break;
     case K_GROUP:          v_groupDeinit(v_group(o));                   break;
     case K_SERVICEMANAGER: /* Is never freed! */                        break;
     case K_SPLICED:        v_splicedDeinit(v_spliced(o));               break;

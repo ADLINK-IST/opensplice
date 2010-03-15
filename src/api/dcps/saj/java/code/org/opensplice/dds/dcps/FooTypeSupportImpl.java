@@ -16,6 +16,7 @@ public abstract class FooTypeSupportImpl extends org.opensplice.dds.dcps.TypeSup
 {
     public FooTypeSupportImpl(){
         super("org/opensplice/dds/dcps/FooDataReaderImpl",
+                "org/opensplice/dds/dcps/FooDataReaderViewImpl",
               "org/opensplice/dds/dcps/FooDataWriterImpl",
 	      "(Lorg/opensplice/dds/dcps/FooTypeSupport;)V",
             null,

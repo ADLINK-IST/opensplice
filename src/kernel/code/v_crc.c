@@ -76,7 +76,9 @@ v_crcNew(
         if (type) {
             crc = c_new(type);
             c_free(type);
-            v_crcInit(crc,key);
+            if (crc) {
+                v_crcInit(crc,key);
+            }
         } else {
             crc = NULL;
         }

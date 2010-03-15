@@ -270,21 +270,32 @@ v_serviceFillNewGroups(
 {
     c_set newGroups;
     C_STRUCT(v_event) ge;
-    v_group g;
+    v_group g, oldGroup;
+    c_iter oldGroups;
     v_kernel kernel;
 
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
 
     kernel = v_objectKernel(service);
-    v_observerLock(v_observer(service));
     newGroups = (c_voidp)c_setNew(v_kernelType(kernel, K_GROUP));
 
     if (newGroups != NULL) {
         addAllGroups(newGroups, kernel->groupSet);
+        v_observerLock(v_observer(service));
         g = v_group(c_read(newGroups)); /* need a group for the event */
 
-        assert(v_observer(service)->eventData == NULL);
+        if(v_observer(service)->eventData != NULL){
+            oldGroups = c_select((c_set)v_observer(service)->eventData, 0);
+            oldGroup = v_group(c_iterTakeFirst(oldGroups));
+
+            while(oldGroup){
+                newGroups = c_setInsert(newGroups, oldGroup);
+                c_free(oldGroup);
+                oldGroup = v_group(c_iterTakeFirst(oldGroups));
+            }
+            c_iterFree(oldGroups);
+        }
         /* just for safety, when assertion are compiled out, free the prev set */
         c_free((c_object)v_observer(service)->eventData);
         v_observer(service)->eventData = (c_voidp)newGroups;
@@ -293,9 +304,9 @@ v_serviceFillNewGroups(
         ge.source = v_publicHandle(v_public(kernel));
         ge.userData = g;
         v_observerNotify(v_observer(service), &ge, NULL);
+        v_observerUnlock(v_observer(service));
         c_free(g);
     }
-    v_observerUnlock(v_observer(service));
 }
 
 c_iter

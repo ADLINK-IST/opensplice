@@ -2,6 +2,7 @@
 SUM=0
 SUCC=0
 FAIL=0
+
 BUILD_RESULTS_LOG=$LOGDIR/examples/build/build_summary.txt
 BUILD_LOG=$LOGDIR/examples/build/build_results.txt
 SUMMARY_LOG=$LOGDIR/examples/build/build_summary.log
@@ -23,8 +24,8 @@ do
         fi
     done
 
-    echo " ####  Project: $PROJECT Begin####" > build.log 
-
+    echo " ####  Project: $PROJECT Begin #### " > build.log
+    
     if [ $spec_build = "no" ]; then
      make >> build.log 2>&1
      status=$?
@@ -36,7 +37,7 @@ do
     SUM=`expr $SUM + 1`
     if [ $status = 0 ]; 
     then
-        if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|error|cannot find symbol)' $CUR_PATH/$PROJECT/build.log`" ]
+        if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|error|cannot find symbol|not found)' $CUR_PATH/$PROJECT/build.log`" ]
         then
            FAIL=`expr $FAIL + 1`
 
@@ -47,6 +48,8 @@ do
            CANNOTFINDSYMBOL=`grep -ci "cannot find symbol" $CUR_PATH/$PROJECT/build.log`
            KILLED=`grep -ci "killed" $CUR_PATH/$PROJECT/build.log`
 
+           NOTFOUND=`grep -ci "not found" $CUR_PATH/$PROJECT/build.log`
+
            echo "$PROJECT  BUILD FAILED " >> build.log
            echo "$PROJECT BUILD FAILED " >> $BUILD_RESULTS_LOG
            echo "" >> $BUILD_RESULTS_LOG
@@ -56,6 +59,9 @@ do
            echo "Errors                    = $ERROR" >> $BUILD_RESULTS_LOG
            echo "Cannot find symbol errors = $CANNOTFINDSYMBOL" >> $BUILD_RESULTS_LOG
            echo "Killed                    = $KILLED" >> $BUILD_RESULTS_LOG
+
+           echo "Not found                 = $NOTFOUND" >> $BUILD_RESULTS_LOG
+
            echo ""  >> $BUILD_RESULTS_LOG
            echo "See build_results.txt for full details of failures"  >> $BUILD_RESULTS_LOG
            echo ""  >> $BUILD_RESULTS_LOG         
@@ -70,7 +76,8 @@ do
        echo "$PROJECT BUILD FAILED : $status" >> $BUILD_RESULTS_LOG
      fi  
     
-    echo " #### Project: $PROJECT End ####" >> build.log 
+    echo " #### Project: $PROJECT End ####" >> build.log
+
     echo "" >> build.log
 
     # Add the logging for this example to a file that will contain output from all examples
@@ -78,6 +85,7 @@ do
     sleep 10
 
 done
+
 cd "$CUR_PATH"
 
 # Add the summary to the start of the file

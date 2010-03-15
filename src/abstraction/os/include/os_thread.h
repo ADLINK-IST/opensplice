@@ -51,6 +51,9 @@ extern "C" {
  */
 typedef os_os_threadId os_threadId;
 
+/** \brief Definition for a thread routine invoked on thread create. */
+typedef void *(*os_threadRoutine)(void*);
+
 /** \brief Definition of the thread attributes
  */
 typedef struct os_threadAttr {
@@ -136,7 +139,7 @@ os_threadCreate(
     os_threadId *threadId,
     const char *name,
     const os_threadAttr *threadAttr,
-    void *(* start_routine)(void *),
+    os_threadRoutine start_routine,
     void *arg);
 
 /** \brief Return the thread ID of the calling thread

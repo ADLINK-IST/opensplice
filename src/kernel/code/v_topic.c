@@ -27,7 +27,7 @@
 #include "v_event.h"
 #include "v_policy.h"
 #include "v_time.h"
-#include "v__domain.h"
+#include "v__partition.h"
 #include "v_configuration.h"
 #include "v__policy.h"
 #include "os_heap.h"
@@ -45,7 +45,7 @@
 #define USERDATA_FIELD_NAME "userData"
 
 static v_accessMode
-v_domainDetermineTopicAccessMode(
+v_partitionDetermineTopicAccessMode(
     const c_char* typeName,
     v_kernel kernel);
 
@@ -274,39 +274,6 @@ keysConsistent(
     return consistent;
 }
 
-static c_bool
-topicConsistent(
-    v_topic topic,
-    const c_char *name,
-    const c_char *typeName,
-    const c_char *keyExpr,
-    v_topicQos qos)
-{
-    c_bool consistent = FALSE;
-    c_char *rTypeName;
-
-    if (c_compareString(v_topicName(topic), name) == C_EQ) {
-        /* only check when equal names */
-        rTypeName = c_metaScopedName(c_metaObject(v_topicDataType(topic)));
-        if (c_compareString(rTypeName, typeName) == C_EQ) {
-            if (v_topicQosEqual(topic->qos, qos, OS_API_INFO)) {
-                consistent = keysConsistent(topic, keyExpr);
-            }
-        } else {
-            OS_REPORT_2(OS_API_INFO, "topicConsistent", 21,
-                        "Topics typenames %s and %s are different",
-                        rTypeName, typeName);
-        }
-        os_free(rTypeName);
-    } else {
-        OS_REPORT_2(OS_API_INFO, "topicConsistent", 21,
-                    "Topics names %s and %s are different",
-                    v_topicName(topic), name);
-    }
-
-    return consistent;
-}
-
 c_type
 v_topicKeyTypeCreate (
     v_topic _this,
@@ -389,16 +356,127 @@ v__topicNew(
     }
 
     c_lockWrite(&kernel->lock);
+    topic = NULL;
     found = v_lookupTopic(kernel, name);
     if (found) {
         /* Check found topic with new topic */
         /* compare topic, if inconsistent, reject creation! */
-        if (topicConsistent(found, name, typeName, keyExpr, newQos) == FALSE) {
-            c_free(found);
-            topic = NULL; /* rejected topic */
+
+        if (c_compareString(v_topicName(found), name) == C_EQ) {
+            /* only check when equal names */
+            c_char *rTypeName = c_metaScopedName(c_metaObject(v_topicDataType(found)));
+            if (c_compareString(rTypeName, typeName) == C_EQ) {
+                if (found->qos) {
+                    c_bool consistent = TRUE;
+                    c_bool valid = v_durabilityPolicyEqual(found->qos->durability, newQos->durability);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Durability'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_durabilityServicePolicyEqual(found->qos->durabilityService, newQos->durabilityService);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'DurabilityService'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_deadlinePolicyEqual(found->qos->deadline, newQos->deadline);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Deadline'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_latencyPolicyEqual(found->qos->latency, newQos->latency);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Latency'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_livelinessPolicyEqual(found->qos->liveliness, newQos->liveliness);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Liveliness'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_reliabilityPolicyEqual(found->qos->reliability, newQos->reliability);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Reliability'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_orderbyPolicyEqual(found->qos->orderby, newQos->orderby);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'OrderBy'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_resourcePolicyEqual(found->qos->resource, newQos->resource);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Resource'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_transportPolicyEqual(found->qos->transport, newQos->transport);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Transport'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_lifespanPolicyEqual(found->qos->lifespan, newQos->lifespan);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Lifespan'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_ownershipPolicyEqual(found->qos->ownership, newQos->ownership);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'Ownership'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = v_historyPolicyEqual(found->qos->history, newQos->history);
+                    if (!valid) {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                                    "Create Topic <%s> failed: Unmatching QoS Policy: 'History'.",
+                                    name);
+                        consistent = FALSE;
+                    }
+                    valid = keysConsistent(found, keyExpr);
+                    if (valid && consistent) {
+                        topic = c_keep(found);
+                    } else {
+                        OS_REPORT_1(OS_WARNING, "v_topicNew", 21,
+                                    "Create Topic \"%s\" failed: Key differs exiting definition",
+                                    name);
+                    }
+                } else {
+                    OS_REPORT_1(OS_WARNING, "v_topicNew", 21,
+                                "Create Topic \"%s\" failed: QoS value undefined",
+                                name);
+                }
+            } else {
+                OS_REPORT_3(OS_WARNING, "v_topicNew", 21,
+                            "Create Topic \"%s\" failed: typename <%s> differs exiting definition <%s>.",
+                            name, rTypeName, typeName);
+            }
+            os_free(rTypeName);
         } else {
-            topic = found; /* accepted topic, transfer refCount */
+            OS_REPORT_3(OS_API_INFO, "v_topicNew", 21,
+                        "Create Topic \"%s\" failed: name <%s> differs existing name <%s>.",
+                        name, name, v_topicName(found));
         }
+        c_free(found);
         /* newQos is not used because the existing topic is returned */
         v_topicQosFree(newQos);
     } else {
@@ -420,7 +498,7 @@ v__topicNew(
                 topic->dataField = field;
                 topic->qos = newQos;
                 topic->keyExpr = c_stringNew(c_getBase(kernel), keyExpr);
-                topic->accessMode = v_domainDetermineTopicAccessMode(typeName, kernel);
+                topic->accessMode = v_partitionDetermineTopicAccessMode(typeName, kernel);
 
                 /* determine CRC codes */
                 str = c_metaScopedName(c_metaObject(field->type));
@@ -539,11 +617,17 @@ v_topicMessageNew(
 #else
     message = (v_message)c_new(v_topicMessageType(topic));
 #endif
+    if (message) {
 #ifndef _NAT_
-    message->allocTime = v_timeGet();
+        message->allocTime = v_timeGet();
 #endif
-    message->qos = NULL;
-    V_MESSAGE_INIT(message);
+        message->qos = NULL;
+        V_MESSAGE_INIT(message);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_topicMessageNew",0,
+                  "Failed to allocate message.");
+    }
     return message;
 }
 
@@ -798,7 +882,7 @@ v_topicMessageCopyKeyValues(
 
 /* ES, dds1576 added */
 v_accessMode
-v_domainDetermineTopicAccessMode(
+v_partitionDetermineTopicAccessMode(
     const c_char* typeName,
     v_kernel kernel)
 {
@@ -823,7 +907,7 @@ v_domainDetermineTopicAccessMode(
             expression = v_cfElementAttributeValue(element, "topic_expression");
             if(expression.kind == V_STRING)
             {
-                if(v_domainStringMatchesExpression(typeName, expression.is.String))
+                if(v_partitionStringMatchesExpression(typeName, expression.is.String))
                 {
                     /* The partition matches the expression.*/
                     accessMode = v_cfElementAttributeValue(element, "access_mode");

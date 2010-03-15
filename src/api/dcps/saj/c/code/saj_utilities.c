@@ -510,8 +510,8 @@ saj_durationCopyOut(
     {
         *dst = (*env)->NewObject(
             env,
-            GET_CACHED(time_t_class),
-            GET_CACHED(time_t_constructor_mid),
+            GET_CACHED(duration_t_class),
+            GET_CACHED(duration_t_constructor_mid),
             src->sec,
             src->nanosec);
         saj_exceptionCheck(env);
@@ -1100,6 +1100,40 @@ saj_LookupTypeSupportDataReader(
     return rc;
 }
 
+saj_returnCode
+saj_LookupTypeSupportDataReaderView(
+    JNIEnv* env,
+    jobject jtypeSupport,
+    gapi_char** result)
+{
+    jfieldID fid;
+    jstring jresult;
+    saj_returnCode rc;
+    const char* data;
+
+    rc = SAJ_RETCODE_ERROR;
+
+    if(jtypeSupport != NULL)
+    {
+        fid = GET_CACHED(typeSupportDataReaderView_fid);
+
+        if(fid != NULL)
+        {
+            jresult = (jstring)((*env)->GetObjectField(env, jtypeSupport, fid));
+            saj_exceptionCheck(env);
+
+            if(jresult != NULL){
+               data = (*env)->GetStringUTFChars(env, jresult, 0);
+               saj_exceptionCheck(env);
+               *result = gapi_string_dup(data);
+               (*env)->ReleaseStringUTFChars(env, jresult, data);
+               saj_exceptionCheck(env);
+            }
+            rc = SAJ_RETCODE_OK;
+        }
+    }
+    return rc;
+}
 
 saj_returnCode
 saj_LookupTypeSupportDataWriter(

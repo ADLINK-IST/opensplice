@@ -22,6 +22,15 @@
 #include "nw__confidence.h"
 #include "nw_configuration.h"
 #include "nw_report.h"
+#include "nw_security.h"
+#include "ut_collection.h"
+
+/* 
+ * This define flag can be used to diagnose leakage of defragbuffers/admins
+ * When it is set, all allocated buffers are kept linked in the adminPool field of the receiveChannel.
+ * Also each admin wil contain a linked-list "trail" of all the changes of the usedcount.
+ */
+#undef NW_BUFFER_TRAILS
 
 /* --------------------------- nw_plugReceivChannel ----------------------- */
 
@@ -63,17 +72,37 @@ NW_STRUCT(nw_plugReceiveChannel) {
 #endif
     /* Boolean for confidence checking */
     nw_bool inUse;
+    plugReceiveStatistics prs;
+    nw_bool crc_check;
+    ut_collection partionIdToHashAdmin;
+    nw_bool fragmentSizeErrorLog;
+
+    NW_SECURITY_DECODER_HOOK_DECL
+#ifdef NW_BUFFER_TRAILS
+    nw_plugBufferDefragAdmin adminPool;
+#endif
 };
 
-
+#ifdef NW_BUFFER_TRAILS
+NW_CLASS(nw_plugBufferTrail);
+NW_STRUCT(nw_plugBufferTrail) {
+    nw_plugBufferTrail prev;
+    nw_seqNr line;
+    nw_seqNr usedCount;
+};
+#endif
 
 /* ------------------------ nw_plugBufferDefragAdmin -------------------- */
 
 NW_STRUCT(nw_plugBufferDefragAdmin) {
     nw_plugBufferDefragAdmin prev;
     nw_plugBufferDefragAdmin next;
-    nw_address senderAddress;
+    NW_STRUCT(nw_senderInfo) sender; 
     nw_seqNr usedCount;
+#ifdef NW_BUFFER_TRAILS
+    nw_plugBufferDefragAdmin link;
+    nw_plugBufferTrail trail;
+#endif
 };
 
 #define UI(val)       ((os_address)(val))
@@ -85,6 +114,40 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 #define DF_DATA(ptr)    (nw_plugDataBuffer(DF_BUFFER(ptr)))
 #define DF_CONTROL(ptr) (nw_plugControlBuffer(DF_BUFFER(ptr)))
 
+
+#if NW_BUFFER_TRAILS
+static void
+nw_plugBufferDefragAdminAddTrail(nw_plugBufferDefragAdmin admin, nw_seqNr line)
+{
+    nw_plugBufferTrail prev;
+    prev = admin->trail; 
+    admin->trail = (nw_plugBufferTrail)os_malloc(UI(sizeof(NW_STRUCT(nw_plugBufferTrail))));
+    admin->trail->usedCount = admin->usedCount;
+    admin->trail->line = line;
+    admin->trail->prev = prev; 
+}
+
+static void
+nw_plugBufferDefragAdminEmptyTrails(nw_plugBufferDefragAdmin admin)
+{
+    nw_plugBufferTrail prev, current;
+    current = admin->trail; 
+    while ( current != NULL ) {
+        prev = current->prev;
+        os_free(current);
+        current = prev;
+    }
+    admin->trail = NULL;
+}
+#endif
+
+#if NW_BUFFER_TRAILS
+#define USEDCOUNT_TRAIL(admin) \
+    nw_plugBufferDefragAdminAddTrail(admin,__LINE__)
+#else
+#define USEDCOUNT_TRAIL(admin)
+#endif
+
 #if 0
 #define PRINT_USEDCOUNT(admin)       \
     printf("%s:%d (0x%x) usedCount = %d\n", __FILE__, __LINE__, (os_address)admin, admin->usedCount)
@@ -92,9 +155,26 @@ NW_STRUCT(nw_plugBufferDefragAdmin) {
 #define PRINT_USEDCOUNT(admin)
 #endif
 
-#define SET_USEDCOUNT(admin, value) admin->usedCount = value; PRINT_USEDCOUNT(admin)
-#define INC_USEDCOUNT(admin)        pa_increment(&admin->usedCount);       PRINT_USEDCOUNT(admin)
-#define DEC_USEDCOUNT(admin)        pa_decrement(&admin->usedCount);       PRINT_USEDCOUNT(admin)
+#define SET_USEDCOUNT(admin, value) do { admin->usedCount = value;        USEDCOUNT_TRAIL(admin); PRINT_USEDCOUNT(admin); } while (0)
+#define INC_USEDCOUNT(admin)        do { pa_increment(&admin->usedCount); USEDCOUNT_TRAIL(admin); PRINT_USEDCOUNT(admin); } while (0)
+#define DEC_USEDCOUNT(admin)        do { pa_decrement(&admin->usedCount); USEDCOUNT_TRAIL(admin); PRINT_USEDCOUNT(admin); } while (0)
+#define TRANSFER_USEDCOUNT(admin)   do {                                  USEDCOUNT_TRAIL(admin); PRINT_USEDCOUNT(admin); } while (0)
+
+static c_equality
+compareLeafs (
+    void *o1,
+    void *o2,
+    void *args
+    )
+{
+    if (o1 < o2) {
+	return C_LT;
+    } else if (o1 > o2) {
+	return C_GT;
+    }
+    return C_EQ;
+}
+
 
 static nw_plugBufferDefragAdmin
 nw_plugBufferDefragAdminCreate(
@@ -104,10 +184,19 @@ nw_plugBufferDefragAdminCreate(
 
     if (receiveChannel->freeBuffers != NULL) {
         /* Get a buffer from the buffer pool */
+    	    	   
         admin = receiveChannel->freeBuffers;
         receiveChannel->freeBuffers = admin->next;
         receiveChannel->nofUsedBuffers++;
         receiveChannel->nofFreeBuffers--;
+        
+        if (admin->usedCount>=1) { 
+        	/* the reference count should be 0 */
+        	NW_REPORT_WARNING("receive data", "receive-buffer in pool has unexpected reference count"); 
+        }
+#if NW_BUFFER_TRAILS
+        nw_plugBufferDefragAdminEmptyTrails(admin);       
+#endif
     } else {
         /* Allocate a new buffer from heap */
         NW_CONFIDENCE(receiveChannel->nofFreeBuffers == 0);
@@ -118,6 +207,14 @@ nw_plugBufferDefragAdminCreate(
                 DF_ADMIN_LENGTH);
             receiveChannel->nofUsedBuffers++;
             receiveChannel->totNofBuffers++;
+            
+            SET_USEDCOUNT(admin, 1); /* to supress valgrind warnings */
+
+#if NW_BUFFER_TRAILS
+            admin->link = receiveChannel->adminPool;
+            receiveChannel->adminPool = admin;  
+            admin->trail = NULL;        
+#endif
 #ifdef NW_TRACING
                     if (receiveChannel->totNofBuffers == 2*receiveChannel->buffersAllocatedTrace) {
                         NW_TRACE_2(Receive, 2, "Total number of defragmentation buffers "
@@ -129,11 +226,10 @@ nw_plugBufferDefragAdminCreate(
 #endif
         }
     }
-
     if (admin != NULL) {
         admin->prev = NULL;
         admin->next = NULL;
-        admin->senderAddress = 0;
+        memset(&(admin->sender), 0, sizeof(NW_STRUCT(nw_senderInfo))); /* zero out */      
         SET_USEDCOUNT(admin, 1);
     }
 
@@ -141,7 +237,11 @@ nw_plugBufferDefragAdminCreate(
 }
 
 
+#ifdef NW_BUFFER_TRAILS
+#define nw_plugBufferDefragAdminFree(admin) nw_plugBufferDefragAdminEmptyTrails(admin); os_free(admin)
+#else
 #define nw_plugBufferDefragAdminFree(admin) os_free(admin)
+#endif
 #define nw_plugBufferDefragAdminKeep(admin) INC_USEDCOUNT(admin)
 
 static void
@@ -150,7 +250,7 @@ nw_plugBufferDefragAdminRelease(
     nw_plugBufferDefragAdmin admin)
 {
     NW_CONFIDENCE(admin->usedCount > 0);
-
+    
     DEC_USEDCOUNT(admin);
     if (admin->usedCount == 0) {
         if (admin->prev != NULL) {
@@ -168,6 +268,7 @@ nw_plugBufferDefragAdminRelease(
         receiveChannel->freeBuffers = admin;
         receiveChannel->nofUsedBuffers--;
         receiveChannel->nofFreeBuffers++;
+
         if ((receiveChannel->nofUsedBuffers > receiveChannel->buffersUsedTraceBottom) &&
                 (receiveChannel->nofUsedBuffers == receiveChannel->buffersUsedTrace/2)) {
             NW_TRACE_2(Receive, 2, "Number of defragmentation buffers in use "
@@ -176,8 +277,15 @@ nw_plugBufferDefragAdminRelease(
                 receiveChannel->nofUsedBuffers);
             receiveChannel->buffersUsedTrace = receiveChannel->buffersUsedTrace / 2;
         }
+        
     }
 }
+
+
+
+
+
+
 
 /* --------------------------- Defragmentation ------------------------------ */
 
@@ -329,6 +437,7 @@ NW_STRUCT(nw_plugSendingPartitionNode) {
     nw_partitionId partitionId;
     nw_bool active;
     nw_seqNr packetNrWaitingFor;
+    nw_seqNr outOfOrderCount;
     NW_STRUCT(nw_plugBufferDefragAdmin) outOfOrderAdminsHead;
     NW_STRUCT(nw_plugBufferDefragAdmin) outOfOrderAdminsTail;
     NW_STRUCT(nw_plugBufferDefragAdmin) defragAdminsHead;
@@ -353,6 +462,7 @@ nw_plugSendingPartitionNodeNew(
         result->partitionId = partitionId;
         result->active = TRUE;
         result->packetNrWaitingFor = 0; /* First packet can be any packet */
+        result->outOfOrderCount =0;
         result->msgHolderPtrsHead = NULL;
         result->msgHolderPtrsTail = NULL;
         result->outOfOrderAdminsHead.prev = NULL;
@@ -568,8 +678,16 @@ nw_plugSendingPartitionNodeOutOfOrderListTake(
             result->next->prev = result->prev;
         }
     }
-    NW_CONFIDENCE((sendingPartitionNode->outOfOrderAdminsHead.next->next == NULL) ==
-                  (sendingPartitionNode->outOfOrderAdminsTail.prev->prev == NULL));
+
+    if (result) {
+    	NW_CONFIDENCE(sendingPartitionNode->outOfOrderCount > 0);
+    	sendingPartitionNode->outOfOrderCount--;
+    }
+
+    NW_CONFIDENCE(((sendingPartitionNode->outOfOrderAdminsHead.next->next == NULL) ==
+                   (sendingPartitionNode->outOfOrderAdminsTail.prev->prev == NULL)) &&
+                  ((sendingPartitionNode->outOfOrderAdminsHead.next->next == NULL) ==
+                   (sendingPartitionNode->outOfOrderCount == 0)));
     return result;
 }
 
@@ -591,15 +709,16 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
     nw_seqNr packetNrPrevious;
     nw_plugBufferDefragAdmin currentAdmin;
     nw_bool holeFound;
-    nw_seqNr OutOfOrderCount;
+
 
     packetNrLookingFor = nw_plugDataBufferGetPacketNr(DF_DATA(admin));
+    TRANSFER_USEDCOUNT(admin);
 
     result = NULL;
     *isDroppedReliably = FALSE;
     isOutOfOrder = FALSE;
     isOld = FALSE;
-    OutOfOrderCount = 0;
+
     if (orderPreservation) {
         /* If this packet was received out of order, insert in into the out of
          * order list or discard it if it is old */
@@ -641,9 +760,12 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             } else {
                 currentAdmin = currentAdmin->prev;
             }
-            OutOfOrderCount++;
+
         }
         if (result == NULL) {
+
+        	sendingPartitionNode->outOfOrderCount++;
+
             NW_CONFIDENCE(insertionNeeded || (currentAdmin->prev == NULL));
             admin->next = currentAdmin->next;
             admin->prev = currentAdmin;
@@ -679,13 +801,13 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
          * All packetbuffers that are in use for this SendingPartitionNode will
          * be freed.
          */
-        if (OutOfOrderCount > receiveChannel->maxReliabBacklog ){
+        if (sendingPartitionNode->outOfOrderCount > receiveChannel->maxReliabBacklog ){
             NW_REPORT_WARNING_1("reliable protocol",
                "Node 0x%x did not resend a missing packet in time, removing that node from the reliable protocol.",
                sendingPartitionNode->nodeId);
 
             sendingPartitionNode->active = FALSE;
-            
+
             /*release all admins for this PartitionNode*/
             nw_plugSendingPartitionNodeFree(receiveChannel,sendingPartitionNode);          
         } 
@@ -713,6 +835,7 @@ nw_plugSendingPartitionNodeDefragListInsert(
     nw_bool found;
 
     packetNrLookingFor = nw_plugDataBufferGetPacketNr(DF_DATA(admin));
+    TRANSFER_USEDCOUNT(admin);
 
     result = NULL;
     currentAdmin = sendingPartitionNode->defragAdminsTail.prev;
@@ -763,6 +886,9 @@ nw_plugSendingPartitionNodeInsertAdmin(
     /* Now insert buffer in list */
     orderPreservation =
         (nw__plugChannelGetReliabilityOffered(nw_plugChannel(receiveChannel)) == NW_REL_RELIABLE);
+    
+    TRANSFER_USEDCOUNT(admin);
+
     insertedAdmin = nw_plugSendingPartitionNodeOutOfOrderListInsert(receiveChannel,sendingPartitionNode, admin,
         orderPreservation, isReinsert, &isDropped);
     if (isDropped) {
@@ -774,6 +900,8 @@ nw_plugSendingPartitionNodeInsertAdmin(
     /* Execute the following action only if the admin is directly available */
     if (insertedAdmin == admin) {
         insertedAdmin = nw_plugSendingPartitionNodeOutOfOrderListTake(sendingPartitionNode, orderPreservation);
+        TRANSFER_USEDCOUNT(admin);
+        
         NW_CONFIDENCE(insertedAdmin == admin);
         nw_plugSendingPartitionNodeDefragListInsert(sendingPartitionNode, admin);
         /* Release the buffer taken from the outOfOrderList */
@@ -915,6 +1043,9 @@ nw_plugReceiveChannelCreateSendingPartitions(
     nw_partitionAddress partitionAddress;
     nw_bool found;
     nw_bool connected;
+    nw_networkSecurityPolicy securityPolicy;
+    os_uint32 hash;
+
 
     NW_CONFIDENCE(receiveChannel != NULL);
 
@@ -922,8 +1053,11 @@ nw_plugReceiveChannelCreateSendingPartitions(
          partitionId < nw_plugPartitionsGetNofPartitions(partitions);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, &connected);
+            &found, &partitionAddress, &securityPolicy, &connected, &hash);
         NW_CONFIDENCE(found);
+
+        /*add hash with partitionid value to the hashTree*/
+        ut_tableInsert((ut_table)receiveChannel->partionIdToHashAdmin,&hash,&partitionId);
         if (found) {
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(receiveChannel)), partitionId, partitionAddress,
@@ -970,11 +1104,19 @@ nw_plugReceiveChannelNew(
         result->lastReceivedFragment = 0;
         result->inUse = FALSE;
 
+#ifdef NW_BUFFER_TRAILS        
+        result->adminPool = NULL;
+#endif
+
+        result->fragmentSizeErrorLog = FALSE;
+
         if (nw_plugChannelGetReliabilityOffered(nw_plugChannel(result)) == NW_REL_RELIABLE) {
             DefDefragBuffersSize = NWCF_DEF_DefragBufferSize;
         } else {
             DefDefragBuffersSize = NWCF_DEF_DefragBufferSizeBestEffort;
         }
+
+        result->crc_check = NWCF_DEFAULTED_SUBPARAM(Bool, pathName, Rx, CrcCheck,NWCF_DEF_CrcCheck);
 
         result->maxNofBuffers = NWCF_DEFAULTED_SUBPARAM(ULong, pathName, Rx, DefragBufferSize,DefDefragBuffersSize);
         result->maxReliabBacklog = NWCF_DEFAULTED_SUBPARAM(ULong, pathName, Rx, MaxReliabBacklog,NWCF_DEF_MaxReliabBacklog);
@@ -983,8 +1125,14 @@ nw_plugReceiveChannelNew(
         result->buffersUsedTrace = DF_BUFUSE_MONITORING_START;
         result->buffersUsedTraceBottom = result->buffersUsedTrace;
 #endif
+
+        NW_SECURITY_DECODER_INIT(result, nodeId, partitions);
+
+        result->partionIdToHashAdmin =  ut_tableNew (compareLeafs, NULL);
         nw_plugReceiveChannelCreateSendingPartitions(result, partitions);
     }
+
+
 
     return nw_plugChannel(result);
 }
@@ -1040,6 +1188,7 @@ nw_plugReceiveChannelFree(
         i++;
     }
     NW_CONFIDENCE(i == receiveChannel->nofFreeBuffers);
+    NW_SECURITY_DECODER_DEINIT(receiveChannel);
 
     /* inherited finalization */
     nw_plugChannelFinalize(channel);
@@ -1189,7 +1338,7 @@ nw_plugReceiveChannelCreateBuffer(
     if ( admin ) {
         result = DF_BUFFER(admin);
     }
-
+    
     return result;
 }
 
@@ -1200,10 +1349,11 @@ nw_plugReceiveChannelCreateBuffer(
 static void
 nw_plugReceiveChannelTakeFirstMessageHolder(
     nw_plugReceiveChannel receiveChannel,
-    nw_messageHolder *messageHolder,
-    nw_address *senderAddress)
+    nw_messageHolder *messageHolder)
 {
-    nw_msgHolderPtr msgHolderPtr;
+	/** (FR) The message-queueing requires some refactoring */
+	
+	nw_msgHolderPtr msgHolderPtr;
     nw_plugBufferDefragAdmin lastReturnedBuffer;
     nw_messageHolder lastReturnedHolder;
     nw_msgHolderPtr lastReturnedMsgHolderPtr;
@@ -1260,13 +1410,11 @@ nw_plugReceiveChannelTakeFirstMessageHolder(
     if (msgHolderPtr != NULL) {
         /* Fill the result */
         *messageHolder = msgHolderPtr->messageHolder;
-        *senderAddress = msgHolderPtr->firstAdmin->senderAddress;
         receiveChannel->lastReturnedBuffer = msgHolderPtr->firstAdmin;
         receiveChannel->lastReturnedHolder = msgHolderPtr->messageHolder;
         receiveChannel->lastReturnedMsgHolderPtr = msgHolderPtr;
     } else {
         *messageHolder = NULL;
-        *senderAddress = 0;
     }
 }
 
@@ -1332,22 +1480,31 @@ nw_plugReceiveChannelGetFragmentInstantly(
     nw_plugReceiveChannel channel,
     nw_data *data,
     nw_length *length,
-    nw_address *senderAddress)
+    nw_senderInfo sender)
 {
     nw_bool result = FALSE;
     nw_messageHolder messageHolder = NULL;
 
-    nw_plugReceiveChannelTakeFirstMessageHolder(channel, &messageHolder, senderAddress);
+    nw_plugReceiveChannelTakeFirstMessageHolder(channel, &messageHolder);
     if (messageHolder != NULL) {
         *data = NW_MESSAGEHOLDER_DATA(messageHolder);
         *length = nw_messageHolderGetLength(messageHolder);
+		NW_CONFIDENCE(*data!=NULL); /* if one of these two checks fails, */
+		NW_CONFIDENCE(*length>0);	/* something must be wrong with the queueing */
+		
+        if (sender != NULL) {
+        	/* so far this copies a 4-octet integer, later with IPv6 it
+        	 * will be necessary to copy the 12-octet IPv6 address */ 
+        	sender->ipAddress = channel->lastReturnedBuffer->sender.ipAddress;
+        	/* no strdup required here, sender does not take ownership */
+        	sender->dn = channel->lastReturnedBuffer->sender.dn; 
+        }
         result = TRUE;
     } else {
         *data = NULL;
         *length = 0;
         result =FALSE;
     }
-
     return result;
 }
 
@@ -1362,6 +1519,8 @@ nw_plugReceiveChannelCommunicateControlReceived(
     nw_plugInterChannel interChannel;
     nw_plugControlMessage message;
     nw_bool more;
+    os_uint32 partitionHashToId;
+    os_uint32 partitionHash;
 
     NW_CONFIDENCE(nw__plugChannelGetReliabilityOffered(nw_plugChannel(channel)) == NW_REL_RELIABLE);
 
@@ -1376,9 +1535,15 @@ nw_plugReceiveChannelCommunicateControlReceived(
     do {
         message = nw_plugControlBufferGetNextMessage(buffer, message, &more);
         NW_CONFIDENCE(message != NULL);
+        partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+
+        partitionHashToId = (os_uint32)ut_get(channel->partionIdToHashAdmin,
+        		 (void *)&partitionHash);
+
+
         nw_plugInterChannelPostAckReceivedMessage(interChannel,
             sendingNodeId,
-            nw_plugControlMessageGetPartitionId(message),
+            partitionHashToId,
             sendingAddress,
             nw_plugControlMessageGetStartingNr(message),
             nw_plugControlMessageGetClosingNr(message),
@@ -1433,17 +1598,38 @@ nw_plugReceiveChannelInsertDataReceived(
         if (!found) {
             currentNode = currentNode->next;
         }
-    }
+    } 
     if (!found) {
         currentNode = nw_plugSendingPartitionNodeNew(sendingNodeId, sendingPartitionId,
             &receiveChannel->sendingPartitionNodes);
     }
     NW_CONFIDENCE(currentNode != NULL);
+    if ( ! nw_plugSendingPartitionNodeIsActive(currentNode) &&
+           nw_plugChannel(receiveChannel)->reconnectAllowed         ) {
+           
+        /* mark them as active again and Initialize */
+        currentNode->active = TRUE;
+        currentNode->packetNrWaitingFor = 0; /* Next packet can be any packet */
+        currentNode->outOfOrderCount =0;
+        currentNode->msgHolderPtrsHead = NULL;
+        currentNode->msgHolderPtrsTail = NULL;
+        currentNode->outOfOrderAdminsHead.prev = NULL;
+        currentNode->outOfOrderAdminsHead.next = &currentNode->outOfOrderAdminsTail;
+        currentNode->outOfOrderAdminsTail.prev = &currentNode->outOfOrderAdminsHead;
+        currentNode->outOfOrderAdminsTail.next = NULL;
+        currentNode->defragAdminsHead.prev = NULL;
+        currentNode->defragAdminsHead.next = &currentNode->defragAdminsTail;
+        currentNode->defragAdminsTail.prev = &currentNode->defragAdminsHead;
+        currentNode->defragAdminsTail.next = NULL;
+    }
 
 
     if ( nw_plugSendingPartitionNodeIsActive(currentNode) ) {
         /* Insert the admin into the defrag of out of order list */
         admin = DF_ADMIN(buffer);
+        
+        TRANSFER_USEDCOUNT(admin);
+        
         insertedAdmin = nw_plugSendingPartitionNodeInsertAdmin(receiveChannel, currentNode,
             admin, FALSE);
         /* Release this reference, buffer is refcounted by the list, if inserted */
@@ -1453,6 +1639,7 @@ nw_plugReceiveChannelInsertDataReceived(
             admin = nw_plugSendingPartitionNodeOutOfOrderListTake(currentNode,
                 orderPreservation);
             while (admin != NULL) {
+                TRANSFER_USEDCOUNT(admin);
                 insertedAdmin = nw_plugSendingPartitionNodeInsertAdmin(receiveChannel,
                     currentNode, admin, TRUE);
                 NW_CONFIDENCE(insertedAdmin == admin);
@@ -1470,96 +1657,179 @@ nw_plugReceiveChannelInsertDataReceived(
     }
 }
 
+
 static nw_bool
 nw_plugReceiveChannelReadSocket(
     nw_plugReceiveChannel channel,
     os_time *timeOut,
     nw_bool *dataRead)
 {
-    sk_length readLength;
+	sk_length readLength;
+	sk_length bufferLength;
     nw_plugBufferDefragAdmin admin;
     nw_plugBuffer buffer;
-    nw_bool result = TRUE;
+    nw_bool result = OS_TRUE;
     nw_seqNr sendingNodeId;
     nw_bool reliable;
     sk_length dataLength;
     nw_partitionId sendingPartitionId;
     nw_bool found;
     char *addressString;
+    nw_networkSecurityPolicy networkSecurityPolicy;
     nw_bool connected;
+    nw_bool crc_correct;
+    os_uint32 crc;	
+    os_uint32 partitionHashToId;
+    os_uint32 partitionHash;
 
-    *dataRead = TRUE;
-    NW_CONFIDENCE(sizeof(sk_address) == sizeof(admin->senderAddress));
+ 
+    *dataRead = OS_TRUE; /* nw_bool is typedef-ed os_boolean */
+    NW_CONFIDENCE(sizeof(sk_address) == sizeof(admin->sender.ipAddress));
+
     buffer = nw_plugReceiveChannelCreateBuffer(channel);
     if (buffer) {
+        const nw_length fragmentLength =  
+            nw__plugChannelGetFragmentLength(nw_plugChannel(channel)); 
+		
         admin = DF_ADMIN(buffer);
+        
+        TRANSFER_USEDCOUNT(admin); 
+        
         readLength = nw_socketReceive(
             nw__plugChannelGetSocket(nw_plugChannel(channel)),
-            (sk_address *)&admin->senderAddress, buffer,
-            nw__plugChannelGetFragmentLength(nw_plugChannel(channel)), timeOut);
-        if (readLength > 0) {
+            (sk_address *)&admin->sender.ipAddress, buffer,
+            fragmentLength, timeOut);
+
+        NW_SECURITY_DECODER_PROCESS(bufferLength /* out */, channel, &(admin->sender), buffer, readLength, fragmentLength);
+
+        if (readLength >= OS_SIZEOF(nw_plugBuffer)) {
+
             if (nw_plugBufferCheckVersion(buffer, NW_CURRENT_PROTOCOL_VERSION)){
-                sendingNodeId = nw_plugBufferGetSendingNodeId(buffer);
-                if (nw_plugBufferGetControlFlag(buffer)) {
-                    /* communicate incoming control message to sending thread */
-                    nw_plugReceiveChannelCommunicateControlReceived(
-                        nw_plugReceiveChannel(channel), sendingNodeId,
-                        admin->senderAddress, nw_plugControlBuffer(buffer));
-                    nw_plugReceiveChannelReleaseBuffer(channel, buffer);
-                } else {
-                    dataLength = nw_plugBufferGetLength(buffer);
-                    if (dataLength > 0) {
-                        NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
-                        sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
-                        connected = FALSE;
-                        nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &connected);
+
+            	dataLength = nw_plugBufferGetLength(buffer);
+
+            	/* check if received length is equal to the length field of the message*/
+            	if (readLength == dataLength) {
+
+					/* skip crc calculation if crc_check is not set in the configfile*/
+					if (channel->crc_check) {
+						crc = ut_crcCalculate(nw_plugChannel(channel)->crc,
+								  ((os_char*)buffer)+sizeof(NW_STRUCT(nw_plugBuffer)),
+								  readLength-sizeof(NW_STRUCT(nw_plugBuffer)));
+						crc_correct = (crc == nw_plugBuffer(buffer)->receivingNodeId);
+					} else {
+						crc = 0;
+						crc_correct = 1;
+					}
+
+					if (crc_correct) {
+						sendingNodeId = nw_plugBufferGetSendingNodeId(buffer);
+						if (nw_plugBufferGetControlFlag(buffer)) {
+							/* communicate incoming control message to sending thread */
+							nw_plugReceiveChannelCommunicateControlReceived(
+								nw_plugReceiveChannel(channel), sendingNodeId,
+								        admin->sender.ipAddress, nw_plugControlBuffer(buffer));
+							nw_plugReceiveChannelReleaseBuffer(channel, buffer);
+						} else {
+
+							if (dataLength > 0) {
+							    if (channel->prs != NULL) {
+                                    channel->prs->numberOfBytesReceived += dataLength;
+                                    channel->prs->numberOfPacketsReceived++;
+                                }
+
+								NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
+								sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+								/*convert hash to partitionId*/
+
+                                partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+
+                                partitionHashToId = (os_uint32)ut_get(
+                                        channel->partionIdToHashAdmin,
+                                        (void *)&partitionHash);
+
+                                connected = FALSE;
+                                sendingPartitionId = partitionHashToId;
+                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &partitionHashToId);
 #ifdef FILTER_ON_SENDING_PARTITION
-                        if (connected) {
+								if (connected) {
 #endif
-                            /* communicate incoming data message to sending thread
-                             * for reliable channels (for acking) */
-                            reliable = (nw__plugChannelGetReliabilityOffered(nw_plugChannel(channel)) == NW_REL_RELIABLE);
-                            NW_CONFIDENCE(nw_plugBufferGetReliabilityFlag(buffer) == reliable);
-                            if (reliable) {
-                                nw_plugReceiveChannelCommunicateDataReceivedReliably(
-                                    channel, admin->senderAddress,
-                                    sendingNodeId, sendingPartitionId,
-                                    nw_plugDataBuffer(buffer));
-                            }
-                            /* Append at tail of doubly linked list */
-                            admin->next = NULL;
-                            if (channel->waitingDataBuffersHead == NULL) {
-                                channel->waitingDataBuffersHead = admin;
-                            } else {
-                                NW_CONFIDENCE(channel->waitingDataBuffersTail != NULL);
-                                (channel->waitingDataBuffersTail)->next = admin;
-                            }
-                            admin->prev = channel->waitingDataBuffersTail;
-                            channel->waitingDataBuffersTail = admin;
+									/* communicate incoming data message to sending thread
+									 * for reliable channels (for acking) */
+									reliable = (nw__plugChannelGetReliabilityOffered(nw_plugChannel(channel)) == NW_REL_RELIABLE);
+									NW_CONFIDENCE(nw_plugBufferGetReliabilityFlag(buffer) == reliable);
+									if (reliable) {
+										nw_plugReceiveChannelCommunicateDataReceivedReliably(
+											channel, admin->sender.ipAddress,
+											sendingNodeId, sendingPartitionId,
+											nw_plugDataBuffer(buffer));
+									}
+									/* Append at tail of doubly linked list */
+									admin->next = NULL;
+									if (channel->waitingDataBuffersHead == NULL) {
+										channel->waitingDataBuffersHead = admin;
+									} else {
+										NW_CONFIDENCE(channel->waitingDataBuffersTail != NULL);
+										(channel->waitingDataBuffersTail)->next = admin;
+									}
+									admin->prev = channel->waitingDataBuffersTail;
+									channel->waitingDataBuffersTail = admin;
+
 #ifdef FILTER_ON_SENDING_PARTITION
-                        } else {
-                            /* This is a strange situation: data received for
-                             * a disconnected partition. Either the switch
-                             * does not implement multicast filtering or the
-                             * application does not fit with the configuration */
-                            NW_REPORT_WARNING_1("receive data",
-                                 "received data for disconnected network partition (id=%d)",
-                                 sendingPartitionId);
-                            nw_plugReceiveChannelReleaseBuffer(channel, buffer);
-                        }
+									TRANSFER_USEDCOUNT(admin);
+								} else {
+									/* This is a strange situation: data received for
+									 * a disconnected partition. Either the switch
+									 * does not implement multicast filtering or the
+									 * application does not fit with the configuration */
+									NW_REPORT_WARNING_1("receive data",
+										 "received data for disconnected network partition (id=%d)",
+										 sendingPartitionId);
+									nw_plugReceiveChannelReleaseBuffer(channel, buffer);
+								}
 #endif
-                    } else {
-                        char *str;
-                        /* DataLength <= 0, so invalid data */
-                        NW_REPORT_WARNING("receive data",
-                             "received data with corrupted content");
-                        str = nw_plugDataBufferToString(nw_plugDataBuffer(buffer));
-                        NW_REPORT_WARNING_1("receive data",
-                             "corrupted content: %s", str);
-                        os_free(str);
-                        nw_plugReceiveChannelReleaseBuffer(channel, buffer);
-                    }
-                }
+							} else {
+                                char *str;
+                                /* DataLength <= 0, so invalid data */
+                                NW_REPORT_WARNING("receive data",
+                                     "received data with corrupted content");
+                                str = nw_plugDataBufferToString(nw_plugDataBuffer(buffer));
+                                NW_REPORT_WARNING_1("receive data",
+                                     "corrupted content: %s", str);
+                                os_free(str);
+
+                                nw_plugReceiveChannelReleaseBuffer(channel, buffer);
+							}
+						}
+					} else {
+						/* Received data was not a valid ospl packet */
+						NW_REPORT_WARNING_3("receive data",
+							 "received data with an incorrect calculated crc %x receive crc %x packet length: %d",
+							 crc,
+							 nw_plugBuffer(buffer)->receivingNodeId,
+							 readLength-sizeof(NW_STRUCT(nw_plugBuffer)));
+
+
+						nw_plugReceiveChannelReleaseBuffer(channel, buffer);
+						*dataRead = FALSE;
+					}
+            	} else {
+            		if (readLength == nw__plugChannelGetFragmentLength(nw_plugChannel(channel))) {
+            			if (!channel->fragmentSizeErrorLog) {
+							NW_REPORT_WARNING_2("receive data",
+								"received data with an incorrect fragment length due to inconsistent fragmentsize configuration (received:%d expected: %d)",
+								readLength,dataLength);
+							channel->fragmentSizeErrorLog = TRUE;
+            			}
+            		} else {
+            			NW_REPORT_WARNING_2("receive data",
+            			    "received data with an incorrect fragment length (received:%d expected: %d)",
+            			    readLength,dataLength);
+
+            		}
+					nw_plugReceiveChannelReleaseBuffer(channel, buffer);
+					*dataRead = OS_FALSE;
+				}
             } else {
                 /* Received data was not a valid ospl packet */
                 NW_REPORT_WARNING("receive data",
@@ -1568,17 +1838,17 @@ nw_plugReceiveChannelReadSocket(
                 *dataRead = FALSE;
             }
         } else {
-            /* ReadLength <= 0, so no data */
+            /* ReadLength < plugbufferheader, so no valid data */
+
             nw_plugReceiveChannelReleaseBuffer(channel, buffer);
             *dataRead = FALSE;
         }
     } else {
-        result = FALSE;
-        *dataRead = FALSE;
+        result = OS_FALSE;
+        *dataRead = OS_FALSE;
     }
     return result;
 }
-
 
 
 static nw_plugBufferDefragAdmin
@@ -1589,6 +1859,7 @@ nw_plugReceiveChannelTakeWaitingDataBuffer(
 
     if (channel->waitingDataBuffersHead) {
         admin = channel->waitingDataBuffersHead;
+        TRANSFER_USEDCOUNT(admin);
         /* set new head to the next of the current head */
         channel->waitingDataBuffersHead = channel->waitingDataBuffersHead->next;
         /* If we have a new head, then update it's prev pointer to NULL,
@@ -1632,6 +1903,7 @@ nw_CheckMessageBox( nw_plugChannel channel )
                             /* mark them as active again and Initialize */
                             currentNode->active = TRUE;
                             currentNode->packetNrWaitingFor = 0; /* Next packet can be any packet */
+                            currentNode->outOfOrderCount =0;
                             currentNode->msgHolderPtrsHead = NULL;
                             currentNode->msgHolderPtrsTail = NULL;
                             currentNode->outOfOrderAdminsHead.prev = NULL;
@@ -1677,14 +1949,15 @@ nw_CheckMessageBox( nw_plugChannel channel )
 void
 nw_plugReceiveChannelProcessIncoming(nw_plugChannel channel)
 {
-    static os_time zeroTime = {0,0};
-    nw_bool dataRead = TRUE;
-    nw_bool result = TRUE;
+    static os_time zeroTime = {0,0}; /* TODO should not be static, but constant , static causes memory region shared by all concurrent threads*/
+    nw_bool dataRead = OS_TRUE;
+    nw_bool result = OS_TRUE;
 
     nw_CheckMessageBox(channel);
     while (result && dataRead ) {
+    	dataRead = OS_FALSE; /* reset */ 
         result = nw_plugReceiveChannelReadSocket(nw_plugReceiveChannel(channel), &zeroTime, &dataRead);
-    }
+   }
 }
 
 c_bool
@@ -1692,7 +1965,9 @@ nw_plugReceiveChannelMessageStart(
     nw_plugChannel channel,
     nw_data *data,
     nw_length *length,
-    nw_address *senderAddress)
+	nw_senderInfo sender,
+    plugReceiveStatistics prs)
+
 {
     nw_plugReceiveChannel  receiveChannel = nw_plugReceiveChannel(channel);
     nw_bool messageWaiting;
@@ -1708,19 +1983,21 @@ nw_plugReceiveChannelMessageStart(
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_RECEIVE);
     NW_CONFIDENCE(data != NULL);
     NW_CONFIDENCE(length != NULL);
-    NW_CONFIDENCE(senderAddress != NULL);
+    NW_CONFIDENCE(sender != NULL);
     NW_CONFIDENCE(sizeof(nw_address) == sizeof(sk_address));
     NW_CONFIDENCE(!receiveChannel->inUse);
 
+   receiveChannel->prs = prs;
+
     *data = NULL;
     *length = 0;
-    *senderAddress = 0;
+
     if (!receiveChannel->wakeupRequested) {
             /* Check if any message is waiting to be read.
              * This can be, for example, a message in a previously received
              * buffer. */
         messageWaiting = nw_plugReceiveChannelGetFragmentInstantly(
-            receiveChannel, data, length, senderAddress);
+            receiveChannel, data, length, sender);
         do {
             /* First read from the socket in order to avoid rxbuffer overflow */
             nw_plugReceiveChannelProcessIncoming(channel);
@@ -1729,6 +2006,7 @@ nw_plugReceiveChannelMessageStart(
                 admin = nw_plugReceiveChannelTakeWaitingDataBuffer(receiveChannel);
                 if (admin != NULL) {
                     buffer = DF_BUFFER(admin);
+                                        
                     NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_HANDLE);
                     sendingNodeId = nw_plugBufferGetSendingNodeId(buffer);
                     sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
@@ -1738,7 +2016,7 @@ nw_plugReceiveChannelMessageStart(
                         receiveChannel, sendingNodeId, sendingPartitionId,
                         nw_plugDataBuffer(buffer), reliable);
                     messageWaiting = nw_plugReceiveChannelGetFragmentInstantly(
-                        receiveChannel, data, length, senderAddress);
+                        receiveChannel, data, length, sender);
 
                     /* Do not release here, but keep the refcount to 1 */
                     /* nw_plugReceiveChannelReleaseBuffer(receiveChannel, buffer); */
@@ -1767,7 +2045,7 @@ nw_plugReceiveChannelMessageStart(
                     }
                 }
             }
-            NW_CONFIDENCE(messageWaiting == ((*data != NULL) && (*length != 0) && (*senderAddress != 0)));
+            NW_CONFIDENCE(messageWaiting == ((*data != NULL) && (*length != 0) && (sender->ipAddress != 0)));
         } while (!messageWaiting && !receiveChannel->wakeupRequested);
     }
 
@@ -1784,16 +2062,18 @@ nw_plugReceiveChannelGetNextFragment(
     nw_length *length)
 {
     nw_plugReceiveChannel receiveChannel = nw_plugReceiveChannel(channel);
-    nw_address senderAddress;
+
+    NW_STRUCT(nw_senderInfo) sender = {0,0};
 
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_RECEIVE);
     NW_CONFIDENCE(data != NULL);
     NW_CONFIDENCE(length != NULL);
     NW_CONFIDENCE(receiveChannel->inUse);
+   
     /* We only arrive here if a new fragment is indeed available. */
-    nw_plugReceiveChannelGetFragmentInstantly(receiveChannel, data, length,
-        &senderAddress);
+    nw_plugReceiveChannelGetFragmentInstantly(receiveChannel, data, length, &sender);
+    
     NW_CONFIDENCE((*data != NULL) && (*length != 0));
 }
 
@@ -1816,15 +2096,21 @@ nw_plugReceiveChannelMessageIgnore(
 
 void
 nw_plugReceiveChannelMessageEnd(
-    nw_plugChannel channel)
+    nw_plugChannel channel,
+    plugReceiveStatistics prs)
 {
     nw_plugReceiveChannel receiveChannel = (nw_plugReceiveChannel)channel;
 
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_RECEIVE);
 /*    NW_CONFIDENCE(receiveChannel->inUse);*/
-
+    NW_CONFIDENCE(receiveChannel->prs == prs);
+    if(receiveChannel->prs != NULL) {
+                	receiveChannel->prs->nofUsedPacketBuffers = receiveChannel->nofUsedBuffers;
+                	receiveChannel->prs->nofFreePacketBuffers = receiveChannel->nofFreeBuffers;
+    }
     receiveChannel->inUse = FALSE;
+    receiveChannel->prs = NULL;
 }
 
 void

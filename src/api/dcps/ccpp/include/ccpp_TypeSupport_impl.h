@@ -17,6 +17,7 @@
 #include "ccpp_Utils.h"
 #include "ccpp_Publisher_impl.h"
 #include "ccpp_Subscriber_impl.h"
+#include "ccpp_DataReader_impl.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 namespace DDS {
@@ -28,6 +29,7 @@ namespace DDS {
         friend class ::DDS::Subscriber_impl;
         friend class ::DDS::Publisher_impl;
         friend class ::DDS::DomainParticipant_impl;
+        friend class ::DDS::DataReader_impl;
 
     public:
         TypeSupportFactory_impl() {};
@@ -39,6 +41,9 @@ namespace DDS {
 
         virtual ::DDS::DataWriter_ptr
         create_datawriter (gapi_dataWriter handle) = 0;
+
+        virtual ::DDS::DataReaderView_ptr
+        create_view (gapi_dataReaderView handle) = 0;
     };
 
     typedef TypeSupportFactory_impl *TypeSupportFactory_impl_ptr;

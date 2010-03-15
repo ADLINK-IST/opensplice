@@ -30,6 +30,7 @@
 #include "mapping/BFL.h"
 #include "mapping/UOBJ.h"
 #include "mapping/UVL.h"
+#include "mapping/BVL.h"
 #include "mapping/VALUE.h"
 
 #endif /* SACPP_MAPPING_H */

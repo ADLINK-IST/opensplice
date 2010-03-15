@@ -34,7 +34,7 @@
 #include "v__builtin.h"
 #include "v_participant.h"
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_qos.h"
 #include "v_public.h"
 #include "v__collection.h"
@@ -73,7 +73,7 @@ dataReaderLookupInstanceUnlocked(
     assert(C_TYPECHECK(_this,v_dataReader));
     assert(C_TYPECHECK(keyTemplate,v_message));
 
-    /* The following line must be removed asap.
+    /* The following line must be removed a.s.a.p.
      * Its not intended to modify the template but there exist a dependency of
      * this side effect that needs to be removed first.
      */
@@ -83,7 +83,7 @@ dataReaderLookupInstanceUnlocked(
 
     if (v_dataReaderQos(_this)->userKey.enable) {
         /* In case of user defined keys the NotEmpty instance set contains all
-         * instances by definition and therefor the objects set that normally
+         * instances by definition and therefore the objects set that normally
          * contains all instances is not used.
          * So in that case the lookup instance must act on the Not Empty
          * instance set.
@@ -111,19 +111,19 @@ dataReaderEntrySubscribe(
     void *o,
     void *arg)
 {
-    v_domain d = v_domain(o);
+    v_partition p = v_partition(o);
     v_dataReaderEntry e = v_dataReaderEntry(arg);
     v_kernel kernel;
     v_group g;
 
     assert(C_TYPECHECK(e,v_dataReaderEntry));
-    assert(C_TYPECHECK(d,v_domain));
+    assert(C_TYPECHECK(p,v_partition));
 
     kernel = v_objectKernel(e);
-    g = v_groupSetCreate(kernel->groupSet,d,e->topic);
+    g = v_groupSetCreate(kernel->groupSet,p,e->topic);
 
-    if(v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
-       v_groupDomainAccessMode(g) == V_ACCESS_MODE_READ)
+    if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
+       v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ)
     {
         v_groupAddEntry(g,v_entry(e));
     }
@@ -133,12 +133,12 @@ dataReaderEntrySubscribe(
 static c_bool
 subscribe(
     c_object entry,
-    c_voidp domain)
+    c_voidp partition)
 {
-    v_domain d = v_domain(domain);
+    v_partition p = v_partition(partition);
     v_dataReaderEntry e = v_dataReaderEntry(entry);
 
-    dataReaderEntrySubscribe(d, e);
+    dataReaderEntrySubscribe(p, e);
 
     return TRUE;
 }
@@ -148,7 +148,7 @@ dataReaderEntryUnSubscribe(
     void *o,
     void *arg)
 {
-    v_domain d = v_domain(o);
+    v_partition p = v_partition(o);
     v_dataReaderEntry e = v_dataReaderEntry(arg);
     v_kernel kernel;
     v_group g;
@@ -156,9 +156,9 @@ dataReaderEntryUnSubscribe(
     c_iter list;
 
     assert(C_TYPECHECK(e,v_dataReaderEntry));
-    assert(C_TYPECHECK(d,v_domain));
+    assert(C_TYPECHECK(p,v_partition));
 
-    params[0] = c_objectValue(d);
+    params[0] = c_objectValue(p);
     params[1] = c_objectValue(e->topic);
     kernel = v_objectKernel(e);
     list = v_groupSetSelect(kernel->groupSet,
@@ -174,12 +174,12 @@ dataReaderEntryUnSubscribe(
 static c_bool
 unsubscribe(
     c_object entry,
-    c_voidp domain)
+    c_voidp partition)
 {
-    v_domain d = v_domain(domain);
+    v_partition p = v_partition(partition);
     v_dataReaderEntry e = v_dataReaderEntry(entry);
 
-    dataReaderEntryUnSubscribe(d, e);
+    dataReaderEntryUnSubscribe(p, e);
 
     return TRUE;
 }
@@ -232,6 +232,40 @@ dataReaderEntryUpdatePurgeLists(
 {
     v_dataReaderEntryUpdatePurgeLists(v_dataReaderEntry(o));
     return TRUE; /* process all other entries */
+}
+
+/*
+ * Precondition: dataReader is locked (v_dataReaderLock).
+ */
+static void
+dataReaderEntriesUpdatePurgeLists(
+    c_iter entries,
+    c_voidp args)
+{
+    c_object entry;
+
+    entry = c_iterTakeFirst(entries);
+
+    while(entry){
+        dataReaderEntryUpdatePurgeLists(entry, args);
+        c_free(entry);
+        entry = c_iterTakeFirst(entries);
+    }
+}
+
+static void
+datareaderEntriesFree(
+    c_iter entries)
+{
+    c_object entry;
+
+    entry = c_iterTakeFirst(entries);
+
+    while(entry){
+        c_free(entry);
+        entry = c_iterTakeFirst(entries);
+    }
+    c_iterFree(entries);
 }
 
 c_long
@@ -526,10 +560,13 @@ v_dataReaderNew (
     if(!topic)
     {
         OS_REPORT_1(OS_ERROR, "v_dataReaderNew",0,
-            "DataReader not created: Could not locate topic with name %s.", q_getId(_from));
+                    "DataReader not created: "
+                    "Could not locate topic with name %s.",
+                    q_getId(_from));
         return NULL;
     }
-    if(v_topicAccessMode(topic) == V_ACCESS_MODE_READ || v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
+    if(v_topicAccessMode(topic) == V_ACCESS_MODE_READ ||
+       v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
     {
         q = v_readerQosNew(kernel,qos);
         if (q == NULL) {
@@ -611,7 +648,6 @@ v_dataReaderNew (
              * outside the reader lock.
              */
             _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
-
             _this->projection = v_projectionNew(_this,_projection);
 
 
@@ -745,7 +781,8 @@ v_dataReaderFree (
             c_iterFree(views);
         }
         if (_this->triggerValue) {
-            c_free(v_readerSample(_this->triggerValue)->instance);
+            v_dataReaderTriggerValueFree(_this->triggerValue);
+            _this->triggerValue = NULL;
         }
         v_dataReaderUnLock(_this);
 
@@ -786,7 +823,7 @@ v_dataReaderDeinit (
     }
 }
 
-/* Helpfunc for writing into the dataViews */
+/* Help function for writing into the dataViews */
 
 static c_bool
 writeSlave(
@@ -910,7 +947,7 @@ instanceReadSamples(
         v_dataReader(a->reader)->sampleCount -= count;
         assert(v_dataReader(a->reader)->sampleCount >= 0);
         /* Note that if the instance has become empty it is not
-         * removed fron the not empty list yet!
+         * removed from the not empty list yet!
          * An empty instance will be removed the next time the instance
          * is accessed (see the following else branch).
          * This is an optimization to avoid continuous inserting and
@@ -940,17 +977,22 @@ v_dataReaderRead(
     c_voidp arg)
 {
     c_bool proceed;
+    c_iter entries;
     C_STRUCT(readSampleArg) argument;
     v_dataReaderInstance emptyInstance;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
 
+    /* Collect entries for purging outside of observer lock to prevent deadlock
+     * between observer, entrySet and group locks with three different threads.
+     */
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
-    v_readerWalkEntries(v_reader(_this),
-                        dataReaderEntryUpdatePurgeLists,
-                        NULL);
+
+    dataReaderEntriesUpdatePurgeLists(entries, NULL);
+
     argument.reader = _this;
     argument.action = action;
     argument.arg = arg;
@@ -982,6 +1024,7 @@ v_dataReaderRead(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfReads, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1004,6 +1047,7 @@ v_dataReaderReadInstance(
     c_voidp arg)
 {
     c_bool proceed;
+    c_iter entries;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
@@ -1014,15 +1058,20 @@ v_dataReaderReadInstance(
 
     assert(C_TYPECHECK(instance, v_dataReaderInstance));
 
+    /* Collect entries for purging outside of observer lock to prevent deadlock
+     * between observer, entrySet and group locks with three different threads.
+     */
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
     if (!v_dataReaderInstanceEmpty(instance)) {
-        v_readerWalkEntries(v_reader(_this),
-                            dataReaderEntryUpdatePurgeLists,
-                            NULL);
+        dataReaderEntriesUpdatePurgeLists(entries, NULL);
         proceed = v_dataReaderInstanceReadSamples(instance,NULL,action,arg);
-
         v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
+
+        if (v_dataReaderInstanceEmpty(instance)) {
+            v_dataReaderRemoveInstance(_this,instance);
+        }
     } else {
         proceed = TRUE;
     }
@@ -1030,6 +1079,7 @@ v_dataReaderReadInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfReads, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1041,6 +1091,7 @@ v_dataReaderReadNextInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
+    c_iter entries;
     c_bool proceed = TRUE;
     v_dataReaderInstance next;
 
@@ -1048,9 +1099,10 @@ v_dataReaderReadNextInstance(
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(C_TYPECHECK(instance, v_dataReaderInstance));
 
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
-    v_readerWalkEntries(v_reader(_this), dataReaderEntryUpdatePurgeLists, NULL);
+    dataReaderEntriesUpdatePurgeLists(entries, NULL);
     next = v_dataReaderNextInstance(_this,instance);
     while ((next != NULL) &&
            v_dataReaderInstanceEmpty(next)) {
@@ -1058,6 +1110,10 @@ v_dataReaderReadNextInstance(
     }
     if (next != NULL) {
         proceed = v_dataReaderInstanceReadSamples(next, NULL,action,arg);
+
+        if (v_dataReaderInstanceEmpty(next)) {
+            v_dataReaderRemoveInstance(_this,next);
+        }
     }
 
 
@@ -1067,6 +1123,7 @@ v_dataReaderReadNextInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfReads, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1161,7 +1218,7 @@ v_dataReaderRemoveInstance(
             /* The instance apparently isn't a member of the
              * NotEmptySet but there is another instance with equal
              * key values.
-             * This is unexpected and should be analysed if this
+             * This is unexpected and should be analyzed if this
              * happens.
              * For now the instance is not removed.
              */
@@ -1196,7 +1253,7 @@ v_dataReaderRemoveInstance(
                 /* The instance apparently isn't a member of the
                  * DataReader but there is another instance with equal
                  * key values.
-                 * This is unexpected and should be analysed if this
+                 * This is unexpected and should be analyzed if this
                  * happens.
                  * For now the instance is not removed.
                  */
@@ -1218,6 +1275,7 @@ v_dataReaderTake(
     v_readerSampleAction action,
     c_voidp arg)
 {
+    c_iter entries;
     c_bool proceed;
     C_STRUCT(takeSampleArg) argument;
     v_dataReaderInstance emptyInstance;
@@ -1225,11 +1283,13 @@ v_dataReaderTake(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
 
+    /* Collect entries for purging outside of observer lock to prevent deadlock
+     * between observer, entrySet and group locks with three different threads.
+     */
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
-    v_readerWalkEntries(v_reader(_this),
-                        dataReaderEntryUpdatePurgeLists,
-                        NULL);
+    dataReaderEntriesUpdatePurgeLists(entries, NULL);
 
     argument.action = action;
     argument.arg = arg;
@@ -1258,6 +1318,7 @@ v_dataReaderTake(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1269,6 +1330,7 @@ v_dataReaderTakeInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
+    c_iter entries;
     c_bool proceed = TRUE;
     c_long count;
 
@@ -1280,14 +1342,15 @@ v_dataReaderTakeInstance(
     }
 
     assert(C_TYPECHECK(instance, v_dataReaderInstance));
-
+    /* Collect entries for purging outside of observer lock to prevent deadlock
+     * between observer, entrySet and group locks with three different threads.
+     */
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
 
     if (!v_dataReaderInstanceEmpty(instance)) {
-        v_readerWalkEntries(v_reader(_this),
-                            dataReaderEntryUpdatePurgeLists,
-                            NULL);
+        dataReaderEntriesUpdatePurgeLists(entries, NULL);
         count = v_dataReaderInstanceSampleCount(instance);
         proceed = v_dataReaderInstanceTakeSamples(instance,NULL,action,arg);
         count -= v_dataReaderInstanceSampleCount(instance);
@@ -1300,6 +1363,11 @@ v_dataReaderTakeInstance(
                                       _this->sampleCount);
             assert(_this->sampleCount >= 0);
             v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
+
+            if (v_dataReaderInstanceEmpty(instance)) {
+				v_dataReaderRemoveInstance(_this,instance);
+			}
+
         }
     } else {
         v_dataReaderRemoveInstance(_this,instance);
@@ -1308,6 +1376,7 @@ v_dataReaderTakeInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1319,6 +1388,7 @@ v_dataReaderTakeNextInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
+    c_iter entries;
     v_dataReaderInstance next;
     c_bool proceed = TRUE;
     c_long count;
@@ -1327,13 +1397,16 @@ v_dataReaderTakeNextInstance(
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(C_TYPECHECK(instance, v_dataReaderInstance));
 
+    /* Collect entries for purging outside of observer lock to prevent deadlock
+     * between observer, entrySet and group locks with three different threads.
+     */
+    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
 
-    v_readerWalkEntries(v_reader(_this),
-                        dataReaderEntryUpdatePurgeLists,
-                        NULL);
+    dataReaderEntriesUpdatePurgeLists(entries, NULL);
     next = v_dataReaderNextInstance(_this,instance);
+
     while ((next != NULL) &&
             v_dataReaderInstanceEmpty(next)) {
         next = v_dataReaderNextInstance(_this,next);
@@ -1349,6 +1422,7 @@ v_dataReaderTakeNextInstance(
         if (count > 0) {
             _this->sampleCount -= count;
             assert(_this->sampleCount >= 0);
+
             if (v_dataReaderInstanceEmpty(next)) {
                 v_dataReaderRemoveInstance(_this,next);
             }
@@ -1360,6 +1434,7 @@ v_dataReaderTakeNextInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
     v_dataReaderUnLock(_this);
+    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1429,13 +1504,13 @@ v_dataReaderNotifyDataAvailable(
     v_entity(_this)->status->state |= V_EVENT_DATA_AVAILABLE;
 
     if (_this->triggerValue) {
-        c_free(v_readerSample(_this->triggerValue)->instance);
-        v_dataReaderSampleFree(_this->triggerValue);
+        v_dataReaderTriggerValueFree(_this->triggerValue);
+        _this->triggerValue = NULL;
     }
+
     if (sample) {
-        c_keep(v_readerSample(sample)->instance);
+        _this->triggerValue = v_dataReaderTriggerValueKeep(sample);
     }
-    _this->triggerValue = c_keep(sample);
 
     event.kind     = V_EVENT_DATA_AVAILABLE;
     event.source   = V_HANDLE_NIL;
@@ -1515,8 +1590,8 @@ updateConnections(
     v_dataReaderEntry e = v_dataReaderEntry(o);
     v_dataReaderConnectionChanges *a = (v_dataReaderConnectionChanges *)arg;
 
-    c_iterWalk(a->addedDomains, dataReaderEntrySubscribe, e);
-    c_iterWalk(a->removedDomains, dataReaderEntryUnSubscribe, e);
+    c_iterWalk(a->addedPartitions, dataReaderEntrySubscribe, e);
+    c_iterWalk(a->removedPartitions, dataReaderEntryUnSubscribe, e);
 
     return TRUE;
 }
@@ -1531,7 +1606,7 @@ v_dataReaderUpdateConnections(
     assert(C_TYPECHECK(_this,v_dataReader));
 
     if ((arg != NULL) &&
-        ((arg->addedDomains != NULL) || (arg->removedDomains != NULL))) {
+        ((arg->addedPartitions != NULL) || (arg->removedPartitions != NULL))) {
         /* partition policy has changed */
         v_readerWalkEntries(v_reader(_this), updateConnections, arg);
     }
@@ -1596,7 +1671,7 @@ v_dataReaderNotifyLivelinessChanged(
          * -: No action
          * A: the new state is DELETED, so depending on the old state
          *    the active or inactive must be decremented.
-         *    And the writer must be unregisted with this reader.
+         *    And the writer must be unregistered with this reader.
          * B: the old state is UNKNOWN or DELETED, so this is the first
          *    time we see this writer. Depending on the new state this
          *    writer is alive or not alive to us.
@@ -1752,7 +1827,7 @@ v_dataReaderField(
 c_bool
 v_dataReaderSubscribe(
     v_dataReader _this,
-    v_domain d)
+    v_partition d)
 {
     assert(C_TYPECHECK(_this,v_dataReader));
 
@@ -1793,7 +1868,7 @@ v_dataReaderSubscribeGroup(
 c_bool
 v_dataReaderUnSubscribe(
     v_dataReader _this,
-    v_domain d)
+    v_partition d)
 {
     assert(C_TYPECHECK(_this,v_reader));
 
@@ -1841,7 +1916,7 @@ getTopic (
         /* Already a topic was found so this must be a Multi Topic reader.
          * In that case abort and clear the topic.
          * Multi Topics are not yet supported by v_builtin.
-         * Even Worse: The spec doesn support builtin definition for
+         * Even Worse: The spec doesn't support builtin definition for
          * Multi Topics.
          */
         c_free(*topic);

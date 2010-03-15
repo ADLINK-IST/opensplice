@@ -43,6 +43,9 @@ cmx_readerInit(
     case K_DATAREADER:
         result = cmx_dataReaderInit((v_dataReader)entity);
     break;
+    case K_NETWORKREADER:
+        result = cmx_networkReaderInit((v_networkReader)entity);
+    break;
     case K_GROUPQUEUE:
         result = cmx_groupQueueInit((v_groupQueue)entity);
     break;

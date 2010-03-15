@@ -17,9 +17,13 @@
 #include "u_participant.h"
 #include "nw_commonTypes.h"
 
+/*
 #define NW_ALIGN(alignment, address)                       \
     ((os_address)(address) + (alignment) - 1U -             \
     ((os_address)(address) + (alignment) - 1U) % (alignment))
+*/
+#define NW_ALIGN(alignment,address) 						\
+	(((os_address)(address) + (alignment) - 1U) & (~( (os_address) ((alignment)- 1U ) ) ))
 
 c_object nw_participantCreateType(u_participant participant,
                                   const c_char *typeName);

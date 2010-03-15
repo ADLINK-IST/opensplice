@@ -166,7 +166,7 @@ jni_deleteWriter(
 jni_result
 jni_publisherPublish(
     jni_publisher pub,
-    const c_char* domainExpr)
+    const c_char* partitionExpr)
 {
     jni_result r;
     
@@ -174,10 +174,10 @@ jni_publisherPublish(
         r = JNI_RESULT_BAD_PARAMETER;
     } 
     else {
-        r = jni_participantAddPartition(pub->participant, domainExpr);
+        r = jni_participantAddPartition(pub->participant, partitionExpr);
         
         if(r == JNI_RESULT_OK){
-            r = jni_convertResult(u_publisherPublish(pub->upublisher, domainExpr));
+            r = jni_convertResult(u_publisherPublish(pub->upublisher, partitionExpr));
         }
     }
     return r;

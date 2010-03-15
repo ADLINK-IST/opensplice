@@ -37,4 +37,8 @@ public interface DataReaderOperations  extends DDS.EntityOperations
   int wait_for_historical_data_w_condition(String filter_expression, String[] expression_parameters, DDS.Time_t min_source_timestamp, DDS.Time_t max_source_timestamp, DDS.ResourceLimitsQosPolicy resource_limits, DDS.Duration_t max_wait);
   int get_matched_publications (DDS.InstanceHandleSeqHolder publication_handles);
   int get_matched_publication_data (DDS.PublicationBuiltinTopicDataHolder publication_data, long publication_handle);
+  DDS.DataReaderView create_view(DataReaderViewQos qos);
+  int delete_view(DataReaderView a_view);
+  int get_default_datareaderview_qos(DataReaderViewQosHolder qos);
+  int set_default_datareaderview_qos(DataReaderViewQos qos);
 } // interface DataReaderOperations

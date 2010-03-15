@@ -65,8 +65,10 @@ public class Statistics {
      * 
      * @param counter The Counter to add to the Statistics.
      */
-    public void addCounter(AbstractValue counter){
-        counters.put(counter.getName(), counter);
+    public void addCounter(AbstractValue counter, String prefix){
+    	String name = prefix + counter.getName();
+    	counter.setName(name);
+        counters.put(name, counter);
     }
     
     /**

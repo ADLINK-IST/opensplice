@@ -12,13 +12,15 @@
 #ifndef OS_WIN32_PROCESS_H
 #define OS_WIN32_PROCESS_H
 
-#include <process.h>
+#undef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h> /* for HANDLE */
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-typedef unsigned int os_os_procId;
+  typedef HANDLE os_os_procId;
 
 #if defined (__cplusplus)
 }

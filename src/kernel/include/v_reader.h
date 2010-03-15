@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_READER_H
@@ -106,6 +106,10 @@ v_readerWalkEntries(
     v_reader _this,
     c_action action,
     c_voidp arg);
+
+OS_API c_iter
+v_readerCollectEntries(
+    v_reader r);
 
 #undef OS_API
 

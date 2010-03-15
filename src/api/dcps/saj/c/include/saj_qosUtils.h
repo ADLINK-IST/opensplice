@@ -300,18 +300,32 @@ saj_returnCode saj_ReaderDataLifecycleQosPolicyCopyIn(
 saj_returnCode saj_TimeBasedFilterQosPolicyCopyIn(
     JNIEnv *env, const jobject src, gapi_timeBasedFilterQosPolicy *dst);
 
-
 /**
- * @brief Copies the java SubscriberQos to a gapi SubscriberQos 
- * object.
+ * @brief Copies the java ShareQosPolicy to a gapi
+ * ShareQosPolicy object.
+ * TODO: Implement ShareQosPolicy-support for Java.
  * @param env The JNI environment.
- * @param src The java SubscriberQos.
- * @param dst The gapi SubscriberQos.
+ * @param src The java ShareQosPolicy.
+ * @param dst The gapi ShareQosPolicy.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
  */
-saj_returnCode saj_SubscriberQosCopyIn(
-    JNIEnv *env, const jobject src, gapi_subscriberQos *dst);
-    
+saj_returnCode
+saj_ShareQosPolicyCopyIn(
+    JNIEnv *env, const jobject src, gapi_shareQosPolicy *dst);
+
+/**
+ * @brief Copies the java ShareQosPolicy to a gapi
+ * ShareQosPolicy object.
+ * TODO: Implement ShareQosPolicy-support for Java.
+ * @param env The JNI environment.
+ * @param src The java ShareQosPolicy.
+ * @param dst The gapi ShareQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_ShareQosPolicyCopyOut(
+    JNIEnv *env, gapi_shareQosPolicy *src,  jobject *dst);
+
 /**
  * @brief Copies the java SubscriberQos to a gapi SubscriberQos 
  * object.
@@ -476,7 +490,22 @@ saj_ReaderDataLifecycleQosPolicyCopyOut(
     jobject *dst);
 
 /**
- * @brief Copies the gapi ReliabilityQosPolicy to a java 
+ * @brief Copies the gapi ReaderLifespanQosPolicy to a java
+ * ReaderLifespanQosPolicy object.
+ * TODO: Implement ReaderLifespanQosPolicy-support for Java.
+ * @param env The JNI environment.
+ * @param src The gapi ReaderLifespanQosPolicy.
+ * @param dst The java ReaderLifespanQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_ReaderLifespanQosPolicyCopyIn(
+    JNIEnv *env,
+    const jobject src,
+    gapi_readerLifespanQosPolicy *dst);
+
+/**
+ * @brief Copies the gapi ReliabilityQosPolicy to a java
  * ReliabilityQosPolicy object.
  * @param env The JNI environment.
  * @param src The gapi ReliabilityQosPolicy.
@@ -658,6 +687,34 @@ saj_DataReaderQosCopyOut(
     jobject *dst);
 
 /**
+ * @brief Copies the java DataReaderViewQos to a gapi
+ * DataReaderViewQos object.
+ * @param env The JNI environment.
+ * @param src The java DataReaderViewQos.
+ * @param dst The gapi DataReaderViewQos.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_DataReaderViewQosCopyIn(
+    JNIEnv *env,
+    jobject src,
+    gapi_dataReaderViewQos *dst);
+
+/**
+ * @brief Copies the gapi DataReaderViewQos to a java
+ * DataReaderViewQos object.
+ * @param env The JNI environment.
+ * @param src The gapi DataReaderViewQos.
+ * @param dst The java DataReaderViewQos.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_DataReaderViewQosCopyOut(
+    JNIEnv *env,
+    gapi_dataReaderViewQos *src,
+    jobject *dst);
+
+/**
  * @brief Copies the java DataWriterQos to a gapi 
  * DataWriterQos object.
  * @param env The JNI environment.
@@ -712,5 +769,61 @@ saj_TopicQosCopyOut(
     JNIEnv          *env, 
     gapi_topicQos   *src, 
     jobject         *dst);
+
+/**
+ * @brief Copies the gapi SubscriptionKeyQosPolicy to a java
+ * SubscriptionKeyQosPolicy object.
+ * @param env The JNI environment.
+ * @param src The gapi SubscriptionKeyQosPolicy.
+ * @param dst The java SubscriptionKeyQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_SubscriptionKeyQosPolicyCopyOut(
+    JNIEnv                          *env,
+    gapi_subscriptionKeyQosPolicy   *src,
+    jobject                         *dst);
+
+/**
+ * @brief Copies the java SubscriptionKeyQosPolicy to a gapi
+ * SubscriptionKeyQosPolicy object.
+ * @param env The JNI environment.
+ * @param src The java SubscriptionKeyQosPolicy.
+ * @param dst The gapi SubscriptionKeyQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_SubscriptionKeyQosPolicyCopyIn(
+    JNIEnv                          *env,
+    const jobject                   src,
+    gapi_subscriptionKeyQosPolicy   *dst);
+
+/**
+ * @brief Copies the gapi ViewKeyQosPolicy to a java
+ * ViewKeyQosPolicy object.
+ * @param env The JNI environment.
+ * @param src The gapi ViewKeyQosPolicy.
+ * @param dst The java ViewKeyQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_ViewKeyQosPolicyCopyOut(
+    JNIEnv                          *env,
+    gapi_viewKeyQosPolicy   *src,
+    jobject                         *dst);
+
+/**
+ * @brief Copies the java ViewKeyQosPolicy to a gapi
+ * ViewKeyQosPolicy object.
+ * @param env The JNI environment.
+ * @param src The java ViewKeyQosPolicy.
+ * @param dst The gapi ViewKeyQosPolicy.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode
+saj_ViewKeyQosPolicyCopyIn(
+    JNIEnv                          *env,
+    const jobject                   src,
+    gapi_viewKeyQosPolicy   *dst);
 
 #endif /* SAJ_QOSUTILS_H */

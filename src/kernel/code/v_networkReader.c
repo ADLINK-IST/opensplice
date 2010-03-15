@@ -31,6 +31,8 @@
 #include "v_time.h"
 #include "v_statistics.h"
 #include "v__messageQos.h"
+#include "v__statCat.h"
+#include "v_networking.h"
 
 #define ORDER_INVERSION_BUGFIX 1
 
@@ -60,6 +62,7 @@ v_networkReaderNew(
     v_readerQos q;
     v_statistics s;
     c_type queueType;
+    c_long i;
 
     assert(C_TYPECHECK(subscriber,v_subscriber));
 
@@ -83,6 +86,9 @@ v_networkReaderNew(
         reader->remoteActivity = FALSE;
         reader->ignoreReliabilityQoS = ignoreReliabilityQoS;
         reader->queueCache = c_arrayNew(queueType, 2*NW_MAX_QUEUE_CACHE_PRIO);
+        for( i= 0; i < 2*NW_MAX_QUEUE_CACHE_PRIO; i++) {
+            reader->queueCache[i] = NULL;    
+        }
         c_free(queueType);
         /* Add to subscriber */
         v_subscriberAddReader(subscriber,v_reader(reader));
@@ -100,10 +106,9 @@ void
 v_networkReaderDeinit(
     v_networkReader reader)
 {
-    if (reader == NULL) {
-        /* suppress warnings */
-    }
-    /* Not yet implemented */
+    assert(reader != NULL);
+    assert(C_TYPECHECK(reader,v_networkReader));
+    v_readerDeinit(v_reader(reader));
 }
 
 c_ulong
@@ -114,23 +119,62 @@ v_networkReaderCreateQueue(
     c_bool reliable,
     c_bool P2P,
     c_time resolution,
-    c_bool useAsDefault)
+    c_bool useAsDefault,
+    const c_char *name)
 {
     c_ulong result = 0;
     v_networkQueue queue;
+    v_networkReaderStatistics s;
+    v_networkQueueStatistics nqs;
+    v_networkingStatistics nws;
+    v_networkChannelStatistics ncs;
+    v_kernel kernel;
+    v_networking n;
+    kernel = v_objectKernel(reader);
+
+
 
     if (reader->nofQueues < NW_MAX_NOF_QUEUES) {
-        queue = v_networkQueueNew(c_getBase((c_object)reader),
-            queueSize, priority, reliable, P2P, resolution);
-        if (queue != NULL) {
-            reader->queues[reader->nofQueues] = queue;
-            reader->nofQueues++;
-            result = reader->nofQueues;
-            if ((useAsDefault) || (reader->defaultQueue == NULL)){
-                c_free(reader->defaultQueue);
-                reader->defaultQueue = c_keep(queue);
-            }
-        }
+
+    	if (v_isEnabledStatistics(kernel, V_STATCAT_NETWORKING)) {
+			nqs = v_networkQueueStatisticsNew(kernel,name);
+			ncs = v_networkChannelStatisticsNew(kernel,name);
+		} else {
+			nqs = NULL;
+			ncs = NULL;
+		}
+
+    	//if (nqs != NULL) {
+		queue = v_networkQueueNew(c_getBase((c_object)reader),
+				queueSize, priority, reliable, P2P, resolution, nqs);
+
+
+		if (queue != NULL) {
+			reader->queues[reader->nofQueues] = queue;
+			reader->nofQueues++;
+			result = reader->nofQueues;
+			//insert statistics
+			if (nqs != NULL) {
+				s = v_networkReaderStatistics(v_entityStatistics(v_entity(reader)));
+				if (s != NULL) {
+					s->queues[s->queuesCount]=nqs;
+					s->queuesCount++;
+				}
+			}
+
+			if ((useAsDefault) || (reader->defaultQueue == NULL)){
+				c_free(reader->defaultQueue);
+				reader->defaultQueue = c_keep(queue);
+			}
+			/* add channel to the networking statistics also */
+			n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+			nws = v_entity(n)->statistics;
+			if (ncs != NULL) {
+				nws->channels[nws->channelsCount]=ncs;
+				nws->channelsCount++;
+			}
+		}
+
     } else {
         OS_REPORT_1(OS_ERROR, "v_networkReaderCreateQueue", 0,
             "Maximum number of network queues (%d) exceeded, "
@@ -231,10 +275,15 @@ v_networkReaderSelectBestQueueByReliability(
             bestQueue = reader->defaultQueue;
         }
         if (prio < NW_MAX_QUEUE_CACHE_PRIO) {
+            /* Store found bestQueue in the cache, while maintaining 
+             * correct reference counts on the Queues
+             */
             if (reliable) {
-                reader->queueCache[prio+NW_MAX_QUEUE_CACHE_PRIO] = bestQueue;
+                c_free(reader->queueCache[prio+NW_MAX_QUEUE_CACHE_PRIO]);
+                reader->queueCache[prio+NW_MAX_QUEUE_CACHE_PRIO] = c_keep(bestQueue);
             } else {
-                reader->queueCache[prio] = bestQueue;
+                c_free(reader->queueCache[prio]);
+                reader->queueCache[prio] = c_keep(bestQueue);
             }
         }
     }
@@ -455,11 +504,8 @@ void
 v_networkReaderFree(
     v_networkReader reader)
 {
-    if (reader == NULL) {
-        /* suppress warnings */
-    }
-    /* Not yet implemented */
-
+    /* call inherited free */
+    v_readerFree(v_reader(reader));
 }
 
 
@@ -481,7 +527,7 @@ v_networkReaderEntrySubscribe(
 c_bool
 v_networkReaderSubscribe(
     v_networkReader reader,
-    v_domain partition)
+    v_partition partition)
 {
     /* Note: function is left here for historical reasons only. It should not
      * be used anymore; subscription should be done by networking daemon
@@ -509,10 +555,10 @@ v_networkReaderSubscribeGroup(
 static c_bool
 v_networkReaderEntryUnSubscribe(
     v_networkReaderEntry entry,
-    v_domain partition)
+    v_partition partition)
 {
     assert(C_TYPECHECK(entry, v_networkReaderEntry));
-    assert(C_TYPECHECK(partition, v_domain));
+    assert(C_TYPECHECK(partition, v_partition));
 
     if (v_group(entry->group)->partition == partition) {
       v_groupRemoveEntry(entry->group, v_entry(entry));
@@ -525,10 +571,10 @@ v_networkReaderEntryUnSubscribe(
 c_bool
 v_networkReaderUnSubscribe(
     v_networkReader reader,
-    v_domain partition)
+    v_partition partition)
 {
     assert(C_TYPECHECK(reader, v_networkReader));
-    assert(C_TYPECHECK(partition, v_domain));
+    assert(C_TYPECHECK(partition, v_partition));
 
     return v_readerWalkEntries(v_reader(reader),
                (c_action)v_networkReaderEntryUnSubscribe, partition);

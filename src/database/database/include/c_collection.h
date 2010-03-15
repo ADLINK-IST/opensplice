@@ -856,6 +856,12 @@ c_listWalk(
     c_action action,
     c_voidp actionArg);
 
+OS_API c_object
+c_listTemplateRemove (
+    c_list _this,
+    c_action condition,
+    c_voidp arg);
+
 #undef OS_API
 
 #if defined (__cplusplus)

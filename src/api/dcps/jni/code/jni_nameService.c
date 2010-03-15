@@ -127,9 +127,7 @@ jni_nameServiceResolveURI(
     c_bool found;
     result = NULL;
     
-    if(mappings == NULL){
-      result = "v_kernel_a01"; /*temporary patch*/
-    } else {
+    if(mappings != NULL){
         copy = c_iterCopy(mappings);
         found = FALSE;
         mapping = jni_mapping(c_iterTakeFirst(copy));
@@ -142,11 +140,7 @@ jni_nameServiceResolveURI(
             mapping = jni_mapping(c_iterTakeFirst(copy));
         }
         c_iterFree(copy);
-        
-        /*temporary patch*/
-        if(found == FALSE){
-            result = "v_kernel_a01";
-        }
     }
+    /* if not found or mapping == NULL then result == NULL */
     return result;
 }

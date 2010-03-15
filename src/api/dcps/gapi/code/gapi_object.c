@@ -69,6 +69,10 @@ C_STRUCT(gapi_handle) {
     _ObjectKind       kind;
     gapi_boolean      claimed;
     os_mutex          mutex;
+#ifdef _RWLOCK_
+    os_mutex          read;
+    unsigned int      count;
+#endif
     gapi_boolean      busy;
     os_cond           cv;
     gapi_boolean      beingDeleted;
@@ -97,6 +101,7 @@ _ObjectRegistryNew (
             osResult = os_mutexAttrInit (&osMutexAttr);
             osMutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
             osResult = os_mutexInit (&registry->mutex, &osMutexAttr);
+
             for (i = 0; i < TRASH_LENGTH; i++) registry->trash[i] = NULL;
         } else {
             if ( registry->active != NULL ) {
@@ -223,6 +228,52 @@ gapi_handleRelease (
     os_mutexUnlock(&handle->mutex);
 }
 
+#ifdef _RWLOCK_
+static void
+gapi_handleReadClaim (
+    gapi_handle handle)
+{
+    os_mutexLock(&handle->read);
+    handle->count++;
+    if (handle->count == 1) {
+        os_mutexLock(&handle->mutex);
+    }
+    handle->claimed = TRUE;
+    os_mutexUnlock(&handle->read);
+}
+
+static void
+gapi_handleReadClaimNotBusy (
+    gapi_handle handle)
+{
+    os_mutexLock(&handle->read);
+    handle->count++;
+    if (handle->count == 1) {
+        os_mutexLock(&handle->mutex);
+    }
+    while ( handle->busy ) {
+        os_condWait(&handle->cv, &handle->mutex);
+    }
+    handle->claimed = TRUE;
+    os_mutexUnlock(&handle->read);
+}
+
+static void
+gapi_handleReadRelease (
+    gapi_handle handle)
+{
+    assert(handle->claimed);
+    os_mutexLock(&handle->read);
+    handle->count--;
+    if (handle->count == 0) {
+        handle->claimed = FALSE;
+        os_mutexUnlock(&handle->mutex);
+    }
+    os_mutexUnlock(&handle->read);
+}
+
+#endif
+
 static void
 gapi_handleFree (
     void *o)
@@ -264,6 +315,9 @@ gapi_handleFree (
             gapi_handleRelease(handle);
             os_condDestroy(&handle->cv);
             os_mutexDestroy(&handle->mutex);
+#ifdef _RWLOCK_
+            os_mutexDestroy(&handle->read);
+#endif
         }
     }
 }
@@ -304,6 +358,11 @@ _ObjectAlloc (
         osResult = os_condAttrInit (&osCondAttr);
         osCondAttr.scopeAttr = OS_SCOPE_PRIVATE;
         osResult = os_condInit (&handle->cv, &handle->mutex, &osCondAttr);
+
+#ifdef _RWLOCK_
+        osResult = os_mutexInit (&handle->read, &osMutexAttr);
+        handle->count = 0;
+#endif
 
         object = (_Object) os_malloc(size);
         if ( object != NULL ) {
@@ -354,14 +413,20 @@ _ObjectDelete (
     if ( handle->registry != NULL ) {
         _ObjectRegistryDeregister(handle->registry, handle);
         gapi_handleRelease(handle);
-	os_condDestroy( &handle->cv );
-	os_mutexDestroy( &handle->mutex );
+        os_condDestroy( &handle->cv );
+        os_mutexDestroy( &handle->mutex );
+#ifdef _RWLOCK_
+        os_mutexDestroy(&handle->read);
+#endif
     } else {
         handle->magic = 0;
         gapi_handleRelease(handle);
-	os_condDestroy( &handle->cv );
-	os_mutexDestroy( &handle->mutex );
-	gapi__free(handle);
+        os_condDestroy( &handle->cv );
+        os_mutexDestroy( &handle->mutex );
+#ifdef _RWLOCK_
+        os_mutexDestroy(&handle->read);
+#endif
+        gapi__free(handle);
     }
 
     if ( action ) {
@@ -462,6 +527,101 @@ gapi_objectPeek (
     return object;
 }
 
+#ifdef _RWLOCK_
+_Object
+gapi_objectReadClaim (
+    gapi_object      _this,
+    _ObjectKind        kind,
+    gapi_returnCode_t *result)
+{
+    gapi_handle       handle = gapi_handle(_this);
+    _Object           object = NULL;
+    gapi_returnCode_t retval = GAPI_RETCODE_BAD_PARAMETER;
+
+    if ( handle != NULL ) {
+        if ( handle->magic == MAGIC ) {
+            gapi_handleReadClaim(handle);
+
+            if ( HEADER_IS_TYPE(handle,kind) ) {
+                if ( handle->object != NULL ) {
+                    object = handle->object;
+                    retval = GAPI_RETCODE_OK;
+                } else {
+                    gapi_handleReadRelease(handle);
+                    retval = GAPI_RETCODE_ALREADY_DELETED;
+                }
+            } else {
+                gapi_handleReadRelease(handle);
+            }
+        }
+    }
+
+    if ( result != NULL ) {
+        *result = retval;
+    }
+
+    return object;
+}
+
+_Object
+gapi_objectReadClaimNB (
+    gapi_object      _this,
+    _ObjectKind        kind,
+    gapi_returnCode_t *result)
+{
+    gapi_handle       handle = gapi_handle(_this);
+    _Object           object = NULL;
+    gapi_returnCode_t retval = GAPI_RETCODE_BAD_PARAMETER;
+
+    if ( handle != NULL ) {
+        if ( handle->magic == MAGIC ) {
+            gapi_handleReadClaimNotBusy(handle);
+
+            if ( HEADER_IS_TYPE(handle,kind) ) {
+                if ( handle->object != NULL ) {
+                   object = handle->object;
+                    retval = GAPI_RETCODE_OK;
+                } else {
+                    gapi_handleReadRelease(handle);
+                    retval = GAPI_RETCODE_ALREADY_DELETED;
+                }
+            } else {
+                gapi_handleReadRelease(handle);
+            }
+        }
+    }
+
+    if ( result != NULL ) {
+        *result = retval;
+    }
+
+    return object;
+}
+
+_Object
+gapi_objectReadPeek (
+    gapi_object _this,
+    _ObjectKind kind)
+{
+    gapi_handle handle = gapi_handle(_this);
+    _Object     object = NULL;
+
+    if ( handle != NULL ) {
+        if ( handle->magic == MAGIC ) {
+            gapi_handleReadClaim(handle);
+            if ( HEADER_IS_TYPE(handle,kind) ) {
+                if ( handle->object != NULL ) {
+                    object = handle->object;
+                }
+            }
+            gapi_handleReadRelease(handle);
+        }
+    }
+
+    return object;
+}
+#endif
+
 /*
  * gapi_objectPeekUnchecked returns the object of to the given handle.
  * This 'unchecked' version, does not check the type of the object, to
@@ -552,6 +712,63 @@ gapi_objectRelease (
 
     return handle;
 }
+
+#ifdef _RWLOCK_
+void
+_ObjectReadClaim (
+    _Object object)
+{
+    gapi_handle handle;
+
+    assert(object);
+    handle = (gapi_handle) object->handle;
+    assert(handle);
+    gapi_handleReadClaim(handle);
+}
+
+void
+_ObjectReadClaimNotBusy (
+    _Object object)
+{
+    gapi_handle handle;
+
+    assert(object);
+    handle = (gapi_handle) object->handle;
+    assert(handle);
+    gapi_handleReadClaimNotBusy(handle);
+}
+
+gapi_object
+_ObjectReadRelease (
+    _Object object)
+{
+    gapi_handle handle = NULL;
+
+    if ( object != NULL ) {
+        handle = (gapi_handle) object->handle;
+        assert(handle);
+        gapi_handleReadRelease(handle);
+    }
+    return (gapi_object) handle;
+}
+
+gapi_object
+gapi_objectReadRelease (
+    gapi_object _this)
+{
+    gapi_handle handle = gapi_handle(_this);
+
+    if ( handle != NULL ) {
+        if ( handle->magic == MAGIC ) {
+            if ( handle->object != NULL ) {
+                gapi_handleReadRelease(handle);
+            }
+        }
+    }
+
+    return handle;
+}
+#endif
 
 gapi_boolean
 _ObjectIsValid (

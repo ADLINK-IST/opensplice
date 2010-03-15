@@ -92,7 +92,7 @@ os_mutexInit (
         } while((!result) && (lastError == ERROR_PIPE_BUSY));
 
         if (!result || (nRead != sizeof(reply))) {
-            OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
+            OS_DEBUG_4("os_mutexInit", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
             osr = os_resultFail;
         } else {
             if ((reply.result == os_resultSuccess) &&
@@ -125,34 +125,44 @@ os_mutexDestroy (
     struct os_servicemsg reply;
     BOOL result;
     DWORD nRead;
+    DWORD lastError;
     os_result osr;
 
     assert(mutex != NULL);
     /* assert(mutex->lockCount == 0); */
-
+    
     pipename = os_servicePipeName();
     if (mutex->scope == OS_SCOPE_SHARED) {
         request.kind = OS_SRVMSG_DESTROY_EVENT;
         request._u.id = mutex->id;
         reply.result = os_resultFail;
         reply.kind = OS_SRVMSG_UNDEFINED;
-        result = CallNamedPipe(
-                     TEXT(pipename),
-                     &request, sizeof(request),
-                     &reply, sizeof(reply),
-                     &nRead,
-                     NMPWAIT_WAIT_FOREVER);
+        
+        do{
+           result = CallNamedPipe(
+                                  TEXT(pipename),
+                                  &request, sizeof(request),
+                                  &reply, sizeof(reply),
+                                  &nRead,
+                                  NMPWAIT_WAIT_FOREVER);
+           if(!result){
+              lastError = GetLastError();
+           } else {
+              lastError = ERROR_SUCCESS;
+           }
+        } while((!result) && (lastError == ERROR_PIPE_BUSY));
+
         if (!result  || (nRead != sizeof(reply))){
-            OS_DEBUG_4("Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
-            osr = os_resultFail;
+           OS_DEBUG_4("os_mutexDestroy", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
+           osr = os_resultFail;
         } else {
-            if ((reply.result == os_resultSuccess) &&
-                (reply.kind == OS_SRVMSG_DESTROY_EVENT)) {
-                osr = os_resultSuccess;
-            } else {
-                osr = os_resultFail;
-            }
-        }
+           if ((reply.result == os_resultSuccess) &&
+               (reply.kind == OS_SRVMSG_DESTROY_EVENT)) {
+              osr = os_resultSuccess;
+           } else {
+              osr = os_resultFail;
+           }
+        }        
     } else { /* private so don't return to pool */
         CloseHandle((HANDLE)mutex->id);
         osr = os_resultSuccess;
@@ -185,7 +195,7 @@ os_mutexLock(
                       OS_SERVICE_EVENT_NAME_PREFIX, mutex->id);
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexLock: failed to open mutex %s %d", name, GetLastError());
+                OS_DEBUG_2("os_mutexLock", "Failed to open mutex %s %d", name, GetLastError());
                 assert(mutexHandle != NULL);
                 return os_resultFail;
             }
@@ -254,7 +264,7 @@ os_mutexUnlock (
                       OS_SERVICE_EVENT_NAME_PREFIX, mutex->id);
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexLock: failed to open mutex %s %d", name, GetLastError());
+                OS_DEBUG_2("os_mutexUnlock", "Failed to open mutex %s %d", name, GetLastError());
                 assert(mutexHandle != NULL);
                 return os_resultFail;
             }

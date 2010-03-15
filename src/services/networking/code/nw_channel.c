@@ -24,8 +24,9 @@
 #include "v_entity.h"      /* for v_entity() */
 #include "v_group.h"       /* for v_group() */
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "nw_report.h"
+#include "nw_security.h"
 
 #define NW_EXTENDS(type) NW_STRUCT(type) _parent
 
@@ -116,8 +117,6 @@ nw_entryHashItemRemove(
     os_free((char *)item->topicName);
     os_free(item);
 }
-
-typedef enum nw_eq_e {NW_UNDEFINED, NW_LT, NW_EQ, NW_GT} nw_eq;
 
 static nw_eq
 nw_entryHashItemCompare(
@@ -440,7 +439,8 @@ nw_receiveChannelRead(
     v_message *messagePtr,
     v_networkReaderEntry *entryPtr,
     const nw_entryLookupAction entryLookupAction,
-    nw_entryLookupArg entryLookupArg)
+    nw_entryLookupArg entryLookupArg,
+    plugReceiveStatistics prs)
 {
     nw_channel channel = (nw_channel)receiveChannel;
     NW_STRUCT(nw_lookupArg) lookupArg;
@@ -453,10 +453,16 @@ nw_receiveChannelRead(
     lookupArg.entryFound = NULL;
 
     nw_bridgeRead(channel->owningBridge, channel->channelId,
-                  messagePtr, onTypeLookup, &lookupArg);
+                  messagePtr, onTypeLookup, &lookupArg, prs);
 
+    if (*messagePtr == NULL) {
+    	/* If message has been dropped (NULL) for security reasons,
+    	 * the entry still might be non-NULL, correct this */
+    	lookupArg.entryFound = NULL;
+    }
+    
     /* Retrieve entry, but only if we still have the previous message */
-    if (*entryPtr == NULL ) {
+    if (*entryPtr == NULL) {
       *entryPtr = lookupArg.entryFound;
     }
 }
@@ -505,7 +511,8 @@ nw_sendChannelWrite(
     nw_sendChannel sendChannel,
     v_networkReaderEntry entry,
     v_message message,
-    nw_signedLength *maxBytes)
+    nw_signedLength *maxBytes,
+    plugSendStatistics pss)
 {
     c_ulong result = 0;
     nw_channel channel = (nw_channel)sendChannel;
@@ -515,7 +522,7 @@ nw_sendChannelWrite(
     result = nw_bridgeWrite(channel->owningBridge, channel->channelId,
                             entry->networkPartitionId, message, entry->hashValue,
                             v_partitionName(v_groupPartition(entry->group)),
-                            v_topicName(v_groupTopic(entry->group)),maxBytes);
+                            v_topicName(v_groupTopic(entry->group)),maxBytes, pss);
 
     return result;
 }
@@ -524,12 +531,13 @@ nw_bool
 nw_sendChannelFlush(
     nw_sendChannel sendChannel,
     nw_bool all,
-    nw_signedLength *maxBytes)
+    nw_signedLength *maxBytes,
+    plugSendStatistics pss)
 {
     nw_bool result;
     nw_channel channel = (nw_channel)sendChannel;
 
-    result = nw_bridgeFlush(channel->owningBridge, channel->channelId, all, maxBytes);
+    result = nw_bridgeFlush(channel->owningBridge, channel->channelId, all, maxBytes, pss);
 
     return result;
 }
@@ -537,13 +545,14 @@ nw_sendChannelFlush(
 void
 nw_sendChannelPeriodicAction(
     nw_sendChannel sendChannel,
-    nw_signedLength *maxBytes)
+    nw_signedLength *maxBytes,
+    plugSendStatistics pss)
 {
     nw_channel channel = (nw_channel)sendChannel;
 
     NW_CONFIDENCE(channel);
 
     if (channel) {
-        nw_bridgePeriodicAction(channel->owningBridge, channel->channelId,maxBytes);
+        nw_bridgePeriodicAction(channel->owningBridge, channel->channelId,maxBytes, pss);
     }
 }

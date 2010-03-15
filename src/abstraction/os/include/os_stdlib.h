@@ -419,6 +419,21 @@ OS_API os_result
 os_fsync(
     FILE *fHandle);
 
+/**
+ * \brief returns the location of the temporary files used by OpenSplice.
+ * This may be the key file describing the shared memory or the shared
+ * file itself depending on the operating system
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - char * of the absolute path of the temporary location.  This will return
+ * always return a valid value, using a default if necessary
+ */
+OS_API char *
+os_getTempDir();
+
 #undef OS_API
 
 #if defined (__cplusplus)

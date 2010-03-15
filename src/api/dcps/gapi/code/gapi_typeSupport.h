@@ -81,7 +81,7 @@ _TypeSupportNew (
 OS_API gapi_returnCode_t
 gapi_typeSupport_register_type (
     gapi_typeSupport _this,
-    gapi_domainParticipant domain,
+    gapi_domainParticipant dp,
     gapi_string name);
 
 OS_API _TypeSupport

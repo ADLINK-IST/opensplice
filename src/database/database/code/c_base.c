@@ -145,20 +145,21 @@ c_stringMalloc(
     }
 
     header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length));
-    header->type = c_keep(base->string_type);
-    pa_increment(&base->string_type->objectCount);
-    header->refCount = 1;
+    if (header) {
+        header->type = c_keep(base->string_type);
+        pa_increment(&base->string_type->objectCount);
+        header->refCount = 1;
 #ifndef NDEBUG
-    header->confidence = CONFIDENCE;
+        header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
-    header->nextObject = NULL;
-    c_header(base->lastObject)->nextObject = s;
-    header->prevObject = base->lastObject;
-    assert(base->firstObject != NULL);
-    base->lastObject = s;
+        header->nextObject = NULL;
+        c_header(base->lastObject)->nextObject = s;
+        header->prevObject = base->lastObject;
+        assert(base->firstObject != NULL);
+        base->lastObject = s;
 #endif
 #endif
-
+    }
     s = (c_string)c_oid(header);
     return s;
 }
@@ -297,6 +298,9 @@ c_baseInit (
     this is required because all meta meta objects are defined as class. **/
     size = MEMSIZE(C_SIZEOF(c_class));
     header = (c_header)c_mmMalloc(base->mm,size);
+    if (!header) {
+    return;
+    }
     memset(header,0,size);
     header->refCount = 1;
     header->type = NULL;
@@ -995,10 +999,7 @@ c_baseInit (
 
         caseNumber = 0;
         /* c_unionCaseNew transfers refCount of type and
-         * c_enumValue(_SWITCH_TYPE_,"....")
-         * for maintainability it would be appropriate that c_unionCaseNew
-         * keeps type and the enum values, and that these objects are freed
-         * in this method after c_unionCaseNew.
+         * c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN")
          */
         type = c_address_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ADDRESS"));
@@ -1140,44 +1141,44 @@ c_create (
     mm = c_mmCreate(address,size);
 
     header = (c_header)c_mmMalloc(mm, MEMSIZE(C_SIZEOF(c_base)));
+    if (header) {
 #ifndef NDEBUG
-    header->confidence = CONFIDENCE;
+        header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
-    header->nextObject = NULL;
-    header->prevObject = NULL;
+        header->nextObject = NULL;
+        header->prevObject = NULL;
 #endif
 #endif
-    header->refCount = 1;
-    header->type = NULL;
-    tempbase = (c_base)c_oid(header);
-    base = (c_base)c_mmBind(mm, name, tempbase);
-    if (base != tempbase) {
-        c_mmFree(mm, tempbase);
-        OS_REPORT(OS_ERROR,"c_base::c_create",0,
-                  "Internal error, memory management seems corrupted");
-        return NULL;
+        header->refCount = 1;
+        header->type = NULL;
+        tempbase = (c_base)c_oid(header);
+        base = (c_base)c_mmBind(mm, name, tempbase);
+        if (base != tempbase) {
+            c_mmFree(mm, tempbase);
+            OS_REPORT(OS_ERROR,"c_base::c_create",0,
+                      "Internal error, memory management seems corrupted");
+            return NULL;
+        }
+        base->mm = mm;
+        base->confidence = CONFIDENCE;
+        base->bindings = c_avlTreeNew(base->mm, 0);
+#ifndef NDEBUG
+#ifdef OBJECT_WALK
+        base->firstObject = tempbase;
+        base->lastObject = tempbase;
+#endif
+#endif
+        c_mutexInit(&base->serLock,SHARED_MUTEX);
+        c_mutexInit(&base->bindLock,SHARED_MUTEX);
+        c_mutexInit(&base->extentBugLock,SHARED_MUTEX);
+
+        c_baseInit(base);
+
+        c_bind(base,"c_baseModule");
+        c_metaObject(base)->name = NULL;
+
+        q_parserInit();
     }
-    base->mm = mm;
-    base->confidence = CONFIDENCE;
-    base->bindings = c_avlTreeNew(base->mm, 0);
-#ifndef NDEBUG
-#ifdef OBJECT_WALK
-    base->firstObject = tempbase;
-    base->lastObject = tempbase;
-#endif
-#endif
-
-    c_mutexInit(&base->serLock,SHARED_MUTEX);
-    c_mutexInit(&base->bindLock,SHARED_MUTEX);
-    c_mutexInit(&base->extentBugLock,SHARED_MUTEX);
-
-    c_baseInit(base);
-
-    c_bind(base,"c_baseModule");
-    c_metaObject(base)->name = NULL;
-
-    q_parserInit();
-
     return base;
 }
 
@@ -1224,25 +1225,31 @@ c_bind (
 {
     c_baseBinding binding, found;
     c_base base;
+    c_object result = NULL;
 
     base = c_header(object)->type->base;
 
     assert(base->confidence == CONFIDENCE);
     binding = (c_baseBinding)c_mmMalloc(base->mm,C_SIZEOF(c_baseBinding));
-    binding->name = c_stringNew(base,name);
-    binding->object = c_keep(object);
+    if (binding) {
+        binding->name = c_stringNew(base,name);
+        binding->object = c_keep(object);
 
-    found = (c_baseBinding)c_avlTreeInsert(base->bindings,
-                                           binding,
-                                           (c_equality(*)())c_compareBindName,
-                                           NULL);
+        found = (c_baseBinding)c_avlTreeInsert(base->bindings,
+                                               binding,
+                                               (c_equality(*)())c_compareBindName,
+                                               NULL);
 
-    if (found != binding) {
-        c_free(binding->object);
-        c_free(binding->name);
-        c_mmFree(base->mm, binding);
+        if (found != binding) {
+            c_free(binding->object);
+            c_free(binding->name);
+            c_mmFree(base->mm, binding);
+        }
+    if (found) {
+        result = found->object;
     }
-    return found->object;
+    }
+    return result;
 }
 
 c_object
@@ -1318,7 +1325,7 @@ c_object
 c_new (
     c_type type)
 {
-    c_header header;
+    c_header header = NULL;
     c_object o;
     c_long size;
 
@@ -1337,124 +1344,51 @@ c_new (
 
             hdr = (c_arrayHeader)c_mmMalloc(type->base->mm,
                                             ARRAYMEMSIZE(size));
-            hdr->size = c_collectionTypeMaxSize(type);
-            header = (c_header)&hdr->_parent;
+            if (hdr) {
+                hdr->size = c_collectionTypeMaxSize(type);
+                header = (c_header)&hdr->_parent;
+            }
         } else {
             header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
         }
-        header->refCount = 1;
-        header->type = c_keep(type);
-        pa_increment(&header->type->objectCount);
+        if (header) {
+            header->refCount = 1;
+            header->type = c_keep(type);
+            pa_increment(&header->type->objectCount);
 #ifndef NDEBUG
-        header->confidence = CONFIDENCE;
+            header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
-        header->nextObject = NULL;
-        c_header(type->base->lastObject)->nextObject = o;
-        header->prevObject = type->base->lastObject;
-        assert(type->base->firstObject != NULL);
-        type->base->lastObject = o;
+            header->nextObject = NULL;
+            c_header(type->base->lastObject)->nextObject = o;
+            header->prevObject = type->base->lastObject;
+            assert(type->base->firstObject != NULL);
+            type->base->lastObject = o;
 #endif
 #endif
-
-        o = c_oid(header);
-        memset(o,0,size);
-    }
+            o = c_oid(header);
+            memset(o,0,size);
 #if CHECK_REF
-	if ((c_baseObject(header->type)->kind == M_EXTENT) ||
-		(c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
-		c_type t;
-		t = c_extentType(c_extent(header->type));
-		ACTUALTYPE(type,t);
-		c_free(t);
-	} else {
-		ACTUALTYPE(type,header->type);
-	}
-	if (type && c_metaObject(type)->name) {
-		if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
-			if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
-				UT_TRACE("\n\n============ New(0x%x) =============\n", o);
-			}
-		}
-	}
-#endif
-    return o;
-}
-
-#if 0
-c_object
-c__new (
-    c_extent extent)
-{
-    c_object o;
-    C_STRUCT(c_header) *header;
-    c_type t;
-    c_long size;
-    c_type type;
-
-    type = c_extentType(extent); /* To be freed */
-    ACTUALTYPE(t,type);
-    size = c_typeSize(t,NULL);
-
-    if (size <= 0) {
-        OS_REPORT_1(OS_ERROR,
-                    "Database c_new",0,
-                    "Illegal size %d specified",size);
-        o = NULL;
-    } else {
-        if ((c_baseObjectKind(t) == M_COLLECTION) &&
-            ((c_collectionTypeKind(t) == C_ARRAY) ||
-             (c_collectionTypeKind(t) == C_SEQUENCE)))
-        {
-            c_arrayHeader hdr;
-            c_type ref;
-            ref = c_extentType(type->extent);
-            assert(ref == type);
-            c_free(ref);
-
-            hdr = (c_arrayHeader)c_mmMalloc(t->base->mm,
-                                            ARRAYMEMSIZE(size));
-            hdr->size = c_collectionTypeMaxSize(t);
-            header = (c_header)&hdr->_parent;
-        } else {
-            header = (c_header)c_mmMalloc(t->base->mm, MEMSIZE(size));
-        }
-        header->refCount = 1;
-        /* We keep and assign the reference to the extent from which we are
-         * created. */
-        header->extent = c_keep(extent);
-
-        o = c_oid(header);
-        memset(o,0,size);
-
-
-#ifndef NDEBUG
-        header->confidence = CONFIDENCE;
-#ifdef OBJECT_WALK
-        header->nextObject = NULL;
-        c_header(t->base->lastObject)->nextObject = o;
-        header->prevObject = t->base->lastObject;
-        assert(t->base->firstObject != NULL);
-        t->base->lastObject = o;
-#endif
-#endif
-    }
-
-#if CHECK_REF
-    if(c_header(o)->extent){
-        if(type && c_metaObject(type)->name){
-            if(strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN){
-                if(strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0){
-                    UT_TRACE("\n\n============ New(0x%x) =============\n", o);
+            if ((c_baseObject(header->type)->kind == M_EXTENT) ||
+                (c_baseObject(header->type)->kind == M_EXTENTSYNC)) {
+                c_type t;
+                t = c_extentType(c_extent(header->type));
+                ACTUALTYPE(type,t);
+                c_free(t);
+            } else {
+                ACTUALTYPE(type,header->type);
+            }
+            if (type && c_metaObject(type)->name) {
+                if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
+                    if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
+                        UT_TRACE("\n\n============ New(0x%x) =============\n", o);
+                    }
                 }
             }
+#endif
         }
     }
-#endif
-    c_free(type);
-
     return o;
 }
-#endif
 
 c_long
 c_arraySize(
@@ -1499,26 +1433,28 @@ c_newArray (
             }
             hdr = (c_arrayHeader)c_mmMalloc(c_type(arrayType)->base->mm,
                                             ARRAYMEMSIZE(allocSize));
-            hdr->size = size;
-            header = (c_header)&hdr->_parent;
+            if (hdr) {
+                hdr->size = size;
+                header = (c_header)&hdr->_parent;
 
-            header->refCount = 1;
-            /* Keep reference to our type */
-            header->type = c_keep(c_type(arrayType));
-            pa_increment(&header->type->objectCount);
+                header->refCount = 1;
+                /* Keep reference to our type */
+                header->type = c_keep(c_type(arrayType));
+                pa_increment(&header->type->objectCount);
 
-            o = c_oid(header);
+                o = c_oid(header);
 
 #ifndef NDEBUG
-            header->confidence = CONFIDENCE;
+                header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
-            header->nextObject = NULL;
-            c_header(arrayType->base->lastObject)->nextObject = o;
-            header->prevObject = arrayType->base->lastObject;
-            assert(arrayType->base->firstObject != NULL);
-            arrayType->base->lastObject = o;
+                header->nextObject = NULL;
+                c_header(arrayType->base->lastObject)->nextObject = o;
+                header->prevObject = arrayType->base->lastObject;
+                assert(arrayType->base->firstObject != NULL);
+                arrayType->base->lastObject = o;
 #endif
 #endif
+            }
         } else {
             OS_REPORT_2(OS_ERROR,
                         "Database c_newArray",0,
@@ -1611,7 +1547,7 @@ _freeReference (
             c_freeReferences(c_metaObject(t), p);
         } else {
             c_free(c_object(*p));
-	}
+        }
     break;
     case M_EXCEPTION:
     case M_STRUCTURE:
@@ -1889,13 +1825,8 @@ c_free (
 #endif /* NDEBUG */
         return; /* cyclic reference detection */
     }
-
-#if CHECK_REF
-    /* Take a local pointer, since header->type pointer will be deleted
-     * The determination of actual type is also done here, because it is needed
-     * in the UT_TRACE below. Normally it is only needed when the ref count
-     * of the object becomes 0.
-     */
+    safeCount = pa_decrement(&header->refCount);
+    /* Take a local pointer, since header->type pointer will be deleted */
     headerType = header->type;
     if ((c_baseObject(headerType)->kind == M_EXTENT) ||
         (c_baseObject(headerType)->kind == M_EXTENTSYNC)) {
@@ -1907,30 +1838,18 @@ c_free (
         ACTUALTYPE(type,headerType);
     }
 
+#if CHECK_REF
     if (type && c_metaObject(type)->name) {
         if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
             if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, strlen(CHECK_REF_TYPE)) == 0) {
                 UT_TRACE("\n\n============ Free(0x%x): %d -> %d =============\n",
-                        object, safeCount, safeCount-1);
+                        object, safeCount+1, safeCount);
             }
         }
     }
 #endif
 
-    safeCount = pa_decrement(&header->refCount);
-
     if (safeCount == 0) {
-        /* Take a local pointer, since header->type pointer will be deleted */
-        headerType = header->type;
-        if ((c_baseObject(headerType)->kind == M_EXTENT) ||
-            (c_baseObject(headerType)->kind == M_EXTENTSYNC)) {
-            c_type t;
-            t = c_extentType(c_extent(headerType));
-            ACTUALTYPE(type,t);
-            c_free(t);
-        } else {
-            ACTUALTYPE(type,headerType);
-        }
         c_freeReferences(c_metaObject(type),object);
 #ifndef NDEBUG
         {
@@ -2164,6 +2083,21 @@ c_baseSerUnlock(
     c_base base)
 {
     c_mutexUnlock(&base->serLock);
+}
+
+void
+c_baseOnOutOfMemory(
+    c_base base,
+    c_baseOutOfMemoryAction action,
+    c_voidp arg)
+{
+    if (base) {
+	c_mm mm;
+	mm = c_baseMM(base);
+	if (mm) {
+            c_mmOnOutOfMemory(mm,action,arg);
+	}
+    }
 }
 
 #ifndef NDEBUG

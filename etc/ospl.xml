@@ -23,9 +23,21 @@
         <Channels>
             <Channel enabled="true" name="BestEffort" reliable="false" default="true">
                 <PortNr>53340</PortNr>
+				<Receiving>
+					<CrcCheck>false</CrcCheck>
+				</Receiving>
+				<Sending>
+					<CrcCheck>false</CrcCheck>
+				</Sending>
             </Channel>
             <Channel enabled="true" name="Reliable" reliable="true">
                 <PortNr>53350</PortNr>
+				<Receiving>
+					<CrcCheck>false</CrcCheck>
+				</Receiving>
+				<Sending>
+					<CrcCheck>false</CrcCheck>
+				</Sending>
             </Channel>
         </Channels>
         <Discovery enabled="true">

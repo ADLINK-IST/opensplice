@@ -83,6 +83,7 @@ namespace DDS
         static const ::DDS::PublisherQos          * const publisher_qos_default (void);
         static const ::DDS::SubscriberQos         * const subscriber_qos_default (void);
         static const ::DDS::DataReaderQos         * const datareader_qos_default (void);
+        static const ::DDS::DataReaderViewQos     * const datareaderview_qos_default (void);
         static const ::DDS::DataReaderQos         * const datareader_qos_use_topic_qos (void);
         static const ::DDS::DataWriterQos         * const datawriter_qos_default (void);
         static const ::DDS::DataWriterQos         * const datawriter_qos_use_topic_qos (void);

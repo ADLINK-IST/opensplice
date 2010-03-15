@@ -385,6 +385,7 @@
                     <value>durability</value>
                     <value>reader</value>
                     <value>writer</value>
+                    <value>networking</value>
                     <default>reader</default>
                 </attributeEnum>
             </element>
@@ -696,7 +697,7 @@
             </element>
         </element>
     </element>
-    <element name="DurabilityService" minOccurrences="1" maxOccurrences="1">
+    <element name="DurabilityService" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
             The responsibilities of the durability service are to realize the
             durable properties of data in an OpenSplice system.
@@ -1356,6 +1357,15 @@
                     <value>Transient</value>
                     <value>Transient_Local</value>
                 </attributeEnum>
+                <attributeString name="name" required="false">
+                    <comment><![CDATA[
+                        The element determines the name for the NameSpace. This name
+                        will appear in the tracing output of the durability service
+                        and is therefore useful for debugging purposes.
+                    ]]></comment>
+                    <maxLength>0</maxLength>
+                    <default>myNameSpace</default>
+                </attributeString>
                 <attributeEnum name="alignmentKind" required="true">
                     <comment><![CDATA[
                         <p>This element determines how the durability service manages
@@ -1947,6 +1957,17 @@
                         This element describes all properties for the transmitting side
                         of the Channel.
                     ]]></comment>
+                    <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the sending side is enabled the network packet will contain a valid crc field. 
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
                     <leafInt name="QueueSize" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             This element specifies the number of messages the networking queue
@@ -2068,6 +2089,17 @@
                         This element describes all properties for the receiving side
                         of the Channel.
                     ]]></comment>
+                    <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the receiving side is enabled only network packets that contain a valid crc field are accepted.  
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
                     <leafInt name="ReceiveBufferSize" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             The UDP receive buffer of the best effort channel socket is
@@ -2153,14 +2185,14 @@
                 This element is used to configure the various parameters of the Discovery Channel,
                 which is used to discover all participating entities in the current Domain.
             ]]></comment>
-            <leafBoolean name="Active" minOccurrences="0" maxOccurrences="1">
-                <comment><![CDATA[
-                    This element can be used to enable or disable the Discovery Channel. In case the Discovery
+            <attributeBoolean name="enabled" required="true">
+                    <comment><![CDATA[
+                    This attribute can be used to enable or disable the Discovery Channel. In case the Discovery
                     Channel is disabled, entities will only detect each others presence implicitly once messages
                     are received for the first time.
-                ]]></comment>
-                <default>true</default>
-            </leafBoolean>
+                    ]]></comment>
+                    <default>true</default>
+            </attributeBoolean>
             <leafInt name="PortNr" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
                     This element specifies the Port number used by the Discovery Channel.
@@ -2174,6 +2206,40 @@
                     This element describes all properties for the transmitting side
                     of the Discovery Channel.
                 ]]></comment>
+                <leafInt name="DiffServField" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[
+                        This element describes the DiffServ setting Discovery will apply to all its
+                        networking messages.
+                        ]]></comment>
+                        <minimum>0</minimum>
+                        <maximum>255</maximum>
+                        <default>0</default>
+                    </leafInt>
+                    <leafEnum name="DontRoute" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[The IP DONTROUTE
+                              socket option is set to the value specified.]]></comment>
+                        <value>True</value>
+                        <value>False</value>
+                        <default>True</default>
+                    </leafEnum>
+                    <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
+                              header value is set to the value specified.]]></comment>
+                        <minimum>0</minimum>
+                        <maximum>255</maximum>
+                        <default>0</default>
+                    </leafInt>
+                    <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the sending side is enabled the network packet will contain a valid crc field. 
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
                 <element name="Scheduling" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         This element specifies the scheduling policies used to control the transmitter thread
@@ -2214,7 +2280,7 @@
                         No description.
                     ]]></comment>
                     <minimum>100</minimum>
-                    <default>1000</default>
+                    <default>333</default>
                 </leafInt>
                 <leafFloat name="SafetyFactor" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
@@ -2239,6 +2305,17 @@
                         This element specifies the scheduling policies used to control the receiver thread
                         of the Discovery Channel.
                     ]]></comment>
+                    <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the receiving side is enabled only network packets that contain a valid crc field are accepted.  
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
                     <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
                         <comment><![CDATA[
                             This element specifies the thread priority that will be used by the receiver thread
@@ -2554,8 +2631,8 @@
                         Each channel needs its own unique port number.
                     ]]></comment>
                     <minimum>0</minimum>
-                    <maximum>32000</maximum>
-                    <default>7412</default>
+                    <maximum>65535</maximum>
+                    <default>53340</default>
                 </leafInt>
             </element>
         </element>
@@ -2577,7 +2654,7 @@
                     Channel.
                 ]]></comment>
                 <minimum>0</minimum>
-                <maximum>32000</maximum>
+                <maximum>65535</maximum>
                 <default>7400</default>
             </leafInt>
             <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -24,6 +24,7 @@
 #include "idl_genSacHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
+#include "idl_catsDef.h"
 
 #include <c_typebase.h>
 #include <os_stdlib.h>
@@ -39,7 +40,7 @@ static c_long loopIndent;
 static c_long varIndex;
 
 static void idl_arrayDimensions(idl_typeArray typeArray);
-static void idl_arrayElements(idl_typeArray typeArray, const char *from, const char *to, c_long indent);
+static void idl_arrayElements(idl_scope scope, const char* name, idl_typeArray typeArray, const char *from, const char *to, c_long indent);
 static void idl_seqElements(idl_scope scope, const char *name, idl_typeSeq typeSeq, c_long indent);
 static void idl_seqLoopCopy(idl_typeSpec typeSpec, const char *from, const char *to, c_long loop_index, c_long indent);
 
@@ -272,11 +273,11 @@ idl_basicMemberType(
     break;
     case idl_string:
         maxlen = idl_typeBasicMaxlen(typeBasic);
-        
+
         DEBUG_INFO
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
         fileOut(file,"    if (%s%s) {\n", from_id, cid);
-        
+
         if(maxlen != 0){
             DEBUG_INFO
             fileOut(file,"        if (((unsigned int)strlen(%s%s)) <= %d) {\n", from_id, cid, maxlen);
@@ -346,11 +347,11 @@ idl_basicCaseType(
     break;
     case idl_string:
         maxlen = idl_typeBasicMaxlen(typeBasic);
-        
+
         DEBUG_INFO
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
         fileOut(file,"    if(%s%s){\n", from_id, cid);
-        
+
         if(maxlen != 0){
             DEBUG_INFO
             fileOut(file,"        if(((unsigned int)strlen(%s%s)) <= %d){\n", from_id, cid, maxlen);
@@ -432,27 +433,45 @@ idl_structureMemberOpenClose(
         idl_basicMemberType (scope, name, idl_typeBasic(typeSpec), "from->", "to->");
     break;
     case idl_ttypedef:
-        if ((idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) ||
-            (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq)) {
+        {
+            os_boolean catsRequested = OS_FALSE;
+            if((idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray))
+            {
+                idl_basicType basic;
+                idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpec)));
+                if(idl_typeSpecType(subType) == idl_tbasic)
+                {
+                    idl_scope tmpScope = idl_scopeDup(scope);
+                    os_char* containingElement;
 
-            scopedName = idl_scopedTypeName(typeSpec);
+                    basic = idl_typeBasicType(idl_typeBasic(subType));
+                    containingElement = idl_scopeElementName(idl_scopeCur (scope));
+                    idl_scopePop(tmpScope);
+                    catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+                }
+            }
+            if (((idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) ||
+                (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq)) && !catsRequested) {
 
-            DEBUG_INFO
-            fileOut(file,"    if(result){\n");
-            fileOut(file,"        extern c_bool __%s__copyIn(c_base, void *, void *);\n", scopedName);
-            fileOut(file,"        result = __%s__copyIn(base, &from->%s, &to->%s);\n", scopedName, cid, cid);
-            fileOut(file,"    }\n");
-        } else {
-            /* Calls itself for the actual type in case of typedef */
-            /* QAC EXPECT 3670; We wan't to use recursion, the recursion is finite */
-            DEBUG_INFO
-            idl_structureMemberOpenClose( scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
+                scopedName = idl_scopedTypeName(typeSpec);
+
+                DEBUG_INFO
+                fileOut(file,"    if(result){\n");
+                fileOut(file,"        extern c_bool __%s__copyIn(c_base, void *, void *);\n", scopedName);
+                fileOut(file,"        result = __%s__copyIn(base, &from->%s, &to->%s);\n", scopedName, cid, cid);
+                fileOut(file,"    }\n");
+            } else {
+                /* Calls itself for the actual type in case of typedef */
+                /* QAC EXPECT 3670; We wan't to use recursion, the recursion is finite */
+                DEBUG_INFO
+                idl_structureMemberOpenClose( scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
+            }
         }
     break;
     case idl_tenum:
         scopedName = idl_scopedSplTypeName(typeSpec);
         maxlen = idl_typeEnumNoElements(idl_typeEnum(typeSpec));
-        
+
         DEBUG_INFO
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
         fileOut(file,"    if((((c_long)from->%s) >= 0) && (((c_long)from->%s) < %d) ){\n", cid, cid, maxlen);
@@ -476,14 +495,38 @@ idl_structureMemberOpenClose(
     break;
     case idl_tarray:
         snprintf(source, (size_t)sizeof(source), "from->%s", name);
+        {
+            os_boolean catsRequested = OS_FALSE;
+            idl_basicType basic;
+            idl_typeSpec subType = idl_typeArrayActual(idl_typeArray(typeSpec));
+            idl_typeSpec subTypeResolved = idl_typeDefResolveFully(subType);
+            if(idl_typeSpecType(subTypeResolved) == idl_tbasic)
+            {
+                idl_scope tmpScope = idl_scopeDup(scope);
+                os_char* containingElement;
 
-        DEBUG_INFO
-        fileOut(file,"    {\n");
-        fileOut(file,"        %s (*dst)", idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
-            idl_arrayDimensions(idl_typeArray(typeSpec));
-        fileOut(file," = &to->%s;\n", cid);
-            idl_arrayElements (idl_typeArray(typeSpec), source, "dst", 1);
-        fileOut(file,"    }\n");
+                basic = idl_typeBasicType(idl_typeBasic(subTypeResolved));
+                containingElement = idl_scopeElementName(idl_scopeCur (scope));
+                idl_scopePop(tmpScope);
+                catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+            }
+            if(catsRequested && basic == idl_char)
+            {
+                DEBUG_INFO
+                fileOut(file,"    {\n");
+                idl_arrayElements (scope, name, idl_typeArray(typeSpec), source, cid, 1);
+                fileOut(file,"    }\n");
+            } else
+            {
+                DEBUG_INFO
+                fileOut(file,"    {\n");
+                fileOut(file,"        %s (*dst)", idl_scopedSplTypeIdent(subType));
+                idl_arrayDimensions(idl_typeArray(typeSpec));
+                fileOut(file," = &to->%s;\n", cid);
+                idl_arrayElements (scope, name, idl_typeArray(typeSpec), source, "dst", 1);
+                fileOut(file,"    }\n");
+            }
+        }
     break;
     case idl_tseq:
         nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
@@ -515,9 +558,9 @@ idl_structureMemberOpenClose(
         fileOut(file,"        }\n");
         fileOut(file,"        if(src0 != NULL){\n");
         fileOut(file,"            length0 = (c_long)(*src0)._length;\n");
-        
+
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
-        
+
         if(maxlen){
             DEBUG_INFO
             idl_printIndent(3);
@@ -570,7 +613,7 @@ idl_structureMemberOpenClose(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  */
 static void
 idl_arrayDimensions(
@@ -598,7 +641,7 @@ idl_arrayDimensions(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param indent Indentation of the output
  */
 static void
@@ -633,7 +676,7 @@ idl_arrayLoopVariables(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param indent Indentation of the output
  */
 static void
@@ -664,7 +707,7 @@ idl_arrayLoopCopyOpen(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  */
 static void
 idl_arrayLoopCopyIndex(
@@ -690,7 +733,7 @@ idl_arrayLoopCopyIndex(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  */
 static void
 idl_arrayLoopCopyIndexString(
@@ -750,7 +793,7 @@ idl_indexSize(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param from Identification of the source to copy from
  * @param to Identification of the destination to copy to
  * @param indent Indentation of the output
@@ -822,7 +865,7 @@ idl_arrayLoopCopyBody(
                 idl_printIndent(loopIndent + indent);
                 fileOut(file,   "    if(result && %s){\n", from);
                 idl_printIndent(loopIndent + indent);
-                
+
                 if(maxlen != 0){
                     DEBUG_INFO
                     fileOut(file,"        if(((unsigned int)strlen(%s)) <= %d){\n", from, maxlen);
@@ -879,7 +922,7 @@ idl_arrayLoopCopyBody(
             fileOut(file,"#endif\n");
         break;
         default:
-            printf("idl_loopCopyBody: Unexpected type\n"); 
+            printf("idl_loopCopyBody: Unexpected type\n");
             /* QAC EXPECT 3416; No side effect here */
             assert(0);
         break;
@@ -890,21 +933,21 @@ idl_arrayLoopCopyBody(
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
-            
+
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
             idl_printIndent(loopIndent + indent);
             fileOut(file,"if((%s)", from);
             idl_arrayLoopCopyIndex(typeArray);
             fileOut(file,"){\n");
-            
+
             if(maxlen != 0){
                 DEBUG_INFO
                 idl_printIndent (loopIndent + indent+1);
                 fileOut(file,"if(((unsigned int)(strlen((%s)", from);
                 idl_arrayLoopCopyIndex(typeArray);
                 fileOut(file,"))) <= %d){\n", maxlen);
-                
+
                 idl_printIndent (loopIndent + indent + 2);
                 fileOut(file,"(*%s)", to);
                 idl_arrayLoopCopyIndex(typeArray);
@@ -940,7 +983,7 @@ idl_arrayLoopCopyBody(
             idl_arrayLoopCopyIndex(typeArray);
             fileOut(file,");\n");
             fileOut(file,"#endif\n");
-            
+
         } else {
             /* QAC EXPECT 3416; No side effect here */
             assert(0);
@@ -989,13 +1032,13 @@ idl_arrayLoopCopyBody(
         fileOut(file,"        c_free(subtype0);\n");
         idl_printIndent(total_indent);
         fileOut(file,"    }\n");
-        
+
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
         idl_printIndent(total_indent);
         fileOut(file,"    if(src0 != NULL){\n");
         idl_printIndent(total_indent);
         fileOut(file,"        length0 = (c_long)(*src0)._length;\n");
-        
+
         if(maxlen){
             DEBUG_INFO
             fileOut(file,"        if(length0 > %d){\n", maxlen);
@@ -1056,7 +1099,7 @@ idl_arrayLoopCopyBody(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param indent Indentation of the loop.
  */
 static void
@@ -1106,7 +1149,7 @@ idl_arrayLoopCopyClose(
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param from Identification of the source to copy from
  * @param to Identification of the destination to copy to
  * @param indent Indentation of the output
@@ -1140,46 +1183,97 @@ idl_arrayLoopCopy(
  * - If the actual type is \b idl_tstruct or \b idl_tunion, an element
  *   copy is used.
  * - If the actual type is \b idl_ttypedef, the strategy depends on the
- *   actual type of the typedef. 
+ *   actual type of the typedef.
  * - If the actual type is \b idl_tseq, the array will be copied on
  *   element basis.
- * 
+ *
  * @todo When the struct or union does not contain a reference, a plain
  * memory copy could be used because the memory map is the same in CORBA
  * and SPLICE-DDS
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
- * is on top of that stack. 
+ * is on top of that stack.
  * @param from Identification of the source to copy from
  * @param to Identification of the destination to copy to
  * @param indent Indentation of the output
  */
 static void
 idl_arrayElements(
+    idl_scope scope,
+    const char* name,
     idl_typeArray typeArray,
     const char *from,
     const char *to,
     c_long indent)
 {
     idl_typeSpec subType = idl_typeArrayActual(typeArray);
-    idl_type idlType = idl_typeSpecType(subType);
+    idl_type idlType;
     c_long maxLen;
-    
+    idl_typeSpec subTypeDereffered = idl_typeDefResolveFully(subType);
+    /* are we dealing with a typedef? */
+    if(subType != subTypeDereffered)
+    {
+        os_boolean catsRequested = OS_FALSE;
+        idl_basicType basic;
+        if(idl_typeSpecType(subTypeDereffered) == idl_tbasic)
+        {
+            idl_scope tmpScope = idl_scopeDup(scope);
+            os_char* containingElement;
+
+            basic = idl_typeBasicType(idl_typeBasic(subTypeDereffered));
+            containingElement = idl_scopeElementName(idl_scopeCur (scope));
+            idl_scopePop(tmpScope);
+            catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+            if(catsRequested)
+            {
+                subType = subTypeDereffered;
+            }
+        }
+    }
+    idlType = idl_typeSpecType(subType);
     switch (idlType) {
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(subType)) == idl_string) {
             idl_arrayLoopCopy(typeArray, from, to, indent);
         } else {
-            DEBUG_INFO
-            idl_printIndent(indent);
-            fileOut(file,"    memcpy (%s, %s, sizeof (*%s));\n", to, from, to);
+            os_boolean catsRequested = OS_FALSE;
+            idl_basicType basic;
+            if(idlType == idl_tbasic)
+            {
+                idl_scope tmpScope = idl_scopeDup(scope);
+                os_char* containingElement;
+
+                basic = idl_typeBasicType(idl_typeBasic(subType));
+                containingElement = idl_scopeElementName(idl_scopeCur (scope));
+                idl_scopePop(tmpScope);
+                catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+            }
+            if(catsRequested && basic == idl_char)
+            {
+                DEBUG_INFO
+                fileOut(file,"        /* Allocate the length of the array (and null terminator) as a database\n");
+                fileOut(file,"        * string\n");
+                fileOut(file,"        */\n");
+                fileOut(file,"        to->%s = c_stringMalloc(base, (%d + 1));\n", to, idl_typeArraySize(typeArray));
+                fileOut(file,"        if(to->%s)\n", to);
+                fileOut(file,"        {\n");
+                fileOut(file,"            /* Copy the value of the array into the database string */\n");
+                fileOut(file,"            strncpy(to->%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
+                fileOut(file,"            to->%s[%d] = '\\0';\n", to, idl_typeArraySize(typeArray));
+                fileOut(file,"        }\n");
+            } else
+            {
+                DEBUG_INFO
+                idl_printIndent(indent);
+                fileOut(file,"    memcpy (%s, %s, sizeof (*%s));\n", to, from, to);
+            }
         }
     break;
     case idl_tenum:
         maxLen = idl_typeEnumNoElements(idl_typeEnum(subType));
-        
+
         DEBUG_INFO
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
         idl_printIndent (indent);
@@ -1399,16 +1493,16 @@ idl_seqLoopCopy(
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
-            
+
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
             idl_printIndent(indent);
             fileOut(file,"        if((%s%d)._buffer[i%d]){\n", from, loop_index-1, loop_index-1);
-            
+
             if(maxlen != 0){
                 DEBUG_INFO
                 idl_printIndent (indent+2);
-                fileOut(file,"    if(((unsigned int)(strlen((%s%d)._buffer[i%d]))) <= %d){\n", 
+                fileOut(file,"    if(((unsigned int)(strlen((%s%d)._buffer[i%d]))) <= %d){\n",
                         from, loop_index-1, loop_index-1, maxlen);
                 idl_printIndent (indent+2);
                 fileOut(file,"        %s[i%d] = c_stringNew(base, (%s%d)._buffer[i%d]);\n",
@@ -1424,8 +1518,8 @@ idl_seqLoopCopy(
                 idl_printIndent (indent+1);
                 fileOut(file,"        %s[i%d] = c_stringNew(base, (%s%d)._buffer[i%d]);\n",
                     to, loop_index-1, from, loop_index-1, loop_index-1);
-                
-            }                
+
+            }
             idl_printIndent (indent);
             fileOut(file,"        } else {\n");
             idl_printIndent (indent);
@@ -1472,22 +1566,22 @@ idl_seqLoopCopy(
             fileOut(file,"            result = __%s__copyIn(base, &(%s%d)._buffer[i%d], (%s *)&%s[i%d]);\n",
                 idl_scopedTypeName(typeSpec), from, loop_index-1, loop_index-1, idl_scopedSplTypeName(typeSpec), to, loop_index-1);
             idl_printIndent(indent);
-            fileOut(file,"        }\n");            
+            fileOut(file,"        }\n");
         break;
         case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
-            
+
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
                 maxlen = idl_typeBasicMaxlen(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec))));
-               
+
                 DEBUG_INFO
                 fileOut(file,"\n#ifdef %s\n", BOUNDSCHECK);
                 fileOut(file,"        if((%s%d)._buffer[i%d]){\n", from, loop_index-1, loop_index-1);
-               
+
                 if(maxlen != 0){
                     DEBUG_INFO
                     idl_printIndent (indent+2);
-                    fileOut(file,"    if(((unsigned int)(strlen((%s%d)._buffer[i%d]))) <= %d){\n", 
+                    fileOut(file,"    if(((unsigned int)(strlen((%s%d)._buffer[i%d]))) <= %d){\n",
                            from, loop_index-1, loop_index-1, maxlen);
                     idl_printIndent (indent+2);
                     fileOut(file,"        %s[i%d] = c_stringNew(base, (%s%d)._buffer[i%d]);\n",
@@ -1503,8 +1597,8 @@ idl_seqLoopCopy(
                     idl_printIndent (indent+1);
                     fileOut(file,"        %s[i%d] = c_stringNew(base, (%s%d)._buffer[i%d]);\n",
                        to, loop_index-1, from, loop_index-1, loop_index-1);
-                   
-                }                
+
+                }
                 idl_printIndent (indent);
                 fileOut(file,"        } else {\n");
                 idl_printIndent (indent);
@@ -1550,7 +1644,7 @@ idl_seqLoopCopy(
             fileOut(file,"#endif\n");
         break;
         default:
-            printf ("idl_seqLoopCopy: Unexpected type\n"); 
+            printf ("idl_seqLoopCopy: Unexpected type\n");
             assert (0);
         break;
         }
@@ -1598,9 +1692,9 @@ idl_seqLoopCopy(
         idl_printIndent(indent);
         fileOut(file,"        }\n");
         idl_printIndent(indent);
-        
+
         fileOut(file,"        length%d = (c_long)(%s%d)._length;\n", loop_index, from, loop_index);
-        
+
         if(maxlen > 0){
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
@@ -1706,21 +1800,21 @@ idl_seqElements(
     fileOut(file,"        type%d = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", indent, typeName, indent);
     fileOut(file,"        c_free(subtype%d);\n", indent);
     fileOut(file,"    }\n");
-    
+
     fileOut(file,"    length%d = (c_long)(*from)._length;\n", indent);
-    
+
     fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
-    
+
     if (maxlen != 0) {
         DEBUG_INFO
         fileOut(file,"    if(length%d > %d){\n", indent, maxlen);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    } else {\n");
-        
+
         fileOut(file,"        dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
         idl_seqLoopCopy(nextType, "*from", destin, 1, indent+2);
         fileOut(file,"        *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
-        
+
         fileOut(file,"    }\n");
     } else {
         DEBUG_INFO
@@ -1749,7 +1843,7 @@ idl_seqElements(
  *   For that copyIn routine, array copy code is generated.
  * - If the actual type is \b idl_tseq, a named copyIn routine is generated.
  *   For that copyIn routine, sequence copy code is generated.
- * 
+ *
  * Type definitions of basic type are immediately copied from within the generated
  * struct or union copyIn routine. No named copy routine is required.
  *
@@ -1804,7 +1898,7 @@ idl_typedefOpenClose(
         fileOut(file,"    _%s *to = (_%s *)_to;\n",
             idl_scopeStack(scope, "_", name),
             idl_scopeStack(scope, "_", name));
-        idl_arrayElements(idl_typeArray(idl_typeDefActual(defSpec)), "*from", "to", 0);
+        idl_arrayElements(scope, name, idl_typeArray(idl_typeDefActual(defSpec)), "*from", "to", 0);
         fileOut(file,"    return result;\n");
         fileOut(file,"}\n");
         fileOut(file,"\n");
@@ -1891,7 +1985,7 @@ idl_unionOpen(
     void *userData)
 {
     c_long maxlen;
-    
+
     DEBUG_INFO
     fileOut(file,"c_bool\n");
     fileOut(file,"__%s__copyIn(c_base base, void *_from, void *_to)\n",
@@ -1912,10 +2006,10 @@ idl_unionOpen(
             idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
     } else if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tenum) {
         maxlen = idl_typeEnumNoElements(idl_typeEnum(idl_typeUnionSwitchKind(unionSpec)));
-        
+
         DEBUG_INFO
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
-        fileOut(file,"    if((((c_long)(from->_d)) >= 0) && (((c_long)(from->_d)) < %d)){\n", 
+        fileOut(file,"    if((((c_long)(from->_d)) >= 0) && (((c_long)(from->_d)) < %d)){\n",
             maxlen);
         fileOut(file,"        to->_d = (%s)from->_d;\n",
             idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
@@ -1937,7 +2031,7 @@ idl_unionOpen(
         DEBUG_INFO
         maxlen = idl_typeEnumNoElements(idl_typeEnum(idl_typeDefActual(idl_typeDef(idl_typeUnionSwitchKind(unionSpec)))));
         fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
-        fileOut(file,"    if( (((c_long)(from->_d)) >= 0) && (((c_long)(from->_d)) < %d)){\n", 
+        fileOut(file,"    if( (((c_long)(from->_d)) >= 0) && (((c_long)(from->_d)) < %d)){\n",
             maxlen);
         fileOut(file,"        to->_d = (%s)from->_d;\n",
                 idl_scopedSplTypeName(idl_typeDefActual(idl_typeDef(idl_typeUnionSwitchKind(unionSpec)))));
@@ -2041,7 +2135,7 @@ idl_unionCaseOpenClose(
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
-                
+
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
             fileOut(file,"        if(from->_u.%s){\n", cid);
@@ -2131,7 +2225,7 @@ idl_unionCaseOpenClose(
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
         c_char source[256];
-        
+
         snprintf(source, (size_t)sizeof(source), "from->_u.%s", name);
 
         DEBUG_INFO
@@ -2139,7 +2233,7 @@ idl_unionCaseOpenClose(
         fileOut(file,"            %s (*dst)", idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
             idl_arrayDimensions(idl_typeArray(typeSpec));
         fileOut(file," = &to->_u.%s;\n", cid);
-            idl_arrayElements(idl_typeArray(typeSpec), source, "dst", 2);
+            idl_arrayElements(scope, name, idl_typeArray(typeSpec), source, "dst", 2);
         fileOut(file,"        }\n");
         fileOut(file,"        break;\n");
         /* QAC EXPECT 3416; No side effect here */
@@ -2161,7 +2255,7 @@ idl_unionCaseOpenClose(
         }
 
         maxlen = idl_typeSeqMaxSize(idl_typeSeq(typeSpec));
-        
+
         snprintf(type_name, (size_t)sizeof(type_name), "_%s_seq", name);
 
         DEBUG_INFO
@@ -2177,10 +2271,10 @@ idl_unionCaseOpenClose(
         fileOut(file,"            type0 = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
         fileOut(file,"            c_free(subtype0);\n");
         fileOut(file,"        }\n");
-        
+
         fileOut(file,"        if(src0 != NULL){\n");
         fileOut(file,"            length0 = (c_long)(*src0)._length;\n");
-        
+
         if(maxlen != 0){
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);

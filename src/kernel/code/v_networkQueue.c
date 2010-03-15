@@ -18,6 +18,7 @@
 #include "kernelModule.h"
 #include "v_networkReaderEntry.h"
 #include "v_networkReaderStatistics.h"
+#include "v__statisticsInterface.h"
 #include "v_entity.h"    /* for v_entity() */
 #include "v_group.h"     /* for v_group()  */
 #include "v__reader.h"    /* for v_reader() */
@@ -117,7 +118,8 @@ v_networkQueueNew(
     c_ulong priority,
     c_bool reliable,
     c_bool P2P,
-    c_time resolution)
+    c_time resolution,
+    v_networkQueueStatistics statistics)
 {
     v_networkQueue result = NULL;
     c_type type;
@@ -129,49 +131,57 @@ v_networkQueueNew(
     assert(type);
     result = v_networkQueue(c_new(type));
     c_free(type);
-    /* Queue properties */
-    result->maxMsgCount = queueSize;
-    result->currentMsgCount = 0;
-    /* Cached type */
-    result->statusMarkerType = c_resolve(base, "kernelModule::v_networkStatusMarker");
-    assert(result->statusMarkerType != NULL);
-    result->sampleType = c_resolve(base, "kernelModule::v_networkQueueSample");
-    assert(result->sampleType != NULL);
-    /* Linked list of in-use marker items */
-    result->firstStatusMarker = NULL;
-    result->lastStatusMarker = NULL;
-    /* Linked list of free marker and message items */
-    result->freeStatusMarkers = NULL;
-    result->freeSamples = NULL;
-    /* Init cv stuff */
-    c_mutexInit(&result->mutex, SHARED_MUTEX);
-    c_condInit(&result->cv, &result->mutex, SHARED_COND);
-    /* Currently no differentiation wrt qos */
-    result->priority = priority;
-    result->reliable = reliable;
-    result->P2P = P2P;
-    
-    equality = c_timeCompare(C_TIME_ZERO, resolution);
-    if (equality == C_EQ) {
-        result->periodic = FALSE;
-        result->resolution = C_TIME_INFINITE;
-        result->msecsResolution = 0xFFFFFFFF;
-        result->phaseMilliSeconds = 0;
-        result->nextWakeup = C_TIME_INFINITE;
+
+    if (result) {
+        /* Queue properties */
+        result->maxMsgCount = queueSize;
+        result->currentMsgCount = 0;
+        /* Cached type */
+        result->statusMarkerType = c_resolve(base, "kernelModule::v_networkStatusMarker");
+        assert(result->statusMarkerType != NULL);
+        result->sampleType = c_resolve(base, "kernelModule::v_networkQueueSample");
+        assert(result->sampleType != NULL);
+        /* Linked list of in-use marker items */
+        result->firstStatusMarker = NULL;
+        result->lastStatusMarker = NULL;
+        /* Linked list of free marker and message items */
+        result->freeStatusMarkers = NULL;
+        result->freeSamples = NULL;
+        /* Init cv stuff */
+        c_mutexInit(&result->mutex, SHARED_MUTEX);
+        c_condInit(&result->cv, &result->mutex, SHARED_COND);
+        /* Currently no differentiation wrt qos */
+        result->priority = priority;
+        result->reliable = reliable;
+        result->P2P = P2P;
+
+        result->statistics = statistics;
+
+        equality = c_timeCompare(C_TIME_ZERO, resolution);
+        if (equality == C_EQ) {
+            result->periodic = FALSE;
+            result->resolution = C_TIME_INFINITE;
+            result->msecsResolution = 0xFFFFFFFF;
+            result->phaseMilliSeconds = 0;
+            result->nextWakeup = C_TIME_INFINITE;
+        } else {
+            assert(equality == C_LT);
+            result->periodic = TRUE;
+            result->resolution = resolution;
+            TIME_TO_MSEC(resolution, result->msecsResolution);        
+            /* A semi-random phase to avoid wake-ups at the same time */
+            now = v_timeGet();
+            result->phaseMilliSeconds = ((c_ulong)(now.nanoseconds/1000000 * 1.618)) %
+                result->msecsResolution;
+            v_networkQueueUpdateNextWakeup(result, &hasChanged);
+            assert(hasChanged);
+        }
+        result->threadWaiting = FALSE;
     } else {
-        assert(equality == C_LT);
-        result->periodic = TRUE;
-        result->resolution = resolution;
-        TIME_TO_MSEC(resolution, result->msecsResolution);        
-        /* A semi-random phase to avoid wake-ups at the same time */
-        now = v_timeGet();
-        result->phaseMilliSeconds = ((c_ulong)(now.nanoseconds/1000000 * 1.618)) %
-            result->msecsResolution;
-        v_networkQueueUpdateNextWakeup(result, &hasChanged);
-        assert(hasChanged);
+        OS_REPORT(OS_ERROR,
+                  "v_networkQueueNew",0,
+                  "Failed to allocate network queue.");
     }
-    result->threadWaiting = FALSE;
-    
     return result;
 }    
 
@@ -207,8 +217,13 @@ v_networkQueueWrite(
 
     c_mutexLock(&queue->mutex);
 
+    /* numberOfSamplesArrived statistics */
+    v_networkQueueStatisticsAdd(numberOfSamplesArrived,queue->statistics);
+
     if (queue->currentMsgCount == queue->maxMsgCount) {
         c_mutexUnlock(&queue->mutex);
+        /* numberOfSamplesRejected stat */
+        v_networkQueueStatisticsAdd(numberOfSamplesRejected,queue->statistics);
         return FALSE;
     }
 
@@ -297,6 +312,12 @@ v_networkQueueWrite(
                 queue->lastStatusMarker = marker; /* no keep, not reference counted */
             }
             *currentMarkerPtr = marker; /* no keep, transfer refCount */
+        } else {
+            OS_REPORT(OS_ERROR,
+                  "v_networkQueueWrite",0,
+                  "Failed to send message.");
+            c_mutexUnlock(&queue->mutex);
+            return FALSE;
         }
     }
     V_MESSAGE_STAMP(msg,readerLookupTime); 
@@ -307,29 +328,42 @@ v_networkQueueWrite(
         newHolder = queue->freeSamples;
         queue->freeSamples = newHolder->next;
     }
-    queue->currentMsgCount++;
 
-    newHolder->message = c_keep(msg);
-    newHolder->entry = c_keep(entry);
-    newHolder->sequenceNumber = sequenceNumber;
-    newHolder->sender = sender;
-    newHolder->sendTo = sendTo;
-    newHolder->receiver = receiver;
+    if (newHolder) {
+        queue->currentMsgCount++;
 
-    if (marker->lastSample != NULL) {
-        newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
-        v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
-    } else {
-        newHolder->next = marker->firstSample; /* no keep, transfer refCount */
-        marker->firstSample = newHolder; /* no keep, transfer refCount */
-    }
-    marker->lastSample = newHolder;
+        /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
+        v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
+        v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
 
-    /* Write done, wake up waiters if needed */
-    if (wasEmpty && queue->threadWaiting) {
-        if (sendNow || v_networkQueueHasExpiringData(queue)) {
-            c_condBroadcast(&queue->cv);
+        newHolder->message = c_keep(msg);
+        newHolder->entry = c_keep(entry);
+        newHolder->sequenceNumber = sequenceNumber;
+        newHolder->sender = sender;
+        newHolder->sendTo = sendTo;
+        newHolder->receiver = receiver;
+
+        if (marker->lastSample != NULL) {
+            newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
+            v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
+        } else {
+            newHolder->next = marker->firstSample; /* no keep, transfer refCount */
+            marker->firstSample = newHolder; /* no keep, transfer refCount */
         }
+        marker->lastSample = newHolder;
+
+
+        /* Write done, wake up waiters if needed */
+        if (wasEmpty && queue->threadWaiting) {
+            if (sendNow || v_networkQueueHasExpiringData(queue)) {
+                c_condBroadcast(&queue->cv);
+            }
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+              "v_networkQueueWrite",0,
+              "Failed to send message.");
+        result = FALSE;
     }
 
     c_mutexUnlock(&queue->mutex);
@@ -378,8 +412,10 @@ v_networkQueueTakeFirst(
         V_MESSAGE_STAMP(sample->message,readerDataAvailableTime); 
 
         /* Copy values */
-        *message = sample->message;
-        *entry = sample->entry;
+        *message = sample->message; /* no keep, transfer refCount */
+        sample->message = NULL; /* clean reference because of  refCount transfer */
+        *entry = sample->entry; /* no keep, transfer refCount */
+        sample->entry = NULL; /* clean reference because of refCount transfer */
         *sequenceNumber = sample->sequenceNumber;
         *sender = sample->sender;
         *sendTo = sample->sendTo;
@@ -389,6 +425,12 @@ v_networkQueueTakeFirst(
         
         /* Remove and free holder */
         queue->currentMsgCount--;
+
+        /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
+        v_networkQueueStatisticsAdd(numberOfSamplesTaken,queue->statistics);
+        v_networkQueueStatisticsCounterDec(numberOfSamplesWaiting,queue->statistics);
+
+
         currentMarker->firstSample = sample->next; /* no keep, transfer refCount */
         sample->next = queue->freeSamples;
         queue->freeSamples = sample;
@@ -430,6 +472,11 @@ v_networkQueueTakeAction(
         if (sample != NULL) {
             proceed = action(sample, arg);
             queue->currentMsgCount--;
+            /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
+            v_networkQueueStatisticsAdd(numberOfSamplesTaken,queue->statistics);
+            v_networkQueueStatisticsCounterDec(numberOfSamplesWaiting,queue->statistics);
+
+
             currentMarker->firstSample = sample->next; /* no keep, transfer refCount */
             sample->next = queue->freeSamples;
             queue->freeSamples = sample;

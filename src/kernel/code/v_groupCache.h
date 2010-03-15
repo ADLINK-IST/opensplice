@@ -19,6 +19,8 @@
 
 #define v_groupCache(o) (C_CAST((o),v_groupCache))
 
+#define v_groupCacheEmpty(_this) v_cacheEmpty(v_cache(_this))
+
 v_groupCache
 v_groupCacheNew (
     v_kernel kernel, 

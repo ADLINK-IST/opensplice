@@ -36,8 +36,9 @@
 #include "v_service.h"     /* for v_service() */
 #include "v_group.h"       /* for v_group */
 #include "v_topic.h"
-#include "v_domain.h"
+#include "v_partition.h"
 #include "v_event.h"
+#include "nw_security.h"
 
 #define NW_CHANNELUSER_BY_ID(controller, id) (controller->channelUsers[id])
 #define NW_SUBSCRIBER_NAME      "Networking subscriber"
@@ -135,6 +136,7 @@ onNewGroupReaderAction(
                                v_topicName(v_groupTopic(group)));
                 }
             }
+            v_networkReaderEntryFree(entry);
         } else {
             NW_TRACE_2(Test, 3,
                        "Ignoring partition %s, topic %s",
@@ -356,10 +358,14 @@ nw_controllerInitializeChannels(
                 if (attr != NULL) {
                     if (!u_cfAttributeStringValue(attr, &channelName)) {
                         NW_REPORT_ERROR("Controller Initialization", "Error in channel name");
-                        /* Memory leak here... */
+                        /* FIXME, Memory leak here... */
                         channelName = nw_stringDup("");
                     }
-                
+                    /* insert channel statistics here */
+
+
+
+
                     channelPath = os_malloc(
                         strlen(NWCF_ROOT(Channel)"[@" NWCF_ATTRIB_ChannelName "='']") +
                         strlen(channelName)+1);
@@ -367,9 +373,10 @@ nw_controllerInitializeChannels(
 
                     sendChannel = nw_bridgeNewSendChannel(controller->bridge, channelPath, onFatal, onFatalUsrData);
                     if (sendChannel) {
+
                         NW_CHANNELUSER_BY_ID(controller, nofChannelUsers) =
                             (nw_channelUser)nw_channelWriterNew(u_serviceGetName(controller->service),channelPath,
-                                         sendChannel, controller->reader);
+                                         sendChannel, controller->reader, iChannel);
                         nofChannelUsers++;
                         nofEntryReaders++;
                     }
@@ -377,7 +384,7 @@ nw_controllerInitializeChannels(
                     if (receiveChannel) {
                         NW_CHANNELUSER_BY_ID(controller, nofChannelUsers) =
                             (nw_channelUser)nw_channelReaderNew(channelPath,
-                                      receiveChannel, controller->reader);
+                                      receiveChannel, controller->reader, iChannel);
                         nofChannelUsers++;
                     }
                     os_free(channelPath);
@@ -453,13 +460,11 @@ nw_controllerSplitPartitionTopic(
     char **topicPart)
 {
     nw_bool result = FALSE;
-    nw_bool incorrectWildcard = FALSE;
     const char *partitionPos;
     os_address partitionLen;
     char *dotPos;
     const char *topicPos;
     os_uint32 topicLen;
-    char *wildcardPos;
     
     if (expression != NULL) {
         partitionPos = expression;
@@ -470,37 +475,12 @@ nw_controllerSplitPartitionTopic(
             *partitionPart = os_malloc(partitionLen + 1);
             strncpy(*partitionPart, partitionPos, partitionLen);
             (*partitionPart)[partitionLen] = '\0';
-            /* Check validity */
-            wildcardPos = strchr(*partitionPart, '*');
-            if (wildcardPos != NULL) {
-                incorrectWildcard = (wildcardPos != *partitionPart) ||
-                    (partitionLen != 1);
-            }
-            if (!incorrectWildcard) {
-                /* Copy topicpart */
-                topicPos = &(dotPos[1]);
-                topicLen = strlen(topicPos);
-                *topicPart = os_malloc(topicLen + 1);
-                strncpy(*topicPart, topicPos, topicLen);
-                (*topicPart)[topicLen] = '\0';
-                /* Check validity */
-                wildcardPos = strchr(*topicPart, '*');
-                if (wildcardPos != NULL) {
-                    incorrectWildcard = (wildcardPos != *topicPart) ||
-                        (topicLen != 1);
-                }
-                if (!incorrectWildcard) {
-                    result = TRUE;
-                } else {
-                    os_free(*partitionPart);
-                    *partitionPart = NULL;
-                    os_free(*topicPart);
-                    *topicPart = NULL;
-                }
-            } else {
-                os_free(*partitionPart);
-                *partitionPart = NULL;
-            }
+			topicPos = &(dotPos[1]);
+			topicLen = strlen(topicPos);
+			*topicPart = os_malloc(topicLen + 1);
+			strncpy(*topicPart, topicPos, topicLen);
+			(*topicPart)[topicLen] = '\0';
+			result = TRUE;
         }
     }
     
@@ -522,6 +502,8 @@ nw_controllerInitializePartitions(
     char *partitionName;
     u_cfAttribute attrConnected;
     c_bool connected;
+    u_cfAttribute attrSecurityPolicy;
+    char *securityPolicy;
 
     os_int32 nofMappings;
     os_int32 iMapping;
@@ -548,8 +530,23 @@ nw_controllerInitializePartitions(
         partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
     }
 
-    nw_partitionsSetGlobalPartition(controller->partitions, partitionAddress);
+    /* might return NULL */ 
+    securityPolicy = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
+        NWSecurityPolicy, NWCF_DEF(NWSecurityPolicy), NWCF_DEF(NWSecurityPolicy));
+
+    /* Compiling wihtout security feature, if configuration is declaring
+     * security profile we must tell user that it does not take any effect */
+    if (NW_SECURITY_DISABLED && securityPolicy) {
+        NW_REPORT_WARNING_1("initializing network",
+			    "Security feature not available, configured security profile  '%s' will not take effect on global partition",
+			  securityPolicy);
+	
+    }
+
+    nw_partitionsSetGlobalPartition(controller->partitions, partitionAddress, 
+				    securityPolicy);
     os_free(partitionAddress);
+    os_free(securityPolicy);
     
     partitionList = nw_configurationGetElements(NWCF_ROOT(NWPartition));
     nofPartitions = c_iterLength(partitionList);
@@ -562,7 +559,7 @@ nw_controllerInitializePartitions(
             if (attrName != NULL) {
                 u_cfAttributeStringValue(attrName, &partitionName);
             } else {
-                partitionName = nw_stringDup(partitionAddress);
+                partitionName = nw_stringDup(partitionAddress); /* CHECKME, who will free the string?*/
             }
             attrConnected = u_cfElementAttribute(partition, NWCF_ATTRIB(Connected));
             if (attrConnected != NULL) {
@@ -570,8 +567,28 @@ nw_controllerInitializePartitions(
             } else {
                 connected = NWCF_DEF(Connected);
             }
+
+	    attrSecurityPolicy = u_cfElementAttribute(partition, NWCF_ATTRIB(NWSecurityPolicy));
+	    
+	    if (attrSecurityPolicy!=NULL) {
+		u_cfAttributeStringValue(attrSecurityPolicy, &securityPolicy);
+	    } else {
+		/* no security policy, no protection */ 
+		securityPolicy = NULL; 
+	    }
+
+	    /* Compiling wihtout security feature, if configuration is
+	     * declaring security profile we must tell user that it does not
+	     * take any effect */
+	    if (NW_SECURITY_DISABLED && securityPolicy) {
+	    	NW_REPORT_WARNING_2("initializing network",
+				    "Security feature not available, configured security profile  '%s' will not take effect on network partition %s",
+				    securityPolicy, partitionName);
+		
+	    }
+
             nw_partitionsAddPartition(controller->partitions, iPartition,
-                partitionName, partitionAddress, connected);
+                partitionName, partitionAddress, securityPolicy, connected);
             NW_TRACE_3(Test, 2, "Read networking partition (%s,%s,%s)",
                 partitionName, partitionAddress, (connected?"Connected":"Disconnected"));
         } else {
@@ -647,6 +664,9 @@ nw_controllerInitialize(
         
     controller->service = service;
 
+    /* first, before all depending services are spawned */ 
+    NW_SECURITY_MODULE_INIT(service);
+    
     nw_controllerInitializePartitions(controller);
 
     subscriberQos = u_subscriberQosNew(NULL);
@@ -706,6 +726,9 @@ nw_controllerFinalize(
         nw_bridgeFree(controller->bridge);
         u_networkReaderFree(controller->reader);
         u_subscriberFree(controller->subscriber);
+
+        /* last, after all depending services have been terminated */ 
+        NW_SECURITY_MODULE_DEINIT();
     }
 }    
 

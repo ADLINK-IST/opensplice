@@ -16,6 +16,34 @@
 #include "nw_plugTypes.h"
 #include "nw_plugChannel.h"
 
+NW_CLASS(plugReceiveStatistics);
+
+NW_STRUCT(plugReceiveStatistics){
+/*
+    c_ulong numberOfPacketsSent;
+    c_ulong numberOfBytesSent;
+    c_ulong numberOfMessagesFragmented;
+    c_ulong numberOfMessagesPacked;
+    c_ulong numberOfKnownNodes;
+	c_ulong numberOfBytesResent;
+	c_ulong numberOfPacketsResent;
+	c_ulong numberOfBytesInResendBuffer;
+	c_ulong numberOfPacketsInResendBuffer;
+ receive*/
+	c_ulong numberOfMessagesReceived;
+	c_ulong numberOfBytesReceived;
+	c_ulong numberOfPacketsReceived;
+	c_ulong numberOfPacketsLost;
+
+	c_ulong numberOfMessagesDelivered;
+	c_ulong numberOfBytesDelivered;
+	c_ulong numberOfMessagesNotInterested;
+	c_ulong numberOfBytesNotInterested;
+	c_ulong nofUsedPacketBuffers;
+	c_ulong nofFreePacketBuffers;
+
+};
+
 NW_CLASS(nw_plugReceiveChannel);
 
 /* Note the symmetry between the read and write functions:
@@ -42,7 +70,8 @@ c_bool         nw_plugReceiveChannelMessageStart(
                    nw_plugChannel channel,
                    nw_data *data,
                    nw_length *length,
-                   nw_address *senderAddress);
+				   nw_senderInfo sender,
+                   plugReceiveStatistics prs);
                    
 /* Non-blocking call returning the remaining part of a message if fragmentation
  * has occurred over the previous buffer */
@@ -58,7 +87,8 @@ void           nw_plugReceiveChannelMessageIgnore(
 /* Non-blocking call freeing the resources used for the message retrieved
  * with the MessageStart function */
 void           nw_plugReceiveChannelMessageEnd(
-                   nw_plugChannel channel);
+                   nw_plugChannel channel,
+                   plugReceiveStatistics prs);
 
 /* Wake up from the wait; this can be called for any reason. As a result,
  * the nw_plugReceiveChannelMessageStart will return with the value FALSE */

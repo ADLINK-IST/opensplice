@@ -32,7 +32,7 @@ public class MetaConfiguration {
     private double version;
     private MetaElement rootElement;
     private ArrayList<MetaElement> services;
-    private static final double LATEST_VERSION = 4.1;
+    private static final double LATEST_VERSION = 5.1;
     
     private MetaConfiguration(float version, MetaElement rootElement, ArrayList<MetaElement> services){
         this.version = version;

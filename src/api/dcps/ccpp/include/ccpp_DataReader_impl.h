@@ -15,12 +15,15 @@
 #include "ccpp.h"
 #include "ccpp_Entity_impl.h"
 #include "ccpp_Subscriber_impl.h"
+#include "ccpp_DataReaderView_impl.h"
 #include "gapi.h"
 #include "gapi_loanRegistry.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 namespace DDS
 {
+    class DataReaderView_impl;
+
     class OS_DCPS_API DataReader_impl
         : public virtual ::DDS::DataReader,
           public ::DDS::Entity_impl
@@ -247,6 +250,27 @@ namespace DDS
             ::DDS::PublicationBuiltinTopicData & publication_data,
             ::DDS::InstanceHandle_t publication_handle
         ) THROW_ORB_EXCEPTIONS;
+
+        virtual ::DDS::DataReaderView_ptr
+        create_view (
+            const ::DDS::DataReaderViewQos & qos
+        ) THROW_ORB_EXCEPTIONS;
+
+        virtual ::DDS::ReturnCode_t
+        delete_view (
+            ::DDS::DataReaderView_ptr a_view
+        ) THROW_ORB_EXCEPTIONS;
+
+        virtual ::DDS::ReturnCode_t
+        get_default_datareaderview_qos (
+          ::DDS::DataReaderViewQos & qos
+        ) THROW_ORB_EXCEPTIONS;
+
+        virtual ::DDS::ReturnCode_t
+        set_default_datareaderview_qos (
+          const ::DDS::DataReaderViewQos & qos
+        ) THROW_ORB_EXCEPTIONS;
+
     };
     typedef DataReader_impl* DataReader_impl_ptr;
 

@@ -27,6 +27,39 @@
     <h2><a name="highlights">Release Highlights</a></h2>
 
     <p>
+       OpenSplice DDS V4.3.1 contains some minor new features:
+       <ul>
+         <li>Protection from random byte attacks on the networking service.
+            <p>
+             In order to protect OpenSplice network packets from malicious 
+             attack the CrcCheck(cyclic redundancy check) configuration item 
+             has been added. CRCs are specifically designed to protect against 
+             common types of errors on communication channels. When enabled the 
+             integrity of delivered network packets from one DDS process to 
+             another is assured.
+            </p>
+         </li>
+         <li>Stopping ospl using signals.
+            <p>
+             OpenSplice DDS domain service can also be stopped by sending a
+             signal to the ospl process, assuming the process was started
+             using the '-f' option. See the Deployment Guide for more information.
+            </p>
+         </li>
+         <li>Character array as a key (not available on Windows)   
+            <p>
+            By default OpenSplice DDS does not support using a character array
+            as a key. Using an (character) array as a key field is not desirable.
+            However from a modeling perspective or simply due to a legacy data
+            model this may be required. To facilitate these scenarios OpenSplice
+            DDS introduces the cats pragma which allows for character arrays to
+            be used as a key. See the PreProcessor user manual for more information.
+            </p>
+         </li>
+       </ul>
+    </p>       
+
+    <p>
        OpenSplice DDS V4.3 contains some significant new features:
        <ul>
          <li>Support for Unicast
@@ -67,7 +100,7 @@
          the node should be restarted or nothing should be done. The following 
          exit codes are supported:
             <ol>
-               <li> 0 : normal termination as result of  ‘OSPL stop’.
+               <li> 0 : normal termination as result of OSPL stop.
                <li> -1: a recoverable error occurred. The system has encountered
                a runtime error and has terminated. A restart of the system is 
                possible. For examples, the system ran out of resources.
@@ -86,8 +119,541 @@
         </ul>
     </p>       
     <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
-    <p>
-
+    <p><h3>4.3.2</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4896<br/>
+            dds529
+          </td>
+          <td>
+            <b>Inconsistent fragments size settings leads to crash of networking service.</b> 
+            <p>
+              Inconsistent fragments settings in the configuration of OpenSplice
+              lead to deserialisation errors and finally a crash of the 
+              networking service.<br/>
+              <b>Solution:</b>When a message is received with a different 
+              fragment size that the receiving side a warning will be reported 
+              once per channel in the ospl-info log and the message will be 
+              discarded.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            5397<br>
+            dds740
+          </td>
+          <td>
+            <b>Coredump in dataReader::_narrow function</b> 
+            <p>
+              A Listener on a DataReader could already trigger before the 
+              language specific entity was created, causing a NULL-pointer
+              to be passed as an argument to the listener call-back.<br/>
+              <b>Solution: </b>The entity is internally created first and 
+              enabled after that to prevent the listener from triggering too
+              early.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6948<br>
+            dds1962
+          </td>
+          <td>
+            <b>Performance issue when reading large number of samples</b> 
+            <p>
+              The read time per sample increases dramatically when reading
+              a large number of samples.<br/>
+              <b>Solution: </b>An internal algorithm had a quadratic 
+              complexity and has been re-written.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6962<br>
+            dds1967
+          </td>
+          <td>
+            <b>Loosing data when communicating on the same host</b> 
+            <p>
+              Sent data can get lost unexpectedly due to an error in the
+              resend mechanism.<br/>
+              <b>Solution: </b>The DataWriter now 'remembers' whether a sample 
+              has been sent before storing it in its history or it has been 
+              stored without even trying to send it. In case it has never been 
+              sent before, the 'regular' delivery path is used instead of the 
+              slightly different path used for 're-sending'.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1970
+          </td>
+          <td>
+            <b>Samples in transient store are always stored ordered by source timestamp</b> 
+            <p>
+              Samples that are published with transient durability should be stored 
+              in the transient store as specified in the PresentationQoSPolicy of 
+              the matching Topic. Right now they are always stored BY_SOURCE_TIMESTAMP, 
+              but the Topic could also ask for BY_DESTIONATION_TIMESTAMP.<br/>
+              <b>Solution: </b>The durability service now stores data according to
+              the PresentationQoSPolicy of the Topic.             
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1974
+          </td>
+          <td>
+            <b>Ospl start on Windows : starts a second daemon if one already exists</b> 
+            <p>
+              "ospl start" on windows will not halt if a matching DomainName 
+              already exists (as done on Unix).  This can lead to lots of DBF 
+              files remaining, and spliced's that cannot be stopped without 
+              TaskManager.<br/>
+              <b>Solution: </b>ospl now checks whether a Domain with this name
+              is already running before starting it.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1976
+          </td>
+          <td>
+            <b>Osplconf error with standard ddsi xml file on distribution</b> 
+            <p>
+              osplconf gives an error message about the port being greater 
+              than 32000, but user ports go all the way to 62000+.<br/>
+              <b>Solution: </b>The osplconf tool has been modified to accept
+              ports up to 65535.             
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1980
+          </td>
+          <td>
+            <b>Incorrect networking-socket(s) creation for unicast connections</b> 
+            <p>
+              When creating a GlobalPartition that exists solely of 
+              unicast addresses, the TTL and DontRoute options can not be set 
+              correctly.<br/>
+              <b>Solution: </b>The DontRoute and TTL behaviour can be configured 
+              in the configuration file now and won't be set to True always.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1981
+          </td>
+          <td>
+            <b>Osplconf: error in configuring discovery enabled status</b> 
+            <p>
+              the 'osplconf' tool assumed that there's an 'active' boolean element 
+              to enable/disable discovery whereas in the networking service, there 
+              is no such flag but instead similar to channels an 'enabled' boolean 
+              attribute that should be controllable by the configurator.<br/>
+              <b>Solution: </b>The enabled attribute has been added to the 
+              'Discovery' element and the 'Active' element of 'Discovery' 
+              has been removed from the configurator.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1982
+          </td>
+          <td>
+            <b>Networking & configurator: DontRoute/TTL issues</b> 
+            <p>
+              The DontRoute setting was not interpreted as a true/false boolean, 
+              but as a 0/1 integer (where the configurator rightfully interprets 
+              it as true/false) and the configurator tool didn't support setting 
+              the DontRoute nor TimeToLive options for Discovery. <br/>
+              <b>Solution: </b>The DontRoute option is now interpreted as boolean
+              by the networking service and The DontRoute and TimeToLive options 
+              have been added as elements under 'Sending' in the configurator tool.
+            </p>
+          </td>
+        </tr>        
+        <tr>
+          <td>
+            dds1983
+          </td>
+          <td>
+            <b>The networking service uses incorrect defaults for 'reactivity-checking' and 'topology-checking'</b> 
+            <p>
+              The default networking-settings for 'channel reactivity' and 
+              'discovery topology' were incorrect in the sense that a topology 
+              change was detected in 6 seconds (1000 msec interval * 6 death-detection) 
+              whereas the reactivity-check for channels was set to 3 seconds 
+              (10 msec resolution * 100 Maxretries * 3 recovery-factor). 
+              In combination with the recently introduced reconnect feature this 
+              could lead to unstable reconnect-behavior.<br/>
+              <b>Solution: </b>The default value for the interval for discovery
+              has been changed to 3 Hz. Therefore topology changes are detected
+              in 2 seconds(333 msec interval * 6 death-dectection).
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1987
+          </td>
+          <td>
+            <b>Wrong message when shmat returns -1.</b> 
+            <p>
+              A wrong message is printed when attaching to shared memory
+              fails and only the error code is printed.<br/>
+              <b>Solution: </b>The message has been corrected and next to the
+              error code, the associated error message is printed as well.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1989
+          </td>
+          <td>
+            <b>Problem comparing keys when using char array as topic key (using #pragma cats) because of '\0' char.</b> 
+            <p>
+              When there is no '\0' terminator in the user defined character array,
+              the internal string representation was not '\0' terminated. Therefore
+              reading and comparing the string was failing.<br/>
+              <b>Solution: </b>If there's no '\0' terminator in the character
+              array, it is still appended to the internal string. The complete
+              behaviour is described in the OpenSplice IDL pre-processor
+              manual in section 1.5.2<br/>
+            </p>
+          </td>
+        </tr>     
+        <tr>
+          <td>
+            dds1992
+          </td>
+          <td>
+            <b>Random byte attack / CrcCheck payload size crash.</b> 
+            <p>
+              The networking service died if the message had less than 20 bytes 
+              UDP payload and started with 'SPL1'..<br/>
+              <b>Solution:</b>The networking service has been made more robust
+              to prevent it from crashing and simply ignoring this data.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2004
+          </td>
+          <td>
+            <b>DLRL DCG doesn't generate correct C++ code for Maps and Sets.</b> 
+            <p>
+              The DLRL C++ code generation w.r.t. Maps and Sets was incorrect. 
+              It generated a getter and setter for all attributes including the 
+              Map and Set attributes, but the return type for Maps and Sets 
+              was not the actual type as specified in the XML mapping file.<br/>
+              <b>Solution:</b>The DCG has been changed to generate return
+              types for Map/Set types as specified in the XML mapping file by
+              the user.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6994<br/>
+            dds2006
+          </td>
+          <td>
+            <b>Multicast network partitions only work if global partition is also multicast.</b> 
+            <p>
+              Network partitions that are configured as multicast didn't work if 
+              the global partition wasn't multicast also.<br/>
+              <b>Solution:</b>The networking service now supports multicast on
+              network partitions even if the global partition isn't configured 
+              with multicast.
+            </p>
+          </td>
+        </tr>
+     </table>
+     <p><h3>4.3.1</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds1345
+          </td>
+          <td>
+            <b>Documentation update</b> 
+            <p>
+               Networking socket option for DontRoute now added to the Deployment Guide.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1676
+          </td>
+          <td>
+            <b>Robustness fixes for windows platform</b> 
+            <p>
+               Better handling of processes and threads to improve robustness.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6750<br>
+            dds1752
+          </td>
+          <td>
+            <b>Correction to DeathDetectionCount definition in Deployment manual.</b> 
+            <p>
+               The deployment manual stated valid values for DeathDetectionCount
+               are 1-6.  The valid values are 1-infinity.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6792<br>
+            dds1797
+          </td>
+          <td>
+            <b>Character array as a key</b>
+            <p>
+             See Release Highlights above. </p> 
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1845
+          </td>
+          <td>
+            <b>VxWorks kernels for mcpn805 do not correctly pick up the netmask from
+            the bootloaded</b> 
+            <p>
+             <b>Solution: </b>See the known issues on a workaround for this 
+             WindRiver issue.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1864
+          </td>
+          <td>
+            <b>mmstat now supported on VxWorks 6</b> 
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1872
+          </td>
+          <td>
+            <b>Protection from random byte attacks on the networking service</b> 
+            <p>
+             See Release Highlights above. </p> 
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1888
+          </td>
+          <td>
+            <b>Problem with the stability of the durability service.</b> 
+            <p>The durability service crashes on deserialization of a NULL sequence. A
+               NULL sequence is not allowed as it should have been deserialized as an 
+               empty sequence.<br/>
+               <i>Solution:</i>Fixed the error that deserialized an empty sequence into a NULL pointer to 
+               actually create an empty sequence.
+           </p>
+         </td>
+        </tr>     
+        <tr>
+          <td>
+            6866/6865<br>
+            dds1905/dds1923/dds1924
+          </td>
+          <td>
+            <b>Stopping ospl using signals</b> 
+            <p>
+             See Release Highlights above. </p> 
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1911
+          </td>
+          <td>
+            <b>Location of OpenSplice temporary files</b>
+            <p>
+             User can now configure the location of OpenSplice temporary files using the OSPL_TEMP variable.  See Deployment Guide for more information.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6869<br>
+            dds1912
+          </td>
+          <td>
+            <b>Failure to restore reliable channel after networking service crash</b>
+            <p>Not all administration in shared memory was cleaned up when the
+               networking service crashed, causing a restart of the service to fail.<br/>
+             <b>Solution: </b>An additional signal handler is installed for 
+             all potentially raised signals when crashing. This handler cleans
+             up all administration in shared memory.<br/><br/> 
+             Note that for this fix to work when using the Java DDS API on POSIX-compliant platforms, 
+             the full path to the jsig library (libjsig.so) must be set in the LD_PRELOAD environment variable
+             before starting an application. This library is part of your Java distribution
+             (typically located in <JRE_HOME>/lib/<ARCH>/libjsig.so). See section 1.3 of 
+             the "DCPS Java Reference guide" for more information</i></p> 
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6938<br>
+            dds1954
+          </td>
+          <td>
+            <b>Reliability backlog mechanism in the networking service is incorrect.</b>
+            <p>The mechanism didn't trigger the correct behaviour in all situations.<br/>
+             <b>Solution:</b>The algorithm that implements the mechanism has been
+             corrected.</i></p> 
+          </td>
+        </tr>
+      </table>
+     <p>
+     <p><h3>4.3p1</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            6803<br>
+            dds1810
+          </td>
+          <td>
+            <b>Service 'networking' DIED problem.</b> 
+            <p><i>The networking service sometimes crashes when it re-connects
+            to a remote node (only when configured to allow re-connections).<br/>
+             <b>Solution: </b>Fixed algorithm in networking service that 
+             handles re-connecting nodes.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1842
+          </td>
+          <td>
+            <b>Zombie-processes after a service that has died is being restarted.</b> 
+            <p><i>The exit status of a died service was not retrieved by 
+            the splicedaemon before restarting it.<br/>
+            <b>Solution: </b>Made the splicedaemon retrieve the exit status
+            from a service before restarting it.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1863
+          </td>
+          <td>
+            <b>Reconnect doesn't work under high-load.</b> 
+            <p><i>The networking service sometimes crashes when it re-connects
+            to a remote node (only when configured to allow re-connections).<br/>
+             <b>Solution: </b>Fixed algorithm in networking service that 
+             handles re-connecting nodes.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1873
+          </td>
+          <td>
+            <b>VxWorks 66 applications sometimes don't terminate.</b> 
+            <p><i>There is an issue with 'phtread_join' on VxWorks6.6 that
+            has been acknowledged by WindRiver.<br/> 
+            <b>Solution: </b>A workaround to prevent the issue from
+            occurring has been implemented.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6838<br/>
+            dds1878
+          </td>
+          <td>
+            <b>Crash when reading InternalFlight.</b> 
+            <p><i>The IDL pre-processor generated wrong code for copying
+            unions with an array branch.<br/>
+            <b>Solution: </b>Fixed the IDL pre-processor C++ code 
+            generation for copying a union branch with an array.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6850<br/>
+            dds1889
+          </td>
+          <td>
+            <b>Deadlock in OpenSplice services or application.</b> 
+            <p><i>Due to an error in the order in which object were locked, the
+            services or application could deadlock.<br/>
+            <b>Solution: </b>An error in the locking strategy in the kernel 
+            has been fixed.</i></p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1891
+          </td>
+          <td>
+            <b>Unnecessary memset causes performance degradation.</b> 
+            <p><i>The DLRL unnecessarily did a memset in DLRL_Exception_init<br/> 
+            <b>Solution: </b>The memset has been removed to improve DLRL 
+            performance.</i></p>
+          </td>
+        </tr>
+         <tr>
+          <td>
+            6851<br/>
+            dds1895
+          </td>
+          <td>
+            <b>Missing DDS_DCPSBVLSeq type declaration.</b> 
+            <p><i>IDL pre-processor output for stand-alone C++ did not compile
+            if the IDL contained a complex bounded sequence.
+            <br/> 
+            <b>Solution: </b>The missing BVL.h file has been made available in the 
+            distribution and the missing include statement has been added to
+            the existing sacpp_mapping.h file.</i></p>
+          </td>
+        </tr>
+      </table>
      <p>
        <h3>4.3</h3>
         <table width="90%">
@@ -380,6 +946,40 @@
      
     <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
      <p>
+       <h3>4.3.1</h3>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds1619
+          </td>
+          <td>
+            <b>Extension of dds1631 (below) with new ExtDomainParticipantListener and change to 
+            ExtTopicListener</b>
+             <p><i>Interface implemented, but no implementation code. This will be 
+             implemented in OpenSplice DDS v5. Only supported for CORBA cohabitation APIs in Java and C++.
+             <br>
+             <code>
+             interface ExtTopicListener : TopicListener &#123;<br> 
+                void on_all_data_disposed ( in Topic): <br>
+             &#125; ; <br> <br>
+             interface ExtDomainParticipantListener : ExtTopicListener, DomainParticipantListener &#123;<br> 
+             &#125; ;
+             </code>
+             </i></p>
+          </td>
+          </td>
+        </tr>
+     </table>
+    </p>
+     <p>
        <h3>4.3</h3>
         <table width="90%">
         <tr>
@@ -415,7 +1015,7 @@
             dds1631
           </td>
           <td>
-            <b>Addition of new interface EXTTopicListener</b>
+            <b>Addition of new interface ExtTopicListener</b>
              <p><i>Interface implemented, but no implementation code. This will be 
              implemented in a future release.
              <br>

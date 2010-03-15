@@ -18,18 +18,21 @@ package org.opensplice.dds.dcps;
  */
 public abstract class TypeSupportImpl extends SajSuperClass implements DDS.TypeSupport {
     private String dataReaderClass = null;
+    private String dataReaderViewClass = null;
     private String dataWriterClass = null;
     private String constructorSignature = null;
     private String orgPName = null;
     private String tgtPName = null;
 
     public TypeSupportImpl( String dataReaderClass,
+                            String dataReaderViewClass,
                             String dataWriterClass,
                             String constructorSignature,
                             String orgPName,
                             String tgtPName)
     {
         this.dataReaderClass = dataReaderClass;
+        this.dataReaderViewClass = dataReaderViewClass;
         this.dataWriterClass = dataWriterClass;
         this.constructorSignature = constructorSignature;
         this.orgPName = orgPName;

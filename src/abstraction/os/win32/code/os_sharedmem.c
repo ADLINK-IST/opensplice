@@ -122,10 +122,10 @@ static const char key_file_prefix[] = "osp";
  *         to the identified shared memory
  *
  * \b os_findKeyFile tries to find the key file related to \b name
- * in the \b /tmp directory. The key files are prefixed with \b
- * /tmp/sp2v3key_.
+ * in the \b temporary directory. The key files are prefixed with \b
+ * /<temporary directory>/sp2v3key_.
  *
- * \b os_findKeyFile first opens the directory \b /tmp by calling
+ * \b os_findKeyFile first opens the temporary directory by calling
  * \b opendir. Then it reads all entries in serach for  any entry
  * that starts with the name \b sp2v3key_ by reading the entry with
  * \b readdir. If the a matching entry is found, it opens the file
@@ -150,13 +150,7 @@ os_findKeyFile(
     int len;
 
     if (key_file_path == NULL) {
-	key_file_path = getenv("OSPL_TEMP");
-    }
-    if (key_file_path == NULL) {
-	key_file_path = getenv("TEMP");
-    }
-    if (key_file_path == NULL) {
-	key_file_path = getenv("TMP");
+        key_file_path = os_getTempDir();
     }
     
     if (key_file_path == NULL) {

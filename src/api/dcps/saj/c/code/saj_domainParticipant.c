@@ -78,10 +78,19 @@ SAJ_FUNCTION(jniCreatePublisher)(
         gapiPublisher = gapi_domainParticipant_create_publisher(participant, pubQos, listener, (gapi_statusMask)jmask);
 
         if (gapiPublisher != GAPI_OBJECT_NIL){
+            gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             rc = saj_construct_java_object(env,  PACKAGENAME "PublisherImpl",
                                             (PA_ADDRCAST)gapiPublisher,
                                             &javaPublisher);
 
+            if(dpqos){
+                if(gapi_domainParticipant_get_qos(participant, dpqos) == GAPI_RETCODE_OK){
+                    if(dpqos->entity_factory.autoenable_created_entities) {
+                        gapi_entity_enable(gapiPublisher);
+                    }
+                }
+                gapi_free(dpqos);
+            }
 
         } else if(listener != NULL){
             saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
@@ -166,9 +175,19 @@ SAJ_FUNCTION(jniCreateSubscriber) (
                                                 participant, gapiSubscriberQos,
                                                 listener, (gapi_statusMask)jmask);
         if(gapiSubscriber != GAPI_OBJECT_NIL){
+            gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             rc = saj_construct_java_object(env, PACKAGENAME "SubscriberImpl",
                                               (PA_ADDRCAST)gapiSubscriber,
                                               &javaSubscriber);
+
+            if(dpqos){
+                if(gapi_domainParticipant_get_qos(participant, dpqos) == GAPI_RETCODE_OK){
+                    if(dpqos->entity_factory.autoenable_created_entities) {
+                        gapi_entity_enable(gapiSubscriber);
+                    }
+                }
+                gapi_free(dpqos);
+            }
         } else if(listener != NULL){
             saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
         }

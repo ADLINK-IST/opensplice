@@ -133,24 +133,31 @@ v_dataViewInstanceNew(
         c_free(subtype);
     }
 #endif
-    v_object(instance)->kernel = v_objectKernel(dataView);
-    v_objectKind(instance) = K_DATAVIEWINSTANCE;
-    instance->dataView = (c_voidp)dataView;
+    if (instance) {
+        v_object(instance)->kernel = v_objectKernel(dataView);
+        v_objectKind(instance) = K_DATAVIEWINSTANCE;
+        instance->dataView = (c_voidp)dataView;
 
-    viewSample = v_dataViewSampleNew(instance,sample);
-    v_dataViewInstanceTemplate(instance)->sample = viewSample;
-    viewSample->next = NULL;
-    viewSample->prev = NULL;
-    v_readerSampleAddViewSample(sample,viewSample);
-    instance->sampleCount = 1;
+        viewSample = v_dataViewSampleNew(instance,sample);
+        if (viewSample) {
+            v_dataViewInstanceTemplate(instance)->sample = viewSample;
+            viewSample->next = NULL;
+            viewSample->prev = NULL;
+            v_readerSampleAddViewSample(sample,viewSample);
+            instance->sampleCount = 1;
 
-    v_stateSet(instance->instanceState,L_NEW);
-    v_stateClear(v_readerSample(viewSample)->sampleState,L_READ);
+            v_stateSet(instance->instanceState,L_NEW);
+            v_stateClear(v_readerSample(viewSample)->sampleState,L_READ);
 
-    assert(C_TYPECHECK(instance,v_dataViewInstance));
-    v_dataViewNotifyDataAvailable(dataView, viewSample);
-
-    CHECK_INSTANCE(instance);
+            assert(C_TYPECHECK(instance,v_dataViewInstance));
+            v_dataViewNotifyDataAvailable(dataView, viewSample);
+        }
+        CHECK_INSTANCE(instance);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_dataViewInstanceNew",0,
+                  "Failed to allocate v_dataViewInstancem");
+    }
 
     return instance;
 }
@@ -224,23 +231,24 @@ v_dataViewInstanceWrite (
     CHECK_INSTANCE(instance);
    
     viewSample = v_dataViewSampleNew(instance,sample);
-    viewSample->next = NULL;
+    if (viewSample) {
+        viewSample->next = NULL;
 
-    prev = &v_dataViewInstanceTemplate(instance)->sample;
-    next = NULL;
+        prev = &v_dataViewInstanceTemplate(instance)->sample;
+        next = NULL;
 
-    while (*prev) {
-        next = *prev;
-        prev = &(*prev)->prev;
-    }
-    *prev = viewSample;
-    viewSample->next = next;
+        while (*prev) {
+            next = *prev;
+            prev = &(*prev)->prev;
+        }
+        *prev = viewSample;
+        viewSample->next = next;
     
-    v_readerSampleAddViewSample(sample,viewSample);
-    instance->sampleCount++;
-    assert(c_refCount(viewSample) == 1);
-    v_dataViewNotifyDataAvailable(v_dataView(instance->dataView), viewSample);
-
+        v_readerSampleAddViewSample(sample,viewSample);
+        instance->sampleCount++;
+        assert(c_refCount(viewSample) == 1);
+        v_dataViewNotifyDataAvailable(v_dataView(instance->dataView), viewSample);
+    }
     CHECK_INSTANCE(instance);
     return V_WRITE_SUCCESS;   
 }

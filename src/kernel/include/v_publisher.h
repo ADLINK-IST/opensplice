@@ -62,22 +62,22 @@ v_publisherEnable (
 OS_API void
 v_publisherPublish (
     v_publisher _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API void
 v_publisherUnPublish (
     v_publisher _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API c_iter
-v_publisherLookupDomains (
+v_publisherLookupPartitions (
     v_publisher _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API c_bool
-v_publisherCheckDomainInterest (
+v_publisherCheckPartitionInterest (
     v_publisher _this,
-    v_domain domain);
+    v_partition partition);
 
 OS_API void
 v_publisherAddWriter (

@@ -28,6 +28,8 @@ C_STRUCT(c_field) {
 };
 
 static c_type _c_field_t = NULL;
+static c_collectionType _c_fieldPath_t = NULL;
+static c_collectionType _c_fieldRefs_t = NULL;
 
 c_type
 c_field_t (
@@ -37,6 +39,34 @@ c_field_t (
         _c_field_t = c_resolve(_this,"c_field");
     }
     return _c_field_t;
+}
+
+c_collectionType
+c_fieldPath_t (
+    c_base _this)
+{
+    if (_c_fieldPath_t == NULL) {
+        _c_fieldPath_t = c_collectionType(
+                             c_metaArrayTypeNew(c_metaObject(_this),
+                                                "C_ARRAY<c_base>",
+                                                c_getMetaType(_this,M_BASE),
+                                                0));
+    }
+    return _c_fieldPath_t;
+}
+
+c_collectionType
+c_fieldRefs_t (
+    c_base _this)
+{
+    if (_c_fieldRefs_t == NULL) {
+        _c_fieldRefs_t = c_collectionType(
+                             c_metaArrayTypeNew(c_metaObject(_this),
+                                                "C_ARRAY<c_address>",
+                                                c_address_t(_this),
+                                                0));
+    }
+    return _c_fieldRefs_t;
 }
 
 void
@@ -99,83 +129,120 @@ c_fieldNew (
     c_base base;
 
     if ((fieldName == NULL) || (type == NULL)) {
+        OS_REPORT(OS_ERROR,
+                  "c_fieldNew failed",0,
+                  "illegal parameter");
         return NULL;
     }
-    o = NULL;
 
     base = c__getBase(type);
+    if (base == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "c_fieldNew failed",0,
+                  "failed to retreive base");
+        return NULL;
+    }
+
     nameList = c_splitString(fieldName,".");
     length = c_iterLength(nameList);
+    field = NULL;
 
-    offset = 0;
-    refsList = NULL;
-    path = c_arrayNew(c_getMetaType(base,M_BASE),length);
-    for (n=0;n<length;n++) {
-        name = c_iterTakeFirst(nameList);
-        o = c_metaResolve(c_metaObject(type),name);
-        os_free(name);
-        if (o == NULL) {
+    if (length > 0) {
+        o = NULL;
+        offset = 0;
+        refsList = NULL;
+//        path = c_arrayNew(c_getMetaType(base,M_BASE),length);
+        path = c_newArray(c_fieldPath_t(base),length);
+        if (path) {
+            for (n=0;n<length;n++) {
+                name = c_iterTakeFirst(nameList);
+                o = c_metaResolve(c_metaObject(type),name);
+                os_free(name);
+                if (o == NULL) {
+                    c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
+                    c_iterFree(nameList);
+                    c_iterFree(refsList);
+                    c_free(path);
+                    return NULL;
+                }
+                path[n] = o;
+                switch (c_baseObject(o)->kind) {
+                case M_ATTRIBUTE:
+                case M_RELATION:
+                    type = c_property(o)->type;
+                    offset += c_property(o)->offset;
+                break;
+                case M_MEMBER:
+                    type = c_specifier(o)->type;
+                    offset += c_member(o)->offset;
+                break;
+                default:
+                    c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
+                    c_iterFree(nameList);
+                    c_iterFree(refsList);
+                    c_free(path);
+                    return NULL;
+                }
+                switch (c_baseObject(type)->kind) {
+                case M_INTERFACE:
+                case M_CLASS:
+                case M_COLLECTION:
+                    /*Longs are inserted in an iterator? Explanation please...*/
+                    refsList = c_iterInsert(refsList,(c_voidp)offset);
+                    offset = 0;
+                break;
+                default:
+                break;
+                }
+            }
+            if (offset > 0) {
+                refsList = c_iterInsert(refsList,(c_voidp)offset);
+            }
+
+
+            field = c_new(c_field_t(base));
+            field->name = c_stringNew(base,fieldName);
+            field->path = path;
+            field->type = c_keep(type);
+            field->kind = c_metaValueKind(o);
+            field->refs = NULL;
+
+            if (refsList) {
+                length = c_iterLength(refsList);
+//                field->refs = c_arrayNew(c_address_t(base),length);
+                field->offset = 0;
+                if (length > 0) {
+                    field->refs = c_newArray(c_fieldRefs_t(base),length);
+                    if (field->refs) {
+                        for (n=(length-1);n>=0;n--) {
+                            field->refs[n] = c_iterTakeFirst(refsList);
+                        }
+                    } else {
+                        OS_REPORT(OS_ERROR,
+                                  "c_fieldNew failed",0,
+                                  "failed to allocate field->refs array");
+                        c_free(field);
+                        field = NULL;
+                    }
+                }
+                c_iterFree(refsList);
+            } else {
+                field->offset = offset;
+            }
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "c_fieldNew failed",0,
+                      "failed to allocate field->path array");
             c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
             c_iterFree(nameList);
-            c_iterFree(refsList);
-            c_free(path);
-            return NULL;
         }
-        path[n] = o;
-        switch (c_baseObject(o)->kind) {
-        case M_ATTRIBUTE:
-        case M_RELATION:
-            type = c_property(o)->type;
-            offset += c_property(o)->offset;
-        break;
-        case M_MEMBER:
-            type = c_specifier(o)->type;
-            offset += c_member(o)->offset;
-        break;
-        default:
-            c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
-            c_iterFree(nameList);
-            c_iterFree(refsList);
-            c_free(path);
-            return NULL;
-        }
-        switch (c_baseObject(type)->kind) {
-        case M_INTERFACE:
-        case M_CLASS:
-        case M_COLLECTION:
-            /*Longs are inserted in an iterator? Explanation please...*/
-            refsList = c_iterInsert(refsList,(c_voidp)offset);
-            offset = 0;
-        break;
-        default:
-        break;
-        }
-    }
-    if (offset > 0) {
-        refsList = c_iterInsert(refsList,(c_voidp)offset);
-    }
-
-    c_iterFree(nameList);
-
-    field = c_new(c_field_t(base));
-    field->name = c_stringNew(base,fieldName);
-    field->path = path;
-    field->type = c_keep(type);
-    field->kind = c_metaValueKind(o);
-
-    if (refsList) {
-        length = c_iterLength(refsList);
-        field->refs = c_arrayNew(c_address_t(base),length);
-        for (n=(length-1);n>=0;n--) {
-            field->refs[n] = c_iterTakeFirst(refsList);
-        }
-        c_iterFree(refsList);
-        field->offset = 0;
+        c_iterFree(nameList);
     } else {
-        field->refs = NULL;
-        field->offset = offset;
+        OS_REPORT_1(OS_ERROR,
+                    "c_fieldNew failed",0,
+                    "failed to process field name <%s>",
+                    fieldName);
     }
-
     return field;
 }
 
@@ -198,7 +265,8 @@ c_fieldConcat (
     field->type = c_keep(tail->type);
     field->kind = tail->kind;
 
-    field->path = c_arrayNew(c_getMetaType(base,M_BASE),len1 + len2);
+//    field->path = c_arrayNew(c_getMetaType(base,M_BASE),len1 + len2);
+    field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
     for (i=0;i<len1;i++) {
         field->path[i] = c_keep(head->path[i]);
     }
@@ -212,7 +280,8 @@ c_fieldConcat (
     totlen = len1 + len2;
     if (totlen > 0) {
         field->offset = 0;
-        field->refs = c_arrayNew(c_long_t(base),totlen);
+//        field->refs = c_arrayNew(c_long_t(base),totlen);
+        field->refs = c_newArray(c_fieldRefs_t(base),totlen);
         if (len1) {
             for (i=0;i<len1;i++) {
                 field->refs[i] = head->refs[i];
@@ -397,7 +466,13 @@ c_fieldValue(
             }
             p = *(c_voidp *)p;
         }
-        p = C_DISPLACE(p,refs[n]);
+        if(p == NULL){
+            v.kind = V_UNDEFINED;
+            return v;
+        }
+        else {
+            p = C_DISPLACE(p,refs[n]);
+        }
     } else {
         p = C_DISPLACE(p,field->offset);
     }

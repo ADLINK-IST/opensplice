@@ -10,8 +10,8 @@
  *
  */
 #include "gapi_subscriber.h"
-#include "gapi_domainParticipant.h"
 #include "gapi_domainParticipantFactory.h"
+#include "gapi_domainParticipant.h"
 #include "gapi_map.h"
 #include "gapi_domainEntity.h"
 #include "gapi_structured.h"
@@ -153,9 +153,7 @@ _SubscriberNew (
     const _DomainParticipant participant)
 {
     _Subscriber newSubscriber;
-    v_participantQos participantQos;
     v_subscriberQos subscriberQos;
-    c_bool enable = TRUE;
     gapi_long len;
 
     assert(uParticipant);
@@ -165,11 +163,7 @@ _SubscriberNew (
     newSubscriber = _SubscriberAlloc();
 
     if ( newSubscriber != NULL ) {
-        if ( u_entityQoS(u_entity(uParticipant), (v_qos*)&participantQos) == U_RESULT_OK ) {
-            enable = participantQos->entityFactory.autoenable_created_entities;
-            u_participantQosFree(participantQos);
-        }
-        _DomainEntityInit(_DomainEntity(newSubscriber), participant, _Entity(participant), enable);
+        _DomainEntityInit(_DomainEntity(newSubscriber), participant, _Entity(participant), FALSE);
         gapi_dataReaderQosCopy (&gapi_dataReaderQosDefault, &newSubscriber->_defDataReaderQos);
         if ( a_listener ) {
             newSubscriber->_Listener = *a_listener;
@@ -198,7 +192,7 @@ _SubscriberNew (
     if ( newSubscriber != NULL) {
         u_subscriber uSubscriber;
 
-        uSubscriber = u_subscriberNew(uParticipant, "subscriber", subscriberQos, enable);
+        uSubscriber = u_subscriberNew(uParticipant, "subscriber", subscriberQos, FALSE);
         u_subscriberQosFree(subscriberQos);
         if ( uSubscriber != NULL ) {
             U_SUBSCRIBER_SET(newSubscriber, uSubscriber);

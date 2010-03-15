@@ -38,12 +38,12 @@ v_groupStreamWrite (
 c_bool
 v_groupStreamSubscribe (
     v_groupStream _this,
-    v_domain partition);
+    v_partition partition);
                                                          
 c_bool
 v_groupStreamUnSubscribe (
     v_groupStream _this,
-    v_domain partition);
+    v_partition partition);
                                                          
 c_bool
 v_groupStreamSubscribeGroup (

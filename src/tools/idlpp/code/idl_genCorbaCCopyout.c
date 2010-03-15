@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -23,6 +23,7 @@
 #include "idl_genSacHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
+#include "idl_catsDef.h"
 
 #include <c_typebase.h>
 #include <os_stdlib.h>
@@ -37,7 +38,7 @@ static c_long varIndex;
 static c_char union_discriminator[256];
 
 static void idl_arrayDimensions (idl_typeArray typeArray);
-static void idl_arrayElements (idl_typeArray typeArray, const char *from, const char *to, c_long indent);
+static void idl_arrayElements (idl_scope scope, const char* name, idl_typeArray typeArray, const char *from, const char *to, c_long indent);
 static void idl_seqLoopCopy (idl_typeSpec typeSpec, const char *from, const char *to, c_long loop_index, c_long indent);
 
 /** @brief Generate a string representaion the literal value of a label
@@ -165,7 +166,7 @@ idl_moduleOpen (
        struct _<scope-elements>_<structure-name> *from = (_<scope-elements>_<structure-name> *)_from;
        <scope-elements>_<structure-name> *to = (<scope-elements>_<structure-name> *)to;
     @endverbatim
- * 
+ *
  * @param scope Current scope (and scope of the structure definition)
  * @param name Name of the structure
  * @param structSpec Specification of the struct holding the amount of members (not used)
@@ -376,25 +377,53 @@ idl_structureMemberOpenClose (
         idl_basicMemberType (scope, name, idl_typeBasic(typeSpec), "from->", "to->");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-        /* QAC EXPECT 3416; No side effect here */
-        if ((idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) ||
-            (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq)) {
-	    idl_fileOutPrintf (idl_fileCur(), "    {\n");
-	    idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
-		idl_scopedTypeName (typeSpec));
-	    idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&from->%s, &to->%s);\n",
-                idl_scopedTypeName (typeSpec),
-                idl_cId(name),
-                idl_cId(name));
-	    idl_fileOutPrintf (idl_fileCur(), "    }\n");
-	} else {
-            /* Calls itself for the actual type in case of typedef */
+        idl_typeSpec typeDereffered = idl_typeDefResolveFully(typeSpec);
+        os_boolean catsRequested = OS_FALSE;
+        idl_basicType basic;
+        if(idl_typeSpecType(typeDereffered) == idl_tarray)
+        {
+            idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeDereffered)));
+            if(idl_typeSpecType(subType) == idl_tbasic)
+            {
+                idl_scope tmpScope = idl_scopeDup(scope);
+                os_char* containingElement;
+
+                basic = idl_typeBasicType(idl_typeBasic(subType));
+                containingElement = idl_scopeElementName(idl_scopeCur (scope));
+                idl_scopePop(tmpScope);
+                catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+            }
+        }
+        if(!catsRequested)
+        {
+            /* QAC EXPECT 3416; No side effect here */
+            if ((idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) ||
+                (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq))
+            {
+                idl_fileOutPrintf (idl_fileCur(), "    {\n");
+                idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
+                idl_scopedTypeName (typeSpec));
+                idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&from->%s, &to->%s);\n",
+                        idl_scopedTypeName (typeSpec),
+                        idl_cId(name),
+                        idl_cId(name));
+                idl_fileOutPrintf (idl_fileCur(), "    }\n");
+            } else {
+                    /* Calls itself for the actual type in case of typedef */
+                    idl_structureMemberOpenClose (
+                    scope,
+                    name,
+                    idl_typeDefActual(idl_typeDef(typeSpec)),
+                    userData);
+            }
+        } else
+        {
             idl_structureMemberOpenClose (
-	        scope,
-	        name,
-	        idl_typeDefActual(idl_typeDef(typeSpec)),
-            userData);
-	}
+                scope,
+                name,
+                typeDereffered,
+                userData);
+        }
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
         idl_fileOutPrintf (idl_fileCur(), "    to->%s = (%s)from->%s;\n",
@@ -413,18 +442,43 @@ idl_structureMemberOpenClose (
 	    idl_cId(name));
 	idl_fileOutPrintf (idl_fileCur(), "    }\n");
         /* QAC EXPECT 3416; No side effect here */
-    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        c_char destin[256];
+    } else if (idl_typeSpecType(typeSpec) == idl_tarray)
+    {
+        idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpec)));
+        os_boolean catsRequested = OS_FALSE;
+        idl_basicType basic;
+        if(idl_typeSpecType(subType) == idl_tbasic)
+        {
+            idl_scope tmpScope = idl_scopeDup(scope);
+            os_char* containingElement;
+            basic = idl_typeBasicType(idl_typeBasic(subType));
+            containingElement = idl_scopeElementName(idl_scopeCur (scope));
+            idl_scopePop(tmpScope);
+            catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+        }
+        if(catsRequested && basic == idl_char)
+        {
+            c_char destination[256];
+            c_char source[256];
 
-        snprintf(destin, (size_t)sizeof(destin), "to->%s", name);
-        idl_fileOutPrintf (idl_fileCur(), "    {\n");
-        idl_fileOutPrintf (idl_fileCur(), "        %s (*src)",
-	    idl_scopedSplTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec))));
-	idl_arrayDimensions (idl_typeArray(typeSpec)),
-	idl_fileOutPrintf (idl_fileCur(), " = &from->%s;\n\n",
-	    idl_cId(name));
-	idl_arrayElements (idl_typeArray(typeSpec), "src", destin, 1);
-        idl_fileOutPrintf (idl_fileCur(), "    }\n");
+            snprintf(destination, (size_t)sizeof(destination), "to->%s", name);
+            snprintf(source, (size_t)sizeof(source), "from->%s", name);
+
+            idl_fileOutPrintf (idl_fileCur(), "    {\n");
+            idl_arrayElements (scope, name, idl_typeArray(typeSpec), source, destination, 1);
+            idl_fileOutPrintf (idl_fileCur(), "    }\n");
+        } else
+        {
+            c_char destin[256];
+
+            snprintf(destin, (size_t)sizeof(destin), "to->%s", name);
+            idl_fileOutPrintf (idl_fileCur(), "    {\n");
+            idl_fileOutPrintf (idl_fileCur(), "        %s (*src)", idl_scopedSplTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec))));
+            idl_arrayDimensions (idl_typeArray(typeSpec));
+            idl_fileOutPrintf (idl_fileCur(), " = &from->%s;\n\n", idl_cId(name));
+            idl_arrayElements (scope, name, idl_typeArray(typeSpec), "src", destin, 1);
+            idl_fileOutPrintf (idl_fileCur(), "    }\n");
+        }
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
         c_char type_name[256];
@@ -476,7 +530,7 @@ idl_arrayDimensions (
 {
     idl_fileOutPrintf (idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
     /* QAC EXPECT 3416; No side effect here */
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {	
+    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
 	/* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
         idl_arrayDimensions (idl_typeArray(idl_typeArrayType(typeArray)));
     }
@@ -722,7 +776,7 @@ idl_arrayLoopCopyBody (
 	    idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);
 	    break;
 	default:
-	    printf ("idl_arrayLoopCopyBody: Unexpected type\n"); 
+	    printf ("idl_arrayLoopCopyBody: Unexpected type\n");
 	    assert (0);
 	    break;
 	}
@@ -899,21 +953,47 @@ idl_arrayLoopCopy (
  */
 static void
 idl_arrayElements (
+    idl_scope scope,
+    const char* name,
     idl_typeArray typeArray,
     const char *from,
     const char *to,
     c_long indent)
 {
-    switch (idl_typeSpecType(idl_typeArrayActual(typeArray))) {
+
+    os_boolean catsRequested = OS_FALSE;
+    idl_basicType basic;
+    idl_typeSpec subType = idl_typeArrayActual(typeArray);
+    idl_typeSpec subTypeResolved = idl_typeDefResolveFully(subType);
+    if(idl_typeSpecType(subTypeResolved) == idl_tbasic)
+    {
+        idl_scope tmpScope = idl_scopeDup(scope);
+        os_char* containingElement;
+        basic = idl_typeBasicType(idl_typeBasic(subTypeResolved));
+
+        containingElement = idl_scopeElementName(idl_scopeCur (scope));
+        idl_scopePop(tmpScope);
+        catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
+    }
+    if(catsRequested)
+    {
+        subType = subTypeResolved;
+    }
+    switch (idl_typeSpecType(subType)) {
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
-	if (idl_typeBasicType(idl_typeBasic(idl_typeArrayActual(typeArray))) == idl_string) {
-	    loopIndent = 0;
-	    idl_arrayLoopCopy (typeArray, from, to, indent);
-	} else {
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (*%s));\n", to, from, from);
-	}
+        if (idl_typeBasicType(idl_typeBasic(subType)) == idl_string) {
+            loopIndent = 0;
+            idl_arrayLoopCopy (typeArray, from, to, indent);
+        } else if(basic == idl_char && catsRequested)
+        {
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(),"    strncpy(%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
+        } else
+        {
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (*%s));\n", to, from, from);
+        }
 	break;
     case idl_tenum:
 	idl_printIndent (indent);
@@ -926,17 +1006,17 @@ idl_arrayElements (
         break;
     case idl_ttypedef:
         /* QAC EXPECT 3416; No side effect here */
-	if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray)))) == idl_tbasic) {
+	if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tbasic) {
             /* QAC EXPECT 3416; No side effect here */
-	    if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray))))) == idl_string) {
+	    if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(subType)))) == idl_string) {
 	        loopIndent = 0;
-		idl_arrayLoopCopy (typeArray, from, to, indent);
+		    idl_arrayLoopCopy (typeArray, from, to, indent);
 	    } else {
-		idl_printIndent (indent);
+		    idl_printIndent (indent);
 	        idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);
 	    }
             /* QAC EXPECT 3416; No side effect here */
-	} else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeArrayActual(typeArray)))) == idl_tenum) {
+	} else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tenum) {
 	    idl_printIndent (indent);
 	    idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);
 	} else {
@@ -948,7 +1028,7 @@ idl_arrayElements (
 	idl_arrayLoopCopy (typeArray, from, to, indent);
         break;
     case idl_tarray:
-	printf ("idl_arrayElements: Unexpected type idl_tarray\n"); 
+	printf ("idl_arrayElements: Unexpected type idl_tarray\n");
         break;
     }
 }
@@ -1173,7 +1253,7 @@ idl_seqLoopCopy (
 		loop_index-1);
 	    break;
 	default:
-	    printf ("idl_arrayLoopCopyBody: Unexpected type\n"); 
+	    printf ("idl_arrayLoopCopyBody: Unexpected type\n");
 	    assert (0);
 	}
 	break;
@@ -1336,7 +1416,7 @@ idl_typedefOpenClose (
 	idl_fileOutPrintf (idl_fileCur(), "    %s *to = (%s *)_to;\n",
 	    idl_scopeStack(scope, "_", name),
 	    idl_scopeStack(scope, "_", name));
-        idl_arrayElements (idl_typeArray(idl_typeDefActual(defSpec)), "from", "*to", 0);
+        idl_arrayElements (scope, name, idl_typeArray(idl_typeDefActual(defSpec)), "from", "*to", 0);
         idl_fileOutPrintf (idl_fileCur(), "}\n");
         idl_fileOutPrintf (idl_fileCur(), "\n");
         break;
@@ -1647,7 +1727,7 @@ idl_unionCaseOpenClose (
 	idl_arrayDimensions (idl_typeArray(typeSpec)),
 	idl_fileOutPrintf (idl_fileCur(), " = &from->_u.%s;\n\n",
 	    idl_cId(name));
-	idl_arrayElements (idl_typeArray(typeSpec), "src", destin, 2);
+	idl_arrayElements (scope, name, idl_typeArray(typeSpec), "src", destin, 2);
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(), "    break;\n");
         /* QAC EXPECT 3416; No side effect here */

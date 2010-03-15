@@ -24,6 +24,7 @@
 #endif
 
 #include <os.h>
+#include <os_report.h>
 #include <cfg_parser.h>
 #include <cf_config.h>
 
@@ -48,10 +49,12 @@ print_usage(
 {
     printf ("\nUsage:\n"
             "      ospl -h\n"
+            "      ospl -v\n"
             "      ospl [-f] start [URI]\n"
             "      ospl [[-d <domain> | -a] stop [URI]]\n"
             "      ospl list\n\n"
-            "      -h       Show this help\n\n");
+            "      -h       Show this help\n\n"
+            "      -v       Show ospl version information\n\n");
     printf ("      start    Start the identified system\n\n"
             "               The system is identified and configured by the URI which is\n"
             "               defined by the environment variable OSPL_URI. This setting can\n"
@@ -95,7 +98,7 @@ print_usage(
             "               name\n\n");
 }
 
-static const char key_file_prefix[] = "/tmp/spddskey_XXXXXX";
+static const char key_file_format[] = "spddskey_XXXXXX";
 
 static void
 removeProcesses(
@@ -178,7 +181,7 @@ removeKeyfile(
 static int
 shutdownDDS(
     const char *key_file_name,
-    const char *domain_name,
+    const char *domainName,
     os_time serviceTerminatePeriod)
 {
     key_t key;
@@ -191,7 +194,7 @@ shutdownDDS(
     FILE *kf;
     int retCode = OSPL_EXIT_CODE_OK;
 
-    printf ("\nShutting down domain \"%s\" ", domain_name);
+    printf ("\nShutting down domain \"%s\" ", domainName);
     kf = fopen (key_file_name, "r");
     if (kf)
     {
@@ -233,7 +236,7 @@ shutdownDDS(
 static char *
 matchKey(
     const char *key_file_name,
-    const char *domain_name)
+    const char *domainName)
 {
     FILE *key_file;
     char domain[512];
@@ -248,9 +251,9 @@ matchKey(
             {
                 if (fgets (domain, sizeof(domain), key_file) != NULL)
                 {
-                    if ((domain_name == NULL) ||
-                        (strcmp (domain_name, "*") == 0) ||
-                        (strcmp (domain_name, domain) == 0))
+                    if ((domainName == NULL) ||
+                        (strcmp (domainName, "*") == 0) ||
+                        (strcmp (domainName, domain) == 0))
                     {
                         return os_strdup (domain);
                     }
@@ -292,16 +295,19 @@ matchUid(
 
 static int
 findSpliceSystemAndRemove(
-    const char *domain_name,
+    const char *domainName,
     os_time serviceTerminatePeriod)
 {
     DIR *key_dir;
     struct dirent *entry;
-    char key_file_name [sizeof(key_file_prefix)+1];
     char *shmName;
     int retCode = OSPL_EXIT_CODE_OK;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    key_dir = opendir ("/tmp");
+    dir_name = os_getTempDir();
+    key_dir = opendir (dir_name);
     if (key_dir)
     {
         entry = readdir (key_dir);
@@ -309,12 +315,15 @@ findSpliceSystemAndRemove(
         {
             if (strncmp (entry->d_name, "spddskey_", 9) == 0)
             {
-                snprintf (key_file_name, sizeof(key_file_prefix)+1, "/tmp/%s", entry->d_name);
-                if ((shmName = matchKey (key_file_name, domain_name)))
+                key_file_name_size = strlen(dir_name) + strlen(key_file_format) + 2;
+                key_file_name  = os_malloc (key_file_name_size);
+                snprintf (key_file_name, key_file_name_size, "%s/%s", dir_name, entry->d_name);
+                if ((shmName = matchKey (key_file_name, domainName)))
                 {
                     retCode = shutdownDDS (key_file_name, shmName, serviceTerminatePeriod);
                     os_free (shmName);
                 }
+                os_free(key_file_name);
             }
             entry = readdir (key_dir);
         }
@@ -332,22 +341,27 @@ findSpliceSystemAndShow(void)
 {
     DIR *key_dir;
     struct dirent *entry;
-    char key_file_name [sizeof(key_file_prefix)+1];
     char *shmName;
-    int found_count;
+    int found_count = 0;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    found_count = 0;
-    key_dir = opendir ("/tmp");
+    dir_name = os_getTempDir();
+    key_dir = opendir (dir_name);
     if (key_dir) {
         entry = readdir (key_dir);
         while (entry != NULL) {
             if (strncmp (entry->d_name, "spddskey_", 9) == 0) {
-                snprintf (key_file_name, sizeof(key_file_prefix)+1, "/tmp/%s", entry->d_name);
+                key_file_name_size = strlen(dir_name) + strlen(key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf (key_file_name, key_file_name_size, "%s/%s", dir_name, entry->d_name);
                 if ((shmName = matchUid (key_file_name, geteuid()))) {
                                     printf ("Splice System with domain name \"%s\" is found running\n", shmName);
                                     ++found_count;
                     os_free (shmName);
                 }
+                os_free(key_file_name);
             }
             entry = readdir (key_dir);
         }
@@ -363,22 +377,28 @@ spliceSystemRunning(
 {
     DIR *key_dir;
     struct dirent *entry;
-    char key_file_name [sizeof(key_file_prefix)+1];
     char *shmName;
     int found = 0;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    key_dir = opendir ("/tmp");
+    dir_name = os_getTempDir();
+    key_dir = opendir (dir_name);
     if (key_dir) {
         entry = readdir (key_dir);
         while (entry != NULL) {
             if (strncmp (entry->d_name, "spddskey_", 9) == 0) {
-                snprintf (key_file_name, sizeof(key_file_prefix)+1, "/tmp/%s", entry->d_name);
+                key_file_name_size = strlen(dir_name) + strlen(key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf (key_file_name, key_file_name_size, "%s/%s", dir_name,entry->d_name);
                 if ((shmName = matchUid (key_file_name, getuid()))) {
-            if (strcmp (shmName, domain) == 0) {
-            found = 1;
-            }
+                    if (strcmp (shmName, domain) == 0) {
+                        found = 1;
+                    }
                     os_free (shmName);
                 }
+                os_free(key_file_name);
             }
             entry = readdir (key_dir);
         }
@@ -392,7 +412,7 @@ findDomain(
     cf_element platformConfig,
     cf_element *domain)
 {
-    char *domain_name = NULL;
+    char *domainName = NULL;
     cf_element dc = NULL;
     cf_element elemName = NULL;
     cf_data dataName;
@@ -405,12 +425,12 @@ findDomain(
             dataName = cf_data(cf_elementChild(elemName, "#text"));
             if (dataName) {
             value = cf_dataValue(dataName);
-            domain_name = value.is.String;
+            domainName = value.is.String;
                 *domain = dc;
             }
     }
     }
-    return domain_name;
+    return domainName;
 }
 
 static void
@@ -474,6 +494,158 @@ check_for_LD_ASSUME_KERNEL (void)
 }
 #endif
 
+static cf_element platformConfig = NULL;
+static char* domain_name = NULL;
+
+static void
+signalHandler(
+    int sig,
+    siginfo_t *info,
+    void *arg)
+{
+    os_time serviceTerminatePeriod;
+    cf_element domain = NULL;
+
+    if(domain_name)
+    {
+        if(platformConfig)
+        {
+            findDomain (platformConfig, &domain);
+        }
+        findServiceTerminatePeriod(domain, &serviceTerminatePeriod);
+        findSpliceSystemAndRemove (domain_name, serviceTerminatePeriod);
+    } else
+    {
+        printf ("Signal received before fully started.\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+}
+
+static void
+ospl_setsignals(
+    )
+{
+    struct sigaction ospl_action;
+    int retVal;
+
+    ospl_action.sa_handler = 0;
+    ospl_action.sa_sigaction = signalHandler;
+
+    retVal = sigemptyset(&ospl_action.sa_mask);
+    if(retVal != 0)
+    {
+        printf("Failed to init the empty signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGHUP);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGHUP signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGILL);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGILL signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGABRT);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGABRT signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGFPE);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGFPE signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGSEGV);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGSEGV signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGPIPE);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGPIPE signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGALRM);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGALRM signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGTERM);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGTERM signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGUSR1);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGUSR1 signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGUSR2);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGUSR2 signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGTSTP);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGTSTP signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGTTIN);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGTTIN signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+    retVal = sigaddset(&ospl_action.sa_mask, SIGTTOU);
+    if(retVal != 0)
+    {
+        printf("Failed to add the SIGTTOU signal to the signal set\n");
+        exit (OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
+    }
+
+
+    ospl_action.sa_flags = SA_SIGINFO;
+    sigaction(SIGHUP, &ospl_action, NULL);
+    sigaction(SIGILL, &ospl_action, NULL);
+    sigaction(SIGABRT, &ospl_action, NULL);
+    sigaction(SIGFPE, &ospl_action, NULL);
+    sigaction(SIGSEGV, &ospl_action, NULL);
+    sigaction(SIGPIPE, &ospl_action, NULL);
+    sigaction(SIGALRM, &ospl_action, NULL);
+    sigaction(SIGTERM, &ospl_action, NULL);
+    sigaction(SIGUSR1, &ospl_action, NULL);
+    sigaction(SIGUSR2, &ospl_action, NULL);
+    sigaction(SIGTSTP, &ospl_action, NULL);
+    sigaction(SIGTTIN, &ospl_action, NULL);
+    sigaction(SIGTTOU, &ospl_action, NULL);
+}
+
 int
 main(
     int argc,
@@ -481,28 +653,31 @@ main(
 {
     int opt;
     int retCode = OSPL_EXIT_CODE_OK;
-    char *domain_name = NULL;
     char *uri = NULL;
     char *command = NULL;
     char start_command[1024];
-    cf_element platformConfig = NULL;
     cf_element domain = NULL;
     cfgprs_status r;
-    os_time serviceTerminatePeriod;
     os_boolean blocking = OS_FALSE;
     os_boolean blockingDefined = OS_FALSE;
+    os_time serviceTerminatePeriod;
 
+    ospl_setsignals();
     os_osInit();
     os_procAtExit(os_osExit);
 
     uri = os_getenv ("OSPL_URI");
 
-    while ((opt = getopt (argc, argv, "hafd:")) != -1)
+    while ((opt = getopt (argc, argv, "hvafd:")) != -1)
     {
         switch (opt)
         {
         case 'h':
             print_usage (argv[0]);
+            exit (OSPL_EXIT_CODE_OK);
+            break;
+        case 'v':
+            printf ("OpenSplice version : %s\n", VERSION);
             exit (OSPL_EXIT_CODE_OK);
             break;
         case 'd':
@@ -549,6 +724,7 @@ main(
     {
         uri = argv[optind+1];
     }
+
     if (uri && (strlen(uri) > 0))
     {
         r = cfg_parse_ospl (uri, &platformConfig);
@@ -619,6 +795,10 @@ main(
                 }
             }
             printf (" Ready\n");
+
+            /* Display locations of info and error files */
+            os_reportDisplayLogLocations();
+
             retCode = WEXITSTATUS(system (start_command));
             if(!blocking)
             {

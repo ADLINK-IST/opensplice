@@ -2145,10 +2145,8 @@ gapi_stringSeq_to_String (
             }
         }
     } else {
-        if ( sequence->_length > 0 ) {
-            rstring = (gapi_string)os_malloc(1);
-            rstring[0] = '\0';
-        }
+        rstring = (gapi_string)os_malloc(1);
+        rstring[0] = '\0';
     }
 
     return rstring;

@@ -58,6 +58,7 @@ typedef enum {
     sajArrBoolean,
     sajArrByte,
     sajArrChar,
+    sajArrCharToBString,
     sajArrShort,
     sajArrInt,
     sajArrLong,

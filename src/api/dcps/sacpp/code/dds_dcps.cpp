@@ -400,6 +400,57 @@ DDS::DomainParticipantListener_ptr DDS::DomainParticipantListener::_unchecked_na
    return result;
 }
 
+const char * DDS::ExtDomainParticipantListener::_local_id = "IDL:DDS/ExtDomainParticipantListener:1.0";
+
+DDS::ExtDomainParticipantListener_ptr DDS::ExtDomainParticipantListener::_duplicate (DDS::ExtDomainParticipantListener_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::ExtDomainParticipantListener::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::ExtDomainParticipantListener::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   typedef ExtTopicListener NestedBase_1;
+
+   if (NestedBase_1::_local_is_a (_id))
+   {
+      return TRUE;
+   }
+
+   typedef DomainParticipantListener NestedBase_2;
+
+   if (NestedBase_2::_local_is_a (_id))
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::ExtDomainParticipantListener_ptr DDS::ExtDomainParticipantListener::_narrow (DDS::Object_ptr p)
+{
+   DDS::ExtDomainParticipantListener_ptr result = NULL;
+   if (p && p->_is_a (DDS::ExtDomainParticipantListener::_local_id))
+   {
+      result = dynamic_cast<DDS::ExtDomainParticipantListener_ptr> (p);
+      result->m_count++;
+   }
+   return result;
+}
+
+DDS::ExtDomainParticipantListener_ptr DDS::ExtDomainParticipantListener::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::ExtDomainParticipantListener_ptr result;
+   result = dynamic_cast<DDS::ExtDomainParticipantListener_ptr> (p);
+   result->m_count++;
+   return result;
+}
+
 const char * DDS::Condition::_local_id = "IDL:DDS/Condition:1.0";
 
 DDS::Condition_ptr DDS::Condition::_duplicate (DDS::Condition_ptr p)
@@ -1227,6 +1278,50 @@ DDS::DataReader_ptr DDS::DataReader::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::DataReader_ptr result;
    result = dynamic_cast<DDS::DataReader_ptr> (p);
+   result->m_count++;
+   return result;
+}
+
+const char * DDS::DataReaderView::_local_id = "IDL:DDS/DataReaderView:1.0";
+
+DDS::DataReaderView_ptr DDS::DataReaderView::_duplicate (DDS::DataReaderView_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::DataReaderView::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::DataReaderView::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   typedef Entity NestedBase_1;
+
+   if (NestedBase_1::_local_is_a (_id))
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::DataReaderView_ptr DDS::DataReaderView::_narrow (DDS::Object_ptr p)
+{
+   DDS::DataReaderView_ptr result = NULL;
+   if (p && p->_is_a (DDS::DataReaderView::_local_id))
+   {
+      result = dynamic_cast<DDS::DataReaderView_ptr> (p);
+      result->m_count++;
+   }
+   return result;
+}
+
+DDS::DataReaderView_ptr DDS::DataReaderView::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::DataReaderView_ptr result;
+   result = dynamic_cast<DDS::DataReaderView_ptr> (p);
    result->m_count++;
    return result;
 }

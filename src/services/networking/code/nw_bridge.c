@@ -34,6 +34,8 @@
 #include "nw_report.h"
 #include "nw_profiling.h"
 #include "nw_stream.h"
+#include "nw_security.h"
+
 
 /* Bridge class definition */
 
@@ -188,7 +190,8 @@ void
 nw_bridgePeriodicAction(
     nw_bridge bridge,
     nw_seqNr channelId,
-    nw_signedLength *bytesLeft)
+    nw_signedLength *bytesLeft,
+    plugSendStatistics pss)
 {
     nw_plugChannel plugChannel;
 
@@ -201,7 +204,7 @@ nw_bridgePeriodicAction(
         plugChannel = NW_CHANNEL_BY_ID(bridge, channelId);
         NW_CONFIDENCE(plugChannel != NULL);
 
-        nw_plugSendChannelPeriodicAction(plugChannel,bytesLeft);
+        nw_plugSendChannelPeriodicAction(plugChannel,bytesLeft, pss);
     }
 }
 
@@ -215,7 +218,8 @@ nw_bridgeWrite(
     v_networkHashValue hashValue,
     const c_char *partitionName,
     const c_char *topicName,
-    nw_signedLength *bytesLeft)
+    nw_signedLength *bytesLeft,
+    plugSendStatistics pss)
 {
     c_ulong result = 0;
     nw_bool valid = TRUE;
@@ -226,13 +230,13 @@ nw_bridgeWrite(
 
     stream = NW_STREAM_BY_ID(bridge, channelId);
 
-    valid = nw_stream_writeBegin(stream, partitionId, bytesLeft);
+    valid = nw_stream_writeBegin(stream, partitionId, bytesLeft, pss);
     if (valid) {
         result  = nw_stream_writeOpaq(stream,sizeof(hashValue),(c_voidp)&hashValue);
         result += nw_stream_writeString(stream,NULL,(c_voidp)&partitionName);
         result += nw_stream_writeString(stream,NULL,(c_voidp)&topicName);
         result += nw_stream_write(stream,message);
-        nw_stream_writeEnd(stream);
+        nw_stream_writeEnd(stream, pss);
     }
     return result;
 }
@@ -242,7 +246,8 @@ nw_bridgeFlush(
     nw_bridge bridge,
     nw_seqNr channelId,
     nw_bool all,
-    nw_signedLength *bytesLeft)
+    nw_signedLength *bytesLeft,
+    plugSendStatistics pss)
 {
     nw_bool result = TRUE;
     nw_plugChannel plugChannel;
@@ -258,7 +263,7 @@ nw_bridgeFlush(
     plugChannel = NW_CHANNEL_BY_ID(bridge, channelId);
     NW_CONFIDENCE(plugChannel != NULL);
 
-    result = nw_plugSendChannelMessagesFlush(plugChannel, all, bytesLeft);
+    result = nw_plugSendChannelMessagesFlush(plugChannel, all, bytesLeft, pss);
 
 #ifdef NW_DEBUGGING
     }
@@ -360,7 +365,8 @@ nw_bridgeRead(
     nw_seqNr channelId,
     v_message *message,
     const nw_typeLookupAction typeLookupAction,
-    nw_typeLookupArg typeLookupArg)
+    nw_typeLookupArg typeLookupArg,
+    plugReceiveStatistics prs)
 {
     nw_plugChannel plugChannel;
     v_networkHashValue hashValue;
@@ -383,21 +389,26 @@ nw_bridgeRead(
         NW_CONFIDENCE(plugChannel != NULL);
         /* Init out parameters */
         /* *message = NULL;  - now an IN/OUT */
-
-        if (*message != NULL) {
+        NW_REPORT_INFO(5, "entering transport read");
+                
+    	if (*message != NULL) {
             /*
              * If there is still a message present, don't read another message,
              * but only process incoming data from the network.
              */
+    		 NW_REPORT_INFO(5, "previous message still pending in out-queue, just processing incoming messages");
+    		        
             nw_plugReceiveChannelProcessIncoming(plugChannel);
         } else {
+            NW_STRUCT(nw_senderInfo) senderInfo = {0,0};
             stream = NW_STREAM_BY_ID(bridge, channelId);
-            result = nw_stream_readBegin(stream);
+            result = nw_stream_readBegin(stream, &senderInfo, prs);
+
             if (result) {
                 partitionName = NULL;
                 topicName = NULL;
                 nw_stream_readOpaq(stream,sizeof(hashValue),&hashValue);
-                nw_stream_readString(stream,NULL,&partitionName);
+                nw_stream_readString(stream,NULL,&partitionName); /* TODO partitionName: expensive string duplication each iteration */
                 if (partitionName) {
                     if(nw_configurationUseComplementPartitions()){
                         /* Change first character case, will leave built-in par-
@@ -407,23 +418,53 @@ nw_bridgeRead(
                     }
                     nw_stream_readString(stream,NULL,&topicName);
                     if (topicName) {
-                        type = typeLookupAction(hashValue,
-                                                partitionName, topicName,
+                        
+                    	type = typeLookupAction(hashValue,
+                                                partitionName, topicName, /* TODO: topicName: expensive string duplication each iteration */
                                                 typeLookupArg);
 
-                        if (type) {
-                            *message = nw_stream_read(stream, type);
-                            v_messageSetAllocTime(*message);
+                        prs->numberOfMessagesReceived++;
 
+                    	
+                    	NW_REPORT_INFO_2(5, "reading message type %s via %s", topicName, partitionName);
+                        
+                        if (type) {
+                        	/* in any case parse the data from package */
+                          	NW_REPORT_INFO_2(4, "parsing instance of %s from %s", topicName, (senderInfo.dn));
+                            *message = nw_stream_read(stream, type);
+                                 
+                            if (!(*message)) {
+                            	/* slow path */
+                            	NW_REPORT_ERROR_2("nw_bridgeRead", "failed to parse instance of topic %s from partition %s", topicName, partitionName);
+                            	/* TODO in this case the networking service is in undefined state and should restart */
+                            } else {
+
+                            	/* else-branch is fast path */
+								/* if sender has not permission to send that data item, ignore and delete it */ 
+								if (!(NW_SECURITY_CHECK_FOR_PUBLISH_PERMISSION_OF_SENDER_ON_RECEIVER_SIDE(senderInfo, partitionName, topicName))) {
+									NW_REPORT_INFO_2(4, "sender no permission granted, dropping message %s from %s", topicName, (senderInfo.dn));
+									c_free(*message);
+									*message = NULL;
+								} else {
+									/* fast path */
+									v_messageSetAllocTime(*message);
+									prs->numberOfMessagesDelivered++;
+								}
+                            }
                         } else {
                             /* Trash rest of message */
-                            nw_stream_read(stream, type);
+                        	NW_REPORT_INFO_2(5, "type unknown, trash message type %s via %s", topicName, partitionName);
+                        	                        
+                        	*message = nw_stream_read(stream, type); /* otherwise *message stays defined and 
+																		causing side effects in next iteration */ 
+                            assert(*message == NULL);
+                            prs->numberOfMessagesNotInterested++;
                         }
                         os_free(topicName);
                     }
                     os_free(partitionName);
                 }
-                nw_stream_readEnd(stream);
+                nw_stream_readEnd(stream,prs);
             }
         }
     }

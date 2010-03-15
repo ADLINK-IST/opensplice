@@ -31,13 +31,14 @@ main(
     int fileIndex = 1;
     c_bool scopedNames = FALSE;
     char osServiceName[SERVICE_NAME_MAX];
+    int id = os_procIdToInteger (os_procIdSelf());
 
     if (argc < 2) {
         printf("Usage: %s [-m] <filename>\n", argv[0]);
         return -1;
     }
 
-    snprintf(osServiceName, SERVICE_NAME_MAX, "%s%d", SERVICE_NAME_PREFIX, (int)os_procIdSelf());
+    snprintf(osServiceName, SERVICE_NAME_MAX, "%s%d", SERVICE_NAME_PREFIX, id);
     if (os_serviceStart(osServiceName) != os_resultSuccess) {
         printf("Failed to start mutex service\n");
         return -2;

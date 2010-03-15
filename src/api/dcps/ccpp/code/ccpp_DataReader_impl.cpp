@@ -17,6 +17,7 @@
 #include "ccpp_Subscriber_impl.h"
 #include "ccpp_TopicDescription_impl.h"
 #include "ccpp_ListenerUtils.h"
+#include "ccpp_DataReaderView_impl.h"
 
 DDS::DataReader_impl::DataReader_impl(gapi_dataReader handle) : DDS::Entity_impl(handle)
 {
@@ -549,6 +550,161 @@ DDS::ReturnCode_t DDS::DataReader_impl::get_matched_publication_data (
   if (result == DDS::RETCODE_OK)
   {
     ccpp_PublicationBuiltinTopicData_copyOut(gapi_data, publication_data);
+  }
+  return result;
+}
+
+//RZ: what to return if gapi_drvqos == nil?
+DDS::DataReaderView_ptr DDS::DataReader_impl::create_view (
+  const ::DDS::DataReaderViewQos & qos
+) THROW_ORB_EXCEPTIONS
+{
+    DataReaderView_ptr drvp;
+    gapi_dataReaderView view_handle;
+    gapi_dataReaderViewQos* gapi_drvqos;
+
+    gapi_drvqos = gapi_dataReaderViewQos__alloc();
+
+    if (gapi_drvqos)
+    {
+        ccpp_DataReaderViewQos_copyIn(qos, *gapi_drvqos);
+        view_handle = gapi_dataReader_create_view(_gapi_self, gapi_drvqos);
+        gapi_free(gapi_drvqos);
+    }
+
+    if (view_handle)
+    {
+        DDS::ccpp_UserData_ptr myUD;
+        gapi_topicDescription topic_descr_handle = gapi_dataReader_get_topicdescription(_gapi_self);
+        char * typeName = gapi_topicDescription_get_type_name(topic_descr_handle);
+
+        if (typeName)
+        {
+          gapi_subscriber subscr_handle = gapi_dataReader_get_subscriber(_gapi_self);
+          gapi_domainParticipant dp_handle = gapi_subscriber_get_participant(subscr_handle);
+
+          if (dp_handle)
+          {
+            gapi_typeSupport ts_handle = gapi_domainParticipant_get_typesupport(dp_handle, typeName);
+            void *tsf = gapi_object_get_user_data(ts_handle);
+
+            if (tsf)
+            {
+              CORBA::Object_ptr anObject = static_cast<CORBA::Object_ptr>(tsf);
+              DDS::TypeSupportFactory_impl_ptr factory = dynamic_cast<DDS::TypeSupportFactory_impl_ptr>(anObject);
+              if (factory)
+              {
+                drvp = factory->create_view(view_handle);
+
+                if (drvp)
+                {
+                  myUD = new DDS::ccpp_UserData(drvp,  NULL);
+                  if (myUD)
+                  {
+                    gapi_object_set_user_data(view_handle, (CORBA::Object *)myUD);
+                  }
+                  else
+                  {
+                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                  }
+                }
+              }
+              else
+              {
+                OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Type Support Factory");
+              }
+            }
+            else
+            {
+              OS_REPORT(OS_ERROR, "CCPP", 0, "Type Support information not available for create_dataview");
+            }
+          }
+          gapi_free(typeName);
+        }
+      }
+
+    return drvp;
+}
+
+DDS::ReturnCode_t DDS::DataReader_impl::delete_view (
+  ::DDS::DataReaderView_ptr a_view
+) THROW_ORB_EXCEPTIONS
+{
+    DDS::ccpp_UserData_ptr myUD;
+    DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
+    DDS::DataReaderView_impl_ptr dataReaderView;
+
+    dataReaderView = dynamic_cast<DDS::DataReaderView_impl_ptr>(a_view);
+    if (dataReaderView)
+    {
+      if (os_mutexLock(&(dataReaderView->drv_mutex)) == os_resultSuccess)
+      {
+        myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(dataReaderView->_gapi_self));
+        result = gapi_dataReader_delete_view(_gapi_self, dataReaderView->_gapi_self);
+        if (result == DDS::RETCODE_OK)
+        {
+          dataReaderView->_gapi_self = NULL;
+          if (myUD)
+          {
+            delete myUD;
+          }
+          else
+          {
+            result = DDS::RETCODE_ERROR;
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+          }
+        }
+        if (os_mutexUnlock(&(dataReaderView->drv_mutex)) != os_resultSuccess)
+        {
+            result = DDS::RETCODE_ERROR;
+            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+        }
+      }
+      else
+      {
+          result = DDS::RETCODE_ERROR;
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
+      }
+    }
+    return result;
+}
+
+DDS::ReturnCode_t DDS::DataReader_impl::get_default_datareaderview_qos (
+  ::DDS::DataReaderViewQos & qos
+) THROW_ORB_EXCEPTIONS
+{
+  DDS::ReturnCode_t result;
+  gapi_dataReaderViewQos * gapi_drvqos = gapi_dataReaderViewQos__alloc();
+  if (gapi_drvqos)
+  {
+    result = gapi_dataReader_get_default_datareaderview_qos(_gapi_self, gapi_drvqos);
+    ccpp_DataReaderViewQos_copyOut(*gapi_drvqos, qos);
+    gapi_free(gapi_drvqos);
+  }
+  else
+  {
+    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+    result = DDS::RETCODE_OUT_OF_RESOURCES;
+  }
+  return result;
+}
+
+DDS::ReturnCode_t DDS::DataReader_impl::set_default_datareaderview_qos (
+  const ::DDS::DataReaderViewQos & qos
+) THROW_ORB_EXCEPTIONS
+{
+  DDS::ReturnCode_t result;
+  gapi_dataReaderViewQos * gapi_drvqos = gapi_dataReaderViewQos__alloc();
+  if (gapi_drvqos)
+  {
+    ccpp_DataReaderViewQos_copyIn( qos, *gapi_drvqos);
+    result = gapi_dataReader_set_default_datareaderview_qos(_gapi_self, gapi_drvqos);
+    gapi_free(gapi_drvqos);
+  }
+  else
+  {
+    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+    result = DDS::RETCODE_OUT_OF_RESOURCES;
   }
   return result;
 }

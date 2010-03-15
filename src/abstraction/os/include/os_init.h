@@ -56,7 +56,7 @@ os_osInit(void);
  * warning (and further do nothing). In a debugging environment the call
  * will crash if called more often than os_osInit().
  *
- * @see os_osExit()
+ * @see os_osInit()
  */
 OS_API void
 os_osExit(void);

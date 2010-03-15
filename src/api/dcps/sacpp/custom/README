@@ -22,7 +22,7 @@ gcc compiler version of choice:
   
   . ./release.com
   
-- Go to the SACPP custom_lib direcotry:
+- Go to the SACPP custom_lib directory:
 
   cd custom_lib/sacpp
  

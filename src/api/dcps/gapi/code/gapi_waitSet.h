@@ -13,6 +13,7 @@
 #define GAPI_WAITSET_H
 
 #include "gapi_common.h"
+#include "gapi_domainParticipant.h"
 #include "gapi_condition.h"
 #include "gapi_map.h"
 

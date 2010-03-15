@@ -13,6 +13,7 @@
 
 #include "v_writerCache.h"
 #include "v_cache.h"
+#include "os_report.h"
 
 static c_type _v_writerCache = NULL;
 static c_type _v_writerCacheItem = NULL;
@@ -51,8 +52,14 @@ v_writerCacheNew (
     base = c_getBase(kernel);
     type = v_writerCache_t(base);
     cache = c_new(type);
-    cache->itemType = v_writerCacheItem_t(base);
-    v_cacheInit(v_cache(cache),kind);
+    if (cache) {
+        cache->itemType = v_writerCacheItem_t(base);
+        v_cacheInit(v_cache(cache),kind);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_writerCacheNew",0,
+                  "Failed to allocate cache.");
+    }
 
     assert(C_TYPECHECK(cache,v_writerCache));
 
@@ -101,9 +108,14 @@ v_writerCacheItemNew (
     assert(C_TYPECHECK(instance,v_groupInstance));
 
     item = c_new(cache->itemType);
-    item->instance = c_keep(instance);
-    v_cacheNodeInit(v_cacheNode(item));
-
+    if (item) {
+        item->instance = c_keep(instance);
+        v_cacheNodeInit(v_cacheNode(item));
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_writerCacheNew",0,
+                  "Failed to allocate cache item.");
+    }
     assert(C_TYPECHECK(item,v_writerCacheItem));
 
     return item;

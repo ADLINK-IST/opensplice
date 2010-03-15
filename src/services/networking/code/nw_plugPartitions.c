@@ -22,12 +22,15 @@
 #include "nw_commonTypes.h"
 #include "nw__confidence.h"
 #include "nw_report.h"
+#include "nw_partitions.h"
 
 NW_CLASS(nw_plugPartition);
 NW_STRUCT(nw_plugPartition) {
     nw_partitionId id;
     nw_partitionAddress address;
+    nw_networkSecurityPolicy securityPolicy;
     nw_bool connected;
+    os_uint32 hash;
 };
 
 NW_STRUCT(nw_plugPartitions) {
@@ -69,6 +72,8 @@ nw_plugPartitionsFree(
                 if (plugPartitions->partitions[iPartition] != NULL) {
                     NW_CONFIDENCE(plugPartitions->partitions[iPartition]->address != NULL);
                     os_free(plugPartitions->partitions[iPartition]->address);
+		    if (plugPartitions->partitions[iPartition]->securityPolicy)
+			os_free(plugPartitions->partitions[iPartition]->securityPolicy);
                     os_free(plugPartitions->partitions[iPartition]);
                 }
             }
@@ -83,6 +88,8 @@ nw_plugPartitionsSetPartition(
     nw_plugPartitions plugPartitions,
     nw_partitionId partitionId,
     nw_partitionAddress partitionAddress,
+    nw_networkSecurityPolicy securityPolicy,
+    os_uint32 hash,
     nw_bool connected)
 {
     nw_plugPartition newPartition;
@@ -95,9 +102,14 @@ nw_plugPartitionsSetPartition(
         newPartition = os_malloc(sizeof(*newPartition));
         if (newPartition != NULL) {
             newPartition->id = partitionId;
+	    /* FIXME: stringDup return values must be checked for NULL !!, but
+	     * question is what should be done in these cases... */ 
             newPartition->address = nw_stringDup(partitionAddress);
+	    /* security profile might be undeclared */ 
+	    newPartition->securityPolicy = securityPolicy ? nw_stringDup(securityPolicy) : NULL;  
             newPartition->connected = connected;
             plugPartitions->partitions[partitionId] = newPartition;
+            newPartition->hash = hash;
         }
     }
 }
@@ -105,9 +117,12 @@ nw_plugPartitionsSetPartition(
 void
 nw_plugPartitionsSetDefaultPartition(
     nw_plugPartitions plugPartitions,
-    nw_partitionAddress partitionAddress)
+    nw_partitionAddress partitionAddress,
+    nw_networkSecurityPolicy securityPolicy,
+    os_uint32 hash)
 {
-    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, TRUE);
+    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, securityPolicy, hash, TRUE);
+
 }
 
 
@@ -127,7 +142,9 @@ nw_plugPartitionsGetPartition(
     nw_partitionId partitionId,
     nw_bool *found,
     nw_partitionAddress *partitionAddress,
-    nw_bool *connected)
+    nw_networkSecurityPolicy *securityPolicy, /* may be NULL */
+    nw_bool *connected,
+    os_uint32 *hash)
 {
     *found = FALSE;
     
@@ -140,7 +157,11 @@ nw_plugPartitionsGetPartition(
         if (plugPartitions->partitions[partitionId] != NULL) {
             *partitionAddress = plugPartitions->partitions[partitionId]->address;
             *connected = plugPartitions->partitions[partitionId]->connected;
+            *hash = plugPartitions->partitions[partitionId]->hash;
             NW_CONFIDENCE(plugPartitions->partitions[partitionId]->id == partitionId);
+            if (securityPolicy) { /* may be NULL */ 
+               *securityPolicy = plugPartitions->partitions[partitionId]->securityPolicy;
+            }
             *found = TRUE;
         }
     } else {
@@ -153,9 +174,12 @@ nw_plugPartitionsGetPartition(
 nw_bool
 nw_plugPartitionsGetDefaultPartition(
     nw_plugPartitions plugPartitions,
-    nw_partitionAddress *partitionAddress)
+    nw_partitionAddress *partitionAddress,
+    nw_networkSecurityPolicy *securityPolicy)
 {
     *partitionAddress = plugPartitions->partitions[0]->address;
+    if (securityPolicy)
+	*securityPolicy = plugPartitions->partitions[0]->securityPolicy; 
     
     return TRUE;
 }

@@ -368,10 +368,36 @@ c_arrayNew (
     c_type subType,
     c_long size);
 
+/**
+ * \brief 	This operation behaves the same as c_arrayNew, with the exeption that
+ * 			it will always return an object with valid header.
+ *
+ * This operation is provided by the database primarily to be able to serialize
+ * sequences\arrays with a zero length, where c_arrayNew would return a NULL object.
+ *
+ * \param subType The element type of the array that must be created.
+ * \param size The number of elements of the array that must be created.
+ *
+ * \return On a successful operation a reference to the created array is
+ *         returned. Otherwise NULL is returned.
+ */
+OS_API c_array
+c_arrayNew_w_header(
+    c_collectionType arrayType,
+    c_long length);
+
 OS_API c_array
 c_newArray (
     c_collectionType arrayType,
     c_long size);
+
+OS_API typedef void (*c_baseOutOfMemoryAction)(c_voidp arg);
+
+OS_API void
+c_baseOnOutOfMemory(
+    c_base base,
+    c_baseOutOfMemoryAction action,
+    c_voidp arg);
 
 #if 0
 /**

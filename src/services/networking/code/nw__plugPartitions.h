@@ -27,11 +27,15 @@ nw_plugPartitionsSetPartition(
     nw_plugPartitions plugPartitions,
     nw_partitionId partitionId,
     nw_partitionAddress partitionAddress,
+    nw_networkSecurityPolicy securityPolicy,
+    os_uint32 hash,
     nw_bool connected);
 
 void
 nw_plugPartitionsSetDefaultPartition(
     nw_plugPartitions plugPartitions,
-    nw_partitionAddress partitionAddress);
+    nw_partitionAddress partitionAddress,
+    nw_networkSecurityPolicy securityPolicy,
+    os_uint32 hash);
 
 #endif /* NW__PLUGPARTITIONS_H */

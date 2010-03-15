@@ -24,6 +24,7 @@ typedef char  *nw_dcpsPartitionExpression;
 typedef char  *nw_dcpsTopicExpression;
 typedef char  *nw_dcpsPartitionName;
 typedef char  *nw_dcpsTopicName;
+typedef char  *nw_networkSecurityPolicy;
 
 #define NW_PARTITIONS_WILDCARD    "*"
 #define NW_PARTITIONS_DEFAULT     ""
@@ -44,11 +45,13 @@ void                  nw_partitionsAddPartition(
                           v_networkPartitionId partitionId,
                           const nw_networkPartitionName partitionName,
                           const nw_networkPartitionAddress partitionAddress,
+			  const nw_networkSecurityPolicy securityPolicy,
                           nw_bool connected);
 
 void                  nw_partitionsSetGlobalPartition(
                           nw_partitions partitions,
-                          const nw_networkPartitionAddress partitionAddress);
+                          const nw_networkPartitionAddress partitionAddress,
+			  const nw_networkSecurityPolicy securityPolicy);
 
 void                  nw_partitionsAddMapping(
                           nw_partitions partitions,

@@ -2,6 +2,7 @@
 # included by makefile and makefile.mak 
 
 CCPP_TMPL_PATH		:=$(OSPL_HOME)/etc/idlpp/CCPP
+SACPP_TMPL_PATH     :=$(OSPL_HOME)/etc/idlpp/SACPP
 ORB_INDEP_DIR		:=orb_independent
 
 CCPP_TMPLS		:=  corbaCxxClassBody
@@ -12,6 +13,9 @@ CCPP_TMPLS		+= corbaCxxMetaDescription
 CCPP_TMPLS		+= corbaIdlInterface
 CCPP_TMPLS		+= corbaIdlInterfaceHeader
 
+#SACPP_TEMPLATES = $(foreach t,$(CCPP_TMPLS), $(addprefix $(SACPP_TMPL_PATH)/, $(t)))
+
+
 CCPP_TEMPLATES 		=$(foreach t,$(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/$(ORB_INDEP_DIR)/, $(t)))
 
 ACE_TAO_1_4_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_ACE_TAO_1_4_1/, $(t)))
@@ -20,6 +24,7 @@ EORB_3_0_TMPLS 		= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS
 OPENFUSION_1_4_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_4_1/, $(t)))
 OPENFUSION_1_5_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_5_1/, $(t)))
 OPENFUSION_1_6_1_TMPLS	= $(foreach t, $(CCPP_TMPLS), $(addprefix $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_6_1/, $(t)))
+SACPP_TMPLS             = $(foreach t, $(CCPP_TMPLS), $(addprefix $(SACPP_TMPL_PATH)/, $(t)))
 
-ORB_TEMPLATES = $(ACE_TAO_1_4_1_TMPLS) $(MICO_2_3_11_TMPLS) $(EORB_3_0_TMPLS) $(OPENFUSION_1_4_1_TMPLS) $(OPENFUSION_1_5_1_TMPLS) $(OPENFUSION_1_6_1_TMPLS)
+ORB_TEMPLATES = $(ACE_TAO_1_4_1_TMPLS) $(MICO_2_3_11_TMPLS) $(EORB_3_0_TMPLS) $(OPENFUSION_1_4_1_TMPLS) $(OPENFUSION_1_5_1_TMPLS) $(OPENFUSION_1_6_1_TMPLS) $(SACPP_TMPLS)
 

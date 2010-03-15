@@ -42,12 +42,12 @@ u_subscriberFree (
 OS_API u_result
 u_subscriberSubscribe (
     u_subscriber _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API u_result
 u_subscriberUnSubscribe (
     u_subscriber _this,
-    const c_char *domainExpr);
+    const c_char *partitionExpr);
 
 OS_API c_iter
 u_subscriberLookupReaders (

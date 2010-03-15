@@ -40,6 +40,10 @@ extern "C" {
         ((struct v_subscriptionInfo *) \
          v_topicData(v_builtinTopicLookup(_this, V_SUBSCRIPTIONINFO_ID),_msg))
 
+#define v_builtinDeliveryInfoData(_this,_msg) \
+        ((struct v_deliveryInfo *) \
+         v_topicData(v_builtinTopicLookup(_this, V_DELIVERYINFO_ID),_msg))
+
 #define v_builtinHeartbeatInfoData(_this,_msg) \
         ((struct v_heartbeatInfo *) \
          v_topicData(v_builtinTopicLookup(_this, V_HEARTBEATINFO_ID),_msg))

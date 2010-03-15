@@ -16,14 +16,18 @@ package DDS;
 public final class WriterDataLifecycleQosPolicy 
 {
   public boolean autodispose_unregistered_instances = false;
+  public Duration_t autopurge_suspended_samples_delay;
+  public Duration_t autounregister_instance_delay;
 
   public WriterDataLifecycleQosPolicy ()
   {
   } // ctor
 
-  public WriterDataLifecycleQosPolicy (boolean _autodispose_unregistered_instances)
+  public WriterDataLifecycleQosPolicy (boolean _autodispose_unregistered_instances, Duration_t _autopurge_suspended_samples_delay, Duration_t _autounregister_instance_delay)
   {
     autodispose_unregistered_instances = _autodispose_unregistered_instances;
+    autopurge_suspended_samples_delay = _autopurge_suspended_samples_delay;
+    autounregister_instance_delay = _autounregister_instance_delay;
   } // ctor
 
 } // class WriterDataLifecycleQosPolicy

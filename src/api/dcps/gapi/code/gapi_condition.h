@@ -14,7 +14,6 @@
 
 #include "gapi_common.h"
 #include "gapi_object.h"
-#include "gapi_domainParticipant.h"
 #include "gapi_set.h"
 #include "gapi_waitSet.h"
 #include "gapi_expression.h"

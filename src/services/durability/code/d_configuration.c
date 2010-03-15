@@ -339,7 +339,7 @@ d_configurationInit(
         }
 
         if(c_iterLength(config->nameSpaces) == 0) {
-            ns = d_nameSpaceNew("NoName", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_ALL);
+            ns = d_nameSpaceNew("NoName0", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_ALL);
             d_nameSpaceAddElement(ns, "all", "*", "*");
             config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
         } else {
@@ -353,11 +353,10 @@ d_configurationInit(
             }
 
             if(!found){
-                ns = d_nameSpaceNew("NoName", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_TRANSIENT);
+                ns = d_nameSpaceNew("AutoBuiltinPartition", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_TRANSIENT);
                 d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, "*");
                 config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
             }
-
         }
         d_configurationReport(config, durability);
     }
@@ -371,6 +370,7 @@ d_configurationNameSpacesCombine(
     d_nameSpace ns;
     d_durability durability;
     c_char* partitions;
+    c_char* name;
 
     const c_char* alignee;
     const c_char* kind;
@@ -412,12 +412,15 @@ d_configurationNameSpacesCombine(
             assert(FALSE);
             break;
     }
+    name = d_nameSpaceGetName(ns);
+
     d_printEvent(durability, D_LEVEL_CONFIG,
                 "    - NameSpace:\n" \
+                "        - Name           : %s\n" \
                 "        - AlignmentKind  : %s\n" \
                 "        - DurabilityKind : %s\n" \
                 "        - Partitions     : %s\n",
-                alignee, kind, partitions);
+                name, alignee, kind, partitions);
 
     os_free(partitions);
 
@@ -471,6 +474,7 @@ d_configurationReport(
     const c_char* timestamps;
     const c_char* timeAlignment;
     const c_char* relativeTimestamps;
+    const c_char* tracingSynchronous;
 
     d_printTimedEvent(durability, D_LEVEL_CONFIG, D_THREAD_MAIN, "Configuration:\n");
 
@@ -607,13 +611,20 @@ d_configurationReport(
     } else {
         relativeTimestamps = "FALSE";
     }
+    if(config->tracingSynchronous == TRUE){
+        tracingSynchronous = "TRUE";
+    } else {
+        tracingSynchronous = "FALSE";
+    }
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- Tracing.Verbosity                           : %s\n" \
             "- Tracing.OutputFile                          : %s\n" \
+            "- Tracing.Synchronous                         : %s\n" \
             "- Tracing.Timestamps                          : %s\n" \
             "- Tracing.RelativeTimestamps                  : %s\n"
             , verbosity
             , config->tracingOutputFileName
+            , tracingSynchronous
             , timestamps
             , relativeTimestamps);
 
@@ -2022,10 +2033,12 @@ d_configurationResolveNameSpaces(
     u_cfElement element;
     c_char *    durabilityKind;
     c_char *    alignmentKind;
+    c_char *    name;
     c_bool      found;
     d_nameSpace ns;
     d_alignmentKind akind;
     d_durabilityKind dkind;
+    c_long length;
 
     result = c_iterNew(NULL);
     iter = u_cfElementXPath(elementParent, nameSpaceName);
@@ -2065,8 +2078,15 @@ d_configurationResolveNameSpaces(
         } else {
             akind = D_ALIGNEE_INITIAL_AND_ALIGNER;
         }
+        found = u_cfElementAttributeStringValue(element, "name", &name);
 
-        ns = d_nameSpaceNew("NoName", akind, dkind);
+        if(!found){
+            length = c_iterLength(result);
+            name = os_malloc(10);
+            sprintf(name, "NoName%d", length);
+        }
+        ns = d_nameSpaceNew(name, akind, dkind);
+        os_free(name);
         d_configurationResolvePartition(ns, element, "NoName", "Partition", "*");
         result = c_iterInsert(result, ns);
 

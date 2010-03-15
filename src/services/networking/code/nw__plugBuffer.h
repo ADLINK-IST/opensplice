@@ -34,7 +34,7 @@ NW_STRUCT(nw_plugBuffer) {
     /* Id of the receiving node in case of P2P communication */
     nw_seqNr receivingNodeId;
 };
-#define NW_CURRENT_PROTOCOL_VERSION '1'
+#define NW_CURRENT_PROTOCOL_VERSION '2'
 
 
 #define nw_plugBufferGetSendingNodeId(buffer) \

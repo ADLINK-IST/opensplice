@@ -2,7 +2,7 @@ include $(OSPL_HOME)/setup/$(SPLICE_TARGET)/config.mak
 include $(OSPL_HOME)/setup/makefiles/orbdeps.mak
 
 CXXINCS	:= -I./
-CXXINCS += $(ORB_CXXINCS)
+CXXINCS += $(ORB_INCLUDE)
 CXXINCS += -I$(OSPL_HOME)/src/include
 CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
@@ -31,7 +31,7 @@ pong.o: ../../pong.cpp pingpongC.cpp pingpongDcpsC.h pingpong.h
 	$(CXX) -g  $(CXXINCS) -c ../../pong.cpp
 
 pingpongC.o: pingpongC.cpp 
-	$(CXX) -g  -I./ $(ORB_CXXINCS) -c pingpongC.cpp
+	$(CXX) -g  -I./ $(CXXINCS) -c pingpongC.cpp
 
 pingpongDcps_impl.o: pingpongDcps_impl.cpp 
 	$(CXX) -g  $(CXXINCS) -c pingpongDcps_impl.cpp 

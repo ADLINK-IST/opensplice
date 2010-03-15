@@ -30,6 +30,7 @@
         const DDS_StatusMask mask
         )
 {
+    DDS_DataReader reader;
     struct gapi_dataReaderListener gListener;
     struct gapi_dataReaderListener *pListener = NULL;
 
@@ -38,14 +39,27 @@
         pListener = &gListener;
     }
 
-    return (DDS_DataReader)
-	gapi_subscriber_create_datareader (
-	    (gapi_subscriber)this,
-	    (gapi_topicDescription)a_topic,
-	    (const gapi_dataReaderQos *)qos,
-	    (const struct gapi_dataReaderListener *)pListener,
-	    (gapi_statusMask) mask
-	);
+    reader = gapi_subscriber_create_datareader (
+                        (gapi_subscriber)this,
+                        (gapi_topicDescription)a_topic,
+                        (const gapi_dataReaderQos *)qos,
+                        (const struct gapi_dataReaderListener *)pListener,
+                        (gapi_statusMask) mask
+                    );
+
+    if(reader){
+        gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
+        if(sqos){
+            if(gapi_subscriber_get_qos(this, sqos) == GAPI_RETCODE_OK){
+                if(sqos->entity_factory.autoenable_created_entities) {
+                    gapi_entity_enable(reader);
+                }
+            }
+            gapi_free(sqos);
+        }
+    }
+
+    return reader;
 }
 
 /*     ReturnCode_t

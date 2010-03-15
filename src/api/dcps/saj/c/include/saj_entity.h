@@ -40,22 +40,6 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_EntityImpl_jniGetStatusChang
 JNIEXPORT jlong JNICALL Java_org_opensplice_dds_dcps_EntityImpl_jniGetInstanceHandle
   (JNIEnv *, jobject);
 
-/*
- * Class:     org_opensplice_dds_dcps_EntityImpl
- * Method:    jniGetName
- * Signature: ()Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_org_opensplice_dds_dcps_EntityImpl_jniGetName
-  (JNIEnv *, jobject);
-
-/*
- * Class:     org_opensplice_dds_dcps_EntityImpl
- * Method:    jniSetName
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_EntityImpl_jniSetName
-  (JNIEnv *, jobject, jstring);
-
 #ifdef __cplusplus
 }
 #endif

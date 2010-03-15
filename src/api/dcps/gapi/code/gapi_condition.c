@@ -20,7 +20,6 @@
 #include "gapi_dataReaderView.h"
 #include "gapi_subscriber.h"
 #include "gapi_structured.h"
-#include "gapi_domainParticipantFactory.h"
 
 #include "os_heap.h"
 

@@ -16,7 +16,7 @@
 /* define the default max_blocking_time to 100 ms */
 #define DEFAULT_MAX_BLOCKING_TIME  {0, 100000000}
 
-gapi_domainParticipantQos        gapi_domainParticipantQosDefault = {
+gapi_domainParticipantQos gapi_domainParticipantQosDefault = {
         /* gapi_userDataQosPolicy user_data */
         {
             /* gapi_octetSeq value */

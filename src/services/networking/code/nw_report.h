@@ -28,6 +28,8 @@
     OS_REPORT_2(OS_ERROR, NW_SERVICENAME ": " funcName, 0, description, a1, a2)
 #define NW_REPORT_ERROR_3(funcName, description, a1, a2, a3)                   \
     OS_REPORT_3(OS_ERROR, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3)
+#define NW_REPORT_ERROR_4(funcName, description, a1, a2, a3, a4)               \
+    OS_REPORT_4(OS_ERROR, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4)
     
 #define NW_REPORT_WARNING(funcName, description)                              \
     OS_REPORT(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description)
@@ -37,6 +39,8 @@
     OS_REPORT_2(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2)
 #define NW_REPORT_WARNING_3(funcName, description, a1, a2, a3)                 \
     OS_REPORT_3(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3)
+#define NW_REPORT_WARNING_4(funcName, description, a1, a2, a3, a4)            \
+    OS_REPORT_4(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4)
 
     
 #define NW_REPORT_INFO(level, description)                                     \

@@ -35,8 +35,8 @@ u_qosNew(
     q = NULL;
     if (tmpl != NULL) {
         switch (tmpl->kind) {
-        case V_DOMAIN_QOS:
-            q = (v_qos)u_domainQosNew((v_domainQos)tmpl);
+        case V_PARTITION_QOS:
+            q = (v_qos)u_partitionQosNew((v_partitionQos)tmpl);
         break;
         case V_PARTICIPANT_QOS:
             q = (v_qos)u_participantQosNew((v_participantQos)tmpl);

@@ -113,7 +113,8 @@ nw_discoveryWriterWriteMessageToNetwork(
                                             &messageBuffer,
                                             &bufferLength,
                                             0,
-                                            &maxBytes);
+                                            &maxBytes,
+                                            NULL);
     if (result) {
         /* Copy the message into the buffer */
         NW_CONFIDENCE(bufferLength >= length);
@@ -121,10 +122,10 @@ nw_discoveryWriterWriteMessageToNetwork(
         /* Update buffer position and size */
         messageBuffer = &(messageBuffer[length]);
         /* Do write and flush immediately */
-        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer);
+        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer, NULL);
         maxBytes = bufferLength;
         result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
-                                                 TRUE, &maxBytes);
+                                                 TRUE, &maxBytes, NULL);
     }
     NW_CONFIDENCE(result);
 }
@@ -508,7 +509,6 @@ nw_discoveryReaderReceivedHeartbeat(
     nw_aliveNodesHashItem itemFound;
     nw_bool wasCreated;
     os_uint32 i;
-    nw_bool reconnectAllowed;
 
     NW_CONFIDENCE(messageBuffer != NULL);
     NW_CONFIDENCE(bufferLength == NW_DISCOVERY_MESSAGE_SIZE);
@@ -578,8 +578,7 @@ nw_discoveryReaderReceivedHeartbeat(
                         itemFound->lastHeartbeatReceivedTime);
                     eq = c_timeCompare(diffTime, itemFound->maxHeartbeatIntervalAllowed);
                     
-                    reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
-                    if (eq == C_GT && !reconnectAllowed) {
+                    if (eq == C_GT && !discoveryReader->reconnectAllowed) {
                         /* It has taken too long for this node to send a heartbeat */
                         itemFound->hasDied = TRUE;
                         discoveryReader->aliveNodesCount--;
@@ -667,7 +666,7 @@ nw_discoveryReaderMain(
     c_bool terminationRequested;
     nw_data messageBuffer;
     nw_length bufferLength;
-    nw_address senderAddress;
+    struct nw_senderInfo_s sender = {0,0};
     c_time now;
 
     nw_runnableSetRunState(runnable, rsRunning);
@@ -676,9 +675,10 @@ nw_discoveryReaderMain(
     while (!terminationRequested) {
         /* First retrieve a buffer to write in */
         nw_plugReceiveChannelMessageStart(discoveryReader->receiveChannel,
-            &messageBuffer, &bufferLength, &senderAddress);
+            &messageBuffer, &bufferLength, &sender, NULL);
+
         if (messageBuffer != NULL) {
-            nw_plugReceiveChannelMessageEnd(discoveryReader->receiveChannel);
+            nw_plugReceiveChannelMessageEnd(discoveryReader->receiveChannel, NULL);
         }
 
         /* Check if we have to stop */
@@ -688,7 +688,9 @@ nw_discoveryReaderMain(
             if (messageBuffer != NULL) {
                 /* Determine the contents of the message and update the admin */
                 nw_discoveryReaderReceivedHeartbeat(discoveryReader, messageBuffer,
-                    bufferLength, senderAddress, now);
+                                                    bufferLength, 
+                                                    sender.ipAddress,
+                                                    now);
             }
             if (discoveryReader->checkRequested) {
                 nw_discoveryReaderCheckForDiedNodes(discoveryReader, now);

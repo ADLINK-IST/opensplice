@@ -183,7 +183,7 @@ _ContentFilteredTopicNew (
                 }
             } else {
                 OS_REPORT_2(OS_API_INFO,
-                    "gapi_domainParticipant_create_contentfilteredtopic", 4,
+                    "_ContentFilteredTopicNew", 4,
                     "Number of supplied parameters (%d) not as expected (%d).",
                     parameters->_length, max);
                 _ContentFilteredTopicFree(newTopic);
@@ -191,7 +191,7 @@ _ContentFilteredTopicNew (
             }
         } else {
             OS_REPORT_1(OS_API_INFO,
-                "gapi_domainParticipant_create_contentfilteredtopic", 4,
+                "_ContentFilteredTopicNew", 4,
                 "Number of supplied parameters (%d) exceeds the maximum of 99.",
                 parameters->_length);
             _ContentFilteredTopicFree(newTopic);

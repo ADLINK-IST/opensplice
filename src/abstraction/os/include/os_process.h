@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -72,23 +72,23 @@ typedef enum {
     OS_TERMINATION_ERROR
 } os_terminationType;
 
-typedef os_int32 (*os_procTerminationHandler)(os_terminationType reason); 
+typedef os_int32 (*os_procTerminationHandler)(os_terminationType reason);
 
 /** \brief Register termination handler for the process
- * 
+ *
  * The termination handler is called when the platform
  * detects a termination request. The value returned
  * by the registered termination handler determines
  * whether the OS layer should continue the termination
  * (return value != 0) or ignore it (return value == 0).
- * 
+ *
  * The termination handler is called with a parameter
  * indicating the reason for termination:
  * - OS_TERMINATION_NORMAL: the application is requested
  *       to terminate by means of the platform (e.g. a
  *       term signal is send to the process)
  * - OS_TERMINATION_FATAL: an application problem is
- *         detected (e.g. segmentation fault, bus error, etc.)  
+ *         detected (e.g. segmentation fault, bus error, etc.)
  */
 OS_API os_procTerminationHandler
 os_procSetTerminationHandler(
@@ -190,6 +190,15 @@ os_procCheckStatus(
     os_procId procId,
     os_int32 *status);
 
+/** \brief Return the integer representation of the given process ID
+ *
+ * Possible Results:
+ * - returns the integer representation of thge given process ID
+ */
+OS_API os_int
+os_procIdToInteger(
+    os_procId id);
+
 /** \brief Return the process ID of the calling process
  *
  * Possible Results:
@@ -289,6 +298,13 @@ os_procMUnlock(
  */
 OS_API os_result
 os_procMUnlockAll(void);
+
+/** \brief enable\disable handling of signals by the abstraction layer.
+ *
+ */
+OS_API void
+os_procSetSignalHandlingEnabled(
+    os_uint enabled);
 
 #undef OS_API
 

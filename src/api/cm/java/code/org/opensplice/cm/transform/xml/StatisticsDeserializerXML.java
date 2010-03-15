@@ -91,23 +91,50 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
     
     private Statistics buildStatistics(Element el, Entity entity) throws TransformationException{
         Statistics statistics;
-        NodeList list = el.getChildNodes();
-        Node child;
-        
         statistics = new Statistics(entity, new Time(0,0));
+
         
-        for(int i=0; i<list.getLength(); i++){
+        return buildStatisticsTree(el,entity,statistics,"");
+    }
+    
+    private Statistics buildStatisticsTree(Element el, Entity entity, Statistics statistics, String pref) throws TransformationException{    
+    	Statistics stat = statistics;
+    	NodeList list = el.getChildNodes();
+        Node child;
+        String prefix = "";
+        String name ="";
+        for(int i=0; i<list.getLength(); i++){ 
             child = list.item(i);
-            
             if(child instanceof Element){
-                if("lastReset".equals(child.getNodeName())){
-                    statistics.setLastReset(this.parseTime((Element)child));
-                } else {
-                    statistics.addCounter(this.buildCounter((Element)child));
-                }
-            }
+	                if("lastReset".equals(child.getNodeName())){
+	                    stat.setLastReset(this.parseTime((Element)child));
+	                } else if ("channels".equals(child.getNodeName())) {
+	                	prefix = pref + child.getNodeName() + ".";
+	                	stat = buildStatisticsTree((Element)child, entity, stat, prefix);
+	                } else if ("queues".equals(child.getNodeName())) {
+	                	prefix = pref + child.getNodeName() + ".";
+	                	stat = buildStatisticsTree((Element)child, entity, stat, prefix);
+	                } else if ("element".equals(child.getNodeName())) {
+	                	if (!name.equalsIgnoreCase("")) { 
+	                	prefix = pref + "[" + name + "].";
+	                	} else {
+	                		prefix = pref + "[" + i + "].";
+	                	}
+	                	stat = buildStatisticsTree((Element)child, entity, stat, prefix);
+	                } else if ("numberOfSamplesWaiting".equals(child.getNodeName())) {               	
+	                	stat.addCounter(buildFullCounter((Element)child),pref);
+	                } else if ("name".equals(child.getNodeName())) {    
+	                	name = buildStringValue((Element)child).getValue();
+                   	    String tmp = pref.substring(0, pref.indexOf("[")) + "[" + name + "].";
+	                	pref = tmp;
+	                	//stat.addCounter(buildStringValue((Element)child),pref);
+	                	
+	                } else {               	
+	                    stat.addCounter(this.buildCounter((Element)child),pref);
+	                }  
+            }        
         }
-        return statistics;
+        return stat;
     }
     
     private AbstractValue buildCounter(Element el) throws TransformationException{
@@ -116,21 +143,19 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         AbstractValue result = null;
         NodeList children = el.getChildNodes();
         
-        if(children.getLength() == 1){
-            result = this.buildValue(el);
-        } else if(children.getLength() == 4){
+        if(children.getLength() == 4){
             result = this.buildFullCounter(el);
         } else {
-           for(int i=0; (i<children.getLength()) && (result == null); i++){
-               child = children.item(i);
-               childName = child.getNodeName();
-               
-               if("count".equals(childName)){
-                   result = this.buildAvgValue(el);
-               } else if("lastUpdate".equals(childName)){
-                   result = this.buildTimedValue(el);
-               }
-           }
+        	child = children.item(0);	
+            childName = child.getNodeName();
+           
+            if("count".equals(childName)){
+               result = this.buildAvgValue(el);
+            } else if("lastUpdate".equals(childName)){
+               result = this.buildTimedValue(el);
+            } else {
+        	   result = this.buildValue(el);
+            }
         }
         return result;
     }
@@ -151,8 +176,28 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
                 throw new TransformationException(nfe.getMessage());
             }
             name = el.getNodeName();
-            
             result = new Value(name, longValue);
+        }
+        return result;
+    }
+    
+    private StringValue buildStringValue(Element el) throws TransformationException{
+        String stringValue;
+        String name;
+        StringValue result = null;
+        Node value = el.getFirstChild();
+        
+        if(value != null){
+            try{
+            	stringValue = value.getNodeValue();
+            } catch(NumberFormatException nfe){
+                logger.logp(Level.SEVERE,  "StatisticsDeserializerXML", 
+                        "buildValue", 
+                        "NumberFormatException occurred, Statistics could not be deserialized: " + value);
+                throw new TransformationException(nfe.getMessage());
+            }
+            name = el.getNodeName();
+            result = new StringValue(name, stringValue);
         }
         return result;
     }
@@ -233,6 +278,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
                 }
             }
         }
+        //name = name + countelement;
        return new AvgValue(name, count, floatValue);
     }
     
@@ -243,6 +289,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         AvgValue avg = null;
         String name, childName;
         Node child, value;
+        //AbstractValue value;
                 
         name = el.getNodeName();
         
@@ -260,7 +307,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
                 avg = this.buildAvgValue((Element)child);
             } else if("value".equals(childName)){
                 value = child.getFirstChild();
-                
+               
                 if(value != null){
                     try{
                         longValue = Long.parseLong(value.getNodeValue());
@@ -273,6 +320,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
                 }
             }
         }
+        //name = name + countelement;
         return new FullCounter(name, longValue, min, max, avg);
     }
     

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -1174,6 +1174,7 @@ d_adminEventThreadStart(
     while(admin->eventThreadTerminate == FALSE){
         os_mutexLock(&admin->eventMutex);
         event = c_iterTakeFirst(admin->eventQueue);
+        os_mutexUnlock(&admin->eventMutex);
 
         while(event){
             for(i=0; i<c_iterLength(admin->eventListeners); i++){
@@ -1185,9 +1186,13 @@ d_adminEventThreadStart(
                 }
             }
             d_adminEventFree(event);
+            os_mutexLock(&admin->eventMutex);
             event = c_iterTakeFirst(admin->eventQueue);
+            os_mutexUnlock(&admin->eventMutex);
         }
-        if(admin->eventThreadTerminate == FALSE){
+        os_mutexLock(&admin->eventMutex);
+
+        if((c_iterLength(admin->eventQueue) == 0) && (admin->eventThreadTerminate == FALSE)){
             os_condWait(&admin->eventCondition, &admin->eventMutex);
         }
         os_mutexUnlock(&admin->eventMutex);

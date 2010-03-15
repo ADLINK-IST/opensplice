@@ -10,6 +10,7 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
     public $(type-name)TypeSupport()
     {
         super("$(java-class-name)DataReaderImpl",
+            "$(java-class-name)DataReaderViewImpl",
             "$(java-class-name)DataWriterImpl",
             "(L$(java-class-name)TypeSupport;)V",
             "$(java-org-package-name)",

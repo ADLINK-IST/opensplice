@@ -11,7 +11,6 @@
  */
 #include "gapi_dataWriter.h"
 #include "gapi_qos.h"
-#include "gapi_domainParticipantFactory.h"
 #include "gapi_publisher.h"
 #include "gapi_dataWriterStatus.h"
 #include "gapi_structured.h"
@@ -186,27 +185,20 @@ _DataWriterNew (
 {
     _DataWriter newDataWriter;
     v_writerQos writerQos;
-    v_publisherQos publisherQos;
     u_writer uWriter;
     u_publisher uPublisher;
     _TypeSupport typeSupport = (_TypeSupport)typesupport;
     char dataWriterId[256];
     gapi_string topicName;
-    c_bool enable = TRUE;
 
     newDataWriter = _DataWriterAlloc();
 
     if ( newDataWriter != NULL ) {
-        uPublisher = U_PUBLISHER_GET(publisher);
-        if ( u_entityQoS(u_entity(uPublisher), (v_qos*)&publisherQos) == U_RESULT_OK ) {
-            enable = publisherQos->entityFactory.autoenable_created_entities;
-            u_publisherQosFree(publisherQos);
-        }
-
         _DomainEntityInit(_DomainEntity(newDataWriter),
                           _DomainEntityParticipant(_DomainEntity(publisher)),
                           _Entity(publisher),
-                          enable);
+                          FALSE);
+
         newDataWriter->topic = topic;
         if ( a_listener ) {
             newDataWriter->listener = *a_listener;
@@ -247,7 +239,7 @@ _DataWriterNew (
                               _TopicUtopic(topic),
                               newDataWriter->uWriterCopy,
                               writerQos,
-                              enable);
+                              FALSE);
         if ( uWriter != NULL ) {
             U_WRITER_SET(newDataWriter, uWriter);
         } else {

@@ -133,12 +133,12 @@ v_dataReaderField(
 c_bool
 v_dataReaderSubscribe(
     v_dataReader reader,
-    v_domain domain);
+    v_partition partition);
 
 c_bool
 v_dataReaderUnSubscribe(
     v_dataReader reader,
-     v_domain domain);
+     v_partition partition);
 
 c_bool
 v_dataReaderSubscribeGroup(
@@ -158,14 +158,37 @@ v_dataReaderUnSubscribeGroup(
             c_tableNext(v_dataReader(_this)->index->notEmptyList, \
                         v_dataReaderInstance(_inst)))
 
+/* The trigger-value stores a sample but needs access to the unreferenced
+ * instance-pointer of the sample, which thus needs to be explicitly kept and
+ * freed.
+ *
+ * This macro returns the parameter sample
+ *
+ * @return sample */
+#define v_dataReaderTriggerValueKeep(sample) \
+        (c_keep(v_readerSample(sample)->instance), \
+         c_keep(sample))
+
+/* The sample stored in the trigger-value has its (otherwise unreferenced)
+ * instance-pointer explicitly kept, so it has to be freed. */
+#define v_dataReaderTriggerValueFree(triggerValue)          \
+    {                                                       \
+        v_dataReaderInstance instance;                      \
+                                                            \
+        assert(C_TYPECHECK(triggerValue, v_readerSample));  \
+        instance = v_readerSample(triggerValue)->instance;  \
+        v_dataReaderSampleFree(triggerValue);               \
+        c_free(instance);                                   \
+    }
+
 void
 v_dataReaderUpdatePurgeLists(
     v_dataReader _this);
 
 typedef struct v_dataReaderConnectionChanges_s {
-    /* the following fields are set when the partitionpolicy has changed. */
-    c_iter addedDomains;
-    c_iter removedDomains;
+    /* the following fields are set when the partitionQosPolicy has changed. */
+    c_iter addedPartitions;
+    c_iter removedPartitions;
 } v_dataReaderConnectionChanges;
 
 void

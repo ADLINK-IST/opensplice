@@ -174,14 +174,14 @@ u_publisherDeinit(
 u_result
 u_publisherPublish(
     u_publisher _this,
-    const c_char *domainExpr)
+    const c_char *partitionExpr)
 {
     v_publisher kp;
     u_result result;
 
     result = u_publisherClaim(_this,&kp);
     if ((result == U_RESULT_OK) && (kp != NULL)) {
-        v_publisherPublish(kp,domainExpr);
+        v_publisherPublish(kp,partitionExpr);
         result = u_publisherRelease(_this);
         if (result != U_RESULT_OK) {
             OS_REPORT_1(OS_ERROR, "u_publisherPublish", 0,
@@ -197,14 +197,14 @@ u_publisherPublish(
 u_result
 u_publisherUnPublish(
     u_publisher _this,
-    const c_char *domainExpr)
+    const c_char *partitionExpr)
 {
     v_publisher kp;
     u_result result;
 
     result = u_publisherClaim(_this,&kp);
     if ((result == U_RESULT_OK) && (kp != NULL)) {
-        v_publisherUnPublish(kp,domainExpr);
+        v_publisherUnPublish(kp,partitionExpr);
         result = u_publisherRelease(_this);
         if (result != U_RESULT_OK) {
             OS_REPORT_1(OS_ERROR, "u_publisherUnPublish", 0,

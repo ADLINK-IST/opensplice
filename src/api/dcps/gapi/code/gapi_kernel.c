@@ -551,13 +551,11 @@ gapi_kernelReaderQosCopyIn (
         kernelCopyInDuration(&srcQos->reader_data_lifecycle.autopurge_disposed_samples_delay,
                              &dstQos->lifecycle.autopurge_disposed_samples_delay);
         dstQos->lifecycle.enable_invalid_samples = srcQos->reader_data_lifecycle.enable_invalid_samples;
-        if ( srcQos->reader_lifespan.use_lifespan ) {
-            dstQos->lifespan.used = TRUE;
-            kernelCopyInDuration(&srcQos->reader_lifespan.duration,
-                                 &dstQos->lifespan.duration);
-        } else {
-            dstQos->lifespan.used = FALSE;
-        }
+
+        dstQos->lifespan.used = srcQos->reader_lifespan.use_lifespan;
+        kernelCopyInDuration(&srcQos->reader_lifespan.duration,
+                             &dstQos->lifespan.duration);
+
         dstQos->share.enable = srcQos->share.enable;
         if ( srcQos->share.enable ) {
             dstQos->share.name = gapi_strdup(srcQos->share.name);
@@ -628,12 +626,10 @@ gapi_kernelReaderQosCopyOut (
         kernelCopyOutDuration(&srcQos->lifecycle.autopurge_disposed_samples_delay,
                               &dstQos->reader_data_lifecycle.autopurge_disposed_samples_delay);
         dstQos->reader_data_lifecycle.enable_invalid_samples = srcQos->lifecycle.enable_invalid_samples;
-        if ( srcQos->lifespan.used ) {
-            dstQos->reader_lifespan.use_lifespan = TRUE;
-            kernelCopyOutDuration(&srcQos->lifespan.duration, &dstQos->reader_lifespan.duration);
-        } else {
-            dstQos->reader_lifespan.use_lifespan = FALSE;
-        }
+
+        dstQos->reader_lifespan.use_lifespan = srcQos->lifespan.used;
+        kernelCopyOutDuration(&srcQos->lifespan.duration, &dstQos->reader_lifespan.duration);
+
 
         dstQos->share.enable = srcQos->share.enable;
         if ( srcQos->share.enable ) {
