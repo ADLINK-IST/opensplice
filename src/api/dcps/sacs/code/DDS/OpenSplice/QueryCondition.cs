@@ -24,6 +24,14 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
+    /// <summary>
+    /// QueryCondition objects are specialized ReadCondition objects that allow the
+    /// application to specify a filter on the locally available data. The DataReader objects
+    /// accept a set of QueryCondition objects for the DataReader and provide support
+    /// (in conjunction with WaitSet objects) for an alternative communication style
+    /// between the Data Distribution Service and the application (i.e., state-based rather
+    /// than event-based).
+    /// </summary>
     internal class QueryCondition : ReadCondition, IQueryCondition
     {
         internal QueryCondition(IntPtr gapiPtr)
@@ -32,6 +40,10 @@ namespace DDS.OpenSplice
             // Base class handles everything.
         }
 
+        /// <summary>
+        /// This operation returns the query expression associated with the QueryCondition.
+        /// </summary>
+        /// <returns>The query expression associated with the QueryCondition.</returns>
         public string GetQueryExpression()
         {
             IntPtr ptr = Gapi.QueryCondition.get_query_expression(GapiPeer);
@@ -41,6 +53,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation obtains the queryParameters associated with the QueryCondition
+        /// </summary>
+        /// <param name="queryParameters">A reference to a sequence of strings that will be 
+        /// used to store the parameters used in the SQL expression</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetQueryParameters(ref string[] queryParameters)
         {
             ReturnCode result = ReturnCode.Error;
@@ -59,6 +77,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation changes the query parameters associated with the QueryCondition.
+        /// </summary>
+        /// <param name="queryParameters">A sequence of strings which are the parameters used in the SQL query string
+        /// (i.e., the “%n” tokens in the expression).</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetQueryParameters(params string[] queryParameters)
         {
             ReturnCode result = ReturnCode.Error;

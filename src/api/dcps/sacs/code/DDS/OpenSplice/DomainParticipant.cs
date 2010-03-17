@@ -24,6 +24,28 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
+    /// <summary>
+    /// All the DCPS Entity objects are attached to a DomainParticipant. A DomainParticipant 
+    /// represents the local membership of the application in a Domain.
+    /// </summary>
+    /// <remarks>A Domain is a distributed concept that links all the applications that must be able to 
+    /// communicate with each other. It represents a communication plane: only the 
+    /// Publishers and the Subscribers attached to the same Domain can interact. 
+    /// This class implements several functions:
+    /// <list type="bullet">
+    /// <item>it acts as a container for all other Entity objects</item>
+    /// <item>it acts as a factory for the Publisher, Subscriber, Topic,ContentFilteredTopic 
+    /// and MultiTopic objects</item>
+    /// <item>it provides access to the built-in Topic objects</item>
+    /// <item>it provides information about Topic objects</item>
+    /// <item>It isolates applications within the same Domain (sharing the same domainId) 
+    /// from other applications in a different Domain on the same set of computers. In this way, 
+    /// several independent distributed applications can coexist in the same physical network without interfering, 
+    /// or even being aware of each other.</item>
+    /// <item>It provides administration services in the Domain, offering operations, which allow the application 
+    /// to ignore locally any information about a given Participant, Publication, Subscription or Topic.</item>
+    /// </list>
+    /// </remarks>
     public class DomainParticipant : Entity, IDomainParticipant
     {
         private readonly DomainParticipantListenerHelper listenerHelper;
@@ -193,6 +215,15 @@ namespace DDS.OpenSplice
             }
 
         }
+
+        /// <summary>
+        /// This operation attaches a DomainParticipantListener to the DomainParticipant.
+        /// </summary>
+        /// <param name="listener">The DomainParticipantListener instance, which will be attached to the 
+        /// DomainParticipant.</param>
+        /// <param name="mask">a bit mask in which each bit enables the invocation of the DomainParticipantListener 
+        /// for a certain status.</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -276,6 +307,18 @@ namespace DDS.OpenSplice
             return CreatePublisher(qos, null, 0);
         }
 
+        /// <summary>
+        /// This operation creates a Publisher with the desired QosPolicy settings and if applicable, 
+        /// attaches the optionally specified PublisherListener to it.
+        /// </summary>
+        /// <param name="qos">A collection of QosPolicy settings for the new Publisher.
+        /// In case these settings are not self consistent, no Publisher is created.</param>
+        /// <param name="listener">The PublisherListener instance which will be attached to the new Publisher.
+        /// It is permitted to use null as the value of the listener: this behaves as a PublisherListener 
+        /// whose operations perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the PublisherListener 
+        /// for a certain status.</param>
+        /// <returns>The newly created Publisher. In case of an error, a null Publisher is returned.</returns>
         public IPublisher CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask)
         {
             IPublisher publisher = null;
@@ -328,6 +371,11 @@ namespace DDS.OpenSplice
             return publisher;
         }
 
+        /// <summary>
+        /// This operation deletes a Publisher.
+        /// </summary>
+        /// <param name="p">The publisher to be deleted.</param>
+        /// <returns>Ok,Error,BadParameter,Alreadydeleted,OutOfResources or PreconditionNotMet.</returns>
         public ReturnCode DeletePublisher(IPublisher p)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -396,6 +444,18 @@ namespace DDS.OpenSplice
             return CreateSubscriber(qos, null, 0);
         }
 
+        /// <summary>
+        /// This operation creates a Subscriber with the desired QosPolicy settings and if applicable, 
+        /// attaches the optionally specified SubscriberListener to it.
+        /// </summary>
+        /// <param name="qos">a collection of QosPolicy settings for the new Subscriber. 
+        /// In case these settings are not self consistent, no Subscriber is created.</param>
+        /// <param name="listener">The SubscriberListener instance which will be attached to the new Subscriber. 
+        /// It is permitted to use null as the value of the listener: this behaves as a SubscriberListener 
+        /// whose operations perform no action.</param>
+        /// <param name="mask">a bit-mask in which each bit enables the invocation of the SubscriberListener 
+        /// for a certain status.</param>
+        /// <returns>The newly created Subscriber. In case of an error a Subscriber with a null value is returned.</returns>
         public ISubscriber CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
         {
             ISubscriber subscriber = null;
@@ -446,6 +506,11 @@ namespace DDS.OpenSplice
             return subscriber;
         }
 
+        /// <summary>
+        /// This operation deletes a Subscriber.
+        /// </summary>
+        /// <param name="s"> The subscriber to be deleted.</param>
+        /// <returns>Return codes are: Ok,Error,BadParameter,AlreadyDeleted,OutOfResources or PreconditionNotMet.</returns>
         public ReturnCode DeleteSubscriber(ISubscriber s)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -461,6 +526,9 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This property returns the built-in Subscriber associated with the DomainParticipant.
+        /// </summary>
         public ISubscriber BuiltInSubscriber
         {
             get
@@ -590,6 +658,22 @@ namespace DDS.OpenSplice
             return CreateTopic(topicName, typeName, qos, null, 0);
         }
 
+        /// <summary>
+        /// This operation creates a reference to a new or existing Topic under the given name,for a specific type, 
+        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified TopicListener to it.
+        /// </summary>
+        /// <param name="topicName">The name of the Topic to be created. A new Topic will only be created, when no Topic, 
+        /// with the same name, is found within the DomainParticipant.</param>
+        /// <param name="typeName">A local alias of the data type, which must have been registered before creating 
+        /// the Topic.</param>
+        /// <param name="qos">The collection of QosPolicy settings for the new Topic. In case these settings are not 
+        /// self consistent, no Topic is created.</param>
+        /// <param name="listener">The TopicListener instance which will be attached to the new Topic. 
+        /// It is permitted to use null as the value of the listener: this behaves as a TopicListener whose operations
+        /// perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the TopicListener 
+        /// for a certain status.</param>
+        /// <returns>The new or existing Topic. In case of an error a Topic with a null value is returned.</returns>
         public ITopic CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask)
         {
             ITopic topic = null;
@@ -645,6 +729,11 @@ namespace DDS.OpenSplice
             return topic;
         }
 
+        /// <summary>
+        /// This operation deletes a Topic
+        /// </summary>
+        /// <param name="t">The Topic which is to be deleted.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,AlreadyDeleted,OutOfResources or PreconditionNotMet.</returns>
         public ReturnCode DeleteTopic(ITopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -660,6 +749,14 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation gives access to an existing (or ready to exist) enabled Topic, based on its topicName.
+        /// </summary>
+        /// <param name="topicName">The name of te Topic that the application wants access to.</param>
+        /// <param name="timeout">The maximum duration to block for the DomainParticipant FindTopic, 
+        /// after which the application thread is unblocked. The special constant Duration Infinite can be used 
+        /// when the maximum waiting time does not need to be bounded.</param>
+        /// <returns>The Topic that has been found. If an error occurs the operation returns a Topic with a null value. </returns>
         public ITopic FindTopic(string topicName, Duration timeout)
         {
             IntPtr gapiPtr = Gapi.DomainParticipant.find_topic(
@@ -677,6 +774,12 @@ namespace DDS.OpenSplice
             return topic;
         }
 
+        /// <summary>
+        /// This operation gives access to a locally-created TopicDescription, with a matching name.
+        /// </summary>
+        /// <param name="name">The name of the TopicDescription to look for.</param>
+        /// <returns>The TopicDescription it has found.If an error occurs the operation 
+        /// returns a TopicDescription with a null value. </returns>
         public ITopicDescription LookupTopicDescription(string name)
         {
             ITopicDescription topicDesc = null;
@@ -704,6 +807,21 @@ namespace DDS.OpenSplice
             return topicDesc;
         }
 
+        /// <summary>
+        /// This operation creates a ContentFilteredTopic for a DomainParticipant in order to allow 
+        /// DataReaders to subscribe to a subset of the topic content.
+        /// </summary>
+        /// <param name="name">The name of the ContentFilteredTopic.</param>
+        /// <param name="relatedTopic">The base topic on which the filtering will be applied. Therefore, 
+        /// a filtered topic is based onn an existing Topic.</param>
+        /// <param name="filterExpression">The SQL expression (subset of SQL), which defines the filtering.</param>
+        /// <param name="expressionParameters">A sequence of strings with the parameter value used in the SQL expression
+        /// (i.e., the number of %n tokens in the expression).The number of values in expressionParameters 
+        /// must be equal or greater than the highest referenced %n token in the filterExpression 
+        /// (e.g. if %1 and %8 are used as parameter in the filterExpression, the expressionParameters should at least
+        /// contain n+1 = 9 values)</param>
+        /// <returns>The newly created ContentFilteredTopic. In case of an error a ContentFilteredTopic with a null
+        /// value is returned.</returns>
         public IContentFilteredTopic CreateContentFilteredTopic(
                 string name, 
                 ITopic relatedTopic,
@@ -737,6 +855,11 @@ namespace DDS.OpenSplice
             return contentFilteredTopic;
         }
 
+        /// <summary>
+        /// This operation deletes a ContentFilteredTopic.
+        /// </summary>
+        /// <param name="t">The ContentFilteredTopic to be deleted.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,AlreadyDeleted,OutOfResources or PreconditionNotMet.</returns>
         public ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -752,7 +875,14 @@ namespace DDS.OpenSplice
             return result;
         }
 
-
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="typeName"></param>
+        /// <param name="subscriptionExpression"></param>
+        /// <param name="expressionParameters"></param>
+        /// <returns></returns>
         public IMultiTopic CreateMultiTopic(
                 string name, 
                 string typeName,
@@ -782,6 +912,11 @@ namespace DDS.OpenSplice
             return multiTopic;
         }
 
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
         public ReturnCode DeleteMultiTopic(IMultiTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -797,6 +932,10 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation deletes all the Entity objects that were created on the DomainParticipant.
+        /// </summary>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources</returns>
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.DomainParticipant.delete_contained_entities(
@@ -805,6 +944,11 @@ namespace DDS.OpenSplice
                     IntPtr.Zero);
         }
 
+        /// <summary>
+        /// This operation replaces the existing set of QosPolicy settings for a DomainParticipant.
+        /// </summary>
+        /// <param name="qos">New set of QosPolicy settings for the DomainParticipant.</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources</returns>
         public ReturnCode SetQos(DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -822,6 +966,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation allows access to the existing set of QoS policies for a DomainParticipant.
+        /// </summary>
+        /// <param name="qos">A reference to the destination DomainParticipantQos struct in which the 
+        /// QosPolicy settings will be copied.</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetQos(ref DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -841,6 +991,11 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
         public ReturnCode IgnoreParticipant(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_participant(
@@ -848,6 +1003,11 @@ namespace DDS.OpenSplice
                     handle);
         }
 
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
         public ReturnCode IgnoreTopic(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_topic(
@@ -855,6 +1015,11 @@ namespace DDS.OpenSplice
                     handle);
         }
 
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
         public ReturnCode IgnorePublication(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_publication(
@@ -862,6 +1027,11 @@ namespace DDS.OpenSplice
                     handle);
         }
 
+        /// <summary>
+        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <returns></returns>
         public ReturnCode IgnoreSubscription(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_subscription(
@@ -869,6 +1039,9 @@ namespace DDS.OpenSplice
                     handle);
         }
 
+        /// <summary>
+        /// This property returns the DomainId of the Domain to which this DomainParticipant is attached.
+        /// </summary>
         public string DomainId
         {
             get
@@ -881,11 +1054,21 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This operation asserts the liveliness for the DomainParticipant.
+        /// </summary>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode AssertLiveliness()
         {
             return Gapi.DomainParticipant.assert_liveliness(GapiPeer);
         }
 
+        /// <summary>
+        /// This operation sets the default PublisherQos of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy 
+        /// settings for the newly created Publishers.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetDefaultPublisherQos(PublisherQos qos)
         {
             ReturnCode result;
@@ -903,6 +1086,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation gets the struct with the default Publisher QosPolicy settings of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">A reference to the PublisherQos struct (provided by the application) in which 
+        /// the default QosPolicy settings for the Publisher are written.</param>
+        /// <returns>Return codes are: Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetDefaultPublisherQos(ref PublisherQos qos)
         {
             ReturnCode result;
@@ -922,6 +1111,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation sets the default SubscriberQos of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy 
+        /// settings for the newly created Subscribers.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetDefaultSubscriberQos(SubscriberQos qos)
         {
             ReturnCode result;
@@ -939,6 +1134,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation gets the struct with the default Subscriber QosPolicy settings of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">a reference to the QosPolicy struct (provided by the application) in which the default 
+        /// QosPolicy settings for the Subscriber is written</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetDefaultSubscriberQos(ref SubscriberQos qos)
         {
             ReturnCode result;
@@ -958,6 +1159,13 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation sets the default TopicQos of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">a collection of QosPolicy settings, which contains the new default QosPolicy settings 
+        /// for the newly created Topics.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted,OutOfResources or 
+        /// InconsistentPolicy</returns>
         public ReturnCode SetDefaultTopicQos(TopicQos qos)
         {
             ReturnCode result;
@@ -976,6 +1184,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation gets the struct with the default Topic QosPolicy settings of the DomainParticipant.
+        /// </summary>
+        /// <param name="qos">A reference to the QosPolicy struct (provided by the application) in which the 
+        /// default QosPolicy settings for the Topic is written.</param>
+        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetDefaultTopicQos(ref TopicQos qos)
         {
             ReturnCode result;
@@ -995,6 +1209,13 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This operation checks whether or not the given Entity represented by handle is created by the 
+        /// DomainParticipant or any of its contained entities.
+        /// </summary>
+        /// <param name="handle">An Entity in the Data Distribution Service.</param>
+        /// <returns>true if handle represents an Entity that is created by the DomainParticipant or any of its
+        /// contained Entities. Otherwise the return value is false.</returns>
         public bool ContainsEntity(InstanceHandle handle)
         {
             byte result = Gapi.DomainParticipant.contains_entity(
@@ -1003,12 +1224,20 @@ namespace DDS.OpenSplice
             return result != 0;
         }
 
+        /// <summary>
+        /// This operation returns the value of the current time that the Data Distribution Service 
+        /// uses to time-stamp written data as well as received data in current_time.
+        /// </summary>
+        /// <param name="currentTime">stores the value of currentTime as used by the Data Distribution Service. 
+        /// The input value of currentTime is ignored.</param>
+        /// <returns>Return codes are:Ok,Error,BadParameter,AlreadyDeleted,OutOfResources or NotEnabled.</returns>
         public ReturnCode GetCurrentTime(out Time currentTime)
         {
             return Gapi.DomainParticipant.get_current_time(
                     GapiPeer,
                     out currentTime);
         }
+
 
         public ITypeSupport GetTypeSupport(string registeredName)
         {

@@ -31,6 +31,9 @@ namespace DDS.OpenSplice
             // Base class handles everything.
         }
 
+        /// <summary>
+        /// This property returns the registered name of the data type associated with the TopicDescription 
+        /// </summary>
         public string TypeName
         {
             get
@@ -43,6 +46,9 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the name used to create the TopicDescription.
+        /// </summary>
         public string Name
         {
             get
@@ -55,6 +61,10 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the DomainParticipant associated with the TopicDescription or 
+        /// a null DomainParticipant.
+        /// </summary>
         public IDomainParticipant Participant
         {
             get
