@@ -23,16 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
-    /// <summary>
-    /// MultiTopic is a specialization of TopicDescription that allows subscriptions
-    /// to combine, filter and/or rearrange data coming from several Topics.
-    /// MultiTopic allows a more sophisticated subscription that can select and combine
-    /// data received from multiple Topics into a single data type (specified by the
-    /// inherited type_name). The data will then be filtered (selection) and possibly
-    /// re-arranged (aggregation and/or projection) according to an SQL expression with
-    /// parameters to adapt the filter clause.
-    /// </summary>
+{    
     internal class MultiTopic : TopicDescription, IMultiTopic
     {
         internal MultiTopic(IntPtr gapiPtr)
@@ -40,10 +31,7 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
+        
         public string SubscriptionExpression
         {
             get
@@ -55,12 +43,7 @@ namespace DDS.OpenSplice
                 return result;
             }
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="expressionParameters"></param>
-        /// <returns></returns>
+        
         public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
             ReturnCode result;
@@ -84,12 +67,7 @@ namespace DDS.OpenSplice
 
 			return result;
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="expressionParameters"></param>
-        /// <returns></returns>
+        
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
             ReturnCode result;

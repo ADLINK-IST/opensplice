@@ -25,14 +25,6 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
-    /// <summary>
-    /// Topic is the most basic description of the data to be published and subscribed.
-    /// A Topic is identified by its name, which must be unique in the whole Domain. In
-    /// addition (by virtue of extending TopicDescription) it fully identifies the type of
-    /// data that can be communicated when publishing or subscribing to the Topic.
-    /// Topic is the only TopicDescription that can be used for publications and
-    /// therefore a specialized DataWriter is associated to the Topic.
-    /// </summary>
     internal class Topic : Entity, ITopic
     {
         private readonly TopicListenerHelper listenerHelper;
@@ -50,13 +42,7 @@ namespace DDS.OpenSplice
             // Base class handles everything.
             this.listenerHelper = listenerHelper;
         }
-
-        /// <summary>
-        /// This operation attaches a TopicListener to the Topic.
-        /// </summary>
-        /// <param name="listener">The listener to be attached to the Topic.</param>
-        /// <param name="mask">A bit mask in which each bit enables the invocation of the TopicListener for a certain status.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode SetListener(ITopicListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -86,25 +72,13 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
-        /// <summary>
-        /// This operation obtains the InconsistentTopicStatus of the Topic.
-        /// </summary>
-        /// <param name="status">the contents of the InconsistentTopicStatus struct of the Topic will be 
-        /// copied into the location specified by status.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources</returns>
+        
         public ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus status)
         {
             if (status == null) status = new InconsistentTopicStatus();
             return Gapi.Topic.get_inconsistent_topic_status(GapiPeer, status);
         }
-
-        /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a Topic.
-        /// </summary>
-        /// <param name="qos">A reference to the destination TopicQos struct in which the QosPolicy 
-        /// settings will be copied.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources</returns>
+        
         public ReturnCode GetQos(ref TopicQos qos)
         {
             ReturnCode result;
@@ -120,13 +94,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a Topic.
-        /// </summary>
-        /// <param name="qos">The new set of QosPolicy settings for a Topic.</param>
-        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted,
-        /// OutOfResources,ImmutablePolicy or InconsistentPolicy.</returns>
+        
         public ReturnCode SetQos(TopicQos qos)
         {
             ReturnCode result;

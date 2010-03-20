@@ -87,31 +87,13 @@ namespace DDS
             // Base class handles everything.
         }
 
-        /// <summary>
-        /// This operation creates a DomainParticipant using the specified URI.
-        /// </summary>
-        /// <param name="domainId">The specified URI used to create the DomainParticipant</param>
-        /// <returns></returns>
+
         public IDomainParticipant CreateParticipant(
             string domainId)
         {
             return CreateParticipant(domainId, null, 0);
         }
 
-        /// <summary>
-        /// This operation creates a new DomainParticipant which will join the domain 
-        /// identified by domainId, and attaches the optionally specified 
-        /// DomainParticipantListener to it.
-        /// </summary>
-        /// <param name="domainId">The ID of the Domain to which the 
-        /// DomainParticipant is joined. This should be a URI to the location of the 
-        /// configuration file that identifies the configuration details of the Domain.</param>
-        /// <param name="listener">The DomainParticipantListener instance which will be attached to the new 
-        /// DomainParticipant. It is permitted to use null as the value of the listener: 
-        /// this behaves as a DomainParticipantListener whose operations perform no action.</param>
-        /// <param name="mask">a bit-mask in which each bit enables the invocation of the 
-        /// DomainParticipantListener for a certain status.</param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
         public IDomainParticipant CreateParticipant(
             string domainId,
             IDomainParticipantListener listener,
@@ -168,15 +150,6 @@ namespace DDS
             return participant;
         }
 
-        /// <summary>
-        /// This operation creates a new DomainParticipant using the specified URI and QoS settings.
-        /// </summary>
-        /// <param name="domainId">The ID of the Domain to which the 
-        /// DomainParticipant is joined. This should be a URI to the location of the 
-        /// configuration file that identifies the configuration details of the Domain.</param>
-        /// <param name="qos">a DomainParticipantQos for the new DomainParticipant. 
-        /// When this set of QosPolicy settings is inconsistent, no DomainParticipant is created.</param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
         public IDomainParticipant CreateParticipant(
             string domainId,
             DomainParticipantQos qos)
@@ -184,22 +157,7 @@ namespace DDS
             return CreateParticipant(domainId, qos, null, 0);
         }
 
-        /// <summary>
-        /// This operation creates a new DomainParticipant which will join the domain 
-        /// identified by domainId, and attaches the optionally specified 
-        /// DomainParticipantListener to it.
-        /// </summary>
-        /// <param name="domainId">The ID of the Domain to which the 
-        /// DomainParticipant is joined. This should be a URI to the location of the 
-        /// configuration file that identifies the configuration details of the Domain.</param>
-        /// <param name="listener">The DomainParticipantListener instance which will be attached to the new 
-        /// DomainParticipant. It is permitted to use null as the value of the listener: 
-        /// this behaves as a DomainParticipantListener whose operations perform no action.</param>
-        /// <param name="qos">a DomainParticipantQos for the new DomainParticipant. 
-        /// When this set of QosPolicy settings is inconsistent, no DomainParticipant is created.</param>
-        /// <param name="mask">a bit-mask in which each bit enables the invocation of the 
-        /// DomainParticipantListener for a certain status.</param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
+        
         public IDomainParticipant CreateParticipant(
             string domainId,
             DomainParticipantQos qos,
@@ -261,12 +219,7 @@ namespace DDS
 
             return participant;
         }
-
-        /// <summary>
-        /// This operation deletes the specified DomainParticipant.
-        /// </summary>
-        /// <param name="a_participant"> The DomainParticipant which is to be deleted.</param>
-        /// <returns>Return codes can be Ok,Error,BadParameter,OutOfResources or PreconditionNotMet</returns>
+      
         public ReturnCode DeleteParticipant(IDomainParticipant a_participant)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -283,30 +236,14 @@ namespace DDS
 
             return result;
         }
-
-        /// <summary>
-        /// This operation looks up an existing DomainParticipant based on its domainId.
-        /// </summary>
-        /// <param name="domainId">the ID of the Domain for which a joining DomainParticipant 
-        /// should be retrieved. This should be a URI to the location of the configuration file that 
-        /// identifies the configuration details of the Domain.</param>
-        /// <returns>The retrieved DomainParticipant. If no such DomainParticipant is found 
-        /// a null is returned.</returns>
+        
         public IDomainParticipant LookupParticipant(string domainId)
         {
             IntPtr gapiDP = OpenSplice.Gapi.DomainParticipantFactory.lookup_participant(GapiPeer, domainId);
             IDomainParticipant participant = (IDomainParticipant)SacsSuperClass.fromUserData(gapiDP);
             return participant;
         }
-
-        /// <summary>
-        /// This operation specifies the default settings for the DomainParticipantQos, 
-        /// that can be used by newly created DomainParticipants that do not have 
-        /// a particular preference for all individual policies. 
-        /// </summary>
-        /// <param name="qos">The DomainParticipantQos which contains the new default 
-        /// DomainParticipantQos for the newly created DomainParticipants</param>
-        /// <returns>Possible return codes are: Ok,Error and OutOfResources.</returns>
+        
         public ReturnCode SetDefaultParticipantQos(DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -324,14 +261,7 @@ namespace DDS
             }
             return result;
         }
-        
-        /// <summary>
-        /// This operation obtains the default settings for the DomainParticipantQos, that can be used 
-        /// by newly created DomainParticipants that do not have a particular preference for all individual policies. 
-        /// </summary>
-        /// <param name="qos">A reference to the DomainParticipantQos in which the default DomainParticipantQos
-        /// for the DomainParticipant is written.</param>
-        /// <returns>Possible return codes are: Ok,Error and outOfResources.</returns>
+                
         public ReturnCode GetDefaultParticipantQos(ref DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -351,11 +281,7 @@ namespace DDS
             return result;
         }
 
-        /// <summary>
-        /// This operation specifies the QoS settings for the DomainParticipantFactory.
-        /// </summary>
-        /// <param name="qos">The new set of Qos policy settings for the DomainParticipantFactory.</param>
-        /// <returns>Possible return codes are: Ok,Error and OutOfResources.</returns>
+        
         public ReturnCode SetQos(DomainParticipantFactoryQos qos)
         {
             ReturnCode result;
@@ -372,13 +298,7 @@ namespace DDS
 
             return result;
         }
-
-        /// <summary>
-        /// This operation obtains the QoS settings for the DomainParticipantFactory.
-        /// </summary>
-        /// <param name="qos">A reference to the destination DomainParticipantFactoryQos, 
-        /// in which the Qos policies will be copied.</param>
-        /// <returns>Possible values are: Ok,Error, OutOfResources.</returns>
+        
         public ReturnCode GetQos(ref DomainParticipantFactoryQos qos)
         {
             ReturnCode result;

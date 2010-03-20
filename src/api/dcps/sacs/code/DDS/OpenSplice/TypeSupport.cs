@@ -23,15 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
-    /// <summary>
-    /// The Topic, MultiTopic or ContentFilteredTopic is bound to a data type
-    /// described by the type name argument. Prior to creating a Topic, MultiTopic or
-    /// ContentFilteredTopic, the data type must have been registered with the Data
-    /// Distribution Service. This is done using the data type specific register_type
-    /// operation on a derived class of the TypeSupport interface. A derived class is
-    /// generated for each data type used by the application, by calling the pre-processor.
-    /// </summary>
+{    
     public abstract class TypeSupport : SacsSuperClass, ITypeSupport
     {
         public abstract string TypeName { get; }

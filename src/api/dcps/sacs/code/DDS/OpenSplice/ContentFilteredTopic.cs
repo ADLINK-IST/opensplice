@@ -23,15 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
-    /// <summary>
-    /// ContentFilteredTopic is a specialization of TopicDescription that allows for content based subscriptions. 
-    /// ContentFilteredTopic describes a more sophisticated subscription that indicates the Subscriber 
-    /// does not necessarily want to see all values of each instance published under the Topic. 
-    /// Rather, it only wants to see the values whose contents satisfy certain criteria. 
-    /// Therefore this class must be used to request content-based subscriptions. The selection 
-    /// of the content is done using the SQL based filter with parameters to adapt the filter clause.
-    /// </summary>
+{    
     internal class ContentFilteredTopic : TopicDescription, IContentFilteredTopic
     {
         internal ContentFilteredTopic(IntPtr gapiPtr)
@@ -39,11 +31,7 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
-        /// <summary>
-        /// This operation returns the filter_expression associated with the ContentFilteredTopic.
-        /// </summary>
-        /// <returns>The string that holds the filter expression associated with the ContentFilteredTopic.</returns>
+        
         public string GetFilterExpression()
         {
             IntPtr ptr = Gapi.ContentFilteredTopic.get_filter_expression(GapiPeer);
@@ -52,13 +40,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation obtains the expression parameters associated with the ContentFilteredTopic.
-        /// </summary>
-        /// <param name="expressionParameters">A reference to a sequence of strings that will be used 
-        /// to store the parameters used in the SQL expression.</param>
-        /// <returns>The possible return codes are: Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
             ReturnCode result;
@@ -81,14 +63,7 @@ namespace DDS.OpenSplice
 
 			return result;
         }
-
-        /// <summary>
-        /// This operation changes the expression parameters associated with the ContentFilteredTopic.
-        /// </summary>
-        /// <param name="expressionParameters">A sequence of strings with the parameters used in the SQL expression.
-        /// The number of values in expressionParameters must be equal or greater than the highest referenced 
-        /// %n token in the subscriptionExpression.</param>
-        /// <returns>The possible return codes are: Ok, Error, BadParameter,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
             ReturnCode result;
@@ -106,10 +81,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This property returns the related topic to the filter.
-        /// </summary>
+        
         public ITopic RelatedTopic
         {
             get

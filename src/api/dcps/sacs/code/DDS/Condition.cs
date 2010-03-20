@@ -23,9 +23,6 @@ using DDS.OpenSplice;
 
 namespace DDS
 {
-    /// <summary>
-    /// Base class for all Conditions that maybe attached to a WaitSet.
-    /// </summary>
     public class Condition : SacsSuperClass, ICondition
     {
         protected Condition(IntPtr gapiPtr, bool weak)
@@ -37,11 +34,7 @@ namespace DDS
         {
             // Base class handles everything.
         }
-        /// <summary>
-        /// Each Condition has a trigger_value that can be TRUE or FALSE and is set
-        /// by the DDS depending on the evaluation of the Condition.
-        /// </summary>
-        /// <returns>A bool that can be TRUE or FALSE </returns>
+        
         public bool GetTriggerValue()
         {
             byte result = OpenSplice.Gapi.Condition.get_trigger_value(GapiPeer);

@@ -23,16 +23,7 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
-    /// <summary>
-    /// A Subscriber is the object responsible for the actual reception of the data
-    /// resulting from its subscriptions.
-    /// A Subscriber acts on behalf of one or more DataReader objects that are related
-    /// to it. When it receives data (from the other parts of the system), it indicates to the
-    /// application that data is available through its DataReaderListener and by
-    /// enabling related Conditions. The application can access the list of concerned
-    /// DataReader objects through the operation get_datareaders and then access the
-    /// data available through operations on the DataReader.
-    /// </summary>
+    
     internal class Subscriber : Entity, ISubscriber
     {
         private readonly SubscriberListenerHelper listenerHelper;
@@ -51,13 +42,6 @@ namespace DDS.OpenSplice
             this.listenerHelper = listenerHelper;
         }
 
-        /// <summary>
-        /// This operation attaches a SubscriberListener to the Subscriber.
-        /// </summary>
-        /// <param name="listener">The SubscriberListener instance, which will be attached to the Subscriber.</param>
-        /// <param name="mask">A bit mask in which each bit enables the invocation of the SubscriberListener 
-        /// for a certain status.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetListener(ISubscriberListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -157,21 +141,7 @@ namespace DDS.OpenSplice
         {
             return CreateDataReader(topic, qos, null, 0);
         }
-
-        /// <summary>
-        /// This operation creates a DataReader with the desired QosPolicy settings, for the
-        /// desired TopicDescription and attaches the optionally specified DataWriterListener to it.
-        /// </summary>
-        /// <param name="topic">The TopicDescription for which the DataReader is created. 
-        /// This may be a Topic, MultiTopic or ContentFilteredTopic.</param>
-        /// <param name="qos">The struct with the QosPolicy settings for the new DataReader, 
-        /// when these QosPolicy settings are not self consistent, no DataReader is created.</param>
-        /// <param name="listener">The DataReaderListener instance which will be attached to the new
-        /// DataReader. It is permitted to use NULL as the value of the listener: this
-        /// behaves as a DataWriterListener whose operations perform no action.</param>
-        /// <param name="mask">A bit-mask in which each bit enables the invocation of 
-        /// the DataReaderListener for a certain status.</param>
-        /// <returns>The newly created DataReader, or in case of an error a null value one.</returns>
+        
         public IDataReader CreateDataReader(
                 ITopicDescription topic, 
                 DataReaderQos qos,
@@ -236,12 +206,7 @@ namespace DDS.OpenSplice
 
             return dataReader;
         }
-
-        /// <summary>
-        /// This operation deletes a DataReader that belongs to the Subscriber.
-        /// </summary>
-        /// <param name="dataReader">The DataReader which is to be deleted.</param>
-        /// <returns>Return codes are:Ok,Error,BadParameter.AlreadyDeleted,OutOfResources or PreconditionNotMet.</returns>
+        
         public ReturnCode DeleteDataReader(IDataReader dataReader)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -255,14 +220,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
-        /// <summary>
-        /// This operation returns a previously created DataReader belonging to the
-        /// Subscriber which is attached to a Topic with the matching topic_name.
-        /// </summary>
-        /// <param name="topicName">The name of the Topic, which is attached to the DataReader to look for.</param>
-        /// <returns>A reference to the DataReader found. If no such DataReader is found the a null value one is 
-        /// returned.</returns>
+        
         public IDataReader LookupDataReader(string topicName)
         {
             IntPtr gapiPtr = Gapi.Subscriber.lookup_datareader(
@@ -272,12 +230,7 @@ namespace DDS.OpenSplice
             IDataReader dataReader = SacsSuperClass.fromUserData(gapiPtr) as IDataReader;
             return dataReader;
         }
-
-        /// <summary>
-        /// This operation deletes all the DataReader objects that were created by means of
-        /// the create_datareader operation on the Subscriber.
-        /// </summary>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.Subscriber.delete_contained_entities(
@@ -290,15 +243,7 @@ namespace DDS.OpenSplice
         {
             return GetDataReaders(ref readers, SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="readers"></param>
-        /// <param name="sampleStates"></param>
-        /// <param name="viewStates"></param>
-        /// <param name="instanceStates"></param>
-        /// <returns></returns>
+        
         public ReturnCode GetDataReaders(
                 ref IDataReader[] readers, 
                 SampleStateKind sampleStates,
@@ -325,24 +270,12 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation invokes the on_data_available operation on
-        /// DataReaderListener objects which are attached to the contained DataReader
-        /// entities having new, available data.
-        /// </summary>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode NotifyDataReaders()
         {
             return Gapi.Subscriber.notify_datareaders(GapiPeer);
         }
-
-        /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a Subscriber.
-        /// </summary>
-        /// <param name="qos">The new set of QosPolicy settings for the Subscriber.</param>
-        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted,
-        /// OutOfResources or ImmutablePolicy</returns>
+        
         public ReturnCode SetQos(SubscriberQos qos)
         {
             DDS.ReturnCode result;
@@ -360,13 +293,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a Subscriber.
-        /// </summary>
-        /// <param name="qos">A reference to the destination SubscriberQos struct in which the QosPolicy 
-        /// settings will be copied.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources</returns>
+        
         public ReturnCode GetQos(ref SubscriberQos qos)
         {
             ReturnCode result;
@@ -385,28 +312,17 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
+        
         public ReturnCode BeginAccess()
         {
             return OpenSplice.Gapi.Subscriber.begin_access(GapiPeer);
         }
-
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
+        
         public ReturnCode EndAccess()
         {
             return OpenSplice.Gapi.Subscriber.end_access(GapiPeer);
         }
-
-        /// <summary>
-        /// This property allows access to the DomainParticipant associated with the Subscriber.
-        /// </summary>
+        
         public IDomainParticipant Participant
         {
             get
@@ -418,14 +334,7 @@ namespace DDS.OpenSplice
                 return domainParticipant;
             }
         }
-
-        /// <summary>
-        /// This operation sets the default DataReaderQos of the DataReader.
-        /// </summary>
-        /// <param name="qos">The DataReaderQos struct, which containsthe new default QosPolicy 
-        /// settings for the newly created DataReaders.</param>
-        /// <returns>Return codes are:Ok,Error,BadParameter,Unsupported,AlreadyDeleted,OutOfResources or 
-        /// InconsistentPolicy.</returns>
+        
         public ReturnCode SetDefaultDataReaderQos(DataReaderQos qos)
         {
             DDS.ReturnCode result;
@@ -443,13 +352,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation gets the default QosPolicy settings of the DataReader.
-        /// </summary>
-        /// <param name="qos">A reference to the DataReaderQos struct(provided by the application) 
-        /// in which the default QosPolicy settings for the DataReader are written.</param>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode GetDefaultDataReaderQos(ref DataReaderQos qos)
         {
             ReturnCode result;
@@ -468,14 +371,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        /// <summary>
-        /// This operation will copy the policies in a_topic_qos to the corresponding policies in datareaderQos.
-        /// </summary>
-        /// <param name="dataReaderQos">The destination DataReaderQos struct to which the QosPolicy settings 
-        /// will be copied.</param>
-        /// <param name="topicQos">The source TopicQos, which will be copied.</param>
-        /// <returns>Return codes are: Ok,Error,AlreadyDeleted or OutOfResources.</returns>
+        
         public ReturnCode CopyFromTopicQos(ref DataReaderQos dataReaderQos, TopicQos topicQos)
         {
             ReturnCode result = ReturnCode.Ok;

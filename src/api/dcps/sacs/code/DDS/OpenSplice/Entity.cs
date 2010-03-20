@@ -22,9 +22,6 @@ using DDS;
 
 namespace DDS.OpenSplice
 {
-    /// <summary>
-    /// This class is the abstract base class for all the DCPS objects. It acts as a generic class for Entity objects.
-    /// </summary>
     public class Entity : SacsSuperClass, IEntity
     {
         internal Entity(IntPtr gapiPtr)
@@ -32,20 +29,12 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
-        /// <summary>
-        /// This operation enables the Entity on which it is being called when the Entity was created 
-        /// with the EntityFactoryQosPolicy set to FALSE.
-        /// </summary>
-        /// <returns>Return codes are:Ok,Error,AlreadyDeleted,OutOfResources or PreconditionNotMet.</returns>
+        
         public ReturnCode Enable()
         {
             return Gapi.Entity.enable(GapiPeer);
         }
-
-        /// <summary>
-        /// This property allows access to the StatusCondition associated with the Entity.
-        /// </summary>
+        
         public IStatusCondition StatusCondition
         {
             get
@@ -59,10 +48,7 @@ namespace DDS.OpenSplice
                 return statusCondition;
             }
         }
-
-        /// <summary>
-        /// This operation returns a mask with the communication statuses in the Entity that are “triggered”.
-        /// </summary>
+        
         public StatusKind StatusChanges
         {
             get
@@ -70,10 +56,7 @@ namespace DDS.OpenSplice
                 return Gapi.Entity.get_status_changes(GapiPeer);
             }
         }
-
-        /// <summary>
-        /// This operation returns the InstanceHandle of the builtin topic sample that represents the specified Entity.
-        /// </summary>
+        
         public InstanceHandle InstanceHandle
         {
             get
