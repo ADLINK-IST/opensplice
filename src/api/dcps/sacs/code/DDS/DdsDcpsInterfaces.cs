@@ -112,7 +112,7 @@ namespace DDS
         /// <list type="bullet">
         /// <item>ReadCondition created by create_readcondition.</item>
         /// <item>QueryCondition created by create_querycondition.</item>
-        /// <iktem>StatusCondition retrieved by get_statuscondition on an Entity.</item>
+        /// <item>StatusCondition retrieved by get_statuscondition on an Entity.</item>
         /// <item>GuardCondition created by the C# operation new.</item>
         /// </list>
         /// When a GuardCondition is initially created, the trigger_value is FALSE.
@@ -484,7 +484,7 @@ namespace DDS
         /// on a DomainParticipant with existing Entity objects, the operation returns
         /// PreconditionNotMet.
         /// </remarks>
-        /// <param name="a_participant"> The DomainParticipant which is to be deleted.</param>
+        /// <param name="participant"> The DomainParticipant which is to be deleted.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
         /// <item>Ok - The DomainParticipant is deleted.</item>
@@ -971,7 +971,7 @@ namespace DDS
         /// When the operation is called on a different DomainParticipant, as used when
         /// the Topic was created, the operation has no effect and returns PreconditionNotMet.
         /// </remarks>
-        /// <param name="t">The Topic which is to be deleted.</param>
+        /// <param name="topic">The Topic which is to be deleted.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
         /// <item>Ok - The Topic is deleted.</item>
@@ -1083,7 +1083,7 @@ namespace DDS
         /// DeleteContentFilteredTopic is called on a different DomainParticipant
         /// the operation will have no effect and it will return PreconditionNotMet.
         /// </remarks>
-        /// <param name="t">The ContentFilteredTopic to be deleted.</param>
+        /// <param name="aContentFilteredTopic">The ContentFilteredTopic to be deleted.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
         /// <item>Ok - The ContentFilteredTopic is deleted.</item>
@@ -1112,7 +1112,7 @@ namespace DDS
         /// <summary>
         /// This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="t"></param>
+        /// <param name="multiTopic"></param>
         /// <returns></returns>
         ReturnCode DeleteMultiTopic(IMultiTopic multiTopic);
         /// <summary>
@@ -1523,7 +1523,7 @@ namespace DDS
         /// InconsistentTopicStatus can also be monitored using a TopicListener or
         /// by using the associated StatusCondition.
         /// </remarks>
-        /// <param name="status">the contents of the InconsistentTopicStatus struct of the Topic will be 
+        /// <param name="aStatus">the contents of the InconsistentTopicStatus struct of the Topic will be 
         /// copied into the location specified by status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
@@ -2072,7 +2072,7 @@ namespace DDS
         /// This operation will copy the QosPolicy settings in a_topic_qos to the
         /// corresponding QosPolicy settings in a_datawriter_qos (replacing the values
         /// in dataWriterQos, if present). This will only apply to the common
-        /// QosPolicy settings in each <Entity>Qos.
+        /// QosPolicy settings in each "Entity" Qos.
         /// This is a “convenience” operation, useful in combination with the operations
         /// GetDefaultDataWriterQos and Topic.GetQos. The operation
         /// CopyFromTopicQos can be used to merge the DataWriter default
@@ -2131,6 +2131,7 @@ namespace DDS
         /// </remarks>
         /// <param name="qos">new set of QosPolicy settings for the DataWriter.</param>
         /// <returns>Return values are: 
+        /// <list type="bullet">
         /// <item>Ok - the new default DataWriterQos is set</item>
         /// <item>Error - an internal error has occurred.</item>
         /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
@@ -2146,6 +2147,7 @@ namespace DDS
         /// DataWriter.</item>
         /// <item>InconsistentPolicy - the parameter qos contains an inconsistent QosPolicy settings, 
         /// e.g. a history depth that is higher than the specified resource limits.</item>
+        /// </list>
         /// </returns>
         ReturnCode SetQos(DataWriterQos qos);
         /// <summary>
