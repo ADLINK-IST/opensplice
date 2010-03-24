@@ -34,7 +34,7 @@ namespace DDS
         {
             // Base class handles everything.
         }
-
+        
         public bool GetTriggerValue()
         {
             byte result = OpenSplice.Gapi.Condition.get_trigger_value(GapiPeer);

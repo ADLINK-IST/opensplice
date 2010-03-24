@@ -22,7 +22,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public class DataReader : Entity, IDataReader
     {
         private DataReaderListenerHelper listenerHelper;
@@ -37,7 +37,7 @@ namespace DDS.OpenSplice
         {
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(IDataReaderListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -75,11 +75,12 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        
         public IReadCondition CreateReadCondition()
         {
             return CreateReadCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
         }
-
+        
         public IReadCondition CreateReadCondition(
                 SampleStateKind sampleStates, 
                 ViewStateKind viewStates,
@@ -111,7 +112,7 @@ namespace DDS.OpenSplice
                     InstanceStateKind.Any,
                     queryExpression, queryParameters);
         }
-
+        
         public IQueryCondition CreateQueryCondition(
                 SampleStateKind sampleStates, 
                 ViewStateKind viewStates,
@@ -142,7 +143,7 @@ namespace DDS.OpenSplice
 
             return queryCondition;
         }
-
+        
         public ReturnCode DeleteReadCondition(IReadCondition condition)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -157,7 +158,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.DataReader.delete_contained_entities(
@@ -165,7 +166,7 @@ namespace DDS.OpenSplice
                     null,
                     IntPtr.Zero);
         }
-
+        
         public ReturnCode SetQos(DataReaderQos qos)
         {
             ReturnCode result;
@@ -182,7 +183,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetQos(ref DataReaderQos qos)
         {
             ReturnCode result;
@@ -199,7 +200,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ITopicDescription GetTopicDescription()
         {
             IntPtr gapiPtr = Gapi.DataReader.get_topicdescription(GapiPeer);
@@ -207,7 +208,7 @@ namespace DDS.OpenSplice
             ITopicDescription topicDesc = SacsSuperClass.fromUserData(gapiPtr) as ITopicDescription;
             return topicDesc;
         }
-
+        
         public ISubscriber Subscriber
         {
             get
@@ -218,48 +219,48 @@ namespace DDS.OpenSplice
                 return subscriber;
             }
         }
-
+        
         public ReturnCode GetSampleRejectedStatus(ref SampleRejectedStatus status)
         {
             if (status == null) status = new SampleRejectedStatus();
             return Gapi.DataReader.get_sample_rejected_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetLivelinessChangedStatus(ref LivelinessChangedStatus status)
         {
             if (status == null) status = new LivelinessChangedStatus();
             return Gapi.DataReader.get_liveliness_changed_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetRequestedDeadlineMissedStatus(ref RequestedDeadlineMissedStatus status)
         {
             if (status == null) status = new RequestedDeadlineMissedStatus();
             return Gapi.DataReader.get_requested_deadline_missed_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetRequestedIncompatibleQosStatus(ref RequestedIncompatibleQosStatus status)
         {
             if (status == null) status = new RequestedIncompatibleQosStatus();
             return Gapi.DataReader.get_requested_incompatible_qos_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status)
         {
             if (status == null) status = new SubscriptionMatchedStatus();
             return Gapi.DataReader.get_subscription_matched_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetSampleLostStatus(ref SampleLostStatus status)
         {
             if (status == null) status = new SampleLostStatus();
             return Gapi.DataReader.get_sample_lost_status(GapiPeer, status);
         }
-
+        
         public ReturnCode WaitForHistoricalData(Duration maxWait)
         {
             return Gapi.DataReader.wait_for_historical_data(GapiPeer, ref maxWait);
         }
-
+        
         public ReturnCode GetMatchedPublications(ref InstanceHandle[] publicationHandles)
         {
             ReturnCode result;

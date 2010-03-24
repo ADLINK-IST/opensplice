@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public abstract class TypeSupport : SacsSuperClass, ITypeSupport
     {
         public abstract string TypeName { get; }

@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     internal class ContentFilteredTopic : TopicDescription, IContentFilteredTopic
     {
         internal ContentFilteredTopic(IntPtr gapiPtr)
@@ -31,7 +31,7 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
+        
         public string GetFilterExpression()
         {
             IntPtr ptr = Gapi.ContentFilteredTopic.get_filter_expression(GapiPeer);
@@ -40,7 +40,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
             ReturnCode result;
@@ -63,7 +63,7 @@ namespace DDS.OpenSplice
 
 			return result;
         }
-
+        
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
             ReturnCode result;
@@ -81,7 +81,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ITopic RelatedTopic
         {
             get

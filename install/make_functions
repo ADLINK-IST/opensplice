@@ -837,6 +837,10 @@ install_hde_target ()
     then
         rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_CPP.pdf
     fi
+    if [ "${INCLUDE_API_DCPS_SACS}" != "yes" ]
+    then
+        rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_CS.pdf
+    fi
     echo "Ready"
 
     #
@@ -1302,6 +1306,84 @@ install_hde_target ()
         echo "*           Ready"
         echo "*         C Ready"
     fi
+
+    if [ "${INCLUDE_CS}" = "yes" -a "${target}" = "x86.win32" ]
+    then
+        echo "*         For standalone C#"
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS
+        echo "*           For PingPong... "
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/*.sln" \
+            ${HDE_dir}/examples/dcps/standalone/CS
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.csproj*" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.csproj*" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        echo "*           Ready"
+        echo "*           For Tutorial... "
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Chatroom
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Data
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Properties
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Chatroom
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Data
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Properties
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Chatroom
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Properties
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/*.sln" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/*.csproj" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Chatroom/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Data/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Data/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Properties/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Properties
+
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/*.csproj" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Chatroom/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Data/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Data/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Properties/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Properties
+
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/*.csproj" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Chatroom/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#//UserLoad/Data/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Data/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Properties/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Properties
+        echo "*           Ready"
+        echo "*         C# Ready"
+    fi
+
 
     if [ "${INCLUDE_JAVA}" = "yes" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then

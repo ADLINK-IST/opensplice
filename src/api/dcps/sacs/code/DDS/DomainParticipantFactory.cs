@@ -24,6 +24,12 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS
 {
+    /// <summary>
+    /// The purpose of this class is to allow the creation and destruction of 
+    /// DomainParticipant objects. DomainParticipantFactory itself has no 
+    /// factory. It is a pre-existing singleton object that can be accessed by means of the 
+    /// Instance property on the DomainParticipantFactory class. 
+    /// </summary>
     public class DomainParticipantFactory : SacsSuperClass, IDomainParticipantFactory
     {
         /**
@@ -60,9 +66,11 @@ namespace DDS
             }
         }
 
-        /**
-         * [Non-standard] Property for DomainParticipantFactory.
-         */
+        /// <summary>
+        /// [Non-standard] Property for DomainParticipantFactory. 
+        /// This property is used to return the DomainParticipantFactory singleton
+        /// object.
+        /// </summary>
         public static DomainParticipantFactory Instance
         {
             get { return GetInstance(); }
@@ -79,9 +87,7 @@ namespace DDS
             // Base class handles everything.
         }
 
-        /**
-         * This operation creates a new DomainParticipant using the specified URI. 
-         */
+
         public IDomainParticipant CreateParticipant(
             string domainId)
         {
@@ -144,9 +150,6 @@ namespace DDS
             return participant;
         }
 
-        /**
-         * This operation creates a new DomainParticipant using the specified URI and QoS settings. 
-         */
         public IDomainParticipant CreateParticipant(
             string domainId,
             DomainParticipantQos qos)
@@ -154,6 +157,7 @@ namespace DDS
             return CreateParticipant(domainId, qos, null, 0);
         }
 
+        
         public IDomainParticipant CreateParticipant(
             string domainId,
             DomainParticipantQos qos,
@@ -216,10 +220,7 @@ namespace DDS
 
             return participant;
         }
-
-        /**
-         * This operation deletes the specified DomainParticipant. 
-         */
+      
         public ReturnCode DeleteParticipant(IDomainParticipant a_participant)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -236,22 +237,14 @@ namespace DDS
 
             return result;
         }
-
-        /**
-         * This operation looks up an existing DomainParticipant based on its domainId. 
-         */
+        
         public IDomainParticipant LookupParticipant(string domainId)
         {
             IntPtr gapiDP = OpenSplice.Gapi.DomainParticipantFactory.lookup_participant(GapiPeer, domainId);
             IDomainParticipant participant = (IDomainParticipant)SacsSuperClass.fromUserData(gapiDP);
             return participant;
         }
-
-        /**
-         * This operation specifies the default settings for the DomainParticipantQos,
-         * that can be used by newly created DomainParticipants that do not have a particular
-         * preference for all individual policies. 
-         */
+        
         public ReturnCode SetDefaultParticipantQos(DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -264,18 +257,13 @@ namespace DDS
                 {
                     // Invoke the corresponding gapi function.
                     result = OpenSplice.Gapi.DomainParticipantFactory.set_default_participant_qos(
-                            GapiPeer, 
+                            GapiPeer,
                             marshaler.GapiPtr);
                 }
             }
             return result;
         }
-
-        /**
-         * This operation obtains the default settings for the DomainParticipantQos,
-         * that can be used by newly created DomainParticipants that do not have a particular
-         * preference for all individual policies. 
-         */
+                
         public ReturnCode GetDefaultParticipantQos(ref DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -296,9 +284,7 @@ namespace DDS
             return result;
         }
 
-        /**
-         * This operation specifies the QoS settings for the DomainParticipantFactory.
-         */
+        
         public ReturnCode SetQos(DomainParticipantFactoryQos qos)
         {
             ReturnCode result;
@@ -316,10 +302,7 @@ namespace DDS
 
             return result;
         }
-
-        /**
-         * This operation obtains the QoS settings for the DomainParticipantFactory.
-         */
+        
         public ReturnCode GetQos(ref DomainParticipantFactoryQos qos)
         {
             ReturnCode result;

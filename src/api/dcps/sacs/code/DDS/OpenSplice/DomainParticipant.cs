@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public class DomainParticipant : Entity, IDomainParticipant
     {
         private readonly DomainParticipantListenerHelper listenerHelper;
@@ -193,6 +193,7 @@ namespace DDS.OpenSplice
             }
 
         }
+        
         public ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -276,6 +277,27 @@ namespace DDS.OpenSplice
             return CreatePublisher(qos, null, 0);
         }
 
+        /// <summary>
+        /// This operation creates a Publisher with the desired QosPolicy settings and if applicable, 
+        /// attaches the optionally specified PublisherListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a Publisher with the desired QosPolicy settings and if
+        /// applicable, attaches the optionally specified PublisherListener to it. When the
+        /// PublisherListener is not applicable, the NULL pointer must be supplied instead.
+        /// To delete the Publisher the operation DeletePublisher or
+        /// DeleteContainedEntities must be used.
+        /// In case the specified QosPolicy settings are not consistent, no Publisher is
+        /// created and the NULL pointer is returned.
+        /// </remarks>
+        /// <param name="qos">A collection of QosPolicy settings for the new Publisher.
+        /// In case these settings are not self consistent, no Publisher is created.</param>
+        /// <param name="listener">The PublisherListener instance which will be attached to the new Publisher.
+        /// It is permitted to use null as the value of the listener: this behaves as a PublisherListener 
+        /// whose operations perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the PublisherListener 
+        /// for a certain status.</param>
+        /// <returns>The newly created Publisher. In case of an error, a null Publisher is returned.</returns>
         public IPublisher CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask)
         {
             IPublisher publisher = null;
@@ -328,7 +350,7 @@ namespace DDS.OpenSplice
 
             return publisher;
         }
-
+        
         public ReturnCode DeletePublisher(IPublisher p)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -396,7 +418,7 @@ namespace DDS.OpenSplice
         {
             return CreateSubscriber(qos, null, 0);
         }
-
+        
         public ISubscriber CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
         {
             ISubscriber subscriber = null;
@@ -447,7 +469,7 @@ namespace DDS.OpenSplice
 
             return subscriber;
         }
-
+        
         public ReturnCode DeleteSubscriber(ISubscriber s)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -462,7 +484,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ISubscriber BuiltInSubscriber
         {
             get
@@ -591,7 +613,7 @@ namespace DDS.OpenSplice
         {
             return CreateTopic(topicName, typeName, qos, null, 0);
         }
-
+        
         public ITopic CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask)
         {
             ITopic topic = null;
@@ -647,7 +669,7 @@ namespace DDS.OpenSplice
 
             return topic;
         }
-
+        
         public ReturnCode DeleteTopic(ITopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -662,7 +684,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ITopic FindTopic(string topicName, Duration timeout)
         {
             IntPtr gapiPtr = Gapi.DomainParticipant.find_topic(
@@ -679,7 +701,7 @@ namespace DDS.OpenSplice
 
             return topic;
         }
-
+        
         public ITopicDescription LookupTopicDescription(string name)
         {
             ITopicDescription topicDesc = null;
@@ -706,7 +728,7 @@ namespace DDS.OpenSplice
 
             return topicDesc;
         }
-
+        
         public IContentFilteredTopic CreateContentFilteredTopic(
                 string name, 
                 ITopic relatedTopic,
@@ -739,7 +761,7 @@ namespace DDS.OpenSplice
 
             return contentFilteredTopic;
         }
-
+        
         public ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -755,7 +777,7 @@ namespace DDS.OpenSplice
             return result;
         }
 
-
+        
         public IMultiTopic CreateMultiTopic(
                 string name, 
                 string typeName,
@@ -784,7 +806,7 @@ namespace DDS.OpenSplice
 
             return multiTopic;
         }
-
+        
         public ReturnCode DeleteMultiTopic(IMultiTopic t)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -799,7 +821,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.DomainParticipant.delete_contained_entities(
@@ -807,7 +829,7 @@ namespace DDS.OpenSplice
                     null,
                     IntPtr.Zero);
         }
-
+        
         public ReturnCode SetQos(DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -825,7 +847,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetQos(ref DomainParticipantQos qos)
         {
             ReturnCode result;
@@ -845,28 +867,28 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode IgnoreParticipant(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_participant(
                     GapiPeer,
                     handle);
         }
-
+        
         public ReturnCode IgnoreTopic(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_topic(
                     GapiPeer,
                     handle);
         }
-
+        
         public ReturnCode IgnorePublication(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_publication(
                     GapiPeer,
                     handle);
         }
-
+        
         public ReturnCode IgnoreSubscription(InstanceHandle handle)
         {
             return Gapi.DomainParticipant.ignore_subscription(
@@ -874,6 +896,7 @@ namespace DDS.OpenSplice
                     handle);
         }
 
+        
         public string DomainId
         {
             get
@@ -890,7 +913,7 @@ namespace DDS.OpenSplice
         {
             return Gapi.DomainParticipant.assert_liveliness(GapiPeer);
         }
-
+        
         public ReturnCode SetDefaultPublisherQos(PublisherQos qos)
         {
             ReturnCode result;
@@ -908,7 +931,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetDefaultPublisherQos(ref PublisherQos qos)
         {
             ReturnCode result;
@@ -928,7 +951,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode SetDefaultSubscriberQos(SubscriberQos qos)
         {
             ReturnCode result;
@@ -946,7 +969,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetDefaultSubscriberQos(ref SubscriberQos qos)
         {
             ReturnCode result;
@@ -966,7 +989,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+       
         public ReturnCode SetDefaultTopicQos(TopicQos qos)
         {
             ReturnCode result;
@@ -985,7 +1008,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetDefaultTopicQos(ref TopicQos qos)
         {
             ReturnCode result;
@@ -1005,7 +1028,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public bool ContainsEntity(InstanceHandle handle)
         {
             byte result = Gapi.DomainParticipant.contains_entity(
@@ -1013,7 +1036,7 @@ namespace DDS.OpenSplice
                     handle);
             return result != 0;
         }
-
+        
         public ReturnCode GetCurrentTime(out Time currentTime)
         {
             return Gapi.DomainParticipant.get_current_time(
@@ -1036,7 +1059,6 @@ namespace DDS.OpenSplice
 
             return typeSupport;
         }
-
 
         public ITypeSupport LookupTypeSupport(string registeredTypeName)
         {

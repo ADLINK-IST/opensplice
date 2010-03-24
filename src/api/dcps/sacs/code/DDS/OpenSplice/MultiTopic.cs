@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     internal class MultiTopic : TopicDescription, IMultiTopic
     {
         internal MultiTopic(IntPtr gapiPtr)
@@ -31,7 +31,7 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
+        
         public string SubscriptionExpression
         {
             get
@@ -43,7 +43,7 @@ namespace DDS.OpenSplice
                 return result;
             }
         }
-
+        
         public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
             ReturnCode result;
@@ -67,7 +67,7 @@ namespace DDS.OpenSplice
 
 			return result;
         }
-
+        
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
             ReturnCode result;

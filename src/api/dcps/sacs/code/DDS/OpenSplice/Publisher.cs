@@ -22,7 +22,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     internal class Publisher : Entity, IPublisher
     {
         private readonly PublisherDataWriterListenerHelper listenerHelper;
@@ -40,7 +40,7 @@ namespace DDS.OpenSplice
             // Base class handles everything.
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(IPublisherListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -136,7 +136,7 @@ namespace DDS.OpenSplice
         {
             return CreateDataWriter(topic, qos, null, 0);
         }
-
+        
         public IDataWriter CreateDataWriter(
                 ITopic topic, 
                 DataWriterQos qos,
@@ -201,7 +201,7 @@ namespace DDS.OpenSplice
 
             return dataWriter;
         }
-
+        
         public ReturnCode DeleteDataWriter(IDataWriter dataWriter)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -215,7 +215,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public IDataWriter LookupDataWriter(string topicName)
         {
             IntPtr gapiPtr = Gapi.Publisher.lookup_datawriter(
@@ -225,7 +225,7 @@ namespace DDS.OpenSplice
             IDataWriter dataWriter = SacsSuperClass.fromUserData(gapiPtr) as IDataWriter;
             return dataWriter;
         }
-
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.Publisher.delete_contained_entities(
@@ -233,7 +233,7 @@ namespace DDS.OpenSplice
                     null,
                     IntPtr.Zero);
         }
-
+        
         public ReturnCode SetQos(PublisherQos qos)
         {
             ReturnCode result;
@@ -252,7 +252,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetQos(ref PublisherQos qos)
         {
             ReturnCode result;
@@ -273,33 +273,34 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        
         public ReturnCode SuspendPublications()
         {
             return Gapi.Publisher.suspend_publications(GapiPeer);
         }
-
+        
         public ReturnCode ResumePublications()
         {
             return Gapi.Publisher.resume_publications(GapiPeer);
         }
-
+        
         public ReturnCode BeginCoherentChanges()
         {
             return Gapi.Publisher.begin_coherent_changes(GapiPeer);
         }
-
+        
         public ReturnCode EndCoherentChanges()
         {
             return Gapi.Publisher.end_coherent_changes(GapiPeer);
         }
-
+        
         public ReturnCode WaitForAcknowledgments(Duration maxWait)
         {
             return Gapi.Publisher.wait_for_acknowledgments(
                     GapiPeer,
                     ref maxWait);
         }
-
+        
         public IDomainParticipant GetParticipant()
         {
             IntPtr gapiPtr = Gapi.Publisher.get_participant(GapiPeer);
@@ -308,7 +309,7 @@ namespace DDS.OpenSplice
                     as IDomainParticipant;
             return domainParticipant;
         }
-
+        
         public ReturnCode SetDefaultDataWriterQos(DataWriterQos qos)
         {
             ReturnCode result;
@@ -326,7 +327,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetDefaultDataWriterQos(ref DataWriterQos qos)
         {
             ReturnCode result;
@@ -346,7 +347,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode CopyFromTopicQos(ref DataWriterQos dataWriterQos, TopicQos topicQos)
         {
             ReturnCode result = ReturnCode.Ok;

@@ -23,6 +23,7 @@ using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
+    
     internal class Subscriber : Entity, ISubscriber
     {
         private readonly SubscriberListenerHelper listenerHelper;
@@ -140,7 +141,7 @@ namespace DDS.OpenSplice
         {
             return CreateDataReader(topic, qos, null, 0);
         }
-
+        
         public IDataReader CreateDataReader(
                 ITopicDescription topic, 
                 DataReaderQos qos,
@@ -206,7 +207,7 @@ namespace DDS.OpenSplice
 
             return dataReader;
         }
-
+        
         public ReturnCode DeleteDataReader(IDataReader dataReader)
         {
             ReturnCode result = ReturnCode.BadParameter;
@@ -220,7 +221,7 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public IDataReader LookupDataReader(string topicName)
         {
             IntPtr gapiPtr = Gapi.Subscriber.lookup_datareader(
@@ -230,7 +231,7 @@ namespace DDS.OpenSplice
             IDataReader dataReader = SacsSuperClass.fromUserData(gapiPtr) as IDataReader;
             return dataReader;
         }
-
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.Subscriber.delete_contained_entities(
@@ -243,7 +244,7 @@ namespace DDS.OpenSplice
         {
             return GetDataReaders(ref readers, SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
         }
-
+        
         public ReturnCode GetDataReaders(
                 ref IDataReader[] readers, 
                 SampleStateKind sampleStates,
@@ -270,12 +271,12 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode NotifyDataReaders()
         {
             return Gapi.Subscriber.notify_datareaders(GapiPeer);
         }
-
+        
         public ReturnCode SetQos(SubscriberQos qos)
         {
             DDS.ReturnCode result;
@@ -294,7 +295,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetQos(ref SubscriberQos qos)
         {
             ReturnCode result;
@@ -314,17 +315,17 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode BeginAccess()
         {
             return OpenSplice.Gapi.Subscriber.begin_access(GapiPeer);
         }
-
+        
         public ReturnCode EndAccess()
         {
             return OpenSplice.Gapi.Subscriber.end_access(GapiPeer);
         }
-
+        
         public IDomainParticipant Participant
         {
             get
@@ -336,7 +337,7 @@ namespace DDS.OpenSplice
                 return domainParticipant;
             }
         }
-
+        
         public ReturnCode SetDefaultDataReaderQos(DataReaderQos qos)
         {
             DDS.ReturnCode result;
@@ -355,7 +356,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetDefaultDataReaderQos(ref DataReaderQos qos)
         {
             ReturnCode result;
@@ -375,7 +376,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode CopyFromTopicQos(ref DataReaderQos dataReaderQos, TopicQos topicQos)
         {
             ReturnCode result = ReturnCode.Ok;

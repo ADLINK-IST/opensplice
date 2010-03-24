@@ -22,7 +22,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public class DataWriter : Entity, IDataWriter
     {
         private PublisherDataWriterListenerHelper listenerHelper;
@@ -37,7 +37,7 @@ namespace DDS.OpenSplice
         {
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(IDataWriterListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -74,7 +74,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode SetQos(DataWriterQos qos)
         {
             ReturnCode result;
@@ -91,7 +91,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetQos(ref DataWriterQos qos)
         {
             ReturnCode result;
@@ -109,7 +109,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ITopic Topic
         {
             get
@@ -120,7 +120,7 @@ namespace DDS.OpenSplice
                 return topic;
             }
         }
-
+        
         public IPublisher Publisher
         {
             get
@@ -131,41 +131,41 @@ namespace DDS.OpenSplice
                 return publisher;
             }
         }
-
+        
         public ReturnCode WaitForAcknowledgments(Duration maxWait)
         {
             return Gapi.DataWriter.wait_for_acknowledgments(GapiPeer, ref maxWait);
         }
-
+        
         public ReturnCode GetLivelinessLostStatus(ref LivelinessLostStatus status)
         {
             if (status == null) status = new LivelinessLostStatus();
             return Gapi.DataWriter.get_liveliness_lost_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetOfferedDeadlineMissedStatus(ref OfferedDeadlineMissedStatus status)
         {
             if (status == null) status = new OfferedDeadlineMissedStatus();
             return Gapi.DataWriter.get_offered_deadline_missed_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetOfferedIncompatibleQosStatus(ref OfferedIncompatibleQosStatus status)
         {
             if (status == null) status = new OfferedIncompatibleQosStatus();
             return Gapi.DataWriter.get_offered_incompatible_qos_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status)
         {
             if (status == null) status = new PublicationMatchedStatus();
             return Gapi.DataWriter.get_publication_matched_status(GapiPeer, status);
         }
-
+        
         public ReturnCode AssertLiveliness()
         {
             return Gapi.DataWriter.assert_liveliness(GapiPeer);
         }
-
+        
         public ReturnCode GetMatchedSubscriptions(ref InstanceHandle[] subscriptionHandles)
         {
             ReturnCode result;
@@ -184,7 +184,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode GetMatchedSubscriptionData(
                 ref SubscriptionBuiltinTopicData subscriptionData, 
                 InstanceHandle subscriptionHandle)

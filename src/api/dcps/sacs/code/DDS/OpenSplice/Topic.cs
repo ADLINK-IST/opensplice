@@ -42,7 +42,7 @@ namespace DDS.OpenSplice
             // Base class handles everything.
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(ITopicListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -72,13 +72,13 @@ namespace DDS.OpenSplice
             }
             return result;
         }
-
+        
         public ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus status)
         {
             if (status == null) status = new InconsistentTopicStatus();
             return Gapi.Topic.get_inconsistent_topic_status(GapiPeer, status);
         }
-
+        
         public ReturnCode GetQos(ref TopicQos qos)
         {
             ReturnCode result;
@@ -95,7 +95,7 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
+        
         public ReturnCode SetQos(TopicQos qos)
         {
             ReturnCode result;
@@ -113,6 +113,10 @@ namespace DDS.OpenSplice
             return result;
         }
 
+        /// <summary>
+        /// This property returns the registered name of the data type associated with the TopicDescription 
+        /// (inherited from TopicDescription)
+        /// </summary>
         public string TypeName
         {
             get
@@ -125,6 +129,10 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the name used to create the TopicDescription.
+        /// (inherited from TopicDescription)
+        /// </summary>
         public string Name
         {
             get
@@ -137,6 +145,11 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the DomainParticipant associated with the TopicDescription or 
+        /// a null DomainParticipant.
+        /// (inherited from TopicDescription)
+        /// </summary>
         public IDomainParticipant Participant
         {
             get
