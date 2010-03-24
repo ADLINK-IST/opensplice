@@ -66,8 +66,8 @@ idl_metaCsharpSerialize2XML(
 
 void
 idl_CsharpRemovePrefix (
-    const char *prefix,
-    char *name)
+    const c_char *prefix,
+    c_char *name)
 {
     unsigned int i, prefixMatch;
 
@@ -80,9 +80,8 @@ idl_CsharpRemovePrefix (
     }
 
     if (prefixMatch) {
-        char *p;
-        int newLength = 0;
-        unsigned int j;
+        c_char *p;
+        unsigned int j = 0, newLength = 0;
 
         p = name + strlen(prefix);
         newLength = strlen(name) - strlen(prefix);
@@ -100,11 +99,10 @@ idl_CsharpRemovePrefix (
     }
 }
 
-static c_char *
-toPascalCase(const c_char *name)
+void
+toPascalCase(c_char *name)
 {
     unsigned int i, j, nrUnderScores;
-    c_char *result;
 
     /* Determine number of '_' characters. */
     nrUnderScores = 0;
@@ -112,18 +110,15 @@ toPascalCase(const c_char *name)
         if (name[i] == '_') nrUnderScores++;
     }
 
-    /* Allocate a string big enough to hold the PascalCase representation. */
-    result = os_malloc(strlen(name) + 1 - nrUnderScores);
-
     /* Now go to UpperCase when necessary.
      * (for loop includes '\0' terminator.)  */
     for (i = 0, j = 0; i <= strlen(name); i++, j++) {
         /* Start out with capital. */
         if (i == 0) {
-            result[j] = toupper(name[i]);
+            name[j] = toupper(name[i]);
         } else if (name[i] == '_') {
             /* On underscore, start new capital. */
-            result[j] = toupper(name[++i]);
+            name[j] = toupper(name[++i]);
         } else {
             /* If underscores mark the occurrence of new words, then go to
              * lower-case for all the other characters.
@@ -131,14 +126,12 @@ toPascalCase(const c_char *name)
              * so copy the character as is.
              */
             if (nrUnderScores > 0) {
-                result[j] = tolower(name[i]);
+                name[j] = tolower(name[i]);
             } else {
-                result[j] = name[i];
+                name[j] = name[i];
             }
         }
     }
-
-    return result;
 }
 
 
@@ -174,58 +167,110 @@ idl_CsharpId(
     const c_char *identifier,
     c_bool customPSM)
 {
-    c_long i;
-    c_char *CsharpId;
+    c_ulong i, j, nrScopes, scopeNr, totalLength;
+    c_char *cSharpId;
+    c_char **scopeList;
 
-    /* In case of the custom PSM mode, first go to PascalCase. */
-    if (customPSM) {
-        CsharpId = toPascalCase(identifier);
-    } else {
-        CsharpId = os_strdup(identifier);
+    nrScopes = 1;
+    /* Determine the amount of scopes by looking for the number of '.' chars. */
+    for (i = 0; i < strlen(identifier); i++) {
+        if (identifier[i] == '.') nrScopes++;
     }
 
-    /* search through the C# keyword list */
-    /* QAC EXPECT 5003; Bypass qactools error, why is this a violation */
-    for (i = 0; i < NR_CSHARP_KEYWORDS; i++) {
-    /* QAC EXPECT 5007, 3416; will not use wrapper, no side effects here */
-        if (strcmp (Csharp_keywords[i], CsharpId) == 0) {
-            /* Determine Escape character. */
-            char escChar = customPSM ? '@' : '_';
+    scopeList = (c_char **) os_malloc(nrScopes * sizeof(c_char *));
+    for (i = 0, scopeNr = 0; i < strlen(identifier); i++, scopeNr++) {
+        j = i;
+        while (identifier[i] != '.' && identifier[i] != '\0') i++;
+        scopeList[scopeNr] = os_malloc(i - j + 1);  /* Account for '\0'. */
+        scopeList[scopeNr][0] = '\0';
+        strncat(scopeList[scopeNr], &identifier[j], i - j);
 
-            /* If a keyword matches the specified identifier, prepend _ */
-            /* QAC EXPECT 5007; will not use wrapper */
-            c_char *EscCsharpId = os_malloc((size_t)((int)strlen(CsharpId)+1+1));
-            snprintf(EscCsharpId, (size_t)((int)strlen(CsharpId)+1+1), "%c%s", escChar, CsharpId);
-            return EscCsharpId;
+        /* In case of the custom PSM mode, first go to PascalCase. */
+        if (customPSM) {
+            toPascalCase(scopeList[scopeNr]);
+        }
+
+        /* search through the C# keyword list */
+        /* QAC EXPECT 5003; Bypass qactools error, why is this a violation */
+        for (j = 0; j < NR_CSHARP_KEYWORDS; j++) {
+        /* QAC EXPECT 5007, 3416; will not use wrapper, no side effects here */
+            if (strcmp (Csharp_keywords[j], scopeList[scopeNr]) == 0) {
+                /* Determine Escape character. */
+                char escChar = customPSM ? '@' : '_';
+
+                /* If a keyword matches the specified identifier, prepend _ */
+                /* QAC EXPECT 5007; will not use wrapper */
+                c_char *EscCsharpId = os_malloc((size_t)((int)strlen(scopeList[scopeNr])+1+1));
+                snprintf(
+                        EscCsharpId,
+                        (size_t)((int)strlen(scopeList[scopeNr])+1+1),
+                        "%c%s",
+                        escChar,
+                        scopeList[scopeNr]);
+                os_free(scopeList[scopeNr]);
+                scopeList[scopeNr] = EscCsharpId;
+            }
         }
     }
 
-    return CsharpId;
-    /* QAC EXPECT 2006; performance is selected above rules here */
+    /* Calculate the total length of the resulting CSharp identifier.
+     * Initialize to 'nrScopes' first, to account for the '.' between each
+     * scope element and the '\0' terminator at the end.
+     */
+    totalLength = nrScopes;
+    for (i = 0; i < nrScopes; i++) {
+        totalLength += strlen(scopeList[i]);
+    }
+    cSharpId = os_malloc(totalLength);
+
+    /* Concatenate all scopes together. */
+    snprintf(cSharpId, strlen(scopeList[0]) + 1, "%s", scopeList[0]);
+    os_free(scopeList[0]);
+    for (i = 1; i < nrScopes; i++) {
+        strncat(cSharpId, ".", 1);
+        strncat(cSharpId, scopeList[i], strlen(scopeList[i]));
+        os_free(scopeList[i]);
+    }
+    os_free(scopeList);
+
+    return cSharpId;
 }
 
-static c_char *
-idl_scopeCsharpElementName (
-    idl_scopeElement scope)
+/* This operation replaces the database scoping operator '::' in the scoped
+ * name of a database type description with the '.' scoping operator in C#.
+ */
+void
+idl_toCsharpScopingOperator(c_char *scopedName)
 {
-    c_char *scopeName;
-    c_char *scopeCsharpName;
+    unsigned int i, j;
 
-    scopeName = idl_scopeElementName(scope);
-    if ((idl_scopeElementType(scope) == idl_tStruct) ||
-            (idl_scopeElementType(scope) == idl_tUnion)) {
-        scopeCsharpName = os_malloc(strlen(scopeName) + 8);
-        sprintf(scopeCsharpName, "%sPackage", scopeName);
-    } else {
-        scopeCsharpName = scopeName;
+    for (i = 0, j = 0; i <= strlen(scopedName); i++, j++) {
+        /* Start looking for an occurrence of the '::' operator.  */
+        if (scopedName[i] == ':' && scopedName[i + 1] == ':') {
+            /* Replace the '::' with a single '.' */
+            scopedName[j] = '.';
+            i++;
+        } else {
+            scopedName[j] = scopedName[i];
+        }
     }
-    return scopeCsharpName;
+}
+
+/* Build a textual presentation of the provided datatype, including
+ * its scope stack.
+ */
+c_char *
+idl_scopeStackFromCType(c_type dataType)
+{
+    c_char *scopedName = os_strdup(c_metaScopedName(c_metaObject(dataType)));
+    idl_toCsharpScopingOperator(scopedName);
+    return scopedName;
 }
 
 /* Build a textual presentation of the provided scope stack taking the
-   C# keyword identifier translation into account. Further the function
-   equals "idl_scopeStack".
-*/
+ * C# keyword identifier translation into account. Further the function
+ * equals "idl_scopeStack".
+ */
 c_char *
 idl_scopeStackCsharp (
     idl_scope scope,
@@ -242,11 +287,11 @@ idl_scopeStackCsharp (
     if (si < sz) {
         /* The scope stack is not empty */
         /* Copy the first scope element name */
-        scopeStack = os_strdup(idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si)), FALSE));
+        scopeStack = os_strdup(idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE));
         si++;
         while (si < sz) {
             /* Translate the scope name to a C identifier */
-            Id = idl_CsharpId(idl_scopeCsharpElementName(idl_scopeIndexed(scope, si)), FALSE);
+            Id = idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE);
             /* allocate space for the current scope stack + the separator
                and the next scope name
              */
@@ -316,35 +361,31 @@ static const c_char *Csharp_predefined[][2] = {
  */
 c_bool
 idl_isPredefined(
-    idl_typeSpec typeSpec)
+    const c_char *scopedName)
 {
     c_long i;
     c_bool predefined = FALSE;
 
-    /* For a given IDL datatype, get the name of its C# representation. */
-    c_char *scopedName = idl_CsharpTypeFromTypeSpec(typeSpec, FALSE, FALSE);
-
     /* Iterate over the list of predefined C# datatypes and compare them to the
      * current C# datatype. If there is a match, indicate so and stop the loop.
      */
-    for (i = 0; i < NR_PREDEFINED_DATATYPES; i++) {
+    for (i = 0; i < NR_PREDEFINED_DATATYPES && !predefined; i++) {
         if (strcmp(scopedName, Csharp_predefined[i][0]) == 0) {
             predefined = TRUE;
-            i = NR_PREDEFINED_DATATYPES; /* stop searching any further. */
         }
     }
 
-    os_free(scopedName);
     return predefined;
 }
+
 
 /* This function translates an IDL typename that has been pre-defined in the
  * C# API already into the name of its C# representation. Otherwise it returns
  * just the original IDL type name.
  */
-static c_char *
+const c_char *
 idl_translateIfPredefined(
-    c_char *typeName)
+    const c_char *scopedName)
 {
     c_long i;
 
@@ -353,14 +394,12 @@ idl_translateIfPredefined(
      * name into its corresponding C# datatype name.
      */
     for (i = 0; i < NR_PREDEFINED_DATATYPES; i++) {
-        if (strcmp(typeName, Csharp_predefined[i][0]) == 0) {
-            os_free(typeName);
-            typeName = os_strdup(Csharp_predefined[i][1]);
-            i = NR_PREDEFINED_DATATYPES; /* stop searching any further. */
+        if (strcmp(scopedName, Csharp_predefined[i][0]) == 0) {
+            return Csharp_predefined[i][1];
         }
     }
 
-    return typeName;
+    return NULL;
 }
 
 /* Return the C# specific type identifier for the
@@ -373,8 +412,7 @@ idl_translateIfPredefined(
 c_char *
 idl_CsharpTypeFromTypeSpec (
     idl_typeSpec typeSpec,
-    c_bool customPSM,
-    c_bool substPredefs)
+    c_bool customPSM)
 {
     c_char *typeName;
 
@@ -382,74 +420,70 @@ idl_CsharpTypeFromTypeSpec (
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* if the specified type is a basic type */
         switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-            case idl_short:
-                typeName = os_strdup("short");
-                break;
-            case idl_ushort:
-                typeName = os_strdup("ushort");
-                break;
-            case idl_long:
-                typeName = os_strdup("int");
-                break;
-            case idl_ulong:
-                typeName = os_strdup("uint");
-                break;
-            case idl_longlong:
-                typeName = os_strdup("long");
-                break;
-            case idl_ulonglong:
-                typeName = os_strdup("ulong");
-                break;
-            case idl_float:
-                typeName = os_strdup("float");
-                break;
-            case idl_double:
-                typeName = os_strdup("double");
-                break;
-            case idl_char:
-                typeName = os_strdup("char");
-                break;
-            case idl_string:
-                typeName = os_strdup("string");
-                break;
-            case idl_boolean:
-                typeName = os_strdup("bool");
-                break;
-            case idl_octet:
-                typeName = os_strdup("byte");
-                break;
-            default:
-                /* No processing required, empty statement to satisfy QAC */
-                break;
+        case idl_short:
+            typeName = os_strdup("short");
+            break;
+        case idl_ushort:
+            typeName = os_strdup("ushort");
+            break;
+        case idl_long:
+            typeName = os_strdup("int");
+            break;
+        case idl_ulong:
+            typeName = os_strdup("uint");
+            break;
+        case idl_longlong:
+            typeName = os_strdup("long");
+            break;
+        case idl_ulonglong:
+            typeName = os_strdup("ulong");
+            break;
+        case idl_float:
+            typeName = os_strdup("float");
+            break;
+        case idl_double:
+            typeName = os_strdup("double");
+            break;
+        case idl_char:
+            typeName = os_strdup("char");
+            break;
+        case idl_string:
+            typeName = os_strdup("string");
+            break;
+        case idl_boolean:
+            typeName = os_strdup("bool");
+            break;
+        case idl_octet:
+            typeName = os_strdup("byte");
+            break;
+        default:
+            /* No processing required, empty statement to satisfy QAC */
+            break;
             /* QAC EXPECT 2016; Default case must be empty here */
         }
         /* QAC EXPECT 3416; No side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
         typeName = idl_CsharpTypeFromTypeSpec (
                 idl_typeSeqActual(idl_typeSeq (typeSpec)),
-                customPSM,
-                substPredefs);
+                customPSM);
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
         typeName = idl_CsharpTypeFromTypeSpec (
                 idl_typeArrayActual(idl_typeArray (typeSpec)),
-                customPSM,
-                substPredefs);
+                customPSM);
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-        typeName = idl_scopeStackCsharp(
+        os_char *tmp = idl_scopeStackCsharp(
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 ".",
                 idl_typeSpecName(typeSpec));
-        if (substPredefs) {
-            if (idl_isPredefined(typeSpec)) {
-                /* idl_translateIfPredefined will release old value when required. */
-                typeName = idl_translateIfPredefined(typeName);
-            } else {
-                typeName = idl_CsharpTypeFromTypeSpec (
-                        idl_typeDefRefered(idl_typeDef(typeSpec)),
-                        customPSM,
-                        substPredefs);
-            }
+        if (idl_isPredefined(tmp)) {
+            /* idl_translateIfPredefined will release old value when required. */
+            typeName = os_strdup(idl_translateIfPredefined(tmp));
+        } else {
+            typeName = idl_CsharpTypeFromTypeSpec (
+                    idl_typeDefRefered(idl_typeDef(typeSpec)),
+                    customPSM);
         }
+        os_free(tmp);
     } else {
         /* if a user type is specified, build it from its scope and its name.
            The type should be one of idl_tenum, idl_tstruct, idl_tunion.
@@ -458,16 +492,15 @@ idl_CsharpTypeFromTypeSpec (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 ".",
                 idl_typeSpecName(typeSpec));
-        if (substPredefs) {
-            /* idl_translateIfPredefined will release old value when required. */
-            typeName = idl_translateIfPredefined(typeName);
+        if (idl_isPredefined(typeName)) {
+            os_char *tmp = os_strdup(idl_translateIfPredefined(typeName));
+            os_free(typeName);
+            typeName = tmp;
         }
 
         /* If a customPSM is specified, translate the typeName into PascalCase. */
         if (customPSM) {
-            c_char *tmp = typeName;
-            typeName = toPascalCase(typeName);
-            os_free(tmp);
+            toPascalCase(typeName);
         }
 
     }
@@ -479,13 +512,22 @@ c_char *
 idl_sequenceCsharpIndexString (
     idl_typeSpec typeSpec,
     SACS_INDEX_POLICY policy,
+    const char *seqLengthName,
     int *indexStrLen)
 {
     c_char *sequenceString, *insertPos;
     const c_char *indexStr;
 
     /* Determine the index-size of the current sequence. */
-    indexStr = (policy == SACS_INCLUDE_INDEXES ? "0" : "");
+    if (policy == SACS_INCLUDE_INDEXES) {
+        if (seqLengthName == NULL) {
+            indexStr = "0";
+        } else {
+            indexStr = seqLengthName;
+        }
+    } else {
+        indexStr = "";
+    }
 
     /* Dereference possible typedefs first. */
     typeSpec = idl_typeSeqType(idl_typeSeq(typeSpec));
@@ -495,7 +537,7 @@ idl_sequenceCsharpIndexString (
 
     if (idl_typeSpecType(typeSpec) == idl_tseq) {
         *indexStrLen += (2 + strlen(indexStr)); /* Current index + '[' and ']'. */
-        sequenceString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, indexStrLen);
+        sequenceString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, indexStrLen);
         insertPos = strchr(sequenceString, '[');
         snprintf(insertPos - 2 - strlen(indexStr), 2 + strlen(indexStr), "[%s]", indexStr);
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
@@ -551,7 +593,7 @@ idl_arrayCsharpIndexString (
         snprintf(insertPos - 1 - strlen(indexStr), 2 + strlen(indexStr), "[%s,", indexStr);
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
         *indexStrLen += (2 + strlen(indexStr)); /* Current index + '[' and ']'. */
-        arrayString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, indexStrLen);
+        arrayString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, indexStrLen);
         insertPos = strchr(arrayString, '[');
         snprintf(insertPos - 2 - strlen(indexStr), 2 + strlen(indexStr), "[%s]", indexStr);
     } else {

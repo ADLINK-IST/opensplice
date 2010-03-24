@@ -53,6 +53,7 @@
 /* C# related support */
 #include "idl_genSACSType.h"
 #include "idl_genSACSTypedClassDefs.h"
+#include "idl_genSACSSplDcps.h"
 
 /* Java related support */
 #include "idl_genCorbaJavaHelper.h"
@@ -1145,6 +1146,7 @@ main (
 
             } else if (idl_getLanguage() == IDL_LANG_CS) {
                 SACSTypeUserData csUserData;
+                SACSSplDcpsUserData splUserData;
 
                 /**
                  * It is not possible to generate type-descriptors while walking over
@@ -1163,8 +1165,8 @@ main (
                 idl_definitionClean();
 
                 /* Generate the file that defines all DCPS specialized classes for the
-                   user types
-                */
+                 * user types
+                 */
                 snprintf(fname,
                     (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                     "%s.cs", basename);
@@ -1176,8 +1178,25 @@ main (
                 idl_walk(base, filename, traceWalk, idl_genSACSTypeProgram(&csUserData));
                 idl_fileOutFree(idl_fileCur());
 
-                /* Expand Typed Csharp TypeSupport, DataReader and DataWriter implementation classes.
-                */
+                /* Generate the file that defines the database representation of
+                 * the IDL data, and that contains the marshalers that translate
+                 * between database representation and C# representation.
+                 */
+                splUserData.customPSM = customPSM;
+                snprintf(fname,
+                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                    "%sSplDcps.cs", basename);
+                idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                if (idl_fileCur() == NULL) {
+                    idl_reportOpenError(fname);
+                }
+
+                idl_walk(base, filename, traceWalk, idl_genSACSSplDcpsProgram(&splUserData));
+                idl_fileOutFree(idl_fileCur());
+
+                /* Expand Typed Csharp TypeSupport, DataReader and DataWriter
+                 * implementation classes.
+                 */
                 csUserData.tmplPrefix = "SacsTypedClassBody";
                 snprintf(fname,
                     (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
@@ -1194,7 +1213,8 @@ main (
                 idl_fileOutFree(idl_fileCur());
 
                 /* Expand Typed Csharp DataReader and DataWriter interfaces.
-                 * There is no need for the meta-data in this phase anymore. */
+                 * There is no need for the meta-data in this phase anymore.
+                 */
                 csUserData.tmplPrefix = "SacsTypedClassSpec";
                 csUserData.idlpp_metaList = NULL;
                 snprintf(fname,

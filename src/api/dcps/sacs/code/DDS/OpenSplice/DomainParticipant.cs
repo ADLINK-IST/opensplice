@@ -280,7 +280,8 @@ namespace DDS.OpenSplice
         {
             IPublisher publisher = null;
 
-            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler())
+            using (OpenSplice.CustomMarshalers.PublisherQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.PublisherQosMarshaler())
             {
                 // Note: we use the same gapi lister as the DataWriter since the
                 // publisher doesn't add anything unique
@@ -400,7 +401,8 @@ namespace DDS.OpenSplice
         {
             ISubscriber subscriber = null;
 
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriberQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriberQosMarshaler())
             {
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
@@ -594,7 +596,8 @@ namespace DDS.OpenSplice
         {
             ITopic topic = null;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
@@ -809,7 +812,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DomainParticipantQosMarshaler marshaler = new DomainParticipantQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -826,7 +830,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DomainParticipantQosMarshaler marshaler = new DomainParticipantQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
             {
                 result = Gapi.DomainParticipant.get_qos(
                         GapiPeer,
@@ -890,7 +895,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler())
+            using (OpenSplice.CustomMarshalers.PublisherQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.PublisherQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -907,7 +913,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (PublisherQosMarshaler marshaler = new PublisherQosMarshaler())
+            using (OpenSplice.CustomMarshalers.PublisherQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.PublisherQosMarshaler())
             {
                 result = Gapi.DomainParticipant.get_default_publisher_qos(
                         GapiPeer,
@@ -926,7 +933,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriberQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriberQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -943,7 +951,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriberQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriberQosMarshaler())
             {
                 result = Gapi.DomainParticipant.get_default_subscriber_qos(
                         GapiPeer,
@@ -962,7 +971,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -980,7 +990,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
                 result = Gapi.DomainParticipant.get_default_topic_qos(
                         GapiPeer,

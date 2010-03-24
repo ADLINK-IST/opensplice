@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IDL_WALK_H
@@ -18,11 +18,11 @@
 #include "idl_program.h"
 #include "idl_tmplExp.h"
 
-void 
+void
 idl_walkPresetFile(
     const char *fileName);
 
-void 
+void
 idl_walkPresetModule(
     const char *moduleName);
 
@@ -32,5 +32,9 @@ idl_walk(
     const char *fileName,
     c_bool traceWalk,
     idl_program program);
+
+idl_typeSpec
+idl_makeTypeCollection(
+    c_collectionType type);
 
 #endif /* IDL_WALK_H */

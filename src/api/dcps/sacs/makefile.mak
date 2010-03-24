@@ -15,7 +15,7 @@ IDL_INC_FLAGS= -I$(IDL_DIR)
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cs -S -o custom-psm
 
 # idlpp output
-IDL_CS   = $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs) 
+IDL_CS   = $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs) $(TOPIC_IDL:%.idl=%SplDcps.cs)
 
 all link: csc
 

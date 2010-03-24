@@ -153,7 +153,8 @@ namespace DDS.OpenSplice
             {
                 SacsSuperClass superObj = (SacsSuperClass)topic;
 
-                using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
+                using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                        new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
                 {
                     if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                     {
@@ -279,7 +280,8 @@ namespace DDS.OpenSplice
         {
             DDS.ReturnCode result;
             
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriberQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriberQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == DDS.ReturnCode.Ok)
@@ -297,7 +299,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SubscriberQosMarshaler marshaler = new SubscriberQosMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriberQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriberQosMarshaler())
             {
                 result = OpenSplice.Gapi.Subscriber.get_qos(
                         GapiPeer,
@@ -338,7 +341,8 @@ namespace DDS.OpenSplice
         {
             DDS.ReturnCode result;
             
-            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == DDS.ReturnCode.Ok)
@@ -356,7 +360,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
             {
                 result = OpenSplice.Gapi.Subscriber.get_default_datareader_qos(
                     GapiPeer,
@@ -382,13 +387,14 @@ namespace DDS.OpenSplice
 
             if (result == ReturnCode.Ok)
             {
-                using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+                using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                        new OpenSplice.CustomMarshalers.TopicQosMarshaler())
                 {
                     result = marshaler.CopyIn(topicQos);
                     if (result == ReturnCode.Ok)
                     {
-                        using (DataReaderQosMarshaler dataReaderMarshaler = 
-                                new DataReaderQosMarshaler())
+                        using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler dataReaderMarshaler = 
+                                new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
                         {
                             result = dataReaderMarshaler.CopyIn(dataReaderQos);
                             if (result == ReturnCode.Ok)

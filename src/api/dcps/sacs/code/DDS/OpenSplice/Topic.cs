@@ -83,7 +83,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
             
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
                 result = Gapi.Topic.get_qos(GapiPeer, marshaler.GapiPtr);
                 if (result == ReturnCode.Ok)
@@ -99,7 +100,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == DDS.ReturnCode.Ok)

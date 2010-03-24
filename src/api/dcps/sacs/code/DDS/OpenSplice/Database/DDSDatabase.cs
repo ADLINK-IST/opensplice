@@ -66,6 +66,19 @@ namespace DDS.OpenSplice.Database
         [DllImport("ddsdatabase", EntryPoint = "c_stringNew")]
         public static extern IntPtr stringNew(IntPtr _this, string str);
 
+    	//OS_API c_base
+        //c_getBase (
+        //    c_object object);
+        [DllImport("ddsdatabase", EntryPoint = "c_getBase")]
+        public static extern IntPtr getBase(IntPtr _object);
+
+    	//OS_API c_type
+        //c_resolve (
+        //    c_base _this,
+        //    const c_char *typeName);
+        [DllImport("ddsdatabase", EntryPoint = "c_resolve")]
+        public static extern IntPtr resolve(IntPtr _this, string typeName);
+
         //OS_API c_array
         //c_arrayNew (
         //    c_type subType,

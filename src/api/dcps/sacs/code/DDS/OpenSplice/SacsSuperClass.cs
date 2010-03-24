@@ -109,7 +109,7 @@ namespace DDS.OpenSplice
                 {
                     Gapi.GenericAllocRelease.Free(gapiPeer);
                 }
-                catch (AccessViolationException e)
+                catch (AccessViolationException)
                 {
                     // TODO: JLS - We should probably figure out why this is happening.
                 }

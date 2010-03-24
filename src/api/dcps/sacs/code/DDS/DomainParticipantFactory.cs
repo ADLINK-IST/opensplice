@@ -162,7 +162,8 @@ namespace DDS
         {
             IDomainParticipant participant = null;
 
-            using (DomainParticipantQosMarshaler marshaler = new DomainParticipantQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
             {
                 if (marshaler.CopyIn(qos) == ReturnCode.Ok)
                 {
@@ -255,7 +256,8 @@ namespace DDS
         {
             ReturnCode result;
 
-            using (DomainParticipantQosMarshaler marshaler = new DomainParticipantQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -278,7 +280,8 @@ namespace DDS
         {
             ReturnCode result;
 
-            using (DomainParticipantQosMarshaler marshaler = new DomainParticipantQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
             {
                 // Invoke the corresponding gapi function.
                 result = OpenSplice.Gapi.DomainParticipantFactory.get_default_participant_qos(GapiPeer, marshaler.GapiPtr);
@@ -300,7 +303,8 @@ namespace DDS
         {
             ReturnCode result;
 
-            using (DomainParticipantFactoryQosMarshaler marshaler = new DomainParticipantFactoryQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantFactoryQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantFactoryQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -320,7 +324,8 @@ namespace DDS
         {
             ReturnCode result;
 
-            using (DomainParticipantFactoryQosMarshaler marshaler = new DomainParticipantFactoryQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DomainParticipantFactoryQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DomainParticipantFactoryQosMarshaler())
             {
                 // Invoke the corresponding gapi function.
                 result = OpenSplice.Gapi.DomainParticipantFactory.get_qos(GapiPeer, marshaler.GapiPtr);

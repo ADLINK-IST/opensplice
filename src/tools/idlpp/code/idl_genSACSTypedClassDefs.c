@@ -243,33 +243,6 @@ idl_unionOpen(
     return idl_abort;
 }
 
-//static void
-//idl_typedefOpenClose(
-//    idl_scope scope,
-//    const char *name,
-//    idl_typeDef defSpec,
-//    void *userData)
-//{
-//    c_char spaces[20];
-//    idl_tmplExp te;
-//
-//    if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
-//        idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tunion) &&
-//        idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
-//        /* keylist defined for this typedef of struct or union */
-//        te = idl_tmplExpNew(idlpp_macroSet);
-//        idl_macroSetAdd(idlpp_macroSet,
-//            idl_macroNew("scope", idl_cxxId(idl_scopeElementName(idl_scopeCur(scope)))));
-//        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_cxxId(name)));
-//        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
-//        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
-//        idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
-//        idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
-//        idl_streamInFree(idlpp_inStream);
-//        idl_tmplExpFree(te);
-//    }
-//}
-
 static struct idl_program idl_genSACSTypedClassDefs;
 
 idl_program

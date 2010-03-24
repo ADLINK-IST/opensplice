@@ -170,7 +170,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -186,7 +187,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
             {
                 result = Gapi.DataReader.get_qos(GapiPeer, marshaler.GapiPtr);
                 if (result == ReturnCode.Ok)
@@ -277,11 +279,14 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public ReturnCode GetMatchedPublicationData(ref PublicationBuiltinTopicData publicationData, InstanceHandle publicationHandle)
+        public ReturnCode GetMatchedPublicationData(
+                ref PublicationBuiltinTopicData publicationData, 
+                InstanceHandle publicationHandle)
         {
             ReturnCode result;
 
-            using (PublicationBuiltinTopicDataMarshaler marshaler = new PublicationBuiltinTopicDataMarshaler())
+            using (OpenSplice.CustomMarshalers.PublicationBuiltinTopicDataMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.PublicationBuiltinTopicDataMarshaler())
             {
                 result = Gapi.DataReader.get_matched_publication_data(
                         GapiPeer,

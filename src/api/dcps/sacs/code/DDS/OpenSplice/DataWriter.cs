@@ -79,7 +79,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DataWriterQosMarshaler marshaler = new DataWriterQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
             {
                 result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
@@ -95,7 +96,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (DataWriterQosMarshaler marshaler = new DataWriterQosMarshaler())
+            using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
             {
                 result = Gapi.DataWriter.get_qos(GapiPeer, marshaler.GapiPtr);
 
@@ -189,7 +191,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SubscriptionBuiltinTopicDataMarshaler marshaler = new SubscriptionBuiltinTopicDataMarshaler())
+            using (OpenSplice.CustomMarshalers.SubscriptionBuiltinTopicDataMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.SubscriptionBuiltinTopicDataMarshaler())
             {
                 result = Gapi.DataWriter.get_matched_subscription_data(
                         GapiPeer,

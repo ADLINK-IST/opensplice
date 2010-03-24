@@ -17,7 +17,7 @@
 #include "idl_program.h"
 /**
  * @file
- * This module generates Standalone C data types
+ * This module generates Standalone C# data types
  * related to an IDL input file.
 */
 
@@ -43,42 +43,6 @@ static c_long enum_element = 0;
 static char *enum_enumName = NULL;
 
 static void idl_arrayDimensions(idl_typeArray typeArray);
-
-/** @brief generate name which will be used as a macro to prevent multiple inclusions
- *
- * From the specified basename create a macro which will
- * be used to prevent multiple inclusions of the generated
- * header file. The basename characters are translated
- * into uppercase characters and the append string is
- * appended to the macro.
- */
-static c_char *
-idl_macroFromBasename(
-    const char *basename,
-    const char *append)
-{
-    static c_char macro[200];
-    c_long i;
-
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper(basename[i]);
-        macro[i+1] = '\0';
-    }
-    strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
-
-    return macro;
-}
-
-static os_equality
-defName(
-    void *iterElem,
-    void *arg)
-{
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
-        return OS_EQ;
-    }
-    return OS_NE;
-}
 
 /* @brief callback function called on opening the IDL input file.
  *
@@ -182,28 +146,34 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    char *structTypeName;
+    char *scopedStructName;
     SACSTypeUserData *csUserData = (SACSTypeUserData *) userData;
     idl_action action;
 
-    if (idl_isPredefined(idl_typeSpec(structSpec))) {
+    scopedStructName = idl_scopeStackCsharp(
+            idl_typeUserScope(idl_typeUser(structSpec)),
+            ".",
+            idl_typeSpecName(idl_typeSpec(structSpec)));
+    if (idl_isPredefined(scopedStructName)) {
         /* return idl_abort to indicate that the structure does not need to be processed. */
         action = idl_abort;
     } else {
+        char *structName;
+
         /* Add the metadata of this struct to a list for later processing. */
         idl_metaCharpAddType(scope, name, idl_typeSpec(structSpec), &csUserData->idlpp_metaList);
 
         /* Generate the C# code that opens a sealed class. */
-        structTypeName = idl_CsharpId(name, csUserData->customPSM);
+        structName = idl_CsharpId(name, csUserData->customPSM);
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "#region %s\n", structTypeName);
+        idl_fileOutPrintf(idl_fileCur(), "#region %s\n", structName);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "[StructLayout(LayoutKind.Sequential)]\n");
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
             "public sealed class %s\n",
-            structTypeName);
+            structName);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "{\n");
 
@@ -212,8 +182,9 @@ idl_structureOpen(
 
         /* return idl_explore to indicate that the rest of the structure needs to be processed. */
         action = idl_explore;
-        os_free(structTypeName);
+        os_free(structName);
     }
+    os_free(scopedStructName);
     return action;
 }
 
@@ -274,11 +245,13 @@ idl_structureMemberOpenClose (
 {
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
     c_bool isPredefined = FALSE;
+    char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
 
     /* Dereference possible typedefs first. */
     while (idl_typeSpecType(typeSpec) == idl_ttypedef && !isPredefined) {
-        if (!idl_isPredefined(typeSpec)) {
+        if (!idl_isPredefined(tpName)) {
             typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+            tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
         } else {
             isPredefined = TRUE;
         }
@@ -293,14 +266,14 @@ idl_structureMemberOpenClose (
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s = string.Empty;\n",
-                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM, TRUE),
+                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
                 idl_CsharpId(name, csUserData->customPSM));
         } else {
             /* generate code for a standard primitive type. */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s;\n",
-                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM, TRUE),
+                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
                 idl_CsharpId(name, csUserData->customPSM));
         }
         break;
@@ -310,7 +283,7 @@ idl_structureMemberOpenClose (
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s %s;\n",
-            idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM, TRUE),
+            idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
             idl_CsharpId(name, csUserData->customPSM));
         break;
 
@@ -318,7 +291,7 @@ idl_structureMemberOpenClose (
     case idl_tunion:
     {
         /* generate code for a standard mapping of a struct or union user-type mapping */
-        char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM, TRUE);
+        char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s %s = new %s();\n",
@@ -333,7 +306,7 @@ idl_structureMemberOpenClose (
         /* Initialize to 2 ('[]') so that every other dimension just has to add 1 ','. */
         int emptyStrLen = 2;
         int indexStrLen = 2;
-        char *tpName = idl_CsharpTypeFromTypeSpec (typeSpec, csUserData->customPSM, TRUE);
+        char *tpName = idl_CsharpTypeFromTypeSpec (typeSpec, csUserData->customPSM);
 
         /* generate code for an array mapping */
         idl_fileOutPrintf(
@@ -353,17 +326,17 @@ idl_structureMemberOpenClose (
         /* Initialize to 2 ('[]') so that every other dimension just has to add 2 '[]'. */
         int emptyStrLen = 2;
         int indexStrLen = 2;
-        char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM, TRUE);
 
         /* generate code for a sequence mapping */
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s%s %s = new %s%s;\n",
             tpName,
-            idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, &emptyStrLen),
+            idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, &emptyStrLen),
             idl_CsharpId(name, csUserData->customPSM),
             tpName,
-            idl_sequenceCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, &indexStrLen));
+            idl_sequenceCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, NULL, &indexStrLen));
+        os_free(tpName);
         break;
     }
 
@@ -371,10 +344,10 @@ idl_structureMemberOpenClose (
         /* This state should only be reachable for predefined types. */
         assert(isPredefined);
         idl_fileOutPrintf(
-            idl_fileCur(),
-            "public %s %s;\n",
-            idl_CsharpTypeFromTypeSpec(typeSpec, FALSE, TRUE),
-            idl_CsharpId(name, csUserData->customPSM));
+                idl_fileCur(),
+                "public %s %s;\n",
+                idl_CsharpTypeFromTypeSpec(typeSpec, FALSE),
+                idl_CsharpId(name, csUserData->customPSM));
         break;
 
     default:
@@ -422,8 +395,7 @@ idl_unionOpen(
     unionTypeName = idl_CsharpId(name, csUserData->customPSM);
     discrTypeName = idl_CsharpTypeFromTypeSpec(
             idl_typeUnionSwitchKind(unionSpec),
-            csUserData->customPSM,
-            TRUE);
+            csUserData->customPSM);
 
     /* Generate the C# code that opens a sealed class. */
     idl_printIndent(indent_level);
@@ -757,8 +729,7 @@ idl_constantOpenClose (
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
     char *constTypeName = idl_CsharpTypeFromTypeSpec(
             idl_constSpecTypeGet(constantSpec),
-            csUserData->customPSM,
-            TRUE);
+            csUserData->customPSM);
 
     idl_printIndent(indent_level);
     idl_fileOutPrintf(

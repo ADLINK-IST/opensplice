@@ -50,9 +50,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_data = (int)Marshal.OffsetOf(dataSampleType, "data");
         private static readonly int offset_sampleInfo = (int)Marshal.OffsetOf(dataSampleType, "sampleInfo");
 
-        public static Dictionary<KeyValuePair<IntPtr, Type>, DatabaseMarshaler> typeMarshalers = 
-                new Dictionary<KeyValuePair<IntPtr, Type>, DatabaseMarshaler>();
-        protected static bool initDone = false;
+        public static Dictionary<KeyValuePair<IDomainParticipant, Type>, DatabaseMarshaler> typeMarshalers = 
+                new Dictionary<KeyValuePair<IDomainParticipant, Type>, DatabaseMarshaler>();
         
         // Used to instantiate an array of the datatype.
         public abstract object[] SampleReaderAlloc(int length);
@@ -64,6 +63,8 @@ namespace DDS.OpenSplice.CustomMarshalers
         private SampleCopyOutDelegate copyOutDelegate;
         private SampleReaderCopyDelegate readerCopyDelegate;
 
+        public abstract void InitEmbeddedMarshalers(IDomainParticipant participant); 
+        
         public SampleCopyInDelegate CopyInDelegate 
         { 
             get
@@ -95,35 +96,27 @@ namespace DDS.OpenSplice.CustomMarshalers
             readerCopyDelegate = ReaderCopy;
         }
 
-        public static DatabaseMarshaler Create(
-                IntPtr participant,
-                IntPtr metaData,
-                Type t, 
-                IMarshalerTypeGenerator generator,
-                bool customPSM)
+        public static void Add(
+                IDomainParticipant participant,
+                Type t,
+                DatabaseMarshaler marshaler)
         {
-            DatabaseMarshaler marshaler;
-            
-            // Check if a Marshaler for this type already exists, and if not, create it.
-            if (!typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, Type>(participant, t), out marshaler))
+            // Check if a Marshaler for this type already exists, and if not, add it.
+            if (!typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out marshaler))
             {
-                // Delegate creation of the marshaler instance to the MarshalerGenerator.
-                marshaler = generator.CreateMarshaler(participant, metaData, t, customPSM);
-
                 // Add the new marshaler to the list of known marshalers.
-                typeMarshalers.Add(new KeyValuePair<IntPtr, Type>(participant, t), marshaler);
+                typeMarshalers.Add(new KeyValuePair<IDomainParticipant, Type>(participant, t), marshaler);
             }
-            return marshaler;
         }
         
         public static DatabaseMarshaler GetMarshaler(
-                IntPtr participant,
+                IDomainParticipant participant,
                 Type t)
         {
             DatabaseMarshaler marshaler;
             
             // Check if a Marshaler for this type already exists, and if so return it.
-            typeMarshalers.TryGetValue(new KeyValuePair<IntPtr, Type>(participant, t), out marshaler);
+            typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out marshaler);
             return marshaler;
         }
         
