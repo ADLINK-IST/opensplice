@@ -662,16 +662,7 @@ $sp($(spaces))    private const string keyList = "$(key-list)";
 $sp($(spaces))    private const string metaDescriptor = "$(meta-descriptor)";
 
 $sp($(spaces))    public $(typename)TypeSupport()
-$sp($(spaces))        : base(typeof($(typename)),
-$sp($(spaces))                new MarshalerTypeGenerator(), $(custom-psm))
-$sp($(spaces))    { }
-
-$sp($(spaces))    public $(typename)TypeSupport(IMarshalerTypeGenerator generator)
-$sp($(spaces))        : base(typeof($(typename)), generator, $(custom-psm))
-$sp($(spaces))    { }
-
-$sp($(spaces))    public $(typename)TypeSupport(DatabaseMarshaler marshaler)
-$sp($(spaces))        : base(typeof($(typename)), marshaler)
+$sp($(spaces))        : base(typeof($(typename)))
 $sp($(spaces))    { }
 
 $sp($(spaces))    public override string TypeName
@@ -696,6 +687,11 @@ $sp($(spaces))        get
 $sp($(spaces))        {
 $sp($(spaces))            return keyList;
 $sp($(spaces))        }
+$sp($(spaces))    }
+
+$sp($(spaces))    public override ReturnCode RegisterType(IDomainParticipant participant, string typeName)
+$sp($(spaces))    {
+$sp($(spaces))        return RegisterType(participant, typeName, new $(typename)Marshaler());
 $sp($(spaces))    }
 
 $sp($(spaces))    public override DDS.OpenSplice.DataWriter CreateDataWriter(IntPtr gapiPtr)

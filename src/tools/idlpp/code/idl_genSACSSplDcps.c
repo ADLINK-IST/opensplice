@@ -317,7 +317,7 @@ idl_cTypeToCSharp(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(
                     idl_fileCur(),
-                    "[MarshalAs(UnmanagedType.LPArray, SizeConst=%lld)]\n",
+                    "[MarshalAs(UnmanagedType.ByValArray, SizeConst=%lld)]\n",
                     nrElements);
             memberTypeNameTmp = idl_scopeStackFromCType(memberType);
             dbTypeTmp = idl_cTypeToCSharp(memberType, memberTypeNameTmp, csUserData);
