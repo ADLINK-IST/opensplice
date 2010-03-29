@@ -92,7 +92,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriter_get_liveliness_lost_status")]
         public static extern ReturnCode get_liveliness_lost_status(
             IntPtr _this,
-            out LivelinessLostStatus status
+            LivelinessLostStatus status
             );
 
         /*     OfferedDeadlineMissedStatus
@@ -101,7 +101,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriter_get_offered_deadline_missed_status")]
         public static extern ReturnCode get_offered_deadline_missed_status(
             IntPtr _this,
-            out OfferedDeadlineMissedStatus status
+            OfferedDeadlineMissedStatus status
             );
 
         /*     OfferedIncompatibleQosStatus
@@ -110,7 +110,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriter_get_offered_incompatible_qos_status")]
         public static extern ReturnCode get_offered_incompatible_qos_status(
             IntPtr _this,
-            out OfferedIncompatibleQosStatus status
+            OfferedIncompatibleQosStatus status
             );
 
         /*     PublicationMatchedStatus
@@ -119,7 +119,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriter_get_publication_matched_status")]
         public static extern ReturnCode get_publication_matched_status(
             IntPtr _this,
-            out PublicationMatchedStatus status
+            PublicationMatchedStatus status
             );
 
         /*     ReturnCode_t

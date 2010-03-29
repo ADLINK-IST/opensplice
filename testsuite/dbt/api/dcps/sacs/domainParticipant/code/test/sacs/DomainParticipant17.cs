@@ -63,37 +63,37 @@ namespace test.sacs
                 result.Result = "Register type failed.";
                 return result;
             }
-            participant.GetDefaultTopicQos(out tHolder);
-            topic = participant.CreateTopic("TestTopic", "type1", ref tHolder, null, 0);
+            participant.GetDefaultTopicQos(ref tHolder);
+            topic = participant.CreateTopic("TestTopic", "type1", tHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Create Topic failed.";
                 return result;
             }
-            participant.GetDefaultPublisherQos(out pHolder);
-            publisher = participant.CreatePublisher(ref pHolder, null, 0);
+            participant.GetDefaultPublisherQos(ref pHolder);
+            publisher = participant.CreatePublisher(pHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Create Publisher failed.";
                 return result;
             }
-            participant.GetDefaultSubscriberQos(out sHolder);
-            subscriber = participant.CreateSubscriber(ref sHolder, null, 0);
+            participant.GetDefaultSubscriberQos(ref sHolder);
+            subscriber = participant.CreateSubscriber(sHolder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Create Subscriber failed.";
                 return result;
             }
-            publisher.GetDefaultDataWriterQos(out wHolder);
-            writer = publisher.CreateDataWriter(topic, ref wHolder, null, 0) as mod.tstDataWriter;
+            publisher.GetDefaultDataWriterQos(ref wHolder);
+            writer = publisher.CreateDataWriter(topic, wHolder) as mod.tstDataWriter;
             if (writer == null)
             {
                 result.Result = "Create Writer failed.";
                 return result;
             }
 
-            subscriber.GetDefaultDataReaderQos(out rHolder);
-            reader = subscriber.CreateDataReader(topic, ref rHolder, null, 0) as mod.tstDataReader;
+            subscriber.GetDefaultDataReaderQos(ref rHolder);
+            reader = subscriber.CreateDataReader(topic, rHolder) as mod.tstDataReader;
             if (reader == null)
             {
                 result.Result = "Create Reader failed.";

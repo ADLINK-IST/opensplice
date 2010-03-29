@@ -31,7 +31,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_inconsistent_topic_status")]
         public static extern ReturnCode get_inconsistent_topic_status(
             IntPtr _this,
-            ref InconsistentTopicStatus status
+            InconsistentTopicStatus status
             );
 
         /*     ReturnCode_t

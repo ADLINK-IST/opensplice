@@ -19,8 +19,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.ISubscriber subscriber;
-            DDS.DataReaderQos dataReaderQos;
-            DDS.IDataReader[] dataReaderSeqHolder;
+			DDS.DataReaderQos dataReaderQos = null;
+			DDS.IDataReader[] dataReaderSeqHolder = null;
             DDS.IDataReader reader1;
             DDS.IDataReader reader2;
             DDS.IDataReader reader3;
@@ -33,31 +33,31 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
-            if (subscriber.GetDefaultDataReaderQos(out dataReaderQos) != DDS.ReturnCode.Ok)
+            if (subscriber.GetDefaultDataReaderQos(ref dataReaderQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos (1).";
                 return result;
             }
-            reader1 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
+            reader1 = subscriber.CreateDataReader(topic, dataReaderQos);//, null, 0);
             if (reader1 == null)
             {
                 result.Result = "Could not create a DataReader (2).";
                 return result;
             }
-            reader2 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
+            reader2 = subscriber.CreateDataReader(topic, dataReaderQos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create a DataReader (3).";
                 return result;
             }
-            reader3 = subscriber.CreateDataReader(topic, ref dataReaderQos);//, null, 0);
+            reader3 = subscriber.CreateDataReader(topic, dataReaderQos);//, null, 0);
             if (reader3 == null)
             {
                 result.Result = "Could not create a DataReader (4).";
                 return result;
             }
 
-            rc = subscriber.GetDataReaders(out dataReaderSeqHolder, DDS.SampleStateKind.Any,
+            rc = subscriber.GetDataReaders(ref dataReaderSeqHolder, DDS.SampleStateKind.Any,
                 DDS.ViewStateKind.Any, DDS.InstanceStateKind.Alive);
             if (rc != DDS.ReturnCode.Unsupported)
             {

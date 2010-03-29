@@ -34,7 +34,7 @@ idl_metaCsharpNew(c_type type, c_char *descriptor);
 void
 idl_metaCharpAddType(
         idl_scope scope,
-        const char *name,
+        const c_char *name,
         idl_typeSpec typeSpec,
         os_iter *metaList);
 
@@ -43,27 +43,49 @@ idl_metaCsharpSerialize2XML(
         idl_metaCsharp *metaElmnt,
         void *args);
 
+void
+idl_CsharpRemovePrefix (
+        const c_char *name,
+        c_char *prefix);
+
 c_char *idl_CsharpId(
-        const char *identifier);
+        const c_char *identifier,
+        c_bool customPSM);
+
+void
+idl_toCsharpScopingOperator(c_char *scopedName);
+
+c_char *
+idl_scopeStackFromCType(c_type dataType);
 
 c_char *idl_scopeStackCsharp(
         idl_scope scope,
-        const char *scopeSepp,
-        const char *name);
+        const c_char *scopeSepp,
+        const c_char *name);
 
 c_char *idl_CsharpTypeFromTypeSpec(
-        idl_typeSpec typeSpec);
+        idl_typeSpec typeSpec,
+        c_bool customPSM);
 
 c_char *idl_genCsharpConstantGetter(void);
 
 c_char *idl_sequenceCsharpIndexString(
         idl_typeSpec typeSpec,
         SACS_INDEX_POLICY policy,
+        const char *seqLengthName,
         int *indexStrLen);
 
 c_char * idl_arrayCsharpIndexString (
         idl_typeSpec typeSpec,
         SACS_INDEX_POLICY policy,
         int *indexStrLen);
+
+const c_char *
+idl_translateIfPredefined(
+    const c_char *scopedName);
+
+c_bool
+idl_isPredefined(
+        const c_char *scopedName);
 
 #endif /* IDL_GENSACSHELPER_H_ */

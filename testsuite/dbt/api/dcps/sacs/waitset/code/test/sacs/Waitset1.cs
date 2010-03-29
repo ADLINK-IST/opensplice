@@ -16,7 +16,7 @@ namespace test.sacs
             Test.Framework.TestResult result;
             Test.Framework.TestVerdict expVerdict = Test.Framework.TestVerdict.Pass;
             string expResult = "Resolving GuardCondition succeeded.";
-            DDS.ICondition[] holder;
+			DDS.ICondition[] holder = null;
             DDS.ReturnCode[] resultCode = new DDS.ReturnCode[] { DDS.ReturnCode.Error, DDS.ReturnCode.Error, DDS.ReturnCode.Error };
             DDS.ReturnCode ddsReturnCode;
             bool continueTesting = true;
@@ -41,7 +41,7 @@ namespace test.sacs
             }
             if (continueTesting)
             {
-                ddsReturnCode = waitset.GetConditions(out holder);
+                ddsReturnCode = waitset.GetConditions(ref holder);
                 if (ddsReturnCode != DDS.ReturnCode.Ok)
                 {
                     result = new Test.Framework.TestResult(expResult, "get_conditions returned RETCODE: "

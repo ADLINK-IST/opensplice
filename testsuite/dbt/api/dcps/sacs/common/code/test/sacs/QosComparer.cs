@@ -3,38 +3,38 @@ namespace test.sacs
     /// <date>Jun 2, 2005</date>
     public class QosComparer
     {
-        public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy;
-        public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy;
-        public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy;
-        public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy;
-        public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy;
-        public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy;
-        public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy;
-        public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy;
-        public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy;
-        public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy;
-        public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy;
-        public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy;
-        public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy;
-        public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy;
-        public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy;
-        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy;
-        public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy;
-        public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy;
-        public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy;
-        public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy;
-        public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy;
-        public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy;
-        public static readonly DDS.DataWriterQos defaultDataWriterQos;
-        public static readonly DDS.SubscriberQos defaultSubscriberQos;
-        public static readonly DDS.DataReaderQos defaultDataReaderQos;
-        public static readonly DDS.TopicQos defaultTopicQos;
+        public static readonly DDS.DeadlineQosPolicy defaultDeadlineQosPolicy = new DDS.DeadlineQosPolicy();
+        public static readonly DDS.DestinationOrderQosPolicy defaultDestinationOrderQosPolicy = new DDS.DestinationOrderQosPolicy();
+        public static readonly DDS.DurabilityQosPolicy defaultDurabilityQosPolicy = new DDS.DurabilityQosPolicy();
+        public static readonly DDS.DurabilityServiceQosPolicy defaultDurabilityServiceQosPolicy = new DDS.DurabilityServiceQosPolicy();
+        public static readonly DDS.EntityFactoryQosPolicy defaultEntityFactoryQosPolicy = new DDS.EntityFactoryQosPolicy();
+        public static readonly DDS.GroupDataQosPolicy defaultGroupDataQosPolicy = new DDS.GroupDataQosPolicy();
+        public static readonly DDS.HistoryQosPolicy defaultHistoryQosPolicy = new DDS.HistoryQosPolicy();
+        public static readonly DDS.LatencyBudgetQosPolicy defaultLatencyBudgetQosPolicy = new DDS.LatencyBudgetQosPolicy();
+        public static readonly DDS.LifespanQosPolicy defaultLifespanQosPolicy = new DDS.LifespanQosPolicy();
+        public static readonly DDS.LivelinessQosPolicy defaultLivelinessQosPolicy = new DDS.LivelinessQosPolicy();
+        public static readonly DDS.OwnershipQosPolicy defaultOwnershipQosPolicy = new DDS.OwnershipQosPolicy();
+        public static readonly DDS.OwnershipStrengthQosPolicy defaultOwnershipStrengthQosPolicy = new DDS.OwnershipStrengthQosPolicy();
+        public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy = new DDS.PartitionQosPolicy();
+        public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy = new DDS.PresentationQosPolicy();
+        public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy = new DDS.ReaderDataLifecycleQosPolicy();
+        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy = new DDS.ReliabilityQosPolicy();
+        public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy = new DDS.ResourceLimitsQosPolicy();
+        public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy = new DDS.TimeBasedFilterQosPolicy();
+        public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy = new DDS.TopicDataQosPolicy();
+        public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy = new DDS.TransportPriorityQosPolicy();
+        public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy = new DDS.UserDataQosPolicy();
+        public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy = new DDS.WriterDataLifecycleQosPolicy();
+        public static readonly DDS.DataWriterQos defaultDataWriterQos = new DDS.DataWriterQos();
+        public static readonly DDS.SubscriberQos defaultSubscriberQos = new DDS.SubscriberQos();
+        public static readonly DDS.DataReaderQos defaultDataReaderQos = new DDS.DataReaderQos();
+        public static readonly DDS.TopicQos defaultTopicQos = new DDS.TopicQos();
 
         static QosComparer()
         {
             defaultDeadlineQosPolicy.Period = DDS.Duration.Infinite;
 
-            defaultDestinationOrderQosPolicy.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationOrderQos;
+            defaultDestinationOrderQosPolicy.Kind = DDS.DestinationOrderQosPolicyKind.ByReceptionTimestampDestinationorderQos;
 
             defaultDurabilityQosPolicy.Kind = DDS.DurabilityQosPolicyKind.VolatileDurabilityQos;
 
@@ -45,7 +45,7 @@ namespace test.sacs
             defaultDurabilityServiceQosPolicy.MaxSamples = -1;
             defaultDurabilityServiceQosPolicy.MaxSamplesPerInstance = -1;
 
-            defaultEntityFactoryQosPolicy.AutoEnableCreatedEntities = true;
+            defaultEntityFactoryQosPolicy.AutoenableCreatedEntities = true;
 
             defaultGroupDataQosPolicy.Value = new byte[0];
 
@@ -69,8 +69,8 @@ namespace test.sacs
             defaultPresentationQosPolicy.CoherentAccess = false;
             defaultPresentationQosPolicy.OrderedAccess = false;
 
-            defaultReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay = DDS.Duration.Infinite;
-            defaultReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay = DDS.Duration.Infinite;
+            defaultReaderDataLifecycleQosPolicy.AutopurgeDisposedSamplesDelay = DDS.Duration.Infinite;
+            defaultReaderDataLifecycleQosPolicy.AutopurgeNowriterSamplesDelay = DDS.Duration.Infinite;
             defaultReaderDataLifecycleQosPolicy.EnableInvalidSamples = true;
 
             defaultReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.BestEffortReliabilityQos;
@@ -88,7 +88,7 @@ namespace test.sacs
 
             defaultUserDataQosPolicy.Value = new byte[0];
 
-            defaultWriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances = true;
+            defaultWriterDataLifecycleQosPolicy.AutodisposeUnregisteredInstances = true;
 
             defaultDataWriterQos.Durability = defaultDurabilityQosPolicy;
             defaultDataWriterQos.Deadline = defaultDeadlineQosPolicy;
@@ -281,7 +281,7 @@ namespace test.sacs
         public static bool SubscriberQosEquals(DDS.SubscriberQos qos1, DDS.SubscriberQos
             qos2)
         {
-            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
                     );
@@ -406,15 +406,15 @@ namespace test.sacs
                     );
                 return false;
             }
-            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay
-                , qos2.ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay))
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay
+                , qos2.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeNoWriterSamplesDelay' values do not match"
                     );
                 return false;
             }
-            if (!DurationEquals(qos1.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay
-                , qos2.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay))
+            if (!DurationEquals(qos1.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay
+                , qos2.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay' values do not match"
                     );
@@ -427,7 +427,7 @@ namespace test.sacs
         public static bool PublisherQosEquals(DDS.PublisherQos qos1, DDS.PublisherQos qos2
             )
         {
-            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
                     );
@@ -708,7 +708,7 @@ namespace test.sacs
         public static bool EntityFactoryQosPolicyEquals(DDS.EntityFactoryQosPolicy policy1
             , DDS.EntityFactoryQosPolicy policy2)
         {
-            if (policy1.AutoEnableCreatedEntities != policy2.AutoEnableCreatedEntities)
+            if (policy1.AutoenableCreatedEntities != policy2.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'EntityFactoryQosPolicy.AutoEnableCreatedEntities' differ"
                     );
@@ -889,14 +889,14 @@ namespace test.sacs
         public static bool ReaderDataLifecycleQosPolicyEquals(DDS.ReaderDataLifecycleQosPolicy
              policy1, DDS.ReaderDataLifecycleQosPolicy policy2)
         {
-            if (!DurationEquals(policy1.AutoPurgeNoWriterSamplesDelay, policy2.AutoPurgeNoWriterSamplesDelay
+            if (!DurationEquals(policy1.AutopurgeNowriterSamplesDelay, policy2.AutopurgeNowriterSamplesDelay
                 ))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeNoWriterSamplesDelay' differ"
                     );
                 return false;
             }
-            if (!DurationEquals(policy1.AutoPurgeDisposedSamplesDelay, policy2.AutoPurgeDisposedSamplesDelay
+            if (!DurationEquals(policy1.AutopurgeDisposedSamplesDelay, policy2.AutopurgeDisposedSamplesDelay
                 ))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay' differ"
@@ -1033,7 +1033,7 @@ namespace test.sacs
         public static bool WriterDataLifecycleQosPolicyEquals(DDS.WriterDataLifecycleQosPolicy
              policy1, DDS.WriterDataLifecycleQosPolicy policy2)
         {
-            if (policy1.AutoDisposeUnregisteredInstances != policy2.AutoDisposeUnregisteredInstances)
+            if (policy1.AutodisposeUnregisteredInstances != policy2.AutodisposeUnregisteredInstances)
             {
                 System.Console.Error.WriteLine("'WriterDataLifecycleQosPolicy.AutoDisposeUnregisteredInstances' differ"
                     );

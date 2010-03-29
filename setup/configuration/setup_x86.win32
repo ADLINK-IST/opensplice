@@ -1,8 +1,3 @@
-# Special features for this platform
-set_var INCLUDE_CS yes
-set_var INCLUDE_API_DCPS_SACS yes
-set_var INCLUDE_DBT_API_DCPS_SACS yes
-
 # "Standard" features we don't build for this platform.
 unset_var INCLUDE_FILTERS
 

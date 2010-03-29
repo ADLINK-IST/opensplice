@@ -14,6 +14,14 @@
 
 #include "idl_program.h"
 
-idl_program idl_genSACSTypeProgram(os_iter *idlpp_metaList);
+struct SACSTypeUserData_s {
+    os_iter idlpp_metaList;
+    c_char *tmplPrefix;
+    c_bool customPSM;
+};
+
+typedef struct SACSTypeUserData_s SACSTypeUserData;
+
+idl_program idl_genSACSTypeProgram(SACSTypeUserData *userData);
 
 #endif /* IDL_GENSACSTYPE_H */

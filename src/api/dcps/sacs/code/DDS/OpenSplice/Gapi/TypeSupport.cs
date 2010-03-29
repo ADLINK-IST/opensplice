@@ -56,7 +56,8 @@ namespace DDS.OpenSplice.Gapi
         //c_metaObject
         public IntPtr   typeSpec;
         //gapi_boolean
-        public bool     useTypeinfo;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool useTypeinfo;
     };
 
     static internal class TypeSupport

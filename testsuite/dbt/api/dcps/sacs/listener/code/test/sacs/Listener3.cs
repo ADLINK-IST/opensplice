@@ -27,7 +27,7 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             topic = (DDS.ITopic)this.ResolveObject("topic");
             listener = new test.sacs.MyDataWriterListener();
-            datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, ref wQos, listener, DDS.StatusKind.Any);
+            datawriter = (mod.tstDataWriter)publisher.CreateDataWriter(topic, wQos, listener, DDS.StatusKind.Any);
             if (datawriter == null)
             {
                 result.Result = "DataWriter could not be created.";

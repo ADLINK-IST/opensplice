@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     internal class ContentFilteredTopic : TopicDescription, IContentFilteredTopic
     {
         internal ContentFilteredTopic(IntPtr gapiPtr)
@@ -31,7 +31,7 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
+        
         public string GetFilterExpression()
         {
             IntPtr ptr = Gapi.ContentFilteredTopic.get_filter_expression(GapiPeer);
@@ -40,39 +40,48 @@ namespace DDS.OpenSplice
 
             return result;
         }
-
-        public ReturnCode GetExpressionParameters(out string[] expressionParameters)
+        
+        public ReturnCode GetExpressionParameters(ref string[] expressionParameters)
         {
+            ReturnCode result;
+            
             using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
             {
-				ReturnCode result = Gapi.ContentFilteredTopic.get_expression_parameters(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = Gapi.ContentFilteredTopic.get_expression_parameters(
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out expressionParameters);
-					return result;
+                    marshaler.CopyOut(ref expressionParameters);
+                }
+                else
+                {
+                    expressionParameters = new string[0];
                 }
             }
 
-			expressionParameters = new string[0];
-			return ReturnCode.Error;
+			return result;
         }
-
+        
         public ReturnCode SetExpressionParameters(params string[] expressionParameters)
         {
-            ReturnCode result = ReturnCode.Error;
-            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler(expressionParameters))
+            ReturnCode result;
+            
+            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
             {
-                result = Gapi.ContentFilteredTopic.set_expression_parameters(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = marshaler.CopyIn(expressionParameters);
+                if (result == DDS.ReturnCode.Ok)
+                {
+                    result = Gapi.ContentFilteredTopic.set_expression_parameters(
+                            GapiPeer,
+                            marshaler.GapiPtr);
+                }
             }
 
             return result;
         }
-
+        
         public ITopic RelatedTopic
         {
             get

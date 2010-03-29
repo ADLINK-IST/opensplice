@@ -302,7 +302,7 @@ namespace DDS.OpenSplice
             GCHandle tmpGCHandleInfo = GCHandle.Alloc(sampleInfos, GCHandleType.Normal);
             IntPtr sampleInfosPtr = GCHandle.ToIntPtr(tmpGCHandleInfo);
 
-            bool result = Gapi.FooDataReader.is_loan(
+            byte result = Gapi.FooDataReader.is_loan(
                 reader.GapiPeer,
                 dataValuesPtr,
                 sampleInfosPtr);
@@ -310,7 +310,7 @@ namespace DDS.OpenSplice
             tmpGCHandleData.Free();
             tmpGCHandleInfo.Free();
 
-            return result;
+            return result != 0;
         }
 
         public static ReturnCode GetKeyValue(DataReader reader, object key, InstanceHandle instanceHandle)

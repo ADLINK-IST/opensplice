@@ -672,19 +672,15 @@ namespace pingpong
 
         public PP_min_msgTypeSupport()
             : base(typeof(PP_min_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_min_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_min_msg),
-                    generator)
+        public PP_min_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_min_msg), generator, false)
         { }
 
-        public PP_min_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_min_msg),
-                    marshaler)
+        public PP_min_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_min_msg), marshaler)
         { }
 
         public override string TypeName
@@ -1387,19 +1383,15 @@ namespace pingpong
 
         public PP_seq_msgTypeSupport()
             : base(typeof(PP_seq_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_seq_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_seq_msg),
-                    generator)
+        public PP_seq_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_seq_msg), generator, false)
         { }
 
-        public PP_seq_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_seq_msg),
-                    marshaler)
+        public PP_seq_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_seq_msg), marshaler)
         { }
 
         public override string TypeName
@@ -2102,19 +2094,15 @@ namespace pingpong
 
         public PP_string_msgTypeSupport()
             : base(typeof(PP_string_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_string_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_string_msg),
-                    generator)
+        public PP_string_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_string_msg), generator, false)
         { }
 
-        public PP_string_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_string_msg),
-                    marshaler)
+        public PP_string_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_string_msg), marshaler)
         { }
 
         public override string TypeName
@@ -2817,19 +2805,15 @@ namespace pingpong
 
         public PP_fixed_msgTypeSupport()
             : base(typeof(PP_fixed_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_fixed_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_fixed_msg),
-                    generator)
+        public PP_fixed_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_fixed_msg), generator, false)
         { }
 
-        public PP_fixed_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_fixed_msg),
-                    marshaler)
+        public PP_fixed_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_fixed_msg), marshaler)
         { }
 
         public override string TypeName
@@ -3532,19 +3516,15 @@ namespace pingpong
 
         public PP_array_msgTypeSupport()
             : base(typeof(PP_array_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_array_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_array_msg),
-                    generator)
+        public PP_array_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_array_msg), generator, false)
         { }
 
-        public PP_array_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_array_msg),
-                    marshaler)
+        public PP_array_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_array_msg), marshaler)
         { }
 
         public override string TypeName
@@ -4247,19 +4227,15 @@ namespace pingpong
 
         public PP_quit_msgTypeSupport()
             : base(typeof(PP_quit_msg),
-                    new MarshalerTypeGenerator())
+                    new MarshalerTypeGenerator(), false)
         { }
 
-        public PP_quit_msgTypeSupport(
-                IMarshalerTypeGenerator generator)
-            : base(typeof(PP_quit_msg),
-                    generator)
+        public PP_quit_msgTypeSupport(IMarshalerTypeGenerator generator)
+            : base(typeof(PP_quit_msg), generator, false)
         { }
 
-        public PP_quit_msgTypeSupport(
-                DatabaseMarshaler marshaler)
-            : base(typeof(PP_quit_msg),
-                    marshaler)
+        public PP_quit_msgTypeSupport(DatabaseMarshaler marshaler)
+            : base(typeof(PP_quit_msg), marshaler)
         { }
 
         public override string TypeName

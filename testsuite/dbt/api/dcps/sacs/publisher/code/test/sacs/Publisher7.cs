@@ -20,9 +20,9 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IPublisher publisher;
-            DDS.DataWriterQos dataWriterQos;
-            DDS.DataWriterQos qosHolder1;
-            DDS.DataWriterQos qosHolder2;
+			DDS.DataWriterQos dataWriterQos = null;
+			DDS.DataWriterQos qosHolder1 = null;
+			DDS.DataWriterQos qosHolder2 = null;
             DDS.IDataWriter writer = null;
             DDS.ITopic topic;
             string expResult = "Default DataWriterQos is used when DATAWRITER_QOS_DEFAULT is specified.";
@@ -33,7 +33,7 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
-            if (publisher.GetDefaultDataWriterQos(out qosHolder1) != DDS.ReturnCode.Ok)
+            if (publisher.GetDefaultDataWriterQos(ref qosHolder1) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataWriterQos";
                 return result;
@@ -41,17 +41,17 @@ namespace test.sacs
             dataWriterQos = qosHolder1;
             dataWriterQos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             dataWriterQos.History.Depth = 150;
-            publisher.SetDefaultDataWriterQos(ref dataWriterQos);
+            publisher.SetDefaultDataWriterQos(dataWriterQos);
 
             //TODO: JLS, DDS.DataWriterQos.Default does not exist
-            writer = publisher.CreateDataWriter(topic, ref qosHolder1);
+            writer = publisher.CreateDataWriter(topic, qosHolder1);
             if (writer == null)
             {
                 result.Result = "Could not create a DataWriter.";
                 return result;
             }
 
-            if (writer.GetQos(out qosHolder2) != DDS.ReturnCode.Ok)
+            if (writer.GetQos(ref qosHolder2) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve DataWriter qos";
                 return result;

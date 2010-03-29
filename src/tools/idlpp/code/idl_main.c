@@ -53,6 +53,7 @@
 /* C# related support */
 #include "idl_genSACSType.h"
 #include "idl_genSACSTypedClassDefs.h"
+#include "idl_genSACSSplDcps.h"
 
 /* Java related support */
 #include "idl_genCorbaJavaHelper.h"
@@ -100,9 +101,9 @@ print_usage(
            "       [-I path] [-D macro[=definition]] [-S | -C] \n"
            "       [-l (c | c++ | cpp | cs | java)] [-j [old]:<new>] [-d directory] \n"
 #ifdef WIN32
-           "       [-P dll_macro_name[,<h-file>]] [-o dds-types] <filename>\n", name);
+           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm)] <filename>\n", name);
 #else
-           "       [-o dds-types] <filename>\n", name);
+           "       [-o (dds-types | custom-psm)] <filename>\n", name);
 #endif
 }
 
@@ -122,6 +123,11 @@ print_help(
         "       variable OSPL_ORB_PATH, the command line option is however leading.\n"
         "       To complete the path to the templates, the environment variable\n"
         "       OSPL_TMPL_PATH is prepended to the ORB path.\n");
+    printf(
+        "       For C, OSPL_ORB_PATH will by default be set to SAC.\n"
+        "       For C++, OSPL_ORB_PATH will by default be set to CCPP%s%s.\n"
+        "       For Java, OSPL_ORB_PATH will by default be set to SAJ.\n",
+        os_fileSep(), DEFAULT_ORB);
     printf(
         "    -I path\n"
         "    -Ipath\n"
@@ -164,27 +170,26 @@ print_help(
         "    -d directory\n"
         "       Specify the location where to place the generated files.\n");
     printf(
-        "    -o dds-types\n"
-        "       Enables support for standard DDS-DCPS definitions. The OpenSplice\n"
-        "       preprocessor provides definitions for constants and types as defined\n"
-        "       in the OMG-DDS-DCPS PSM. This implies that these definitions can be\n"
-        "       used within application IDL.\n");
+        "    -o (dds-types | custom-psm)\n"
+        "       'dds-types' enables support for standard DDS-DCPS definitions.\n"
+        "       The OpenSplice preprocessor provides definitions for constants\n"
+        "       and types as defined in the OMG-DDS-DCPS PSM. This implies that\n"
+        "       these definitions can be used within application IDL.\n"
+        "       'custom-psm' enables support for alternative IDL language mappings.\n"
+        "       Currently C-Sharp offers an alternative language mapping where\n"
+        "       IDL names are translated to their PascalCase representation and\n"
+        "       where '@' instead of '_' is used to escape reserved C#-keywords.\n");
     printf(
-        "       For C, OSPL_ORB_PATH will by default be set to SAC.\n"
-        "       For C++, OSPL_ORB_PATH will by default be set to CCPP%s%s.\n"
-        "       For Java, OSPL_ORB_PATH will by default be set to SAJ.\n",
-        os_fileSep(), DEFAULT_ORB);
-    printf(
-            "    -l (c | c++ | cpp | cs | java)\n"
-            "       Defines the target language. Value 'cs' represents C-sharp\n"
-            "       and 'cpp' is an alias for 'c++'.\n"
-            "       Note that the OpenSplice preprocessor does not support every\n"
-            "       combination of mode and language. The default setting of the\n"
-            "       OpenSplice preprocessor is c++.\n");
+        "    -l (c | c++ | cpp | cs | java)\n"
+        "       Defines the target language. Value 'cs' represents C-sharp\n"
+        "       and 'cpp' is an alias for 'c++'.\n"
+        "       Note that the OpenSplice preprocessor does not support every\n"
+        "       combination of mode and language. The default setting of the\n"
+        "       OpenSplice preprocessor is c++.\n");
 
     printf(
-            "    <filename>\n"
-            "       Specifies the IDL input file to process.\n");
+        "    <filename>\n"
+        "       Specifies the IDL input file to process.\n");
     printf("\n"
         "    Supported languages, ORBs and modes:\n"
         "       Lang    ORB    mode   library        OSPL_ORB_PATH\n"
@@ -419,6 +424,7 @@ main (
     c_bool makeRegisterType = FALSE;
     c_bool makeAll = TRUE;
     c_bool dcpsTypes = FALSE;
+    c_bool customPSM = FALSE;
     c_bool attachDatabase = FALSE;
     os_sharedAttr sharedAttr;
     os_sharedHandle sHandle;
@@ -679,6 +685,8 @@ main (
         case 'o':
             if (strcmp(optarg, "dds-types") == 0) {
                 dcpsTypes = TRUE;
+            } else if (strcmp(optarg, "custom-psm") == 0) {
+                customPSM = TRUE;
             } else {
                 print_usage(argv[0]);
                 idl_exit(-1);
@@ -1151,23 +1159,28 @@ main (
                 idl_definitionClean();
 
             } else if (idl_getLanguage() == IDL_LANG_CS) {
+                SACSTypeUserData csUserData;
+                SACSSplDcpsUserData splUserData;
+
                 /**
                  * It is not possible to generate type-descriptors while walking over
                  * the data. This is caused by the fact that the walk holds a lock for
                  * the type it is currently processing, while the serializer that needs
                  * to generate the typedescriptor will try to claim the same lock.
-                 * For that purpose we will use an iterator that cashes the relevant
+                 * For that purpose we will use an iterator that caches the relevant
                  * meta-data on the first walk, and then process and generate the type
-                 * descriptors in the template inititialization phase of the 3rd walk,
+                 * descriptors in the template inititialization phase of the 2nd walk,
                  * where it does not hold any type locks yet.
                  */
-                os_iter idlpp_metaList = NULL;
+                csUserData.idlpp_metaList = NULL;
+                csUserData.tmplPrefix = NULL;
+                csUserData.customPSM = customPSM;
 
                 idl_definitionClean();
 
                 /* Generate the file that defines all DCPS specialized classes for the
-                   user types
-                */
+                 * user types
+                 */
                 snprintf(fname,
                     (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                     "%s.cs", basename);
@@ -1176,27 +1189,29 @@ main (
                     idl_reportOpenError(fname);
                 }
 
-                idl_walk(base, filename, traceWalk, idl_genSACSTypeProgram(&idlpp_metaList));
+                idl_walk(base, filename, traceWalk, idl_genSACSTypeProgram(&csUserData));
                 idl_fileOutFree(idl_fileCur());
 
-                /* Expand Typed Csharp DataReader and DataWriter interfaces.
-                */
+                /* Generate the file that defines the database representation of
+                 * the IDL data, and that contains the marshalers that translate
+                 * between database representation and C# representation.
+                 */
+                splUserData.customPSM = customPSM;
                 snprintf(fname,
                     (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
-                    "I%sDcps.cs", basename);
+                    "%sSplDcps.cs", basename);
                 idl_fileSetCur(idl_fileOutNew(fname, "w"));
                 if (idl_fileCur() == NULL) {
                     idl_reportOpenError(fname);
                 }
-                idl_walk(
-                        base,
-                        filename,
-                        traceWalk,
-                        idl_genSACSTypedClassDefsProgram("SacsTypedClassSpec", NULL));
+
+                idl_walk(base, filename, traceWalk, idl_genSACSSplDcpsProgram(&splUserData));
                 idl_fileOutFree(idl_fileCur());
 
-                /* Expand Typed Csharp TypeSupport, DataReader and DataWriter implementation classes.
-                */
+                /* Expand Typed Csharp TypeSupport, DataReader and DataWriter
+                 * implementation classes.
+                 */
+                csUserData.tmplPrefix = "SacsTypedClassBody";
                 snprintf(fname,
                     (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                     "%sDcps.cs", basename);
@@ -1208,7 +1223,26 @@ main (
                         base,
                         filename,
                         traceWalk,
-                        idl_genSACSTypedClassDefsProgram("SacsTypedClassBody", &idlpp_metaList));
+                        idl_genSACSTypedClassDefsProgram(&csUserData));
+                idl_fileOutFree(idl_fileCur());
+
+                /* Expand Typed Csharp DataReader and DataWriter interfaces.
+                 * There is no need for the meta-data in this phase anymore.
+                 */
+                csUserData.tmplPrefix = "SacsTypedClassSpec";
+                csUserData.idlpp_metaList = NULL;
+                snprintf(fname,
+                    (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
+                    "I%sDcps.cs", basename);
+                idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                if (idl_fileCur() == NULL) {
+                    idl_reportOpenError(fname);
+                }
+                idl_walk(
+                        base,
+                        filename,
+                        traceWalk,
+                        idl_genSACSTypedClassDefsProgram(&csUserData));
                 idl_fileOutFree(idl_fileCur());
             } else if (idl_getLanguage() == IDL_LANG_JAVA) {
                 idl_genJavaHelperInit(orgPackage, tarPackage);

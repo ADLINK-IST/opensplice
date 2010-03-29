@@ -42,7 +42,7 @@ namespace DDS.OpenSplice
             // Base class handles everything.
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(ITopicListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
@@ -50,17 +50,7 @@ namespace DDS.OpenSplice
             Gapi.gapi_topicListener gapiListener;
             listenerHelper.Listener = listener;
             listenerHelper.CreateListener(out gapiListener);
-            if (listener == null)
-            {
-                using (TopicListenerMarshaler marshaler = new TopicListenerMarshaler(ref gapiListener))
-                {
-                    result = Gapi.Topic.set_listener(
-                        GapiPeer,
-                        marshaler.GapiPtr,
-                        mask);
-                }
-            }
-            else
+            if (listener != null)
             {
                 lock (listener)
                 {
@@ -73,49 +63,60 @@ namespace DDS.OpenSplice
                     }
                 }
             }
+            else
+            {
+                result = Gapi.Topic.set_listener(
+                    GapiPeer,
+                    IntPtr.Zero,
+                    mask);
+            }
             return result;
         }
-
+        
         public ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus status)
         {
-            return Gapi.Topic.get_inconsistent_topic_status(
-                GapiPeer,
-                ref status);
+            if (status == null) status = new InconsistentTopicStatus();
+            return Gapi.Topic.get_inconsistent_topic_status(GapiPeer, status);
         }
-
-        public ReturnCode GetQos(out TopicQos qos)
+        
+        public ReturnCode GetQos(ref TopicQos qos)
         {
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler())
+            ReturnCode result;
+            
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
-                ReturnCode result = Gapi.Topic.get_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-
+                result = Gapi.Topic.get_qos(GapiPeer, marshaler.GapiPtr);
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
-                    return result;
+                    marshaler.CopyOut(ref qos);
                 }
             }
 
-            qos = new TopicQos();
-            return ReturnCode.Error;
+            return result;
         }
-
-        public ReturnCode SetQos(ref TopicQos qos)
+        
+        public ReturnCode SetQos(TopicQos qos)
         {
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
-            using (TopicQosMarshaler marshaler = new TopicQosMarshaler(ref qos))
+            using (OpenSplice.CustomMarshalers.TopicQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.TopicQosMarshaler())
             {
-                result = Gapi.Topic.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
+                result = marshaler.CopyIn(qos);
+                if (result == DDS.ReturnCode.Ok)
+                {
+                    result = Gapi.Topic.set_qos(GapiPeer, marshaler.GapiPtr);
+                }
             }
 
             return result;
         }
 
+        /// <summary>
+        /// This property returns the registered name of the data type associated with the TopicDescription 
+        /// (inherited from TopicDescription)
+        /// </summary>
         public string TypeName
         {
             get
@@ -128,6 +129,10 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the name used to create the TopicDescription.
+        /// (inherited from TopicDescription)
+        /// </summary>
         public string Name
         {
             get
@@ -140,6 +145,11 @@ namespace DDS.OpenSplice
             }
         }
 
+        /// <summary>
+        /// This property returns the DomainParticipant associated with the TopicDescription or 
+        /// a null DomainParticipant.
+        /// (inherited from TopicDescription)
+        /// </summary>
         public IDomainParticipant Participant
         {
             get

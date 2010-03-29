@@ -53,14 +53,14 @@ namespace Chatroom
                 status, "Chat.NameServiceTypeSupport.RegisterType");
 
             /* Set the ReliabilityQosPolicy to RELIABLE. */
-            TopicQos reliableTopicQos;
-            status = participant.GetDefaultTopicQos(out reliableTopicQos);
+            TopicQos reliableTopicQos = new TopicQos();
+            status = participant.GetDefaultTopicQos(ref reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.get_DefaultTopicQos");
             reliableTopicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
 
             /* Make the tailored QoS the new default. */
-            status = participant.SetDefaultTopicQos(ref reliableTopicQos);
+            status = participant.SetDefaultTopicQos(reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.SetDefaultTopicQos");
 
@@ -68,14 +68,14 @@ namespace Chatroom
             ITopic chatMessageTopic = participant.CreateTopic(
                 "Chat_ChatMessage",
                 chatMessageTypeName,
-                ref reliableTopicQos);
+                reliableTopicQos);
             ErrorHandler.checkHandle(
                 chatMessageTopic,
                 "DDS.DomainParticipant.CreateTopic (ChatMessage)");
 
             /* Set the DurabilityQosPolicy to TRANSIENT. */
-            TopicQos settingTopicQos;
-            status = participant.GetDefaultTopicQos(out settingTopicQos);
+            TopicQos settingTopicQos = new TopicQos();
+            status = participant.GetDefaultTopicQos(ref settingTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultTopicQos");
             settingTopicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
@@ -84,21 +84,21 @@ namespace Chatroom
             ITopic nameServiceTopic = participant.CreateTopic(
                 "Chat_NameService",
                 nameServiceTypeName,
-                ref settingTopicQos);
+                settingTopicQos);
             ErrorHandler.checkHandle(
                 nameServiceTopic, "DDS.DomainParticipant.CreateTopic");
 
             /* Adapt the default SubscriberQos to read from the
            "ChatRoom" Partition. */
-            SubscriberQos subQos;
-            status = participant.GetDefaultSubscriberQos(out subQos);
+            SubscriberQos subQos = new SubscriberQos();
+            status = participant.GetDefaultSubscriberQos(ref subQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultSubscriberQos");
             subQos.Partition.Name = new string[1];
             subQos.Partition.Name[0] = "ChatRoom";
 
             /* Create a Subscriber for the UserLoad application. */
-            ISubscriber chatSubscriber = participant.CreateSubscriber(ref subQos);
+            ISubscriber chatSubscriber = participant.CreateSubscriber(subQos);
             ErrorHandler.checkHandle(
                 chatSubscriber, "DDS.DomainParticipant.CreateSubscriber");
 
@@ -115,12 +115,12 @@ namespace Chatroom
 
             /* Adapt the DataReaderQos for the ChatMessageDataReader to
                keep track of all messages. */
-            DataReaderQos messageQos;
-            status = chatSubscriber.GetDefaultDataReaderQos(out messageQos);
+            DataReaderQos messageQos = new DataReaderQos();
+            status = chatSubscriber.GetDefaultDataReaderQos(ref messageQos);
             ErrorHandler.checkStatus(
                 status, "DDS.Subscriber.GetDefaultDataReaderQos");
             status = chatSubscriber.CopyFromTopicQos(
-                out messageQos, ref reliableTopicQos);
+                ref messageQos, reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.Subscriber.CopyFromTopicQos");
             messageQos.History.Kind = HistoryQosPolicyKind.KeepAllHistoryQos;
@@ -129,7 +129,7 @@ namespace Chatroom
                (using the appropriate QoS). */
             parentReader = chatSubscriber.CreateDataReader(
                 chatMessageTopic,
-                ref messageQos);
+                messageQos);
             ErrorHandler.checkHandle(
                 parentReader, "DDS.Subscriber.CreateDataReader (ChatMessage)");
 
@@ -225,7 +225,7 @@ namespace Chatroom
                         // Some liveliness has changed (either a DataWriter
                         // joined or a DataWriter left)
                         LivelinessChangedStatus livelinessStatus = new LivelinessChangedStatus() ;
-                        status = loadAdmin.GetLivelinessChangedStatus(livelinessStatus);
+                        status = loadAdmin.GetLivelinessChangedStatus(ref livelinessStatus);
                         ErrorHandler.checkStatus(status, "DDS.DataReader.getLivelinessChangedStatus");
                         if (livelinessStatus.AliveCount < prevCount)
                         {

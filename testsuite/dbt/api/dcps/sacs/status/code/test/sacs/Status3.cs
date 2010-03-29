@@ -13,37 +13,37 @@ namespace test.sacs
         {
             mod.tstDataWriter datawriter;
             DDS.ReturnCode rc;
-            DDS.LivelinessLostStatus llStatus;
-            DDS.OfferedDeadlineMissedStatus odmStatus;
-            DDS.OfferedIncompatibleQosStatus oiqStatus;
-            DDS.PublicationMatchedStatus pmStatus;
+			DDS.LivelinessLostStatus llStatus = null;
+			DDS.OfferedDeadlineMissedStatus odmStatus = null;
+			DDS.OfferedIncompatibleQosStatus oiqStatus = null;
+			DDS.PublicationMatchedStatus pmStatus = null;
             string expResult = "DataWriter status test succeeded";
             Test.Framework.TestResult result;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             datawriter = (mod.tstDataWriter)this.ResolveObject("datawriter");
-            rc = datawriter.GetLivelinessLostStatus(out llStatus);
+            rc = datawriter.GetLivelinessLostStatus(ref llStatus);
             if (DDS.ReturnCode.Ok != rc)
             {
-                result.Result = "LivelinessLostStatus could not be resolved.";
+                result.Result = string.Format("LivelinessLostStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
-            rc = datawriter.GetOfferedDeadlineMissedStatus(out odmStatus);
+            rc = datawriter.GetOfferedDeadlineMissedStatus(ref odmStatus);
             if (DDS.ReturnCode.Ok != rc)
             {
-                result.Result = "OfferedDeadlineMissedStatus could not be resolved.";
+                result.Result = string.Format("OfferedDeadlineMissedStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
-            rc = datawriter.GetOfferedIncompatibleQosStatus(out oiqStatus);
+            rc = datawriter.GetOfferedIncompatibleQosStatus(ref oiqStatus);
             if (DDS.ReturnCode.Ok != rc)
             {
-                result.Result = "OfferedIncompatibleStatus could not be resolved.";
+                result.Result = string.Format("OfferedIncompatibleStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
-            rc = datawriter.GetPublicationMatchedStatus(out pmStatus);
+            rc = datawriter.GetPublicationMatchedStatus(ref pmStatus);
             if (DDS.ReturnCode.Ok != rc)
             {
-                result.Result = "PublicationMatchStatus could not be resolved.";
+                result.Result = string.Format("OfferedIncompatibleStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
             result.Result = expResult;

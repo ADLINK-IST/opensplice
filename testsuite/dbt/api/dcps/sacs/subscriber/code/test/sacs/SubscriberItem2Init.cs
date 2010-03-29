@@ -15,7 +15,7 @@ namespace test.sacs
         {
             DDS.IDomainParticipant participant;
             mod.tstTypeSupport typeSupport;
-            DDS.TopicQos topQosHolder;
+			DDS.TopicQos topQosHolder = null;
             DDS.ITopic topic;
             DDS.ReturnCode rc;
             Test.Framework.TestResult result;
@@ -35,12 +35,12 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultTopicQos(out topQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultTopicQos(ref topQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default TopicQos could not be resolved.";
                 return result;
             }
-            topic = participant.CreateTopic("my_topic", "my_type", ref topQosHolder);//, null, 0);
+            topic = participant.CreateTopic("my_topic", "my_type", topQosHolder);//, null, 0);
             if (topic == null)
             {
                 result.Result = "Topic could not be created.";

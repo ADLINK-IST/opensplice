@@ -21,8 +21,8 @@ namespace test.sacs
             bool value;
             DDS.StatusKind statusMask;
             DDS.ICondition[] holder;
-            DDS.SubscriptionMatchedStatus sHolder = new DDS.SubscriptionMatchedStatus();
-            DDS.LivelinessChangedStatus lHolder = new DDS.LivelinessChangedStatus();
+            DDS.SubscriptionMatchedStatus smStatus = new DDS.SubscriptionMatchedStatus();
+            DDS.LivelinessChangedStatus lcStatus = new DDS.LivelinessChangedStatus();
             string expResult = "ReadCondition test succeeded.";
             result = new Test.Framework.TestResult(expResult, string.Empty,
                 Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Fail);
@@ -60,16 +60,16 @@ namespace test.sacs
             {
                 System.Console.Out.WriteLine("Holder length : " + holder.Length);
                 System.Console.Out.WriteLine("Status changes: " + reader.StatusChanges);
-                reader.GetSubscriptionMatchedStatus(sHolder);
-                System.Console.Out.WriteLine("Total count   : " + sHolder.TotalCount);
-                reader.GetLivelinessChangedStatus(lHolder);
-                System.Console.Out.WriteLine("Alive count   : " + lHolder.AliveCount);
+                reader.GetSubscriptionMatchedStatus(ref smStatus);
+                System.Console.Out.WriteLine("Total count   : " + smStatus.TotalCount);
+                reader.GetLivelinessChangedStatus(ref lcStatus);
+                System.Console.Out.WriteLine("Alive count   : " + lcStatus.AliveCount);
                 result.Result = "wait should return 1 condition but didn't (1).";
                 return result;
             }
-            rc = reader.GetLivelinessChangedStatus(lHolder);
+            rc = reader.GetLivelinessChangedStatus(ref lcStatus);
             
-            DDS.LivelinessChangedStatus status = lHolder;
+            DDS.LivelinessChangedStatus status = lcStatus;
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "GetLivelinessChangedStatus call failed.";

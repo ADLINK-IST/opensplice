@@ -249,7 +249,7 @@ namespace DDS.OpenSplice.Gapi
          *     inout SampleInfoSeq info_seq);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataReader_is_loan")]
-        public static extern bool is_loan(
+        public static extern byte is_loan(
             IntPtr _this,
             IntPtr data_buffer,
             IntPtr info_seq);

@@ -24,7 +24,7 @@ namespace test.sacs
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             datareader = (mod.tstDataReader)this.ResolveObject("datareader");
-            rc = datareader.GetSampleRejectedStatus(srStatus);
+            rc = datareader.GetSampleRejectedStatus(ref srStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "SampleRejectedStatus could not be resolved.";
@@ -40,15 +40,17 @@ namespace test.sacs
                 result.Result = "SampleRejectedStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetLivelinessChangedStatus(lcStatus);
+            rc = datareader.GetLivelinessChangedStatus(ref lcStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
+                result.Result = string.Format("OfferedIncompatibleStatus could not be resolved. ReturnCode: {0}", rc);
                 result.Result = "LivelinessChangedStatus could not be resolved.";
                 return result;
             }
-            rc = datareader.GetRequestedIncompatibleQosStatus(riqStatus);
+            rc = datareader.GetRequestedIncompatibleQosStatus(ref riqStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
+                result.Result = string.Format("OfferedIncompatibleStatus could not be resolved. ReturnCode: {0}", rc);
                 result.Result = "RequestedIncompatibleStatus could not be resolved.";
                 return result;
             }
@@ -62,16 +64,16 @@ namespace test.sacs
                 result.Result = "RequestedIncompatibleQosStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetSubscriptionMatchedStatus(smStatus);
+            rc = datareader.GetSubscriptionMatchedStatus(ref smStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "SubscriptionMatchStatus could not be resolved.";
+                result.Result = string.Format("SubscriptionMatchStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
-            rc = datareader.GetSampleLostStatus(slStatus);
+            rc = datareader.GetSampleLostStatus(ref slStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "SampleLostStatus could not be resolved.";
+                result.Result = string.Format("SampleLostStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
             if (slStatus.TotalCount != 0)
@@ -84,10 +86,10 @@ namespace test.sacs
                 result.Result = "SampleLostStatus.TotalCountChange != 0.";
                 return result;
             }
-            rc = datareader.GetRequestedDeadlineMissedStatus(rdmStatus);
+            rc = datareader.GetRequestedDeadlineMissedStatus(ref rdmStatus);
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "RequestedDeadlineMissedStatus could not be resolved (" + rc + ").";
+                result.Result = string.Format("RequestedDeadlineMissedStatus could not be resolved. ReturnCode: {0}", rc);
                 return result;
             }
             result.Result = expResult;

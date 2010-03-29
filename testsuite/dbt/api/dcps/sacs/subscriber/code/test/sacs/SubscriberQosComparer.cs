@@ -6,7 +6,7 @@ namespace test.sacs
         public static bool SubscriberQosEqual(DDS.SubscriberQos qos1, DDS.SubscriberQos qos2
             )
         {
-            if (qos1.EntityFactory.AutoEnableCreatedEntities != qos2.EntityFactory.AutoEnableCreatedEntities)
+            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
             {
                 System.Console.Error.WriteLine("'entity_factory.autoenable_created_entities' values do not match"
                     );

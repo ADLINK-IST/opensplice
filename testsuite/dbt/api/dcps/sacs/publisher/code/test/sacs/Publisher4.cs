@@ -39,7 +39,7 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IPublisher publisher;
-            DDS.DataWriterQos qos;
+			DDS.DataWriterQos qos = null;
             string expResult = "DataWriterQos test succeeded";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
@@ -47,7 +47,7 @@ namespace test.sacs
                 Test.Framework.TestVerdict.Fail);
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
 
-            if (publisher.GetDefaultDataWriterQos(out qos) != DDS.ReturnCode.Ok)
+            if (publisher.GetDefaultDataWriterQos(ref qos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Failed to get the default datawriter qos (1)";
                 return result;
@@ -59,14 +59,14 @@ namespace test.sacs
                 return result;
             }
             qos.Deadline.Period.NanoSec = DDS.Duration.InfiniteNanoSec + 1;
-            rc = publisher.SetDefaultDataWriterQos(ref qos);
+            rc = publisher.SetDefaultDataWriterQos(qos);
             if (rc != DDS.ReturnCode.BadParameter)
             {
                 result.Result = "Received return code " + rc + " but expected RETCODE_BAD_PARAMETER (3)";
                 return result;
             }
 
-            if (publisher.GetDefaultDataWriterQos(out qos) != DDS.ReturnCode.Ok)
+            if (publisher.GetDefaultDataWriterQos(ref qos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Failed to get the default datawriter qos (4)";
                 return result;
@@ -78,7 +78,7 @@ namespace test.sacs
             }
             qos.History.Depth = 8;
             qos.ResourceLimits.MaxSamplesPerInstance = 2;
-            rc = publisher.SetDefaultDataWriterQos(ref qos);
+            rc = publisher.SetDefaultDataWriterQos(qos);
             if (rc != DDS.ReturnCode.InconsistentPolicy)
             {
                 result.Result = "Received return code " + rc + " but expected RETCODE_INCONSISTENT_POLICY (5)";

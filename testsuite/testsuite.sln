@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "waitset", "dbt\api\dcps\sac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "writer", "dbt\api\dcps\sacs\writer\writer.csproj", "{34ADD8CE-2E64-4813-A510-73CE9966086F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "boundsCheck", "dbt\api\dcps\sacs\boundsCheck\boundsCheck.csproj", "{AD40A018-A690-4E40-B966-6C641504E441}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -120,6 +122,10 @@ Global
 		{34ADD8CE-2E64-4813-A510-73CE9966086F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34ADD8CE-2E64-4813-A510-73CE9966086F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34ADD8CE-2E64-4813-A510-73CE9966086F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD40A018-A690-4E40-B966-6C641504E441}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD40A018-A690-4E40-B966-6C641504E441}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD40A018-A690-4E40-B966-6C641504E441}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD40A018-A690-4E40-B966-6C641504E441}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

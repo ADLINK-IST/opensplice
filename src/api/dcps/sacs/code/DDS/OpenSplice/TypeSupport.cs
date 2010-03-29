@@ -23,7 +23,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public abstract class TypeSupport : SacsSuperClass, ITypeSupport
     {
         public abstract string TypeName { get; }
@@ -35,8 +35,6 @@ namespace DDS.OpenSplice
         public abstract DataReader CreateDataReader(IntPtr gapiPtr);
 
         protected Type dataType = null;
-        protected DatabaseMarshaler marshaler = null;
-        protected IMarshalerTypeGenerator generator = null;
 
         protected delegate void DummyOperationDelegate();
         protected DummyOperationDelegate dummyOperationDelegate;
@@ -52,119 +50,62 @@ namespace DDS.OpenSplice
         /*
          * Constructor for a TypeSupport that uses the specified (custom) Marshaler.
          */
-        public TypeSupport(
-            Type dataType,
-            DatabaseMarshaler marshaler)
+        public TypeSupport(Type dataType)
         {
             this.dataType = dataType;
-            this.marshaler = marshaler;
 
             this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
             IntPtr ptr = Gapi.FooTypeSupport.alloc(
-               TypeName,                    /* Original IDL type name */
+               TypeName,                    // Original IDL type name
                KeyList,
                Description,
-               IntPtr.Zero,                 /* type_load */
-               marshaler.CopyInDelegate,    /* copyIn: copy from C# types */
-               dummyOperationDelegate,      /* copyOut: copy to C# types */
-               0,                           /* alloc_size */
-               IntPtr.Zero,                 /* alloc buffer */
-               IntPtr.Zero,                 /* writer copy */
-               marshaler.ReaderCopyDelegate,/* reader copy */
-               IntPtr.Zero,                 /* create datawriter */
-               IntPtr.Zero);                /* create datareader */
+               IntPtr.Zero,                 // type_load
+               dummyOperationDelegate,      // copyIn: delay initialization until marshaler present
+               dummyOperationDelegate,      // copyOut: delay initialization until marshaler present
+               0,                           // alloc_size
+               IntPtr.Zero,                 // alloc buffer
+               IntPtr.Zero,                 // writer copy
+               dummyOperationDelegate,      // reader copy: delay initialization until marshaler present
+               IntPtr.Zero,                 // create datawriter
+               IntPtr.Zero);                // create datareader
 
             // Base class handles everything.
             base.SetPeer(ptr);
         }
 
-        /*
-         * Constructor for a TypeSupport that generates a Marshaler using
-         * the specified Marshaler generator.
-         */
-        public TypeSupport(
-            Type dataType,
-            IMarshalerTypeGenerator generator)
-        {
-            this.dataType = dataType;
-            this.generator = generator;
-
-            //this.fakeCopyOutDelegate = new FakeSampleCopyOutDelegate(FakeCopyOut);
-            this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
-            IntPtr ptr = Gapi.FooTypeSupport.alloc(
-               TypeName,                    /* Original IDL type name */
-               KeyList,
-               Description,
-               IntPtr.Zero,                 /* type_load */
-               dummyOperationDelegate,      /* copyIn: copy from C# types */
-               dummyOperationDelegate,      /* copyOut: copy to C# types */
-               0,                           /* alloc_size */
-               IntPtr.Zero,                 /* alloc buffer */
-               IntPtr.Zero,                 /* writer copy */
-               dummyOperationDelegate,      /* reader copy */
-               IntPtr.Zero,                 /* create datawriter */
-               IntPtr.Zero);                /* create datareader */
-
-            // Base class handles everything.
-            base.SetPeer(ptr);
-        }
+        // The RegisterType operation should be implemented in its type specific specialization.
+        public abstract ReturnCode RegisterType(
+                IDomainParticipant participant, 
+                string typeName);
 
         // TODO: This operation is currently not thread-safe. 
-        public virtual ReturnCode RegisterType(IDomainParticipant participant, string typeName)
+        public virtual ReturnCode RegisterType(
+                IDomainParticipant participant, 
+                string typeName, 
+                DatabaseMarshaler marshaler)
         {
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result = ReturnCode.BadParameter;
 
-            if (participant == null)
+            if (participant != null && marshaler != null) 
             {
-                return result;
-            }
-
-            if (marshaler == null && generator == null)
-            {
-                // TODO: Write error in message log.
-                return result;
-            }
-
-            IntPtr domainObj = (participant as DomainParticipant).GapiPeer;
-            result = Gapi.FooTypeSupport.register_type(
-                GapiPeer,
-                domainObj,
-                typeName);
-
-
-            // If there is no explicit marshaler, then generate one.
-            if (marshaler == null)
-            {
-                // Get the attribute names and offsets of this datatype.
-                // This meta-data is looked up by using the IDL type name.
-                IntPtr metaData = Gapi.DomainParticipant.get_type_metadescription(domainObj, TypeName);
-
-                // Generate a new marshaller using the available generator.
-                marshaler = DatabaseMarshaler.Create(domainObj, metaData, dataType, generator);
-
-                // Attach the functions in the generated marshaler to the current TypeSupport.
-                result = AttachMarshalerDelegates(this.GapiPeer, marshaler);
+                // Now that a marshaler is present, 
+                result = AttachMarshalerDelegates(GapiPeer, marshaler);
                 if (result == ReturnCode.Ok)
                 {
-                    // Attach the same functions to the copy of the TypeSupport that was already 
-                    // registered in the Domain.
-                    IntPtr registeredTS;
-                    
-                    //if typeName is null use TypeName instead - 
-                    //this case applies only here to avoid a NullReferenceException
-                    
-                    if (typeName == null)
+                    IntPtr domainObj = (participant as DomainParticipant).GapiPeer;
+                    result = Gapi.FooTypeSupport.register_type(
+                            GapiPeer,
+                            domainObj,
+                            typeName);
+
+                    if (result == ReturnCode.Ok)
                     {
-                        registeredTS = Gapi.DomainParticipant.get_typesupport(domainObj, TypeName);
+                        DatabaseMarshaler.Add(participant, dataType, marshaler);
+                        marshaler.InitEmbeddedMarshalers(participant);
                     }
-                    else 
-                    { 
-                        registeredTS = Gapi.DomainParticipant.get_typesupport(domainObj, typeName); 
-                    }
-                    result = AttachMarshalerDelegates(registeredTS, marshaler);
                 }
             }
-
+            
             return result;
         }
 
@@ -175,17 +116,21 @@ namespace DDS.OpenSplice
             ReturnCode result = ReturnCode.Ok;
 
             typeSupport = Gapi.TypeSupport.Claim(ts, out tsPtr, ref result);
-            typeSupport.copy_in = marshaler.CopyInDelegate;
+            if (result == ReturnCode.Ok)
+            {
+                typeSupport.copy_in = marshaler.CopyInDelegate;
 
-            // HACK: This is a Mono workaround. Currently you cannot marshal a delegate
-            // to a function pointer if the parameters include an "object" type. So we
-            // will pass a fake delegate, and then internally use the real copyOut, this
-            // may give better performance anyways, since we won't have to convert the
-            // IntPtr to a Delegate for every ReaderCopy invocation.
-            typeSupport.copy_out = dummyOperationDelegate;
+                // HACK: This is a Mono workaround. Currently you cannot marshal a delegate
+                // to a function pointer if the parameters include an "object" type. So we
+                // will pass a fake delegate, and then internally use the real copyOut, this
+                // may give better performance anyways, since we won't have to convert the
+                // IntPtr to a Delegate for every ReaderCopy invocation.
+                typeSupport.copy_out = dummyOperationDelegate;
 
-            typeSupport.reader_copy = marshaler.ReaderCopyDelegate;
-            Gapi.TypeSupport.Release(typeSupport, tsPtr);
+                typeSupport.reader_copy = marshaler.ReaderCopyDelegate;
+                Gapi.TypeSupport.Release(typeSupport, tsPtr);
+            }
+
             return result;
         }
     }

@@ -7,18 +7,14 @@
 	using System;
 
 	namespace PingPong
-	{
-		
-		
+	{	
 		public class ping
-		{
-			
+		{		
 			public static void Main (String[] args) {
 
 			    pinger pinger_instance = new pinger();
 
 	            pinger_instance.run (args);
-
 		    }
 		}
 	}

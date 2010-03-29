@@ -30,7 +30,7 @@ namespace Chatroom
                     chatterName = args[1];
                 }
             }
-
+                 
             /* Create a DomainParticipantFactory and a DomainParticipant
                (using Default QoS settings. */
             DomainParticipantFactory dpf = DomainParticipantFactory.Instance;
@@ -55,15 +55,21 @@ namespace Chatroom
             ErrorHandler.checkStatus(
                 status, "Chat.NameServiceTypeSupport.RegisterType");
 
+            /* Initialise Qos variables */
+            TopicQos reliableTopicQos = new TopicQos();
+            TopicQos settingTopicQos = new TopicQos();
+            PublisherQos pubQos = new PublisherQos();
+            DataWriterQos dwQos = new DataWriterQos();
+            DataWriterQos nsDwQos = new DataWriterQos();
+
             /* Set the ReliabilityQosPolicy to RELIABLE. */
-            TopicQos reliableTopicQos;
-            status = participant.GetDefaultTopicQos(out reliableTopicQos);
+            status = participant.GetDefaultTopicQos(ref reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultTopicQos");
             reliableTopicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
 
             /* Make the tailored QoS the new default. */
-            status = participant.SetDefaultTopicQos(ref reliableTopicQos);
+            status = participant.SetDefaultTopicQos(reliableTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.SetDefaultTopicQos");
 
@@ -71,14 +77,13 @@ namespace Chatroom
             ITopic chatMessageTopic = participant.CreateTopic(
                 "Chat_ChatMessage",
                 chatMessageTypeName,
-                ref reliableTopicQos);
+                reliableTopicQos);
             ErrorHandler.checkHandle(
                 chatMessageTopic,
                 "DDS.DomainParticipant.CreateTopic (ChatMessage)");
 
             /* Set the DurabilityQosPolicy to TRANSIENT. */
-            TopicQos settingTopicQos;
-            status = participant.GetDefaultTopicQos(out settingTopicQos);
+            status = participant.GetDefaultTopicQos(ref settingTopicQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultTopicQos");
             settingTopicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
@@ -87,34 +92,31 @@ namespace Chatroom
             ITopic nameServiceTopic = participant.CreateTopic(
                 "Chat_NameService",
                 nameServiceTypeName,
-                ref settingTopicQos);
+                settingTopicQos);
             ErrorHandler.checkHandle(
                 nameServiceTopic,
                 "DDS.DomainParticipant.CreateTopic (NameService)");
 
             /* Adapt the default PublisherQos to write into the
                "ChatRoom" Partition. */
-            PublisherQos pubQos;
-            status = participant.GetDefaultPublisherQos(out pubQos);
+            status = participant.GetDefaultPublisherQos(ref pubQos);
             ErrorHandler.checkStatus(
                 status, "DDS.DomainParticipant.GetDefaultPublisherQos");
             pubQos.Partition.Name = new string[1];
             pubQos.Partition.Name[0] = partitionName;
 
             /* Create a Publisher for the chatter application. */
-            IPublisher chatPublisher = participant.CreatePublisher(
-                ref pubQos);
+            IPublisher chatPublisher = participant.CreatePublisher(pubQos);
             ErrorHandler.checkHandle(
                 chatPublisher, "DDS.DomainParticipant.CreatePublisher");
 
             /* Create a DataWriter for the ChatMessage Topic
                (using the appropriate QoS). */
-            DataWriterQos dwQos;
-            chatPublisher.GetDefaultDataWriterQos(out dwQos);
-            status = chatPublisher.CopyFromTopicQos(out dwQos, ref reliableTopicQos);
+            chatPublisher.GetDefaultDataWriterQos(ref dwQos);
+            status = chatPublisher.CopyFromTopicQos(ref dwQos, reliableTopicQos);
             ErrorHandler.checkStatus(status, "DDS.Publisher.CopyFromTopicQos");
 
-            IDataWriter parentWriter = chatPublisher.CreateDataWriter(chatMessageTopic, ref dwQos);
+            IDataWriter parentWriter = chatPublisher.CreateDataWriter(chatMessageTopic, dwQos);
             ErrorHandler.checkHandle(
                 parentWriter, "DDS.Publisher.CreateDatawriter (chatMessage)");
 
@@ -125,18 +127,17 @@ namespace Chatroom
 
             /* Create a DataWriter for the NameService Topic
                (using the appropriate QoS). */
-            DataWriterQos nsDwQos;
-            status = chatPublisher.GetDefaultDataWriterQos(out nsDwQos);
+            status = chatPublisher.GetDefaultDataWriterQos(ref nsDwQos);
             ErrorHandler.checkStatus(
                 status, "DDS.Publisher.GetDefaultDatawriterQos");
-            status = chatPublisher.CopyFromTopicQos(out nsDwQos, ref settingTopicQos);
+            status = chatPublisher.CopyFromTopicQos(ref nsDwQos, settingTopicQos);
             ErrorHandler.checkStatus(status, "DDS.Publisher.CopyFromTopicQos");
 
             WriterDataLifecycleQosPolicy writerDataLifecycle = dwQos.WriterDataLifecycle;
-            writerDataLifecycle.AutoDisposeUnregisteredInstances = false;
+            writerDataLifecycle.AutodisposeUnregisteredInstances = false;
             IDataWriter nsParentWriter = chatPublisher.CreateDataWriter(
                 nameServiceTopic,
-                ref nsDwQos,
+                nsDwQos,
                 null,
                 StatusKind.Any);
             ErrorHandler.checkHandle(
@@ -168,9 +169,12 @@ namespace Chatroom
             ChatMessage msg = new ChatMessage();
             msg.userID = ownID;
             msg.index = 0;
-            if (ownID == TERMINATION_MESSAGE) {
+            if (ownID == TERMINATION_MESSAGE)
+            {
                 msg.content = "Termination message.";
-            } else {
+            }
+            else
+            {
                 msg.content = "Hi there, I will send you " +
                     NUM_MSG + " more messages.";
             }
@@ -187,14 +191,15 @@ namespace Chatroom
             Thread.Sleep(1000);
 
             /* Write any number of messages . */
-            for (int i = 1; i <= NUM_MSG && ownID != TERMINATION_MESSAGE; i++) {
+            for (int i = 1; i <= NUM_MSG && ownID != TERMINATION_MESSAGE; i++)
+            {
                 msg.index = i;
                 msg.content = "Message no. " + i;
                 Console.WriteLine("Writing message: \"" + msg.content + "\"");
                 status = talker.Write(msg, userHandle);
                 ErrorHandler.checkStatus(status, "Chat.ChatMessageDataWriter.Write");
 
-                Thread.Sleep (1000); /* do not run so fast! */
+                Thread.Sleep(1000); /* do not run so fast! */
             }
 
             /* Leave the room by disposing and unregistering the message instance */

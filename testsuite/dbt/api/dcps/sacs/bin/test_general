@@ -16,12 +16,12 @@ run_testcases ()
 {
     printTestDirHeader $TESTCASESDIR
 
-	curdir=`pwd`
-	cd $TESTCASESDIR
+    curdir=`pwd`
+    cd $TESTCASESDIR
     for d in $TESTCASES; do
 	    run_testcase
     done
-    cd curdir
+    cd $curdir
 }
 
 run_testcase ()

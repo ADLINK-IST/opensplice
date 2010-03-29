@@ -39,8 +39,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IPublisher publisher;
-            DDS.DataWriterQos qosHolder;
-            DDS.TopicQos topicQos;
+			DDS.DataWriterQos qosHolder = null;
+			DDS.TopicQos topicQos = null;
             string expResult = "copy_from_topic_qos test succeeded";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
@@ -49,7 +49,7 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             topicQos = (DDS.TopicQos)this.ResolveObject("topicQos");
 
-            rc = publisher.CopyFromTopicQos(out qosHolder, ref topicQos);
+            rc = publisher.CopyFromTopicQos(ref qosHolder, topicQos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "copy_from_topic_qos failed.";
@@ -114,11 +114,11 @@ namespace test.sacs
             osp.Value = 11;
             qosHolder.OwnershipStrength.Value = 11;
             DDS.WriterDataLifecycleQosPolicy wlp = new DDS.WriterDataLifecycleQosPolicy();
-            wlp.AutoDisposeUnregisteredInstances = true;
-            qosHolder.WriterDataLifecycle.AutoDisposeUnregisteredInstances = true;
+            wlp.AutodisposeUnregisteredInstances = true;
+            qosHolder.WriterDataLifecycle.AutodisposeUnregisteredInstances = true;
 
             DDS.DataWriterQos wqos = qosHolder;
-            rc = publisher.CopyFromTopicQos(out qosHolder, ref topicQos);
+            rc = publisher.CopyFromTopicQos(ref qosHolder, topicQos);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "copy_from_topic_qos failed.";

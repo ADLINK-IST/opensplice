@@ -21,8 +21,8 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.ISubscriber subscriber;
-            DDS.DataReaderQos dataReaderQos;
-            DDS.DataReaderQos qosHolder;
+			DDS.DataReaderQos dataReaderQos = null;
+			DDS.DataReaderQos qosHolder = null;
             DDS.IDataReader reader1;
             DDS.IDataReader reader2;
             DDS.IDataReader reader3;
@@ -39,26 +39,26 @@ namespace test.sacs
             topic1 = (DDS.ITopic)this.ResolveObject("topic");
             topic2 = (DDS.ITopic)this.ResolveObject("otherTopic");
 
-            rc = subscriber.GetDefaultDataReaderQos(out qosHolder);
+            rc = subscriber.GetDefaultDataReaderQos(ref qosHolder);
             dataReaderQos = qosHolder;
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos (1).";
                 return result;
             }
-            reader1 = subscriber.CreateDataReader(topic1, ref dataReaderQos);//, null, 0);
+            reader1 = subscriber.CreateDataReader(topic1, dataReaderQos);//, null, 0);
             if (reader1 == null)
             {
                 result.Result = "Could not create a DataReader (2).";
                 return result;
             }
-            reader2 = subscriber.CreateDataReader(topic2, ref dataReaderQos);//, null, 0);
+            reader2 = subscriber.CreateDataReader(topic2, dataReaderQos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create a DataReader (3).";
                 return result;
             }
-            reader3 = subscriber.CreateDataReader(topic1, ref dataReaderQos);//, null, 0);
+            reader3 = subscriber.CreateDataReader(topic1, dataReaderQos);//, null, 0);
             if (reader3 == null)
             {
                 result.Result = "Could not create a DataReader (4).";

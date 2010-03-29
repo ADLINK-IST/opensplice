@@ -14,9 +14,9 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IDataReader reader;
-            DDS.DataReaderQos qos;
-            DDS.DataReaderQos qos2;
-            DDS.DataReaderQos holder;
+			DDS.DataReaderQos qos = null;
+			DDS.DataReaderQos qos2 = null;
+			DDS.DataReaderQos holder = null;
             DDS.ReturnCode rc;
             Test.Framework.TestResult result;
             string expResult = "Reader test succeeded.";
@@ -25,7 +25,7 @@ namespace test.sacs
             reader = (DDS.IDataReader)this.ResolveObject("datareader");
             qos = (DDS.DataReaderQos)this.ResolveObject("datareaderQos");
 
-            if (reader.GetQos(out holder) != DDS.ReturnCode.Ok)
+            if (reader.GetQos(ref holder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Qos of DataReader could not be resolved.";
                 return result;
@@ -43,19 +43,19 @@ namespace test.sacs
             qos2 = holder;
             qos2.Deadline.Period = new DDS.Duration(3, 3);
             qos2.LatencyBudget.Duration = new DDS.Duration(6, 6);
-            qos2.ReaderDataLifecycle.AutoPurgeDisposedSamplesDelay = new DDS.Duration(
+            qos2.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay = new DDS.Duration(
                 5, 5);
             qos2.UserData.Value = new byte[2];
             qos2.UserData.Value[0] = 2;
             qos2.UserData.Value[0] = 4;
-            rc = reader.SetQos(ref qos2);
+            rc = reader.SetQos(qos2);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "New Qos could not be applied.";
                 return result;
             }
 
-            if (reader.GetQos(out holder) != DDS.ReturnCode.Ok)
+            if (reader.GetQos(ref holder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Qos of DataReader could not be resolved (2).";
                 return result;

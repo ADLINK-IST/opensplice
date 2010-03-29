@@ -76,7 +76,7 @@ namespace DDS.OpenSplice
                     status.TotalCount = gapi_status.total_count;
                     status.TotalCountChange = gapi_status.total_count_change;
                     status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, out status.Policies);
+                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, ref status.Policies);
 
                     listener.OnOfferedIncompatibleQos(dataWriter, status);
                 }

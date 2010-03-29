@@ -24,8 +24,6 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             listener = new test.sacs.MyPublisherListener();
 
-            // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
-
             rc = publisher.SetListener(listener, DDS.StatusKind.Any);
             if (rc != DDS.ReturnCode.Ok)
             {

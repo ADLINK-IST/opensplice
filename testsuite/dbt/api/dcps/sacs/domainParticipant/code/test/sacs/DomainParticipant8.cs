@@ -25,9 +25,9 @@ namespace test.sacs
             DDS.DomainParticipantFactory factory;
             DDS.DomainParticipantQos qos;
             DDS.IPublisher publisher;
-            DDS.PublisherQos pholder;
+			DDS.PublisherQos pholder = null;
             DDS.ISubscriber subscriber;
-            DDS.SubscriberQos sholder;
+			DDS.SubscriberQos sholder = null;
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             factory = (DDS.DomainParticipantFactory)this.ResolveObject("factory");
             qos = (DDS.DomainParticipantQos)this.ResolveObject("participantQos");
@@ -77,22 +77,22 @@ namespace test.sacs
                     }
                 }
             }
-            participant2 = factory.CreateParticipant(string.Empty, ref qos, null, 0);
+            participant2 = factory.CreateParticipant(string.Empty, qos);//, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create DomainParticipant failed.";
                 return result;
             }
 
-            participant2.GetDefaultPublisherQos(out pholder);
-            publisher = participant2.CreatePublisher(ref pholder);//, null, 0);
+            participant2.GetDefaultPublisherQos(ref pholder);
+            publisher = participant2.CreatePublisher(pholder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Create Publisher failed.";
                 return result;
             }
-            participant2.GetDefaultSubscriberQos(out sholder);
-            subscriber = participant2.CreateSubscriber(ref sholder);//, null, 0);
+            participant2.GetDefaultSubscriberQos(ref sholder);
+            subscriber = participant2.CreateSubscriber(sholder);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "Create Subscriber failed.";

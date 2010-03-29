@@ -15,11 +15,11 @@ namespace test.sacs
         {
             Test.Framework.TestResult result;
             string expResult = "DomainParticipant Publisher test succeeded.";
-            DDS.PublisherQos pubQosHolder;
+			DDS.PublisherQos pubQosHolder = null;
             DDS.IPublisher publisher;
             DDS.IPublisher publisher2;
             DDS.ReturnCode returnCode;
-            DDS.DomainParticipantQos qos;
+			DDS.DomainParticipantQos qos = null;
             DDS.IDomainParticipant participant;
             DDS.IDomainParticipant participant2;
             DDS.DomainParticipantFactory factory;
@@ -29,18 +29,18 @@ namespace test.sacs
                 Test.Framework.TestVerdict.Fail);
             qos = (DDS.DomainParticipantQos)this.ResolveObject("participantQos");
 
-            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Get default PublisherQos failed.";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref pubQosHolder);//, null, 0);
+            publisher = participant.CreatePublisher(pubQosHolder);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "Create Publisher failed.";
                 return result;
             }
-            publisher2 = participant.CreatePublisher();
+            publisher2 = participant.CreatePublisher(null, null, 0);
             if (publisher2 != null)
             {
                 this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See scdds213");
@@ -49,7 +49,7 @@ namespace test.sacs
                 participant.DeleteContainedEntities();
                 return result;
             }
-            participant2 = factory.CreateParticipant(null, ref qos, null, 0);
+            participant2 = factory.CreateParticipant(null, qos);//, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create Participant failed.";
@@ -79,12 +79,17 @@ namespace test.sacs
                 result.Result = "Delete of already deleted Publisher succeeded.";
                 return result;
             }
-            returnCode = participant.DeletePublisher(null);
-            if (returnCode == DDS.ReturnCode.Ok)
+            try
             {
-                result.Result = "Delete null Publisher succeeded.";
-                return result;
+                returnCode = participant.DeletePublisher(null);
+                if (returnCode == DDS.ReturnCode.Ok)
+                {
+                    result.Result = "Delete null Publisher succeeded.";
+                    return result;
+                }
             }
+            catch {}
+
             result.Verdict = Test.Framework.TestVerdict.Pass;
             result.Result = expResult;
             return result;

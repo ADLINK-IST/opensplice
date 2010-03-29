@@ -3,7 +3,7 @@
 # Set name context of used tooling
 CC		 = gcc
 CXX		 = g++
-CSC      = gmcs
+CSC		 = gmcs
 
     # Binary used for filtering
 FILTER           = filter_gcc
@@ -25,7 +25,7 @@ AR_CMDS          = rv
 	# preprocessor
 MAKEDEPFLAGS     = -M
 CPP		 = cpp
-GCPP     = g++ -E
+GCPP		 = g++ -E
 	# gcov
 GCOV		 = gcov
 

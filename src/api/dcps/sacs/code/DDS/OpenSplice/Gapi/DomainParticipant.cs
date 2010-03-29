@@ -368,7 +368,7 @@ namespace DDS.OpenSplice.Gapi
          *         in InstanceHandle_t a_hande);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipant_contains_entity")]
-        public static extern bool contains_entity(
+        public static extern byte contains_entity(
             IntPtr _this,
             InstanceHandle a_handle);
 

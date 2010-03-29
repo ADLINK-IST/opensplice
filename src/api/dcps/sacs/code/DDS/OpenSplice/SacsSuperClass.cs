@@ -105,7 +105,14 @@ namespace DDS.OpenSplice
             // TODO: Verify when we need to release unmanaged memory
             if (weak)
             {
-                Gapi.GenericAllocRelease.Free(gapiPeer);
+                try
+                {
+                    Gapi.GenericAllocRelease.Free(gapiPeer);
+                }
+                catch (AccessViolationException)
+                {
+                    // TODO: JLS - We should probably figure out why this is happening.
+                }
             }
 
             // Reset the gapi handles stored in this object.

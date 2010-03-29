@@ -5,6 +5,8 @@ namespace test.sacs
     /// <date>Jun 2, 2005</date>
     public class Listener7 : Test.Framework.TestCase
     {
+        DDS.ReturnCode rc;
+        
         public Listener7()
             : base("sacs_listener_tc7", "sacs_listener", "listener", "Listener multithread test."
                 , "Listener multithread test.", null)
@@ -12,8 +14,6 @@ namespace test.sacs
             this.AddPreItem(new test.sacs.ListenerInit());
             this.AddPostItem(new test.sacs.ListenerDeinit());
         }
-
-        DDS.ReturnCode rc;
 
         public override Test.Framework.TestResult Run()
         {
@@ -25,7 +25,6 @@ namespace test.sacs
             mod.tstDataReader reader;
             Test.Framework.TestResult result;
             test.sacs.Listener7.ListenerThread[] threads;
-            //Thread[] threads;
             string expResult = "Listener multithread test succeeded.";
             DDS.ReturnCode[] results;
 
@@ -63,9 +62,9 @@ namespace test.sacs
                     threads[j].Join();
                     results[j] = threads[j].GetResult();
                 }
-                catch (System.Exception)
+                catch (System.Exception e)
                 {
-                    result.Result = "Thread " + j + " could not be joined.";
+                    result.Result = string.Format("Thread {0} could not be joined. Exception: {1}", j, e);
                     return result;
                 }
             }
@@ -73,7 +72,7 @@ namespace test.sacs
             {
                 if (results[j] != DDS.ReturnCode.Ok)
                 {
-                    result.Result = "Listener thread " + j + " failed.";
+                    result.Result = string.Format("Listener thread {0} failed.", j);
                     return result;
                 }
             }
@@ -81,14 +80,12 @@ namespace test.sacs
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;
         }
-
-
         
-        private static void runListeners(Listener7 _enclosing, DDS.IEntity entity, int id)
+        private static void runListeners(Listener7 listener7, DDS.IEntity entity, int id)
         {
             DDS.ReturnCode rc = DDS.ReturnCode.Error;
 
-            System.Console.Out.WriteLine("Thread " + id + " started...");
+            System.Console.Out.WriteLine("Thread {0} started...", id);
             System.Threading.Thread.Sleep(0);
             if (entity is DDS.IDomainParticipant)
             {
@@ -108,7 +105,6 @@ namespace test.sacs
             {
                 if (entity is DDS.IPublisher)
                 {
-                    // TODO: JLS - Is something missing here, there isn't a IPublisher SetListener method
                     DDS.IPublisherListener listener = new test.sacs.MyPublisherListener();
                     DDS.IPublisher domainEntity = (DDS.IPublisher)entity;
                     rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
@@ -201,22 +197,21 @@ namespace test.sacs
         {
             return this.rc;
         }
-        
        
        private class ListenerThread 
         {
+            private readonly Listener7 listener7;
             private int id;
-
             private DDS.IEntity entity;
-
             private DDS.ReturnCode rc = DDS.ReturnCode.Error;
+            private Thread myThread;
 
-            public ListenerThread(Listener7 _enclosing, DDS.IEntity entity, int id)
+            public ListenerThread(Listener7 listener7, DDS.IEntity entity, int id)
             {
-                this._enclosing = _enclosing;
+                this.listener7 = listener7;
                 this.id = id;
                 this.entity = entity;
-                
+                this.myThread = new Thread(Run);
             }
 
             public void Run()
@@ -237,115 +232,96 @@ namespace test.sacs
                         }
                     }
                 }
-                else
+                else if (this.entity is DDS.IPublisher)
                 {
-                    if (this.entity is DDS.IPublisher)
+                    DDS.IPublisherListener listener = new test.sacs.MyPublisherListener();
+                    DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
+                    this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                    if (this.rc == DDS.ReturnCode.Ok)
                     {
-                        DDS.IPublisherListener listener = new test.sacs.MyPublisherListener();
-                        DDS.IPublisher domainEntity = (DDS.IPublisher)this.entity;
-                        this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                        this.rc = domainEntity.SetListener(null, 0);
                         if (this.rc == DDS.ReturnCode.Ok)
                         {
-                            this.rc = domainEntity.SetListener(null, 0);
-                            if (this.rc == DDS.ReturnCode.Ok)
-                            {
-                                this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
-                            }
+                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
                         }
                     }
-                    else
+                }
+                else if (this.entity is DDS.IDataWriter)
+                {
+                    DDS.DataWriterListener listener = new test.sacs.MyDataWriterListener();
+                    DDS.IDataWriter domainEntity = (DDS.IDataWriter)this.entity;
+                    this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
+                    if (this.rc == DDS.ReturnCode.Ok)
                     {
-                        if (this.entity is DDS.IDataWriter)
+                        this.rc = domainEntity.SetListener(null, 0);
+                        if (this.rc == DDS.ReturnCode.Ok)
                         {
-                            DDS.DataWriterListener listener = new test.sacs.MyDataWriterListener();
-                            DDS.IDataWriter domainEntity = (DDS.IDataWriter)this.entity;
-                            this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.RequestedDeadlineMissed);
-                            if (this.rc == DDS.ReturnCode.Ok)
-                            {
-                                this.rc = domainEntity.SetListener(null, 0);
-                                if (this.rc == DDS.ReturnCode.Ok)
-                                {
-                                    this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (this.entity is DDS.IDataReader)
-                            {
-                                DDS.IDataReaderListener listener = new test.sacs.MyDataReaderListener();
-                                DDS.IDataReader domainEntity = (DDS.IDataReader)this.entity;
-                                this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
-                                if (this.rc == DDS.ReturnCode.Ok)
-                                {
-                                    this.rc = domainEntity.SetListener(null, 0);
-                                    if (this.rc == DDS.ReturnCode.Ok)
-                                    {
-                                        this.rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedIncompatibleQos);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (this.entity is DDS.ITopic)
-                                {
-                                    DDS.TopicListener listener = new test.sacs.MyTopicListener();
-                                    DDS.ITopic domainEntity = (DDS.ITopic)this.entity;
-                                    this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.InconsistentTopic);
-                                    if (this.rc == DDS.ReturnCode.Ok)
-                                    {
-                                        this.rc = domainEntity.SetListener(null, 0);
-                                        if (this.rc == DDS.ReturnCode.Ok)
-                                        {
-                                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.InconsistentTopic);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    if (this.entity is DDS.ISubscriber)
-                                    {
-                                        DDS.ISubscriberListener listener = new test.sacs.MySubscriberListener();
-                                        DDS.ISubscriber domainEntity = (DDS.ISubscriber)this.entity;
-                                        this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
-                                        if (this.rc == DDS.ReturnCode.Ok)
-                                        {
-                                            this.rc = domainEntity.SetListener(null, 0);
-                                            if (this.rc == DDS.ReturnCode.Ok)
-                                            {
-                                                this.rc = domainEntity.SetListener(listener, DDS.StatusKind.DataOnReaders);
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        System.Console.Out.WriteLine("Entity type: " + this.entity.ToString() + " not supported.");
-                                    }
-                                }
-                            }
+                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.RequestedIncompatibleQos);
                         }
                     }
+                }
+                else if (this.entity is DDS.IDataReader)
+                {
+                    DDS.IDataReaderListener listener = new test.sacs.MyDataReaderListener();
+                    DDS.IDataReader domainEntity = (DDS.IDataReader)this.entity;
+                    this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+                    if (this.rc == DDS.ReturnCode.Ok)
+                    {
+                        this.rc = domainEntity.SetListener(null, 0);
+                        if (this.rc == DDS.ReturnCode.Ok)
+                        {
+                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.OfferedIncompatibleQos);
+                        }
+                    }
+                }
+                else if (this.entity is DDS.ITopic)
+                {
+                    DDS.TopicListener listener = new test.sacs.MyTopicListener();
+                    DDS.ITopic domainEntity = (DDS.ITopic)this.entity;
+                    this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.InconsistentTopic);
+                    if (this.rc == DDS.ReturnCode.Ok)
+                    {
+                        this.rc = domainEntity.SetListener(null, 0);
+                        if (this.rc == DDS.ReturnCode.Ok)
+                        {
+                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.InconsistentTopic);
+                        }
+                    }
+                }
+                else if (this.entity is DDS.ISubscriber)
+                {
+                    DDS.ISubscriberListener listener = new test.sacs.MySubscriberListener();
+                    DDS.ISubscriber domainEntity = (DDS.ISubscriber)this.entity;
+                    this.rc = (domainEntity).SetListener(listener, DDS.StatusKind.OfferedDeadlineMissed);
+                    if (this.rc == DDS.ReturnCode.Ok)
+                    {
+                        this.rc = domainEntity.SetListener(null, 0);
+                        if (this.rc == DDS.ReturnCode.Ok)
+                        {
+                            this.rc = domainEntity.SetListener(listener, DDS.StatusKind.DataOnReaders);
+                        }
+                    }
+                }
+                else
+                {
+                    System.Console.Out.WriteLine("Entity type: " + this.entity.ToString() + " not supported.");
                 }
                 System.Console.Out.WriteLine("Thread " + this.id + " finished.");
             }
 
             public virtual DDS.ReturnCode GetResult()
             {
-                return this.rc;
+                return rc;
             }
-
-            private readonly Listener7 _enclosing;
 
             internal void Start()
             {
-                //throw new System.NotImplementedException();
-                Run(); 
+                myThread.Start();
             }
 
             internal void Join()
             {
-                throw new System.NotImplementedException();
-                
+               myThread.Join();
             }
         }
     }

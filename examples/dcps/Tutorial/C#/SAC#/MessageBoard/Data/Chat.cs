@@ -11,7 +11,7 @@ namespace Chat
     {
         public int userID;
         public int index;
-        public string content = "";
+        public string content = string.Empty;
     };
     #endregion
 
@@ -20,7 +20,7 @@ namespace Chat
     public sealed class NameService
     {
         public int userID;
-        public string name = "";
+        public string name = string.Empty;
     };
     #endregion
 
@@ -29,9 +29,9 @@ namespace Chat
     public sealed class NamedMessage
     {
         public int userID;
-        public string userName = "";
+        public string userName = string.Empty;
         public int index;
-        public string content = "";
+        public string content = string.Empty;
     };
     #endregion
 

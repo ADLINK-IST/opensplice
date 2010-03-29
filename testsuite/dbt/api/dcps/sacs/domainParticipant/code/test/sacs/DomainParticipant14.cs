@@ -18,12 +18,12 @@ namespace test.sacs
             string expResult = "Default subscriberQos is used when SUBSCRIBER_QOS_DEFAULT is specified.";
             DDS.DomainParticipantFactory factory;
             DDS.IDomainParticipant participant;
-            DDS.DomainParticipantQos pqosHolder;
-            DDS.SubscriberQos subQosHolder;
-            DDS.SubscriberQos subQosHolder2;
+			DDS.DomainParticipantQos pqosHolder = null;
+			DDS.SubscriberQos subQosHolder = null;
+			DDS.SubscriberQos subQosHolder2 = null;
             DDS.ISubscriber sub;
             DDS.ReturnCode returnCode;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."
@@ -31,13 +31,13 @@ namespace test.sacs
                 return result;
             }
 
-            if (factory.GetDefaultParticipantQos(out pqosHolder) != DDS.ReturnCode.Ok)
+            if (factory.GetDefaultParticipantQos(ref pqosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Default DomainParticipantQos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, ref pqosHolder, null, 0);
+            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "Creation of DomainParticipant failed."
@@ -45,7 +45,7 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out subQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref subQosHolder) != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Subscriber qos could not be resolved."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
@@ -55,7 +55,7 @@ namespace test.sacs
             name[0] = "Subscriber";
             name[1] = "QoS";
             subQosHolder.Partition.Name = name;
-            returnCode = participant.SetDefaultSubscriberQos(ref subQosHolder);
+            returnCode = participant.SetDefaultSubscriberQos(subQosHolder);
             if (returnCode != DDS.ReturnCode.Ok)
             {
                 result = new Test.Framework.TestResult(expResult, "Setting default subscriber QoS failed."
@@ -70,7 +70,7 @@ namespace test.sacs
                 return result;
             }
 
-            sub.GetQos(out subQosHolder2);
+            sub.GetQos(ref subQosHolder2);
             if (!subQosHolder.Partition.Name[0].Equals(subQosHolder.Partition.Name
                 [0]) || !subQosHolder.Partition.Name[1].Equals(subQosHolder.Partition
                 .Name[1]))

@@ -18,69 +18,114 @@
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace DDS.OpenSplice.Gapi
+namespace DDS.OpenSplice
 {
-    static internal class ErrorInfo
+    enum ReportType {
+        OS_INFO,
+        OS_WARNING,
+        OS_ERROR,
+        OS_CRITICAL,
+        OS_FATAL,
+        OS_REPAIRED,
+        OS_API_INFO
+    }
+
+    static internal class OS
     {
-        /*     ErrorInfo
-         *     ErrorInfo__alloc (
-         *         void);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo__alloc")]
-        public static extern IntPtr alloc();
+       /* void
+        *     os_report();
+        */
+        [DllImport("ddsos", EntryPoint = "os_report")]
+        public static extern void Report(
+                ReportType type,
+                string reportContext,
+                string fileName,
+                int lineNo,
+                DDS.ErrorCode reportCode,
+                string description);
 
-        /*     ReturnCode_t
-         *     update( );
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_update")]
-        public static extern ReturnCode update(
-            IntPtr _this);
+        public static void Report(
+                ReportType type,
+                string reportContext,
+                string fileName,
+                DDS.ErrorCode reportCode,
+                string description)
+        {
+            StackFrame callStack = new StackFrame(1, true);
+            Report( type, 
+                    reportContext, 
+                    fileName, 
+                    callStack.GetFileLineNumber(),
+                    reportCode,
+                    description);
+        }
+    }    
+    
+    namespace Gapi
+    {
+        static internal class ErrorInfo
+        {
+            /*     ErrorInfo
+             *     ErrorInfo__alloc (
+             *         void);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo__alloc")]
+            public static extern IntPtr alloc();
 
-        /*     ReturnCode_t
-         *     get_code(
-         *         out ErrorCode code);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_code")]
-        public static extern ReturnCode get_code(
-            IntPtr _this,
-            out ErrorCode code);
+            /*     ReturnCode_t
+             *     update( );
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_update")]
+            public static extern ReturnCode update(
+                IntPtr _this);
 
-        /*     ReturnCode_t
-         *     get_location(
-         *         out String location);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_location")]
-        public static extern ReturnCode get_location(
-            IntPtr _this,
-            out string location);
+            /*     ReturnCode_t
+             *     get_code(
+             *         out ErrorCode code);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_code")]
+            public static extern ReturnCode get_code(
+                IntPtr _this,
+                out DDS.ErrorCode code);
 
-        /*     ReturnCode_t
-         *     get_source_line(
-         *         out String source_line);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_source_line")]
-        public static extern ReturnCode get_source_line(
-            IntPtr _this,
-            out string source_line);
+            /*     ReturnCode_t
+             *     get_location(
+             *         out String location);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_location")]
+            public static extern ReturnCode get_location(
+                IntPtr _this,
+                out string location);
 
-        /*     ReturnCode_t
-         *     get_stack_trace(
-         *         out String stack_trace);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_stack_trace")]
-        public static extern ReturnCode get_stack_trace(
-            IntPtr _this,
-            out string stack_trace);
+            /*     ReturnCode_t
+             *     get_source_line(
+             *         out String source_line);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_source_line")]
+            public static extern ReturnCode get_source_line(
+                IntPtr _this,
+                out string source_line);
 
-        /*     ReturnCode_t
-         *     get_message(
-         *         out String message);
-         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_message")]
-        public static extern ReturnCode get_message(
-            IntPtr _this,
-            out string message);
+            /*     ReturnCode_t
+             *     get_stack_trace(
+             *         out String stack_trace);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_stack_trace")]
+            public static extern ReturnCode get_stack_trace(
+                IntPtr _this,
+                out string stack_trace);
+
+            /*     ReturnCode_t
+             *     get_message(
+             *         out String message);
+             */
+            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_message")]
+            public static extern ReturnCode get_message(
+                IntPtr _this,
+                out string message);
+        }
     }
 }

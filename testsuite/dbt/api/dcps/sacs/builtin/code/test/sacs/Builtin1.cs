@@ -18,27 +18,27 @@ namespace test.sacs
             DDS.ITopic topic2;
             Test.Framework.TestResult result;
             string expResult = "Builtin topic test succeeded.";
-            result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
-                .Pass, Test.Framework.TestVerdict.Fail);
+            result = new Test.Framework.TestResult(
+                    expResult, 
+                    string.Empty, 
+                    Test.Framework.TestVerdict.Pass, 
+                    Test.Framework.TestVerdict.Fail);
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSParticipant");
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSParticipant could not be found.";
-                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic2 = (DDS.ITopic)participant.LookupTopicDescription("DCPSParticipant");
             if (topic2 == null)
             {
                 result.Result = "Builtin Topic DCPSParticipant could not be found(2).";
-                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             if (topic != topic2)
             {
                 result.Result = "Resolved topics do not match for DCPSParticipant.";
-                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSPublication");

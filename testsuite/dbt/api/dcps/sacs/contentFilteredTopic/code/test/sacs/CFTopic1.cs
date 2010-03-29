@@ -32,7 +32,7 @@ namespace test.sacs
             DDS.IContentFilteredTopic filteredTopic;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
-            string[] ssHolder;
+            string[] ssHolder = null;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
@@ -100,7 +100,7 @@ namespace test.sacs
                 result.Result = "unexpected expression (\"" + retrievedFilterExpression + "\") after calling get_filter_expression (4).";
                 return result;
             }
-            rc = filteredTopic.GetExpressionParameters(out ssHolder);
+            rc = filteredTopic.GetExpressionParameters(ref ssHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "operation get_expression_parameters returned " + rc;
@@ -141,7 +141,7 @@ namespace test.sacs
                 result.Result = "Recieved return code " + rc + " after calling set_expression_parameters (6).";
                 return result;
             }
-            rc = filteredTopic.GetExpressionParameters(out ssHolder);
+            rc = filteredTopic.GetExpressionParameters(ref ssHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "operation get_expression_parameters returned " + rc;

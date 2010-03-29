@@ -16,6 +16,7 @@
 #include "idl_keyDef.h"
 #include "idl_dll.h"
 
+#include "idl_genSACSType.h"
 #include "idl_genSACSTypedClassDefs.h"
 #include "idl_genSACSHelper.h"
 
@@ -26,7 +27,6 @@
 static idl_macroAttrib idlpp_macroAttrib;
 static idl_streamIn idlpp_inStream;
 static c_char *idlpp_template;
-static c_char *idlpp_tmplPrefix;
 static idl_macroSet idlpp_macroSet;
 static c_long idlpp_indent_level = 0;
 
@@ -48,6 +48,7 @@ idl_fileOpen(
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
@@ -61,7 +62,15 @@ idl_fileOpen(
     }
 
     /* Prepare file header template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%c%sHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, idlpp_tmplPrefix);
+    snprintf(
+            tmplFileName,
+            (size_t)sizeof(tmplFileName),
+            "%s%c%s%c%sHeader",
+            tmplPath,
+            OS_FILESEPCHAR,
+            orbPath,
+            OS_FILESEPCHAR,
+            csUserData->tmplPrefix);
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -86,7 +95,15 @@ idl_fileOpen(
     idl_tmplExpFree(te);
 
     /* Prepare class definition template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%c%s", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, idlpp_tmplPrefix);
+    snprintf(
+            tmplFileName,
+            (size_t)sizeof(tmplFileName),
+            "%s%c%s%c%s",
+            tmplPath,
+            OS_FILESEPCHAR,
+            orbPath,
+            OS_FILESEPCHAR,
+            csUserData->tmplPrefix);
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -100,11 +117,10 @@ idl_fileOpen(
     memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
     close(tmplFile);
 
-    if (userData)
+    if (csUserData->idlpp_metaList)
     {
         /* Walk over the available meta-data and generate the appropriate typeDescriptors. */
-        os_iter *metaList = (os_iter *) userData;
-        os_iterWalk(*metaList, idl_metaCsharpSerialize2XML, NULL);
+        os_iterWalk(csUserData->idlpp_metaList, idl_metaCsharpSerialize2XML, NULL);
     }
 
     idlpp_indent_level = 0;
@@ -126,11 +142,16 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    char *moduleName;
+    SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+
+    moduleName = idl_CsharpId(name, csUserData->customPSM);
     idl_printIndent(idlpp_indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", idl_CsharpId(name));
+    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", moduleName);
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     idlpp_indent_level++;
+    os_free(moduleName);
     return idl_explore;
 }
 
@@ -151,26 +172,30 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    c_char spaces[20];
-    idl_tmplExp te;
-
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
+        c_char spaces[20];
+        idl_tmplExp te;
+        SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+        char *scopeName = idl_CsharpId(
+                idl_scopeElementName(idl_scopeCur(scope)),
+                csUserData->customPSM);
+        char *structName = idl_CsharpId(name, csUserData->customPSM);
+
         /* keylist has been defined for this struct, so it acts as topic. */
         te = idl_tmplExpNew(idlpp_macroSet);
-        idl_macroSetAdd(idlpp_macroSet,
-            idl_macroNew("scope", idl_CsharpId(idl_scopeElementName(idl_scopeCur(scope)))));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_CsharpId(name)));
-        idl_macroSetAdd(idlpp_macroSet,
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", scopeName));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", structName));
+        idl_macroSetAdd(
+                idlpp_macroSet,
                 idl_macroNew("scoped-meta-type-name", idl_scopeStack(scope, "::", name)));
         snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("custom-psm", csUserData->customPSM ? "true" : "false"));
 
-        if (userData)
-        {
-            os_iter *metaList = (os_iter *) userData;
-            idl_metaCsharp *metaElmnt = os_iterTakeFirst(*metaList);
+        if (csUserData->idlpp_metaList) {
+            idl_metaCsharp *metaElmnt = os_iterTakeFirst(csUserData->idlpp_metaList);
             idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptor", metaElmnt->descriptor));
         }
 
@@ -178,6 +203,9 @@ idl_structureOpen(
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
+
+        os_free(scopeName);
+        os_free(structName);
     }
     return idl_abort;
 }
@@ -189,60 +217,37 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
-    c_char spaces[20];
-    idl_tmplExp te;
-
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
+        c_char spaces[20];
+        idl_tmplExp te;
+        SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+        char *scopeName = idl_CsharpId(
+                idl_scopeElementName(idl_scopeCur(scope)),
+                csUserData->customPSM);
+        char *unionName = idl_CsharpId(name, csUserData->customPSM);
+
     /* keylist defined for this union */
         te = idl_tmplExpNew(idlpp_macroSet);
-        idl_macroSetAdd(idlpp_macroSet,
-            idl_macroNew("scope", idl_CsharpId(idl_scopeElementName(idl_scopeCur(scope)))));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_CsharpId(name)));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", scopeName));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", unionName));
         snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
+        os_free(scopeName);
+        os_free(unionName);
     }
     return idl_abort;
 }
 
-//static void
-//idl_typedefOpenClose(
-//    idl_scope scope,
-//    const char *name,
-//    idl_typeDef defSpec,
-//    void *userData)
-//{
-//    c_char spaces[20];
-//    idl_tmplExp te;
-//
-//    if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
-//        idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tunion) &&
-//        idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
-//        /* keylist defined for this typedef of struct or union */
-//        te = idl_tmplExpNew(idlpp_macroSet);
-//        idl_macroSetAdd(idlpp_macroSet,
-//            idl_macroNew("scope", idl_cxxId(idl_scopeElementName(idl_scopeCur(scope)))));
-//        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_cxxId(name)));
-//        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
-//        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
-//        idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
-//        idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
-//        idl_streamInFree(idlpp_inStream);
-//        idl_tmplExpFree(te);
-//    }
-//}
-
 static struct idl_program idl_genSACSTypedClassDefs;
 
 idl_program
-idl_genSACSTypedClassDefsProgram(c_char *tmplPrefix, os_iter *metaList)
+idl_genSACSTypedClassDefsProgram(void *userData)
 {
-    idlpp_tmplPrefix = tmplPrefix;
-
     idl_genSACSTypedClassDefs.idl_getControl                  = NULL;
     idl_genSACSTypedClassDefs.fileOpen                        = idl_fileOpen;
     idl_genSACSTypedClassDefs.fileClose                       = NULL;
@@ -264,7 +269,7 @@ idl_genSACSTypedClassDefsProgram(c_char *tmplPrefix, os_iter *metaList)
     idl_genSACSTypedClassDefs.sequenceOpenClose               = NULL;
     idl_genSACSTypedClassDefs.constantOpenClose               = NULL;
     idl_genSACSTypedClassDefs.artificialDefaultLabelOpenClose = NULL;
-    idl_genSACSTypedClassDefs.userData                        = metaList;
+    idl_genSACSTypedClassDefs.userData                        = userData;
 
     return &idl_genSACSTypedClassDefs;
 }

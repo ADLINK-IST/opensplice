@@ -37,10 +37,10 @@ namespace test.sacs
             DDS.ISubscriber subscriber;
             mod.tstDataReader reader;
             mod.tstDataWriter writer;
-            DDS.PublisherQos publisherQosHolder;
-            DDS.SubscriberQos subscriberQosHolder;
-            DDS.DataReaderQos dataReaderQosHolder;
-            DDS.DataWriterQos dataWriterQosHolder;
+            DDS.PublisherQos publisherQos = null;
+            DDS.SubscriberQos subscriberQos = null;
+            DDS.DataReaderQos dataReaderQos = null;
+            DDS.DataWriterQos dataWriterQos = null;
             Test.Framework.TestResult result;
             participant = (DDS.IDomainParticipant)testCase.ResolveObject("participant");
             topic = (DDS.ITopic)testCase.ResolveObject("topic");
@@ -54,50 +54,50 @@ namespace test.sacs
                 return result;
             }
 
-            if (participant.GetDefaultPublisherQos(out publisherQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref publisherQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "participant.get_default_publisher_qos failed (2).";
                 return result;
             }
-            publisher = participant.CreatePublisher(ref publisherQosHolder);//, null, 0);
+            publisher = participant.CreatePublisher(publisherQos);//, null, 0);
             if (publisher == null)
             {
                 result.Result = "participant.create_publisher failed (3).";
                 return result;
             }
 
-            if (publisher.GetDefaultDataWriterQos(out dataWriterQosHolder) != DDS.ReturnCode.Ok)
+            if (publisher.GetDefaultDataWriterQos(ref dataWriterQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "publisher.get_default_datawriter_qos failed (4).";
                 return result;
             }
 
-            writer = publisher.CreateDataWriter(topic, ref dataWriterQosHolder, null, 0) as mod.tstDataWriter;
+            writer = publisher.CreateDataWriter(topic, dataWriterQos) as mod.tstDataWriter;
             if (writer == null)
             {
                 result.Result = "could not create a tstDataWriter (5).";
                 return result;
             }
 
-            if (participant.GetDefaultSubscriberQos(out subscriberQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultSubscriberQos(ref subscriberQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "participant.get_default_subscriber_qos failed (6).";
                 return result;
             }
-            subscriber = participant.CreateSubscriber(ref subscriberQosHolder);//, null, 0);
+            subscriber = participant.CreateSubscriber(subscriberQos);//, null, 0);
             if (subscriber == null)
             {
                 result.Result = "participant.create_subscriber failed (7).";
                 return result;
             }
 
-            if (subscriber.GetDefaultDataReaderQos(out dataReaderQosHolder) != DDS.ReturnCode.Ok)
+            if (subscriber.GetDefaultDataReaderQos(ref dataReaderQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "subscriber.get_default_datareader_qos failed (8).";
                 return result;
             }
 
-            reader = subscriber.CreateDataReader(filteredTopic, ref dataReaderQosHolder, null, 0) as mod.tstDataReader;
+            reader = subscriber.CreateDataReader(filteredTopic, dataReaderQos) as mod.tstDataReader;
             if (reader == null)
             {
                 result.Result = "subscriber.create_datareader failed (9).";
@@ -107,7 +107,7 @@ namespace test.sacs
             testCase.RegisterObject("publisher", publisher);
             testCase.RegisterObject("subscriber", subscriber);
             testCase.RegisterObject("reader", reader);
-            testCase.RegisterObject("dataReaderQos", dataReaderQosHolder);
+            testCase.RegisterObject("dataReaderQos", dataReaderQos);
             testCase.RegisterObject("writer", writer);
             result.Result = "Initialization success.";
             result.Verdict = Test.Framework.TestVerdict.Pass;

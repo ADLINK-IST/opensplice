@@ -19,7 +19,7 @@ namespace test.sacs
             DDS.IPublisher publisher;
             DDS.IPublisher publisher2;
             DDS.InstanceHandle[] handles;
-            DDS.SubscriptionBuiltinTopicData data;
+			DDS.SubscriptionBuiltinTopicData data = null;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             string expResult = "Functions not supported yet.";
@@ -42,14 +42,14 @@ namespace test.sacs
             }
             writer.AssertLiveliness();
             handles = new DDS.InstanceHandle[0];
-            rc = writer.GetMatchedSubscriptions(out handles);
+            rc = writer.GetMatchedSubscriptions(ref handles);
             if (rc != DDS.ReturnCode.Unsupported)
             {
                 result.Result = "get_matched_subscriptions has been implemented.";
                 return result;
             }
 
-            rc = writer.GetMatchedSubscriptionData(out data, -1);
+            rc = writer.GetMatchedSubscriptionData(ref data, -1);
             if (rc != DDS.ReturnCode.Unsupported)
             {
                 result.Result = "get_matched_subscription_data has been implemented.";

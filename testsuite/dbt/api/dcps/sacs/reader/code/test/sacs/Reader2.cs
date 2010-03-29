@@ -19,8 +19,8 @@ namespace test.sacs
             DDS.ISubscriber subscriber;
             DDS.ISubscriber subscriber2;
             Test.Framework.TestResult result;
-            DDS.InstanceHandle[] handles;
-            DDS.PublicationBuiltinTopicData data;
+			DDS.InstanceHandle[] handles = null;
+			DDS.PublicationBuiltinTopicData data = null;
             DDS.ReturnCode rc;
             string expResult = "Functions not supported yet.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
@@ -46,14 +46,14 @@ namespace test.sacs
                 result.Result = "wait_for_historical_data failed.";
                 return result;
             }
-            rc = reader.GetMatchedPublications(out handles);
+            rc = reader.GetMatchedPublications(ref handles);
             if (rc != DDS.ReturnCode.Unsupported)
             {
                 result.Result = "get_matched_publications has been implemented.";
                 return result;
             }
 
-            rc = reader.GetMatchedPublicationData(out data, -10);
+            rc = reader.GetMatchedPublicationData(ref data, -10);
             if (rc != DDS.ReturnCode.Unsupported)
             {
                 result.Result = "get_matched_publication_data has been implemented.";

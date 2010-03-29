@@ -22,7 +22,7 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{
+{    
     public class DataReader : Entity, IDataReader
     {
         private DataReaderListenerHelper listenerHelper;
@@ -37,47 +37,62 @@ namespace DDS.OpenSplice
         {
             this.listenerHelper = listenerHelper;
         }
-
+        
         public ReturnCode SetListener(IDataReaderListener listener, StatusKind mask)
         {
             ReturnCode result = ReturnCode.Error;
 
-            Gapi.gapi_dataReaderListener gapiListener;
-            if (listenerHelper == null)
+            if (listener != null)
             {
-                // Since the real DataReader is created from the TypeSupport,
-                // the listenerHelper is not "readonly"
-                listenerHelper = new DataReaderListenerHelper();
+                Gapi.gapi_dataReaderListener gapiListener;
+                if (listenerHelper == null)
+                {
+                    // Since the real DataReader is created from the TypeSupport,
+                    // the listenerHelper is not "readonly"
+                    listenerHelper = new DataReaderListenerHelper();
+                }
+                listenerHelper.Listener = listener;
+                listenerHelper.CreateListener(out gapiListener);
+                lock (listener)
+                {
+                    using (DataReaderListenerMarshaler marshaler = new DataReaderListenerMarshaler(ref gapiListener))
+                    {
+                        result = Gapi.DataReader.set_listener(
+                            GapiPeer,
+                            marshaler.GapiPtr,
+                            mask);
+                    }
+                }
             }
-            listenerHelper.Listener = listener;
-            listenerHelper.CreateListener(out gapiListener);
-
-            using (DataReaderListenerMarshaler marshaler = new DataReaderListenerMarshaler(ref gapiListener))
+            else
             {
                 result = Gapi.DataReader.set_listener(
                     GapiPeer,
-                    marshaler.GapiPtr,
+                    IntPtr.Zero,
                     mask);
             }
 
             return result;
         }
 
+        
         public IReadCondition CreateReadCondition()
         {
             return CreateReadCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any);
         }
-
-        public IReadCondition CreateReadCondition(SampleStateKind sampleStates, ViewStateKind viewStates,
-            InstanceStateKind instanceStates)
+        
+        public IReadCondition CreateReadCondition(
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates)
         {
             IReadCondition readCondition = null;
 
             IntPtr gapiPtr = Gapi.DataReader.create_readcondition(
-                GapiPeer,
-                sampleStates,
-                viewStates,
-                instanceStates);
+                    GapiPeer,
+                    sampleStates,
+                    viewStates,
+                    instanceStates);
 
             if (gapiPtr != IntPtr.Zero)
             {
@@ -87,88 +102,105 @@ namespace DDS.OpenSplice
             return readCondition;
         }
 
-        public IQueryCondition CreateQueryCondition(string queryExpression, params string[] queryParameters)
+        public IQueryCondition CreateQueryCondition(
+                string queryExpression, 
+                params string[] queryParameters)
         {
-            return CreateQueryCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any,
-                queryExpression, queryParameters);
+            return CreateQueryCondition(
+                    SampleStateKind.Any, 
+                    ViewStateKind.Any, 
+                    InstanceStateKind.Any,
+                    queryExpression, queryParameters);
         }
-
-        public IQueryCondition CreateQueryCondition(SampleStateKind sampleStates, ViewStateKind viewStates,
-            InstanceStateKind instanceStates, string queryExpression, params string[] queryParameters)
+        
+        public IQueryCondition CreateQueryCondition(
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates, 
+                string queryExpression, 
+                params string[] queryParameters)
         {
             IQueryCondition queryCondition = null;
 
-            using (IMarshaler marshaler = new SequenceStringMarshaler(queryParameters))
+            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
             {
-                IntPtr gapiPtr = Gapi.DataReader.create_querycondition(
-                    GapiPeer,
-                    sampleStates,
-                    viewStates,
-                    instanceStates,
-                    queryExpression,
-                    marshaler.GapiPtr);
-
-                if (gapiPtr != IntPtr.Zero)
+                if (marshaler.CopyIn(queryParameters) == DDS.ReturnCode.Ok)
                 {
-                    queryCondition = new QueryCondition(gapiPtr);
+                    IntPtr gapiPtr = Gapi.DataReader.create_querycondition(
+                            GapiPeer,
+                            sampleStates,
+                            viewStates,
+                            instanceStates,
+                            queryExpression,
+                            marshaler.GapiPtr);
+
+                    if (gapiPtr != IntPtr.Zero)
+                    {
+                        queryCondition = new QueryCondition(gapiPtr);
+                    }
                 }
             }
 
             return queryCondition;
         }
-
+        
         public ReturnCode DeleteReadCondition(IReadCondition condition)
         {
             ReturnCode result = ReturnCode.BadParameter;
-            ReadCondition conditionObj = condition as ReadCondition;
 
+            ReadCondition conditionObj = condition as ReadCondition;
             if (conditionObj != null)
             {
                 result = Gapi.DataReader.delete_readcondition(
-                    GapiPeer,
-                    conditionObj.GapiPeer);
+                        GapiPeer,
+                        conditionObj.GapiPeer);
             }
+
             return result;
         }
-
+        
         public ReturnCode DeleteContainedEntities()
         {
             return Gapi.DataReader.delete_contained_entities(
-                GapiPeer,
-                null,
-                IntPtr.Zero);
+                    GapiPeer,
+                    null,
+                    IntPtr.Zero);
         }
-
-        public ReturnCode SetQos(ref DataReaderQos qos)
+        
+        public ReturnCode SetQos(DataReaderQos qos)
         {
-            using (IMarshaler marshaler = new DataReaderQosMarshaler(ref qos))
+            ReturnCode result;
+
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
             {
-                return Gapi.DataReader.set_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-            }
-        }
-
-        public ReturnCode GetQos(out DataReaderQos qos)
-        {
-            qos = new DataReaderQos();
-            ReturnCode result = ReturnCode.Error;
-
-            using (DataReaderQosMarshaler marshaler = new DataReaderQosMarshaler())
-            {
-                result = Gapi.DataReader.get_qos(
-                GapiPeer,
-                marshaler.GapiPtr);
-
+                result = marshaler.CopyIn(qos);
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out qos);
+                    result = Gapi.DataReader.set_qos(GapiPeer, marshaler.GapiPtr);
                 }
             }
 
             return result;
         }
+        
+        public ReturnCode GetQos(ref DataReaderQos qos)
+        {
+            ReturnCode result;
 
+            using (OpenSplice.CustomMarshalers.DataReaderQosMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.DataReaderQosMarshaler())
+            {
+                result = Gapi.DataReader.get_qos(GapiPeer, marshaler.GapiPtr);
+                if (result == ReturnCode.Ok)
+                {
+                    marshaler.CopyOut(ref qos);
+                }
+            }
+
+            return result;
+        }
+        
         public ITopicDescription GetTopicDescription()
         {
             IntPtr gapiPtr = Gapi.DataReader.get_topicdescription(GapiPeer);
@@ -176,7 +208,7 @@ namespace DDS.OpenSplice
             ITopicDescription topicDesc = SacsSuperClass.fromUserData(gapiPtr) as ITopicDescription;
             return topicDesc;
         }
-
+        
         public ISubscriber Subscriber
         {
             get
@@ -187,91 +219,84 @@ namespace DDS.OpenSplice
                 return subscriber;
             }
         }
-
-        public ReturnCode GetSampleRejectedStatus(SampleRejectedStatus status)
+        
+        public ReturnCode GetSampleRejectedStatus(ref SampleRejectedStatus status)
         {
-            return Gapi.DataReader.get_sample_rejected_status(
-                GapiPeer,
-                status);
+            if (status == null) status = new SampleRejectedStatus();
+            return Gapi.DataReader.get_sample_rejected_status(GapiPeer, status);
         }
-
-        public ReturnCode GetLivelinessChangedStatus(LivelinessChangedStatus status)
+        
+        public ReturnCode GetLivelinessChangedStatus(ref LivelinessChangedStatus status)
         {
-            return Gapi.DataReader.get_liveliness_changed_status(
-                 GapiPeer,
-                 status);
+            if (status == null) status = new LivelinessChangedStatus();
+            return Gapi.DataReader.get_liveliness_changed_status(GapiPeer, status);
         }
-
-        public ReturnCode GetRequestedDeadlineMissedStatus(RequestedDeadlineMissedStatus status)
+        
+        public ReturnCode GetRequestedDeadlineMissedStatus(ref RequestedDeadlineMissedStatus status)
         {
-            return Gapi.DataReader.get_requested_deadline_missed_status(
-                 GapiPeer,
-                 status);
+            if (status == null) status = new RequestedDeadlineMissedStatus();
+            return Gapi.DataReader.get_requested_deadline_missed_status(GapiPeer, status);
         }
-
-        public ReturnCode GetRequestedIncompatibleQosStatus(RequestedIncompatibleQosStatus status)
+        
+        public ReturnCode GetRequestedIncompatibleQosStatus(ref RequestedIncompatibleQosStatus status)
         {
-            return Gapi.DataReader.get_requested_incompatible_qos_status(
-                 GapiPeer,
-                 status);
+            if (status == null) status = new RequestedIncompatibleQosStatus();
+            return Gapi.DataReader.get_requested_incompatible_qos_status(GapiPeer, status);
         }
-
-        public ReturnCode GetSubscriptionMatchedStatus(SubscriptionMatchedStatus status)
+        
+        public ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status)
         {
-            return Gapi.DataReader.get_subscription_matched_status(
-                 GapiPeer,
-                 status);
+            if (status == null) status = new SubscriptionMatchedStatus();
+            return Gapi.DataReader.get_subscription_matched_status(GapiPeer, status);
         }
-
-        public ReturnCode GetSampleLostStatus(SampleLostStatus status)
+        
+        public ReturnCode GetSampleLostStatus(ref SampleLostStatus status)
         {
-            return Gapi.DataReader.get_sample_lost_status(
-                 GapiPeer,
-                 status);
+            if (status == null) status = new SampleLostStatus();
+            return Gapi.DataReader.get_sample_lost_status(GapiPeer, status);
         }
-
+        
         public ReturnCode WaitForHistoricalData(Duration maxWait)
         {
-            return Gapi.DataReader.wait_for_historical_data(
-                GapiPeer,
-                ref maxWait);
+            return Gapi.DataReader.wait_for_historical_data(GapiPeer, ref maxWait);
         }
-
-        public ReturnCode GetMatchedPublications(out InstanceHandle[] publicationHandles)
+        
+        public ReturnCode GetMatchedPublications(ref InstanceHandle[] publicationHandles)
         {
-            publicationHandles = null;
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
             using (SequenceInstanceHandleMarshaler marshaler = new SequenceInstanceHandleMarshaler())
             {
                 result = Gapi.DataReader.get_matched_publications(
-                    GapiPeer,
-                    marshaler.GapiPtr);
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out publicationHandles);
+                    marshaler.CopyOut(ref publicationHandles);
                 }
             }
 
             return result;
         }
 
-        public ReturnCode GetMatchedPublicationData(out PublicationBuiltinTopicData publicationData, InstanceHandle publicationHandle)
+        public ReturnCode GetMatchedPublicationData(
+                ref PublicationBuiltinTopicData publicationData, 
+                InstanceHandle publicationHandle)
         {
-            publicationData = new PublicationBuiltinTopicData();
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result;
 
-            using (PublicationBuiltinTopicDataMarshaler marshaler = new PublicationBuiltinTopicDataMarshaler())
+            using (OpenSplice.CustomMarshalers.PublicationBuiltinTopicDataMarshaler marshaler = 
+                    new OpenSplice.CustomMarshalers.PublicationBuiltinTopicDataMarshaler())
             {
                 result = Gapi.DataReader.get_matched_publication_data(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    publicationHandle);
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        publicationHandle);
 
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(out publicationData);
+                    marshaler.CopyOut(ref publicationData);
                 }
             }
 

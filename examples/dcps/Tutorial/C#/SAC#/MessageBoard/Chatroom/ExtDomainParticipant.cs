@@ -119,26 +119,26 @@ public class ExtDomainParticipant : IDomainParticipant {
 
         /* Adapt the default SubscriberQos to read from the
            "ChatRoom" Partition. */
-        status = realParticipant.GetDefaultSubscriberQos (out subQos);
+        status = realParticipant.GetDefaultSubscriberQos (ref subQos);
         ErrorHandler.checkStatus(
             status, "DDS.DomainParticipant.GetDefaultSubscriberQos");
         subQos.Partition.Name = new string[1];
         subQos.Partition.Name[0] = partitionName;
 
         /* Create a private Subscriber for the multitopic simulator. */
-        multiSub = realParticipant.CreateSubscriber(ref subQos);
+        multiSub = realParticipant.CreateSubscriber(subQos);
         ErrorHandler.checkHandle(
             multiSub,
             "DDS.DomainParticipant.CreateSubscriber (for multitopic)");
 
         /* Create a DataReader for the FilteredMessage Topic
            (using the appropriate QoS). */
-        DataReaderQos drQos;
-        TopicQos topicQos;
-        filteredMessageTopic.RelatedTopic.GetQos(out topicQos);
-        multiSub.CopyFromTopicQos(out drQos, ref topicQos);
+        DataReaderQos drQos = new DataReaderQos();
+        TopicQos topicQos = new TopicQos();
+        filteredMessageTopic.RelatedTopic.GetQos(ref topicQos);
+        multiSub.CopyFromTopicQos(ref drQos, topicQos);
 
-        parentReader = multiSub.CreateDataReader(filteredMessageTopic, ref drQos);
+        parentReader = multiSub.CreateDataReader(filteredMessageTopic, drQos);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader (ChatMessage)");
 
@@ -155,12 +155,12 @@ public class ExtDomainParticipant : IDomainParticipant {
 
         /* Create a DataReader for the nameService Topic
            (using the appropriate QoS). */
-        DataReaderQos nsDrQos;
-        TopicQos nsQos;
-        nameServiceTopic.GetQos(out nsQos);
-        multiSub.CopyFromTopicQos(out nsDrQos, ref nsQos);
+        DataReaderQos nsDrQos = new DataReaderQos();
+        TopicQos nsQos = new TopicQos();
+        nameServiceTopic.GetQos(ref nsQos);
+        multiSub.CopyFromTopicQos(ref nsDrQos, nsQos);
 
-        parentReader = multiSub.CreateDataReader(nameServiceTopic, ref nsDrQos);
+        parentReader = multiSub.CreateDataReader(nameServiceTopic, nsDrQos);
         ErrorHandler.checkHandle(parentReader, "DDS.Subscriber.CreateDatareader (NameService)");
 
         /* Narrow the abstract parent into its typed representative. */
@@ -186,7 +186,7 @@ public class ExtDomainParticipant : IDomainParticipant {
 
         /* Create the Topic that simulates the multi-topic
            (use Qos from chatMessage).*/
-        status = chatMessageTopic.GetQos(out namedMessageQos);
+        status = chatMessageTopic.GetQos(ref namedMessageQos);
         ErrorHandler.checkStatus(status, "DDS.Topic.GetQos");
 
         /* Create the NamedMessage Topic whose samples simulate
@@ -194,32 +194,32 @@ public class ExtDomainParticipant : IDomainParticipant {
         namedMessageTopic = realParticipant.CreateTopic(
             "Chat_NamedMessage",
             type_name,
-            ref namedMessageQos);
+            namedMessageQos);
         ErrorHandler.checkHandle(
             namedMessageTopic,
             "DDS.DomainParticipant.CreateTopic (NamedMessage)");
 
         /* Adapt the default PublisherQos to write into the
            "ChatRoom" Partition. */
-        status = realParticipant.GetDefaultPublisherQos(out pubQos);
+        status = realParticipant.GetDefaultPublisherQos(ref pubQos);
         ErrorHandler.checkStatus(
             status, "DDS.DomainParticipant.get_default_publisher_qos");
         pubQos.Partition.Name = new string[1];
         pubQos.Partition.Name[0] = partitionName;
 
         /* Create a private Publisher for the multitopic simulator. */
-        multiPub = realParticipant.CreatePublisher(ref pubQos);
+        multiPub = realParticipant.CreatePublisher(pubQos);
         ErrorHandler.checkHandle(
             multiPub,
             "DDS.DomainParticipant.create_publisher (for multitopic)");
 
-        DataWriterQos nmDrQos;
-        TopicQos nmQos;
-        namedMessageTopic.GetQos(out nmQos);
-        multiPub.CopyFromTopicQos(out nmDrQos, ref nmQos);
+        DataWriterQos nmDrQos = new DataWriterQos();
+        TopicQos nmQos = new TopicQos();
+        namedMessageTopic.GetQos(ref nmQos);
+        multiPub.CopyFromTopicQos(ref nmDrQos, nmQos);
 
         /* Create a DataWriter for the multitopic. */
-        parentWriter = multiPub.CreateDataWriter(namedMessageTopic, ref nmDrQos);
+        parentWriter = multiPub.CreateDataWriter(namedMessageTopic, nmDrQos);
         ErrorHandler.checkHandle(
             parentWriter, "DDS.Publisher.CreateDatawriter (NamedMessage)");
 
@@ -293,9 +293,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreatePublisher();
     }
 
-    public IPublisher CreatePublisher(ref PublisherQos qos)
+    public IPublisher CreatePublisher(PublisherQos qos)
     {
-        return realParticipant.CreatePublisher(ref qos);
+        return realParticipant.CreatePublisher(qos);
     }
 
     public IPublisher CreatePublisher(IPublisherListener listener, StatusKind mask)
@@ -303,9 +303,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreatePublisher(listener, mask);
     }
 
-    public IPublisher CreatePublisher(ref PublisherQos qos, IPublisherListener listener, StatusKind mask)
+    public IPublisher CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask)
     {
-        return realParticipant.CreatePublisher(ref qos, listener, mask);
+        return realParticipant.CreatePublisher(qos, listener, mask);
     }
 
     public ISubscriber CreateSubscriber()
@@ -313,9 +313,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreateSubscriber();
     }
 
-    public ISubscriber CreateSubscriber(ref SubscriberQos qos)
+    public ISubscriber CreateSubscriber(SubscriberQos qos)
     {
-        return realParticipant.CreateSubscriber(ref qos);
+        return realParticipant.CreateSubscriber(qos);
     }
 
     public ISubscriber CreateSubscriber(ISubscriberListener listener, StatusKind mask)
@@ -323,9 +323,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreateSubscriber(listener, mask);
     }
 
-    public ISubscriber CreateSubscriber(ref SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
+    public ISubscriber CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask)
     {
-        return realParticipant.CreateSubscriber(ref qos, listener, mask);
+        return realParticipant.CreateSubscriber(qos, listener, mask);
     }
 
     public ReturnCode DeletePublisher(IPublisher p) {
@@ -346,9 +346,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreateTopic(topicName, typeName);
     }
 
-    public ITopic CreateTopic(string topicName, string typeName, ref TopicQos qos)
+    public ITopic CreateTopic(string topicName, string typeName, TopicQos qos)
     {
-        return realParticipant.CreateTopic(topicName, typeName, ref qos);
+        return realParticipant.CreateTopic(topicName, typeName, qos);
     }
 
     public ITopic CreateTopic(string topicName, string typeName, ITopicListener listener, StatusKind mask)
@@ -356,9 +356,9 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.CreateTopic(topicName, typeName, listener, mask);
     }
 
-    public ITopic CreateTopic(string topicName, string typeName, ref TopicQos qos, ITopicListener listener, StatusKind mask)
+    public ITopic CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask)
     {
-        return realParticipant.CreateTopic(topicName, typeName, ref qos, listener, mask);
+        return realParticipant.CreateTopic(topicName, typeName, qos, listener, mask);
     }
 
     public ReturnCode DeleteTopic(ITopic a_topic) {
@@ -411,12 +411,12 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.DeleteContainedEntities();
     }
 
-    public ReturnCode SetQos(ref DomainParticipantQos qos) {
-        return realParticipant.SetQos(ref qos);
+    public ReturnCode SetQos(DomainParticipantQos qos) {
+        return realParticipant.SetQos(qos);
     }
 
-    public ReturnCode GetQos(out DomainParticipantQos qos) {
-        return realParticipant.GetQos(out qos);
+    public ReturnCode GetQos(ref DomainParticipantQos qos) {
+        return realParticipant.GetQos(ref qos);
     }
 
     public ReturnCode SetListener(IDomainParticipantListener a_listener, StatusKind mask) {
@@ -453,28 +453,28 @@ public class ExtDomainParticipant : IDomainParticipant {
         return realParticipant.AssertLiveliness();
     }
 
-    public ReturnCode SetDefaultPublisherQos(ref PublisherQos qos) {
-        return realParticipant.SetDefaultPublisherQos(ref qos);
+    public ReturnCode SetDefaultPublisherQos(PublisherQos qos) {
+        return realParticipant.SetDefaultPublisherQos(qos);
     }
 
-    public ReturnCode GetDefaultPublisherQos(out PublisherQos qos) {
-        return realParticipant.GetDefaultPublisherQos(out qos);
+    public ReturnCode GetDefaultPublisherQos(ref PublisherQos qos) {
+        return realParticipant.GetDefaultPublisherQos(ref qos);
     }
 
-    public ReturnCode SetDefaultSubscriberQos(ref SubscriberQos qos) {
-        return realParticipant.SetDefaultSubscriberQos(ref qos);
+    public ReturnCode SetDefaultSubscriberQos(SubscriberQos qos) {
+        return realParticipant.SetDefaultSubscriberQos (qos);
     }
 
-    public ReturnCode GetDefaultSubscriberQos(out SubscriberQos qos) {
-        return realParticipant.GetDefaultSubscriberQos(out qos);
+    public ReturnCode GetDefaultSubscriberQos(ref SubscriberQos qos) {
+        return realParticipant.GetDefaultSubscriberQos(ref qos);
     }
 
-    public ReturnCode SetDefaultTopicQos(ref TopicQos qos) {
-        return realParticipant.SetDefaultTopicQos(ref qos);
+    public ReturnCode SetDefaultTopicQos(TopicQos qos) {
+        return realParticipant.SetDefaultTopicQos (qos);
     }
 
-    public ReturnCode GetDefaultTopicQos(out TopicQos qos) {
-        return realParticipant.GetDefaultTopicQos(out qos);
+    public ReturnCode GetDefaultTopicQos(ref TopicQos qos) {
+        return realParticipant.GetDefaultTopicQos(ref qos);
     }
 
     public ReturnCode GetDiscoveredParticipants(ref InstanceHandle[] handles) {

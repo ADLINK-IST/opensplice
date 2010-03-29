@@ -1,6 +1,7 @@
 # Set subsystems to be processed
 #
 SUBSYSTEMS      := framework
+SUBSYSTEMS      += dbt
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 

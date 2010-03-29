@@ -17,12 +17,12 @@ namespace test.sacs
             Test.Framework.TestResult result;
             string expResult = "Setting/resolving default PublisherQos succeeded.";
             DDS.IDomainParticipant participant;
-            DDS.PublisherQos pubQosHolder;
+			DDS.PublisherQos pubQosHolder = null;
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
 
-            if (participant.GetDefaultPublisherQos(out pubQosHolder) != DDS.ReturnCode.Ok)
+            if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Publisher qos could not be resolved.";
                 return result;

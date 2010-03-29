@@ -31,13 +31,6 @@ namespace DDS
     // ----------------------------------------------------------------------
     // Types & Pre-defined values
     // ----------------------------------------------------------------------
-    public struct BuiltinTopicKey
-    {
-        public uint SystemId;
-        public uint LocalId;
-        public uint Serial;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public struct Duration
     {
@@ -403,7 +396,7 @@ namespace DDS
         public const string Scheduling = "Scheduling";
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+/*    [StructLayout(LayoutKind.Sequential)]
     public struct DomainParticipantQos
     {
         public UserDataQosPolicy UserData;
@@ -728,7 +721,7 @@ namespace DDS
         public PartitionQosPolicy Partition;
         public TopicDataQosPolicy TopicData;
         public GroupDataQosPolicy GroupData;
-    }
+    }*/
 
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public class SampleInfo

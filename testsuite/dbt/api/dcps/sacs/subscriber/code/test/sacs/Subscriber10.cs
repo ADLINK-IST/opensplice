@@ -20,9 +20,9 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.ISubscriber subscriber;
-            DDS.DataReaderQos dataReaderQos;
+			DDS.DataReaderQos dataReaderQos = null;
             DDS.IDomainParticipant participant;
-            DDS.DataReaderQos qosHolder1;
+            DDS.DataReaderQos qosHolder1 = null;
             DDS.ITopic topic;
             string expResult = "copy_from_topic_qos rejects TOPIC_QOS_DEFAULT with correct code.";
             Test.Framework.TestResult result;
@@ -33,7 +33,7 @@ namespace test.sacs
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
-            if (subscriber.GetDefaultDataReaderQos(out dataReaderQos) != DDS.ReturnCode.Ok)
+            if (subscriber.GetDefaultDataReaderQos(ref dataReaderQos) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos";
                 return result;
@@ -42,15 +42,9 @@ namespace test.sacs
             dataReaderQos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             dataReaderQos.History.Depth = 150;
 
-            // TODO: JLS, DDS.TopicQos.Default does not exist
-            DDS.TopicQos topicQosHolder;
-            rc = participant.GetDefaultTopicQos(out topicQosHolder);
-            if (rc != DDS.ReturnCode.Ok)
-            {
-                result.Result = "Could not retrieve topicQos";
-                return result;
-            }
-            rc = subscriber.CopyFromTopicQos(out qosHolder1,ref topicQosHolder);
+            // TODO: JLS, Verify the intent of this BadParameter test.
+            DDS.TopicQos topicQosHolder = null;
+            rc = subscriber.CopyFromTopicQos(ref qosHolder1, topicQosHolder);
             if (rc != DDS.ReturnCode.BadParameter)
             {
                 result.Result = "copy_from_topic_qos returns wrong code (RETCODE = " + rc + ").";

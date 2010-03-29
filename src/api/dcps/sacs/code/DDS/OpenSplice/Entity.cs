@@ -29,12 +29,12 @@ namespace DDS.OpenSplice
         {
             // Base class handles everything.
         }
-
+        
         public ReturnCode Enable()
         {
             return Gapi.Entity.enable(GapiPeer);
         }
-
+        
         public IStatusCondition StatusCondition
         {
             get
@@ -48,7 +48,7 @@ namespace DDS.OpenSplice
                 return statusCondition;
             }
         }
-
+        
         public StatusKind StatusChanges
         {
             get
@@ -56,7 +56,7 @@ namespace DDS.OpenSplice
                 return Gapi.Entity.get_status_changes(GapiPeer);
             }
         }
-
+        
         public InstanceHandle InstanceHandle
         {
             get

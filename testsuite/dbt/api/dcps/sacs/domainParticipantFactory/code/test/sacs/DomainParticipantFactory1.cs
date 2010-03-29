@@ -16,7 +16,7 @@ namespace test.sacs
             Test.Framework.TestVerdict expVerdict = Test.Framework.TestVerdict.Pass;
             string expResult = "Resolving DomainParticipantFactory succeeded.";
             DDS.DomainParticipantFactory factory;
-            factory = DDS.DomainParticipantFactory.GetInstance();
+            factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipantFactory could not be initialised."

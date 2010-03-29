@@ -51,7 +51,9 @@ namespace DDS.OpenSplice
         }
 
         // ITopicListener
-        private void Topic_PrivateOnInconsistentTopic(IntPtr entityData, IntPtr topicPtr, InconsistentTopicStatus status)
+        private void Topic_PrivateOnInconsistentTopic(
+                IntPtr entityData, IntPtr topicPtr, 
+                InconsistentTopicStatus status)
         {
             if (listener != null)
             {
@@ -64,7 +66,10 @@ namespace DDS.OpenSplice
         }
 
         // IDataWriterListener
-        private void PrivateOfferedDeadlineMissed(IntPtr entityData, IntPtr writerPtr, OfferedDeadlineMissedStatus status)
+        private void PrivateOfferedDeadlineMissed(
+                IntPtr entityData, 
+                IntPtr writerPtr, 
+                OfferedDeadlineMissedStatus status)
         {
             if (listener != null)
             {
@@ -76,7 +81,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateLivelinessLost(IntPtr entityData, IntPtr writerPtr, LivelinessLostStatus status)
+        private void PrivateLivelinessLost(
+                IntPtr entityData, 
+                IntPtr writerPtr, 
+                LivelinessLostStatus status)
         {
             if (listener != null)
             {
@@ -88,7 +96,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateOfferedIncompatibleQos(IntPtr entityData, IntPtr writerPtr, Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
+        private void PrivateOfferedIncompatibleQos(
+                IntPtr entityData, 
+                IntPtr writerPtr, 
+                Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
         {
             if (listener != null)
             {
@@ -97,17 +108,23 @@ namespace DDS.OpenSplice
                     IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
 
                     OfferedIncompatibleQosStatus status = new OfferedIncompatibleQosStatus();
+                    
                     status.TotalCount = gapi_status.total_count;
                     status.TotalCountChange = gapi_status.total_count_change;
                     status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, out status.Policies);
+                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(
+                            gapi_status.policies, 
+                            ref status.Policies);
 
                     listener.OnOfferedIncompatibleQos(dataWriter, status);
                 }
             }
         }
 
-        private void PrivatePublicationMatched(IntPtr entityData, IntPtr writerPtr, PublicationMatchedStatus status)
+        private void PrivatePublicationMatched(
+                IntPtr entityData, 
+                IntPtr writerPtr, 
+                PublicationMatchedStatus status)
         {
             if (listener != null)
             {
@@ -133,7 +150,10 @@ namespace DDS.OpenSplice
         }
 
         // IDataReaderListener
-        private void PrivateRequestedDeadlineMissed(IntPtr entityData, IntPtr enityPtr, RequestedDeadlineMissedStatus status)
+        private void PrivateRequestedDeadlineMissed(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                RequestedDeadlineMissedStatus status)
         {
             if (listener != null)
             {
@@ -145,7 +165,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateRequestedIncompatibleQos(IntPtr entityData, IntPtr enityPtr, Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
+        private void PrivateRequestedIncompatibleQos(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
         {
             if (listener != null)
             {
@@ -154,17 +177,23 @@ namespace DDS.OpenSplice
                     IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
 
                     RequestedIncompatibleQosStatus status = new RequestedIncompatibleQosStatus();
+
                     status.TotalCount = gapi_status.total_count;
                     status.TotalCountChange = gapi_status.total_count_change;
                     status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, out status.Policies);
+                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(
+                            gapi_status.policies, 
+                            ref status.Policies);
 
                     listener.OnRequestedIncompatibleQos(dataReader, status);
                 }
             }
         }
 
-        private void PrivateSampleRejected(IntPtr entityData, IntPtr enityPtr, SampleRejectedStatus status)
+        private void PrivateSampleRejected(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                SampleRejectedStatus status)
         {
             if (listener != null)
             {
@@ -176,7 +205,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateLivelinessChanged(IntPtr entityData, IntPtr enityPtr, LivelinessChangedStatus status)
+        private void PrivateLivelinessChanged(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                LivelinessChangedStatus status)
         {
             if (listener != null)
             {
@@ -200,7 +232,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateSubscriptionMatched(IntPtr entityData, IntPtr enityPtr, SubscriptionMatchedStatus status)
+        private void PrivateSubscriptionMatched(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                SubscriptionMatchedStatus status)
         {
             if (listener != null)
             {
@@ -212,7 +247,10 @@ namespace DDS.OpenSplice
             }
         }
 
-        private void PrivateSampleLost(IntPtr entityData, IntPtr enityPtr, SampleLostStatus status)
+        private void PrivateSampleLost(
+                IntPtr entityData, 
+                IntPtr enityPtr, 
+                SampleLostStatus status)
         {
             if (listener != null)
             {

@@ -15,6 +15,6 @@
 #include "idl_program.h"
 
 idl_program
-idl_genSACSTypedClassDefsProgram(c_char *tmplPrefix, os_iter *metaList);
+idl_genSACSTypedClassDefsProgram(void *userData);
 
 #endif /* IDL_GENSACSTYPEDCLASSDEFS_H */

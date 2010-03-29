@@ -49,7 +49,7 @@ namespace test.sacs
                 result.Result = "Could not attach condition.";
                 return result;
             }
-            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, ref drQos, null, 0);
+            reader2 = (mod.tstDataReader)subscriber.CreateDataReader(topic, drQos);//, null, 0);
             if (reader2 == null)
             {
                 result.Result = "Could not create datareader.";
@@ -163,7 +163,7 @@ namespace test.sacs
                 result.Result = "delete_datareader succeeded, but should not.";
                 return result;
             }
-            rc = waitset.GetConditions(out conditionHolder);
+            rc = waitset.GetConditions(ref conditionHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed.";
@@ -185,7 +185,7 @@ namespace test.sacs
                 result.Result = "delete_readcondition failed.";
                 return result;
             }
-            rc = waitset.GetConditions(out conditionHolder);
+            rc = waitset.GetConditions(ref conditionHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed(2).";
@@ -297,7 +297,7 @@ namespace test.sacs
                 result.Result = "delete_readcondition failed(q7).";
                 return result;
             }
-            rc = waitset.GetConditions(out conditionHolder);
+            rc = waitset.GetConditions(ref conditionHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "get_conditions failed(q7).";

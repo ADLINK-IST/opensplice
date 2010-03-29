@@ -22,8 +22,8 @@ namespace test.sacs
         {
             DDS.ISubscriber subscriber;
             DDS.DataReaderQos dataReaderQos;
-            DDS.DataReaderQos qosHolder1;
-            DDS.DataReaderQos qosHolder2;
+			DDS.DataReaderQos qosHolder1 = null;
+			DDS.DataReaderQos qosHolder2 = null;
             DDS.IDataReader reader;
             DDS.ITopic topic;
             string expResult = "Default DataReadearQos is used when DATAREADER_QOS_DEFAULT is specified.";
@@ -34,7 +34,7 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             topic = (DDS.ITopic)this.ResolveObject("topic");
 
-            if (subscriber.GetDefaultDataReaderQos(out qosHolder1) != DDS.ReturnCode.Ok)
+            if (subscriber.GetDefaultDataReaderQos(ref qosHolder1) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve default DataReaderQos";
                 return result;
@@ -43,10 +43,8 @@ namespace test.sacs
             dataReaderQos = qosHolder1;
             dataReaderQos.History.Kind = DDS.HistoryQosPolicyKind.KeepAllHistoryQos;
             dataReaderQos.History.Depth = 150;
-            subscriber.SetDefaultDataReaderQos(ref dataReaderQos);
+            subscriber.SetDefaultDataReaderQos(dataReaderQos);
 
-            // TODO: JLS, DDS.DataReaderQos.Default does not exist
-            //LF, this is different than in Java. Supplying createDataReader only with a topic, creates a reader with the subscribers default_reader_qos, which have been altered previously in this test.            
             reader = subscriber.CreateDataReader(topic);
             if (reader == null)
             {
@@ -54,13 +52,13 @@ namespace test.sacs
                 return result;
             }
 
-            if (reader.GetQos(out qosHolder2) != DDS.ReturnCode.Ok)
+            if (reader.GetQos(ref qosHolder2) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Could not retrieve DataReader qos";
                 return result;
             }
             
-            if (test.sacs.QosComparer.DataReaderQosEquals(qosHolder1, qosHolder2))
+            if (!test.sacs.QosComparer.DataReaderQosEquals(qosHolder1, qosHolder2))
             {
                 result.Result = "Default DataReadearQos is not used when DATAREADER_QOS_DEFAULT is specified." + qosHolder2.History.Kind + "  ::  " + qosHolder1.History.Kind;
                 return result;

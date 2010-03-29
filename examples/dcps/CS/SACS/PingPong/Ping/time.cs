@@ -8,39 +8,40 @@ using System;
 
 namespace PingPong
 {
-	
-	
-	public class time
-	{
+    public class time
+    {
+        public long _time;
 
-	public long _time;
+        public time()
+        {
+            _time = 0L;
+        }
 
-	public time() {
-		_time = 0L;
-	}
+        public time(long t)
+        {
+            _time = t;
+        }
 
-	public time(long t) {
-		_time = t;
-	}
+        public void timeGet()
+        {
+            _time = DateTime.Now.Ticks / 1000L;
+        }
 
-	public void timeGet() {
-		_time = DateTime.Now.Ticks / 1000L;
-	}
+        public long get()
+        {
+            return _time;
+        }
 
-	public long get() {
-		return _time;
-	}
+        public void set(long t)
+        {
+            _time = t;
+        }
 
-	public void set(long t) {
-		_time = t;
-	}
+        public long sub(time t)
+        {
+            long nt = _time - t.get();
 
-	public long sub(time t) {
-		long nt = _time - t.get();
-
-		return nt;
-	}
-
-}
-
+            return nt;
+        }
+    }
 }
