@@ -124,7 +124,7 @@ FilterFilename(const DDS_StdString& fullname)
 void
 DDSError(const DDS_StdString& message)
 {
-   cerr << "idlc" << ": error: " << message << nl;
+   cerr << "cppgen: error: " << message << nl;
 }
 
 void

@@ -103,10 +103,11 @@ v_writerGroupSetAdd (
 
     type = v_writerGroup_t(c_getBase(g));
     proxy = c_new(type);
+
     if (proxy) {
         proxy->group = c_keep(g);
         proxy->next = set->firstGroup;
-        proxy->groupInstanceCache = v_writerCacheNew(v_objectKernel(g),
+	    proxy->targetCache = v_writerCacheNew(v_objectKernel(g),
                                                  V_CACHE_OWNER);
         set->firstGroup = proxy;
     } else {
@@ -259,6 +260,8 @@ struct groupWriteArg {
     v_writerInstance instance;
     v_message message;
     v_writeResult result;
+    v_resendScope resendScope;
+    v_resendScope rejectScope;
 };
 
 static c_bool
@@ -278,9 +281,10 @@ groupWrite(
     instance = NULL;
     result = v_groupWrite(proxy->group, message, &instance, V_NETWORKID_LOCAL);
     if (instance != NULL) {
-        item = v_writerCacheItemNew(proxy->groupInstanceCache,instance);
-        v_writerCacheInsert(proxy->groupInstanceCache,item);
-        v_writerCacheInsert(a->instance->groupInstanceCache,item);
+        item = v_writerCacheItemNew(proxy->targetCache,instance);
+        v_writerCacheInsert(proxy->targetCache,item);
+        v_writerCacheInsert(a->instance->targetCache,item);
+        v_groupInstanceRegisterSource(instance,item);
         c_free(instance);
         c_free(item);
     }
@@ -288,6 +292,11 @@ groupWrite(
         if ((result == V_WRITE_REJECTED) ||
             (a->result == V_WRITE_SUCCESS)) {
             a->result = result;
+            /* Force resend to all because v_groupWrite does not return
+             * the resend scope.
+             */
+//            a->resendScope = V_RESEND_ALL;
+            a->rejectScope = V_RESEND_ALL;
         }
     }
 
@@ -304,11 +313,14 @@ groupInstanceWrite (
     struct groupWriteArg *a = (struct groupWriteArg *)arg;
 
     item = v_writerCacheItem(node);
-    result = v_groupInstanceWrite(item->instance,v_message(a->message));
-    if (result != V_WRITE_SUCCESS) {
-        if ((result == V_WRITE_REJECTED) ||
-            (a->result == V_WRITE_SUCCESS)) {
-            a->result = result;
+	if (item->instance) {
+        result = v_groupInstanceWrite(item->instance,v_message(a->message));
+        if (result != V_WRITE_SUCCESS) {
+            if ((result == V_WRITE_REJECTED) ||
+                (a->result == V_WRITE_SUCCESS)) {
+                a->result = result;
+                a->rejectScope = V_RESEND_ALL;
+            }
         }
     }
     return TRUE;
@@ -319,17 +331,24 @@ groupInstanceResend (
     v_cacheNode node,
     c_voidp arg)
 {
-    v_writeResult result;
+    v_writeResult result = V_WRITE_SUCCESS;
     v_writerCacheItem item;
+    v_resendScope scope;
     struct groupWriteArg *a = (struct groupWriteArg *)arg;
 
     item = v_writerCacheItem(node);
 
-    result = v_groupInstanceResend(item->instance,v_message(a->message));
-    if (result != V_WRITE_SUCCESS) {
-        if ((result == V_WRITE_REJECTED) ||
-            (a->result == V_WRITE_SUCCESS)) {
-            a->result = result;
+	if (item->instance) {
+        scope = a->resendScope;
+        result = v_groupInstanceResend(item->instance,
+                                       v_message(a->message),
+                                       &scope);
+        a->rejectScope |= scope;
+        if (result != V_WRITE_SUCCESS) {
+            if ((result == V_WRITE_REJECTED) ||
+                (a->result == V_WRITE_SUCCESS)) {
+                a->result = result;
+            }
         }
     }
     return TRUE;
@@ -359,7 +378,6 @@ connectInstance(
     v_writerGroup proxy = (v_writerGroup)arg;
     v_writer w = v_writer(i->writer);
     v_message message;
-    v_writerSample sample, found;
     struct groupWriteArg grouparg;
 
     message = v_writerInstanceCreateMessage(i);
@@ -373,17 +391,9 @@ connectInstance(
     grouparg.message = message;
     grouparg.instance = i;
     grouparg.result = V_WRITE_SUCCESS;
+    grouparg.resendScope = V_RESEND_ALL;
     groupWrite(proxy, &grouparg);
-    if (grouparg.result == V_WRITE_INTRANSIT) {
-        sample = v_writerSampleNew(w, message);
 
-        if (sample) {
-            found = v_writerInstanceInsert(i, sample);
-            v_writerSampleSetSentBefore(found, TRUE);
-            c_free(found);
-            c_free(sample);
-        }
-    }
     c_free(message);
 
     return TRUE;
@@ -407,23 +417,22 @@ writeGroupInstance(
     v_groupInstance instance;
 
     instance = v_groupInstance(item->instance);
-    if (v_groupInstanceOwner(instance) == a->group) {
-        /* I will never get a rejected status, since datareaders don't need to
-         * store the message.
-         * I can get an INTRANSIT status, in case of an unreliable network.
-         * Again we accep the fact that we will temporarily exceed resource
-         * limits.
-         */
-        wr = v_groupWrite(instance->group,
-                          a->message,
-                          &instance,
-                          V_NETWORKID_ANY);
-
-        assert(wr != V_WRITE_REJECTED);
-        if (wr == V_WRITE_INTRANSIT) {
-            a->keep = TRUE;
+    if (instance) {
+        if (v_groupInstanceOwner(instance) == a->group) {
+            /* I will never get a rejected status, since datareaders don't
+             * need to store the message.
+             * I can get an INTRANSIT status, in case of an unreliable network.
+             * Again we accep the fact that we will temporarily exceed resource
+             * limits.
+             */
+            wr = v_groupWrite(instance->group,
+                              a->message,
+                              &instance,
+                              V_NETWORKID_ANY);
+            result = FALSE;
+        } else {
+            result = TRUE;
         }
-        result = FALSE;
     } else {
         result = TRUE;
     }
@@ -476,7 +485,7 @@ disconnectInstance(
         grouparg.message = message;
         grouparg.keep = FALSE;
         grouparg.group = proxy->group;
-        v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
+        v_writerCacheWalk(i->targetCache, writeGroupInstance, &grouparg);
         if (grouparg.keep) {
             sample = v_writerSampleNew(w, message);
 
@@ -507,7 +516,7 @@ disconnectInstance(
         grouparg.message = message;
         grouparg.keep = FALSE;
         grouparg.group = proxy->group;
-        v_writerCacheWalk(i->groupInstanceCache, writeGroupInstance, &grouparg);
+        v_writerCacheWalk(i->targetCache, writeGroupInstance, &grouparg);
         if (grouparg.keep) {
             sample = v_writerSampleNew(w, message);
 
@@ -559,28 +568,22 @@ writerResend(
         grouparg.message = message;
         grouparg.instance = instance;
         grouparg.result = V_WRITE_SUCCESS;
+        grouparg.resendScope = V_RESEND_ALL;
+        grouparg.rejectScope = 0;
 
         if (implicit) {
             v_writerGroupSetWalk(&writer->groupSet,groupWrite,&grouparg);
         } else {
-            v_writerCacheWalk(instance->groupInstanceCache,
+            v_writerCacheWalk(instance->targetCache,
                               groupInstanceWrite,&grouparg);
         }
         result = grouparg.result;
-        if (result == V_WRITE_INTRANSIT) {
-            sample = v_writerSampleNew(writer,message);
-
-            if (sample) {
-                v_writerSampleSetSentBefore(sample, TRUE);
-                v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
-                keepSample(writer,instance,sample);
-                c_free(sample);
-            }
-        } else if (result == V_WRITE_REJECTED) {
+        if (result == V_WRITE_REJECTED) {
             sample = v_writerSampleNew(writer,message);
             if (sample) {
                 v_writerSampleSetSentBefore(sample, TRUE);
-                v_writerSampleResend(sample);
+//                v_writerSampleResend(sample,grouparg.resendScope);
+                v_writerSampleResend(sample,grouparg.rejectScope);
                 keepSample(writer,instance,sample);
                 c_free(sample);
             }
@@ -606,6 +609,8 @@ writerWrite(
     grouparg.message = message;
     grouparg.instance = instance;
     grouparg.result = V_WRITE_SUCCESS;
+    grouparg.resendScope = V_RESEND_ALL;
+    grouparg.rejectScope = 0;
 
     if (v_publisherIsSuspended(v_publisher(writer->publisher))) {
       /* The message is not written to the group(s), but instead kept in the
@@ -629,25 +634,17 @@ writerWrite(
             if (implicit) {
                 v_writerGroupSetWalk(&writer->groupSet,groupWrite,&grouparg);
             } else {
-                v_writerCacheWalk(instance->groupInstanceCache,
+                v_writerCacheWalk(instance->targetCache,
                                   groupInstanceWrite,&grouparg);
             }
             result = grouparg.result;
-            if (result == V_WRITE_INTRANSIT) {
+            if (result == V_WRITE_REJECTED) {
                 sample = v_writerSampleNew(writer,message);
 
                 if (sample) {
                     v_writerSampleSetSentBefore(sample, TRUE);
-                    v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
-                    keepSample(writer,instance,sample);
-                    c_free(sample);
-                }
-            } else if (result == V_WRITE_REJECTED) {
-                sample = v_writerSampleNew(writer,message);
-
-                if (sample) {
-                    v_writerSampleSetSentBefore(sample, TRUE);
-                    v_writerSampleResend(sample);
+//                    v_writerSampleResend(sample,grouparg.resendScope);
+                    v_writerSampleResend(sample,grouparg.rejectScope);
                     keepSample(writer,instance,sample);
                     c_free(sample);
                 }
@@ -656,7 +653,8 @@ writerWrite(
             sample = v_writerSampleNew(writer,message);
 
             if (sample) {
-                v_writerSampleResend(sample);
+//                v_writerSampleResend(sample,grouparg.resendScope);
+                v_writerSampleResend(sample,grouparg.rejectScope);
                 keepSample(writer,instance,sample);
                 c_free(sample);
             }
@@ -956,7 +954,7 @@ writerUnregister(
         } else {
             found = c_remove(w->instances,instance,NULL,NULL);
             assert(found == instance);
-            c_free(found);
+            v_writerInstanceFree(found);
             v_writerInstanceFree(instance);
             result = V_WRITE_PRE_NOT_MET;
         }
@@ -1008,11 +1006,11 @@ writerUnregister(
                 found = c_remove(w->instances,instance,NULL,NULL);
                 /* Instance is removed from writer, so also subtract related
                  * statistics. */
-                UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(w, instance);
                 assert(found == instance);
-                v_cacheDeinit(v_cache(instance->groupInstanceCache));
+                UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(w, instance);
+                v_writerCacheDeinit(instance->targetCache);
                 v_publicFree(v_public(instance));
-                c_free(found);
+                v_writerInstanceFree(found);
             } else {
                 v_writerInstanceUnregister(instance);
                 UPDATE_WRITER_STATISTICS(w, instance, oldState);
@@ -1020,7 +1018,7 @@ writerUnregister(
         } else {
             sample = v_writerSampleNew(w,message);
             if (sample) {
-                v_writerSampleResend(sample);
+                v_writerSampleResend(sample,V_RESEND_ALL);
                 keepSample(w,instance,sample);
                 v_writerInstanceUnregister(instance);
                 UPDATE_WRITER_STATISTICS(w, instance, oldState);
@@ -1130,7 +1128,7 @@ unpublish(
         proxy = v_writerGroupSetRemove(&w->groupSet,g);
         assert(proxy != NULL);
         c_tableWalk(w->instances, disconnectInstance, proxy);
-        v_writerCacheDeinit(proxy->groupInstanceCache);
+        v_writerCacheDeinit(proxy->targetCache);
         c_free(proxy);
         c_free(g);
     }
@@ -1516,7 +1514,7 @@ removeFromGroup (
 
     c_tableWalk(w->instances, disconnectInstance, g);
 
-    v_writerCacheDeinit(g->groupInstanceCache);
+    v_writerCacheDeinit(g->targetCache);
     return TRUE;
 }
 
@@ -1528,7 +1526,7 @@ reconnectToGroup(
     v_writer w = v_writer(arg);
 
     c_tableWalk(w->instances, disconnectInstance, g);
-    v_writerCacheDeinit(g->groupInstanceCache);
+    v_writerCacheDeinit(g->targetCache);
     c_tableWalk(w->instances, connectInstance, g);
     return TRUE;
 }
@@ -1587,12 +1585,14 @@ v_writerFree(
 static c_bool
 instanceFree(
     c_object o,
-    c_voidp arg)
+    c_voidp writer)
 {
-    if (arg != NULL) {
-        /* suppress warnings */
-    }
+    v_writerInstance instance = v_writerInstance(o);
+
+    UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(writer, instance);
+    v_writerCacheDeinit(instance->targetCache);
     v_publicFree(o);
+
     return TRUE;
 }
 
@@ -1605,7 +1605,7 @@ v_writerDeinit(
     }
     assert(C_TYPECHECK(w,v_writer));
 
-    c_tableWalk(w->instances,instanceFree,NULL);
+    c_tableWalk(w->instances,instanceFree,w);
     v_deadLineInstanceListFree(w->deadlineList);
     v_observerDeinit(v_observer(w));
 }
@@ -1653,7 +1653,7 @@ v_writerUnPublishGroup(
     proxy = v_writerGroupSetRemove(&writer->groupSet, group);
     assert(proxy != NULL);
     c_tableWalk(writer->instances, disconnectInstance, proxy);
-    v_writerCacheDeinit(proxy->groupInstanceCache);
+    v_writerCacheDeinit(proxy->targetCache);
     c_free(proxy);
 
     v_observerUnlock(v_observer(writer));
@@ -2063,13 +2063,18 @@ v_writerWrite(
         if (w->deliveryGuard != NULL) {
             /* Collect all currently known connected synchronous DataReaders */
             waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
+            if (waitlist) {
+                v_stateSet(v_nodeState(message),L_SYNCHRONOUS);
+            }
         }
         result = writerWrite(instance,message,implicit);
+#if 0
         if (result == V_WRITE_SUCCESS) {
             /* Successful delivered to all so no need to wait. */
             v_deliveryWaitListFree(waitlist);
             waitlist = NULL;
         }
+#endif
         v_stateClear(instance->state, L_DISPOSED);
         deadlineUpdate(w, instance);
         UPDATE_WRITER_STATISTICS(w, instance, oldState);
@@ -2404,7 +2409,6 @@ resendInstance(
     c_bool proceed = TRUE;
 
     writer = v_writer(instance->writer);
-
     assert(!v_writerInstanceTestState(instance, L_EMPTY));
     if (!v_writerInstanceTestState(instance, L_EMPTY)) {
         sample = v_writerSample(instance->last);
@@ -2427,20 +2431,24 @@ resendInstance(
                     grouparg.instance = instance;
                     grouparg.message = message;
                     grouparg.result = V_WRITE_SUCCESS;
+                    grouparg.rejectScope = 0;
 
                     if(v_writerSampleHasBeenSentBefore(sample)){
-                        v_writerCacheWalk(instance->groupInstanceCache,
+                        grouparg.resendScope = sample->resendScope;
+                        v_writerCacheWalk(instance->targetCache,
                                       groupInstanceResend,
                                       &grouparg);
                     } else {
-                        v_writerCacheWalk(instance->groupInstanceCache,
+                        grouparg.resendScope = V_RESEND_ALL;
+                        v_writerCacheWalk(instance->targetCache,
                                       groupInstanceWrite,
                                       &grouparg);
 
                         v_writerSampleSetSentBefore(sample, TRUE);
                     }
                     if (grouparg.result == V_WRITE_REJECTED) {
-                        v_writerSampleResend(sample);
+//                        v_writerSampleResend(sample,grouparg.resendScope);
+                        v_writerSampleResend(sample,grouparg.rejectScope);
                         /* The sample could not be delivered because
                          * of the lack of resources at the receiver.
                          * Therefore it is of no use to try to resend
@@ -2448,9 +2456,6 @@ resendInstance(
                          * to abort resending for this writer.
                          */
                         proceed = FALSE;
-                    }
-                    if (grouparg.result == V_WRITE_INTRANSIT) {
-                        v_writerSampleKeep(sample,_INTRANSIT_DECAY_COUNT_);
                     }
                 break;
                 case V_SAMPLE_KEEP:
@@ -2505,8 +2510,9 @@ v_writerResend(
             found = c_remove(writer->instances,instance,NULL,NULL);
             assert(found == instance);
             UPDATE_WRITER_STATISTICS_REMOVE_INSTANCE(writer, instance);
-            c_free(found);
+            v_writerCacheDeinit(instance->targetCache);
             v_publicFree(v_public(instance));
+            v_writerInstanceFree(found);
         }
         /*NK: Always free because it has been kept in the emptyList iterator!*/
         v_writerInstanceFree(instance);

@@ -53,8 +53,8 @@ typedef enum v_writerSampleStatus {
 #define v_writerSampleKeep(_this,decayCount) \
         _v_writerSampleKeep(v_writerSample(_this),decayCount)
 
-#define v_writerSampleResend(_this) \
-        _v_writerSampleResend(v_writerSample(_this))
+#define v_writerSampleResend(_this, resendScope) \
+        _v_writerSampleResend(v_writerSample(_this), resendScope)
 
 #define v_writerSampleSetSentBefore(_this, sentBefore) \
         _v_writerSampleSetSentBefore(_this, sentBefore)
@@ -86,7 +86,8 @@ _v_writerSampleKeep(
 
 void
 _v_writerSampleResend(
-    v_writerSample _this);
+    v_writerSample _this,
+    v_resendScope resendScope);
 
 void
 _v_writerSampleSetSentBefore(

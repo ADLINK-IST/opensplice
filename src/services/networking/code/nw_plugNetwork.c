@@ -100,6 +100,8 @@ nw_plugNetworkInitializePartitions(
     u_cfElement partitionElement;
     u_cfAttribute attrConnected;
     c_bool connected;
+    u_cfAttribute attrCompression;
+    c_bool compression;
     u_cfAttribute attrAddress;
     char *partitionAddress;
     sk_addressType addressType;
@@ -143,6 +145,18 @@ nw_plugNetworkInitializePartitions(
         } else {
             connected = NWCF_DEF_Connected;
         }
+        attrCompression = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_Compression);
+        if (attrCompression != NULL) {
+            u_cfAttributeBoolValue(attrCompression,  &compression);
+	    u_cfAttributeFree(attrCompression);
+        } else {
+            compression = NWCF_DEF_Compression;
+        }
+#ifdef OSPL_NO_ZLIB
+        if (compression) {
+            NW_REPORT_WARNING("Channel setup", "Compression configured but not enabled in this build");
+        }
+#endif  /* OSPL_NO_ZLIB */
         attrAddress = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionAddress);
         if (attrAddress != NULL) {
             u_cfAttributeStringValue(attrAddress, &partitionAddress);
@@ -157,13 +171,27 @@ nw_plugNetworkInitializePartitions(
 		u_cfAttributeFree(attrSecurityPolicy);
 	    }
 
-            nw_plugPartitionsSetPartition(partitions, partitionId,
+            nw_plugPartitionsSetPartition(
+                partitions,
+                partitionId,
                 partitionAddress,
                 securityPolicy,
-                ut_crcCalculate(plugNetwork->partitionCrc,
-								(void *)u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName),
-								strlen((char *)u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName))),
-                connected);
+                ut_crcCalculate (
+                    plugNetwork->partitionCrc,
+                    (void *)u_cfElementAttribute(
+                       partitionElement,
+                       NWCF_ATTRIB_NWPartitionName
+                    ),
+                    strlen(
+                       (char *)u_cfElementAttribute(
+                          partitionElement,
+                          NWCF_ATTRIB_NWPartitionName
+                       )
+                    )
+                ),
+                connected,
+                compression
+            );
 
         os_free(partitionAddress);
 	    os_free(securityPolicy);

@@ -1654,7 +1654,7 @@ idl_unionCaseOpenClose(
                     idl_scopedTypeName(typeSpec),
                     idl_cxxId(name));
             idl_fileOutPrintf(idl_fileCur(), "            to->%s(x);\n", idl_cxxId(name));
-            idl_fileOutPrintf(idl_fileCur(), "            delete x;");
+            idl_fileOutPrintf(idl_fileCur(), "            delete [] x;");
             idl_fileOutPrintf(idl_fileCur(), "        }\n");
             idl_fileOutPrintf(idl_fileCur(), "        break;\n");
             /* QAC EXPECT 3416; No side effect here */
@@ -1730,7 +1730,7 @@ idl_unionCaseOpenClose(
             idl_typeArraySize(idl_typeArray(typeSpec)));
         idl_arrayElements(scope, name, idl_typeArray(typeSpec), origin, "x", 1);
         idl_fileOutPrintf(idl_fileCur(), "        to->%s(x);\n", idl_cxxId(name));
-        idl_fileOutPrintf(idl_fileCur(), "        delete x;\n",
+        idl_fileOutPrintf(idl_fileCur(), "        delete [] x;\n",
             idl_scopeStackCxx(scope, "::", type_name));
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
         idl_fileOutPrintf(idl_fileCur(), "    break;\n");
@@ -1817,6 +1817,17 @@ idl_getControl(
     return &idlControl;
 }
 
+static void
+idl_artificialDefaultLabelOpenClose(
+    idl_scope scope,
+    idl_labelVal labelVal,
+    idl_typeSpec typeSpec,
+    void *userData)
+{
+    idl_fileOutPrintf (idl_fileCur(), "    default:\n");
+    idl_fileOutPrintf (idl_fileCur(), "    break;\n");
+}
+
 /**
  * Specifies the callback table for the CORBA C++ CopyIn generation functions.
  */
@@ -1842,7 +1853,7 @@ idl_genCorbaCxxCopyout = {
     NULL, /* idl_boundedStringOpenClose */
     NULL, /* idl_sequenceOpenClose */
     NULL, /* idl_constantOpenClose */
-    NULL, /* idl_artificialDefaultLabelOpenClose */
+    idl_artificialDefaultLabelOpenClose,
     NULL  /* userData */
 };
 

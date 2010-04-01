@@ -400,6 +400,7 @@ v_participantNotify(
         case V_EVENT_DATA_AVAILABLE:
         case V_EVENT_HISTORY_DELETE:
         case V_EVENT_HISTORY_REQUEST:
+        case V_EVENT_PERSISTENT_SNAPSHOT:
             /*Do nothing here.*/
         break;
         default:
@@ -577,6 +578,7 @@ v_participantResendManagerMain(
                 wp = v_proxy(c_iterTakeFirst(writerProxies));
             }
             c_iterFree(writerProxies);
+
             c_mutexLock(&p->resendMutex);
         } /* already quiting */
     }

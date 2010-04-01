@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_ERROR_H
@@ -231,7 +231,10 @@
 #define GAPI_METHOD_DELETE_VIEW                                             130
 #define GAPI_METHOD_SET_DEFAULT_DATAREADERVIEW_QOS                          131
 
-#define GAPI_METHOD_MAX                                                     132
+/* Domain */
+#define GAPI_METHOD_DELETE_DOMAIN                                           132
+
+#define GAPI_METHOD_MAX                                                     133
 #define GAPI_ERRORCODE_MAX                                                   22
 
 

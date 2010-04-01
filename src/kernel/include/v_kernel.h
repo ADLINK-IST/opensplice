@@ -1,21 +1,21 @@
 /*
- *                         OpenSplice DDS
- *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
- *
- *                     $OSPL_HOME/LICENSE
- *
- *   for full copyright notice and license terms.
- *
- */
+*                         OpenSplice DDS
+*
+*   This software and documentation are Copyright 2006 to 2009 PrismTech
+*   Limited and its licensees. All rights reserved. See file:
+*
+*                     $OSPL_HOME/LICENSE
+*
+*   for full copyright notice and license terms.
+*
+*/
 #ifndef V_KERNEL_H
 #define V_KERNEL_H
 
 /** \file kernel/include/v_kernel.h
- *  \brief This file defines the interface
- *
- */
+*  \brief This file defines the interface
+*
+*/
 
 #include "kernelModule.h"
 
@@ -36,36 +36,34 @@ extern "C" {
 #define C_REPORT(s) printf(s)
 
 /**
- * \brief The <code>c_object</code> cast method.
- *
- * This method casts an object to a <code>c_object</code> object.
- */
+* \brief The <code>c_object</code> cast method.
+*
+* This method casts an object to a <code>c_object</code> object.
+*/
 #define v_object(o)  ((v_object)(o))
 /**
- * \brief The <code>v_kernel</code> cast method.
- *
- * This method casts an object to a <code>v_kernel</code> object.
- * Before the cast is performed, if compiled with the NDEBUG flag not set,
- * the type of the object is checked to be <code>v_kernel</code> or
- * one of its subclasses.
- */
+* \brief The <code>v_kernel</code> cast method.
+*
+* This method casts an object to a <code>v_kernel</code> object.
+* Before the cast is performed, if compiled with the NDEBUG flag not set,
+* the type of the object is checked to be <code>v_kernel</code> or
+* one of its subclasses.
+*/
 #define v_kernel(o)  (C_CAST(o,v_kernel))
 /**
- * \brief The <code>v_context</code> cast method.
- *
- * This method casts an object to a <code>v_context</code> object.
- * Before the cast is performed, if compiled with the NDEBUG flag not set,
- * the type of the object is checked to be <code>v_context</code> or
- * one of its subclasses.
- */
+* \brief The <code>v_context</code> cast method.
+*
+* This method casts an object to a <code>v_context</code> object.
+* Before the cast is performed, if compiled with the NDEBUG flag not set,
+* the type of the object is checked to be <code>v_context</code> or
+* one of its subclasses.
+*/
 #define v_context(o) (C_CAST(o,v_context))
 
 #define v_objectKernel(o) (v_kernel(v_object(o)->kernel))
 #define v_objectKind(o)   (v_object(o)->kind)
 
 #define v_kernelType(_this,_kind) (v_kernel(_this)->type[_kind])
-
-#define synch_printf //
 
 typedef enum {
     V_RESULT_UNDEFINED,
@@ -207,6 +205,13 @@ v_unregisterBuiltinTopic (
     v_kernel _this,
     enum v_infoId id,
     v_message msg);
+
+OS_API v_result
+v_kernelCreatePersistentSnapshot(
+    v_kernel _this,
+    const c_char * partition_expression,
+    const c_char * topic_expression,
+    const c_char * uri);
 
 #undef OS_API
 

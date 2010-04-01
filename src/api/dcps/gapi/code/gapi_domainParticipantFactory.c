@@ -17,6 +17,7 @@
 #include "gapi_structured.h"
 #include "gapi_expression.h"
 #include "gapi_error.h"
+#include "gapi_domain.h"
 
 #include "os.h"
 #include "c_iterator.h"
@@ -28,6 +29,7 @@ C_STRUCT(_DomainParticipantFactory) {
     C_EXTENDS(_Object);
     _ObjectRegistry registry;
     c_iter DomainParticipantList;         /* List of domain participants */
+    c_iter DomainList;         /* List of domains */
     gapi_domainParticipantQos defaultQos; /* Default domain participant qos */
     os_mutex mtx;
 };
@@ -148,6 +150,7 @@ gapi_domainParticipantFactory_get_instance(
             } else {
                 os_mutexAttr attr;
                 TheFactory->DomainParticipantList = c_iterNew (NULL);
+                TheFactory->DomainList = c_iterNew (NULL);
                 memset(&TheFactory->defaultQos, 0, sizeof(TheFactory->defaultQos));
                 gapi_domainParticipantQosCopy (&gapi_domainParticipantQosDefault,
                                                &TheFactory->defaultQos);
@@ -418,6 +421,38 @@ gapi_compareDomain(
     return equal;
 }
 
+static c_equality
+gapi_compareDomainUri(
+    _Domain domain,
+    gapi_domainId_t domainId2)
+{
+    gapi_domainId_t domainId1;
+    c_equality equal;
+
+    domainId1 = _DomainGetDomainIdNoCopy(domain);
+    if((domainId2 == NULL) && (domainId1 == NULL))
+    {
+        equal = C_EQ;
+    } else if((domainId2 != NULL) && (domainId1 != NULL))
+    {
+        long len;
+
+        len = strlen(domainId1) + 1;
+        if (strncmp(domainId2, domainId1, len) == 0)
+        {
+            equal = C_EQ;
+        } else
+        {
+            equal = C_NE;
+        }
+    } else
+    {
+        equal = C_NE;
+    }
+
+    return equal;
+}
+
 gapi_domainParticipant
 gapi_domainParticipantFactory_lookup_participant(
     gapi_domainParticipantFactory _this,
@@ -606,9 +641,83 @@ gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
     gapi_domainId_t domain_id)
 {
-    return (gapi_domain) NULL;
+    _DomainParticipantFactory factory;
+    _Domain domain = NULL;
+    c_iter iterResult;
+
+    factory = gapi_domainParticipantFactoryClaim(_this, NULL);
+    if (factory)
+    {
+        if (factory == TheFactory)
+        {
+            os_mutexLock(&factory->mtx);
+            domain = c_iterResolve(factory->DomainList, gapi_compareDomainUri, (void*)domain_id);
+            if(!domain)
+            {
+                domain = _DomainNew(domain_id);
+                if(domain)
+                {
+                    iterResult = c_iterInsert(factory->DomainList, domain);
+                    if(!iterResult)
+                    {
+                        _DomainFree(domain);
+                        domain = NULL;
+                    } else
+                    {
+                        _ObjectRegistryRegister(factory->registry, (_Object)domain);
+                    }
+
+                } /* else domain remains null */
+                _ObjectRelease((_Object)domain);
+            }
+            os_mutexUnlock(&factory->mtx);
+        }/* else domain remains null */
+        _EntityRelease(factory);
+    }/* else domain remains null */
+    return (gapi_domain)_ObjectToHandle((_Object)domain);
 }
 
+/*     ReturnCode_t
+ *     delete_domain(
+ *         in Domain a_domain);
+ */
+gapi_returnCode_t
+gapi_domainParticipantFactory_delete_domain (
+    gapi_domainParticipantFactory _this,
+    gapi_domain a_domain)
+{
+    gapi_returnCode_t result;
+    _DomainParticipantFactory factory;
+    _Domain domain;
+    gapi_context context;
+
+    GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_DELETE_DOMAIN);
+    factory = gapi_domainParticipantFactoryClaim(_this, &result);
+
+    if ( factory ) {
+        os_mutexLock(&factory->mtx);
+        if ( factory != TheFactory ) {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        } else {
+            domain = gapi_domainClaimNB(a_domain, NULL);
+            if ( domain != NULL ) {
+                if (c_iterTake (factory->DomainList, domain) != domain) {
+                    result = GAPI_RETCODE_BAD_PARAMETER;
+                } else {
+                    _DomainFree (domain);
+                    domain = NULL;
+                }
+            } else {
+                result = GAPI_RETCODE_BAD_PARAMETER;
+            }
+            _EntityRelease(domain);
+        }
+        os_mutexUnlock(&factory->mtx);
+    }
+    _EntityRelease(factory);
+
+    return result;
+}
 static c_equality
 gapi_compareTypesupport(
     _DomainParticipant participant,
@@ -660,6 +769,7 @@ static void
 factoryCleanup(void)
 {
     _DomainParticipant participant;
+    _Domain domain;
     c_iter list;
     _ObjectRegistry registry;
 
@@ -669,6 +779,13 @@ factoryCleanup(void)
         while ( participant ) {
             _DomainParticipantCleanup(participant);
             participant = _DomainParticipant(c_iterTakeFirst(list));
+        }
+        list = TheFactory->DomainList;
+        domain = _Domain(c_iterTakeFirst(list));
+        while ( domain ) {
+            _ObjectClaimNotBusy((_Object)domain);
+            _DomainFree(domain);
+            domain = _Domain(c_iterTakeFirst(list));
         }
         os_mutexDestroy(&TheFactory->mtx);
         registry = TheFactory->registry;

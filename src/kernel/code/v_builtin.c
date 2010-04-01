@@ -59,6 +59,7 @@ v_builtinWritersDisable(
     _this->writers[V_PARTICIPANTINFO_ID] = NULL;
     _this->writers[V_SUBSCRIPTIONINFO_ID] = NULL;
     _this->writers[V_HEARTBEATINFO_ID] = NULL;
+    _this->writers[V_DELIVERYINFO_ID] = NULL;
 }
 
 static c_type _v_builtin_t = NULL;

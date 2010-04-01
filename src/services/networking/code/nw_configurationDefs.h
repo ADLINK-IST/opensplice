@@ -257,6 +257,7 @@
 #define NWCF_ATTRIB_NWPartitionName    "Name"
 #define NWCF_ATTRIB_NWPartitionAddress "Address"
 #define NWCF_ATTRIB_Connected          "Connected"
+#define NWCF_ATTRIB_Compression        "Compression"
 #define NWCF_ATTRIB_NWSecurity         "Security"
 #define NWCF_ATTRIB_NWSecurityPolicy   "SecurityProfile"
 #define NWCF_ATTRIB_Authentication     "Authentication"
@@ -265,6 +266,7 @@
 #define NWCF_ATTRIB_AccessControl      "AccessControl"
 #define NWCF_DEF_NWPartitionAddress    ""
 #define NWCF_DEF_Connected             (TRUE)
+#define NWCF_DEF_Compression           (FALSE)
 #define NWCF_DEF_NWSecurityPolicy      (NULL)
 
 /* ------------------------- Partitioning/PartitionMappings ----------------- */

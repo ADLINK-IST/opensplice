@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -229,12 +229,6 @@ d_publisherDeinit(
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "statusRequest writer destroyed\n");
             publisher->statusRequestWriter = NULL;
         }
-        if(publisher->sampleRequestWriter){
-            d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "destroying sampleRequest writer\n");
-            u_writerFree(publisher->sampleRequestWriter);
-            d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "sampleRequest writer destroyed\n");
-            publisher->sampleRequestWriter = NULL;
-        }
         if(publisher->sampleChainWriter){
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "destroying sampleChain writer\n");
             u_writerFree(publisher->sampleChainWriter);
@@ -258,6 +252,12 @@ d_publisherDeinit(
             u_writerFree(publisher->deleteDataWriter);
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "deleteData writer destroyed\n");
             publisher->deleteDataWriter = NULL;
+        }
+        if(publisher->sampleRequestWriter){
+            d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "destroying sampleRequest writer\n");
+            u_writerFree(publisher->sampleRequestWriter);
+            d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "sampleRequest writer destroyed\n");
+            publisher->sampleRequestWriter = NULL;
         }
         if(publisher->publisher){
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "destroying user publisher\n");
@@ -873,6 +873,9 @@ d_publisherSampleChainWriterCopy(
         msgTo->msgBody._u.link.completeness   = msgFrom->msgBody._u.link.completeness;
     break;
     default:
+        OS_REPORT_1(OS_ERROR, "d_publisherSampleChainWriterCopy", 0,
+                    "Illegal message body discriminant value (%d) detected.",
+                    msgTo->msgBody._d);
         assert(FALSE);
     }
 
@@ -1050,6 +1053,7 @@ d_publisherNameSpacesWriterCopy(
     msgTo->master.systemId            = msgFrom->master.systemId;
     msgTo->master.localId             = msgFrom->master.localId;
     msgTo->master.lifecycleId         = msgFrom->master.lifecycleId;
+    msgTo->isComplete                 = msgFrom->isComplete;
 
     if(msgFrom->partitions) {
         msgTo->partitions = c_stringNew(base, msgFrom->partitions);

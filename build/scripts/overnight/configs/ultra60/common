@@ -1,4 +1,4 @@
-JAVA_HOME=/usr/local/jdk1.5.0
+JAVA_HOME=/usr/local/jdk1.6.0
 TAO_ROOT=/usr/users/dds/INSTALLED\ FOR\ DDS/TAO161_0-SunOS-5.10-studio12-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
 JACORB_HOME=/usr/users/dds/INSTALLED\ FOR\ DDS/JacORBME
 

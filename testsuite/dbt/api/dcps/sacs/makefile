@@ -22,3 +22,6 @@ SUBSYSTEMS	 += waitset
 SUBSYSTEMS	 += writer
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
+
+clean:
+	rm -rf exec/$(SPLICE_TARGET)

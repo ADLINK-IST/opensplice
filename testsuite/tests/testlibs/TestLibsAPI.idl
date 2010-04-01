@@ -1,0 +1,126 @@
+#ifndef TESTLIBS_API_IDL
+#define TESTLIBS_API_IDL
+
+// Workaround tao_idl glitch.
+#ifdef __TAO_IDL
+  #include "tao/orb.idl"
+  // sequences of strings seem to be roached.
+#endif
+
+module OSPLTestLib
+{
+    typedef string DataKey;
+
+    union DataValue;
+    struct Data;
+
+    /*
+    Each Data item is a pair between a key value and a vaguely
+    generic and polymorphic DataValue value. Avoiding Any's so we can map down to
+    DDS for standalone / ORB-less examples. Calls and returns
+    pass a sequence of these each.
+    */
+
+    typedef sequence <DataValue> DataValueSeq;
+    typedef sequence <Data> DataSeq;
+
+    enum DataValueType
+    {
+        VALUE_STRING,
+        VALUE_LONG_LONG,
+        VALUE_BOOLEAN,
+        VALUE_SEQ_OF_VALUES,
+        VALUE_SEQ_OF_DATA
+        // Extend at will ...
+    };
+
+    union DataValue switch (::OSPLTestLib::DataValueType)
+    {
+        case VALUE_STRING:
+            string string_val;
+        case VALUE_LONG_LONG:
+            long long long_long_val;
+        case VALUE_BOOLEAN:
+            boolean boolean_val;
+        case VALUE_SEQ_OF_VALUES:
+            ::OSPLTestLib::DataValueSeq seq_of_values_val;
+        case VALUE_SEQ_OF_DATA:
+            ::OSPLTestLib::DataSeq seq_of_data;
+    };
+
+    struct Data
+    {
+        DataKey the_key;
+        DataValue the_value;
+    };
+
+    typedef string ProcessName;
+    typedef sequence <ProcessName> ProcessNameSeq;
+
+    interface RemoteProcessServer
+    {
+
+        oneway void poke_process_with (in string process_action,
+                                        in ProcessName process_target,
+                                        in DataSeq poke_with,
+                                        in unsigned long seq_no,
+                                        in string process_source);
+
+        ::OSPLTestLib::DataSeq call_process_with (in string process_action,
+                                               in ProcessName process_target,
+                                               in DataSeq call_with,
+                                               in unsigned long seq_no,
+                                               in ProcessName process_source);
+
+        long get_process_status (in ProcessName process_target);
+
+        boolean set_process_status (in long process_status,
+                                 in ProcessName process_target);
+
+        oneway void shutdown (in ProcessName process_target);
+    };
+
+    local interface RemoteProcess : RemoteProcessServer {};
+
+    local interface ProcessControl : RemoteProcess
+    {
+        boolean wait_for_process_state (in long process_status,
+                                        in ProcessName process_target,
+                                        in unsigned long long time_t_timeout);
+
+        void park_thread_to_do_work ();
+
+        void set_process_self (in RemoteProcessServer process_self);
+    };
+
+    typedef sequence <RemoteProcess> RemoteProcessSeq;
+
+    //const ProcessName ALL_PROCESSES = "ALL";
+
+    // const ProcessName ALL_OTHER_PROCESSES = "ALL_OTHERS";
+
+    const unsigned long long FOREVER = 0xFFFFFFFFFFFFFFFF;
+
+    // The below for future use only - keep calm and carry on.
+
+    struct CallStruct
+    {
+        string action;
+        ProcessName process_target;
+        DataSeq call_with;
+        unsigned long seq_no;
+        ProcessName process_source;
+    };
+    #pragma keylist CallStruct seq_no process_source
+
+    struct ResponseStruct
+    {
+        ProcessName respond_to;
+        unsigned long seq_no;
+        DataSeq send_back;
+    };
+    #pragma keylist ResponseStruct seq_no respond_to
+
+};
+
+#endif /* TESTLIBS_API_IDL */

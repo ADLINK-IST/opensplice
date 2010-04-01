@@ -20,6 +20,7 @@ BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
 BUILD_EXAMPLES=examples/build
+VALGRIND=valgrind/vg_summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=archive-dist.txt
 EOF
@@ -38,6 +39,7 @@ BUILD_RBT=build-rbt-tests.txt
 RUN_DBT=perform-dbt-tests.txt
 RUN_RBT=perform-rbt-tests.txt
 BUILD_EXAMPLES=examples/build
+VALGRIND=valgrind/vg_summary.html
 BUILD_DIST=build-dist.txt
 KEEP_DIST=../distro
 EOF
@@ -52,19 +54,19 @@ cat > $RESFILE <<EOF
 BUILD=TODO
 EOF
 
-if [ $BUILD_DIST = "yes" ]
+if [ "$BUILD_DIST" = "yes" ]
 then
     echo "BUILD_DIST=TODO" >> $RESFILE
 else
     echo "BUILD_DIST=SKIP" >> $RESFILE
 fi
-if [ $KEEP_DIST = "yes" ]
+if [ "$KEEP_DIST" = "yes" ]
 then
     echo "KEEP_DIST=TODO" >> $RESFILE
 else
     echo "KEEP_DIST=SKIP" >> $RESFILE
 fi
-if [ $RUN_DBT = "yes" ]
+if [ "$RUN_DBT" = "yes" ]
 then
     echo "BUILD/DBT=TODO" >> $RESFILE
     echo "RUN/DBT=TODO" >> $RESFILE
@@ -72,7 +74,7 @@ else
     echo "BUILD/DBT=SKIP" >> $RESFILE
     echo "RUN/DBT=SKIP" >> $RESFILE
 fi
-if [ $RUN_RBT = "yes" ]
+if [ "$RUN_RBT" = "yes" ]
 then
     echo "BUILD/RBT=TODO" >> $RESFILE
     echo "RUN/RBT=TODO" >> $RESFILE
@@ -80,13 +82,20 @@ else
     echo "BUILD/RBT=SKIP" >> $RESFILE
     echo "RUN/RBT=SKIP" >> $RESFILE
 fi
-if [ $RUN_EXAMPLES = "yes" ]
+if [ "$RUN_EXAMPLES" = "yes" ]
 then
     echo "BUILD/EXAMPLES=TODO" >> $RESFILE
     echo "RUN/EXAMPLES=TODO" >> $RESFILE
+    if [ "$VALGRIND" = "yes" ]
+    then
+        echo "VALGRIND=TODO" >> $RESFILE
+    else
+        echo "VALGRIND=SKIP" >> $RESFILE
+    fi
 else
     echo "BUILD/EXAMPLES=SKIP" >> $RESFILE
     echo "RUN/EXAMPLES=SKIP" >> $RESFILE
+    echo "VALGRIND=SKIP" >> $RESFILE
 fi
 ArchiveLogs
 
@@ -183,6 +192,7 @@ then
         fi
         ArchiveLogs
     fi
+
     if [ "$RUN_EXAMPLES" != "yes" ]
     then
         echo "BUILD/EXAMPLES=SKIPPED" >> $RESFILE
@@ -190,6 +200,10 @@ then
         RUN_EXAMPLES_STAGE_WORKED=0
         BUILD_EXAMPLES_STAGE_WORKED=0
     else
+        if [ "$VALGRIND" = "yes" ]
+        then
+            mkdir $LOGDIR/valgrind
+        fi
         mkdir $LOGDIR/examples
         mkdir $LOGDIR/examples/build
         $IBSDIR/dcps_build_examples $ARGS > $LOGDIR/examples/build/build_results.txt 2>&1
@@ -215,8 +229,24 @@ then
                 echo "RUN/EXAMPLES=FAIL" >> $RESFILE
                 RUN_EXAMPLES_STAGE_WORKED=1
             fi
+
+            if [ "$VALGRIND" != "yes" ]
+            then
+                echo "VALGRIND=SKIPPED" >> $RESFILE
+            else
+                create_valgrind_summary $LOGDIR/valgrind/
+                VALGRIND_STAGE_OK=$?
+                if [ $VALGRIND_STAGE_OK = 0 ]
+                then
+                    echo "VALGRIND=PASS" >> $RESFILE
+                else
+                    echo "VALGRIND=FAIL" >> $RESFILE
+                fi
+                ArchiveLogs
+            fi
         else
             echo "RUN/EXAMPLES=ABORTED" >> $RESFILE
+            echo "VALGRIND=ABORTED" >> $RESFILE
         fi
         ArchiveLogs
     fi
@@ -235,7 +265,17 @@ then
             then
                 SetState "ExamplesFailed"
             else
-                SetState "Complete"
+                if [ "$VALGRIND_STAGE_OK" = 1 ]
+                then
+                    SetState "ValgrindFail"
+                else
+                    if [ "$VALGRIND_STAGE_OK" = 2 ]
+                    then
+                        SetState "ValgrindLeak"
+                    else
+                        SetState "Complete"
+                    fi
+                fi
             fi
         fi
     else

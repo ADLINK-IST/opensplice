@@ -102,7 +102,7 @@ main (
         domain, 
         DDS_PARTICIPANT_QOS_DEFAULT, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(participant, "DDS_DomainParticipantFactory_create_participant");  
 
     /* Register the required datatype for ChatMessage. */
@@ -143,7 +143,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(chatMessageTopic, "DDS_DomainParticipant_create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -160,7 +160,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServiceTopic, "DDS_DomainParticipant_create_topic");
 
     /* Adapt the default SubscriberQos to read from the "ChatRoom" Partition. */
@@ -178,7 +178,7 @@ main (
     strcpy (sub_qos->partition.name._buffer[0], partitionName);
 
     /* Create a Subscriber for the UserLoad application. */
-    chatSubscriber = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_ANY_STATUS);
+    chatSubscriber = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_STATUS_MASK_NONE);
     checkHandle(chatSubscriber, "DDS_DomainParticipant_create_subscriber");
     
     /* Create a DataReader for the NameService Topic (using the appropriate QoS). */
@@ -187,7 +187,7 @@ main (
         nameServiceTopic, 
         DDS_DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServer, "DDS_Subscriber_create_datareader (NameService)");
 
     /* Adapt the DataReaderQos for the ChatMessageDataReader to keep track of all messages. */
@@ -205,7 +205,7 @@ main (
         chatMessageTopic, 
         message_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(loadAdmin, "DDS_Subscriber_create_datareader (ChatMessage)");
     
     /* Initialize the Query Arguments. */

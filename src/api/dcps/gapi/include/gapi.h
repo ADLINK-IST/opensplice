@@ -393,7 +393,8 @@ typedef gapi_unsigned_long gapi_statusMask;
 #define GAPI_PUBLICATION_MATCH_STATUS               8192U
 #define GAPI_SUBSCRIPTION_MATCH_STATUS              16384U
 
-#define GAPI_ANY_STATUS              0xFFFF
+#define GAPI_ANY_STATUS              0x7FE7
+#define GAPI_STATUS_ANY_V1_2         0x7FE7
 
 /*
  * struct InconsistentTopicStatus {
@@ -2829,6 +2830,16 @@ gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
     gapi_domainId_t domain_id);
 
+
+/*     ReturnCode_t
+ *     delete_domain(
+ *         in Domain a_domain);
+ */
+OS_API gapi_returnCode_t
+gapi_domainParticipantFactory_delete_domain (
+    gapi_domainParticipantFactory _this,
+    gapi_domain a_domain);
+
 /*
  * interface TypeSupport
  */
@@ -4121,6 +4132,9 @@ gapi_dataReader_get_matched_publication_data (
     gapi_dataReader _this,
     gapi_publicationBuiltinTopicData *publication_data,
     const gapi_instanceHandle_t publication_handle);
+
+
+
 /*
  * interface DataReaderView : Entity
  */
@@ -5165,6 +5179,24 @@ OS_API gapi_instanceHandle_t
 gapi_fooDataReader_lookup_instance (
     gapi_fooDataReader _this,
     const gapi_foo * instance_data);
+
+/*
+ * Get userdata for datareader instance
+ */
+OS_API gapi_returnCode_t
+gapi_fooDataReader_getInstanceUserData (
+    gapi_fooDataReader _this,
+    gapi_instanceHandle_t instance,
+    c_voidp* data_out);
+
+/*
+ * Set userdata for datareader instance
+ */
+OS_API gapi_returnCode_t
+gapi_fooDataReader_setInstanceUserData (
+    gapi_fooDataReader _this,
+    gapi_instanceHandle_t instance,
+    c_voidp data);
 
 /*
  * The following FooDataReaderView operations are not for

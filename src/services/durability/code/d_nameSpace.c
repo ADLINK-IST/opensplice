@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <string.h>
@@ -117,7 +117,7 @@ d_nameSpaceAddPartitionTopic(
 
 /**************************************************************/
 
-static c_bool
+c_bool
 d_nameSpaceStringMatches(
     c_string str,
     c_string pattern )
@@ -538,7 +538,8 @@ d_nameSpaceNew(
         nameSpace->quality.seconds      = 0;
         nameSpace->quality.nanoseconds  = 0;
         nameSpace->master               = d_networkAddressUnaddressed();
-
+        nameSpace->masterState			= D_STATE_COMPLETE;
+        nameSpace->masterConfirmed		= FALSE;
     }
 
     return nameSpace;
@@ -568,6 +569,7 @@ d_nameSpaceFromNameSpaces(
                                                     ns->master.systemId,
                                                     ns->master.localId,
                                                     ns->master.lifecycleId);
+            nameSpace->masterState		   = D_STATE_COMPLETE;
             nameSpace->elements            = d_tableNew(elementCompare, elementFree);
 
             partitions = d_nameSpacesGetPartitions(ns);
@@ -581,6 +583,36 @@ d_nameSpaceFromNameSpaces(
         }
     }
     return nameSpace;
+}
+
+void
+d_nameSpaceSetMasterState(
+		d_nameSpace nameSpace,
+		d_serviceState serviceState)
+{
+	if (isANameSpace(nameSpace)) {
+		d_lockLock (d_lock(nameSpace));
+		nameSpace->masterState = serviceState;
+		d_lockUnlock(d_lock(nameSpace));
+	}
+	return;
+}
+
+d_serviceState
+d_nameSpaceGetMasterState(
+		d_nameSpace nameSpace)
+{
+	d_serviceState masterState;
+
+	masterState = D_STATE_INIT;
+
+	if (isANameSpace(nameSpace)) {
+		d_lockLock (d_lock(nameSpace));
+		masterState = nameSpace->masterState;
+		d_lockUnlock (d_lock(nameSpace));
+	}
+
+	return masterState;
 }
 
 void
@@ -612,6 +644,46 @@ d_nameSpaceGetMaster(
         d_lockUnlock(d_lock(nameSpace));
     }
     return addr;
+}
+
+void
+d_nameSpaceMasterConfirmed(
+		d_nameSpace nameSpace)
+{
+	if (isANameSpace(nameSpace))
+	{
+		d_lockLock (d_lock(nameSpace));
+		nameSpace->masterConfirmed = TRUE;
+		d_lockUnlock(d_lock(nameSpace));
+	}
+}
+
+void
+d_nameSpaceMasterPending(
+		d_nameSpace nameSpace)
+{
+	if (isANameSpace(nameSpace))
+	{
+		d_lockLock (d_lock(nameSpace));
+		nameSpace->masterConfirmed = FALSE;
+		d_lockUnlock(d_lock(nameSpace));
+	}
+}
+
+c_bool
+d_nameSpaceIsMasterConfirmed(
+		d_nameSpace nameSpace)
+{
+	c_bool masterConfirmed;
+
+	masterConfirmed = FALSE;
+
+	if (isANameSpace (nameSpace))
+	{
+		masterConfirmed = nameSpace->masterConfirmed;
+	}
+
+	return masterConfirmed;
 }
 
 c_bool

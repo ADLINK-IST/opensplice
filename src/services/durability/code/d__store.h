@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -20,7 +20,7 @@
 #if defined (__cplusplus)
 extern "C" {
 #endif
- 
+
 void    d_storeInit     (d_store store, d_objectDeinitFunc deinit);
 
 void    d_storeFree     (d_store store);
@@ -37,7 +37,7 @@ typedef d_storeResult   (*d_storeActionStartFunc)           (const d_store store
 typedef d_storeResult   (*d_storeActionStopFunc)            (const d_store store);
 
 typedef d_storeResult   (*d_storeGroupInjectFunc)           (const d_store store,
-                                                             const c_char* partition, 
+                                                             const c_char* partition,
                                                              const c_char* topic,
                                                              const u_participant participant,
                                                              d_group *group);
@@ -51,6 +51,9 @@ typedef d_storeResult   (*d_storeGetQualityFunc)            (const d_store store
 
 typedef d_storeResult   (*d_storeBackupFunc)                (const d_store store,
                                                              const d_nameSpace nameSpace);
+
+typedef d_storeResult 	(*d_storeRestoreBackupFunc)			(const d_store store,
+															 const d_nameSpace nameSpace);
 
 typedef d_storeResult   (*d_storeMessageStoreFunc)          (const d_store store,
                                                              const v_groupAction message);
@@ -76,21 +79,35 @@ typedef d_storeResult   (*d_storeInstanceRegisterFunc)      (const d_store store
 typedef d_storeResult   (*d_storeInstanceUnregisterFunc)    (const d_store store,
                                                              const v_groupAction message);
 
+typedef d_storeResult   (*d_storeCreatePersistentSnapshotFunc)(const d_store store,
+                                                              const os_char* partitionExpr,
+                                                              const os_char* topicExpr,
+                                                              const os_char* uri);
+
 typedef d_storeResult   (*d_storeOptimizeGroupFunc)         (const d_store store,
                                                              const d_group group);
+
+typedef d_storeResult	(*d_storeNsIsCompleteFunc)			(const d_store store,
+															 const d_nameSpace nameSpace,
+															 c_bool* isComplete);
+
+typedef d_storeResult 	(*d_storeNsMarkCompleteFunc)		(const d_store store,
+															 const d_nameSpace nameSpace,
+															 c_bool isComplete);
 
 C_STRUCT(d_store){
     C_EXTENDS(d_lock);
     d_configuration             	config;
     d_storeType                 	type;
-    
+
     d_storeOpenFunc             	openFunc;
     d_storeCloseFunc            	closeFunc;
-    
+
     d_storeActionStartFunc          actionStartFunc;
     d_storeActionStopFunc           actionStopFunc;
     d_storeGetQualityFunc       	getQualityFunc;
     d_storeBackupFunc           	backupFunc;
+    d_storeRestoreBackupFunc		restoreBackupFunc;
     d_storeGroupsReadFunc       	groupsReadFunc;
     d_storeGroupStoreFunc       	groupStoreFunc;
     d_storeGroupInjectFunc      	groupInjectFunc;
@@ -102,7 +119,10 @@ C_STRUCT(d_store){
     d_storeMessagesInjectFunc   	messagesInjectFunc;
     d_storeInstanceRegisterFunc		instanceRegisterFunc;
     d_storeInstanceUnregisterFunc	instanceUnregisterFunc;
+    d_storeCreatePersistentSnapshotFunc createPersistentSnapshotFunc;
     d_storeOptimizeGroupFunc        optimizeGroupFunc;
+    d_storeNsIsCompleteFunc			nsIsCompleteFunc;
+    d_storeNsMarkCompleteFunc		nsMarkCompleteFunc;
 };
 
 #if defined (__cplusplus)

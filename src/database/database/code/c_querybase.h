@@ -85,6 +85,9 @@ C_STRUCT(c_qVar) {
     c_bool hasChanged;
     c_collection keys;
     c_qConst variable;
+#if 1
+    c_type type;
+#endif
 };
 
 C_STRUCT(c_qType) {

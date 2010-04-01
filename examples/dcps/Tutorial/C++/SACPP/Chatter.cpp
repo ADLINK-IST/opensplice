@@ -99,7 +99,7 @@ main (
     /* Create a DomainParticipantFactory and a DomainParticipant (using Default QoS settings. */
     dpf = DomainParticipantFactory::get_instance ();
     checkHandle(dpf.in(), "DDS::DomainParticipantFactory::get_instance");
-    participant = dpf->create_participant(domain, PARTICIPANT_QOS_DEFAULT, NULL, ANY_STATUS);
+    participant = dpf->create_participant(domain, PARTICIPANT_QOS_DEFAULT, NULL, STATUS_MASK_NONE);
     checkHandle(participant.in(), "DDS::DomainParticipantFactory::create_participant");  
 
     /* Register the required datatype for ChatMessage. */
@@ -135,7 +135,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(chatMessageTopic.in(), "DDS::DomainParticipant::create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -149,7 +149,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(nameServiceTopic.in(), "DDS::DomainParticipant::create_topic (NameService)");
 
     /* Adapt the default PublisherQos to write into the "ChatRoom" Partition. */
@@ -159,7 +159,7 @@ main (
     pub_qos.partition.name[0] = partitionName;
 
     /* Create a Publisher for the chatter application. */
-    chatPublisher = participant->create_publisher(pub_qos, NULL, ANY_STATUS);
+    chatPublisher = participant->create_publisher(pub_qos, NULL, STATUS_MASK_NONE);
     checkHandle(chatPublisher.in(), "DDS::DomainParticipant::create_publisher");
     
     /* Create a DataWriter for the ChatMessage Topic (using the appropriate QoS). */
@@ -167,7 +167,7 @@ main (
         chatMessageTopic.in(), 
         DATAWRITER_QOS_USE_TOPIC_QOS,
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentWriter, "DDS::Publisher::create_datawriter (chatMessage)");
     
     /* Narrow the abstract parent into its typed representative. */
@@ -184,7 +184,7 @@ main (
         nameServiceTopic.in(), 
         dw_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentWriter, "DDS::Publisher::create_datawriter (NameService)");
     
     /* Narrow the abstract parent into its typed representative. */

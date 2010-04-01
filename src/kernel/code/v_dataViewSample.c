@@ -56,14 +56,7 @@ v_dataViewSampleNew(
 #endif
     if (sample) {
         v_readerSample(sample)->instance = (c_voidp)instance;
-#if 0
-        /* must be a bug because NEW is an instance state and
-         * not a sample state. */
-
-        v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
-#else
         v_readerSample(sample)->sampleState = 0;
-#endif
         v_dataViewSampleList(sample)->next = NULL;
         v_dataViewSampleList(sample)->prev = NULL;
         sample->prev = NULL;

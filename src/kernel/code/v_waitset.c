@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__waitset.h"
@@ -108,7 +108,6 @@ v_waitsetDeinit(
     v_waitsetEvent event;
     v_observable o;
     v_proxy found;
-    findProxyArgument arg;
     v_handleResult result;
 
     assert(_this != NULL);
@@ -174,7 +173,9 @@ v_waitsetEventFree(
             c_free(event);
         } else if(event->kind == V_EVENT_HISTORY_REQUEST) {
             c_free(event);
-        } else {
+        } else if(event->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
+            c_free(event);
+        }else {
             event->next = _this->eventCache;
             _this->eventCache = event;
         }
@@ -197,6 +198,7 @@ v_waitsetNotify(
     v_historyDeleteEventData hde;
     v_waitsetEventHistoryDelete wehd;
     v_waitsetEventHistoryRequest wehr;
+    v_waitsetEventPersistentSnapshot weps;
     v_kernel k;
 
     assert(_this != NULL);
@@ -219,6 +221,12 @@ v_waitsetNotify(
             wehr = c_new(v_kernelType(k, K_WAITSETEVENTHISTORYREQUEST));
             wehr->request = (v_historicalDataRequest)c_keep(e->userData);
             event = (v_waitsetEvent)wehr;
+        } else if (e->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
+            /* request persistent snapshot data */
+            weps = c_new(v_kernelType(k, K_WAITSETEVENTPERSISTENTSNAPSHOT));
+            weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
+            event = (v_waitsetEvent)weps;
+
         } else {
             /* Group events by origin of event */
             /* What about events while no threads are waiting?

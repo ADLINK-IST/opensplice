@@ -424,7 +424,7 @@ class pinger {
          */
         dpf = DDS.DomainParticipantFactory.get_instance ();
 	dpf.get_default_participant_qos (dpQos);
-        dp = dpf.create_participant (myDomain, dpQos.value, null, DDS.ANY_STATUS.value);
+        dp = dpf.create_participant (myDomain, dpQos.value, null, DDS.STATUS_MASK_NONE.value);
         if (dp == null) {
             System.out.println ("PING: ERROR - Splice Daemon not running");
             return;
@@ -437,7 +437,7 @@ class pinger {
         dp.get_default_publisher_qos (pQos);
 	pQos.value.partition.name = new String [1];
 	pQos.value.partition.name[0] = write_partition;
-        p = dp.create_publisher (pQos.value, null, DDS.ANY_STATUS.value);
+        p = dp.create_publisher (pQos.value, null, DDS.STATUS_MASK_NONE.value);
         pQos = null;
 
         /*
@@ -446,7 +446,7 @@ class pinger {
         dp.get_default_subscriber_qos (sQos);
 	sQos.value.partition.name = new String [1];
 	sQos.value.partition.name[0] = read_partition;
-        s = dp.create_subscriber (sQos.value, null, DDS.ANY_STATUS.value);
+        s = dp.create_subscriber (sQos.value, null, DDS.STATUS_MASK_NONE.value);
         sQos = null;
 
 	/*
@@ -467,13 +467,13 @@ class pinger {
         /*  Create Topic */
         PP_min_dt = new pingpong.PP_min_msgTypeSupport();
         PP_min_dt.register_type (dp, "pingpong::PP_min_msg");
-        PP_min_topic = dp.create_topic ("PP_min_topic", "pingpong::PP_min_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_min_topic = dp.create_topic ("PP_min_topic", "pingpong::PP_min_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_min_writer = pingpong.PP_min_msgDataWriterHelper.narrow (p.create_datawriter (PP_min_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_min_writer = pingpong.PP_min_msgDataWriterHelper.narrow (p.create_datawriter (PP_min_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Create datareader */
-        PP_min_reader = pingpong.PP_min_msgDataReaderHelper.narrow (s.create_datareader (PP_min_topic, drQos.value, null, DDS.ANY_STATUS.value));
+        PP_min_reader = pingpong.PP_min_msgDataReaderHelper.narrow (s.create_datareader (PP_min_topic, drQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Add datareader statuscondition to waitset */
         PP_min_sc = PP_min_reader.get_statuscondition ();
@@ -488,13 +488,13 @@ class pinger {
         /*  Create Topic */
         PP_seq_dt = new pingpong.PP_seq_msgTypeSupport();
         PP_seq_dt.register_type (dp, "pingpong::PP_seq_msg");
-        PP_seq_topic = dp.create_topic ("PP_seq_topic", "pingpong::PP_seq_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_seq_topic = dp.create_topic ("PP_seq_topic", "pingpong::PP_seq_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_seq_writer = pingpong.PP_seq_msgDataWriterHelper.narrow (p.create_datawriter (PP_seq_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_seq_writer = pingpong.PP_seq_msgDataWriterHelper.narrow (p.create_datawriter (PP_seq_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Create datareader */
-        PP_seq_reader = pingpong.PP_seq_msgDataReaderHelper.narrow (s.create_datareader (PP_seq_topic, drQos.value, null, DDS.ANY_STATUS.value));
+        PP_seq_reader = pingpong.PP_seq_msgDataReaderHelper.narrow (s.create_datareader (PP_seq_topic, drQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Add datareader statuscondition to waitset */
         PP_seq_sc = PP_seq_reader.get_statuscondition ();
@@ -509,13 +509,13 @@ class pinger {
         /*  Create Topic */
         PP_string_dt = new pingpong.PP_string_msgTypeSupport();
         PP_string_dt.register_type (dp, "pingpong::PP_string_msg");
-        PP_string_topic = dp.create_topic ("PP_string_topic", "pingpong::PP_string_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_string_topic = dp.create_topic ("PP_string_topic", "pingpong::PP_string_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_string_writer = pingpong.PP_string_msgDataWriterHelper.narrow (p.create_datawriter (PP_string_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_string_writer = pingpong.PP_string_msgDataWriterHelper.narrow (p.create_datawriter (PP_string_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Create datareader */
-        PP_string_reader = pingpong.PP_string_msgDataReaderHelper.narrow (s.create_datareader (PP_string_topic, drQos.value, null, DDS.ANY_STATUS.value));
+        PP_string_reader = pingpong.PP_string_msgDataReaderHelper.narrow (s.create_datareader (PP_string_topic, drQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Add datareader statuscondition to waitset */
         PP_string_sc = PP_string_reader.get_statuscondition ();
@@ -530,13 +530,13 @@ class pinger {
         /*  Create Topic */
         PP_fixed_dt = new pingpong.PP_fixed_msgTypeSupport();
         PP_fixed_dt.register_type (dp, "pingpong::PP_fixed_msg");
-        PP_fixed_topic = dp.create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_fixed_topic = dp.create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_fixed_writer = pingpong.PP_fixed_msgDataWriterHelper.narrow (p.create_datawriter (PP_fixed_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_fixed_writer = pingpong.PP_fixed_msgDataWriterHelper.narrow (p.create_datawriter (PP_fixed_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Create datareader */
-        PP_fixed_reader = pingpong.PP_fixed_msgDataReaderHelper.narrow (s.create_datareader (PP_fixed_topic, drQos.value, null, DDS.ANY_STATUS.value));
+        PP_fixed_reader = pingpong.PP_fixed_msgDataReaderHelper.narrow (s.create_datareader (PP_fixed_topic, drQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Add datareader statuscondition to waitset */
         PP_fixed_sc = PP_fixed_reader.get_statuscondition ();
@@ -551,13 +551,13 @@ class pinger {
         /*  Create Topic */
         PP_array_dt = new pingpong.PP_array_msgTypeSupport();
         PP_array_dt.register_type (dp, "pingpong::PP_array_msg");
-        PP_array_topic = dp.create_topic ("PP_array_topic", "pingpong::PP_array_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_array_topic = dp.create_topic ("PP_array_topic", "pingpong::PP_array_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_array_writer = pingpong.PP_array_msgDataWriterHelper.narrow (p.create_datawriter (PP_array_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_array_writer = pingpong.PP_array_msgDataWriterHelper.narrow (p.create_datawriter (PP_array_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Create datareader */
-        PP_array_reader = pingpong.PP_array_msgDataReaderHelper.narrow (s.create_datareader (PP_array_topic, drQos.value, null, DDS.ANY_STATUS.value));
+        PP_array_reader = pingpong.PP_array_msgDataReaderHelper.narrow (s.create_datareader (PP_array_topic, drQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         /* Add datareader statuscondition to waitset */
         PP_array_sc = PP_array_reader.get_statuscondition ();
@@ -572,10 +572,10 @@ class pinger {
         /*  Create Topic */
         PP_quit_dt = new pingpong.PP_quit_msgTypeSupport();
         PP_quit_dt.register_type (dp, "pingpong::PP_quit_msg");
-        PP_quit_topic = dp.create_topic ("PP_quit_topic", "pingpong::PP_quit_msg", tQos.value, null, DDS.ANY_STATUS.value);
+        PP_quit_topic = dp.create_topic ("PP_quit_topic", "pingpong::PP_quit_msg", tQos.value, null, DDS.STATUS_MASK_NONE.value);
 
         /* Create datawriter */
-        PP_quit_writer = pingpong.PP_quit_msgDataWriterHelper.narrow (p.create_datawriter (PP_quit_topic, dwQos.value, null, DDS.ANY_STATUS.value));
+        PP_quit_writer = pingpong.PP_quit_msgDataWriterHelper.narrow (p.create_datawriter (PP_quit_topic, dwQos.value, null, DDS.STATUS_MASK_NONE.value));
 
         for (block = 0; block < nof_blocks ; block++) {
             while (!finish_flag) {

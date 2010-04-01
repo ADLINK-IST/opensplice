@@ -39,11 +39,8 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                lock (listener)
-                {
-                    ISubscriber subscriber = (ISubscriber)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-                    listener.OnDataOnReaders(subscriber);
-                }
+                ISubscriber subscriber = (ISubscriber)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
+                listener.OnDataOnReaders(subscriber);
             }
         }
 

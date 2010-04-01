@@ -170,7 +170,9 @@ v_groupQueueWrite(
         
     switch(action->kind){
     case V_GROUP_ACTION_REGISTER:             /*fallthrough on purpose.*/
-    case V_GROUP_ACTION_UNREGISTER:           /*fallthrough on purpose.*/
+    case V_GROUP_ACTION_UNREGISTER:
+    	/*Do not handle register & unregister messages*/
+    	break;
     case V_GROUP_ACTION_WRITE:                /*fallthrough on purpose.*/
     case V_GROUP_ACTION_DISPOSE:              /*fallthrough on purpose.*/
     case V_GROUP_ACTION_LIFESPAN_EXPIRE:      /*fallthrough on purpose.*/

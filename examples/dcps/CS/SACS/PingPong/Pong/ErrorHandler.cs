@@ -21,10 +21,10 @@
  * 
  ***/
 using DDS;
+using System;
 
 namespace PingPong
 {
-
     public sealed class ErrorHandler
     {
 
@@ -70,11 +70,8 @@ namespace PingPong
             {
                 System.Console.WriteLine(
                     "Error in " + info + ": " + getErrorName(status));
-            }
-            else
-            {
-                System.Console.WriteLine("status ok " + status);
-            }
+                System.Environment.Exit(-1);
+            }            
         }
 
         /**
@@ -86,11 +83,8 @@ namespace PingPong
             {
                 System.Console.WriteLine(
                     "Error in " + info + ": Creation failed: invalid handle");
-            }
-            else
-            {
-                System.Console.WriteLine("Handle is ok");
-            }
+                System.Environment.Exit(-1);
+            }            
         }
     }
 }

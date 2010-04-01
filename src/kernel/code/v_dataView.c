@@ -77,50 +77,82 @@ dataViewSampleTypeNew(
     c_char *metaName;
 
     assert(C_TYPECHECK(dataReader,v_dataReader));
-
-    readerSampleType = v_dataReaderSampleType(dataReader);
+    assert(dataReader);
 
     base = c_getBase(dataReader);
+
+    if (base == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewSampleTypeNew",0,
+                  "failed to retrieve base");
+        return NULL;
+    }
 
     if (v_dataViewSample_t == NULL) {
         v_dataViewSample_t = v_dataViewSample_t(base);
     }
+
     if (v_dataViewSample_t == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewSampleTypeNew",0,
+                  "failed to retrieve v_dataViewSample_t type");
         return NULL;
     }
-    sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(sampleType)->extends = c_keep(v_dataViewSample_t);
-    o = c_metaDeclare(c_metaObject(sampleType),"sample",M_ATTRIBUTE);
-    c_property(o)->type = c_keep(readerSampleType);
-    c_free(o);
-    c_metaObject(sampleType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(sampleType));
+
+    readerSampleType = v_dataReaderSampleType(dataReader);
+    if (readerSampleType == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewSampleTypeNew",0,
+                  "failed to retrieve sample type from dataReader");
+        return NULL;
+    }
+
+    foundType = NULL;
+
     metaName = c_metaName(c_metaObject(readerSampleType));
-    if (metaName != NULL) {
+    if (metaName) {
+        sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+        if (sampleType) {
+            c_class(sampleType)->extends = c_keep(v_dataViewSample_t);
+            o = c_metaDeclare(c_metaObject(sampleType),"sample",M_ATTRIBUTE);
+            if (o) {
+                c_property(o)->type = c_keep(readerSampleType);
+                c_metaObject(sampleType)->definedIn = c_keep(base);
+                c_metaFinalize(c_metaObject(sampleType));
+
 #define SAMPLE_FORMAT "v_dataViewSample<%s>"
 #define SAMPLE_NAME   "v_dataViewSample<>"
-        /* sizeof contains \0 */
-        length = sizeof(SAMPLE_NAME) +
-                 strlen(metaName);
-        name = os_malloc(length);
-        sres = snprintf(name,length,SAMPLE_FORMAT,
-                 metaName);
-        assert(sres == (length-1));
+                /* sizeof contains \0 */
+                length = sizeof(SAMPLE_NAME) + strlen(metaName);
+                name = os_malloc(length);
+                sres = snprintf(name,length,SAMPLE_FORMAT, metaName);
+                assert(sres == (length-1));
 #undef SAMPLE_FORMAT
 #undef SAMPLE_NAME
+
+                foundType = c_type(c_metaBind(c_metaObject(base),name,
+                                              c_metaObject(sampleType)));
+                os_free(name);
+                c_free(o);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_dataView::dataViewSampleTypeNew",0,
+                          "failed to declare new sample type sample attribute");
+            }
+            c_free(sampleType);
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_dataView::dataViewSampleTypeNew",0,
+                      "failed to define new sample type");
+        }
         c_free(metaName);
     } else {
-        /* not supposed to happen anymore! */
-        assert(FALSE);
-        length = 100;
-        name = os_malloc(length);
-        sprintf(name,"v_dataViewSample<0x"PA_ADDRFMT">",
-                (c_address)readerSampleType);
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewSampleTypeNew",0,
+                  "failed to retrieve sample type name");
     }
-    foundType = c_type(c_metaBind(c_metaObject(base),name,
-                                  c_metaObject(sampleType)));
-    os_free(name);
-    c_free(sampleType);
+
+    c_free(readerSampleType);
 
     return foundType;
 }
@@ -137,50 +169,76 @@ dataViewInstanceTypeNew(
     c_char *metaName;
 
     assert(C_TYPECHECK(viewSampleType,c_type));
+    assert(viewSampleType);
 
     base = c_getBase(viewSampleType);
+
+    if (base == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewInstanceTypeNew",0,
+                  "failed to retrieve base");
+        return NULL;
+    }
 
     if (v_dataViewInstance_t == NULL) {
         v_dataViewInstance_t = v_dataViewInstance_t(base);
     }
+
     if (v_dataViewInstance_t == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewInstanceTypeNew",0,
+                  "failed to retrieve v_dataViewInstance_t type");
         return NULL;
     }
-    instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(instanceType)->extends = c_keep(v_dataViewInstance_t);
-    o = c_metaObject(c_metaDeclare(c_metaObject(instanceType),
-                                   "sample",
-                                   M_ATTRIBUTE));
-    c_property(o)->type = c_keep(viewSampleType);
-    c_free(o);
 
-    c_metaObject(instanceType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(instanceType));
     metaName = c_metaName(c_metaObject(viewSampleType));
-    if (metaName != NULL) {
+    if (metaName == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewInstanceTypeNew",0,
+                  "failed to retrieve sample type name");
+        return NULL;
+    }
+
+    foundType = NULL;
+
+    instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+    if (instanceType) {
+        c_class(instanceType)->extends = c_keep(v_dataViewInstance_t);
+        o = c_metaObject(c_metaDeclare(c_metaObject(instanceType),
+                                       "sample",
+                                       M_ATTRIBUTE));
+        if (o) {
+            c_property(o)->type = c_keep(viewSampleType);
+            c_metaObject(instanceType)->definedIn = c_keep(base);
+            c_metaFinalize(c_metaObject(instanceType));
+
 #define INSTANCE_NAME   "v_dataViewInstance<>"
 #define INSTANCE_FORMAT "v_dataViewInstance<%s>"
-        /* The sizeof contains \0 */
-        length = sizeof(INSTANCE_NAME) +
-                 strlen(metaName);
-        name = os_malloc(length);
-        sres = snprintf(name,length,INSTANCE_FORMAT,
-                    metaName);
-        assert(sres == (length-1));
+            /* The sizeof contains \0 */
+            length = sizeof(INSTANCE_NAME) + strlen(metaName);
+            name = os_malloc(length);
+            sres = snprintf(name,length,INSTANCE_FORMAT, metaName);
+            assert(sres == (length-1));
 #undef INSTANCE_NAME
 #undef INSTANCE_FORMAT
-        c_free(metaName);
+
+            foundType = c_type(c_metaBind(c_metaObject(base),name,
+                                          c_metaObject(instanceType)));
+
+            os_free(name);
+            c_free(o);
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_dataView::dataViewInstanceTypeNew",0,
+                      "failed to declare sampleType->sample attribute");
+        }
+        c_free(instanceType);
     } else {
-        assert(FALSE); /* Not supposed to happen anymore */
-        length = 100;
-        name = os_malloc(length);
-        sprintf(name,"v_dataViewInstance<v_dataViewSample<0x"PA_ADDRFMT">>",
-                (c_address)viewSampleType);
+        OS_REPORT(OS_ERROR,
+                  "v_dataView::dataViewInstanceTypeNew",0,
+                  "failed to define instance type name");
     }
-    foundType = c_type(c_metaBind(c_metaObject(base),name,
-                                  c_metaObject(instanceType)));
-    os_free(name);
-    c_free(instanceType);
+    c_free(metaName);
 
     return foundType;
 }
@@ -217,8 +275,9 @@ v_dataViewInit(
     assert(dataViewInstanceType != NULL);
     if (qos->userKey.enable) {
         if (qos->userKey.expression) {
-            keyExpr = os_malloc(strlen(qos->userKey.expression) + 1);
-            strcpy(keyExpr, qos->userKey.expression);
+            totalSize = strlen(qos->userKey.expression) + 1;
+            keyExpr = os_malloc(totalSize);
+            strncpy(keyExpr, qos->userKey.expression,totalSize);
         } else {
             keyExpr = NULL;
         }
@@ -616,12 +675,10 @@ v_dataViewTakeNextInstance(
     v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
     nextInstance = v_dataViewInstance(c_tableNext(_this->instances,instance));
-    while ((nextInstance != NULL) && v_dataViewInstanceEmpty(nextInstance)) {
-        assert(FALSE);
-        nextInstance =  v_dataViewInstance(c_tableNext(_this->instances,
-                                                       nextInstance));
-    }
     if (nextInstance != NULL) {
+
+        assert(v_dataViewInstanceEmpty(nextInstance) == FALSE);
+
         proceed = v_dataViewInstanceTakeSamples(nextInstance,NULL,action,arg);
         if (v_dataViewInstanceEmpty(nextInstance)) {
             if (_this->takenInstance != NULL) {

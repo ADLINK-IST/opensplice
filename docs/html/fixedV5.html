@@ -1,0 +1,730 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V5</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="releasenotes.html">
+        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+    <h1>Fixed Bugs and Changes V5.1</h1>
+    <h2>Contents</h2>
+    <ul>
+      <li><a href="#highlights">Release Highlights</a></li>
+      <li><a href="#issues_not_api">Fixed Bugs and Changes not affecting API</a></li>
+      <li><a href="#issues_api">Fixed Bugs and Changes affecting API</a></li>
+    </ul>
+    <hr>
+    This page contains a list of all bugfixes and changes incorporated in 
+    OpenSplice V5.1 series of releases<br>
+    
+    <h2><a name="highlights">Release Highlights</a></h2>
+
+    <p>
+       OpenSplice DDS V5.1 contains some new features:
+       <ul>
+         <li>Compiled with JAVA6
+            <p>
+             OpenSplice DDS V5.x is compiled with JDK1.6, but can run on a Java 5 JRE as
+             the compile flag -source 1.5 is set
+            </p>
+         </li>
+         <li>Data compression at the network level
+            <p>
+             OpenSplice DDS can be configured to use zlib compression <a href="http://www.zlib.net/"> www.zlib.net</a>
+             to compress network packets. See the OpenSplice Documentation set for further information.
+            </p>
+         </li>
+         <li>Ability to add your own reporting plugin
+            <p>
+             OpenSplice DDS can be configured to use an external reporting library. 
+             See the OpenSplice Documentation set for further information.
+             This functionality is not available on the embedded platforms (VxWorks or Integrity)
+            </p>
+         </li>
+         <li>Domain identification
+            <p>
+             A DomainId consists of a string that represents either a URI to the
+             location of the configuration file (e.g. “file:///projects/DDS/ospl.xml”) or the
+             Domain name as specified in the configuration file. The actual value returned is
+             dependent of the value used when creating the DomainParticipant, also see the
+             DomainParticipantFactory create_participant operation. If a DomainParticipant
+             is created using the Domain name then it will also return the Domain name and 
+             visa-versa when created using a URI then the URI will be returned by this 
+             operation. The configuration file, identified by the URI, specifies all 
+             configuration details of the Domain
+            </p>
+         </li>
+         <li>C# API is now a fully supported API
+            <p>
+              <a href="csharp.html">View the C# documentation.</a>
+            </p>
+         </li>
+         <li>Allow multiple installations on Windows
+            <p>
+             In the V4 series OpenSplice DDS used system wide environment variables. 
+             With OpenSplice DDS V5.1, these are not set. Note: Users will require 
+             OpenSplice DDS PowerTools 2.3 to cope with this change.
+            </p>
+         </li>
+       </ul>
+    </p>       
+
+      
+    <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+    <p><h3>5.1.0</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            4838<br/>
+            dds505
+          </td>
+          <td>
+            <b>Shared DataReaders needed for efficiency</b><br/>
+            <i>
+              Applications need facilities that allow them to share one 
+              DataReader over multiple processes on the same node. This 
+              allows reducing the memory footprint on a node significantly in
+              case a lot of applications are interested in the same data<br/><br/>
+              <b>Solution:</b>A new 'share' QoS policy has been introduced 
+              in the SubscriberQos and DataReaderQos that allow applications
+              to share these entities.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1011
+          </td>
+          <td>
+            <b>Not all .bat files in the 'bin' directory of the release use Windows line endings</b><br/>
+            <i>
+              Some .bat files in the 'bin' directory of the Windows release use 
+              UNIX-style line endings.<br/><br/>
+              <b>Solution:</b>Changed the line-endings of the .bat files to 
+              Windows-style line-endings.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6569<br/>
+            dds1541
+          </td>
+          <td>
+            <b>OSPL does not generate default entry of switch of unions in C++</b><br/>
+            <i>
+             According to the IDL to C++ mapping, the IDL pre-processor 
+             should generate a default entry for in case no all the possible 
+             values of the switch are defined as cases and no default case is
+             modelled in IDL. Because this is not done, compiling the
+             generated code will show warnings.<br/><br/>
+              <b>Solution:</b>A default entry is now generated by the IDL 
+              pre-processor to make sure compiling the generated code does not
+              show any warnings.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6556<br/>
+            dds1551
+          </td>
+          <td>
+            <b>User application conflict with cfg_parse operation</b><br/>
+            <i>
+              <br/>OpenSplice has a 'cfg_parse' function that is also used
+              a lot in other products. This leads to a name collision when
+              OpenSplice is used in combination with these other products.<br/><br/>
+              <b>Solution:</b>The 'cfg_parse' function has been renamed to
+              'cfg_parse_ospl' to prevent collisions.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1552
+          </td>
+          <td>
+            <b>Support for abstract domain identification in create_domain_participant</b><br/>
+            <i>
+              OpenSplice V4 and before only support URI as domain ID<br/><br/>
+              <b>Solution:</b>A DomainId consists of a string that represents either a URI to the
+               location of the configuration file (e.g. “file:///projects/DDS/ospl.xml”) or the
+               Domain name as specified in the configuration file. The actual value returned is
+               dependent of the value used when creating the DomainParticipant, also see the
+               DomainParticipantFactory create_participant operation. If a DomainParticipant
+               is created using the Domain name then it will also return the Domain name and 
+               visa-versa when created using a URI then the URI will be returned by this 
+               operation. The configuration file, identified by the URI, specifies all 
+               configuration details of the Domain.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1677
+          </td>
+          <td>
+            <b>os_threadCreate failed because of wrong stack size</b><br/>
+            <i>
+              <br/>If on the system the PTHREAD_STACK_MIN is smaller than 
+              OS_STACKSIZE_DEFAULT the call to pthread_attr_setstacksize in 
+              os_threadCreate (POSIX) will fail.<br/><br/>
+              <b>Solution:</b>PTHREAD_STACK_MIN is now used instead.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6815<br/>
+            dds1829
+          </td>
+          <td>
+            <b>Persistent data can get lost</b><br/>
+            <i>
+              <br/>Due to the durability alignment strategy, persistent data can 
+              get 'lost'. The durability when not master for a name-space sets 
+              aside the locally stored persistent data set. Then it aligns with 
+              the master. When during this process, the host is reset 
+              (actively or power-fail), the persistent data-set may not be 
+              complete.<br/><br/>
+              <b>Solution:</b>The durability service now stores information about
+              having a complete set or not on disk. If it detects on re-start that
+              the set is not complete, the 'old' set is restored and injected
+              instead to at least have a complete set of data. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1836
+          </td>
+          <td>
+            <b>On VxWorks - ospl reports warning sched_getscheduler failed with error 3 in cmsoap service</b><br/>
+            <i>
+              This occurs because the sched_getscheduler requires a task id in vxworks6.<br/><br/>
+              <b>Solution:</b>Properly handle the case when os_procAttrGetClass is called
+               by adding a vxworks6.x specific version of os_procAttrGetClass that passes 
+               the current task id rather than process id to sched_getscheduler
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1844
+          </td>
+          <td>
+            <b>Addition of networking statistics</b><br/>
+            <i>
+              A large number of statistics for the networking service have been 
+              added and these are now available in the OpenSplice Tuner. By 
+              default, statistics are switched off. The enable them, the following
+              needs to be added to the configuration file under //OpenSplice/Domain:<br/>
+<pre>&lt;Statistics&gt;
+  &lt;Category name="networking" enabled="true"/&gt;
+&lt;/Statistics&gt;</pre>              
+            </i>
+          </td>
+        </tr>        <tr>
+          <td>
+            dds1847
+          </td>
+          <td>
+            <b>Support multiple installations of OpenSplice DDS on Windows platforms</b><br/>
+            <i>
+              OpenSplice DDS uses system variables and thus installing a new 
+              version of OpenSplice will overwrite the variables for the previous 
+              installation.<br/><br/>
+              <b>Solution:</b>OpenSplice does not use system variables anymore. 
+              A release.bat script is available in the installation directory to 
+              configure your environment.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6792<br/>
+            dds1865
+          </td>
+          <td>
+            <b>The IDL pre-processor must report unsupported key types</b><br/>
+            <i>
+              The IDL pre-processor does not report illegal key fields in a 
+              type when the attributes are there, but the type of the attributes
+              is not supported as a key field. Besides that, it also still 
+              generated code, causing problems with this code only at run-time.<br/><br/> 
+              <b>Solution:</b>The IDL pre-processor now reports unsupported 
+              key fields and does not generate any code in that situation.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1894
+          </td>
+          <td>
+            <b>durability: Two nodes select each other as master, blocking alignment</b><br/>
+            <i>
+              Due to an error in the algorithm that determines the master-ship of
+              a durability service, multiple masters can appear, causing the
+              alignment of non-volatile data to fail.<br/><br/>
+              <b>Solution:</b>The error in determination of the master has been 
+              repaired.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1899
+          </td>
+          <td>
+            <b>Asymmetric NetworkPartition configuration</b><br/>
+            <i>
+              Right now networkPartitions are characterized by an ID that's 
+              determined by the order in which they're defined in the config-file.
+              This does NOT allow for asymmetric configuration. <br/>
+              <b>Solution:</b>A name-hash is calculated to create an ID that 
+              allows asymmetric configuration of networkPartitions over nodes.
+            </i>
+          </td>
+        </tr>
+         <tr>
+          <td>
+            6861<br/>
+            dds1903
+          </td>
+          <td>
+            <b>Network partition expression more limited than described and needed</b><br/>
+            <i>
+              <br/>The network partition.topic expression is more limited than 
+              described in the deployment manual regarding the usage of 
+              wild-cards ('*').<br/><br/>
+              <b>Solution:</b>Wild-cards are now supported on all levels for 
+              network-partitions.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1914
+          </td>
+          <td>
+            <b>Improve reporting of non-matching topics</b><br/>
+            <i>
+              Currently when an application creates a topic that already exists 
+              in the system it will be compared against the existing one and the 
+              creation will fail if the definition is not equal.
+
+              The error reports that are generated are not useful as they often 
+              do not report the topic name. It would be very helpful if users 
+              know which topic creation fails and what the cause is, 
+              preferable also report conflicting values.<br/><br/>
+              <b>Solution:</b>The type name of the topic is now reported when
+              the user tries to create a topic with the same name but a 
+              different type.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6879<br/>
+            dds1921
+          </td>
+          <td>
+            <b>Illegal object reported followed by segmentation faults</b><br/>
+            <i>
+              <br/>Applications sometimes report detecting an illegal
+              object after which they crash. This is caused by an
+              inconsistency in the kernel instance administration.<br/><br/>
+              <b>Solution:</b>The error in the internal administration of 
+              instances in the kernel has been corrected.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1926
+          </td>
+          <td>
+            <b>Setting parameters of a query is too expensive</b><br/>
+            <i>
+              <br/>Setting a parameter on a simple query 
+              (using only '=' i.c.w. AND) is too expensive and results in 
+              congestion on the memory manager.<br/><br/>
+              <b>Solution:</b>Instead of fully reconstructing a query, only the
+              parameters are now changed for simple queries.
+            </i>
+          </td>
+         </tr>
+         <tr>
+          <td>
+            dds1932
+          </td>
+          <td>
+            <b>State the paths of the ospl-info and  ospl-error files immediately after running ospl start</b><br/>
+          </td>
+         </tr>
+         <tr>
+          <td>
+            6904<br/>
+            dds1938
+          </td>
+          <td>
+            <b>Set query parameters should reset the query cache</b><br/>
+            <i>
+              <br/>Setting the query parameters should reset the query cache 
+              because the query when executed over the reader database might 
+              pass samples with the new arguments. This causes the reader not 
+              to trigger the application when new data arrives and also can
+              lead to the situation in which an application cannot read any 
+              data from the reader, even though there is data.<br/><br/>
+              <b>Solution:</b>The cache is now re-evaluated when a query is
+              modified and also when historical data is delivered.
+            </i>
+          </td>
+         </tr>
+         <tr>
+          <td>
+            dds1946
+          </td>
+          <td>
+            <b>Corrupted caching instance pipeline</b><br/>
+            <i>
+              <br/>The instance pipeline in the kernel is formed by caching 
+              destination instances at source instances. The design supports 
+              disconnecting sources but disconnecting destination instances is 
+              poorly implemented. This may lead to corrupted instance caches 
+              and in some cases temporary memory leakage.<br/><br/>
+              <b>Solution:</b>The pipeline implementation has been modified to
+              allow disconnecting destination instances also.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1947
+          </td>
+          <td>
+            <b>Default JDK is now Java 6</b><br/>
+            <i>
+              OpenSplice DDS V5 is compiled with JDK6, but is compatible 
+              with JDK5 as we use the -source 1.5 flag
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1965
+          </td>
+          <td>
+            <b>Persistent data-store completeness needs to be communicated to late-joining nodes</b><br/>
+            <i>
+              When nodes are aligned simultaneously, it is possible for them 
+              to detect whether they did receive a consistent (complete) persistent 
+              data-set or not. In this scenario, these nodes can take action to 
+              prevent injection of incomplete persistent data the next time the 
+              node starts.
+
+              However, for late joining nodes there is no way to detect if a 
+              currently available persistent set is complete/consistent. Therefore, 
+              if a system would be restarted, and a previous late joining node 
+              from a system where incomplete persistent data was injected would 
+              become master for this set, injection of incomplete data would happen.<br/><br/>
+              
+              <b>Solution:</b>Late joining nodes get information about persistent 
+              data completeness of other nodes.<br/>
+
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+           dds1986
+          </td>
+          <td>
+            <b>Problem with persistent topic having exclusive ownership strength</b>
+            <p>Because exclusive persistent/transient samples were not stored 
+             correctly, writers that no longer existed (for example from a 
+             persistent store) could in some cases prevent new writers from 
+             writing new data.<br/><br/>
+             <b>Solution:</b>Instances from a persistent store are now always 
+             implicitly unregistered. Modifications have been made to prevent 
+             storing persistent register/unregister messages, since these are 
+             now both implicit. Furthermore, the durability service will maintain
+             data according to the OwnershipQosPolicy that is set in the 
+             TopicQos.
+            </p>
+          </td>
+        </tr>  
+        <tr>
+          <td>
+            6989<br/>
+            dds1988
+          </td>
+          <td>
+            <b>Linux 64 bit crashes when using a shared memory address above the 4GB range</b><br/>
+            <i>
+              When using a shared memory address which is not aligned on 8192 
+              bytes, OpenSplice DDS would crash.<br/><br/>
+              <b>Solution:</b>Added functionality to print a warning in the info 
+              log when the configured shared memory address is not aligned on 
+              8192 bytes on 64-bit platforms. DDS will also automatically 
+              select the next correctly aligned address and use that instead.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1998
+          </td>
+          <td>
+            <b>Problem with unions in durability in debug mode</b><br/>
+            <i>
+              Due to an invalid assertion, the durability service crashed in
+              debug mode when using specific constructions within a union.<br/><br/>
+              <b>Solution:</b>The invalid assertion has been removed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1999
+          </td>
+          <td>
+            <b>Problem with durability when publishing a union with switch set to a value without corresponding case</b><br/>
+            <i>
+              Due to an invalid assumption in the serialization routines, the 
+              durability service is not able to handle unions correctly when
+              the switch is set to a value without a corresponding case.<br/><br/>
+              <b>Solution:</b>The serialization routines have been updated to 
+              handle these unions correctly.
+            </i>
+          </td>
+        </tr>
+         <tr>
+          <td>
+            dds2007
+          </td>
+          <td>
+            <b>Durability crashes when tracing is enabled and needs to print '%' character</b><br/>
+            <i>
+              <br/>The durability service crashes while tracing information when
+              there's a % in the path, because 'fprintf' takes it as format.<br/><br/>
+              <b>Solution:</b>The information to print using 'fprintf' is done
+              using a format with the string as argument instead of directly 
+              printing the string.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2013
+          </td>
+          <td>
+            <b>idlpp doesn't allow typedef of interface</b><br/>
+            <i>
+              Even though no code is generated for (typedefs of) interfaces by
+              the IDL pre-processor, it should still allow these constructions
+              to be modelled in IDL. <br/><br/>
+              <b>Solution:</b>The IDL pre-processor has been modified to ignore
+              typedefs of interfaces as well.
+            </i>
+          </td>
+        </tr>
+         <tr>
+          <td>
+            7012<br/>
+            dds2015
+          </td>
+          <td>
+            <b>idlpp truncates case label in case of enumeration for java</b><br/>
+            <i>
+              <br/>If the enumeration label inclusive it's scope is larger than 
+              100 characters, the label truncated to 99 characters.<br/><br/>
+              <b>Solution:</b>The length of an enum label is now dynamically 
+              determined.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2022
+          </td>
+          <td>
+            <b>cppgen for Windows can not handle multiple #includes unless 
+            separated by more than a new-line</b><br/>
+            <i>
+              In cpp (C Pre Processor) this occurs when you do not have a carriage 
+              return at the end of an included idl files and there is another 
+              idl file included after it.<br/><br/>
+              <b>Solution:</b>The cpp has been modified to handle this situation 
+              correctly.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6861<br/>
+            dds2029
+          </td>
+          <td>
+            <b>u_queryNew accesses unset variable copy</b><br/>
+            <i>
+              <br/>In the function u_queryNew the variable copy is accessed and 
+              used to dispose (q_dispose) while it's value has not been set.<br/><br/>
+              <b>Solution:</b>The variable is no longer disposed when it has 
+              not been set.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+          dds2043
+          </td>
+          <td>
+            <b>Allow bigger value of InitialDiscoveryPeriod</b>
+            <p>The InitialDiscoveryPeriod max value allowed is 10s. More is 
+            required by customers. <br/><br/>
+            <b>Solution:</b>The maximum value for InitialDiscoveryPeriod is now 
+            set to 60 seconds 
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2045
+          </td>
+          <td>
+            <b>PolySpace issues</b><br/>
+            <i>
+              <br/>Static code analysis with PolySpace demonstrates some 
+              (potential) problems in the code-base.<br/><br/>
+              <b>Solution:</b>The detected problems in the code have been repaired.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7062<br/>
+            dds2072
+          </td>
+          <td>
+            <b>Deadlock in Opensplice callstack when calling write() and take() 
+               at the same time</b><br/>
+            <i>
+              Due to an error in the internal locking strategy in the OpenSplice
+              kernel, an application can get into a deadlock when three threads are 
+              concurrently operating on the same set of objects.<br/><br/>
+              <b>Solution:</b>The error in the internal locking strategy has been
+              repaired.
+            </i>
+          </td>
+        </tr>
+     </table>
+    <h2><a name="issues_api">Fixed Bugs and Changes affecting API</a></h2>
+     <p>
+       <h3>5.1.0</h3>
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            GEN_7<br/>
+            dds1577
+          </td>
+          <td>
+            <b>Report Plug-In facility</b><br/>
+            <i>
+              See the release highlights section
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            DDS_8<br/>
+            dds1617
+          </td>
+          <td>
+            <b>Network level compression</b><br/>
+            <i>
+              See the release highlights section
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            DDS_29<br/>
+            dds1617
+          </td>
+          <td>
+            <b>Create a persistent snapshot</b><br/>
+            <i>
+              The durability service allows an application to request a snapshot of the values of instances of a topic.
+              A snapshot consists of a copy of the current persistent data in a new file, the name of which is provided by the application.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1837
+          </td>
+          <td>
+            <b>The C++ API does not support all Quality of Service</b><br/>
+            <i>
+              The C++ API (sacpp & ccpp) did not support the following QoS;
+              <ul>
+                 <li>subscriber.share</li>
+                 <li>datareader.share</li>
+                 <li>datareader.reader_lifespan</li>
+                 <li>datareader.subscription_keys</li>
+                 <li>datareader.reader_data_lifecycle</li>
+                 <li>DataReaderViewQos</li>
+                 <li>viewKeyQosPolicy</li>
+              </ul><br/>
+              <b>Solution:</b>QoS-ses are now implemented
+            </i>
+          </td>
+        </tr>
+     </table>
+    </p>
+
+    <p>
+    <br/>
+    <hr>
+    <p>
+      <a target="_top" href="http://www.prismtech.com">
+      <img src="../images/logo_prismtech2.jpg" align="right"
+           width="112" height="29" border="0" alt="PrismTech"></a> 
+      <a href="#top" target="_self">
+      <img src="../images/top.gif" width="32" 
+           height="32" border="0" alt="TOP"></a><br/>
+      <a href="#top" target="_self">Top</a>
+    </p>
+  </body>
+</html>
+
+
+
+
+

@@ -105,7 +105,7 @@ main (
         domain, 
         DDS_PARTICIPANT_QOS_DEFAULT, 
         NULL, 
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(participant, "DDS_DomainParticipantFactory_create_participant");  
 
     /* Register the required datatype for ChatMessage. */
@@ -156,7 +156,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL, 
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(chatMessageTopic, "DDS_DomainParticipant_create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -173,7 +173,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServiceTopic, "DDS_DomainParticipant_create_topic");
     
     /* Create a multitopic that substitutes the userID with its corresponding userName. */
@@ -201,7 +201,7 @@ main (
     strcpy (sub_qos->partition.name._buffer[0], partitionName);
 
     /* Create a Subscriber for the MessageBoard application. */
-    chatSubscriber = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_ANY_STATUS);
+    chatSubscriber = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_STATUS_MASK_NONE);
     checkHandle(chatSubscriber, "DDS_DomainParticipant_create_subscriber");
     
     /* Create a DataReader for the NamedMessage Topic (using the appropriate QoS). */
@@ -210,7 +210,7 @@ main (
         namedMessageTopic, 
         DDS_DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(chatAdmin, "DDS_Subscriber_create_datareader");
     
     /* Print a message that the MessageBoard has opened. */

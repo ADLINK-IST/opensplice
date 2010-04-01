@@ -1474,8 +1474,8 @@ idl_module(
         idl_scopePush(context->ownScope, idl_scopeElementNew(c_metaObject(o)->name, idl_tModule));
         c_metaWalk(c_metaObject (o), idl_metaobject, context);
         idl_scopePopFree(context->ownScope);
+        idl_moduleClose(context, o);
     }
-    idl_moduleClose(context, o);
 }
 
 void

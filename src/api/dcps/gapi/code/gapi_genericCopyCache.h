@@ -78,7 +78,7 @@ typedef enum {
 
 typedef struct {
     unsigned short size;
-    unsigned short copyType;
+    gapiCopyType copyType;
 } gapiCopyHeader;
 
 #define gapiCopyHeaderNextObject(copyHeader) \

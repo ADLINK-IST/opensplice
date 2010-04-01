@@ -366,7 +366,7 @@ to_copyType(c_type t)
         ct = gapiEnum;
     break;
     case M_PRIMITIVE:
-        switch (c_primitive (t)->kind) {
+        switch (c_primitive(t)->kind) {
         case P_BOOLEAN:
             ct = gapiBoolean;
         break;
@@ -386,10 +386,16 @@ to_copyType(c_type t)
             ct = gapiLong;
         break;
         default:
+            OS_REPORT_1(OS_ERROR,"to_copyType",0,
+                        "Illegal primitive type (%d) detected.",
+                        c_primitive(t)->kind);
             assert (0);
         }
     break;
     default:
+        OS_REPORT_1(OS_ERROR,"to_copyType",0,
+                    "Illegal type (%d) detected.",
+                    c_baseObject(t)->kind);
         assert (0);
     }
     return ct;

@@ -18,43 +18,39 @@
 #include <v_cache.h>
 
 #define v_groupCache(o) (C_CAST((o),v_groupCache))
-
 #define v_groupCacheEmpty(_this) v_cacheEmpty(v_cache(_this))
 
-v_groupCache
+v_cache
 v_groupCacheNew (
     v_kernel kernel, 
     v_cacheKind kind);
 
-void
-v_groupCacheInsert (
-    v_groupCache _this, 
-    v_groupCacheItem item);
+#define v_groupCacheInsert(_this,item) \
+        v_cacheInsert(v_cache(_this),v_cacheNode(item))
 
 #define v_groupCacheWalk(_this,_action,_arg) \
         v_cacheWalk(v_cache(_this),_action,_arg)
 
-void
-v_groupCacheDeinit (
-    v_groupCache _this);
+#define v_groupCacheDeinit(_this) \
+        v_cacheDeinit(v_cache(_this))
 
 /* inner class: v_groupCacheItem */
 
 #define v_groupCacheItem(o) (C_CAST((o),v_groupCacheItem))
 
+#define v_groupCacheRemove(_this,item) \
+        v_cacheRemove(v_cache(_this),v_cacheNode(item))
+
+#define v_groupCacheItemRemove(_this,kind) \
+        v_cacheNodeRemove(v_cacheNode(_this),kind)
+
+#define v_groupCacheItemInstance(_this) \
+        c_keep(v_cacheNode(_this)->instance)
+
 v_groupCacheItem
 v_groupCacheItemNew (
     v_groupInstance groupInstance, 
     v_instance instance);
-
-v_instance
-v_groupCacheItemObject (
-    v_groupCacheItem _this);
-
-void
-v_groupCacheItemRemove (
-    v_groupCacheItem _this, 
-    v_cacheKind kind);
 
 #endif
 

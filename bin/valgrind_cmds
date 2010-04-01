@@ -1,0 +1,64 @@
+
+#NOTE : Keep the same structure, commands must start on newline with VG_ as the begining of the var name
+#as it is parsed later and used. And log names must start vg_ 
+
+# You must set the VG_LOG_DIR before sourcing this file, If you alter the VG_LOG_DIR you must 
+# resource this file
+if [ -z "$VG_LOG_DIR" ]
+then
+    VG_LOG_DIR=.
+    export VG_LOG_DIR
+fi
+
+# Options to add for more info 
+# --leak-check=full --show-reachable=yes --leak-resolution=high
+#
+
+# Since valgrind version 3.5.0 "--leak-check=full" will report leaks as errors.  This means we
+# cannot easily distinguish memory errors from leaks.  For now set --leak-check to "summary"
+# which will report leaks but unfortunately not give stack traces of where they exist.
+
+VALGRIND_OPTIONS_QUOTED="\"--num-callers=50\" \"--leak-check=summary\" \"--show-reachable=yes\" \"--leak-resolution=high\" \"--tool=memcheck\" \"-v\""
+# for VALGRIND_OPTIONS remove the \"
+VALGRIND_OPTIONS=`echo $VALGRIND_OPTIONS_QUOTED | sed 's@\"@@g'`
+
+#Used in the example runs
+VG_PONG="valgrind --log-file=$VG_LOG_DIR/vg_pong.txt $VALGRIND_OPTIONS"
+VG_PING_M="valgrind --log-file=$VG_LOG_DIR/vg_ping_m.txt $VALGRIND_OPTIONS"
+VG_PING_Q="valgrind --log-file=$VG_LOG_DIR/vg_ping_q.txt $VALGRIND_OPTIONS"
+VG_PING_S="valgrind --log-file=$VG_LOG_DIR/vg_ping_s.txt $VALGRIND_OPTIONS"
+VG_PING_B="valgrind --log-file=$VG_LOG_DIR/vg_ping_b.txt $VALGRIND_OPTIONS"
+VG_PING_F="valgrind --log-file=$VG_LOG_DIR/vg_ping_f.txt $VALGRIND_OPTIONS"
+VG_PING_T="valgrind --log-file=$VG_LOG_DIR/vg_ping_t.txt $VALGRIND_OPTIONS"
+VG_OSPL_START="valgrind --log-file=$VG_LOG_DIR/vg_ospl_start.txt $VALGRIND_OPTIONS"
+VG_OSPL_STOP="valgrind --log-file=$VG_LOG_DIR/vg_ospl_stop.txt $VALGRIND_OPTIONS"
+
+#Used after an ospl start as valgrind slows spliced 
+#and other service startup by a considerable amount
+VG_START_SLEEP="sleep 4"
+
+#Used in code at time of fork/exec
+#each of the valgrind args MUST be 'slashed double quoted' as this is the way the os_procCreate will use it
+VG_SPLICED="valgrind \"--log-file=$VG_LOG_DIR/vg_spliced.txt\" $VALGRIND_OPTIONS_QUOTED"
+VG_DURABILITY="valgrind \"--log-file=$VG_LOG_DIR/vg_durability.txt\" $VALGRIND_OPTIONS_QUOTED"
+VG_NETWORKING="valgrind \"--log-file=$VG_LOG_DIR/vg_networking.txt\" $VALGRIND_OPTIONS_QUOTED"
+VG_DDSI="valgrind \"--log-file=$VG_LOG_DIR/vg_ddsi.txt\" $VALGRIND_OPTIONS_QUOTED"
+VG_SNETWORKING="valgrind \"--log-file=$VG_LOG_DIR/vg_snetworking.txt\" $VALGRIND_OPTIONS_QUOTED"
+VG_CMSOAP="valgrind \"--log-file=$VG_LOG_DIR/vg_cmsoap.txt\" $VALGRIND_OPTIONS_QUOTED"
+
+export VG_OSPL_START \
+       VG_PONG \
+       VG_PING_M \
+       VG_PING_Q \
+       VG_PING_S \
+       VG_PING_B \
+       VG_PING_F \
+       VG_PING_T \
+       VG_OSPL_STOP \
+       VG_SPLICED \
+       VG_DURABILITY \
+       VG_NETWORKING \
+       VG_DDSI \
+       VG_SNETWORKING \
+       VG_CMSOAP \
+       VG_START_SLEEP

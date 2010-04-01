@@ -4,16 +4,18 @@
 include $(OSPL_HOME)/setup/makefiles/makefile.mak
 
 TARGET_CSEXEC = ping
-CS_NAMESPCS	 = . PingPong
+CS_NAMESPCS	 = . pingpong
 
 # Specify the location of the IDL data model, and the generation results of idlpp.
-IDL_DIR     := PingPong
+IDL_DIR     := ../../PingPong
 TOPIC_IDL   := $(notdir $(wildcard $(IDL_DIR)/*.idl))
-IDLPP_CS    := $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs)
+IDLPP_CS    := $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs) $(TOPIC_IDL:%.idl=%SplDcps.cs)
 
 TARGET_LINK_DIR = ../../exec/$(SPLICE_TARGET)
 
-all link: idlgen csapi csc
+CODE_DIR	:= ../../PingPong/Ping
+
+all link: idlgen csapi csc pong.exe
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -41,4 +43,6 @@ $(CS_API):
 $(IDLPP_CS): $(IDL_DIR)/$(TOPIC_IDL)
 	idlpp -l cs -S $<
 
-
+pong.exe: ../../PingPong/Pong/pong.cs ../../PingPong/Pong/ErrorHandler.cs ../../PingPong/Pong/ponger.cs ../../PingPong/Pong/stats.cs ../../PingPong/Pong/time.cs $(IDLPP_CS)
+	$(CSC) $(CSFLAGS) -out:pong.exe $(CSTARGET_EXEC) $(CSLIBS) $^
+	cp pong.exe $(TARGET_LINK_DIR)

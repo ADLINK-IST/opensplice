@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "c__base.h"
@@ -151,7 +151,6 @@ c_fieldNew (
         o = NULL;
         offset = 0;
         refsList = NULL;
-//        path = c_arrayNew(c_getMetaType(base,M_BASE),length);
         path = c_newArray(c_fieldPath_t(base),length);
         if (path) {
             for (n=0;n<length;n++) {
@@ -209,7 +208,6 @@ c_fieldNew (
 
             if (refsList) {
                 length = c_iterLength(refsList);
-//                field->refs = c_arrayNew(c_address_t(base),length);
                 field->offset = 0;
                 if (length > 0) {
                     field->refs = c_newArray(c_fieldRefs_t(base),length);
@@ -264,8 +262,6 @@ c_fieldConcat (
 
     field->type = c_keep(tail->type);
     field->kind = tail->kind;
-
-//    field->path = c_arrayNew(c_getMetaType(base,M_BASE),len1 + len2);
     field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
     for (i=0;i<len1;i++) {
         field->path[i] = c_keep(head->path[i]);
@@ -280,7 +276,6 @@ c_fieldConcat (
     totlen = len1 + len2;
     if (totlen > 0) {
         field->offset = 0;
-//        field->refs = c_arrayNew(c_long_t(base),totlen);
         field->refs = c_newArray(c_fieldRefs_t(base),totlen);
         if (len1) {
             for (i=0;i<len1;i++) {

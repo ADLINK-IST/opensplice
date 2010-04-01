@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -49,11 +49,11 @@ nw_networkPartitionNew(
     nw_networkPartition *prevNext)
 {
     nw_networkPartition result = NULL;
-    
+
     NW_CONFIDENCE(prevNext != NULL);
-    
+
     result = os_malloc(sizeof(*result));
-    
+
     if (result != NULL) {
         result->id = id;
         result->name = nw_stringDup(name);
@@ -64,7 +64,7 @@ nw_networkPartitionNew(
         result->next = NULL;
         *prevNext = result;
     }
-    
+
     return result;
 }
 
@@ -74,7 +74,7 @@ nw_networkPartitionFree(
     nw_networkPartition *prevNext)
 {
     NW_CONFIDENCE(prevNext != NULL);
-    
+
     if (networkPartition != NULL) {
         *prevNext = networkPartition->next;
         os_free(networkPartition->name);
@@ -85,7 +85,7 @@ nw_networkPartitionFree(
         os_free(networkPartition);
     }
 }
-    
+
 
 /* -------------------------- nw_partitionMapping --------------------------- */
 
@@ -107,11 +107,11 @@ nw_partitionMappingNew(
     nw_partitionMapping *prevNext)
 {
     nw_partitionMapping result = NULL;
-    
+
     NW_CONFIDENCE(prevNext != NULL);
-    
+
     result = os_malloc(sizeof(*result));
-    
+
     if (result != NULL) {
         result->dcpsPartitionExpression = nw_stringDup(dcpsPartitionExpression);
         result->dcpsTopicExpression = nw_stringDup(dcpsTopicExpression);
@@ -119,7 +119,7 @@ nw_partitionMappingNew(
         result->next = NULL;
         *prevNext = result;
     }
-    
+
     return result;
 }
 
@@ -129,7 +129,7 @@ nw_partitionMappingFree(
     nw_partitionMapping *prevNext)
 {
     NW_CONFIDENCE(prevNext != NULL);
-    
+
     if (partitionMapping != NULL) {
         *prevNext = partitionMapping->next;
         os_free(partitionMapping->dcpsPartitionExpression);
@@ -145,17 +145,32 @@ typedef enum nw_mappingMatch_e {
     NW_MATCH_EXACT    = 3
 } nw_mappingMatch;
 
+/* Mapping result:
+ *
+ *    Partition match |   Topic match  |   result
+ * ---------------------------------------------------
+ * 1) EXACT           |   EXACT        |   EXACT
+ * 2) EXACT           |   WILDCARD     |   PARTIAL
+ * 3) EXACT           |   NONE         |   NONE
+ * 4) WILDCARD        |   EXACT        |   PARTIAL
+ * 5) WILDCARD        |   WILDCARD     |   WILDCARD
+ * 6) WILDCARD        |   NONE         |   NONE
+ * 7) NONE            |   EXACT        |   NONE
+ * 8) NONE            |   WILDCARD     |   NONE
+ * 9) NONE            |   NONE         |   NONE
+ *
+ */
+
 static nw_mappingMatch
-nw_WildcardMatching(
+nw_wildcardMatching(
     c_string str,
     c_string pattern )
+
 {
-    c_bool   stop = FALSE;
+	c_bool   stop = FALSE;
     nw_mappingMatch   matches = NW_MATCH_EXACT;
     c_string strRef = NULL;
     c_string patternRef = NULL;
-    /* c_string t1 = str; */
-    /* c_string t2 = pattern; */
 
     /* QAC EXPECT 2106,2100; */
     while ((*str != 0) && (*pattern != 0) && (stop == FALSE)) {
@@ -216,22 +231,6 @@ nw_WildcardMatching(
     /* QAC EXPECT 5101; */
 }
 
-/* Mapping result:
- *
- *    Partition match |   Topic match  |   result
- * ---------------------------------------------------
- * 1) EXACT           |   EXACT        |   EXACT
- * 2) EXACT           |   WILDCARD     |   PARTIAL
- * 3) EXACT           |   NONE         |   NONE
- * 4) WILDCARD        |   EXACT        |   PARTIAL
- * 5) WILDCARD        |   WILDCARD     |   WILDCARD
- * 6) WILDCARD        |   NONE         |   NONE
- * 7) NONE            |   EXACT        |   NONE
- * 8) NONE            |   WILDCARD     |   NONE
- * 9) NONE            |   NONE         |   NONE
- *
- */
-
 static nw_mappingMatch
 nw_partitionMappingMatch(
     nw_partitionMapping partitionMapping,
@@ -243,16 +242,16 @@ nw_partitionMappingMatch(
 
     if (partitionMapping != NULL) {
 
-        partitionMatch = nw_WildcardMatching(dcpsPartitionName, partitionMapping->dcpsPartitionExpression);
+        partitionMatch = nw_wildcardMatching(dcpsPartitionName, partitionMapping->dcpsPartitionExpression);
         if (partitionMatch != NW_MATCH_NONE) {
-            result = nw_WildcardMatching(dcpsTopicName, partitionMapping->dcpsTopicExpression);
+        	result = nw_wildcardMatching(dcpsTopicName, partitionMapping->dcpsTopicExpression);
 
-            if((partitionMatch == NW_MATCH_WILDCARD && result == NW_MATCH_EXACT) ||
-                 (partitionMatch == NW_MATCH_EXACT && result == NW_MATCH_WILDCARD)) {
-                 result = NW_MATCH_PARTIAL;
-            }
+			if((partitionMatch == NW_MATCH_WILDCARD && result == NW_MATCH_EXACT) ||
+			   (partitionMatch == NW_MATCH_EXACT && result == NW_MATCH_WILDCARD)) {
+				 result = NW_MATCH_PARTIAL;
+			}
         } else {
-            result = NW_MATCH_NONE;
+        	result = NW_MATCH_NONE;
         }
 
     }
@@ -271,11 +270,11 @@ NW_STRUCT(nw_partitions) {
 
 nw_partitions
 nw_partitionsNew() {
-    
+
     nw_partitions result = NULL;
-    
+
     result = os_malloc(sizeof(*result));
-    
+
     if (result != NULL) {
         result->partitionsHead = NULL;
         result->partitionsTail = NULL;
@@ -284,7 +283,7 @@ nw_partitionsNew() {
         nw_partitionsAddPartition(result, V_NETWORKPARTITIONID_LOCALHOST,
 	  NW_LOCALPARTITION_NAME, NULL, NULL /* securityPolicy*/, TRUE);
     }
-    
+
     return result;
 }
 
@@ -315,7 +314,7 @@ nw_partitionsLookupPartitionByName(
 {
     nw_networkPartition result = NULL;
     nw_networkPartition currentPartition;
-    
+
     if (partitions != NULL) {
         currentPartition = partitions->partitionsHead;
         while ((result == NULL) && (currentPartition != NULL)) {
@@ -326,7 +325,7 @@ nw_partitionsLookupPartitionByName(
             }
         }
     }
-    
+
     return result;
 }
 
@@ -342,11 +341,11 @@ nw_partitionsAddPartition(
     nw_networkPartitionName usedName = NULL;
     nw_networkPartition networkPartition;
     nw_networkPartition *prevNext;
-    
+
     if (partitions != NULL) {
-        
+
         /* Take default name partitionName is empty or NULL */
-        
+
         if (partitionName != NULL) {
             if (*partitionName != '\0') {
                 usedName = partitionName;
@@ -355,7 +354,7 @@ nw_partitionsAddPartition(
         if (usedName == NULL) {
             usedName = partitionAddress;
         }
-        
+
         /* First see if the partition is already available */
         networkPartition = nw_partitionsLookupPartitionByName(partitions, usedName);
         if (networkPartition == NULL) {
@@ -382,7 +381,7 @@ nw_partitionsAddMapping(
     nw_networkPartition networkPartition;
     nw_partitionMapping partitionMapping;
     nw_partitionMapping *prevNext;
-    
+
     if (partitions != NULL) {
         networkPartition = nw_partitionsLookupPartitionByName(partitions,
             partitionName);
@@ -395,7 +394,7 @@ nw_partitionsAddMapping(
                 NW_GLOBALPARTITION_NAME);
             NW_CONFIDENCE(networkPartition != NULL);
         }
-        
+
         if (partitions->mappingsTail != NULL) {
             prevNext = &(partitions->mappingsTail->next);
         } else {
@@ -420,7 +419,7 @@ nw_partitionsSetGlobalPartition(
 }
 
 
-                          
+
 /* Looking up of networkPartitions */
 
 v_networkPartitionId
@@ -433,7 +432,7 @@ nw_partitionsLookupBestFit(
     nw_partitionMapping currentMapping;
     nw_mappingMatch bestMatch = NW_MATCH_NONE;
     nw_mappingMatch currentMatch;
-    
+
     if (partitions != NULL) {
         currentMapping = partitions->mappingsHead;
         while ((currentMapping != NULL) && (bestMatch != NW_MATCH_EXACT)) {
@@ -446,9 +445,11 @@ nw_partitionsLookupBestFit(
             currentMapping = currentMapping->next;
         }
     }
-    
+
     /* We should have found at least a wildcard match, for the default partition */
     NW_CONFIDENCE(bestMatch != NW_MATCH_NONE);
-    
+
     return result;
 }
+
+

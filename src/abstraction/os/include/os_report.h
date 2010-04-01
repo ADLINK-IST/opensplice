@@ -59,6 +59,8 @@ extern "C" {
 
 typedef void * os_IReportService_s;
 
+typedef void * os_reportPlugin;
+
 typedef enum os_reportType {
     OS_INFO,
     OS_WARNING,
@@ -142,8 +144,24 @@ OS_API os_int32
 os_unregisterReportService(
     os_IReportService_s reportServiceContext);
 
+OS_API os_int32
+os_reportRegisterPlugin(
+    const char *library_file_name,
+    const char *initialize_method_name,
+    const char *argument,
+    const char *report_method_name,
+    const char *finalize_method_name,
+    os_reportPlugin *plugin);
+
+OS_API os_int32
+os_reportUnregisterPlugin(
+    os_reportPlugin plugin);
+
 OS_API void
 os_reportDisplayLogLocations();
+
+
+
 
 #undef OS_API
 

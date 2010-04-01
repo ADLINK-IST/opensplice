@@ -70,7 +70,7 @@ v_deliveryGuardNotify(
 v_result
 v_deliveryGuardIgnore(
     v_deliveryGuard _this,
-    c_ulong systemId);
+    v_gid readerGID);
 
 #if defined (__cplusplus)
 }

@@ -1,41 +1,41 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package DDS;
 
 /**
- * Allow the creation and destruction of {@link DomainParticipant} objects. 
+ * Allow the creation and destruction of {@link DomainParticipant} objects.
  * This class is implemented as a Singleton.
  */
-public class DomainParticipantFactory 
-	extends org.opensplice.dds.dcps.SajSuperClass 
-	implements DomainParticipantFactoryOperations 
+public class DomainParticipantFactory
+	extends org.opensplice.dds.dcps.SajSuperClass
+	implements DomainParticipantFactoryOperations
 {
 	/**
      * The one and only instance of the DomainParticipantFactory.
      */
 	private static DDS.DomainParticipantFactory theParticipantFactory = null;
-	
+
 	/**
-	 * Private constructor to prevent the creation of new instances of the 
-	 * DomainParticipantFactory. Call the static method get_instance to get a 
+	 * Private constructor to prevent the creation of new instances of the
+	 * DomainParticipantFactory. Call the static method get_instance to get a
 	 * reference.
 	 */
     private DomainParticipantFactory() {
     }
-    
+
     /**
-     * Static method to get a reference to the one DomainParticipantFactory 
-     * instance. 
-     * @return a reference to the one and only instance of the 
+     * Static method to get a reference to the one DomainParticipantFactory
+     * instance.
+     * @return a reference to the one and only instance of the
      * DomainParticipantFactory.
      */
     public static synchronized DDS.DomainParticipantFactory get_instance() {
@@ -47,37 +47,37 @@ public class DomainParticipantFactory
                 /*Library could not be loaded.*/
                 System.err.println("DDS.DomainParticipantFactory.get_instance() failed: " + ule.getMessage());
             }
-    		
+
     	}
     	return theParticipantFactory;
     }
 
     public DDS.DomainParticipant create_participant (String domainId, DDS.DomainParticipantQos qos, DDS.DomainParticipantListener a_listener, int mask) {
         DDS.DomainParticipant dp = jniCreateParticipant(domainId, qos, a_listener,mask);
-        
+
         if(dp != null){
             boolean success = false;
             int rc;
-            
-            ParticipantBuiltinTopicDataTypeSupport participantTypeSupport = 
+
+            ParticipantBuiltinTopicDataTypeSupport participantTypeSupport =
                                 new ParticipantBuiltinTopicDataTypeSupport();
             rc = participantTypeSupport.register_type(dp, "DDS::ParticipantBuiltinTopicData");
-            
+
             if(rc == RETCODE_OK.value){
-                TopicBuiltinTopicDataTypeSupport topicTypeSupport = 
+                TopicBuiltinTopicDataTypeSupport topicTypeSupport =
                                         new TopicBuiltinTopicDataTypeSupport();
                 rc = topicTypeSupport.register_type(dp, "DDS::TopicBuiltinTopicData");
-            
+
                 if(rc == RETCODE_OK.value){
-                    PublicationBuiltinTopicDataTypeSupport publicationTypeSupport = 
+                    PublicationBuiltinTopicDataTypeSupport publicationTypeSupport =
                                 new PublicationBuiltinTopicDataTypeSupport();
                     rc = publicationTypeSupport.register_type(dp, "DDS::PublicationBuiltinTopicData");
-                    
+
                     if(rc == RETCODE_OK.value){
-                        SubscriptionBuiltinTopicDataTypeSupport subscriptionTypeSupport = 
+                        SubscriptionBuiltinTopicDataTypeSupport subscriptionTypeSupport =
                                 new SubscriptionBuiltinTopicDataTypeSupport();
                         rc = subscriptionTypeSupport.register_type(dp, "DDS::SubscriptionBuiltinTopicData");
-                        
+
                         if(rc == RETCODE_OK.value){
                             success = true;
                         }
@@ -114,9 +114,13 @@ public class DomainParticipantFactory
     public int get_qos (DDS.DomainParticipantFactoryQosHolder qos){
 		return jniGetQos(qos);
     	}
-	
+
     public DDS.Domain lookup_domain (String domain_id) {
         return jniLookupDomain(domain_id);
+    }
+
+    public int delete_domain (DDS.Domain a_domain) {
+        return jniDeleteDomain(a_domain);
     }
 
     private native static DomainParticipantFactory jniGetInstance();
@@ -130,5 +134,5 @@ public class DomainParticipantFactory
     private native int jniGetQos(DDS.DomainParticipantFactoryQosHolder qos);
 
     private native DDS.Domain jniLookupDomain(String domain_id);
-    
+    private native int jniDeleteDomain(DDS.Domain a_domain);
 } // DomainParticipantFactory

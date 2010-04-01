@@ -24,7 +24,7 @@ public class PublicationBuiltinTopicDataTypeSupport extends org.opensplice.dds.d
     public PublicationBuiltinTopicDataTypeSupport()
     {
         super("DDS/PublicationBuiltinTopicDataDataReaderImpl",
-                "DDS/PublicationBuiltinTopicDataDataReaderViewImpl",
+            "DDS/PublicationBuiltinTopicDataDataReaderViewImpl",
             "DDS/PublicationBuiltinTopicDataDataWriterImpl",
             "(LDDS/PublicationBuiltinTopicDataTypeSupport;)V",
             "null",

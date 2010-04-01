@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_report.h"
@@ -17,7 +17,7 @@
 
 #define ERROR_CONTEXT "DCPS API"
 
-static const char *methodName[] = { 
+static const char *methodName[] = {
     "unknown",
     "get_qos",
     "set_qos",
@@ -192,7 +192,7 @@ static const char *qosPolicyName[] = {
     GAPI_SHARE_QOS_POLICY_NAME,
     GAPI_SCHEDULING_QOS_POLICY_NAME
 };
-    
+
 
 static const char *qosAttributeName[] = {
     "unknown",
@@ -225,7 +225,7 @@ static const char *qosAttributeName[] = {
     "scheduling_class",
     "scheduling_priority_kind"
 };
-    
+
 
 static const char *errorMessage[] = {
     "undefined error",
@@ -252,7 +252,7 @@ static const char *errorMessage[] = {
     "inconsistent topic"
 };
 
-    
+
 
 static const char *
 getEntityName (
@@ -261,10 +261,11 @@ getEntityName (
     _ObjectKind kind;
 
 #define _CASE_(k,n) case OBJECT_KIND_##k: return #n
-    
+
     kind = gapi_objectGetKind(entity);
     switch ( kind ) {
         _CASE_(ENTITY,Entity);
+        _CASE_(DOMAIN,Domain);
         _CASE_(DOMAINPARTICIPANTFACTORY,DomainParticipantFactory);
         _CASE_(DOMAINPARTICIPANT,DomainParticipant);
         _CASE_(TYPESUPPORT,Typesupport);

@@ -126,12 +126,14 @@ _v_writerSampleKeep (
 /* Precondition: protect the sample yourself */
 void
 _v_writerSampleResend (
-    v_writerSample sample)
+    v_writerSample sample,
+    v_resendScope resendScope)
 {
     assert(sample);
     assert(C_TYPECHECK(sample,v_writerSample));
 
     sample->resend = TRUE;
+    sample->resendScope |= resendScope;
 }
 
 void

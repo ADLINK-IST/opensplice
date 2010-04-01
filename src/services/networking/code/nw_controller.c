@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -51,11 +51,11 @@ C_STRUCT(nw_controller) {
     /* Sub admin */
     u_subscriber subscriber;
     u_networkReader reader;
-  
+
     /* Discovery of other nodes */
     nw_discoveryWriter discoveryWriter;
     nw_discoveryReader discoveryReader;
-  
+
     /* Channels for writing and reading data */
     nw_bridge bridge;
     os_uint32 nofChannelUsers;
@@ -85,7 +85,7 @@ onNewGroupReaderAction(
     struct readerActionArg *actionArg = (struct readerActionArg *)arg;
     v_group group;
     nw_controller controller;
-    v_networkReaderEntry entry;   
+    v_networkReaderEntry entry;
     os_uint32 i;
     v_networkPartitionId networkPartitionId;
 
@@ -93,8 +93,8 @@ onNewGroupReaderAction(
     actionArg = (struct readerActionArg *)arg;
     controller = actionArg->controller;
     group = actionArg->group;
-    
-    /* Lookup an entry from the new group to check if we have not been 
+
+    /* Lookup an entry from the new group to check if we have not been
      * notified of this before... */
     entry = v_networkReaderLookupEntry(reader, group);
     if (!entry) {
@@ -108,23 +108,27 @@ onNewGroupReaderAction(
                                   v_topicName(v_groupTopic(group)));
 
         if ( networkPartitionId != V_NETWORKPARTITIONID_LOCALHOST ){
+            if (strcmp(v_partitionName(v_groupPartition(group)),"__BUILT-IN PARTITION__") ==0) {
 
-            NW_TRACE_3(Test, 3,
-                       "Selected partitionId %d for "
-                       "partition %s, topic %s",
-                       networkPartitionId,
-                       v_partitionName(v_groupPartition(group)),
-                       v_topicName(v_groupTopic(group)));
+                /* do not trace build in partitions */
+            } else {
+                NW_TRACE_3(Test, 3,
+                           "Selected partitionId %d for "
+                           "partition %s, topic %s",
+                           networkPartitionId,
+                           v_partitionName(v_groupPartition(group)),
+                           v_topicName(v_groupTopic(group)));
+            }
 
             entry = v_networkReaderEntryNew(reader, group,
                                             controller->networkId,
                                             controller->nofEntryReaders,
                                             networkPartitionId);
-            
+
             /* Walk over all channelUsers to notify them on this new group */
             for (i=0; i<controller->nofChannelUsers; i++) {
                 nw_channelUserNotifyNewGroup(
-                    NW_CHANNELUSER_BY_ID(controller, i), 
+                    NW_CHANNELUSER_BY_ID(controller, i),
                     entry);
                 /* For the test, do not output addition of builtin-partitions
                  * because this might happen in any order */
@@ -142,7 +146,7 @@ onNewGroupReaderAction(
                        "Ignoring partition %s, topic %s",
                        v_partitionName(v_groupPartition(group)),
                        v_topicName(v_groupTopic(group)));
-            
+
             v_groupNotifyAwareness(group, u_serviceGetName(controller->service), FALSE);
         }
     }
@@ -174,7 +178,7 @@ onNewGroup(
     }
     c_iterFree(newGroups);
 }
-            
+
 static c_ulong
 nw_controllerOnNewGroup(
     u_dispatcher o,
@@ -208,7 +212,7 @@ getNetworkId(
     nw_controller controller)
 {
     os_time time;
-   
+
     (void)controller;
 
     /* NOTE: for now, let network ID be a "random"-number. This number has to be
@@ -230,7 +234,7 @@ onNodeStarted(
 {
     nw_controller controller = (nw_controller)arg;
     (void)detectedTime;
-    
+
     NW_CONFIDENCE(controller->discoveryReader != NULL);
     NW_CONFIDENCE(controller->discoveryWriter != NULL);
 
@@ -238,7 +242,7 @@ onNodeStarted(
         networkId, aliveCount);
     NW_REPORT_INFO_2(1,"Topology Discovery: Discovered active remote node 0x%x, currently %u active nodes known",
                         networkId,  aliveCount);
-    
+
     /* Advertise my existence */
     /* Note: this will be p2p in the future */
     nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter);
@@ -263,7 +267,7 @@ onNodeStopped(
 {
     nw_controller controller = (nw_controller)arg;
     (void)detectedTime;
-    
+
     NW_CONFIDENCE(controller->discoveryReader != NULL);
     NW_CONFIDENCE(controller->discoveryWriter != NULL);
 
@@ -290,7 +294,7 @@ onNodeDied(
 {
     nw_controller controller = (nw_controller)arg;
     (void)detectedTime;
-    
+
     NW_CONFIDENCE(controller->discoveryReader != NULL);
     NW_CONFIDENCE(controller->discoveryWriter != NULL);
 
@@ -309,7 +313,7 @@ onNodeDied(
 static void
 onFatal(void)
 {
-    
+
 }
 
 /* ------------- Main function of this controller ------------ */
@@ -343,13 +347,13 @@ nw_controllerInitializeChannels(
             nofChannels = c_iterLength(channelList);
         }
 
-  
+
         if (nofChannels == 0) {
              controller->channelUsers = NULL;
         } else {
              /* Create channelUsers */
              controller->channelUsers= (nw_channelUser *)os_malloc(
-                 2 * nofChannels * 
+                 2 * nofChannels *
                  (os_uint32)sizeof(*controller->channelUsers));
 
             for (iChannel=0; iChannel<nofChannels; iChannel++) {
@@ -398,7 +402,7 @@ nw_controllerInitializeChannels(
             c_iterFree(channelList);
         }
 #undef NW_CHANNEL_PATH
-        
+
         /* Now find an enabled discovery channel */
 #define NW_DISCOVERY_PATH NWCF_ROOT(DiscoveryChannel) "[@"NWCF_ATTRIB_enabled"!='false']"
 
@@ -420,7 +424,7 @@ nw_controllerInitializeChannels(
         }
         if (useDiscovery) {
             controller->discoveryWriter = nw_discoveryWriterNew(controller->networkId, NW_DISCOVERY_PATH);
-            controller->discoveryReader = nw_discoveryReaderNew(controller->networkId, 
+            controller->discoveryReader = nw_discoveryReaderNew(controller->networkId,
                NW_DISCOVERY_PATH, onNodeStarted, onNodeStopped, onNodeDied, controller);
 #ifdef NW_LOOPBACK
             if (nw_configurationUseLoopback()) {
@@ -430,7 +434,7 @@ nw_controllerInitializeChannels(
             u_cfElementFree(channel);
         }
 #undef NW_DISCOVERY_PATH
-        
+
         channel = c_iterTakeFirst(channelList);
         while (channel != NULL) {
             u_cfElementFree(channel);
@@ -465,7 +469,7 @@ nw_controllerSplitPartitionTopic(
     char *dotPos;
     const char *topicPos;
     os_uint32 topicLen;
-    
+
     if (expression != NULL) {
         partitionPos = expression;
         dotPos = strchr(expression, '.');
@@ -483,7 +487,7 @@ nw_controllerSplitPartitionTopic(
 			result = TRUE;
         }
     }
-    
+
     return result;
 }
 
@@ -514,40 +518,9 @@ nw_controllerInitializePartitions(
     char *topicExpression;
     /* Checking if the address is valid */
     sk_addressType addressType;
-    
+
     controller->partitions = nw_partitionsNew();
-    
-    /* First get the GlobalPartition aka default partition */
-    partitionAddress = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
-        NWPartitionAddress, NWCF_DEF(GlobalAddress), NWCF_DEF(GlobalAddress));
 
-    addressType = sk_getAddressType(partitionAddress);
-    if (addressType == SK_TYPE_UNKNOWN) {
-        NW_REPORT_ERROR_2("initializing network",
-            "Incorrect address %s read from configuration, using default %s",
-            partitionAddress, NWCF_DEF(GlobalAddress));
-        os_free(partitionAddress);
-        partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
-    }
-
-    /* might return NULL */ 
-    securityPolicy = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
-        NWSecurityPolicy, NWCF_DEF(NWSecurityPolicy), NWCF_DEF(NWSecurityPolicy));
-
-    /* Compiling wihtout security feature, if configuration is declaring
-     * security profile we must tell user that it does not take any effect */
-    if (NW_SECURITY_DISABLED && securityPolicy) {
-        NW_REPORT_WARNING_1("initializing network",
-			    "Security feature not available, configured security profile  '%s' will not take effect on global partition",
-			  securityPolicy);
-	
-    }
-
-    nw_partitionsSetGlobalPartition(controller->partitions, partitionAddress, 
-				    securityPolicy);
-    os_free(partitionAddress);
-    os_free(securityPolicy);
-    
     partitionList = nw_configurationGetElements(NWCF_ROOT(NWPartition));
     nofPartitions = c_iterLength(partitionList);
     for (iPartition=1; iPartition<=nofPartitions; iPartition++) {
@@ -569,12 +542,12 @@ nw_controllerInitializePartitions(
             }
 
 	    attrSecurityPolicy = u_cfElementAttribute(partition, NWCF_ATTRIB(NWSecurityPolicy));
-	    
+
 	    if (attrSecurityPolicy!=NULL) {
 		u_cfAttributeStringValue(attrSecurityPolicy, &securityPolicy);
 	    } else {
-		/* no security policy, no protection */ 
-		securityPolicy = NULL; 
+		/* no security policy, no protection */
+		securityPolicy = NULL;
 	    }
 
 	    /* Compiling wihtout security feature, if configuration is
@@ -584,7 +557,7 @@ nw_controllerInitializePartitions(
 	    	NW_REPORT_WARNING_2("initializing network",
 				    "Security feature not available, configured security profile  '%s' will not take effect on network partition %s",
 				    securityPolicy, partitionName);
-		
+
 	    }
 
             nw_partitionsAddPartition(controller->partitions, iPartition,
@@ -650,6 +623,39 @@ nw_controllerInitializePartitions(
         }
     }
 
+    /*Finally get the GlobalPartition aka default partition this will act as a
+     *fallthrough for partition/topic combinations that didn't match any of the
+     *previous mappings
+     */
+    partitionAddress = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
+        NWPartitionAddress, NWCF_DEF(GlobalAddress), NWCF_DEF(GlobalAddress));
+
+    addressType = sk_getAddressType(partitionAddress);
+    if (addressType == SK_TYPE_UNKNOWN) {
+        NW_REPORT_ERROR_2("initializing network",
+            "Incorrect address %s read from configuration, using default %s",
+            partitionAddress, NWCF_DEF(GlobalAddress));
+        os_free(partitionAddress);
+        partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
+    }
+
+    /* might return NULL */
+    securityPolicy = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
+        NWSecurityPolicy, NWCF_DEF(NWSecurityPolicy), NWCF_DEF(NWSecurityPolicy));
+
+    /* Compiling wihtout security feature, if configuration is declaring
+     * security profile we must tell user that it does not take any effect */
+    if (NW_SECURITY_DISABLED && securityPolicy) {
+        NW_REPORT_WARNING_1("initializing network",
+                "Security feature not available, configured security profile  '%s' will not take effect on global partition",
+              securityPolicy);
+    }
+
+    nw_partitionsSetGlobalPartition(controller->partitions, partitionAddress,
+                    securityPolicy);
+    os_free(partitionAddress);
+    os_free(securityPolicy);
+
 }
 
 
@@ -661,12 +667,12 @@ nw_controllerInitialize(
     c_voidp onFatalUsrData)
 {
     v_subscriberQos subscriberQos;
-        
+
     controller->service = service;
 
-    /* first, before all depending services are spawned */ 
+    /* first, before all depending services are spawned */
     NW_SECURITY_MODULE_INIT(service);
-    
+
     nw_controllerInitializePartitions(controller);
 
     subscriberQos = u_subscriberQosNew(NULL);
@@ -684,12 +690,12 @@ nw_controllerInitialize(
 
     /* Create a dataReader to read from */
     controller->reader = u_networkReaderNew(controller->subscriber,
-                                            NW_READER_NAME, 
+                                            NW_READER_NAME,
                         NULL,
                         FALSE); /*ignoreReliabilityQoS*/
     controller->networkId = getNetworkId(controller);
     controller->bridge = nw_bridgeNew(controller->networkId);
-    
+
     nw_controllerInitializeChannels(controller,onFatal,onFatalUsrData);
 
      NW_TRACE_1(Discovery, 1, "Networking service has handed out nodeId 0x%x",
@@ -706,9 +712,9 @@ nw_controllerFinalize(
     nw_controller controller)
 {
     os_uint32 i;
-    
+
     if (controller) {
-      
+
         /* Finalize self */
         if (controller->discoveryWriter != NULL) {
             nw_runnableFree((nw_runnable)controller->discoveryWriter);
@@ -727,10 +733,10 @@ nw_controllerFinalize(
         u_networkReaderFree(controller->reader);
         u_subscriberFree(controller->subscriber);
 
-        /* last, after all depending services have been terminated */ 
+        /* last, after all depending services have been terminated */
         NW_SECURITY_MODULE_DEINIT();
     }
-}    
+}
 
 
 /* ---------------------- public -------------------- */
@@ -738,8 +744,8 @@ nw_controllerFinalize(
 nw_controller
 
 nw_controllerNew(
-    u_service service, 
-    nw_controllerListener onFatal, 
+    u_service service,
+    nw_controllerListener onFatal,
     c_voidp usrData)
 {
     nw_controller result;
@@ -750,7 +756,7 @@ nw_controllerNew(
         /* Initialize self */
         nw_controllerInitialize(result, service, onFatal, usrData);
     }
-    
+
     return result;
 }
 
@@ -771,20 +777,20 @@ nw_controllerStart(
 {
     os_uint32 i;
     c_ulong mask;
-    
+
     if (controller) {
 
         /* First start all channelUser threads */
         for (i=0; i<controller->nofChannelUsers; i++) {
             nw_runnableStart((nw_runnable)NW_CHANNELUSER_BY_ID(controller, i));
         }
-        
+
         /* Set the listener of the service */
         u_dispatcherGetEventMask(u_dispatcher(controller->service), &mask);
-        u_dispatcherSetEventMask(u_dispatcher(controller->service), 
+        u_dispatcherSetEventMask(u_dispatcher(controller->service),
             mask | V_EVENT_NEW_GROUP);
         u_entityAction(u_entity(controller->service), fillNewGroups, NULL);
-        u_dispatcherInsertListener(u_dispatcher(controller->service), 
+        u_dispatcherInsertListener(u_dispatcher(controller->service),
             nw_controllerOnNewGroup, controller);
 
         /* Start announcing my existence */
@@ -822,11 +828,11 @@ nw_controllerStop(
 
         /* Stop listening */
          u_dispatcherGetEventMask(u_dispatcher(controller->service), &mask);
-         u_dispatcherSetEventMask(u_dispatcher(controller->service), 
+         u_dispatcherSetEventMask(u_dispatcher(controller->service),
             mask & ~V_EVENT_NEW_GROUP);
         u_dispatcherRemoveListener(u_dispatcher(controller->service),
             nw_controllerOnNewGroup);
-        
+
         /* Stop all channelUser threads */
         for (i=0; i<controller->nofChannelUsers; i++) {
             nw_runnableStop((nw_runnable)NW_CHANNELUSER_BY_ID(controller, i));

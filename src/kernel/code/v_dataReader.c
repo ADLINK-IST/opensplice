@@ -26,6 +26,7 @@
 #include "v_handle.h"
 #include "v_group.h"
 #include "v_groupSet.h"
+#include "v_groupCache.h"
 #include "v__dataReaderInstance.h"
 #include "v__status.h"
 #include "v__query.h"
@@ -815,11 +816,11 @@ v_dataReaderDeinit (
     v_readerDeinit(v_reader(_this));
 
     if(_this->index){
-    	c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
-    	c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
+        c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
+        c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
     }
     if(_this->deadLineList){
-    	v_deadLineInstanceListFree(_this->deadLineList);
+        v_deadLineInstanceListFree(_this->deadLineList);
     }
 }
 
@@ -1247,6 +1248,7 @@ v_dataReaderRemoveInstance(
                 UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index,
                                                          instance);
                 instance->purgeInsertionTime = C_TIME_ZERO;
+                v_groupCacheDeinit(instance->sourceCache);
                 v_publicFree(v_public(instance));
                 c_free(found);
             } else {
@@ -1336,12 +1338,12 @@ v_dataReaderTakeInstance(
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
+    assert(C_TYPECHECK(instance, v_dataReaderInstance));
 
     if (instance == NULL) {
         return FALSE;
     }
 
-    assert(C_TYPECHECK(instance, v_dataReaderInstance));
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
@@ -1365,8 +1367,8 @@ v_dataReaderTakeInstance(
             v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
 
             if (v_dataReaderInstanceEmpty(instance)) {
-				v_dataReaderRemoveInstance(_this,instance);
-			}
+                v_dataReaderRemoveInstance(_this,instance);
+            }
 
         }
     } else {
@@ -1756,23 +1758,6 @@ v_dataReaderKeyExpr(
     return v_indexKeyExpr(_this->index);
 }
 
-static void
-getPathNameSize (
-    c_voidp name,
-    c_voidp length)
-{
-    (*(c_long *)length) = (*(c_long *)length + strlen((c_char *)name) + 1);
-}
-
-static void
-getPathName (
-    c_voidp name,
-    c_voidp str)
-{
-    strcat((c_char *)str,(c_char *)name);
-    strcat((c_char *)str,".");
-}
-
 c_field
 v_dataReaderIndexField(
     v_dataReader _this,
@@ -2018,15 +2003,19 @@ v_dataReaderAllocInstance(
     v_dataReader _this)
 {
     v_dataReaderInstance instance;
+    v_kernel kernel;
+
+    kernel = v_objectKernel(_this);
 
     instance = v_dataReaderInstance(c_extentCreate(_this->index->objectExtent));
 
-    v_object(instance)->kernel = v_objectKernel(_this);
+    v_object(instance)->kernel = kernel;
     v_objectKind(instance) = K_DATAREADERINSTANCE;
 
     v_instanceInit(v_instance(instance));
 
     instance->index = (c_voidp)_this->index;
+    instance->sourceCache = v_groupCacheNew(kernel, V_CACHE_SOURCES);
 
     return instance;
 }

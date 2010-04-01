@@ -23,19 +23,20 @@
 
 #define v_cache(o)     (C_CAST((o),v_cache))
 #define v_cacheNode(o) (C_CAST((o),v_cacheNode))
+#define v_cacheItem(o) (C_CAST((o),v_cacheItem))
 
 OS_API typedef c_bool
 (*v_cacheWalkAction)(
     v_cacheNode node,
     c_voidp arg);
 
-OS_API void
-v_cacheNodeInit (
-    v_cacheNode node);
+OS_API v_cacheNode
+v_cacheNodeNew (
+    v_cache cache);
 
-OS_API void
-v_cacheInit (
-    v_cache cache,
+OS_API v_cache
+v_cacheNew (
+    c_type nodeType,
     v_cacheKind kind);
 
 OS_API void

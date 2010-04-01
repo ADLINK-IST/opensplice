@@ -80,6 +80,14 @@ JNIEXPORT jint JNICALL Java_DDS_DomainParticipantFactory_jniGetQos
 JNIEXPORT jobject JNICALL Java_DDS_DomainParticipantFactory_jniLookupDomain
   (JNIEnv *, jobject, jstring);
 
+/*
+ * Class:     DDS_DomainParticipantFactory
+ * Method:    jniDeleteDomain
+ * Signature: (LDDS/Domain;)I
+ */
+JNIEXPORT jint JNICALL Java_DDS_DomainParticipantFactory_jniDeleteDomain
+  (JNIEnv *, jobject, jobject);
+
 #ifdef __cplusplus
 }
 #endif

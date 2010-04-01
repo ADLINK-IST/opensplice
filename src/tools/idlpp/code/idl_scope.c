@@ -116,8 +116,8 @@ idl_scopeElementType (
     idl_scopeElement element)
 {
     if (element == NULL) {
-	/* Empty scope stack will deliver NULL scope element */
-	return idl_tModule;
+        /* Empty scope stack will deliver NULL scope element */
+        return idl_tModule;
     }
     return element->scopeType;
 }
@@ -143,7 +143,7 @@ idl_scopeDup (
     c_long si;
 
     for (si = 0; si < (scope->scopePointer+1); si++) {
-	idl_scopePush (newScope, idl_scopeElementDup(scope->stack[si]));
+        idl_scopePush (newScope, idl_scopeElementDup(scope->stack[si]));
     }
     return newScope;
 }
@@ -157,7 +157,7 @@ idl_scopeFree (
 
     assert (scope);
     for (si = 0; si < (scope->scopePointer+1); si++) {
-	idl_scopeElementFree(scope->stack[si]);
+        idl_scopeElementFree(scope->stack[si]);
     }
     os_free (scope->baseName);
     os_free (scope);
@@ -219,7 +219,7 @@ idl_scopeCur (
     assert (scope->scopePointer >= -1);
 
     if (scope->scopePointer == -1) {
-	return NULL;
+        return NULL;
     }
     return scope->stack[scope->scopePointer];
 }
@@ -248,13 +248,13 @@ idl_scopeEqual (
 
     /* If the "scopePointer"s are unequal, the stack do not equal */
     if (scope1->scopePointer != scope2->scopePointer) {
-	return FALSE;
+        return FALSE;
     }
     /* Per stack element compare the names, if any does not equal the stacks are unequal */
     for (i = 0; i < (scope1->scopePointer + 1); i++) {
-	if (strcmp(idl_scopeElementName(scope1->stack[i]), idl_scopeElementName(scope2->stack[i])) != 0) {
-	    return FALSE;
-	}
+        if (strcmp(idl_scopeElementName(scope1->stack[i]), idl_scopeElementName(scope2->stack[i])) != 0) {
+            return FALSE;
+        }
     }
     return TRUE;
 }
@@ -262,25 +262,26 @@ idl_scopeEqual (
 /* Determine if a scope stack is contained by a second stack */
 c_bool
 idl_scopeSub (
-    idl_scope scope,
-    idl_scope scopeSub)
+    idl_scope scope, /* moduleScope */
+    idl_scope scopeSub) /* keyScope */
 {
     c_long i;
 
     /* If the "scopePointer" of the stack is higher than the "scopePointer" of the second
        stack, the second stack can not contain the first stack
     */
+
     if (scope->scopePointer > scopeSub->scopePointer) {
-	return FALSE;
+        return FALSE;
     }
     /* For all scope elements of the stack with the scope elements of the second stack.
        If one of them does not equal, the second stack can not contain the first.
        The scope element types are not compared, this should not a real problem.
     */
     for (i = 0; i < (scope->scopePointer + 1); i++) {
-	if (strcmp(idl_scopeElementName(scope->stack[i]), idl_scopeElementName(scopeSub->stack[i])) != 0) {
-	    return FALSE;
-	}
+        if (strcmp(idl_scopeElementName(scope->stack[i]), idl_scopeElementName(scopeSub->stack[i])) != 0) {
+            return FALSE;
+        }
     }
     return TRUE;
 }

@@ -17,6 +17,18 @@
 
 #include "os_report.h"
 
+static c_type _v_gid_t = NULL;
+
+c_type
+v_gid_t(
+    c_base base)
+{
+    if (_v_gid_t == NULL) {
+        _v_gid_t = c_resolve(base,"kernelModule::v_gid");
+    }
+    return c_keep(_v_gid_t);
+}
+
 v_result
 v_deliveryWaitListWait (
     v_deliveryWaitList _this,
@@ -27,18 +39,25 @@ v_deliveryWaitListWait (
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
-    if (_this->systemIds != NULL) {
+    if (_this->readerGID != NULL) {
         c_mutexLock(&_this->mutex);
         r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
         c_mutexUnlock(&_this->mutex);
+
         switch (r) {
-        case SYNC_RESULT_SUCCESS: result = V_RESULT_OK; break;
-        case SYNC_RESULT_TIMEOUT: result = V_RESULT_TIMEOUT; break;
+        case SYNC_RESULT_SUCCESS:
+           result = V_RESULT_OK;
+        break;
+        case SYNC_RESULT_TIMEOUT:
+           result = V_RESULT_TIMEOUT;
+        break;
         case SYNC_RESULT_UNAVAILABLE:
         case SYNC_RESULT_BUSY:
         case SYNC_RESULT_INVALID:
         case SYNC_RESULT_FAIL:
-        default: result = V_RESULT_PRECONDITION_NOT_MET; break;
+        default:
+            result = V_RESULT_PRECONDITION_NOT_MET;
+        break;
         }
     }
 
@@ -51,36 +70,31 @@ v_deliveryWaitListNotify (
     v_deliveryInfoTemplate msg)
 {
     c_ulong size, i, count;
-    c_ulong systemId;
+    v_gid *list;
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
     assert(msg);
 
-    systemId = msg->userData.writerGID.systemId;
-
-synch_printf("v_deliveryWaitListNotify: systemId          = %d\n",systemId);
-synch_printf("                          sequenceNumber    = %d\n",msg->userData.sequenceNumber);
-synch_printf("v_deliveryWaitListNotify: was expecting:\n");
-synch_printf("                          sequenceNumber    = %d\n",_this->sequenceNumber);
-    if(   msg->userData.sequenceNumber == _this->sequenceNumber
-      /* && v_gidEqual(msg->userData.writerGID, _this->writerGID)
-       && v_gidEqual(msg->userData.writerInstanceGID, _this->writerInstanceGID)*/)
+    list = (v_gid *)_this->readerGID;
+    if(msg->userData.sequenceNumber == _this->sequenceNumber)
     {
         count = 0;
-        size = c_arraySize(_this->systemIds);
+        
+        size = c_arraySize(_this->readerGID);
         for (i=0; i<size; i++) {
-            if ((c_ulong)_this->systemIds[i] == systemId) {
-                /* Set the found systemId to zero,
+            if (v_gidEqual(list[i],msg->userData.readerGID)) {
+                /* Set the found readerGID to zero,
                  * iThe waitlist can be unblocked when
                  * all expected systemIds are zero.
                  * In that case count will be 0.
                  */
-synch_printf("v_deliveryWaitListNotify: systemId found so reset value\n");
-                _this->systemIds[i] = 0;
+                v_gidSetNil(list[i]);
             }
-            count += (c_ulong)_this->systemIds[i];
+            count += v_gidSystemId(list[i]);
         }
         if (count == 0) {
+            c_free(_this->readerGID);
+            _this->readerGID = NULL;
             c_mutexLock(&_this->mutex);
             c_condSignal(&_this->cv);
             c_mutexUnlock(&_this->mutex);
@@ -92,27 +106,30 @@ synch_printf("v_deliveryWaitListNotify: systemId found so reset value\n");
 v_result
 v_deliveryWaitListIgnore (
     v_deliveryWaitList _this,
-    c_ulong systemId)
+    v_gid readerGID)
 {
     c_ulong size, i, count;
+    v_gid *list;
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
     count = 0;
-    size = c_arraySize(_this->systemIds);
+    size = c_arraySize(_this->readerGID);
+    list = (v_gid *)_this->readerGID;
     for (i=0; i<size; i++) {
-        if ((c_ulong)_this->systemIds[i] == systemId) {
-            /* Set the found systemId to zero,
+        if (v_gidEqual(list[i],readerGID)) {
+            /* Set the found reader gid to zero,
              * iThe waitlist can be unblocked when
              * all expected systemIds are zero.
              * In that case count will be 0.
              */
-synch_printf("v_deliveryWaitListIgnore: systemId found so reset value\n");
-            _this->systemIds[i] = 0;
+            v_gidSetNil(list[i]);
         }
-        count += (c_ulong)_this->systemIds[i];
+        count += v_gidSystemId(list[i]);
     }
     if (count == 0) {
+        c_free(_this->readerGID);
+        _this->readerGID = NULL;
         c_mutexLock(&_this->mutex);
         c_condSignal(&_this->cv);
         c_mutexUnlock(&_this->mutex);
@@ -123,7 +140,7 @@ synch_printf("v_deliveryWaitListIgnore: systemId found so reset value\n");
 C_CLASS(copySystemIdsArg);
 C_STRUCT(copySystemIdsArg)
 {
-    c_array systemIds;
+    c_array readerGID;
     c_long index;
 };
 
@@ -134,15 +151,16 @@ copySystemIds (
 {
     v_deliveryPublisher p = v_deliveryPublisher(o);
     copySystemIdsArg a = (copySystemIdsArg)arg;
+    v_gid *list;
 
-synch_printf("v_deliveryWaitListNew: found systemId %d\n", p->systemId);
-    a->systemIds[a->index++] = p->systemId;
+    list = (v_gid *)a->readerGID;
+    list[a->index++] = p->readerGID;
     assert(p->count > 0);
     return TRUE;
 }
 
 static c_array
-copySystemIdsFromPublications(
+copyReaderGIDsFromPublications(
     v_deliveryGuard _this)
 {
     /* copy system Ids from _this->publications */
@@ -155,16 +173,14 @@ copySystemIdsFromPublications(
         size = 0;
     }
     if (size > 0) {
-        arg.systemIds = c_arrayNew(c_long_t(c_getBase(c_object(_this))),size);
+        arg.readerGID = c_arrayNew(v_gid_t(c_getBase(c_object(_this))),size);
         arg.index = 0;
-synch_printf("v_deliveryWaitListNew: found %d systemIds\n", size);
         c_walk(_this->publications, copySystemIds, &arg);
     } else {
-synch_printf("v_deliveryWaitListNew: found NO systemIds\n");
-        arg.systemIds = NULL;
+        arg.readerGID = NULL;
     }
 
-    return arg.systemIds;
+    return arg.readerGID;
 }
 
 v_deliveryWaitList
@@ -179,16 +195,17 @@ v_deliveryWaitListNew(
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
     if (_this) {
-synch_printf("v_deliveryWaitListNew: enter\n");
         /* lookup or create a writer specific admin.
          */
         type = c_subType(_this->waitlists);
         waitlist = c_new(type);
         c_free(type);
         if (waitlist) {
-/*            waitlist->writerInstanceGID = msg->writerInstanceGID;
-            waitlist->writerGID = msg->writerGID;*/
             waitlist->sequenceNumber = msg->sequenceNumber;
+            waitlist->readerGID = copyReaderGIDsFromPublications(_this);
+            waitlist->guard = _this;
+            c_mutexInit(&waitlist->mutex, SHARED_MUTEX);
+            c_condInit(&waitlist->cv, &waitlist->mutex, SHARED_COND);
         }
         found = c_tableInsert(_this->waitlists, waitlist);
         if (found != waitlist) {
@@ -198,20 +215,12 @@ synch_printf("v_deliveryWaitListNew: enter\n");
                       "detected inconsistent waitlist admin.");
             c_free(waitlist);
             waitlist = NULL;
-        } else {
-            waitlist->systemIds = copySystemIdsFromPublications(_this);
-            waitlist->guard = _this;
         }
-synch_printf("v_deliveryWaitListNew: exit\n");
     } else {
         OS_REPORT(OS_ERROR,
                   "v_deliveryWaitListNew",0,
                   "Operation failed: illegal parameter (_this == NULL).");
     }
-
-    synch_printf("v_deliveryWaitNew: returning waitlist, values:\n");
-    synch_printf("                          sequenceNumber    = %d\n",waitlist->sequenceNumber);
-
     return waitlist;
 }
 
@@ -221,12 +230,10 @@ v_deliveryWaitListFree(
 {
     v_deliveryWaitList found;
     v_result result;
-    c_type type;
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
     if (_this) {
-synch_printf("v_deliveryWaitListFree: enter\n");
         /* lookup or create a writer specific admin.
          */
         found = c_remove(v_deliveryGuard(_this->guard)->waitlists, _this, NULL, NULL);
@@ -235,7 +242,6 @@ synch_printf("v_deliveryWaitListFree: enter\n");
         c_free(found);
         c_free(_this);
         result = V_RESULT_OK;
-synch_printf("v_deliveryWaitListFree: exit\n");
     } else {
         result = V_RESULT_ILL_PARAM;
     }

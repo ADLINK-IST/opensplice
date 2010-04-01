@@ -87,7 +87,7 @@ public class Chatter {
 	    ErrorHandler.checkHandle(
             dpf, "DDS.DomainParticipantFactory.get_instance");
 	    participant = dpf.create_participant(
-            domain, PARTICIPANT_QOS_DEFAULT.value, null, ANY_STATUS.value);
+            domain, PARTICIPANT_QOS_DEFAULT.value, null, STATUS_MASK_NONE.value);
 	    ErrorHandler.checkHandle(
             participant, "DDS.DomainParticipantFactory.create_participant");
 	    
@@ -129,7 +129,7 @@ public class Chatter {
 	        chatMessageTypeName, 
 	        reliableTopicQos.value, 
 	        null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
 	    ErrorHandler.checkHandle(
 	    	chatMessageTopic, 
 	    	"DDS.DomainParticipant.create_topic (ChatMessage)");
@@ -147,7 +147,7 @@ public class Chatter {
 	        nameServiceTypeName, 
 	        settingTopicQos.value, 
 	        null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
 	    ErrorHandler.checkHandle(
 	        nameServiceTopic, 
             "DDS.DomainParticipant.create_topic (NameService)");
@@ -162,7 +162,7 @@ public class Chatter {
 
 	    /* Create a Publisher for the chatter application. */
 	    chatPublisher = participant.create_publisher(
-            pubQos.value, null, ANY_STATUS.value);
+            pubQos.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             chatPublisher, "DDS.DomainParticipant.create_publisher");
 	    
@@ -172,7 +172,7 @@ public class Chatter {
 	        chatMessageTopic, 
 	        DATAWRITER_QOS_USE_TOPIC_QOS.value,
 	        null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentWriter, "DDS.Publisher.create_datawriter (chatMessage)");
 	    
@@ -195,7 +195,7 @@ public class Chatter {
             nameServiceTopic, 
             dwQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentWriter, "DDS.Publisher.create_datawriter (NameService)");
         

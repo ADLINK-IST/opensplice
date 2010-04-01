@@ -5,9 +5,16 @@ TARGET_DLIB	:= $(DDS_OS)
 
 include  $(OSPL_HOME)/setup/makefiles/target.mak
 
+ifdef INCLUDE_PLUGGABLE_REPORTING
+ifneq (,$(findstring yes,$(INCLUDE_PLUGGABLE_REPORTING)))
+CPPFLAGS	+= -DINCLUDE_PLUGGABLE_REPORTING
+CFLAGS      += -DINCLUDE_PLUGGABLE_REPORTING
+endif
+endif
+
 CPPFLAGS	+= -DOSPL_BUILD_OS
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
-CINCS    += -I$(OSPL_HOME)/src/database/database/include
+# CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)

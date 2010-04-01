@@ -13,6 +13,7 @@
 #include "u__kernel.h"
 #include "u__participant.h"
 #include "u__usrClock.h"
+#include "u__usrReportPlugin.h"
 #include "v_kernel.h"
 #include "v_entity.h"
 #include "os_report.h"
@@ -460,6 +461,9 @@ u_kernelNew(
             s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
                 u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+                u_usrReportPluginReadAndRegister (processConfig);
+#endif
             } else {
                 OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_USER, 0,
                             "Cannot read configuration from URI: \"%s\".",uri);
@@ -660,6 +664,9 @@ u_kernelOpen(
             s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
                 u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+                u_usrReportPluginReadAndRegister (processConfig);
+#endif
     	        u_usrClockInit (processConfig);
                 if (domainCfg.prioInherEnabled) {
                     os_mutexSetPriorityInheritanceMode(OS_TRUE);
@@ -781,6 +788,11 @@ u_kernelClose (
                   "Illegal parameter.");
         r = U_RESULT_ILL_PARAM;
     }
+
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+    u_usrReportPluginUnregister ();
+#endif
+
     return r;
 }
 
@@ -818,6 +830,7 @@ u_kernelFree (
             if (r != os_resultSuccess) {
                 r = U_RESULT_INTERNAL_ERROR;
             }
+            c_destroy(c_getBase(k->kernel));
             if (k->shm != NULL) {
 #ifndef INTEGRITY
                 if (unlockSharedMemory(k) != 0) {
@@ -857,6 +870,11 @@ u_kernelFree (
                   "The specified Kernel = NIL.");
         r = U_RESULT_OK;
     }
+
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+    u_usrReportPluginUnregister ();
+#endif
+
     return r;
 }
 
@@ -1009,6 +1027,42 @@ u_kernelAddress(
     return address;
 }
 
+u_result
+u_kernelCreatePersistentSnapshot(
+    u_kernel _this,
+    const c_char * partition_expression,
+    const c_char * topic_expression,
+    const c_char * uri)
+{
+    v_kernel kernel;
+    u_result result;
+    v_result kResult;
+
+    if(!_this || !partition_expression || !topic_expression || !uri)
+    {
+        result = U_RESULT_ILL_PARAM;
+    } else
+    {
+        result = U_RESULT_OK;
+    }
+
+    if(result == U_RESULT_OK)
+    {
+        result = u_kernelClaim(_this, &kernel);
+        if(result == U_RESULT_OK)
+        {
+            kResult = v_kernelCreatePersistentSnapshot(
+                kernel,
+                partition_expression,
+                topic_expression,
+                uri);
+            result = u_resultFromKernel(kResult);
+            u_kernelRelease(_this);
+        }
+    }
+    return result;
+}
+
 os_sharedHandle
 u_kernelSharedMemoryHandle (
     u_kernel kernel)
@@ -1019,4 +1073,3 @@ u_kernelSharedMemoryHandle (
         return NULL;
     }
 }
-

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -216,7 +216,7 @@ idl_structureClose(
     /* build constructor <type-name> () {} */
     idl_fileOutPrintf(idl_fileCur(), "\n");
     idl_fileOutPrintf(idl_fileCur(), "    public %s() {\n", idl_javaId(name));
-    
+
     mapIter = idl_mapFirst(map);
     while (idl_mapIterObject(mapIter)) {
         typeSpec = idl_mapIterObject(mapIter);
@@ -357,7 +357,7 @@ idl_structureMemberOpenClose(
     while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
     }
-        
+
     /* generate type-name and field-name attribute */
     if ((idl_typeSpecType(typeSpec) == idl_tbasic)) {
         /* store type-name and field-name in iterator (append) */
@@ -526,11 +526,11 @@ idl_unionClose(
     idl_mapIter mapIter;
     idl_typeSpec typeSpec;
     char *memberName;
-    
+
     mapIter = idl_mapFirst(map);
     typeSpec = idl_mapIterObject(mapIter);
     memberName = idl_mapIterKey(mapIter);
-    
+
     idl_fileOutPrintf(idl_fileCur(), "    public %s () {\n", idl_javaId(name));
 
     while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
@@ -540,35 +540,35 @@ idl_unionClose(
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         if (idl_typeBasicType(idl_typeBasic (typeSpec)) == idl_string) {
             idl_fileOutPrintf(
-                idl_fileCur(), 
-                "        __%s = \"\";\n", 
+                idl_fileCur(),
+                "        __%s = \"\";\n",
                 idl_javaId(memberName));
         } else if (idl_typeBasicType(idl_typeBasic (typeSpec)) == idl_boolean) {
             idl_fileOutPrintf(
-                idl_fileCur(), 
-                "        __%s = false;\n", 
+                idl_fileCur(),
+                "        __%s = false;\n",
                 idl_javaId(memberName));
         } else if (idl_typeBasicType(idl_typeBasic (typeSpec)) == idl_char) {
             idl_fileOutPrintf(
-                idl_fileCur(), 
-                "        __%s = '\\0';\n", 
+                idl_fileCur(),
+                "        __%s = '\\0';\n",
                 idl_javaId(memberName));
         } else {
             idl_fileOutPrintf(
-                idl_fileCur(), 
-                "        __%s = 0;\n", 
+                idl_fileCur(),
+                "        __%s = 0;\n",
                 idl_javaId(memberName));
         }
     } else if (idl_typeSpecType(typeSpec) == idl_tseq || idl_typeSpecType(typeSpec) == idl_tarray) {
         int __memberNameLength;
         char *__memberName;
-        
+
         __memberNameLength = strlen(memberName) + 2 + 1;
         __memberName = os_malloc(__memberNameLength);
         snprintf(__memberName, __memberNameLength, "__%s", memberName);
         idl_fileOutPrintf(
-            idl_fileCur(), 
-            "        __%s = new %s", 
+            idl_fileCur(),
+            "        __%s = new %s",
             idl_javaId(memberName),
             idl_corbaJavaTypeFromTypeSpec(typeSpec));
         java_arrayDimensions(typeSpec);
@@ -577,26 +577,26 @@ idl_unionClose(
         os_free(__memberName);
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct || idl_typeSpecType(typeSpec) == idl_tunion) {
         idl_fileOutPrintf(
-            idl_fileCur(), 
-            "        __%s = new %s();\n", 
+            idl_fileCur(),
+            "        __%s = new %s();\n",
             idl_javaId(memberName),
             idl_corbaJavaTypeFromTypeSpec(typeSpec));
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
         idl_fileOutPrintf(
-            idl_fileCur(), 
-            "        __%s = %s.from_int(0);\n", 
+            idl_fileCur(),
+            "        __%s = %s.from_int(0);\n",
             idl_javaId(memberName),
             idl_corbaJavaTypeFromTypeSpec(typeSpec));
     }
 
     idl_fileOutPrintf(idl_fileCur(), "        _d = (%s)%s;\n", unionSwitchType, union1stCaseValue);
     idl_fileOutPrintf(idl_fileCur(), "    }\n");
-    
+
     idl_mapIterFree(mapIter);
     idl_mapFree(map);
     union1stCaseValue = NULL;
-    
-    
+
+
     /* close class */
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     /* close file */
@@ -610,10 +610,10 @@ idl_unionCaseTypeFromTypeSpec(
     char typeName[512];
 
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-        snprintf(typeName, sizeof(typeName), "%s", 
+        snprintf(typeName, sizeof(typeName), "%s",
             idl_corbaJavaTypeFromTypeSpec(typeSpec));
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-        snprintf (typeName, sizeof(typeName), "%s%s", 
+        snprintf (typeName, sizeof(typeName), "%s%s",
             idl_corbaJavaTypeFromTypeSpec(idl_typeSeqActual(idl_typeSeq(typeSpec))),
             idl_sequenceIndexString (idl_typeSeq(typeSpec)));
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
@@ -626,7 +626,7 @@ idl_unionCaseTypeFromTypeSpec(
         if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
             (idl_typeSpecType (typeSpec) == idl_tunion) ||
             (idl_typeSpecType (typeSpec) == idl_tenum)) {
-            snprintf(typeName, sizeof(typeName), "%s", 
+            snprintf(typeName, sizeof(typeName), "%s",
                 idl_corbaJavaTypeFromTypeSpec(typeSpec));
         } else {
             printf ("idl_unionCaseTypeFromTypeSpec: Unexpected type %d\n",
@@ -668,16 +668,16 @@ idl_unionCaseOpenClose(
 
     /* store type-name and field-name in iterator (append) */
     idl_mapAdd(map, idl_javaId(name), typeSpec);
-    
+
     /* Obtain name of first label and total number of labels. */
     nrElements = os_iterLength(labelIter);
     labelImage = os_iterObject(labelIter, 0);
-    
+
     /* Save the 1st case label for usage with the default constructor. */
     if (!union1stCaseValue) {
         union1stCaseValue = os_iterObject(labelIter, 0);
     }
-    
+
     idl_fileOutPrintf(
         idl_fileCur(),
         "    private %s __%s;\n\n",
@@ -727,7 +727,7 @@ idl_unionCaseOpenClose(
 /*      Theoretically this branch should never be reached: also the code
         underneath doesn't make any sense. That's why an assert has
         now been substituted.
-        
+
         labelImage = os_iterObject(labelsUsedIter, 0);
         idl_fileOutPrintf(idl_fileCur(), "        _d = (%s)%s;\n", unionSwitchType, labelImage);
 */
@@ -824,58 +824,60 @@ idl_artificialDefaultLabelOpenClose(
  * @param labelVal Specifies the kind and the value of the label
  * @return String representing the image of \b labelVal
  */
+#define maxLabelNameSize 100
+
 static c_char *
 idl_valueFromLabelVal (
     idl_labelVal labelVal)
 {
-    static c_char labelName[1000];
+    c_char *labelName;
 
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
-        snprintf(labelName, (size_t)sizeof(labelName), "%s",
-	    idl_labelJavaEnumVal(unionSwitchType, idl_labelEnum(labelVal)));
+        labelName = idl_labelJavaEnumVal(unionSwitchType, idl_labelEnum(labelVal));
     } else {
+        labelName = os_malloc(maxLabelNameSize);
         switch (idl_labelValueVal(idl_labelValue(labelVal)).kind) {
 	    case V_CHAR:
-            snprintf(labelName, (size_t)sizeof(labelName), "%u", 
+            snprintf(labelName, maxLabelNameSize, "%u",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
 		break;
 	    case V_SHORT:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", 
+            snprintf(labelName, maxLabelNameSize, "%d",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
 		break;
 	    case V_USHORT:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", 
+            snprintf(labelName, maxLabelNameSize, "%d",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
 		break;
 	    case V_LONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", 
+            snprintf(labelName, maxLabelNameSize, "%d",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
 		break;
 	    case V_ULONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", 
+            snprintf(labelName, maxLabelNameSize, "%d",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
 		break;
 	    case V_LONGLONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%lldL", 
+            snprintf(labelName, maxLabelNameSize, "%lldL",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.LongLong);
 		break;
 	    case V_ULONGLONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%lldL", 
+            snprintf(labelName, maxLabelNameSize, "%lldL",
                 idl_labelValueVal(idl_labelValue(labelVal)).is.ULongLong);
 		break;
 	    case V_BOOLEAN:
     		/* QAC EXPECT 3416; No side effect here */
 		if (idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == TRUE) {
-		    snprintf(labelName, (size_t)sizeof(labelName), "true");
+		    snprintf(labelName, maxLabelNameSize, "true");
 		} else {
-		    snprintf(labelName, (size_t)sizeof(labelName), "false");
+		    snprintf(labelName, maxLabelNameSize, "false");
 		}
 		break;
 	    default:
 		break;
         }
     }
-    return os_strdup(labelName);
+    return labelName;
 }
 
 /** @brief callback function called on definition of the union case labels in the IDL input file.
@@ -1092,10 +1094,10 @@ idl_enumerationElementOpenClose (
 /* @brief generate dimension of an array or a sequence
  *
  * java_arrayDimensions is a local support function to generate
- * the dimensions of a java Array representing an IDL sequence or 
- * array. Since Sequences will always be initialized to 0 elements, 
- * its dimensions will always be assigned 0. Arrays will be assigned 
- * their IDL dimensions. 
+ * the dimensions of a java Array representing an IDL sequence or
+ * array. Since Sequences will always be initialized to 0 elements,
+ * its dimensions will always be assigned 0. Arrays will be assigned
+ * their IDL dimensions.
  *
  * @param typeSeq Specifies the type of the sequence
  */
@@ -1129,15 +1131,15 @@ idl_arraySliceDimensions(
 {
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray &&
-        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {	
+        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {
         idl_arraySliceDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
     }
 }
 
-/* @brief function to find out whether the elements of an array 
+/* @brief function to find out whether the elements of an array
  * require initialization.
  *
- * idl_arrayElementsNeedInitialization is a local support function to find out 
+ * idl_arrayElementsNeedInitialization is a local support function to find out
  * whether the specified array is of a type for which all elements need to be
  * initialized individually. If the array is of a primitive type, this is never
  * necessary, but if the array contains a reference type and no underlying
@@ -1151,28 +1153,28 @@ idl_arrayElementsNeedInitialization(
     idl_typeArray typeArray)
 {
     int initRequired = FALSE;
-    
+
     /* Obtain the type of the array. */
     idl_typeSpec typeSpec = idl_typeArrayType(typeArray);
-    
+
     /* Resolve potential typedefs. */
     while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
     }
-        
+
     if (idl_typeSpecType(typeSpec) == idl_tarray) {
         initRequired = idl_arrayElementsNeedInitialization(idl_typeArray(typeSpec));
-    } else if ( idl_typeSpecType(typeSpec) == idl_tstruct || 
+    } else if ( idl_typeSpecType(typeSpec) == idl_tstruct ||
                 idl_typeSpecType(typeSpec) == idl_tunion ||
                 idl_typeSpecType(typeSpec) == idl_tenum ||
-                ( idl_typeSpecType(typeSpec) == idl_tbasic && 
+                ( idl_typeSpecType(typeSpec) == idl_tbasic &&
                   idl_typeBasicType(idl_typeBasic (typeSpec)) == idl_string) ) {
         initRequired = TRUE;
     }
-    
+
     return initRequired;
 }
- 
+
 /* @brief generate initialization of array elements.
  *
  * idl_arrayElementInit generates for-loops that initialize
@@ -1190,11 +1192,11 @@ idl_arrayElementInit(
     while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
     }
-    
+
     if (idl_typeSpecType(typeSpec) == idl_tarray) {
         idl_fileOutPrintf(
-            idl_fileCur(), 
-            "%*sfor(int i%d = 0; i%d < %d; i%d++) {\n", 
+            idl_fileCur(),
+            "%*sfor(int i%d = 0; i%d < %d; i%d++) {\n",
             indent,
             "",
             dimCount,
@@ -1203,19 +1205,19 @@ idl_arrayElementInit(
             dimCount);
         idl_arrayElementInit(
             idl_typeArrayType(idl_typeArray(typeSpec)),
-            elementName, 
-            dimCount + 1, 
+            elementName,
+            dimCount + 1,
             indent + 4);
         idl_fileOutPrintf(
-            idl_fileCur(), 
-            "%*s}\n", 
+            idl_fileCur(),
+            "%*s}\n",
             indent,
             "");
     } else {
         int j;
-        
+
         idl_fileOutPrintf(
-            idl_fileCur(), 
+            idl_fileCur(),
             "%*s%s",
             indent,
             "",
@@ -1223,7 +1225,7 @@ idl_arrayElementInit(
         for (j =  1; j < dimCount; j++) {
             idl_fileOutPrintf(idl_fileCur(), "[i%d]", j);
         }
-        if ( idl_typeSpecType(typeSpec) == idl_tbasic && 
+        if ( idl_typeSpecType(typeSpec) == idl_tbasic &&
              idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
             idl_fileOutPrintf(
                 idl_fileCur(),
@@ -1231,7 +1233,7 @@ idl_arrayElementInit(
          } else if ( idl_typeSpecType(typeSpec) == idl_tunion ||
                      idl_typeSpecType(typeSpec) == idl_tstruct ) {
             idl_fileOutPrintf(
-                idl_fileCur(), 
+                idl_fileCur(),
                 " = new %s();\n",
                 idl_corbaJavaTypeFromTypeSpec(typeSpec));
         } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
@@ -1258,17 +1260,17 @@ idl_ifArrayInitializeElements(
 {
     int dimCount = 1;
     int indent = 8;
-    
+
     while (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
     }
-    
+
     if ( idl_typeSpecType(typeSpec) == idl_tarray) {
         if (idl_arrayElementsNeedInitialization(idl_typeArray(typeSpec))) {
             idl_arrayElementInit(
-                typeSpec, 
-                elementName, 
-                dimCount, 
+                typeSpec,
+                elementName,
+                dimCount,
                 indent);
         }
     }
@@ -1323,7 +1325,7 @@ idl_constantOpenClose(
     }
     idl_fileOutPrintf(idl_fileCur(), "public interface %s {\n",
 	idl_constSpecName(constantSpec));
-    
+
     if (idl_typeSpecType(idl_constSpecTypeGet(constantSpec)) == idl_tbasic &&
         idl_typeBasicType(idl_typeBasic(idl_constSpecTypeGet(constantSpec))) == idl_string) {
         idl_fileOutPrintf(

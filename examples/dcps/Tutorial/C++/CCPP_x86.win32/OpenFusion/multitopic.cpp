@@ -198,7 +198,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     sub_qos.partition.name[0] = partitionName;
 
     /* Create a private Subscriber for the multitopic simulator. */
-    multiSub = realParticipant->create_subscriber(sub_qos, NULL, DDS::ANY_STATUS);
+    multiSub = realParticipant->create_subscriber(sub_qos, NULL, DDS::STATUS_MASK_NONE);
     checkHandle(multiSub.in(), "DDS::DomainParticipant::create_subscriber (for multitopic)");
     
     /* Create a DataReader for the FilteredMessage Topic (using the appropriate QoS). */
@@ -206,7 +206,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
         filteredMessageTopic.in(), 
         DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS::ANY_STATUS);
+        DDS::STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (ChatMessage)");
 
     /* Narrow the abstract parent into its typed representative. */
@@ -226,7 +226,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
         nameServiceTopic.in(), 
         DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS::ANY_STATUS);
+        DDS::STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (NameService)");
     
     /* Narrow the abstract parent into its typed representative. */
@@ -255,7 +255,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
         type_name, 
         namedMessageQos, 
         NULL,
-        DDS::ANY_STATUS);
+        DDS::STATUS_MASK_NONE);
     checkHandle(namedMessageTopic.in(), "DDS::DomainParticipant::create_topic (NamedMessage)");
     
     /* Adapt the default PublisherQos to write into the "ChatRoom" Partition. */
@@ -265,7 +265,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     pub_qos.partition.name[0] = partitionName;
 
     /* Create a private Publisher for the multitopic simulator. */
-    multiPub = realParticipant->create_publisher(pub_qos, NULL, DDS::ANY_STATUS);
+    multiPub = realParticipant->create_publisher(pub_qos, NULL, DDS::STATUS_MASK_NONE);
     checkHandle(multiPub.in(), "DDS::DomainParticipant::create_publisher (for multitopic)");
     
     /* Create a DataWriter for the multitopic. */
@@ -273,7 +273,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
         namedMessageTopic.in(), 
         DATAWRITER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS::ANY_STATUS);
+        DDS::STATUS_MASK_NONE);
     checkHandle(parentWriter, "DDS::Publisher::create_datawriter (NamedMessage)");
     
     /* Narrow the abstract parent into its typed representative. */

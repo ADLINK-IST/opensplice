@@ -45,44 +45,73 @@ sampleTypeNew(
     v_topic topic)
 {
     c_metaObject o;
-    c_type sampleType,foundType;
+    c_type msgType,sampleType,foundType;
     c_base base;
     c_char *name;
     c_long length,sres;
 
     assert(C_TYPECHECK(topic,v_topic));
+    assert(topic);
+
+    if (v_topicName(topic) == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_index::sampleTypeNew failed",0,
+                  "failed to retreive topic name");
+        return NULL;
+    }
 
     base = c_getBase(topic);
 
+    if (base == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_index::sampleTypeNew failed",0,
+                  "failed to retreive base");
+        return NULL;
+    }
+
+    msgType = c_keep(v_topicMessageType(topic));
+
+    if (msgType == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_index::sampleTypeNew failed",0,
+                  "failed to retreive topic message type");
+        return NULL;
+    }
+
     sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(sampleType)->extends = v_dataReaderSample_t(base);
-    o = c_metaDeclare(c_metaObject(sampleType),"message",M_ATTRIBUTE);
-    c_property(o)->type = c_keep(v_topicMessageType(topic));
-    c_free(o);
-    c_metaObject(sampleType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(sampleType));
-    if (v_topicName(topic) != NULL) {
+    if (sampleType) {
+        c_class(sampleType)->extends = v_dataReaderSample_t(base);
+        o = c_metaDeclare(c_metaObject(sampleType),"message",M_ATTRIBUTE);
+        if (o) {
+            c_property(o)->type = c_keep(msgType);
+            c_metaObject(sampleType)->definedIn = c_keep(base);
+            c_metaFinalize(c_metaObject(sampleType));
+
 #define SAMPLE_FORMAT "v_indexSample<%s>"
 #define SAMPLE_NAME   "v_indexSample<>"
-        /* sizeof contains \0 */
-        length = sizeof(SAMPLE_NAME) + strlen(v_topicName(topic));
-        name = os_malloc(length);
-        sres = snprintf(name,length,SAMPLE_FORMAT,v_topicName(topic));
-        assert(sres == (length-1));
+            /* sizeof contains \0 */
+            length = sizeof(SAMPLE_NAME) + strlen(v_topicName(topic));
+            name = os_malloc(length);
+            sres = snprintf(name,length,SAMPLE_FORMAT,v_topicName(topic));
+            assert(sres == (length-1));
 #undef SAMPLE_FORMAT
 #undef SAMPLE_NAME
+
+            foundType = c_type(c_metaBind(c_metaObject(base),
+                                          name,
+                                          c_metaObject(sampleType)));
+            c_free(o);
+        } else {
+            foundType = NULL;
+        }
+        c_free(sampleType);
     } else {
-        /* not supposed to happen anymore! */
-        assert(FALSE);
-        length = 21;
-        name = os_malloc(length);
-        sprintf(name,"v_indexSample<0x"PA_ADDRFMT">",(c_address)topic);
+        OS_REPORT(OS_ERROR,
+                  "v_index::sampleTypeNew failed",0,
+                  "failed to retreive topic sample type");
     }
-    foundType = c_type(c_metaBind(c_metaObject(base),
-                                  name,
-                                  c_metaObject(sampleType)));
     os_free(name);
-    c_free(sampleType);
+    c_free(msgType);
 
     return foundType;
 }
@@ -232,8 +261,16 @@ v_indexInit(
     if (nrOfKeys>0) {
         totalSize = nrOfKeys * strlen("key.field0,");
         if (nrOfKeys > 9) {
+            /* For each key number greater than one digit
+             * i.e. number of keys > 9 add one additional
+             * character space to the total size.
+             */
             totalSize += (nrOfKeys-9);
             if (nrOfKeys > 99) {
+                /* For each key number greater than two digits
+                 * i.e. number of keys > 99 add one additional
+                 * character space to the total size.
+                 */
                 totalSize += (nrOfKeys-99);
             }
         }
@@ -291,7 +328,7 @@ v__indexNew(
         nrOfTopics = c_iterLength(list);
         if (nrOfTopics == 0) {
             OS_REPORT_1(OS_ERROR,
-                        "_v_dataReaderNew", 0,
+                        "v__indexNew", 0,
                         "Unknown topic %s",
                         q_getId(_from));
             c_iterFree(list);
@@ -299,7 +336,7 @@ v__indexNew(
         }
         if (nrOfTopics > 1) {
             OS_REPORT_1(OS_ERROR,
-                        "_v_dataReaderNew", 0,
+                        "v__indexNew", 0,
                         "Multiple topic definitions of: %s",
                         q_getId(_from));
             topic = v_topic(c_iterTakeFirst(list));

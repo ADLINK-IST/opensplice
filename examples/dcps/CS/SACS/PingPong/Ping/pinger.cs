@@ -1,8 +1,14 @@
-// pinger.cs created with MonoDevelop
-// User: lina at 4:14 PM 10/12/2009
-//
-// To change standard headers go to Edit->Preferences->Coding->Standard Headers
-//
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
 using System;
 using DDS.OpenSplice;
@@ -22,8 +28,8 @@ namespace PingPong
 
         private char topic_id = 's';
 
-        private String write_partition = "PING";
-        private String read_partition = "PONG";
+        private String write_partition = "PongWrite";
+        private String read_partition = "PongRead";
 
         /*
          * Global Variables
@@ -83,7 +89,7 @@ namespace PingPong
         private time postWriteTime = new time();
         private time preTakeTime = new time();
         private time postTakeTime = new time();
-
+        
         /*
          * P I N G
          */
@@ -114,6 +120,25 @@ namespace PingPong
             int nof_cycles = 100;
             int nof_blocks = 20;
 
+            /**
+             * Command Line argument processing
+             */
+            if (args.Length != 0)
+            {
+                if (args.Length != 5)
+                {
+                    System.Console.WriteLine("Invalid.....");
+                    System.Console.WriteLine("Usage: ping blocks blocksize topic_id WRITE_PARTITION READ_PARTITION ");
+                    Environment.Exit(1);
+                }
+                nof_blocks = int.Parse(args[0]);
+                nof_cycles = int.Parse(args[1]);
+                topic_id = args[2][0];
+                write_partition = args[3];
+                read_partition = args[4];
+            }
+                
+
             /*
              * Create WaitSet
              */
@@ -133,7 +158,7 @@ namespace PingPong
             /*
              * Create participant
              */
-            dpf = DDS.DomainParticipantFactory.GetInstance();
+            dpf = DDS.DomainParticipantFactory.Instance;
             dpf.GetDefaultParticipantQos(ref dpQos);
             
             ErrorHandler.checkHandle(dpf, "DDS.DomainParticipantFactory.Instance");
@@ -477,32 +502,11 @@ namespace PingPong
                         System.Console.WriteLine("# Block     Count   mean    min    max      Count   mean    min    max      Count   mean    min    max");
                     }
 
-                    print_formatted(6, block);
-                    System.Console.WriteLine(" ");
-                    print_formatted(10, roundtrip.count);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, roundtrip.average);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, roundtrip.min);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, roundtrip.max);
-                    System.Console.WriteLine(" ");
-                    print_formatted(10, write_access.count);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, write_access.average);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, write_access.min);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, write_access.max);
-                    System.Console.WriteLine(" ");
-                    print_formatted(10, read_access.count);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, read_access.average);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, read_access.min);
-                    System.Console.WriteLine(" ");
-                    print_formatted(6, read_access.max);
-                    System.Console.WriteLine();
+                    System.Console.WriteLine(String.Format("{0,-6} {1, 10} {2, 6} {3, 6} {4, 6} {5, 10} {6, 6} {7, 6} {8, 6} {9, 10} {10, 6} {11, 6} {12, 6}",
+                        block,roundtrip.count,roundtrip.average,roundtrip.min, roundtrip.max,write_access.count, write_access.average,write_access.min, 
+                        write_access.max, read_access.count, read_access.average, read_access.min, read_access.max));
+                    Console.Out.Flush();
+
                     write_access.init_stats();
                     read_access.init_stats();
                     roundtrip.init_stats();

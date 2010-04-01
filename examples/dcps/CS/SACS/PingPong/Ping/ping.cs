@@ -1,20 +1,25 @@
-	// ping.cs created with MonoDevelop
-	// User: lina at 4:13 PM 10/12/2009
-	//
-	// To change standard headers go to Edit->Preferences->Coding->Standard Headers
-	//
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
 
-	using System;
+using System;
 
-	namespace PingPong
-	{	
-		public class ping
-		{		
-			public static void Main (String[] args) {
-
-			    pinger pinger_instance = new pinger();
-
-	            pinger_instance.run (args);
-		    }
-		}
-	}
+namespace PingPong
+{	
+     public class ping
+     {		
+         public static void Main (String[] args) 
+         {
+              pinger pinger_instance = new pinger();
+              pinger_instance.run (args);
+         }
+     }
+}

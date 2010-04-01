@@ -17,6 +17,7 @@
 #include <os_stdlib.h>
 #include <os_heap.h>
 #include <os_socket.h>
+#include <os_library.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,6 +28,7 @@
 #endif
 
 #define OS_REPORTSERVICES_MAX	(10)
+#define OS_REPORTPLUGINS_MAX	(10)
 #define OS_MAX_DESCRIPTIONSIZE  (2048)
 
 #define SERV_IP "10.1.0.3"
@@ -46,6 +48,35 @@ typedef struct {
     os_IReportService_s os_reportContext;
 } os_reportServiceType;
 
+typedef void *os_reportPlugin_context;
+
+typedef int
+(*os_reportPlugin_initialize)(
+    const char *argument, 
+    os_reportPlugin_context context);
+
+typedef int 
+(*os_reportPlugin_report)(
+    os_reportPlugin_context, 
+    const char *report);
+
+typedef int
+(*os_reportPlugin_finalize)(
+    os_reportPlugin_context);
+
+typedef struct os_reportPlugin_s {
+    os_reportPlugin_initialize initialize_symbol;
+    os_reportPlugin_report report_symbol;
+    os_reportPlugin_finalize finalize_symbol;
+    os_reportPlugin_context plugin_context;
+} *os_reportPlugin_t;
+
+typedef struct os_reportPluginAdmin_s {
+    unsigned int size;
+    unsigned int length;
+    os_reportPlugin_t * reportArray;
+} *os_reportPluginAdmin;
+
 static os_reportServiceType os_reportServices[OS_REPORTSERVICES_MAX] = {
     { 0, 0 },
     { 0, 0 },
@@ -62,6 +93,8 @@ static FILE* error_log = NULL;
 static FILE* info_log = NULL;
 
 static os_int32 os_reportServicesCount = 0;
+
+os_reportPluginAdmin reportPluginAdmin = NULL;
 
 static const char *os_reportTypeText [] = {
     "INFO",
@@ -221,6 +254,26 @@ os_open_error_file (void)
     return file;
 }
 
+os_reportPluginAdmin
+os_reportPluginAdminNew(
+    unsigned int size)
+{
+    os_reportPluginAdmin admin = NULL;
+    unsigned int i;
+
+    admin = os_malloc(sizeof(struct os_reportPluginAdmin_s));
+    admin->reportArray = os_malloc(sizeof(os_reportPlugin_t) * size);
+
+    for (i = 0; i < size; i++) {
+      admin->reportArray[i] = NULL;
+    }
+
+    admin->size = size;
+    admin->length =0;
+
+    return admin;
+}
+
 void
 os_reportDisplayLogLocations()
 {
@@ -337,9 +390,11 @@ os_report(
     ...)
 {
     va_list args;
-    os_int32 i;
+    unsigned int i;
     const char *file_name = fileName;
     const char *ptr;
+    char xml_description[1024];
+    char extended_description[512];
 
 #ifdef WIN32
     char file_separator = '\\';
@@ -348,35 +403,65 @@ os_report(
 #endif
 
     for (ptr=fileName; *ptr!=0; ptr++) {
-        if (*ptr == file_separator) {
-            file_name = (char *)((long)ptr+1);
-        }
+       if (*ptr == file_separator) {
+          file_name = (char *)((long)ptr+1);
+       }
     }
 
     va_start(args, description);
     if (os_reportServicesCount != 0) {
-        for (i = 0; i < OS_REPORTSERVICES_MAX; i++) {
-            if (os_reportServices[i].os_reportContext != 0) {
-                os_reportServices[i].os_reportService(os_reportServices[i].os_reportContext,
-                    reportType, reportContext, file_name, lineNo, reportCode,
-                    description, args);
-            }
-        }
-    } else {
-        os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);
+       for (i = 0; i < OS_REPORTSERVICES_MAX; i++) {
+          if (os_reportServices[i].os_reportContext != 0) {
+             os_reportServices[i].os_reportService(os_reportServices[i].os_reportContext,
+                                                   reportType, reportContext, file_name, lineNo, reportCode,
+                                                   description, args);
+          }
+       }
+    } 
+    
+    if (reportPluginAdmin != NULL){ 
+       vsnprintf (extended_description, sizeof(extended_description)-1, description, args);    
+       sprintf (xml_description,  
+                "<%s>\n"                   
+                "<DESCRIPTION>%s</DESCRIPTION>\n"  
+                "<CONTEXT>%s</CONTEXT>\n"          
+                "<FILE>%s</FILE>\n"                
+                "<LINE>%d</LINE>\n"                
+                "<CODE>%d</CODE>\n"                
+                "</%s>\n",                           
+                os_reportTypeText[reportType],   
+                extended_description,                     
+                reportContext,                   
+                fileName,                        
+                lineNo,                          
+                reportCode,                      
+                os_reportTypeText[reportType]);
+        
+        
+       for (i = 0; i < reportPluginAdmin->size; i++){ 
+          if (reportPluginAdmin->reportArray[i] != NULL) {     
+             if (reportPluginAdmin->reportArray[i]->report_symbol != 0) {
+                reportPluginAdmin->reportArray[i]->report_symbol 
+                (reportPluginAdmin->reportArray[i]->plugin_context, xml_description);
+             }
+          }
+       }    
     }
+    
+    os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);
+    
     va_end(args);
     va_start(args, description);
     if (reportType == OS_API_INFO) {
-        char sourceLine[512];
+       char sourceLine[512];
 
-        snprintf(sourceLine, sizeof(sourceLine), "%s::%d", file_name, lineNo);
-        sourceLine[sizeof(sourceLine)-1] = '\0';
-        os_reportSetApiInfoRec(reportContext, sourceLine, NULL, reportCode,
-             description, args);
+       snprintf(sourceLine, sizeof(sourceLine), "%s::%d", file_name, lineNo);
+       sourceLine[sizeof(sourceLine)-1] = '\0';
+       os_reportSetApiInfoRec(reportContext, sourceLine, NULL, reportCode,
+                              description, args);
     }
     va_end(args);
-}
+ }
 
 void
 os_reportSetApiInfoContext(
@@ -628,3 +713,161 @@ os_unregisterReportService (
     return -1;
 }
 
+ os_int32
+ os_reportRegisterPlugin(
+    const char *library_file_name,
+    const char *initialize_method_name,
+    const char *argument,
+    const char *report_method_name,
+    const char *finalize_method_name,
+    os_reportPlugin *plugin)
+ {
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+    os_library libraryHandle;
+    os_libraryAttr attr;
+    os_result osr;
+
+    os_reportPlugin_initialize initFunction;
+    os_reportPlugin_finalize finalizeFunction;
+    os_reportPlugin_report reportFunction;
+    os_reportPlugin_context context;
+    os_reportPlugin_t rplugin;
+
+    osr = os_libraryAttrInit(&attr);
+
+    if (library_file_name != NULL){
+       libraryHandle = os_libraryOpen (library_file_name, &attr);    
+    }
+
+    if (libraryHandle == NULL) {
+       OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
+                    "Unable to load library: %s", library_file_name);
+    }
+
+    initFunction =  (os_reportPlugin_initialize)os_libraryGetSymbol (libraryHandle, initialize_method_name);
+  
+    if (initFunction == NULL) {
+       OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
+                    "Unable to resolve report intialize function: %s", initialize_method_name);
+    }
+
+    finalizeFunction = (os_reportPlugin_finalize)os_libraryGetSymbol (libraryHandle, finalize_method_name);
+
+    if (finalizeFunction == NULL) {
+       OS_REPORT_1 (OS_WARNING, "os_reportRegsiterPlugin", 0,
+                    "Unable to resolve report finalize function: %s", finalize_method_name);
+    }
+
+    reportFunction = (os_reportPlugin_report)os_libraryGetSymbol (libraryHandle, report_method_name);
+  
+    if (reportFunction == NULL) {
+       OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
+                    "Unable to resolve report Report function: %s", report_method_name);
+    }
+
+    if (initFunction == NULL && finalizeFunction == NULL && reportFunction == NULL){
+       OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
+                    "No functions resolved for report Plugin : %s", library_file_name);        
+    
+       return -1;
+    }
+    else { 
+       if (initFunction != NULL){
+          osr = initFunction (argument, context);
+
+          if (osr != 0){
+             OS_REPORT_2 (OS_ERROR, "os_reportRegisterPlugin", 0,
+                          "Initialize report plugin failed : %s : Return code %d\n", initialize_method_name, osr);            
+             return -1;
+          }            
+       }
+    }
+
+    if (reportPluginAdmin == NULL){
+       reportPluginAdmin = os_reportPluginAdminNew (OS_REPORTPLUGINS_MAX);
+    }
+
+    
+    if (reportPluginAdmin->length < reportPluginAdmin->size){
+
+       reportPluginAdmin->reportArray[reportPluginAdmin->length] = os_malloc(sizeof(struct os_reportPlugin_s));  
+      
+       rplugin = reportPluginAdmin->reportArray[reportPluginAdmin->length++];
+
+       rplugin->initialize_symbol = initFunction;
+       rplugin->report_symbol = reportFunction;
+       rplugin->finalize_symbol = finalizeFunction; 
+       rplugin->plugin_context = context;
+        
+       *plugin = rplugin;       
+
+       OS_REPORT_1 (OS_INFO, "os_reportRegisterPlugin", 0,
+                    "Report Plugin successfully registered : %s", library_file_name);   
+
+       return 0;       
+    }
+    
+    OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
+                 "Failed to register report plugin : %s", library_file_name);  
+
+    return -1;
+#else
+    return 0;
+#endif
+ }
+
+
+ os_int32
+ os_reportUnregisterPlugin(
+    os_reportPlugin plugin)
+ {
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+    os_reportPlugin_t rplugin;
+    os_result osr;
+
+    if (reportPluginAdmin != NULL){  
+       rplugin = (os_reportPlugin_t)plugin;
+
+       /* Verify if the plugin is a valid address within the bounds of the reportArray.
+        */
+       if ((rplugin >= reportPluginAdmin->reportArray[0]) &&
+           (rplugin <= reportPluginAdmin->reportArray[reportPluginAdmin->length - 1]))
+       {
+          os_reportPlugin_finalize finalize_symbol = rplugin->finalize_symbol;
+          os_reportPlugin_context plugin_context = rplugin->plugin_context;
+          /* Note that this isn't thread safe!
+           * Problems minimized by first setting report_symbol to NULL;
+           */
+          rplugin->report_symbol = NULL;
+          rplugin->initialize_symbol = NULL;
+          rplugin->finalize_symbol = NULL;
+          rplugin->plugin_context = NULL;
+          if (finalize_symbol) {
+             osr = finalize_symbol(plugin_context);
+             if (osr != 0){
+                OS_REPORT_1 (OS_ERROR,
+                             "os_reportUnregisterPlugin", 0,
+                             "Finalize report plugin failed : Return code %d\n",
+                             osr);            
+                return -1;
+             }            
+          }
+          OS_REPORT (OS_INFO,
+                     "os_reportUnregisterPlugin", 0,
+                     "Successfully finalized report plugin"); 
+          return 0;
+       } else {
+          OS_REPORT (OS_WARNING,
+                     "os_reportUnregisterPlugin", 0,
+                     "Finalize report plugin failed"); 
+       }
+    } else {
+       OS_REPORT (OS_WARNING,
+                  "os_reportUnregisterPlugin", 0,
+                  "Finalize report plugin failed"); 
+    }
+    return -1;
+#else
+    return 0;
+#endif
+ }

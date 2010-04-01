@@ -124,7 +124,7 @@ public class ExtDomainParticipant implements DomainParticipant {
 
         /* Create a private Subscriber for the multitopic simulator. */
         multiSub = realParticipant.create_subscriber(
-            subQos.value, null, ANY_STATUS.value);
+            subQos.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             multiSub, 
             "DDS.DomainParticipant.create_subscriber (for multitopic)");
@@ -135,7 +135,7 @@ public class ExtDomainParticipant implements DomainParticipant {
             filteredMessageTopic, 
             DATAREADER_QOS_USE_TOPIC_QOS.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader (ChatMessage)");
 
@@ -160,7 +160,7 @@ public class ExtDomainParticipant implements DomainParticipant {
             nameServiceTopic, 
             DATAREADER_QOS_USE_TOPIC_QOS.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader (NameService)");
         
@@ -199,7 +199,7 @@ public class ExtDomainParticipant implements DomainParticipant {
             type_name, 
             namedMessageQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             namedMessageTopic, 
             "DDS.DomainParticipant.create_topic (NamedMessage)");
@@ -214,7 +214,7 @@ public class ExtDomainParticipant implements DomainParticipant {
 
         /* Create a private Publisher for the multitopic simulator. */
         multiPub = realParticipant.create_publisher(
-            pubQos.value, null, ANY_STATUS.value);
+            pubQos.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             multiPub, 
             "DDS.DomainParticipant.create_publisher (for multitopic)");
@@ -224,7 +224,7 @@ public class ExtDomainParticipant implements DomainParticipant {
             namedMessageTopic, 
             DATAWRITER_QOS_USE_TOPIC_QOS.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentWriter, "DDS.Publisher.create_datawriter (NamedMessage)");
         

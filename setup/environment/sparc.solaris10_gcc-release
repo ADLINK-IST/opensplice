@@ -13,6 +13,7 @@ gawk_check || ERRS=1
 bison_check || ERRS=1
 flex_check || ERRS=1
 javac_check || ERRS=1
+gmcs_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
 

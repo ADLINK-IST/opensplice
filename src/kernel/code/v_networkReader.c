@@ -20,6 +20,8 @@
 #include "v__networkQueue.h"
 #include "v_networkReaderEntry.h"
 #include "v_networkReaderStatistics.h"
+#include "v_networkChannelStatistics.h"
+#include "v_networkQueueStatistics.h"
 #include "v_entity.h"    /* for v_entity() */
 #include "v_group.h"     /* for v_group()  */
 #include "v__reader.h"    /* for v_reader() */
@@ -32,6 +34,7 @@
 #include "v_statistics.h"
 #include "v__messageQos.h"
 #include "v__statCat.h"
+#include "v__kernel.h"
 #include "v_networking.h"
 
 #define ORDER_INVERSION_BUGFIX 1
@@ -136,44 +139,44 @@ v_networkReaderCreateQueue(
 
     if (reader->nofQueues < NW_MAX_NOF_QUEUES) {
 
-    	if (v_isEnabledStatistics(kernel, V_STATCAT_NETWORKING)) {
-			nqs = v_networkQueueStatisticsNew(kernel,name);
-			ncs = v_networkChannelStatisticsNew(kernel,name);
-		} else {
-			nqs = NULL;
-			ncs = NULL;
-		}
+        if (v_isEnabledStatistics(kernel, V_STATCAT_NETWORKING)) {
+            nqs = v_networkQueueStatisticsNew(kernel,name);
+            ncs = v_networkChannelStatisticsNew(kernel,name);
+        } else {
+            nqs = NULL;
+            ncs = NULL;
+        }
 
-    	//if (nqs != NULL) {
-		queue = v_networkQueueNew(c_getBase((c_object)reader),
-				queueSize, priority, reliable, P2P, resolution, nqs);
+        queue = v_networkQueueNew(c_getBase((c_object)reader),
+                queueSize, priority, reliable, P2P, resolution, nqs);
 
 
-		if (queue != NULL) {
-			reader->queues[reader->nofQueues] = queue;
-			reader->nofQueues++;
-			result = reader->nofQueues;
-			//insert statistics
-			if (nqs != NULL) {
-				s = v_networkReaderStatistics(v_entityStatistics(v_entity(reader)));
-				if (s != NULL) {
-					s->queues[s->queuesCount]=nqs;
-					s->queuesCount++;
-				}
-			}
+        if (queue != NULL) {
+            reader->queues[reader->nofQueues] = queue;
+            reader->nofQueues++;
+            result = reader->nofQueues;
+            /* insert statistics
+             */
+            if (nqs != NULL) {
+                s = v_networkReaderStatistics(v_entityStatistics(v_entity(reader)));
+                if (s != NULL) {
+                    s->queues[s->queuesCount]=nqs;
+                    s->queuesCount++;
+                }
+            }
 
-			if ((useAsDefault) || (reader->defaultQueue == NULL)){
-				c_free(reader->defaultQueue);
-				reader->defaultQueue = c_keep(queue);
-			}
-			/* add channel to the networking statistics also */
-			n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
-			nws = v_entity(n)->statistics;
-			if (ncs != NULL) {
-				nws->channels[nws->channelsCount]=ncs;
-				nws->channelsCount++;
-			}
-		}
+            if ((useAsDefault) || (reader->defaultQueue == NULL)){
+                c_free(reader->defaultQueue);
+                reader->defaultQueue = c_keep(queue);
+            }
+            /* add channel to the networking statistics also */
+            n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+            nws = (v_networkingStatistics)v_entity(n)->statistics;
+            if (ncs != NULL) {
+                nws->channels[nws->channelsCount]=ncs;
+                nws->channelsCount++;
+            }
+        }
 
     } else {
         OS_REPORT_1(OS_ERROR, "v_networkReaderCreateQueue", 0,

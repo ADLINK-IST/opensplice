@@ -22,7 +22,7 @@ all link: ../../exec/$(SPLICE_TARGET)/ping ../../exec/$(SPLICE_TARGET)/pong
 
 ping.o: ../../ping.cpp pingpongC.cpp pingpongDcpsC.h pingpong.h
 	$(CXX) -g $(CXXINCS) -c ../../ping.cpp
- 
+
 ../../exec/$(SPLICE_TARGET)/pong: pong.o pingpongC.o pingpongDcpsC.o pingpongDcps_impl.o pingpongSplDcps.o
 	mkdir -p ../../exec/$(SPLICE_TARGET)
 	$(LD_EXE) -o  ../../exec/$(SPLICE_TARGET)/pong -L$(OSPL_HOME)/lib/$(SPLICE_TARGET) pong.o pingpongC.o pingpongDcpsC.o pingpongDcps_impl.o pingpongSplDcps.o $(ORB_LDLIBS) -l$(DDS_DCPSCCPP) -lstdc++
@@ -30,22 +30,22 @@ ping.o: ../../ping.cpp pingpongC.cpp pingpongDcpsC.h pingpong.h
 pong.o: ../../pong.cpp pingpongC.cpp pingpongDcpsC.h pingpong.h
 	$(CXX) -g  $(CXXINCS) -c ../../pong.cpp
 
-pingpongC.o: pingpongC.cpp 
+pingpongC.o: pingpongC.cpp
 	$(CXX) -g  -I./ $(CXXINCS) -c pingpongC.cpp
 
-pingpongDcps_impl.o: pingpongDcps_impl.cpp 
-	$(CXX) -g  $(CXXINCS) -c pingpongDcps_impl.cpp 
+pingpongDcps_impl.o: pingpongDcps_impl.cpp
+	$(CXX) -g  $(CXXINCS) -c pingpongDcps_impl.cpp
 
-pingpongDcpsC.o: pingpongDcpsC.cpp 
-	$(CXX) -g  $(CXXINCS) -c pingpongDcpsC.cpp 
+pingpongDcpsC.o: pingpongDcpsC.cpp
+	$(CXX) -g  $(CXXINCS) -c pingpongDcpsC.cpp
 
-pingpongSplDcps.o: pingpongSplDcps.cpp 
+pingpongSplDcps.o: pingpongSplDcps.cpp
 	$(CXX) -g  $(CXXINCS) -c pingpongSplDcps.cpp
 
 pingpongDcps.idl pingpong.h pingpongDcps_impl.h pingpongSplDcps.h pingpongDcps_impl.cpp pingpongSplDcps.cpp pingpongC.cpp pingpongC.h: ../../pingpong.idl
-	$(ORB_COMPILER) -I../../ -I$(OSPL_HOME)/src/api/dcps/ccpp/idl $(ORB_CXXFLAGS) ../../pingpong.idl
+	$(ORB_COMPILER) -I../../ -I$(OSPL_HOME)/etc/idl $(ORB_CXXFLAGS) ../../pingpong.idl
 	idlpp -C -l cpp ../../pingpong.idl
 
 pingpongDcpsC.cpp pingpongDcpsC.h : pingpongDcps.idl
-	$(ORB_COMPILER) -I../../ -I$(OSPL_HOME)/src/api/dcps/ccpp/idl $(ORB_CXXFLAGS) pingpongDcps.idl
-    
+	$(ORB_COMPILER) -I../../ -I$(OSPL_HOME)/etc/idl $(ORB_CXXFLAGS) pingpongDcps.idl
+

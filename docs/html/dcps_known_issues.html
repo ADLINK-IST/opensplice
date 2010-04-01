@@ -26,23 +26,6 @@
         </tr>
         <tr>
           <td>
-            dds124
-          </td>
-          <td>
-            <b>IDL Preprocessor does not warn for illegal keyfields</b><br/>
-            <i>
-              When assigning an array as keyfield for a datatype (using the
-              #pragma keylist statement in the IDL), the IDL preprocessor does not
-              give an error message stating that arrays are not supported as key field
-              defintions. Instead, code generation finishes successfully, but at run-time
-              the generated code doesn't work.<br/>
-              The pre-processor should therefore generate an error message when a type
-              is selected as keyfield that semantically cannot function as a key.
-            </i>
-          </td>
-        </tr>
-        <tr>
-          <td>
             dds184
           </td>
           <td>
@@ -137,22 +120,6 @@
             </i>
           </td>
         </tr>
-        <tr>
-          <td>
-            dds540
-          </td>
-          <td>
-            <b>
-              idlpp generates invalid Java code when a union does not mention its default case
-              as the last branch
-            </b><br/>
-            <i>
-              Idlpp assumes that when used, the default case in a union is always mentioned last. If
-              that is not the case, idlpp will choose the wrong discriminator value for the
-              default case. As a result the generated code is incorrect, causing unexpected failures
-              or incorrect data.
-            </i>
-          </td>
         </tr>
         <tr>
           <td>
@@ -185,27 +152,83 @@
         </tr>      
         <tr>
           <td>
-            dds1752
+            dds1577
           </td>
           <td>
-            <b>Deployment manual (3.5.5.4.1) says valid values for DeathDetectionCount are 1-6</b><br/>
+            <b>Report Plug-in - using a blank name</b><br/>
             <i>
-              Valid values are actually 1-infinity. A documentation update will be made for the next release.
+              The library name for the report plugin can be blank but if it is blank
+              then an error occurs in existing code when trying to resolve function
+              names, this error causes a failure.
             </i>
           </td>
         </tr>      
         <tr>
           <td>
-            dds1756
+            dds2025
           </td>
           <td>
-            <b>DCPS API reference manual for DataWriter wait_for_acknowledgments</b><br/>
+            <b>CRTRL C in Java does not interrupt</b><br/>
             <i>
-              The DCPS API reference manuals state that the DataWriter wait_for_acknowledgments function
-              is not implemented. It is, a documentation update will be made for the next release.
+When CTRL-C is pressed the JVM reacts to this signal and starts the exit handling, however the way we deal with the exit handling in the JAVA and OpenSplice combination gives some problems, hence the existence of this ticket. So to get around the java application not termination when CTRL-C is used the following steps need to be taken
+
+- A shutdown hook (standard JAVA mechanism) needs to be installed within the JAVA application
+- This shutdown hook should delete all (application created) participants and it's contents.
+
+An example of such shutdown hook (tailored for the customers Client.java code:
+<pre>
+// Example shutdown hook class
+class OSPLShutdown extends Thread
+{
+    private Client client;
+
+    public OSPLShutdown(Client client)
+    {
+        this.client = client;
+    }
+
+    public void run()
+    {
+        int status;
+
+        if(client.participant != null)
+        {
+            status = client.participant.delete_contained_entities();
+            if ( status != RETCODE_OK.value && status != RETCODE_NO_DATA.value)
+            {
+                System.out.println("Error in delete_contained_entities, status = " + status);
+            }
+
+            status = TheParticipantFactory.value.delete_participant(client.participant);
+            if ( status != RETCODE_OK.value && status != RETCODE_NO_DATA.value)
+            {
+                System.out.println("Error in delete_participant, status = " + status);
+            }
+        }
+    }
+}
+</pre>
+Installing the shutdown hook (preferably called before any OpenSplice call):
+<pre>
+        OSPLShutdown sh = new OSPLShutdown(this);
+        Runtime.getRuntime().addShutdownHook(sh);
+</pre>
             </i>
           </td>
         </tr>      
+        <tr>
+          <td>
+            dds2046
+          </td>
+          <td>
+            <b>Application with listeners does not terminate</b><br/>
+            <i>
+              When an application attach listeners, then it does not terminate and just hangs after the main thread finished.
+              This occurs in both java and c++.
+              <br>Workaround is to delete all the DCPS objects (Datareaders, listeners, Topics...) before terminating your application.
+            </i>
+          </td>
+        </tr>
       </table>
 
       <br/>

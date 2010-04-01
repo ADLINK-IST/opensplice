@@ -1,0 +1,77 @@
+// -*- MPC -*-
+// $Id:$
+// This file needs latest MPC.
+
+project (*): ospl_dcps_cpp_app_base_libs, ccpp_typesupport, taolib, ospl_dcpsccpp_incl {
+
+    // Prebuild step to clear out and recreate the output dirs.
+    prebuild = <%rmdir%> .<%slash%>$(SPLICE_ORB)<%slash%>include <%cmdsep%> \
+               <%rmdir%> .<%slash%>$(SPLICE_ORB)<%slash%>lib <%cmdsep%> \
+               <%mkdir%> .<%slash%>$(SPLICE_ORB)<%slash%>include <%cmdsep%> \
+               <%mkdir%> .<%slash%>$(SPLICE_ORB)<%slash%>lib
+
+    // Generated library name.
+    sharedname = dcpsccpp
+
+    libout = $(SPLICE_ORB)/lib
+
+    includes += $(TAO_ROOT)/include
+
+    // Modify default type support compilation to expect
+    // generated output to be here rather than to the idl file dir
+    Modify_Custom(TypeSupport) {
+        output_follows_input = 0
+    }
+
+    // idlpp code generation
+    TypeSupport_Files {
+        splice_ts_flags += -P OS_DCPS_API,ccpp_dcps_if.h
+        ../../etc/idl/dds_builtinTopics.idl
+        ../../etc/idl/dds_dcps_builtintopics.idl
+    }
+
+    // Modify the default IDL processing to expect source output in this dir
+    // rather than the dir the idl lives in. Change inline file endings. Generate
+    // export include and macro.
+    Modify_Custom(IDL) {
+        output_follows_input = 0
+        commandflags += -Wb,export_macro=OS_DCPS_API \
+                        -Wb,export_include=ccpp_dcps_if.h \
+                        -Sp -Sd -si S.i -ci C.i
+    }
+
+    // This file list is fed to the ORB compiler
+    IDL_Files {
+        ../../etc/idl/dds_builtinTopics.idl
+        ../../etc/idl/dds_dcps_builtintopics.idl
+        ../../etc/idl/dds_dcps_interfaces.idl
+        ../../etc/idl/dds_dcps.idl
+        // + automatically the generated TypeSupport IDL
+    }
+
+    // The source files to be compiled.
+    Source_Files {
+        // All the implementation source in this dir
+        *.cpp
+        // ... + automatically the generated codegen (tao_idl and idlpp) outputs
+    }
+
+    // Additional header files. .h for each *.cpp already added by default.
+    Header_Files {
+        ccpp_dds_builtinTopics.h
+        ccpp_dds_dcps_builtintopics.h
+    }
+
+    // On windows we need a build DLL macro.
+    specific(prop:windows) {
+        macros += OSPL_BUILD_DCPSCCPP
+    }
+
+    // Extra macro define - don't know what we need this for.
+    macros += $(SPLICE_ORB)
+
+    // Put the headers and inline code into the include dir
+    postbuild = <%cp%> *.h .<%slash%>$(SPLICE_ORB)<%slash%>include<%slash%>. <%cmdsep%> \
+    postbuild = <%cp%> *.i .<%slash%>$(SPLICE_ORB)<%slash%>include<%slash%>.
+}
+

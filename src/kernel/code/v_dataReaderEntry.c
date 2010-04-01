@@ -35,6 +35,7 @@
 #include "v__statisticsInterface.h"
 #include "v_message.h"
 #include "v__messageQos.h"
+#include "v__deliveryService.h"
 
 #include "os_report.h"
 
@@ -413,19 +414,11 @@ v_dataReaderEntryWrite(
             v_observerUnlock(v_observer(reader));
             return V_WRITE_SUCCESS;
         }
-        /* For Subscriber defined keys always filter-out all QoS-incompatible
-         * messages.
-         */
-        if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
-            v_observerUnlock(v_observer(reader));
-            return V_WRITE_SUCCESS;
-        }
-    } else {
-        /* Filter-out all QoS-incompatible messages. */
-        if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
-            v_observerUnlock(v_observer(reader));
-            return V_WRITE_SUCCESS;
-        }
+    }
+    /* Filter-out all QoS-incompatible messages. */
+    if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
+        v_observerUnlock(v_observer(reader));
+        return V_WRITE_SUCCESS;
     }
 
     v_statisticsULongValueInc(v_reader, numberOfSamplesArrived, reader);
@@ -620,6 +613,12 @@ v_dataReaderEntryWrite(
         cnt = v_dataReader(reader)->sampleCount;
         v_statisticsULongSetValue(v_reader,numberOfSamples,reader,cnt);
         v_statisticsMaxValueSetValue(v_reader,maxNumberOfSamples,reader,cnt);
+    }
+
+    if ((result==V_WRITE_SUCCESS) && (v_stateTest(v_nodeState(message),L_SYNCHRONOUS))) {
+        v_kernel kernel = v_objectKernel(reader);
+        v_gid gid = v_publicGid(v_public(reader));
+        v_deliveryServiceAckMessage(kernel->deliveryService,message,gid);
     }
 
     V_MESSAGE_STAMP(message,readerNotifyTime);

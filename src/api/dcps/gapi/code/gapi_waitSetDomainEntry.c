@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_waitSetDomainEntry.h"
@@ -22,11 +22,11 @@
 
 static void *
 _WaitSetDomainEntryRun(
-    _WaitSetDomainEntry _this) 
+    _WaitSetDomainEntry _this)
 {
     c_iter list = NULL;
     os_time delay;
-    
+
     delay.tv_sec = 0;
     delay.tv_nsec = 10000000; /* 10 millisec */
 
@@ -53,7 +53,7 @@ _WaitSetDomainEntryRun(
 _WaitSetDomainEntry
 _WaitSetDomainEntryNew(
     _WaitSet waitset,
-    gapi_domainId_t domain_id) 
+    gapi_domainId_t domain_id)
 {
     _WaitSetDomainEntry _this = NULL;
     gapi_domainParticipant dp = NULL;
@@ -73,6 +73,8 @@ _WaitSetDomainEntryNew(
             u_participant(_EntityUEntity(gapi_objectPeek(dp, OBJECT_KIND_DOMAINPARTICIPANT)));
 
         _this->uWaitset = u_waitsetNew(_this->uParticipant);
+        /* Create a backref from the u_waitset to its _WaitSet object. */
+        u_entitySetUserData(u_entity(_this->uWaitset), waitset);
         if (_this->uWaitset == NULL) {
             os_free(_this);
             _this = NULL;
@@ -83,11 +85,11 @@ _WaitSetDomainEntryNew(
 }
 void
 _WaitSetDomainEntryDelete(
-    _WaitSetDomainEntry _this) 
+    _WaitSetDomainEntry _this)
 {
     u_result uresult;
     os_time delay;
-    
+
     delay.tv_sec = 0;
     delay.tv_nsec = 10000000; /* 10 millisec */
     if (_this->uWaitset) {
@@ -111,14 +113,14 @@ _WaitSetDomainEntryDelete(
         u_waitsetFree(_this->uWaitset);
         _this->uWaitset = NULL;
     }
-    
+
     os_free(_this);
 }
 
 gapi_returnCode_t
 _WaitSetDomainEntryMultiMode(
     _WaitSetDomainEntry _this,
-    c_bool multimode) 
+    c_bool multimode)
 {
     gapi_returnCode_t      result = GAPI_RETCODE_OK;
     os_result              osResult;
@@ -131,7 +133,7 @@ _WaitSetDomainEntryMultiMode(
                 u_waitsetNotify(_this->uWaitset, NULL);
             }
              _this->running = TRUE;
-    
+
             osResult = os_threadAttrInit(&osThreadAttr);
             if (osResult == os_resultSuccess) {
                 osResult = os_threadCreate(
@@ -160,10 +162,10 @@ _WaitSetDomainEntryMultiMode(
 gapi_returnCode_t
 _WaitSetDomainEntryAttachCondition(
     _WaitSetDomainEntry _this,
-    _Condition condition) 
+    _Condition condition)
 {
     gapi_returnCode_t result;
-    
+
     result =  _ConditionAddWaitset(condition,
                                    _EntityHandle(_this->waitset),
                                    _this->uWaitset);
@@ -173,33 +175,33 @@ _WaitSetDomainEntryAttachCondition(
     }
 
     return result;
-    
+
 }
 
 gapi_returnCode_t
 _WaitSetDomainEntryDetachCondition(
     _WaitSetDomainEntry _this,
-    _Condition condition) 
+    _Condition condition)
 {
     gapi_returnCode_t result;
-    
+
     result =  _ConditionRemoveWaitset(condition,
                                       _EntityHandle(_this->waitset),
                                       _this->uWaitset);
-    
+
     if (result == GAPI_RETCODE_OK) {
         _this->condition_count--;
     }
 
     return result;
-    
+
 }
 
 
 /* returns either os_resultFail or os_resultSuccess */
 os_result
 _WaitSetDomainEntryWait(
-    _WaitSetDomainEntry _this) 
+    _WaitSetDomainEntry _this)
 {
     c_iter    list = NULL;
     os_result result = os_resultFail;
@@ -221,15 +223,15 @@ _WaitSetDomainEntryWait(
 os_result
 _WaitSetDomainEntryTimedWait(
     _WaitSetDomainEntry _this,
-    const os_time t) 
+    const os_time t)
 {
     c_iter     list   = NULL;
     os_result  result = os_resultTimeout;
     c_time     ctime;
-    
+
     ctime.seconds     = t.tv_sec;
     ctime.nanoseconds = t.tv_nsec;
-    
+
     _this->busy = TRUE;
     u_waitsetTimedWait(_this->uWaitset,ctime,&list);
     if (list) {

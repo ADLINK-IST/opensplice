@@ -1,0 +1,28 @@
+#ifndef OSPL_DDS_DCPS_PSEUDO_INTERFACES_PIDL
+#define OSPL_DDS_DCPS_PSEUDO_INTERFACES_PIDL
+
+/*
+$Id:$
+
+This pseudo IDL file defines the interfaces that the DDS spec has granted
+exceptions to the normal IDL specification for. These cannot therefore be generated
+by a compliant IDL compiler. These types can however be used in IDL. They
+should be safe as args / return types. Inheriting from them may not work and
+should be avoided if you want your interface to be portable across language
+mappings. If you have to do that, consider the (Proprietary) *Interface bases
+below instead.
+
+*/
+
+#include "dds_dcps_interfaces.idl"
+
+module DDS
+{
+    local interface WaitSet : WaitSetInterface { };
+
+    local interface GuardCondition : GuardConditionInterface { } ;
+
+    local interface DomainParticipantFactory : DomainParticipantFactoryInterface { };
+};
+
+#endif /* OSPL_DDS_DCPS_PSEUDO_INTERFACES_PIDL */

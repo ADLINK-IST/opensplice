@@ -1,34 +1,35 @@
 cd bld
 
-ospl start
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
 
 BLOKSIZE=100
 BLOKCOUNT=100
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar pong PongRead PongWrite&
+$VG_PONG java -classpath .:$OSPL_HOME/jar/dcpscj.jar pong PongRead PongWrite&
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+$VG_PING_M  java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+$VG_PING_Q java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+$VG_PING_S java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+$VG_PING_F java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
 
 sleep 2
 
-java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping 1 10 t PongRead PongWrite
+$VG_PING_T java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping 1 10 t PongRead PongWrite
 
 sleep 4
 
-ospl stop
+$VG_OSPL_STOP ospl stop
 
 cd ..

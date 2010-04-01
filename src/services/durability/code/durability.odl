@@ -91,6 +91,7 @@ module durabilityModule2 {
         d_quality          initialQuality;
         c_ulong            total;
         d_networkAddress_s master;
+        c_bool             isComplete;
     };
    
     struct d_sampleRequest_s {

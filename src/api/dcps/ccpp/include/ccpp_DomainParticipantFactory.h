@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CCPP_DOMAINPARTICIPANTFACTORY_H
@@ -55,6 +55,9 @@ namespace DDS
             const char * domainId
         ) THROW_ORB_EXCEPTIONS;
 
+        virtual ::DDS::ReturnCode_t delete_domain (
+            ::DDS::Domain_ptr a_domain
+        ) THROW_ORB_EXCEPTIONS;
 
         virtual ::DDS::ReturnCode_t set_qos (
           const ::DDS::DomainParticipantFactoryQos & qos

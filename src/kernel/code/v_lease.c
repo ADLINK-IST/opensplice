@@ -12,6 +12,7 @@
 
 #include "os_report.h"
 
+#include "v__kernel.h"
 #include "v__lease.h"
 #include "v__leaseManager.h"
 #include "v_time.h"

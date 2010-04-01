@@ -90,6 +90,9 @@ LDLIBS_CXX =
 LDLIBS_NW = -lsocket -lnsl
 LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS = -lxnet -lnsl -lsocket
+LDLIBS_ZLIB = -lz
+LDFLAGS_ZLIB = 
+CINCS_ZLIB =
 
 #enable XPG5 plus extensions
 CFLAGS		+= -D_XOPEN_SOURCE=500 -D__EXTENSIONS__

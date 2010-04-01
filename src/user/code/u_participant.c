@@ -372,8 +372,8 @@ u_participantNewGroupListener(
 
     r = u_participantClaim(u_participant(_this), &kp);
     if ((r == U_RESULT_OK) && (kp != NULL)) {
-        v_participantConnectNewGroup(kp,event);
-        r = u_participantRelease(_this);
+        v_participantConnectNewGroup(kp,NULL);
+        r = u_participantRelease(u_participant(_this));
     }
     return r;
 }

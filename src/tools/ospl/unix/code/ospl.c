@@ -655,18 +655,24 @@ main(
     int retCode = OSPL_EXIT_CODE_OK;
     char *uri = NULL;
     char *command = NULL;
-    char start_command[1024];
+    char start_command[2048];
     cf_element domain = NULL;
     cfgprs_status r;
     os_boolean blocking = OS_FALSE;
     os_boolean blockingDefined = OS_FALSE;
     os_time serviceTerminatePeriod;
+    char *vg_cmd = NULL;
 
     ospl_setsignals();
     os_osInit();
     os_procAtExit(os_osExit);
 
     uri = os_getenv ("OSPL_URI");
+    vg_cmd = os_getenv("VG_SPLICED");
+    if (!vg_cmd)
+    {
+       vg_cmd = "";
+    }
 
     while ((opt = getopt (argc, argv, "hvafd:")) != -1)
     {
@@ -779,21 +785,22 @@ main(
             {
                 if(!blocking)
                 {
-                    snprintf (start_command, sizeof(start_command), "spliced \"%s\" &", uri);
+                   snprintf (start_command, sizeof(start_command), "%s spliced \"%s\" &", vg_cmd, uri);
                 } else
                 {
-                    snprintf (start_command, sizeof(start_command), "spliced \"%s\"", uri);
+                   snprintf (start_command, sizeof(start_command), "%s spliced \"%s\"", vg_cmd, uri);
                 }
             } else
             {
                 if(!blocking)
                 {
-                    snprintf (start_command, sizeof(start_command), "spliced &");
+                   snprintf (start_command, sizeof(start_command), "%s spliced &", vg_cmd);
                 } else
                 {
-                    snprintf (start_command, sizeof(start_command), "spliced");
+                   snprintf (start_command, sizeof(start_command), "%s spliced", vg_cmd);
                 }
             }
+
             printf (" Ready\n");
 
             /* Display locations of info and error files */

@@ -1,11 +1,8 @@
 # "Standard" features we don't build for this platform.
 unset_var INCLUDE_FILTERS
-
 unset_var INCLUDE_TESTENGINE
-unset_var INCLUDE_DBT_LOC
-unset_var INCLUDE_DBT_SERVICES_DBMS
-unset_var INCLUDE_DBT_TOOLS_SHMDUMP
-unset_var INCLUDE_DBT_API_CM
+
+# "Tests we don't build for this platform.
 unset_var INCLUDE_DBT_API_DLRL
 unset_var INCLUDE_DBT_API_DLRL_SAJ
 unset_var INCLUDE_DBT_API_DLRL_SACPP

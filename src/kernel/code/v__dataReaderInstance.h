@@ -52,6 +52,12 @@
 #define v_dataReaderInstanceInNotEmptyList(_this) \
         (v_dataReaderInstance(_this)->inNotEmptyList)
 
+#define v_dataReaderInstanceRegisterSource(_this,item) \
+        v_groupCacheInsert(v_dataReaderInstance(_this)->sourceCache,item)
+
+#define v_dataReaderInstanceDisconnect(_this) \
+        v_groupCacheDeinit(v_dataReaderInstance(_this)->sourceCache)
+
 v_dataReaderInstance
 v_dataReaderInstanceNew(
     v_dataReader reader,
@@ -62,8 +68,14 @@ v_dataReaderInstanceInit(
     v_dataReaderInstance _this,
     v_message message);
 
+#if 1
+void
+v_dataReaderInstanceFree(
+    v_dataReaderInstance _this);
+#else
 #define v_dataReaderInstanceFree(_this) \
         c_free(_this)
+#endif
 
 void
 v_dataReaderInstanceDeinit(

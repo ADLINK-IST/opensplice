@@ -610,6 +610,11 @@ saj_ReliabilityQosPolicyCopyIn(
             rc = saj_durationCopyIn(
                 env, javaMaxBlockingTime, &(dst->max_blocking_time));
         }
+        if(rc == SAJ_RETCODE_OK){
+            dst->synchronous = (*env)->GetBooleanField(env, src,
+                 GET_CACHED(reliabilityQosPolicy_synchronous_fid)) == JNI_TRUE;
+            saj_exceptionCheck(env);
+        }
     (*env)->DeleteLocalRef (env, javaKind);
     (*env)->DeleteLocalRef (env, javaMaxBlockingTime);
     }
@@ -2316,6 +2321,7 @@ saj_ReliabilityQosPolicyCopyOut(
 {
     jobject javaKind;
     jobject javaMaxBlockingTime;
+    jboolean javaSynchronous;
     saj_returnCode rc;
 
     assert(dst != NULL);
@@ -2327,6 +2333,12 @@ saj_ReliabilityQosPolicyCopyOut(
     if (*dst == NULL)
     {
         rc = saj_create_new_java_object(env, "DDS/ReliabilityQosPolicy", dst);
+    }
+
+    if (!src->synchronous) {
+        javaSynchronous = JNI_FALSE;
+    } else {
+        javaSynchronous = JNI_TRUE;
     }
 
     if (rc == SAJ_RETCODE_OK)
@@ -2357,6 +2369,12 @@ saj_ReliabilityQosPolicyCopyOut(
                     GET_CACHED(reliabilityQosPolicy_maxBlockingTime_fid),
                     javaMaxBlockingTime
                 );
+                saj_exceptionCheck(env);
+                (*env)->SetBooleanField(
+                    env,
+                    *dst,
+                    GET_CACHED(reliabilityQosPolicy_synchronous_fid),
+                    javaSynchronous);
                 saj_exceptionCheck(env);
             }
         }

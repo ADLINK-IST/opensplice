@@ -224,6 +224,10 @@ v_serviceNotify(
             /* This allows receiving the event by means of a waitset.*/
             v_observableNotify(v_observable(service), event);
         break;
+        case V_EVENT_PERSISTENT_SNAPSHOT:
+            /* This allows receiving the event by means of a waitset.*/
+            v_observableNotify(v_observable(service), event);
+        break;
         default:
         break;
         }

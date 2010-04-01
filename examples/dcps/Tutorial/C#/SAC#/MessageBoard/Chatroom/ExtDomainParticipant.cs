@@ -135,6 +135,7 @@ public class ExtDomainParticipant : IDomainParticipant {
            (using the appropriate QoS). */
         DataReaderQos drQos = new DataReaderQos();
         TopicQos topicQos = new TopicQos();
+        multiSub.GetDefaultDataReaderQos(ref drQos);
         filteredMessageTopic.RelatedTopic.GetQos(ref topicQos);
         multiSub.CopyFromTopicQos(ref drQos, topicQos);
 
@@ -213,13 +214,14 @@ public class ExtDomainParticipant : IDomainParticipant {
             multiPub,
             "DDS.DomainParticipant.create_publisher (for multitopic)");
 
-        DataWriterQos nmDrQos = new DataWriterQos();
+        DataWriterQos nmDwQos = new DataWriterQos();
         TopicQos nmQos = new TopicQos();
+        multiPub.GetDefaultDataWriterQos(ref nmDwQos);
         namedMessageTopic.GetQos(ref nmQos);
-        multiPub.CopyFromTopicQos(ref nmDrQos, nmQos);
+        multiPub.CopyFromTopicQos(ref nmDwQos, nmQos);
 
         /* Create a DataWriter for the multitopic. */
-        parentWriter = multiPub.CreateDataWriter(namedMessageTopic, nmDrQos);
+        parentWriter = multiPub.CreateDataWriter(namedMessageTopic, nmDwQos);
         ErrorHandler.checkHandle(
             parentWriter, "DDS.Publisher.CreateDatawriter (NamedMessage)");
 

@@ -1,7 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
+using System;
 using DDS;
 using Chat;
 
@@ -148,8 +156,8 @@ namespace Chatroom
 
             bool terminated = false;
 
-            NamedMessage[] messages = new NamedMessage[10];
-            SampleInfo[] infos = new SampleInfo[10];
+            NamedMessage[] messages = null;;
+            SampleInfo[] infos = null;
 
             while (!terminated)
             {
@@ -172,6 +180,7 @@ namespace Chatroom
                     if (msg.userID == TERMINATION_MESSAGE)
                     {
                         System.Console.WriteLine("Termination message received: exiting...");
+                        terminated = true;
                     }
                     else
                     {

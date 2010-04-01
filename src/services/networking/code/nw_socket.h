@@ -79,7 +79,9 @@ void        nw_socketAddPartition(
                 nw_socket sock,
                 sk_partitionId partitionId,
                 const char *addressString,
-                sk_bool connected);
+                sk_bool connected,
+                sk_bool compression,
+                sk_bool receiving);
 
 sk_length   nw_socketSendData(
                 nw_socket sock,

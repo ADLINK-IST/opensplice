@@ -29,7 +29,8 @@ nw_plugPartitionsSetPartition(
     nw_partitionAddress partitionAddress,
     nw_networkSecurityPolicy securityPolicy,
     os_uint32 hash,
-    nw_bool connected);
+    nw_bool connected,
+    nw_bool compression);
 
 void
 nw_plugPartitionsSetDefaultPartition(

@@ -15,7 +15,18 @@
 #include "v_kernel.h"
 
 /** \file kernel/code/v__deliveryService.h
- *  \brief This file defines the interface of AckReader objects.
+ *  \brief This file defines the interface of the Kernels Delivery Service.
+ *
+ * The Delivery Service implements a synchronous delivery protocol.
+ * This Service implements a mechanism to send and receive delivery
+ * acknoledgement.
+ * When a synchronous DataReader receives a message from a synchronous
+ * DataWriter it will acknowledge the message by calling the method
+ * v_deliveryServiceAckMessage(). This method publishes a delivery message
+ * via the builtin Delivery Topic DataWriter to acknowledeg the message.
+ * The Delivery Service on the node of the DataWriter that has sent the message
+ * will receive the delivery acknoledgement message and notify the DataWriter
+ * that the sent message has been delivered.
  *
  */
 
@@ -52,6 +63,10 @@ void
 v_deliveryServiceDeinit(
     v_deliveryService _this);
 
+/* the following v_deliveryServiceSubscribe and v_deliveryServiceUnSubscribe
+ * methods are defined by the v_reader interface and are required to 
+ * establish connectivity to communication partitions.
+ */
 c_bool
 v_deliveryServiceSubscribe(
     v_deliveryService _this,
@@ -65,19 +80,51 @@ v_deliveryServiceUnSubscribe(
 #define v_deliveryServiceAddEntry(_this,entry) \
         v_deliveryServiceEntry(v_readerAddEntry(v_reader(_this),v_entry(entry)))
 
+/* The v_deliveryServiceRegister method is called by the spliced to pass received
+ * builtin subscription messages. The Delivery Service will use this information
+ * to update the 'connected synchronous DataReader' list of the synchronous
+ * DataWriters. Each synchronous DataWriter has a v_deliveryGuard known by the
+ * Delivery Service that contains the list of all associated synchronous
+ * DataReaders.
+ */
 void
 v_deliveryServiceRegister(
     v_deliveryService _this,
     v_message msg);
 
+/* The v_deliveryServiceUnregister method is called by the spliced to pass
+ * received builtin subscription (dispose) messages.
+ * The Delivery Service will use this information to update the
+ * 'connected synchronous DataReader' list of the synchronous DataWriters.
+ * Each synchronous DataWriter has a v_deliveryGuard known by the
+ * Delivery Service that contains the list of all associated synchronous
+ * DataReaders.
+ */
 void
 v_deliveryServiceUnregister(
     v_deliveryService _this,
     v_message msg);
 
+/* The v_deliveryServiceWrite method is called to deliver a delivery acknoledgemnt
+ * message. The Service will find all waiting DataWriters (v_deliveryWaitLists)
+ * and remove the DataReader identified by the message from the wait lists.
+ * When a waitlist becomes empty (no DataReaders more to wait for) the DataWriter
+ * will be unblocked.
+ */
 v_writeResult
 v_deliveryServiceWrite(
     v_deliveryService _this,
     v_deliveryInfoTemplate msg);
+
+/* The v_deliveryServiceAckMessage method is called by synchronous DataReaders
+ * to acknowledge the delivery of a synchronous message.
+ * This method will use the kernels Delivery Topic builtin DataWriter to
+ * publish a Delivery message.
+ */
+v_writeResult
+v_deliveryServiceAckMessage (
+    v_deliveryService _this,
+    v_message message,
+    v_gid gid);
 
 #endif

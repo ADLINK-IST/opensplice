@@ -262,7 +262,6 @@ u_resultFromKernelWriteResult (
 
     switch (vr) {
     case V_WRITE_SUCCESS:
-    case V_WRITE_INTRANSIT:
     case V_WRITE_REJECTED:
         result = U_RESULT_OK;
     break;

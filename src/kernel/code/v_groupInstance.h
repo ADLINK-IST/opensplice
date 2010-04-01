@@ -14,7 +14,8 @@
 #define V_GROUPINSTANCE_H
 
 #include "v_kernel.h"
-#include "v_groupCache.h"
+#include "v_writerInstance.h"
+#include "v_writerCache.h"
 #include "v_state.h"
 
 #define v_groupInstance(_this) (C_CAST(_this,v_groupInstance))
@@ -30,7 +31,7 @@
 
 #define v_groupInstanceSetHeadNoRefCount(_this,_sample) \
         v_groupInstanceTemplate(_this)->newest = \
-        v_groupSample(_sample)
+        v_groupSampleTemplate(_sample)
 
 #define v_groupInstanceTail(_this) \
         v_groupSample(v_groupInstance(_this)->oldest)
@@ -57,20 +58,22 @@
                      (v_groupInstance *)(&_this), \
                      V_NETWORKID_LOCAL)
 
-#define v_groupInstanceResend(_this,msg) \
+#define v_groupInstanceResend(_this,msg,resendScope) \
         v_groupResend(v_groupInstanceGroup(_this), \
                      msg, \
                      (v_groupInstance *)(&_this), \
+                     resendScope, \
                      V_NETWORKID_LOCAL)
 
-#define v_groupInstanceCacheWalk(_this,action,arg) \
-        v_groupCacheWalk(v_groupInstance(_this)->readerInstanceCache,action,arg)
+#define v_groupInstanceRegisterSource(_this,item) \
+        v_writerCacheInsert(v_groupInstance(_this)->sourceCache,item);
 
 #define v_groupInstanceSetEpoch(_this,_epoch) \
         v_groupInstance(_this)->epoch = _epoch
 
 typedef c_bool (*v_groupInstanceWalkSampleAction) \
                (v_groupSample s, c_voidp arg);
+
 typedef c_bool (*v_groupInstanceWalkRegistrationAction) \
                (v_registration r, c_voidp arg);
 
@@ -87,6 +90,11 @@ v_groupInstanceInit (
 void
 v_groupInstanceFree(
     v_groupInstance _this);
+
+v_writeResult
+v_groupInstanceUnregisterInstance (
+    v_groupInstance _this,
+    v_writerInstance instance);
 
 v_writeResult
 v_groupInstanceRegister (

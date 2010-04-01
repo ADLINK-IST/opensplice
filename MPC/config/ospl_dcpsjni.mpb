@@ -1,0 +1,6 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_dcpsjni_incl, ospl_base {
+  lit_libs += dcpsjni
+}

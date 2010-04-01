@@ -309,15 +309,12 @@ c_timeFromReal (
 {
     c_time tr;
 
-    if (d >= 0.0) {
-        tr.seconds = (c_long)d;
-        tr.nanoseconds = (c_ulong)((d-(c_double)tr.seconds) *
-                                      (c_double)1000000000.0);
-    } else {
-        tr.seconds = (c_long)d - 1;
-        tr.nanoseconds = (c_ulong)((d-(c_double)tr.seconds) *
-                                      (c_double)1000000000.0);
+    if (d >= (c_double)C_TIME_INFINITE.seconds) {
+        OS_REPORT(OS_ERROR,"c_timeFromReal",0,"overflow detected: real exceeds max int");
     }
+    tr.seconds = (c_long)d;
+    tr.nanoseconds = (c_ulong)((d-(c_double)tr.seconds) *
+                                  (c_double)1000000000.0);
     return tr;
 }
 

@@ -250,6 +250,19 @@ serviceCommandIsValid(
     return result;
 }
 
+static char* splitOnFirstToken(char *original, char token)
+{
+   int i;
+   for (i = 0; original[i] != '\0'; i++)
+   {
+      if (original[i] == token)
+      {
+         original[i] = '\0';
+         return &original[++i];
+      }
+   }
+   return NULL;
+}
 
 static int
 startServices(
@@ -281,6 +294,9 @@ startServices(
     sr_serviceInfo info;
     c_char* args;
     int argc;
+    char *vg_cmd = NULL;
+    char *command = NULL;
+    char *vg_args = NULL;
 
     assert(this != NULL);
 
@@ -293,28 +309,82 @@ startServices(
         if (TRUE)
 #endif
         {
-            /* allocate with room for 2 quotes, a space, and an end-of-string */
-            argc = 1+strlen(info->name)+
-                   3+strlen(info->args)+
-                   3+strlen(info->configuration)+
-                   2;
-            args = os_malloc(argc);
-            if (args)
-            {
-                if (strlen(info->args) == 0)
-                {
+           if (!strcmp(info->name,"networking"))
+           {
+              vg_cmd = os_getenv("VG_NETWORKING");
+           }
+           else if (!strcmp(info->name,"durability"))
+           {
+              vg_cmd = os_getenv("VG_DURABILITY");
+           }
+           else if (!strcmp(info->name,"ddsi"))
+           {
+              vg_cmd = os_getenv("VG_DDSI");
+           }
+           else if (!strcmp(info->name,"snetworking"))
+           {
+              vg_cmd = os_getenv("VG_SNETWORKING");
+           }
+           else if (!strcmp(info->name,"cmsoap"))
+           {
+              vg_cmd = os_getenv("VG_CMSOAP");
+           }
+
+           if (!vg_cmd)
+           {
+              command = os_strdup(info->command);
+              /* allocate with room for 2 quotes, a space, and an end-of-string */
+              argc = 1+strlen(info->name)+
+                     3+strlen(info->args)+
+                     3+strlen(info->configuration)+
+                     2;
+           }
+           else
+           {
+              /* get the valgrind command */
+              vg_args = splitOnFirstToken(vg_cmd, ' ');
+              command = os_locate(vg_cmd, OS_ROK|OS_XOK);
+              argc = 1+strlen(info->command)+
+                     1+strlen(info->name)+
+                     3+strlen(info->args)+
+                     1+strlen(vg_args)+
+                     3+strlen(info->configuration)+
+                     2;
+           }
+           args = os_malloc(argc);
+           if (args)
+           {
+              if (strlen(info->args) == 0)
+              {
+                 if (!vg_cmd)
+                 {
                     snprintf(args, argc, "\"%s\" \"%s\"",
                              info->name, info->configuration);
-                }
-                else
-                {
+                 }
+                 else
+                 {
+                    snprintf(args, argc, "%s \"%s\" \"%s\" \"%s\"",
+                             vg_args, info->command, info->name, info->configuration);
+                 }
+              }
+              else
+              {
+                 if (!vg_cmd)
+                 {
                     snprintf(args, argc, "\"%s\" \"%s\" \"%s\"",
                              info->name, info->configuration, info->args);
-                }
-            }
-            procCreateResult = os_procCreate(info->command,
-                info->name, args,
-                &info->procAttr, &info->procId);
+                 }
+                 else
+                 {
+                    snprintf(args, argc, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+                             vg_args, info->command, info->name, info->configuration, info->args);
+                 }
+              }
+           }
+
+           procCreateResult = os_procCreate(command,
+                                            info->name, args,
+                                            &info->procAttr, &info->procId);
             if (procCreateResult == os_resultSuccess)
             {
                 OS_REPORT_2(OS_INFO, OSRPT_CNTXT_SPLICED,
@@ -330,6 +400,10 @@ startServices(
             if (args)
             {
                 os_free(args);
+            }
+            if (command)
+            {
+                os_free(command);
             }
         }
         else

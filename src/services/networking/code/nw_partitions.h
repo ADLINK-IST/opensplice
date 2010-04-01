@@ -33,6 +33,7 @@ typedef char  *nw_networkSecurityPolicy;
 #define NW_GLOBALPARTITION_NAME   "@global"
 
 
+
 nw_partitions         nw_partitionsNew();
 
 void                  nw_partitionsFree(
@@ -60,6 +61,7 @@ void                  nw_partitionsAddMapping(
                           const nw_networkPartitionName networkPartitionName);
                           
 /* Looking up of networkPartitions */
+
 
 v_networkPartitionId  nw_partitionsLookupBestFit(
                           nw_partitions partitions,

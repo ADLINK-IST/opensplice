@@ -134,8 +134,8 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
-
     idl_fileOutPrintf(idl_fileCur(), "\n");
+    
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
         idl_fileOutPrintf(idl_fileCur(), "#include \"%sSplDcps.h\"\n", idl_depGet (idl_depDefGet(), i));

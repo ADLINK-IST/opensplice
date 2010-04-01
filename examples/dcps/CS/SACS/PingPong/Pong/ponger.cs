@@ -1,8 +1,14 @@
-// ponger.cs created with MonoDevelop
-// User: lina at 4:36 PM 10/14/2009
-//
-// To change standard headers go to Edit->Preferences->Coding->Standard Headers
-//
+/*
+*                         OpenSplice DDS
+*
+*   This software and documentation are Copyright 2006 to 2009 PrismTech 
+*   Limited and its licensees. All rights reserved. See file:
+*
+*                     $OSPL_HOME/LICENSE 
+*
+*   for full copyright notice and license terms. 
+*
+*/
 
 using System;
 using pingpong;
@@ -15,8 +21,8 @@ namespace PingPong
          * Configurable parameters (through cmdline)
          * These are the default settings
          */
-        private String write_partition = "PING";
-        private String read_partition = "PONG";
+        private String write_partition = "PongWrite";
+        private String read_partition = "PongRead";
 
         public void run(String[] args)
         {
@@ -97,7 +103,7 @@ namespace PingPong
                 {
                     System.Console.WriteLine("Invalid.....");
                     System.Console.WriteLine("Usage: pong [READ_PARTITION WRITE_PARTITION]");
-                    return;
+                    Environment.Exit(1);
                 }
                 read_partition = args[0];
                 write_partition = args[1];
@@ -120,7 +126,7 @@ namespace PingPong
             /*
              * Create participant
              */
-            dpf = DDS.DomainParticipantFactory.GetInstance();
+            dpf = DDS.DomainParticipantFactory.Instance;
             dpf.GetDefaultParticipantQos(ref dpQos);
             dp = dpf.CreateParticipant(myDomain, dpQos, null, DDS.StatusKind.Any);
             if (dp == null)

@@ -186,7 +186,6 @@ _DataWriterNew (
     _DataWriter newDataWriter;
     v_writerQos writerQos;
     u_writer uWriter;
-    u_publisher uPublisher;
     _TypeSupport typeSupport = (_TypeSupport)typesupport;
     char dataWriterId[256];
     gapi_string topicName;
@@ -641,7 +640,7 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    result = v_handleClaim(from->instanceHandle, &instance);
+    result = v_handleClaim(from->instanceHandle, (v_object*)&instance);
     if (result == V_HANDLE_OK) {
         to->last_instance_handle = u_instanceHandleNew(v_public(instance));
         result = v_handleRelease(from->instanceHandle);

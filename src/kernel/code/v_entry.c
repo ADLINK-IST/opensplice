@@ -19,6 +19,7 @@
 #include "v_handle.h"
 #include "v_dataReaderEntry.h"
 #include "v_networkReaderEntry.h"
+#include "v_deliveryServiceEntry.h"
 #include "v_writerInstance.h"
 #include "v_public.h"
 #include "v_group.h"
@@ -89,6 +90,9 @@ v_entryWrite(
     case K_NETWORKREADER:
         writeResult = v_networkReaderEntryWrite(v_networkReaderEntry(e),
                                                 o, writingNetworkId);
+    break;
+    case K_DELIVERYSERVICE:
+        writeResult = v_deliveryServiceEntryWrite(v_deliveryServiceEntry(e),o,instance);
     break;
     default:
         OS_REPORT_1(OS_ERROR,

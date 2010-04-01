@@ -77,7 +77,7 @@ v_deliveryWaitListNotify (
 v_result
 v_deliveryWaitListIgnore (
     v_deliveryWaitList _this,
-    c_ulong systemId);
+    v_gid readerGID);
 
 #if defined (__cplusplus)
 }

@@ -11,7 +11,7 @@ include		$(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_UTIL
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
-CINCS    += -I$(OSPL_HOME)/src/database/database/include
+# CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)

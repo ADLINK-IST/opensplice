@@ -139,7 +139,7 @@ os_sharedSize(
     os_sharedHandle sharedHandle,
     os_uint32 *size)
 {
-    os_result result;
+    os_result result = os_resultFail;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
@@ -153,6 +153,8 @@ os_sharedSize(
     break;
     case OS_MAP_ON_HEAP:
         result = os_heap_sharedSize(sharedHandle->name, size);
+    break;
+    default:
     break;
     }
     return result;

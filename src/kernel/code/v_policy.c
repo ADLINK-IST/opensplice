@@ -35,13 +35,16 @@ v_partitionPolicyAdd(
 {
     v_partitionPolicy newPolicy;
     c_char *str;
+    c_long size;
 
     newPolicy = NULL;
     if ((p != NULL) &&
-        (strstr(p, expr) == NULL)) /* not in partitionPolicy yet */ {
-        str = os_malloc(strlen(p) + 1 + strlen(expr) + 1);
+        (strstr(p, expr) == NULL)) /* not in partitionPolicy yet */
+    {
+        size = strlen(p) + 1 + strlen(expr) + 1;
+        str = os_malloc(size);
         if (str != NULL) {
-            strcpy(str, p);
+            strncpy(str, p, size);
             str = strcat(str, ",");
             str = strcat(str, expr);
             newPolicy = c_stringNew(base, str);

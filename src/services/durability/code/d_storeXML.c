@@ -91,6 +91,34 @@ C_STRUCT(groupExpungeActions){
 #define groupExpungeActions(i) ((groupExpungeActions)(i))
 #define persistentInstance(i) ((persistentInstance)(i))
 
+static d_storeResult
+groupsReadXMLUnsafe(
+    const d_store store,
+    d_groupList *list);
+
+static c_char*
+getDataFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic);
+
+static c_char*
+getBakFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic);
+
+static c_char*
+getMetaFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic);
+
+static d_storeResult
+d_storeNsMarkCompleteXMLBasedOnPath(
+    const c_char* storeDir,
+    const d_nameSpace nameSpace,
+    c_bool isComplete);
 
 static c_char*
 d_storeXMLDirNew(
@@ -329,7 +357,6 @@ actionStopUnlocked(
     d_storeXML(store)->sessionAlive = FALSE;
     d_tableFree(store->openedFiles);
     store->openedFiles = NULL;
-
     return D_STORE_RESULT_OK;
 }
 
@@ -549,13 +576,15 @@ URIToString(
 {
     int i, length, index, code;
     c_char c;
-    c_char tmp[512];
-    c_char* str = NULL;
+    c_char *tmp;
+    c_char *str = NULL;
     c_char codeString[4];
 
     if(uri){
         length = (int)strlen(uri);
         index = 0;
+
+        tmp = os_malloc(length+1);
 
         for(i=0; i<length; i++){
             c = uri[i];
@@ -660,6 +689,7 @@ URIToString(
         tmp[index++] = '\0';
         str = (c_char*)(os_malloc(strlen(tmp) + 1));
         sprintf(str, "%s", tmp);
+        os_free(tmp);
     }
     return str;
 }
@@ -749,40 +779,36 @@ getSubString(
 }
 
 static c_char*
-getDirectoryName(
-    const d_storeXML store,
+getDirectoryNameForStoreDir(
+    const c_char* storeDir,
     const c_char* partition)
 {
     c_char* fileName;
-    c_char* storeDir;
     c_char* partitionURI;
     const c_char* filesep;
 
+    assert(storeDir);
     assert(partition);
-    assert(store);
 
     fileName = NULL;
-
-    if(store){
-        storeDir = d_store(store)->config->persistentStoreDirectory;
-
-        if(strlen(partition) == 0){
-            fileName = (c_char*)(os_malloc(strlen(storeDir) + 1));
-            sprintf(fileName, "%s", storeDir);
-        } else {
-            filesep = os_fileSep();
-            partitionURI = stringToURI(partition);
-            fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1));
-            sprintf(fileName, "%s%s%s", storeDir, filesep, partitionURI);
-            os_free(partitionURI);
-        }
+    if(strlen(partition) == 0)
+    {
+        fileName = (c_char*)(os_malloc(strlen(storeDir) + 1));
+        sprintf(fileName, "%s", storeDir);
+    } else
+    {
+        filesep = os_fileSep();
+        partitionURI = stringToURI(partition);
+        fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1));
+        sprintf(fileName, "%s%s%s", storeDir, filesep, partitionURI);
+        os_free(partitionURI);
     }
     return fileName;
 }
 
 static c_bool
-createDirectoryIfNecessary(
-    const d_storeXML store,
+createDirectoryIfNecessaryForStoreDir(
+    const c_char* storeDir,
     const c_char* partition)
 {
     c_bool result;
@@ -790,8 +816,13 @@ createDirectoryIfNecessary(
     os_result status;
     struct os_stat statBuf;
 
-    dirName = getDirectoryName(store, partition);
-
+    if(storeDir)
+    {
+        dirName = getDirectoryNameForStoreDir(storeDir, partition);
+    } else
+    {
+        dirName = NULL;
+    }
     status = os_stat(dirName, &statBuf);
 
     if (status != os_resultSuccess) {
@@ -807,44 +838,80 @@ createDirectoryIfNecessary(
     return result;
 }
 
+static c_bool
+createDirectoryIfNecessary(
+    const d_storeXML store,
+    const c_char* partition)
+{
+    c_bool result;
+    c_char *storeDir;
+
+    if(store)
+    {
+        storeDir = d_store(store)->config->persistentStoreDirectory;
+    } else
+    {
+        storeDir = NULL;
+    }
+    result = createDirectoryIfNecessaryForStoreDir(storeDir, partition);
+    return result;
+}
+
 static c_char*
 getDataFileName(
     const d_storeXML store,
     const c_char* partition,
     const c_char* topic)
 {
-    c_char* fileName;
+    c_char* fileName = NULL;
     c_char* storeDir;
-    c_char* partitionURI;
-    const c_char* filesep;
 
     assert(partition);
     assert(topic);
     assert(store);
 
-    fileName = NULL;
-
-    if(store){
+    if(store)
+    {
         storeDir = d_store(store)->config->persistentStoreDirectory;
-        filesep = os_fileSep();
+        fileName = getDataFileNameBasedOnPath(storeDir, partition, topic);
+    }
 
-        if(strlen(partition) == 0){
-            fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
+    return fileName;
+}
 
-            if(fileName){
-                sprintf(fileName, "%s%s%s.xml", storeDir, filesep, topic);
+c_char*
+getDataFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic)
+{
+    c_char* fileName = NULL;
+    c_char* partitionURI;
+    const c_char* filesep;
+
+    assert(partition);
+    assert(topic);
+    assert(storeDir);
+
+    filesep = os_fileSep();
+    if(strlen(partition) == 0)
+    {
+        fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
+        if(fileName)
+        {
+            sprintf(fileName, "%s%s%s.xml", storeDir, filesep, topic);
+        }
+    } else
+    {
+        partitionURI = stringToURI(partition);
+        if(partitionURI)
+        {
+            fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 5));
+            if(fileName)
+            {
+                sprintf(fileName, "%s%s%s%s%s.xml", storeDir, filesep, partitionURI, filesep, topic);
             }
-        } else {
-            partitionURI = stringToURI(partition);
-
-            if(partitionURI){
-                fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 5));
-
-                if(fileName){
-                    sprintf(fileName, "%s%s%s%s%s.xml", storeDir, filesep, partitionURI, filesep, topic);
-                }
-                os_free(partitionURI);
-            }
+            os_free(partitionURI);
         }
     }
     return fileName;
@@ -934,20 +1001,41 @@ getBakFileName(
     const c_char* partition,
     const c_char* topic)
 {
-    c_char* fileName;
+    c_char* fileName = NULL;
     c_char* storeDir;
-    c_char* partitionURI;
-    const c_char* filesep;
 
     assert(partition);
     assert(topic);
     assert(store);
 
+    if(store)
+    {
+        storeDir = d_store(store)->config->persistentStoreDirectory;
+        fileName = getBakFileNameBasedOnPath(storeDir, partition, topic);
+    }
+
+    return fileName;
+}
+
+c_char*
+getBakFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic)
+{
+    c_char* fileName;
+    c_char* partitionURI;
+    const c_char* filesep;
+
+    assert(partition);
+    assert(topic);
+    assert(storeDir);
+
     fileName = NULL;
 
-    if(store){
+    if(storeDir)
+    {
         filesep = os_fileSep();
-        storeDir = d_store(store)->config->persistentStoreDirectory;
 
         if(strlen(partition) == 0){
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
@@ -969,20 +1057,40 @@ getMetaFileName(
     const c_char* partition,
     const c_char* topic)
 {
-    c_char* fileName;
+    c_char* fileName = NULL;
     c_char* storeDir;
-    c_char* partitionURI;
-    const c_char* filesep;
 
     assert(partition);
     assert(topic);
     assert(store);
 
+    if(store)
+    {
+        storeDir = d_store(store)->config->persistentStoreDirectory;
+        fileName = getMetaFileNameBasedOnPath(storeDir, partition, topic);
+    }
+
+    return fileName;
+}
+
+c_char*
+getMetaFileNameBasedOnPath(
+    const c_char* storeDir,
+    const c_char* partition,
+    const c_char* topic)
+{
+    c_char* fileName;
+    c_char* partitionURI;
+    const c_char* filesep;
+
+    assert(partition);
+    assert(topic);
+    assert(storeDir);
+
     fileName = NULL;
 
-    if(store){
+    if(storeDir){
         filesep = os_fileSep();
-        storeDir = d_store(store)->config->persistentStoreDirectory;
 
         if(strlen(partition) == 0){
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 10));
@@ -1678,7 +1786,7 @@ processTopic(
     /* QAC EXPECT 1253,1277; */
     if (OS_ISREG(status->stat_mode)) {
         char * filename = os_fileNormalize(path);
-        
+
         if(filename){
             fDes = fopen(filename, "r");
             os_free(filename);
@@ -1870,7 +1978,7 @@ persistentInstanceInsertUnregister(
             added = FALSE;
         }
     } else {
-        /*No registration found for unregistration, no need to insert of there is no data*/
+        /*No registration found for unregistration, no need to insert if there is no data*/
         if( (instance->writeCount == 0) &&
             (instance->disposeCount == 0))
         {
@@ -3158,6 +3266,80 @@ processGroupExpungeActions(
     return result;
 }
 
+/* Helper struct for unregister walk function */
+typedef struct unregisterFindData
+{
+	v_message writeMsg;
+	v_message unregisterMsg;
+} unregisterFindData;
+
+/* Search for a writer in registration list */
+static void
+unregisterLookupWalk (
+		v_message message,
+		c_iterActionArg userData)
+{
+	c_bool messageFound;
+	unregisterFindData* walkData;
+
+	messageFound = FALSE;
+	walkData = (unregisterFindData*)userData;
+
+	/* Only search if no unregister message has is found */
+	if (!(walkData->unregisterMsg))
+	{
+		/* If message is a unregister message and has equal GID,
+		 * this is a valid unregister message for writeMessage */
+		if (message &&
+			(v_stateTest(v_nodeState(message), L_UNREGISTER)) &&
+			(v_gidEqual(walkData->writeMsg->writerGID, message->writerGID))) {
+
+			walkData->unregisterMsg = message;
+		}
+	}
+}
+
+/* Create unregister message from write message */
+static v_message
+createUnregisterMessage(
+		v_group group,
+		v_message message)
+{
+    c_array 		   messageKeyList;
+    c_long	 		   i, nrOfKeys;
+    v_message 		   unregisterMessage;
+
+    assert(!v_stateTest(v_nodeState(message), L_UNREGISTER));
+
+	/* Create new message objec */
+	unregisterMessage = v_topicMessageNew
+								(group->topic);
+
+	/* Copy keyvalues to unregistermessage */
+    messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
+    nrOfKeys = c_arraySize(messageKeyList);
+    for (i=0;i<nrOfKeys;i++) {
+        c_fieldAssign (messageKeyList[i],
+        		unregisterMessage,
+        		c_fieldValue(messageKeyList[i],message));
+    }
+
+	/* Set instance & writer GID */
+    unregisterMessage->writerGID =
+    		message->writerGID;
+    unregisterMessage->writerInstanceGID =
+    		message->writerInstanceGID;
+
+    /* Copy messageQos */
+    c_keep (message->qos);
+    unregisterMessage->qos = message->qos;
+
+	/* Set nodestate to unregister */
+	v_nodeState(unregisterMessage) = L_UNREGISTER;
+
+    return unregisterMessage;
+}
+
 /* PRE: The v_group exists */
 static d_storeResult
 d_storeXMLOptimizeGroup(
@@ -3165,7 +3347,8 @@ d_storeXMLOptimizeGroup(
     v_group           group,
     d_partition       partition,
     d_topic           topic,
-    c_bool            inject )
+    c_bool            inject,
+    c_bool			  optimize)
 {
     FILE *             fdes, *tmpfdes;
     c_char *           data, *data2;
@@ -3182,15 +3365,21 @@ d_storeXMLOptimizeGroup(
     v_topicQos         topicQos;
     os_time            optimizeTime, oneSec;
     v_writeResult      wr;
+    unregisterFindData walkData;
     c_bool             reported = FALSE;
 
     message = NULL;
     perData = NULL;
-    result = D_STORE_RESULT_ERROR;
+    result = D_STORE_RESULT_OK;
     len = openFile(persistentStore, group, &fdes);
-    tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
 
-    if ((len > 0) && fdes && tmpfdes) {
+    /* Do not create temporary file for optimizing when no optimization is required */
+    if (optimize) {
+    	tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
+    }
+
+    /* Store file exists and is not empty, if store needs optimization tmp file must exist */
+    if ((len > 0) && fdes && (tmpfdes || !optimize)) {
         type = v_topicMessageType(group->topic);
         topicQos = v_topicQosRef(group->topic);
         data = (c_char *)d_malloc((os_uint32)(len + EXTRA_BACKSLS), "readData");
@@ -3290,7 +3479,10 @@ d_storeXMLOptimizeGroup(
                             partition, topic);
 
                     perData = NULL;
-                    fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+
+                    if (optimize) {
+                    	fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                    }
 
                     if(serializer){
                         instance = d_tableTake(instances);
@@ -3299,6 +3491,8 @@ d_storeXMLOptimizeGroup(
                             message = (v_message)c_iterTakeFirst(instance->messages);
 
                             while(message){
+
+                            	/* Inject data */
                                 if(inject == TRUE){
                                     wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_LOCAL);
                                     oneSec.tv_sec  = 1;
@@ -3311,27 +3505,64 @@ d_storeXMLOptimizeGroup(
 
                                     if((wr != V_WRITE_SUCCESS) &&
                                        (wr != V_WRITE_REGISTERED) &&
-                                       (wr != V_WRITE_UNREGISTERED))
-                                    {
+                                       (wr != V_WRITE_UNREGISTERED)) {
                                         OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
                                             "Unable to write persistent data to group. (result: '%d')\n",
                                             wr);
+                                        result = D_STORE_RESULT_ERROR;
+                                    }else
+                                    {
+                                        /* If a sample is written or registered, add unregister action */
+                                        if (!v_stateTest(v_nodeState(message), L_UNREGISTER)) {
+                                        	/* Prepare walkdata */
+                                        	walkData.writeMsg = message;
+                                        	walkData.unregisterMsg = NULL;
+
+                                        	/* Lookup unregister message */
+                                        	c_iterWalk (
+                                        			instance->messages,
+                                        			unregisterLookupWalk,
+                                        			&walkData);
+
+                                        	/* Create unregister message if none found */
+                                        	if (!(walkData.unregisterMsg)) {
+                                        		walkData.unregisterMsg =
+                                        				createUnregisterMessage (group, message);
+                                        		c_iterAppend (instance->messages, walkData.unregisterMsg);
+                                        	}
+
+                                        	/* Set valid sequence number */
+                                        	if (message->sequenceNumber >=
+													walkData.unregisterMsg->sequenceNumber) {
+                                        		walkData.unregisterMsg->sequenceNumber =
+                                        				message->sequenceNumber + 1;
+                                        	}
+
+                                        	/* Set sample time (always) after write\register time */
+                                            walkData.unregisterMsg->allocTime = v_timeGet();
+                                            walkData.unregisterMsg->writeTime = walkData.unregisterMsg->allocTime;
+                                        }
                                     }
                                 }
-                                serData = sd_serializerSerialize(serializer, (c_object)message);
 
-                                if(serData){
-                                    data2 = sd_serializerToString(serializer, serData);
+                                /* Write optimized data */
+                                if (optimize) {
+									serData = sd_serializerSerialize(serializer, (c_object)message);
 
-                                    if(data2){
-                                        fprintf(tmpfdes, "%s\n%s\n", instance->keyValue, data2);
-                                        os_free(data2);
-                                    }
-                                    sd_serializedDataFree(serData);
-                                    c_free(message);
+									if(serData){
+										data2 = sd_serializerToString(serializer, serData);
+
+										if(data2){
+											fprintf(tmpfdes, "%s\n%s\n", instance->keyValue, data2);
+											os_free(data2);
+										}
+										sd_serializedDataFree(serData);
+										c_free(message);
+									}
                                 }
                                 message = (v_message)c_iterTakeFirst(instance->messages);
                             }
+
                             persistentInstanceFree(instance);
                             instance = d_tableTake(instances);
                         }
@@ -3341,15 +3572,18 @@ d_storeXMLOptimizeGroup(
                         result = D_STORE_RESULT_OUT_OF_RESOURCES;
                     }
 
-                    fprintf(tmpfdes, "</TOPIC>\n");
-                    closeFile(persistentStore, tmpfdes);
-                    renameSuccess = renameTempToActual(persistentStore, partition, topic);
+                    if (optimize)
+                    {
+						fprintf(tmpfdes, "</TOPIC>\n");
+						closeFile(persistentStore, tmpfdes);
+						renameSuccess = renameTempToActual(persistentStore, partition, topic);
 
-                    if(renameSuccess == TRUE){
-                        optimizeTime = os_timeGet();
-                        result = setOptimizeTime(persistentStore, partition, topic, optimizeTime);
-                    } else {
-                        result = D_STORE_RESULT_IO_ERROR;
+						if(renameSuccess == TRUE && optimize){
+							optimizeTime = os_timeGet();
+							result = setOptimizeTime(persistentStore, partition, topic, optimizeTime);
+						} else {
+							result = D_STORE_RESULT_IO_ERROR;
+						}
                     }
                 }
             } else {
@@ -3372,153 +3606,35 @@ d_storeXMLInjectTopicXML(
     d_partition       partition,
     d_topic           topic )
 {
-    FILE *            fdes;
-    c_char *          data;
-    c_long            len;
     c_type            type;
-    sd_serializer     serializer;
-    v_message         perData;
-    sd_serializedData serData;
-    c_long            status1, status2;
-    c_bool            check, reported;
+    c_bool            check;
     d_storeResult     result;
     c_char*           keys;
-    v_writeResult     wr;
     c_bool            optimized;
-    os_time           oneSec;
 
-    reported = FALSE;
     optimized = isOptimized(persistentStore, partition, topic);
 
-    if(optimized == FALSE){
-        type = v_topicMessageType(group->topic);
-        keys = v_topicKeyExpr(group->topic);
+    /*if(optimized == FALSE){*/
+	type = v_topicMessageType(group->topic);
+	keys = v_topicKeyExpr(group->topic);
 
-        if(!keys){
-            check = metaDataIsCorrect(type, persistentStore, topic, partition,
-                "", v_topicQosRef(group->topic));
-        } else {
-            check = metaDataIsCorrect(type, persistentStore, topic, partition,
-                keys, v_topicQosRef(group->topic));
-        }
-        if (check == FALSE) {
-            d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
-            OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
-            result = D_STORE_RESULT_METADATA_MISMATCH;
-            /* metaData is not OK: should the maintainer remove topic and meta data ?? */
-        } else {
-            result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE);
-        }
-    } else {
-        result = D_STORE_RESULT_ERROR;
-        len = openFile(persistentStore, group, &fdes);
+	if(!keys){
+		check = metaDataIsCorrect(type, persistentStore, topic, partition,
+			"", v_topicQosRef(group->topic));
+	} else {
+		check = metaDataIsCorrect(type, persistentStore, topic, partition,
+			keys, v_topicQosRef(group->topic));
+	}
+	if (check == FALSE) {
+		d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
+		OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
+		result = D_STORE_RESULT_METADATA_MISMATCH;
+		/* metaData is not OK: should the maintainer remove topic and meta data ?? */
+	} else {
+		/* Inject XML and optimize if necessary */
+		result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE, !optimized);
+	}
 
-        if (len > 0) {
-            type = v_topicMessageType(group->topic);
-            keys = v_topicKeyExpr(group->topic);
-
-            if(!keys){
-                check = metaDataIsCorrect(type, persistentStore, topic, partition,
-                    "", v_topicQosRef(group->topic));
-            } else {
-                check = metaDataIsCorrect(type, persistentStore, topic, partition,
-                    keys, v_topicQosRef(group->topic));
-            }
-            /* QAC EXPECT 2100; Integral promotion : unsigned char promoted to signed int */
-            if (check == FALSE) {
-                d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
-                OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
-                result = D_STORE_RESULT_METADATA_MISMATCH;
-                /* metaData is not OK: should the maintainer remove topic and meta data ?? */
-            } else {
-                data = (c_char *)d_malloc((os_uint32)(len + EXTRA_BACKSLS), "readData");
-                if ((fdes == NULL) || (data == NULL)) {
-                    result = D_STORE_RESULT_MUTILATED;
-                    d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_COULD_NOT_READ_TOPIC" \n", topic);
-                    OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0,
-                               RR_COULD_NOT_READ_TOPIC" \n", topic);
-                } else {
-                    serializer = sd_serializerXMLNewTyped(type);
-
-                    if(serializer){
-                        data[0] = '\0';
-                        readLine(fdes, len, data);
-                        status1 = strncmp(data, "<TOPIC>", 7);
-
-                        if (status1 != 0) {
-                            result = D_STORE_RESULT_MUTILATED;
-                            d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
-                            RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
-                            OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0,
-                                       RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
-                        } else {
-                            data[0] = '\0';
-                            readLine(fdes, len, data); /*read keys*/
-                            status1 = feof(fdes);
-                            result = D_STORE_RESULT_OK;
-
-                            while ((status1 == 0) && (result == D_STORE_RESULT_OK)) {
-                                readObject(fdes, len, data); /*read object*/
-                                status2 = strncmp(data, "<object>", 8);
-
-                                if (status2 == 0) {
-                                     serData = sd_serializerFromString(serializer, data);
-
-                                     if(serData){
-                                         perData = sd_serializerDeserializeValidated(serializer, serData);
-
-                                         if(perData){
-                                             wr = v_groupWriteNoStream(group, perData, NULL, V_NETWORKID_LOCAL);
-                                             oneSec.tv_sec  = 1;
-                                             oneSec.tv_nsec = 0;
-
-                                             while(wr == V_WRITE_REJECTED){
-                                                 wr = v_groupWriteNoStream(group, perData, NULL, V_NETWORKID_LOCAL);
-                                                 os_nanoSleep(oneSec);
-                                             }
-
-                                             if((wr != V_WRITE_SUCCESS) &&
-                                                (wr != V_WRITE_REGISTERED) &&
-                                                (wr != V_WRITE_UNREGISTERED))
-                                             {
-                                                 OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                                     "Unable to write persistent data to group. (result: '%d')\n",
-                                                     wr);
-                                                 result = D_STORE_RESULT_OUT_OF_RESOURCES;
-                                             }
-                                             c_free(perData);
-                                         } else if(!reported) {
-                                             OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
-                                                     "Data for group '%s.%s' on disk is mutilated. Some data might be lost.",
-                                                     partition, topic);
-                                             d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
-                                                     "Data for group '%s.%s' on disk is mutilated. Some data might be lost\n",
-                                                     partition, topic);
-                                             reported = TRUE;
-                                         }
-                                         sd_serializedDataFree(serData);
-                                     } else {
-                                         result = D_STORE_RESULT_OUT_OF_RESOURCES;
-                                     }
-                                }
-                                data[0] = '\0';
-                                readLine(fdes, len, data); /*read keys*/
-                                status1 = feof(fdes);
-                            }
-                        }
-                        sd_serializerFree(serializer);
-                    } else {
-                        result = D_STORE_RESULT_OUT_OF_RESOURCES;
-                    }
-                    closeFile(persistentStore, fdes);
-                    d_free(data);
-                }
-            }
-        } else if(len == -1) {
-            d_storeReport(d_store(persistentStore), D_LEVEL_FINE, "No data exists yet on disk for group %s.%s\n", partition, topic);
-            result = D_STORE_RESULT_OK;
-        }
-    }
     return result;
 /* QAC EXPECT 5102; too many local variables */
 }
@@ -3602,6 +3718,8 @@ d_storeNewXML()
 {
     d_storeXML storeXML;
     d_store store;
+    os_mutexAttr mutexAttr;
+    os_result resultInit;
 
     storeXML = d_storeXML(os_malloc(C_SIZEOF(d_storeXML)));
     store = d_store(storeXML);
@@ -3620,7 +3738,19 @@ d_storeNewXML()
     assert(storeXML->dataBuffer);
     storeXML->keyBuffer             = (c_char *)os_malloc((os_uint32)MAX_KEY_SIZE);
     assert(storeXML->keyBuffer);
-
+    resultInit = os_mutexAttrInit(&mutexAttr);
+    if(resultInit == os_resultSuccess)
+    {
+        mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
+        resultInit = os_mutexInit(&(storeXML->mutex), &mutexAttr);
+        if(resultInit != os_resultSuccess)
+        {
+            OS_REPORT(OS_ERROR, "durability", 0, "Failed to init mutex for XML store.");
+        }
+    } else
+    {
+        OS_REPORT(OS_ERROR, "durability", 0, "Failed to init mutex attributes for XML store.");
+    }
     store->openFunc             	= d_storeOpenXML;
     store->closeFunc            	= d_storeCloseXML;
     store->groupsReadFunc       	= d_storeGroupsReadXML;
@@ -3628,6 +3758,7 @@ d_storeNewXML()
     store->groupStoreFunc       	= d_storeGroupStoreXML;
     store->getQualityFunc       	= d_storeGetQualityXML;
     store->backupFunc           	= d_storeBackupXML;
+    store->restoreBackupFunc		= d_storeRestoreBackupXML;
     store->actionStartFunc          = d_storeActionStartXML;
     store->actionStopFunc           = d_storeActionStopXML;
     store->messageStoreFunc     	= d_storeMessageStoreXML;
@@ -3637,8 +3768,11 @@ d_storeNewXML()
     store->deleteHistoricalDataFunc = d_storeDeleteHistoricalDataXML;
     store->messagesInjectFunc   	= d_storeMessagesInjectXML;
     store->instanceRegisterFunc		= d_storeInstanceRegisterXML;
+    store->createPersistentSnapshotFunc   = d_storeCreatePersistentSnapshotXML;
     store->instanceUnregisterFunc   = d_storeInstanceUnregisterXML;
     store->optimizeGroupFunc        = d_storeOptimizeGroupXML;
+    store->nsIsCompleteFunc			= d_storeNsIsCompleteXML;
+    store->nsMarkCompleteFunc		= d_storeNsMarkCompleteXML;
 
     return storeXML;
 }
@@ -3657,6 +3791,7 @@ d_storeDeinitXML(
         d_storeFileFree(store->dummyFile);
         os_free(store->dataBuffer);
         os_free(store->keyBuffer);
+        os_mutexDestroy (&(store->mutex));
     }
 }
 
@@ -3677,6 +3812,7 @@ d_storeFreeXML(
             result = D_STORE_RESULT_PRECONDITION_NOT_MET;
         } else {
             d_lockUnlock(d_lock(store));
+
             d_storeFree(d_store(store));
             result = D_STORE_RESULT_OK;
         }
@@ -3763,7 +3899,6 @@ d_storeCloseXML(
 
     if(store != NULL){
         d_lockLock(d_lock(store));
-
         if(d_storeXML(store)->opened == FALSE) {
             result = D_STORE_RESULT_PRECONDITION_NOT_MET;
         } else {
@@ -3802,12 +3937,13 @@ d_storeActionStartXML(
     assert(store->type == D_STORE_TYPE_XML);
 
     if(store != NULL){
+        os_mutexLock(&(d_storeXML(store)->mutex));
         d_lockLock(d_lock(store));
-
         if(d_storeXML(store)->opened == FALSE) {
             result = D_STORE_RESULT_PRECONDITION_NOT_MET;
         } else {
             d_storeXML(store)->sessionAlive = TRUE;
+
             d_storeXML(store)->openedFiles = d_tableNew(d_storeFileCompare, d_storeFileFree);
             d_storeXML(store)->expungeActions = d_tableNew(groupExpungeActionsCompare, groupExpungeActionsFree);
             result = D_STORE_RESULT_OK;
@@ -3816,7 +3952,6 @@ d_storeActionStartXML(
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
-
     return result;
 }
 
@@ -3828,10 +3963,8 @@ d_storeActionStopXML(
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_XML);
-
     if(store != NULL){
         d_lockLock(d_lock(store));
-
         if(d_storeXML(store)->opened == FALSE) {
             result = D_STORE_RESULT_PRECONDITION_NOT_MET;
         } else {
@@ -3844,10 +3977,10 @@ d_storeActionStopXML(
             }
         }
         d_lockUnlock(d_lock(store));
+        os_mutexUnlock(&(d_storeXML(store)->mutex));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
-
     return result;
 }
 
@@ -3863,20 +3996,42 @@ d_storeGroupsReadXML(
 
     if(store != NULL){
         d_lockLock(d_lock(store));
-
-        if(d_storeXML(store)->opened == FALSE) {
-            result = D_STORE_RESULT_PRECONDITION_NOT_MET;
-        } else if(list == NULL) {
-            result = D_STORE_RESULT_ILL_PARAM;
-        } else {
-            *list = d_storeXML(store)->groups;
-            result = D_STORE_RESULT_OK;
-        }
+        result = groupsReadXMLUnsafe(store, list);
         d_lockUnlock(d_lock(store));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
 
+    return result;
+}
+
+d_storeResult
+groupsReadXMLUnsafe(
+    const d_store store,
+    d_groupList *list)
+{
+    d_storeResult result;
+
+    assert(d_objectIsValid(d_object(store), D_STORE));
+    assert(store->type == D_STORE_TYPE_XML);
+
+    if(store)
+    {
+        if(d_storeXML(store)->opened == FALSE)
+        {
+            result = D_STORE_RESULT_PRECONDITION_NOT_MET;
+        } else if(list == NULL)
+        {
+            result = D_STORE_RESULT_ILL_PARAM;
+        } else
+        {
+            *list = d_storeXML(store)->groups;
+            result = D_STORE_RESULT_OK;
+        }
+    } else
+    {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
     return result;
 }
 
@@ -4077,6 +4232,7 @@ d_storeGroupStoreXML(
     return result;
 }
 
+
 d_storeResult
 d_storeBackupXML(
     const d_store store,
@@ -4107,7 +4263,10 @@ d_storeBackupXML(
                     fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
                     backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
 
-                    rename(fileStorePath, backupStorePath);
+                    if (rename(fileStorePath, backupStorePath) != 0)
+                    {
+                    	result = D_STORE_RESULT_IO_ERROR;
+                    }
 
                     os_free(fileStorePath);
                     os_free(backupStorePath);
@@ -4115,6 +4274,57 @@ d_storeBackupXML(
                 groupList = groupList->next;
             }
             result = D_STORE_RESULT_OK;
+        }
+        d_lockUnlock(d_lock(persistentStore));
+    } else {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+/* Restore backed up files */
+d_storeResult
+d_storeRestoreBackupXML (
+		const d_store store,
+		const d_nameSpace nameSpace)
+{
+    d_storeResult result;
+    d_storeXML    persistentStore;
+    d_groupList   groupList;
+    c_char*       fileStorePath;
+    c_char*       backupStorePath;
+
+    assert(d_objectIsValid(d_object(store), D_STORE));
+    assert(store->type == D_STORE_TYPE_XML);
+
+    if(store != NULL) {
+        persistentStore = d_storeXML(store);
+        d_lockLock(d_lock(persistentStore));
+
+        if(persistentStore->opened == FALSE) {
+            result = D_STORE_RESULT_PRECONDITION_NOT_MET;
+        } else if(nameSpace == NULL) {
+            result = D_STORE_RESULT_ILL_PARAM;
+        } else {
+            groupList = persistentStore->groups;
+
+            result = D_STORE_RESULT_OK;
+
+            while(groupList) {
+                if(d_nameSpaceIsIn(nameSpace, groupList->partition, groupList->topic)) {
+                    fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
+                    backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
+
+                    if (rename(backupStorePath, fileStorePath) != 0)
+                    {
+                    	result = D_STORE_RESULT_IO_ERROR;
+                    }
+
+                    os_free(fileStorePath);
+                    os_free(backupStorePath);
+                }
+                groupList = groupList->next;
+            }
         }
         d_lockUnlock(d_lock(persistentStore));
     } else {
@@ -4290,6 +4500,109 @@ d_storeInstanceRegisterXML(
 }
 
 d_storeResult
+d_storeCreatePersistentSnapshotXML(
+    const d_store store,
+    const c_char* partitionExpr,
+    const c_char* topicExpr,
+    const c_char* uri)
+{
+    d_storeResult result;
+    c_bool match;
+    os_char* fileStorePath;
+    os_char* destStorePath;
+    d_groupList listIter;
+    c_ulong length;
+    c_ulong i;
+    d_nameSpace nameSpace;
+    d_durabilityKind dkind;
+
+    assert(store);
+    assert(topicExpr);
+    assert(partitionExpr);
+    assert(uri);
+    assert(d_objectIsValid(d_object(store), D_STORE));
+    assert(store->type == D_STORE_TYPE_XML);
+
+    if(store)
+    {
+        os_mutexLock(&(d_storeXML(store)->mutex));
+        d_lockLock(d_lock(store));
+        if(d_storeXML(store)->opened == FALSE)
+        {
+            result = D_STORE_RESULT_PRECONDITION_NOT_MET;
+        } else
+        {
+
+
+            result = groupsReadXMLUnsafe(store, &listIter);
+            while(result == D_STORE_RESULT_OK && listIter)
+            {
+                match = d_nameSpaceStringMatches(listIter->partition, (c_string)partitionExpr);
+                if(match)
+                {
+                    match = d_nameSpaceStringMatches(listIter->topic, (c_string)topicExpr);
+                    if(match)
+                    {
+                        c_char* tmp;
+                        tmp = d_storeXMLDirNew(store, uri);
+                        if(tmp)
+                        {
+                            os_free(tmp);
+                            createDirectoryIfNecessaryForStoreDir(uri, listIter->partition);
+                            /* Copy data file */
+                            fileStorePath = getDataFileName(d_storeXML(store), listIter->partition, listIter->topic);
+                            destStorePath = getDataFileNameBasedOnPath(uri, listIter->partition, listIter->topic);
+                            result = d_storeCopyFile(fileStorePath, destStorePath);
+                            os_free(fileStorePath);
+                            os_free(destStorePath);
+                            if(result == D_STORE_RESULT_OK)
+                            {
+                                /* Copy meta file */
+                                fileStorePath = getMetaFileName(d_storeXML(store), listIter->partition, listIter->topic);
+                                destStorePath = getMetaFileNameBasedOnPath(uri, listIter->partition, listIter->topic);
+                                result = d_storeCopyFile(fileStorePath, destStorePath);
+                                os_free(fileStorePath);
+                                os_free(destStorePath);
+                                /* Store the complete file for the namespace */
+                                if(result == D_STORE_RESULT_OK)
+                                {
+                                    length = c_iterLength(store->config->nameSpaces);
+                                    for(i = 0; i < length; i++)
+                                    {
+                                        nameSpace = d_nameSpace(c_iterObject(store->config->nameSpaces, i));
+                                        dkind = d_nameSpaceGetDurabilityKind(nameSpace);
+                                        if(dkind == D_DURABILITY_PERSISTENT || dkind == D_DURABILITY_ALL)
+                                        {
+                                            if(d_nameSpaceIsIn(nameSpace, listIter->partition, listIter->topic))
+                                            {
+                                                /* always mark the namespace as complete for a snapshot */
+                                                result = d_storeNsMarkCompleteXMLBasedOnPath (
+                                                    uri,
+                                                    nameSpace,
+                                                    TRUE);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else
+                        {
+                            result = D_STORE_RESULT_IO_ERROR;
+                        }
+                    }
+                }
+                listIter = d_groupList(listIter->next);
+            }
+        }
+        d_lockUnlock(d_lock(store));
+        os_mutexUnlock(&(d_storeXML(store)->mutex));
+    } else {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+d_storeResult
 d_storeInstanceUnregisterXML(
     const d_store store,
     const v_groupAction msg)
@@ -4409,7 +4722,8 @@ d_storeOptimizeGroupXML(
                     result = d_storeXMLOptimizeGroup(d_storeXML(store),
                                                      vgroup,
                                                      partition, topic,
-                                                     FALSE);
+                                                     FALSE,
+                                                     TRUE);
                 } else {
                     result = D_STORE_RESULT_OK;
                 }
@@ -4424,5 +4738,185 @@ d_storeOptimizeGroupXML(
         result = D_STORE_RESULT_ILL_PARAM;
     }
     return result;
+}
+
+
+/* Return filename for namespace complete indicator file */
+static
+d_storeResult
+d_storeNsCompleteFileName(
+    const char* storeDir,
+    const d_nameSpace nameSpace,
+    char nameBuff[])
+{
+	d_storeResult result;
+
+	if (storeDir && nameSpace)
+	{
+		nameBuff[0] = '\0';
+
+		/* Copy path of persistent store to buffer */
+		strcat (nameBuff, storeDir);
+
+		/* Copy '/' character */
+		strcat (nameBuff, os_fileSep());
+
+		/* Copy namespace name */
+		strcat (nameBuff, d_nameSpaceGetName(nameSpace));
+
+		/* Copy postfix for completefile */
+		strcat (nameBuff, "_complete");
+
+		result = D_STORE_RESULT_OK;
+	}else
+	{
+		result = D_STORE_RESULT_ILL_PARAM;
+	}
+
+	return result;
+}
+
+/* Check if namespace complete indicator file exists */
+static
+c_bool
+d_storeNsCompleteFileExists (
+    const char completeFile[])
+{
+	c_bool result;
+	os_result osResult;
+    struct os_stat buf;
+
+	result = FALSE;
+
+	osResult = os_stat (completeFile, &buf);
+	if (osResult == os_resultSuccess)
+	{
+		result = TRUE;
+	}
+
+	return result;
+}
+
+/* Create or remove namespace completefile */
+static
+d_storeResult
+d_storeNsMarkComplete_w_name (
+    const char completeFile[],
+    c_bool isComplete)
+{
+	d_storeResult result;
+	c_bool completeFileExists;
+	FILE* hFile;
+
+	result = D_STORE_RESULT_OK;
+
+	completeFileExists = d_storeNsCompleteFileExists (completeFile);
+
+	/* Remove existing complete file if namespace is incomplete, otherwise create it */
+	if (isComplete)
+	{
+		if (!completeFileExists)
+		{
+			hFile = fopen (completeFile, "w");
+			if (!hFile)
+			{
+				result = D_STORE_RESULT_IO_ERROR;
+			}else
+			{
+				fclose (hFile);
+			}
+		}
+	}else
+	{
+		if (completeFileExists && (remove (completeFile) != 0))
+		{
+			result = D_STORE_RESULT_IO_ERROR;
+		}
+	}
+
+	return result;
+}
+
+/* Check if namespace is complete */
+d_storeResult
+d_storeNsIsCompleteXML (
+    const d_store store,
+    const d_nameSpace nameSpace,
+    c_bool* isComplete)
+{
+	char completeFile[OS_PATH_MAX];
+	d_storeResult result;
+
+    if(store)
+    {
+        d_lockLock(d_lock(store));
+
+        if (isComplete)
+        {
+            *isComplete = FALSE;
+
+            /* Get completeFile name */
+            result = d_storeNsCompleteFileName (
+                store->config->persistentStoreDirectory,
+                nameSpace,
+                completeFile);
+            if (result == D_STORE_RESULT_OK)
+            {
+                *isComplete = d_storeNsCompleteFileExists (completeFile);
+            }
+        }else
+        {
+            result = D_STORE_RESULT_ILL_PARAM;
+        }
+        d_lockUnlock(d_lock(store));
+    } else
+    {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
+
+	return result;
+}
+
+d_storeResult
+d_storeNsMarkCompleteXMLBasedOnPath(
+    const c_char* storeDir,
+    const d_nameSpace nameSpace,
+    c_bool isComplete)
+{
+    d_storeResult result;
+	char completeFile[OS_PATH_MAX];
+
+	/* Get completeFile name */
+	result = d_storeNsCompleteFileName (storeDir, nameSpace, completeFile);
+	if (result == D_STORE_RESULT_OK)
+	{
+		result = d_storeNsMarkComplete_w_name (completeFile, isComplete);
+	}
+    return result;
+}
+
+/* Mark namespace incomplete or complete */
+d_storeResult
+d_storeNsMarkCompleteXML (
+    const d_store store,
+    const d_nameSpace nameSpace,
+    c_bool isComplete)
+{
+	d_storeResult result;
+
+    if(store)
+    {
+        d_lockLock(d_lock(store));
+        result = d_storeNsMarkCompleteXMLBasedOnPath(
+            store->config->persistentStoreDirectory,
+            nameSpace,
+            isComplete);
+        d_lockUnlock(d_lock(store));
+    } else
+    {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
+
+	return result;
 }
 

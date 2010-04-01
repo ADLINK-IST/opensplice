@@ -246,7 +246,6 @@ c_mmMalloc(
     c_ulong    chunkSize;
 
     if (size == 0) {
-        assert(size != 0);
         return NULL;
     }
     if (mm->shared == FALSE) {

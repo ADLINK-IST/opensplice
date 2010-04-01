@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -48,7 +48,7 @@ d_storeResult       d_storeGroupsRead           (const d_store store,
                                                  d_groupList *list);
 
 d_storeResult       d_storeGroupInject          (const d_store store,
-                                                 const c_char* partition, 
+                                                 const c_char* partition,
                                                  const c_char* topic,
                                                  const u_participant participant,
                                                  d_group *group);
@@ -77,7 +77,7 @@ d_storeResult       d_storeMessageExpunge       (const d_store store,
 
 d_storeResult       d_storeInstanceExpunge      (const d_store store,
                                                  const v_groupAction message);
-                    
+
 d_storeResult       d_storeDeleteHistoricalData (const d_store store,
                                                  const v_groupAction message);
 
@@ -87,10 +87,34 @@ d_storeResult       d_storeMessagesInject       (const d_store store,
 d_storeResult       d_storeOptimizeGroup        (const d_store store,
                                                  const d_group group);
 
-void                d_storeReport               (const d_store store, 
+void                d_storeReport               (const d_store store,
                                                  d_level level,
                                                  const char * eventText,
                                                  ...);
+d_storeResult
+d_storeCreatePersistentSnapshot(
+    const d_store store,
+    const c_char* partitionExpr,
+    const c_char* topicExpr,
+    const c_char* uri);
+
+d_storeResult
+d_storeCopyFile(
+    os_char* fileStorePath,
+    os_char* destStorePath);
+
+
+d_storeResult		d_storeNsIsComplete 		(const d_store store,
+												 const d_nameSpace nameSpace,
+												 c_bool* isComplete);
+
+d_storeResult		d_storeNsMarkComplete 		(const d_store store,
+												 const d_nameSpace nameSpace,
+												 c_bool isComplete);
+
+d_storeResult		d_storeRestoreBackup		(const d_store store,
+												 const d_nameSpace nameSpace);
+
 
 #if defined (__cplusplus)
 }

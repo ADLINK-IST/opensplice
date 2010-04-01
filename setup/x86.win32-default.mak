@@ -112,6 +112,9 @@ LDLIBS_OS = -lkernel32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
+LDLIBS_ZLIB = -lzlib
+LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
+CINCS_ZLIB = "-I$(ZLIB_HOME)"
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj

@@ -730,8 +730,8 @@ gapi_queryCondition_get_query_parameters(
     if (querycondition != NULL) {
         gapi_stringSeqCopyout(querycondition->query_parameters,
                               query_parameters);
+        _EntityRelease(querycondition);
     }
-    _EntityRelease(querycondition);
 
     return result;
 }

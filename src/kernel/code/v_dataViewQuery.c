@@ -1102,7 +1102,7 @@ v_dataViewQuerySetParams(
                 q_dispose(predicate);
             }
             result = TRUE;
-
+#if 0
             if(_this->params){
                 c_free(_this->params);
                 _this->params = NULL;
@@ -1183,6 +1183,7 @@ v_dataViewQuerySetParams(
             } else {
                 _this->params = NULL;
             }
+#endif
         } else {
             OS_REPORT(OS_ERROR,
                       "v_dataViewQuerySetParams failed", 0,

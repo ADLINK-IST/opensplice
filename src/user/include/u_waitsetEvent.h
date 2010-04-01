@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -30,11 +30,14 @@ extern "C" {
 #define u_waitsetEvent(e)               ((u_waitsetEvent)e)
 #define u_waitsetHistoryDeleteEvent(e)  ((u_waitsetHistoryDeleteEvent)e)
 #define u_waitsetHistoryRequestEvent(e) ((u_waitsetHistoryRequestEvent)e)
+#define u_waitsetPersistentSnapshotEvent(e) ((u_waitsetPersistentSnapshotEvent)e)
+
 
 typedef enum u_waitsetEventKind_s {
     U_WAITSET_EVENT,
     U_WAITSET_EVENT_HISTORY_DELETE,
-    U_WAITSET_EVENT_HISTORY_REQUEST
+    U_WAITSET_EVENT_HISTORY_REQUEST,
+    U_WAITSET_EVENT_PERSISTENT_SNAPSHOT
 } u_waitsetEventKind;
 
 C_STRUCT(u_waitsetEvent) {
@@ -61,6 +64,14 @@ C_STRUCT(u_waitsetHistoryRequestEvent) {
     c_time maxSourceTimestamp;
 };
 
+C_STRUCT(u_waitsetPersistentSnapshotEvent) {
+    C_EXTENDS(u_waitsetEvent);
+    v_handle source;
+    c_char* partitionExpr;
+    c_char* topicExpr;
+    c_char* uri;
+};
+
 OS_API u_waitsetEvent
 u_waitsetEventNew(
     u_entity e, c_ulong k);
@@ -83,6 +94,15 @@ u_waitsetHistoryRequestEventNew(
     struct v_resourcePolicy resourceLimits,
     c_time minSourceTimestamp,
     c_time maxSourceTimestamp);
+
+OS_API u_waitsetEvent
+u_waitsetPersistentSnapshotEventNew(
+    u_entity e,
+    c_ulong k,
+    v_handle source,
+    const c_char* partitionExpr,
+    const c_char* topicExpr,
+    const c_char* uri);
 
 OS_API void
 u_waitsetEventFree(

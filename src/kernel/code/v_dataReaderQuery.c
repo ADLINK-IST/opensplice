@@ -42,6 +42,8 @@
 #define V_STATE_ACTIVE         (0x00000001U)       /* 1 */
 #define V_STATE_DATA_AVAILABLE (0x00000001U << 1)  /* 2 */
 
+#define MAX_PARAM_ID_SIZE (32)
+
 static q_expr
 resolveField(
     v_dataReader _this,
@@ -269,12 +271,12 @@ v_dataReaderQueryNew (
             q_print(subExpr,12);
             printf("\n");
 #endif
-/* The following code generates the intermeadiate non-key query code.
-   Unfortunatly c_queryNew creates the query expression relative to the
+/* The following code generates the intermediate non-key query code.
+   Unfortunately c_queryNew creates the query expression relative to the
    given collection's element type. In this case the instance type.
-   This means that to performe the query evaluation on each sample within
+   This means that to perform the query evaluation on each sample within
    an instance the sample must be swapped with the instance sample field and
-   reswapped after the evaluation.
+   re-swapped after the evaluation.
 */
             progExpr = F1(Q_EXPR_PROGRAM,subExpr);
             query->sampleQ[i] = c_queryNew(instanceSet,
@@ -304,19 +306,18 @@ v_dataReaderQueryNew (
         }
     }
     c_iterFree(list);
-    found = c_setInsert(v_collection(r)->queries,query);
-    assert(found == query);
 
+#if 1
     if (params) {
         c_long size, strSize, curSize, exprSize, count;
         c_char *tmp, *paramString;
         c_char character, prevCharacter;
-        c_char number[32];
+        c_char number[MAX_PARAM_ID_SIZE];
         c_bool inNumber;
 
         exprSize = strlen(query->expression);
         prevCharacter = '\0';
-        memset(number, 0, 32);
+        memset(number, 0, MAX_PARAM_ID_SIZE);
         size = -1;
         count = 0;
         inNumber = FALSE;
@@ -338,10 +339,19 @@ v_dataReaderQueryNew (
                 if(curSize > size){
                     size = curSize;
                 }
-                memset(number, 0, 32);
+                memset(number, 0, MAX_PARAM_ID_SIZE);
                 inNumber = FALSE;
                 count = 0;
             } else if(inNumber == TRUE){
+                if (count == MAX_PARAM_ID_SIZE) {
+                    OS_REPORT_1(OS_ERROR,
+                                "v_dataReaderQueryNew failed", 0,
+                                "Ridicule big parameter id (%s).",
+                                query->expression);
+                    v_dataReaderUnLock(r);
+                    v_queryFree(v_query(query));
+                    return NULL;
+                }
                 number[count++] = character;
             }
             prevCharacter = character;
@@ -358,7 +368,7 @@ v_dataReaderQueryNew (
         if (size > 0) {
             strSize = 0;
 
-            /* Determine the string size of a comma sepparated
+            /* Determine the string size of a comma separated
              * parameter list.
              */
             for(i=0; i<size; i++){
@@ -366,7 +376,7 @@ v_dataReaderQueryNew (
                 strSize += strlen(tmp) + 1;
                 os_free(tmp);
             }
-            /* Allocate and create a comma sepparated parameter list.
+            /* Allocate and create a comma separated parameter list.
              */
             paramString = (c_char*)os_malloc(strSize);
             memset(paramString, 0, strSize);
@@ -386,6 +396,11 @@ v_dataReaderQueryNew (
             query->params = NULL;
         }
     }
+#endif
+
+    found = c_setInsert(v_collection(r)->queries,query);
+    assert(found == query);
+
     v_observerUnlock(v_observer(r));
 #if PRINT_QUERY
     printf("End v_dataReaderQueryNew\n\n");
@@ -647,6 +662,7 @@ C_STRUCT(readActionArg) {
     c_query query;
     v_readerSampleAction action;
     c_voidp arg;
+    c_iter emptyList;
 };
 C_CLASS(readActionArg);
 
@@ -666,6 +682,10 @@ instanceReadSamples(
                                                   a->query,
                                                   a->action,
                                                   a->arg);
+    } else {
+        if (!c_iterContains(a->emptyList, instance)) {
+             a->emptyList = c_iterInsert(a->emptyList,instance);
+        }
     }
     return proceed;
 }
@@ -727,8 +747,18 @@ v_dataReaderQueryRead (
                         }
 
                         if (pass) {
-                            proceed = v_dataReaderSampleRead(_this->triggerValue,
-                                                             action,arg);
+                            if (instance->sampleCount == 0) {
+                                /* No valid samples exist,
+                                 * so there must be one invalid sample.
+                                 * Dcps-Spec. demands a Desctructive read -> v_dataReaderSampleTake()
+                                 */
+                                assert(v_dataReaderInstanceStateTest(instance, L_STATECHANGED));
+                                proceed = v_dataReaderSampleTake(_this->triggerValue,action,arg);
+                                assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
+                            } else {
+                                proceed = v_dataReaderSampleRead(_this->triggerValue,
+                                                                 action,arg);
+                            }
                         } else {
                             /* The trigger_value no longer satisfies the Query.
                              * It can therefore be reset.
@@ -744,6 +774,7 @@ v_dataReaderQueryRead (
                 argument.action = action;
                 argument.arg = arg;
                 argument.query = NULL;
+                argument.emptyList = NULL;
 
                 instanceSet = r->index->notEmptyList;
                 len = c_arraySize(_this->instanceQ);
@@ -759,7 +790,20 @@ v_dataReaderQueryRead (
                                                &argument);
                     }
                 }
+                if (argument.emptyList != NULL) {
+                    v_dataReaderInstance emptyInstance;
 
+                    emptyInstance = c_iterTakeFirst(argument.emptyList);
+                    while (emptyInstance != NULL) {
+                        v_dataReaderRemoveInstance(r,emptyInstance);
+                        emptyInstance = c_iterTakeFirst(argument.emptyList);
+                    }
+                    c_iterFree(argument.emptyList);
+                    v_statisticsULongSetValue(v_reader,
+                                              numberOfInstances,
+                                              r,
+                                              v_dataReaderInstanceCount(r));
+                }
             }
             v_statisticsULongValueInc(v_query, numberOfReads, _this);
 
@@ -805,20 +849,22 @@ v_dataReaderQueryReadInstance(
         v_statisticsULongValueInc(v_query, numberOfReads, _this);
         return FALSE;
     }
-    if (v_dataReaderInstanceEmpty(instance)) {
-        action(NULL,arg); /* This triggers the action routine that
-                           * the last sample is read. */
-    } else {
-        src = v_querySource(v_query(_this));
-        if (src != NULL) {
-            assert(v_objectKind(src) == K_DATAREADER);
-            if (v_objectKind(src) == K_DATAREADER) {
-                r = v_dataReader(src);
-                v_dataReaderLock(r);
-                r->readCnt++;
+    src = v_querySource(v_query(_this));
+    if (src != NULL) {
+        assert(v_objectKind(src) == K_DATAREADER);
+        if (v_objectKind(src) == K_DATAREADER) {
+            r = v_dataReader(src);
+            v_dataReaderLock(r);
+            r->readCnt++;
 #ifdef _MAXPURGE_
-                v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeLists(r);
 #endif
+
+            if (v_dataReaderInstanceEmpty(instance)) {
+                action(NULL,arg); /* This triggers the action routine that
+                                   * the last sample is read. */
+                v_dataReaderRemoveInstance(r,instance);
+            } else {
                 len = c_arraySize(_this->instanceQ);
                 i=0;
                 while ((i<len) && proceed) {
@@ -843,21 +889,20 @@ v_dataReaderQueryReadInstance(
                 if (!proceed) {
                    _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
                 }
-
-                v_dataReaderUnLock(r);
-            } else {
-                proceed = FALSE;
-                OS_REPORT(OS_ERROR,
-                          "v_dataReaderQueryReadInstance failed", 0,
-                          "source is not datareader");
             }
-            c_free(src);
+            v_dataReaderUnLock(r);
         } else {
             proceed = FALSE;
             OS_REPORT(OS_ERROR,
                       "v_dataReaderQueryReadInstance failed", 0,
-                      "no source");
+                      "source is not datareader");
         }
+        c_free(src);
+    } else {
+        proceed = FALSE;
+        OS_REPORT(OS_ERROR,
+                  "v_dataReaderQueryReadInstance failed", 0,
+                  "no source");
     }
     /* Should fall within a lock on _this */
     v_statisticsULongValueInc(v_query, numberOfReads, _this);
@@ -912,6 +957,9 @@ v_dataReaderQueryReadNextInstance(
             a.hasData = FALSE;
             while ((nextInstance != NULL) && (a.hasData == FALSE)) {
                 i=0;
+		if (v_dataReaderInstanceEmpty(nextInstance)) {
+		    v_dataReaderRemoveInstance(r,nextInstance);
+		}
                 while ((i<len) && proceed) {
                     if (_this->instanceQ[i] != NULL) {
                         if (c_queryEval(_this->instanceQ[i],nextInstance)) {
@@ -1411,13 +1459,13 @@ v_dataReaderQuerySetParams(
     c_char *tmp, *paramString;
     c_base base;
     c_char character, prevCharacter;
-    c_char number[32];
+    c_char number[MAX_PARAM_ID_SIZE];
     c_bool inNumber;
 
   /* first remove the old query */
     assert(C_TYPECHECK(_this,v_dataReaderQuery));
 
-    if (q_getTag(expression) !=  Q_EXPR_PROGRAM) {
+    if (q_getTag(expression) != Q_EXPR_PROGRAM) {
         assert(FALSE);
         return FALSE;
     }
@@ -1433,6 +1481,11 @@ v_dataReaderQuerySetParams(
             v_dataReaderLock(r);
             _this->updateCnt = 0;
             len = c_arraySize(_this->instanceQ);
+            /* Try to assign parameter values to all sub-queries.
+             * If one or more of the assignments fails then it indicates that
+             * optimisations have become invalid due to the change and
+             * that the whole query needs to be rebuild.
+             */
             for (i=0; (i<len) && (result == TRUE); i++) {
                 result = c_querySetParams(_this->instanceQ[i],params) &&
                          c_querySetParams(_this->sampleQ[i],params);
@@ -1440,6 +1493,9 @@ v_dataReaderQuerySetParams(
             if (result) {
                 v_dataReaderUnLock(r);
             } else {
+                /* One or more of the assignments failed so rebuild the
+                 * query from the expression with the new parameter values.
+                 */
                 predicate = q_exprCopy(expression);
 #if PRINT_QUERY
                 printf("v_datyaReaderQuerySetParams\n");
@@ -1500,14 +1556,14 @@ v_dataReaderQuerySetParams(
                         q_print(subExpr,12);
                         printf("\n");
 #endif
-                        /* The following code generates the intermeadiate
-                         * non-key query code. Unfortunatly c_queryNew
+                        /* The following code generates the intermediate
+                         * non-key query code. Unfortunately c_queryNew
                          * creates the query expression relative to the given
                          * collection's element type. In this case the instance
-                         * type. This means that to performe the query
+                         * type. This means that to perform the query
                          * evaluation on each sample within an instance the
                          * sample must be swapped with the instance sample
-                         * field and reswapped after the evaluation.
+                         * field and re-swapped after the evaluation.
                          */
                         progExpr = F1(Q_EXPR_PROGRAM,subExpr);
                         _this->sampleQ[i] = c_queryNew(instanceSet,
@@ -1539,6 +1595,7 @@ v_dataReaderQuerySetParams(
             }
             result = TRUE;
 
+#if 1
             if(_this->params){
                 c_free(_this->params);
                 _this->params = NULL;
@@ -1547,7 +1604,7 @@ v_dataReaderQuerySetParams(
             if (params) {
                 exprSize = strlen(_this->expression);
                 prevCharacter = '\0';
-                memset(number, 0, 32);
+                memset(number, 0, MAX_PARAM_ID_SIZE);
                 size = -1;
                 count = 0;
                 inNumber = FALSE;
@@ -1569,10 +1626,17 @@ v_dataReaderQuerySetParams(
                         if(curSize > size){
                             size = curSize;
                         }
-                        memset(number, 0, 32);
+                        memset(number, 0, MAX_PARAM_ID_SIZE);
                         inNumber = FALSE;
                         count = 0;
                     } else if(inNumber == TRUE){
+                        if (count == MAX_PARAM_ID_SIZE) {
+                            OS_REPORT_1(OS_ERROR,
+                                        "v_dataReaderQuerySetParams failed", 0,
+                                        "Ridicule big parameter id (%s).",
+                                        _this->expression);
+                            return FALSE;
+                        }
                         number[count++] = character;
                     }
                     prevCharacter = character;
@@ -1589,7 +1653,7 @@ v_dataReaderQuerySetParams(
                 if (size > 0) {
                     strSize = 0;
 
-                    /* Determine the string size of a comma sepparated
+                    /* Determine the string size of a comma separated
                      * parameter list.
                      */
                     for(i=0; i<size; i++){
@@ -1597,7 +1661,7 @@ v_dataReaderQuerySetParams(
                         strSize += strlen(tmp) + 1;
                         os_free(tmp);
                     }
-                    /* Allocate and create a comma sepparated parameter list.
+                    /* Allocate and create a comma separated parameter list.
                      */
                     paramString = (c_char*)os_malloc(strSize);
                     memset(paramString, 0, strSize);
@@ -1619,6 +1683,7 @@ v_dataReaderQuerySetParams(
             } else {
                 _this->params = NULL;
             }
+#endif
         } else {
             OS_REPORT(OS_ERROR,
                       "v_dataReaderQuerySetParams failed", 0,
@@ -1631,6 +1696,18 @@ v_dataReaderQuerySetParams(
                   "v_dataReaderQuerySetParams failed", 0,
                   "no source");
         result = FALSE;
+    }
+
+    if (result == TRUE) {
+        _this->walkRequired = TRUE;
+        if (v_observableCount(v_observable(_this)) > 0) {
+            C_STRUCT(v_event) event;
+
+            event.kind     = V_EVENT_TRIGGER;
+            event.source   = v_publicHandle(v_public(_this));
+            event.userData = NULL;
+            v_observableNotify(v_observable(_this), &event);
+        }
     }
 
     return result;

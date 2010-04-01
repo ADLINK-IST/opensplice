@@ -96,6 +96,9 @@ LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS = 
 LDLIBS_JAVA = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC= -lodbc
+LDLIBS_ZLIB = -lz
+LDFLAGS_ZLIB =
+CINCS_ZLIB =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .o

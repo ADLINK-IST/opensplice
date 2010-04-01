@@ -30,6 +30,7 @@ NW_STRUCT(nw_plugPartition) {
     nw_partitionAddress address;
     nw_networkSecurityPolicy securityPolicy;
     nw_bool connected;
+    nw_bool compression;
     os_uint32 hash;
 };
 
@@ -90,7 +91,8 @@ nw_plugPartitionsSetPartition(
     nw_partitionAddress partitionAddress,
     nw_networkSecurityPolicy securityPolicy,
     os_uint32 hash,
-    nw_bool connected)
+    nw_bool connected,
+    nw_bool compression)
 {
     nw_plugPartition newPartition;
     
@@ -108,6 +110,7 @@ nw_plugPartitionsSetPartition(
 	    /* security profile might be undeclared */ 
 	    newPartition->securityPolicy = securityPolicy ? nw_stringDup(securityPolicy) : NULL;  
             newPartition->connected = connected;
+            newPartition->compression = compression;
             plugPartitions->partitions[partitionId] = newPartition;
             newPartition->hash = hash;
         }
@@ -121,7 +124,7 @@ nw_plugPartitionsSetDefaultPartition(
     nw_networkSecurityPolicy securityPolicy,
     os_uint32 hash)
 {
-    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, securityPolicy, hash, TRUE);
+    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, securityPolicy, hash, TRUE, FALSE);
 
 }
 
@@ -144,6 +147,7 @@ nw_plugPartitionsGetPartition(
     nw_partitionAddress *partitionAddress,
     nw_networkSecurityPolicy *securityPolicy, /* may be NULL */
     nw_bool *connected,
+    nw_bool *compression,
     os_uint32 *hash)
 {
     *found = FALSE;
@@ -157,6 +161,7 @@ nw_plugPartitionsGetPartition(
         if (plugPartitions->partitions[partitionId] != NULL) {
             *partitionAddress = plugPartitions->partitions[partitionId]->address;
             *connected = plugPartitions->partitions[partitionId]->connected;
+            *compression = plugPartitions->partitions[partitionId]->compression;
             *hash = plugPartitions->partitions[partitionId]->hash;
             NW_CONFIDENCE(plugPartitions->partitions[partitionId]->id == partitionId);
             if (securityPolicy) { /* may be NULL */ 

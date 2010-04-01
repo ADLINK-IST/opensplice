@@ -1,22 +1,22 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_writerInstance.h"
 #include "v_state.h"
 #include "v__writer.h"
-#include "v_writerCache.h"
 #include "v_writerSample.h"
 #include "c_collection.h"
 #include "v_observer.h"
 #include "v_public.h"
+#include "v_writerCache.h"
 #include "v_instance.h"
 #include "v_topic.h"
 #include "v__statisticsInterface.h"
@@ -53,8 +53,8 @@ v_writerInstanceNew(
             v_object(instance)->kernel = v_objectKernel(writer);
             v_objectKind(instance) = K_WRITERINSTANCE;
             instance->writer = (c_voidp)writer;
-            instance->groupInstanceCache = v_writerCacheNew(v_objectKernel(writer),
-                                                            V_CACHE_INSTANCE);
+            instance->targetCache = v_writerCacheNew(v_objectKernel(writer),
+                                                        V_CACHE_TARGETS);
         } else {
             OS_REPORT(OS_ERROR,
                       "v_writerInstanceNew",0,
@@ -116,15 +116,14 @@ v_writerInstanceFree(
     assert(C_TYPECHECK(instance,v_writerInstance));
 
     if (c_refCount(instance) == 1) {
+        sample = v_writerInstanceHead(instance);
+        v_writerInstanceSetHead(instance,NULL);
+        c_free(sample);
         if (v_writer(instance->writer)->cachedInstance == NULL) {
-            sample = v_writerInstanceHead(instance);
-            c_free(sample);
-            v_writerInstanceSetHead(instance,NULL);
-
             v_writer(instance->writer)->cachedInstance = c_keep(instance);
-            
         }
-        v_cacheDeinit(v_cache(instance->groupInstanceCache));
+
+        v_writerCacheDeinit(instance->targetCache);
     }
     c_free(instance);
 }
@@ -134,10 +133,10 @@ v_writerInstanceDeinit(
     v_writerInstance instance)
 {
     assert(C_TYPECHECK(instance,v_writerInstance));
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
 
-    v_instanceDeinit(v_instance(instance)); 
+    v_instanceDeinit(v_instance(instance));
 }
 
 v_message
@@ -154,7 +153,7 @@ v_writerInstanceCreateMessage(
     if (_this != NULL) {
         writer = v_writerInstanceWriter(_this);
         message = v_topicMessageNew(v_writerTopic(writer));
-        if (message != NULL) { 
+        if (message != NULL) {
             messageKeyList = v_topicMessageKeyList(v_writerTopic(writer));
             instanceKeyList = v_writerKeyList(writer);
             assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
@@ -183,7 +182,7 @@ v_writerInstanceInsert(
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_writerInstance));
     assert(C_TYPECHECK(sample,v_writerSample));
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
 
     if (sample == NULL) {
@@ -248,7 +247,7 @@ v_writerInstanceInsert(
     }
     sample->prev = NULL;
     v_writerInstanceResetState(instance, L_EMPTY);
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
     assert(C_TYPECHECK(result,v_writerSample));
 
@@ -271,7 +270,7 @@ v_writerInstanceRemove (
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_writerInstance));
     assert(C_TYPECHECK(sample,v_writerSample));
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
 
     if (v_writerInstanceTestState(instance,L_EMPTY)) {
@@ -309,7 +308,7 @@ v_writerInstanceRemove (
         result = sample;
     }
 
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
     assert(C_TYPECHECK(result,v_writerSample));
 
@@ -343,7 +342,7 @@ v_writerInstanceTakeAll(
 
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_writerInstance));
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
 
     if (v_writerInstanceTestState(instance,L_EMPTY)) {
@@ -358,7 +357,7 @@ v_writerInstanceTakeAll(
         v_writerInstanceSetHead(instance,NULL);
     }
 
-    assert((v_writerInstanceTail(instance) == NULL) == 
+    assert((v_writerInstanceTail(instance) == NULL) ==
            v_writerInstanceTestState(instance,L_EMPTY));
 
     return oldest;

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d__waitset.h"
@@ -181,6 +181,7 @@ d_waitsetNew(
                 mask |= V_EVENT_NEW_GROUP;
                 mask |= V_EVENT_HISTORY_DELETE;
                 mask |= V_EVENT_HISTORY_REQUEST;
+                mask |= V_EVENT_PERSISTENT_SNAPSHOT;
                 mask |= V_EVENT_TRIGGER;
                 u_waitsetSetEventMask(waitset->uwaitset, mask);
 
@@ -320,6 +321,7 @@ d_waitsetAttach(
                     mask |= V_EVENT_NEW_GROUP;
                     mask |= V_EVENT_HISTORY_DELETE;
                     mask |= V_EVENT_HISTORY_REQUEST;
+                    mask |= V_EVENT_PERSISTENT_SNAPSHOT;
                     mask |= V_EVENT_TRIGGER;
                     u_waitsetSetEventMask(helper->userWaitset, mask);
                     ur = u_waitsetAttach(helper->userWaitset, u_entity(we->dispatcher),

@@ -918,7 +918,7 @@
                 ]]></comment>
                 <default>3.0</default>
                 <minimum>0.1</minimum>
-                <maximum>10.0</maximum>
+                <maximum>60.0</maximum>
             </leafFloat>
             <element name="Alignment" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[

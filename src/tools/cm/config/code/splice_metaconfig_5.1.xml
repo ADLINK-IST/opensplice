@@ -1625,9 +1625,14 @@
             </leafString>
             <element name="Reconnection" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                     This element specifies the behavior for the network service
-                     w.r.t. other network services re-connecting after being 
-                     disconnected for a while. 
+                     This element specifies the desired networking-behavior with respect to the 
+                     validity of restoring lost connectivity with remote nodes.  
+                     Here ‘lost connectivity’ means a prolonged inability to communicate with a known 
+                     and still active remote node (typically because of network-issues) 
+                     that has resulted in such a node being declared ‘dead’ either by the topology-discovery or 
+                     lost-reliability being detected by a reliable channel’s reactivity-checking mechanism. 
+                     If automatic reconnection is allowed, communication channels with the now-reachable-again node will be restored,
+                     even though reliable data might have been lost during the disconnection period. 
                 ]]></comment>
                 <attributeBoolean name="allowed" required="true">
                     <comment><![CDATA[
@@ -1696,7 +1701,7 @@
                     <default>broadcast</default>
                     <maxLength>0</maxLength>
                 </attributeString>
-                 <attributeString name="SecurityProfile" required="true">
+                 <attributeString name="SecurityProfile" required="false">
                     <comment><![CDATA[
                         In the context of secure networking, the GlobalPartition element provides
 						support for the attribute SecurityProfile. The attribute is referencing a security
@@ -1872,7 +1877,7 @@
 				required for a network partition, the network partition must be associated with a
 				security profile
             ]]></comment>
-             <attributeBoolean name="enabled" required="true">
+             <attributeBoolean name="enabled" required="false">
                     <comment><![CDATA[
                         This is an optional attribute. If not defined it defaults to true and all network
 						partitions, if not specified otherwise, will be encoded using the NULL cipher. The
@@ -1885,7 +1890,7 @@
                     ]]></comment>
                     <values>true</values>
                     <values>false</values>
-                    <default>true</default>
+                    <default>false</default>
               </attributeBoolean>
               <element name="SecurityProfile" minOccurrences="0" maxOccurrences="0">
                 <comment><![CDATA[
@@ -2277,13 +2282,13 @@
                         <maximum>255</maximum>
                         <default>0</default>
                     </leafInt>
-                    <leafEnum name="DontRoute" minOccurrences="0" maxOccurrences="1">
+                    <leafBoolean name="DontRoute" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[The IP DONTROUTE
                               socket option is set to the value specified.]]></comment>
                         <value>True</value>
                         <value>False</value>
                         <default>True</default>
-                    </leafEnum>
+                    </leafBoolean>
                     <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
                               header value is set to the value specified.]]></comment>

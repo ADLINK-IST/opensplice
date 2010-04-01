@@ -148,6 +148,7 @@ namespace testNamespace
             publisherQos.Presentation.OrderedAccess = false;
 
             // Create the Publisher
+            dp.Enable();
             IPublisher publisher = dp.CreatePublisher(publisherQos);
             Console.WriteLine("Create Publisher: {0}", publisher);
 

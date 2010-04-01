@@ -7,6 +7,7 @@ echo
 
 ERRS=0
 gcc_check || ERRS=1
+valgrind_check || ERRS=1
 make_check || ERRS=1
 gawk_check || ERRS=1
 bison_check || ERRS=1

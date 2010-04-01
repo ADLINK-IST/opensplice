@@ -1,17 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 
 #include "v_cache.h"
+#include "os_report.h"
+
+static c_type _v_cache = NULL;
+
+c_type
+v_cache_t (
+    c_base base)
+{
+    if (_v_cache == NULL) {
+        _v_cache = c_resolve(base,"kernelModule::v_cache");
+    }
+    return c_keep(_v_cache);
+}
 
 #ifdef NDEBUG
 #define v_cacheNodeCheck(c)
@@ -26,91 +39,81 @@ v_cacheNodeCheck(
     if (node->owner.prev) {
         assert(v_cacheNode(node->owner.prev)->owner.next == node);
     }
-    if (node->instance.next) {
-        assert(v_cacheNode(node->instance.next)->instance.prev == node);
+    if (node->targets.next) {
+        assert(v_cacheNode(node->targets.next)->targets.prev == node);
     }
-    if (node->instance.prev) {
-        assert(v_cacheNode(node->instance.prev)->instance.next == node);
+    if (node->targets.prev) {
+        assert(v_cacheNode(node->targets.prev)->targets.next == node);
+    }
+    if (node->sources.next) {
+        assert(v_cacheNode(node->sources.next)->sources.prev == node);
+    }
+    if (node->sources.prev) {
+        assert(v_cacheNode(node->sources.prev)->sources.next == node);
     }
 }
-#endif /* NDEBUG */
+#endif
 
-void
-v_cacheNodeInit (
+static void
+v_cacheNodeInit(
     v_cacheNode node)
 {
-    assert(C_TYPECHECK(node,v_cacheNode));
-
-    node->owner.next = NULL;
-    node->owner.prev = NULL;
-    node->instance.next = NULL;
-    node->instance.prev = NULL;
+    if (node) {
+        node->owner.next = NULL;
+        node->owner.prev = NULL;
+        node->targets.next = NULL;
+        node->targets.prev = NULL;
+        node->sources.next = NULL;
+        node->sources.prev = NULL;
+    }
 }
 
-void
-v_cacheInit (
-    v_cache cache,
-    v_cacheKind kind)
+v_cacheNode
+v_cacheNodeNew (
+    v_cache cache)
 {
+    v_cacheNode node;
+
     assert(C_TYPECHECK(cache,v_cache));
 
-    cache->kind = kind;
-    v_cacheNodeInit(v_cacheNode(cache));
+    node = c_new(cache->itemType);
+    v_cacheNodeInit(node);
+    return node;
 }
 
-void
-ownerCheck(
-    v_cacheNode node)
+v_cache
+v_cacheNew (
+    c_type type,
+    v_cacheKind kind)
 {
-    v_cacheNode next,prev;
-    assert(node);
-    assert(C_TYPECHECK(node,v_cacheNode));
-   
-    next = node->owner.next;
-    prev = node;
-    while (next != NULL) { 
-        assert(next->owner.prev == prev);
-        prev = next;
-        next = next->owner.next;
-    }
-    prev = node->owner.prev;
-    next = node;
-    while (prev != NULL) { 
-        assert(prev->owner.next == next);
-        next = prev;
-        prev = prev->owner.prev;
-    }
-}
+    c_base base = NULL;
+    c_type cache_t;
+    v_cache cache = NULL;
 
-void
-instanceCheck (
-    v_cacheNode node)
-{
-    v_cacheNode next,prev;
-    assert(node);
-    assert(C_TYPECHECK(node,v_cacheNode));
-   
-    next = node->instance.next;
-    prev = node;
-    while (next != NULL) { 
-        assert(next->instance.prev == prev);
-        prev = next;
-        next = next->instance.next;
+    assert(C_TYPECHECK(cache,v_cache));
+    assert(C_TYPECHECK(type,c_type));
+
+    if (type) {
+        base = c_getBase(type);
+        if (base) {
+            cache_t = v_cache_t(base);
+            cache = c_new(cache_t);
+            c_free(cache_t);
+            if (cache) {
+                cache->kind = kind;
+                cache->itemType = c_keep(type);
+                v_cacheNodeInit(v_cacheNode(cache));
+            }
+        }
     }
-    prev = node->instance.prev;
-    next = node;
-    while (prev != NULL) { 
-        assert(prev->instance.next == next);
-        next = prev;
-        prev = prev->instance.prev;
-    }
+    return cache;
 }
 
 void
 v_cacheDeinit (
     v_cache cache)
 {
-    v_cacheNode node;
+    v_cacheNode node, next;
 
     assert(C_TYPECHECK(cache,v_cache));
 
@@ -118,26 +121,42 @@ v_cacheDeinit (
     switch (cache->kind) {
     case V_CACHE_OWNER:
         node = v_cacheNode(cache)->owner.next;
+        while (node != NULL) {
+            v_cacheNodeCheck(node);
+            assert(C_TYPECHECK(node,v_cacheNode));
+            next = node->owner.next;
+            v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
+            node = v_cacheNode(cache)->owner.next;
+            assert(next == node);
+            v_cacheNodeCheck(v_cacheNode(cache));
+        }
     break;
-    case V_CACHE_INSTANCE:
-        node = v_cacheNode(cache)->instance.next;
+    case V_CACHE_TARGETS:
+        node = v_cacheNode(cache)->targets.next;
+        while (node != NULL) {
+            v_cacheNodeCheck(node);
+            assert(C_TYPECHECK(node,v_cacheNode));
+            next = node->targets.next;
+            v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
+            node = v_cacheNode(cache)->targets.next;
+            assert(next == node);
+            v_cacheNodeCheck(v_cacheNode(cache));
+        }
+    break;
+    case V_CACHE_SOURCES:
+        node = v_cacheNode(cache)->sources.next;
+        while (node != NULL) {
+            v_cacheNodeCheck(node);
+            assert(C_TYPECHECK(node,v_cacheNode));
+            next = node->sources.next;
+            v_cacheNodeRemove(node,V_CACHE_SOURCES); /* also frees node. */
+            node = v_cacheNode(cache)->sources.next;
+            assert(next == node);
+            v_cacheNodeCheck(v_cacheNode(cache));
+        }
     break;
     default:
         node = NULL;
-    }
-    while (node != NULL) {
-        assert(C_TYPECHECK(node,v_cacheNode));
-        v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
-        switch (cache->kind) {
-        case V_CACHE_OWNER:
-            node = v_cacheNode(cache)->owner.next;
-        break;
-        case V_CACHE_INSTANCE:
-            node = v_cacheNode(cache)->instance.next;
-        break;
-        default:
-            node = NULL;
-        }
     }
     v_cacheNodeCheck(v_cacheNode(cache));
 }
@@ -150,6 +169,7 @@ v_cacheInsert (
     struct v_cacheLink *nodeLink;
     struct v_cacheLink *cacheLink;
     struct v_cacheLink *headLink;
+    c_bool error = FALSE;
 
     assert(cache != NULL);
     assert(node != NULL);
@@ -163,53 +183,44 @@ v_cacheInsert (
         nodeLink = &node->owner;
         cacheLink = &v_cacheNode(cache)->owner;
         if (cacheLink->next != NULL) {
-            headLink = &cacheLink->next->owner;
+            headLink = &v_cacheNode(cacheLink->next)->owner;
             headLink->prev = node;
         }
     break;
-    case V_CACHE_INSTANCE:
-        nodeLink = &node->instance;
-        cacheLink = &v_cacheNode(cache)->instance;
+    case V_CACHE_TARGETS:
+        nodeLink = &node->targets;
+        cacheLink = &v_cacheNode(cache)->targets;
         if (cacheLink->next != NULL) {
-            headLink = &cacheLink->next->instance;
+            headLink = &v_cacheNode(cacheLink->next)->targets;
+            headLink->prev = node;
+        }
+    break;
+    case V_CACHE_SOURCES:
+        nodeLink = &node->sources;
+        cacheLink = &v_cacheNode(cache)->sources;
+        if (cacheLink->next != NULL) {
+            headLink = &v_cacheNode(cacheLink->next)->sources;
             headLink->prev = node;
         }
     break;
     default:
         assert(FALSE);
-        nodeLink = NULL;
-        cacheLink = NULL;
+        OS_REPORT_1(OS_ERROR, "v_cacheInsert", 0,
+                    "Illegal value of cache->kind detected. (%d)",
+                    cache->kind);
+        error = TRUE;
     break;
     }
-    assert(nodeLink->next == NULL);
-    assert(nodeLink->prev == NULL);
-    nodeLink->next = cacheLink->next;
-    cacheLink->next = c_keep(node);
-    nodeLink->prev = v_cacheNode(cache);
-    v_cacheNodeCheck(v_cacheNode(cache));
-    v_cacheNodeCheck(node);
-}
-
-c_bool
-v_cacheEmpty (
-    v_cache cache)
-{
-    v_cacheNode node;
-
-    assert(C_TYPECHECK(cache,v_cache));
-
-    switch (cache->kind) {
-    case V_CACHE_OWNER:
-        node = v_cacheNode(cache)->owner.next;
-    break;
-    case V_CACHE_INSTANCE:
-        node = v_cacheNode(cache)->instance.next;
-    break;
-    default:
-        node = NULL;
-    break;
+    if (!error) {
+        assert(nodeLink->next == NULL);
+        assert(nodeLink->prev == NULL);
+        nodeLink->next = cacheLink->next;
+        cacheLink->next = node;
+        nodeLink->prev = v_cacheNode(cache);
+        v_cacheNodeCheck(v_cacheNode(cache));
+        v_cacheNodeCheck(node);
+        c_keep(node);
     }
-    return (c_bool)(node != NULL);
 }
 
 c_bool
@@ -229,17 +240,28 @@ v_cacheWalk (
     case V_CACHE_OWNER:
         node = v_cacheNode(cache)->owner.next;
         while ((node != NULL) && (proceed)) {
+            v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
             proceed = action(node,arg);
             node = node->owner.next;
         }
     break;
-    case V_CACHE_INSTANCE:
-        node = v_cacheNode(cache)->instance.next;
+    case V_CACHE_TARGETS:
+        node = v_cacheNode(cache)->targets.next;
         while ((node != NULL) && (proceed)) {
+            v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
             proceed = action(node,arg);
-            node = node->instance.next;
+            node = node->targets.next;
+        }
+    break;
+    case V_CACHE_SOURCES:
+        node = v_cacheNode(cache)->sources.next;
+        while ((node != NULL) && (proceed)) {
+            v_cacheNodeCheck(node);
+            assert(C_TYPECHECK(node,v_cacheNode));
+            proceed = action(node,arg);
+            node = node->sources.next;
         }
     break;
     default:
@@ -268,20 +290,33 @@ v_cacheNodeRemove (
         }
         if (nodeLink->prev != NULL) {
             v_cacheNode(nodeLink->prev)->owner.next = nodeLink->next;
-            
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
         v_cacheNodeCheck(node);
         c_free(node);
     break;
-    case V_CACHE_INSTANCE:
-        nodeLink = &node->instance;
+    case V_CACHE_TARGETS:
+        nodeLink = &node->targets;
         if (nodeLink->next != NULL) {
-            v_cacheNode(nodeLink->next)->instance.prev = nodeLink->prev;
+            v_cacheNode(nodeLink->next)->targets.prev = nodeLink->prev;
         }
         if (nodeLink->prev != NULL) {
-            v_cacheNode(nodeLink->prev)->instance.next = nodeLink->next;
+            v_cacheNode(nodeLink->prev)->targets.next = nodeLink->next;
+        }
+        nodeLink->next = NULL;
+        nodeLink->prev = NULL;
+        v_cacheNodeCheck(node);
+        c_free(node);
+    break;
+    case V_CACHE_SOURCES:
+        v_cacheItem(node)->instance = NULL;
+        nodeLink = &node->sources;
+        if (nodeLink->next != NULL) {
+            v_cacheNode(nodeLink->next)->sources.prev = nodeLink->prev;
+        }
+        if (nodeLink->prev != NULL) {
+            v_cacheNode(nodeLink->prev)->sources.next = nodeLink->next;
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
@@ -289,8 +324,9 @@ v_cacheNodeRemove (
         c_free(node);
     break;
     case V_CACHE_ANY:
-        v_cacheNodeRemove(node,V_CACHE_INSTANCE);
+        assert(c_refCount(node) > 1);
         v_cacheNodeRemove(node,V_CACHE_OWNER);
+        v_cacheNodeRemove(node,V_CACHE_TARGETS);
     break;
     default:
     break;

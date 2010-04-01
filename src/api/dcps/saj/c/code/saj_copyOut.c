@@ -388,7 +388,7 @@ saj_cfsoBoolean (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetBooleanField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Boolean = %d @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Boolean = %d @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -409,8 +409,8 @@ saj_cfuoBoolean (
     saj_setUnionBranch(javaObject, cuh, unionCase, jboolean, ctx->src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Boolean = %d setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Boolean = %d setterID = %x\n", *src, unionCase->setterID));
 
     return result;
 }
@@ -429,7 +429,7 @@ saj_cfsoByte (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetByteField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Byte = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Byte = %hd @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -450,8 +450,8 @@ saj_cfuoByte (
     saj_setUnionBranch(javaObject, cuh, unionCase, jbyte, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Byte = %hd setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Byte = %hd setterID = %x\n", *src, unionCase->setterID));
 
     return result;
 }
@@ -471,7 +471,7 @@ saj_cfsoChar (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetCharField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Char = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Char = %hd @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -492,8 +492,8 @@ saj_cfuoChar (
     saj_setUnionBranch(javaObject, cuh, unionCase, jchar, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Char = %d setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Char = %d setterID = %x\n", *src, unionCase->setterID));
 
     return result;
 }
@@ -513,7 +513,7 @@ saj_cfsoShort (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetShortField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Short = %hd @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Short = %hd @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -534,8 +534,8 @@ saj_cfuoShort (
     saj_setUnionBranch(javaObject, cuh, unionCase, jshort, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Short = %d setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Short = %d setterID = %x\n", *src, unionCase->setterID));
 
     return result;
 }
@@ -555,7 +555,7 @@ saj_cfsoInt (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetIntField (0x%x, %d, %d)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Int = %d @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Int = %d @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -576,8 +576,8 @@ saj_cfuoInt (
     saj_setUnionBranch(javaObject, cuh, unionCase, jint, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Int = %d setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Int = %d setterID = %x\n", *src, (int)unionCase->setterID));
 
     return result;
 }
@@ -597,7 +597,7 @@ saj_cfsoLong (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetLongField (0x%x, %d, %lld)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Long = %lld @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Long = %lld @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -618,8 +618,8 @@ saj_cfuoLong (
     saj_setUnionBranch(javaObject, cuh, unionCase, jlong, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %lld)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Long = %lld setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %lld)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Long = %lld setterID = %x\n", *src, unionCase->setterID));
 
     return result;
 }
@@ -639,7 +639,7 @@ saj_cfsoFloat (
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: SetFloatField (0x%x, %d, %f)\n", javaObject, javaFID, *src));
-    TRACE(printf ("Copied out Float = %f @ offset = %d FID = %x\n", *src, ctx->offset, (int)javaFID));
+    TRACE(printf ("Copied out Float = %f @ offset = %d FID = %x\n", *src, ctx->offset, javaFID));
 
     return result;
 }
@@ -660,8 +660,8 @@ saj_cfuoFloat (
     saj_setUnionBranch(javaObject, cuh, unionCase, jfloat, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Float = %f setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Float = %f setterID = %x\n", *src, (int)unionCase->setterID));
 
     return result;
 }
@@ -702,8 +702,8 @@ saj_cfuoDouble (
     saj_setUnionBranch(javaObject, cuh, unionCase, jdouble, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, setterID, *src));
-    TRACE(printf ("Copied out Double = %f setterID = %x\n", *src, (int)setterID));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %f)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("Copied out Double = %f setterID = %x\n", *src, (int)unionCase->setterID));
 
     return result;
 }
@@ -779,7 +779,7 @@ saj_cfuoEnum (
         saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &enumObject, discrValue, ctx);
         result = saj_copyGetStatus(ctx);
 
-        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, enumObject));
+        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, enumObject));
     }
     return result;
 }
@@ -895,7 +895,7 @@ saj_cfuoArrBoolean (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbooleanArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1005,7 +1005,7 @@ saj_cfuoArrByte (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbyteArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1197,7 +1197,7 @@ saj_cfuoArrChar (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jcharArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1340,7 +1340,7 @@ saj_cfuoArrShort (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jshortArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1450,7 +1450,7 @@ saj_cfuoArrInt (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jintArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1560,7 +1560,7 @@ saj_cfuoArrLong (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jlongArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1667,7 +1667,7 @@ saj_cfuoArrFloat (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jfloatArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1777,7 +1777,7 @@ saj_cfuoArrDouble (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jdoubleArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1893,7 +1893,7 @@ saj_cfuoSeqBoolean (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbooleanArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2005,7 +2005,7 @@ saj_cfuoSeqByte (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jbyteArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2117,7 +2117,7 @@ saj_cfuoSeqChar (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jcharArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2229,7 +2229,7 @@ saj_cfuoSeqShort (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jshortArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2339,7 +2339,7 @@ saj_cfuoSeqInt (
     if (result == SAJ_COPYRESULT_OK) {
         saj_setUnionBranch(javaObject, cuh, unionCase, jintArray, &array, discrValue, ctx);
         result = saj_copyGetStatus(ctx);
-        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
     }
     return result;
 }
@@ -2451,7 +2451,7 @@ saj_cfuoSeqLong (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jlongArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2565,7 +2565,7 @@ saj_cfuoSeqFloat (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jfloatArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2677,7 +2677,7 @@ saj_cfuoSeqDouble (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jdoubleArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -2782,9 +2782,9 @@ saj_cfuoStruct (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &structObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, structObject));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, structObject));
         }
-        TRACE(printf ("Copied out Struct setterID = %x\n", (int)setterID));
+        TRACE(printf ("Copied out Struct setterID = %x\n", unionCase->setterID));
     }
     return result;
 }
@@ -2995,7 +2995,7 @@ saj_cfuoUnion (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &unionObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, unionObject));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, unionObject));
         }
     }
     return result;
@@ -3069,7 +3069,7 @@ saj_cfuoString (
     if(result == SAJ_COPYRESULT_OK){
         saj_setUnionBranch(javaObject, cuh, unionCase, jstring, &str, discrValue, ctx);
         result = saj_copyGetStatus(ctx);
-        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, \"%s\")\n", javaObject, setterID, str));
+        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, \"%s\")\n", javaObject, unionCase->setterID, str));
     }
     return result;
 }
@@ -3141,7 +3141,7 @@ saj_cfuoBString (
     if(result == SAJ_COPYRESULT_OK){
         saj_setUnionBranch(javaObject, cuh, unionCase, jstring, &str, discrValue, ctx);
         result = saj_copyGetStatus(ctx);
-        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, \"%s\")\n", javaObject, setterID, str));
+        TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, \"%s\")\n", javaObject, unionCase->setterID, str));
     }
     return result;
 }
@@ -3256,7 +3256,7 @@ saj_cfuoArray (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &arrayObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, arrayObject));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, arrayObject));
         }
     }
     return result;
@@ -3377,7 +3377,7 @@ saj_cfuoSequence (
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jobject, &arrayObject, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, arrayObject));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, arrayObject));
         }
     }
     return result;

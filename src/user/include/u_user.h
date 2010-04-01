@@ -132,6 +132,15 @@ OS_API u_result u_userProtect (u_entity e);
  */
 OS_API u_result u_userUnprotect (u_entity e);
 
+OS_API u_kernel
+u_userKernelOpen (
+    const c_char *uri,
+    c_long timeout);
+
+OS_API u_result
+u_userKernelClose (
+    u_kernel kernel);
+
 /** \brief Increases the refCount of the object only within the lifespan of the process.
  */
 OS_API c_object u_userKeep(c_object o);

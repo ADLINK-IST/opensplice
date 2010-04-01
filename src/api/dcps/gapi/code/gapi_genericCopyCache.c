@@ -12,6 +12,7 @@
 #include "os_heap.h"
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "os_report.h"
 #include "c_base.h"
 #include "c_iterator.h"
 
@@ -329,6 +330,9 @@ gapi_getUnionDescriptor (
             discrVal = *(gapi_long *)src;
             break;            
         default:
+            OS_REPORT_1(OS_ERROR,"gapi_getUnionDescriptor",0,
+                        "Illegal gapiCopyType (%d) detected.",
+                        ct);
             assert(0);
             break;
     }
@@ -371,6 +375,9 @@ gapi_metaObjectBuild(
     case M_UNIONCASE:
     case M_CONSTANT:
     case M_MODULE:
+        OS_REPORT_1(OS_ERROR,"gapi_metaObject",0,
+                    "Unsupported type (%d) detected.",
+                    c_baseObject(o)->kind);
         assert (FALSE);
         break;
     default:
@@ -430,6 +437,9 @@ gapi_metaObjectBuild(
             gapi_cacheDoubleBuild (c_primitive(o), context);
             break;
         default:
+            OS_REPORT_1(OS_ERROR,"gapi_metaObject",0,
+                        "Illegal primitive type (%d) detected.",
+                        c_primitive(o)->kind);
             assert (FALSE);
         }
         break;
@@ -489,7 +499,10 @@ gapi_metaObjectBuild(
                     /* double */
                     gapi_cacheSeqDoubleBuild (c_collectionType(o), context);
                     break;
-                    default:
+                default:
+                    OS_REPORT_1(OS_ERROR,"gapi_metaObject",0,
+                                "Illegal collection type (%d) detected.",
+                                c_collectionType(o)->kind);
                     assert (FALSE);
                 }
             } else {
@@ -545,6 +558,9 @@ gapi_metaObjectBuild(
                     gapi_cacheArrDoubleBuild (c_collectionType(o), context);
                     break;
                 default:
+                    OS_REPORT_1(OS_ERROR,"gapi_metaObject",0,
+                                "Illegal collection type (%d) detected.",
+                                c_collectionType(o)->kind);
                     assert (FALSE);
                 }
             } else {
@@ -566,6 +582,9 @@ gapi_metaObjectBuild(
             gapi_cacheUnionBuild (c_union(o), context);
         break;
     default:
+        OS_REPORT_1(OS_ERROR,"gapi_metaObject",0,
+                    "Illegal object type (%d) detected.",
+                    c_baseObject(o)->kind);
         assert (FALSE);
         break;
     }
@@ -669,6 +688,9 @@ gapi_cacheUnionLabel (
             break;
         case V_VOIDP:
         case V_ADDRESS:
+            OS_REPORT_1(OS_ERROR," gapi_cacheUnionLabel",0,
+                        "Illegal value kind (%d) detected.",
+                        lit->value.kind);
             assert(FALSE);
             break;
     }

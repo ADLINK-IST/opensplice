@@ -51,6 +51,14 @@
 #include "c_iterator.h"
 #include "os_heap.h"
 #include "os_report.h"
+#include "d_durability.h"
+
+struct createPersistentSnapshotHelper {
+    c_char* partExpr;
+    c_char* topicExpr;
+    c_char* uri;
+    d_listener listener;
+};
 
 /**
  * TODO: d_groupLocalListenerHandleAlignment: take appropriate action on
@@ -795,6 +803,7 @@ d_groupLocalListenerDetermineMasters(
              * existing master.
              */
             d_nameSpaceSetMaster(nameSpace, unaddressed);
+            d_nameSpaceMasterPending (nameSpace);
 
             mastership.nameSpace = nameSpace;
             mastership.master = d_nameSpaceGetMaster(nameSpace);
@@ -828,7 +837,7 @@ d_groupLocalListenerDetermineMasters(
                             d_networkAddressFree(mastership.master);
                             mastership.master = d_networkAddressUnaddressed();
                         } else if(!d_networkAddressEquals(lastMaster, mastership.master)){
-                            /* Check whether I determined an master already
+                            /* Check whether I determined a master already
                              * in the previous loop.
                              */
                             if(!d_networkAddressIsUnaddressed(lastMaster)) {
@@ -1011,6 +1020,7 @@ d_groupLocalListenerDetermineMasters(
                            d_nameSpaceGetName(nameSpace));
                 }
                 d_networkAddressFree(master);
+                d_nameSpaceMasterConfirmed (nameSpace);
             }
         }
     } while ((conflicts == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
@@ -1042,13 +1052,14 @@ initPersistentData(
     d_group group;
     d_configuration configuration;
     u_participant participant;
-    d_storeResult result;
+    d_storeResult result, result2;
     d_groupList list, next;
     c_long i, length;
     d_nameSpace nameSpace;
     d_durabilityKind dkind;
     c_bool attached;
     v_group vgroup;
+    c_bool nsComplete;
 
     admin         = d_listenerGetAdmin(d_listener(listener));
     durability    = d_adminGetDurability(admin);
@@ -1060,6 +1071,8 @@ initPersistentData(
     result        = d_storeGroupsRead(store, &list);
 
     if(result == D_STORE_RESULT_OK){
+
+    	/* Loop namespaces */
         for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
             nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
 
@@ -1071,6 +1084,33 @@ initPersistentData(
 
                     d_durabilitySetState(durability, D_STATE_INJECT_PERSISTENT);
 
+                    /* If namespace is not complete & may contain persistent data, restore backup */
+                    result2 = d_storeNsIsComplete (store, nameSpace, &nsComplete);
+                    if ( (result2 == D_STORE_RESULT_OK) && !nsComplete)
+                    {
+                        /* If master, start injecting own persistent data */
+                        d_printTimedEvent(durability, D_LEVEL_WARNING,
+                            D_THREAD_GROUP_LOCAL_LISTENER,
+                            "Namespace '%s' is incomplete, restoring backup\n",
+                            d_nameSpaceGetName(nameSpace));
+
+                    	if (d_storeRestoreBackup (store, nameSpace) != D_STORE_RESULT_OK)
+                    	{
+                            d_printTimedEvent(durability, D_LEVEL_WARNING,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Backup for namespace '%s' failed, marking masterState incomplete\n",
+                                d_nameSpaceGetName(nameSpace));
+
+                            OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                            		"Backup for namespace '%s' failed, marking masterState incomplete\n",
+                            		d_nameSpaceGetName (nameSpace));
+
+                            /* If backup fails, mark master state for namespace !D_STATE_COMPLETE */
+                            d_nameSpaceSetMasterState (nameSpace, D_STATE_INIT);
+                    	}
+                    }
+
+                    /* Loop (persistent) groups, inject data from group */
                     while(next) {
                         if(d_durabilityMustTerminate(durability) == FALSE){
                             if(d_nameSpaceIsIn(nameSpace, next->partition, next->topic) == TRUE) {
@@ -1128,6 +1168,7 @@ initPersistentData(
                     }
                 }
             } else {
+            	/* If not master, backup old persistent data (would be overwritten otherwise) */
                 result = d_storeBackup(store, nameSpace);
 
                 if(result != D_STORE_RESULT_OK) {
@@ -1136,6 +1177,9 @@ initPersistentData(
                         "Namespace could NOT be backupped in local persistent store (%d)\n",
                         result);
                 }
+
+                /* Mark namespace incomplete */
+                d_storeNsMarkComplete (store, nameSpace, FALSE);
             }
         }
     } else {
@@ -1175,15 +1219,145 @@ initMasters(
         os_nanoSleep(sleepTime);
         terminate = d_durabilityMustTerminate(durability);
     }
+
     if(!terminate){
         d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN, "Fellow groups complete.\n");
     }
 }
 
+struct fellowState {
+	d_networkAddress address;
+	d_serviceState state;
+};
+
 struct masterHelper {
     d_groupLocalListener listener;
     c_iter nameSpaces;
+    c_iter fellowStates;
 };
+
+/* Walk fellows, insert fellow state in iterator list */
+static c_bool
+fellowStateWalk (d_fellow fellow, c_voidp userData)
+{
+	/* Create new fellow object */
+	struct fellowState* fellowStateObject;
+
+	fellowStateObject = os_malloc (sizeof(struct fellowState));
+	if (!fellowStateObject)
+	{
+		return FALSE;
+	}
+
+	/* Set object */
+	fellowStateObject->address = d_fellowGetAddress (fellow);
+	fellowStateObject->state = d_fellowGetState (fellow);
+
+	/* Insert fellow state */
+	c_iterInsert (userData, fellowStateObject);
+
+	return TRUE;
+}
+
+static c_bool
+fellowStateCleanWalk (struct fellowState* fellowStateObject, c_voidp userData)
+{
+	d_networkAddressFree(fellowStateObject->address);
+	os_free (fellowStateObject);
+	return TRUE;
+}
+
+/* Clean fellowstates & iterator */
+static void
+freeFellowStates (c_iter fellowStates)
+{
+	c_iterWalk (fellowStates, fellowStateCleanWalk, NULL);
+	c_iterFree (fellowStates);
+}
+
+/* Store snapshot of fellow states for future reference */
+static c_iter
+fetchFellowStates(d_groupLocalListener listener)
+{
+	c_iter fellowStates;
+	d_admin admin;
+	d_durability durability;
+	struct fellowState* fellowStateObject;
+
+
+	admin =  d_listenerGetAdmin(d_listener(listener));
+	durability = d_adminGetDurability(admin);
+	fellowStates = c_iterNew (NULL);
+
+	/* Fill fellow list */
+	d_adminFellowWalk (admin, fellowStateWalk, fellowStates);
+
+	/* Create fellow state for own durability service */
+	fellowStateObject = os_malloc (sizeof(struct fellowState));
+	if (!fellowStateObject)
+	{
+		freeFellowStates (fellowStates);
+		fellowStates = NULL;
+	}else
+	{
+		fellowStateObject->address = d_adminGetMyAddress(admin);
+		fellowStateObject->state = d_durabilityGetState (durability);
+	}
+
+	/* Insert own address & state to list */
+	c_iterInsert (fellowStates, fellowStateObject);
+
+	return fellowStates;
+}
+
+/* Mark namespace with state of fellow */
+static void
+markNameSpace (
+		const d_nameSpace nameSpace,
+		const c_iter fellowStates,
+		d_admin admin)
+{
+	d_durability durability;
+	d_networkAddress master;
+	struct fellowState* fellowStateObject;
+	c_long i;
+
+	durability 	  = d_adminGetDurability(admin);
+	master = d_nameSpaceGetMaster(nameSpace);
+    i = 0;
+
+	/* Walk fellow states */
+	while ((fellowStateObject = (struct fellowState*)c_iterObject(fellowStates, i++)))
+	{
+		if (d_networkAddressEquals(fellowStateObject->address, master))
+		{
+			/* Only D_STATE_COMPLETE states can be overwritten */
+			if (d_nameSpaceGetMasterState(nameSpace) == D_STATE_COMPLETE)
+			{
+				d_nameSpaceSetMasterState (nameSpace, fellowStateObject->state);
+			}
+			break;
+		}
+	}
+
+	d_networkAddressFree (master);
+}
+
+/* Walk function that marks namespace master state */
+c_bool nameSpaceMarkWalk (
+		d_nameSpace nameSpace,
+		c_voidp userData)
+{
+	c_iter fellowStates;
+	d_admin admin;
+
+	fellowStates = (c_iter)((struct masterHelper*)userData)->fellowStates;
+	admin = d_listenerGetAdmin(d_listener(((struct masterHelper*)userData)->listener));
+
+	markNameSpace (nameSpace, fellowStates, admin);
+
+	return TRUE;
+}
 
 static c_bool
 determineNewMastersAction(
@@ -1204,6 +1378,11 @@ determineNewMastersAction(
 
             if(c_iterLength(helper->nameSpaces) > 0){
                 tryChains = d_groupLocalListenerDetermineMasters(listener, helper->nameSpaces);
+
+                c_iterWalk (helper->nameSpaces, nameSpaceMarkWalk, helper);
+
+                /* Cleanup fellow states */
+                freeFellowStates (helper->fellowStates);
             }
 
             os_mutexUnlock(&listener->masterLock);
@@ -1279,6 +1458,9 @@ notifyFellowRemoved(
             helper = (struct masterHelper*)(os_malloc(sizeof(struct masterHelper)));
             helper->listener = listener;
             helper->nameSpaces = nameSpaces;
+            /* Fetch fellow states to be able to determine namespace completeness later */
+            helper->fellowStates = fetchFellowStates (listener);
+
             sleepTime.tv_sec = 0;
             sleepTime.tv_nsec = 100000000;
             masterAction = d_actionNew(os_timeGet(), sleepTime, determineNewMastersAction, helper);
@@ -1352,6 +1534,55 @@ d_groupLocalAction(
     return FALSE;
 }
 
+
+static c_bool
+d_groupCreatePersistentSnapshotAction(
+    d_action action,
+    c_bool terminate)
+{
+    d_durability durability;
+    d_admin admin;
+    struct createPersistentSnapshotHelper* cps;
+    u_result result;
+
+    cps = (struct createPersistentSnapshotHelper*)(d_actionGetArgs(action));
+
+    if(d_objectIsValid(d_object(cps->listener), D_LISTENER))
+    {
+        if(terminate == FALSE)
+        {
+            admin = d_listenerGetAdmin(cps->listener);
+            durability = d_adminGetDurability(admin);
+
+            result = d_durabilityTakePersistentSnapshot(
+                durability,
+                cps->partExpr,
+                cps->topicExpr,
+                cps->uri);
+            if(result != U_RESULT_OK)
+            {
+                OS_REPORT_4(
+                    OS_ERROR,
+                    "d_groupCreatePersistentSnapshotAction",
+                    0,
+                    "Creation of persistent snapshot failed with result "
+                    "'%d'. Snapshot was requested for partition expression '%s',"
+                    " topic expression '%s' and was to be stored at location '%s'.",
+                    result,
+                    cps->partExpr,
+                    cps->topicExpr,
+                    cps->uri);
+            }
+
+        }
+    }
+    os_free(cps->partExpr);
+    os_free(cps->topicExpr);
+    os_free(cps->uri);
+    os_free(cps);
+
+    return FALSE;
+}
 
 struct deleteHistoricalDataHelper {
     c_time deleteTime;
@@ -1501,10 +1732,12 @@ d_groupLocalListenerAction(
     d_action action;
     u_waitsetHistoryDeleteEvent hde;
     u_waitsetHistoryRequestEvent hre;
+    u_waitsetPersistentSnapshotEvent pse;
     os_time sleepTime;
     d_readerRequest readerRequest;
     struct deleteHistoricalDataHelper* data;
     struct readerRequestHelper* requestHelper;
+    struct createPersistentSnapshotHelper* snapshotHelper;
 
     if (o && userData) {
         listener   = d_listener(userData);
@@ -1566,6 +1799,27 @@ d_groupLocalListenerAction(
             action = d_actionNew(os_timeGet(), sleepTime, d_groupDeleteHistoricalDataAction, data);
             d_actionQueueAdd(queue, action);
         }
+        if((event->events & V_EVENT_PERSISTENT_SNAPSHOT) == V_EVENT_PERSISTENT_SNAPSHOT)
+        {
+            pse = u_waitsetPersistentSnapshotEvent(event);
+            d_printTimedEvent(durability, D_LEVEL_FINER,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Received a request for a persistent snapshot for partition "
+                "expression '%s' and topic expression '%s' to be stored at"
+                "destination '%s'.\n", pse->partitionExpr, pse->topicExpr, pse->uri);
+            snapshotHelper  = (struct createPersistentSnapshotHelper*)(os_malloc(
+                                    sizeof(struct createPersistentSnapshotHelper)));
+            snapshotHelper->partExpr = os_strdup(pse->partitionExpr);
+            snapshotHelper->topicExpr = os_strdup(pse->topicExpr);
+            snapshotHelper->uri = os_strdup(pse->uri);
+            snapshotHelper->listener = listener;
+            sleepTime.tv_sec = 1;
+            sleepTime.tv_nsec = 0;
+
+            action = d_actionNew(os_timeGet(), sleepTime, d_groupCreatePersistentSnapshotAction, snapshotHelper);
+            d_actionQueueAdd(queue, action);
+        }
+
     }
     return event->events;
 
@@ -1594,19 +1848,20 @@ d_groupLocalListenerStart(
 
     assert(d_listenerIsValid(d_listener(listener), D_GROUP_LOCAL_LISTENER));
 
+    /* Setup listener for NEW_GROUP, HISTORY_DELETE and HISTORY_REQUEST events */
     if(listener){
         d_listenerLock(d_listener(listener));
         durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
         config      = d_durabilityGetConfiguration(durability);
         dispatcher  = u_dispatcher( d_durabilityGetService(durability));
-        action      = d_groupLocalListenerAction;
+        action      = d_groupLocalListenerAction; /* callback function */
 
         if(d_listener(listener)->attached == FALSE){
             ur = u_dispatcherGetEventMask(dispatcher, &mask);
 
             if(ur == U_RESULT_OK){
                 ur = u_dispatcherSetEventMask(dispatcher,
-                        mask | V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST);
+                        mask | V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT);
 
                 if(ur == U_RESULT_OK){
                     admin      = d_listenerGetAdmin(d_listener(listener));
@@ -1614,11 +1869,12 @@ d_groupLocalListenerStart(
                     store      = d_subscriberGetPersistentStore(subscriber);
                     waitset    = d_subscriberGetWaitset(subscriber);
 
+                    /* Create and attach waitset for listener */
                     os_threadAttrInit(&attr);
                     listener->waitsetData = d_waitsetEntityNew(
                                     "groupLocalListener",
                                     dispatcher, action,
-                                    V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST,
+                                    V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT,
                                     attr, listener);
                     wsResult = d_waitsetAttach(waitset, listener->waitsetData);
 

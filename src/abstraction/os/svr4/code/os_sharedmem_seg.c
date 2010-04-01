@@ -644,8 +644,11 @@ os_svr4_sharedMemoryAttach(
             rv = os_resultFail;
             if (map_address == (void *)-1) {
                 memset(errorBuf, 0, 128);
+#ifndef NO_STRERROR_R
                 success = strerror_r(errno, errorBuf, 128);
-
+#else
+                success = 1;
+#endif
                 if(success == 1){
                     sprintf(errorBuf, "Unkown error");
                 }

@@ -65,7 +65,7 @@ OS_API c_iter
 v_partitionLookupSubscribers (
     v_partition _this);
 
-v_accessMode
+OS_API v_accessMode
 v_kernelPartitionAccessMode(
     v_kernel _this,
     v_partitionPolicy partition);

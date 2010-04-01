@@ -95,7 +95,7 @@ public class UserLoad extends Thread {
             domain, 
             PARTICIPANT_QOS_DEFAULT.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             participant, "DDS.DomainParticipantFactory.create_participant");  
 
@@ -137,7 +137,7 @@ public class UserLoad extends Thread {
             chatMessageTypeName, 
             reliableTopicQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             chatMessageTopic, 
             "DDS.DomainParticipant.create_topic (ChatMessage)");
@@ -155,7 +155,7 @@ public class UserLoad extends Thread {
             nameServiceTypeName, 
             settingTopicQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             nameServiceTopic, "DDS.DomainParticipant.create_topic");
 
@@ -169,7 +169,7 @@ public class UserLoad extends Thread {
 
         /* Create a Subscriber for the UserLoad application. */
         chatSubscriber = participant.create_subscriber(
-            subQos.value, null, ANY_STATUS.value);
+            subQos.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             chatSubscriber, "DDS.DomainParticipant.create_subscriber");
         
@@ -179,7 +179,7 @@ public class UserLoad extends Thread {
             nameServiceTopic, 
             DATAREADER_QOS_USE_TOPIC_QOS.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader (NameService)");
 
@@ -206,7 +206,7 @@ public class UserLoad extends Thread {
             chatMessageTopic, 
             messageQos.value, 
             null, 
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader (ChatMessage)");
         

@@ -19,6 +19,10 @@
 #include "os_stdlib.h"
 #include "os_socket.h"
 
+#ifndef OSPL_NO_ZLIB
+#include "zlib.h"
+#endif
+
 /* Descendants */
 #include "nw_socketBroadcast.h"
 #include "nw_socketMulticast.h"
@@ -441,6 +445,7 @@ nw_socketBind(
     struct sockaddr_in bindAddress;
 
     if (sock != NULL) {
+
         /* Avoid already in use error messages */
         optLen = (os_uint32)sizeof(optVal);
         optVal = SK_TRUE;
@@ -452,6 +457,7 @@ nw_socketBind(
 
         bindAddress = sock->sockAddrData;
         bindAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+
         if (retVal == os_resultSuccess) {
             retVal = os_sockBind(sock->socketData,
                 (const struct sockaddr *)&bindAddress,
@@ -464,6 +470,7 @@ nw_socketBind(
                            "bind socket", "bind");
 
             if ((retVal == os_resultSuccess) && (sock->supportsControl)) {
+
                 retVal = os_sockSetsockopt(sock->socketControl,
                                 SOL_SOCKET, SO_REUSEADDR,
                                 (void *)&optVal, optLen);
@@ -472,6 +479,7 @@ nw_socketBind(
 
                 bindAddress = sock->sockAddrControl;
                 bindAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+
                 if (retVal == os_resultSuccess) {
                     retVal = os_sockBind(sock->socketControl,
                         (const struct sockaddr *)&bindAddress,
@@ -502,7 +510,9 @@ nw_socketAddPartition(
     nw_socket sock,
     sk_partitionId partitionId,
     const char *addressString,
-    sk_bool connected)
+    sk_bool connected,
+    sk_bool compression,
+    sk_bool receiving)
 {
     sk_address address;
     nw_stringList addressNameList;
@@ -540,12 +550,12 @@ nw_socketAddPartition(
             NW_TRACE_3(Test, 4, "Adding host \"%s\" (%s) to partition %d",
                 currentAddress, inet_ntoa(*((struct in_addr *)(&address))), partitionId);
 
-            nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected);
+            nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected, compression);
             /* Do any multicast related actions if needed */
             if (partitionId != 0 && connected) {
                 /* No need to add first the default partition,
                    that already happened with socket initialisation */
-                nw_socketMulticastAddPartition(sock, currentAddress);
+                nw_socketMulticastAddPartition(sock, currentAddress, receiving);
             }
         }
     }
@@ -685,6 +695,7 @@ nw_socketNew(
             	if (defaultAddressType == SK_TYPE_MULTICAST) {
             		result->sockAddrData.sin_addr.s_addr = sk_stringToAddress(
 						defaultNetworkAddress, NWCF_DEF(Address));
+
 					/* We can stop multicasting from looping back though */
 					result->loopsback = SK_FALSE;
             	} else {
@@ -786,12 +797,9 @@ nw_socketNew(
             case SK_TYPE_UNKNOWN:
             case SK_TYPE_UNICAST:
             	nw_socketBroadcastInitialize(result, receiving);
-            	if (result->multicastSupported) {
-            	        nw_socketMulticastInitialize(result, receiving);
-            	}
             	break;
             case SK_TYPE_MULTICAST:
-            	nw_socketMulticastInitialize(result, receiving);
+            	nw_socketMulticastInitialize(result, receiving,(sk_address)result->sockAddrData.sin_addr.s_addr);
             	break;
             default:
             	break;
@@ -956,6 +964,10 @@ nw_socketSendDataToPartition(
     sk_address partitionAddress;
     struct sockaddr_in sockAddrForPartition;
     nw_bool found;
+    sk_bool compression = FALSE;
+    unsigned long zlen;
+    unsigned char *zbuff;
+    int zresult;
 
     NW_CONFIDENCE(sock != NULL);
 
@@ -964,8 +976,33 @@ nw_socketSendDataToPartition(
     NW_PROF_LAPSTART(SendTo);
 
     found = nw_socketPartitionsLookup(sock->partitions, partitionId,
-        &addressList);
+        &addressList, &compression);
     NW_CONFIDENCE(found);
+
+#ifndef OSPL_NO_ZLIB
+    /* Compress the payload if so enabled, unless it's just little */
+
+    if (length > 255 && compression)
+    {
+        zlen = length;
+        zbuff = (unsigned char *)alloca (zlen);
+        zresult = compress (zbuff, &zlen, buffer, length);
+        if (zresult == Z_OK)
+        {
+            buffer = zbuff;
+            length = zlen;
+        }
+        else
+        {
+            /* Z_BUF_ERROR is expected if the data is uncompressable as we
+               have only given a target buffer of the original data size */
+            if (zresult != Z_BUF_ERROR)
+            {
+               NW_REPORT_WARNING_1("Sending packet", "Compression failed (error code %d), sending uncompressed.", zresult);
+            }
+        }
+    }
+#endif   /* OSPL_NO_ZLIB */
 
     sockAddrForPartition = sock->sockAddrData;
     sendResAll = 0;
@@ -1090,10 +1127,11 @@ sk_length
 nw_socketReceive(
     nw_socket sock,
     sk_address *senderAddress,
-    void *buffer,
+    void *vbuffer,
     sk_length length,
     os_time *timeOut)
 {
+    unsigned char *buffer = vbuffer;
     sk_length result = 0;
     os_int32 recvRes = 0;
     os_int32 selectRes;
@@ -1102,6 +1140,9 @@ nw_socketReceive(
     os_int ownMessage;
     nw_bool readDone = FALSE;
     os_time tmpTimeOut = *timeOut;
+    unsigned char *zbuff;
+    unsigned long zlen;
+    int zresult;
 #ifdef NW_DEBUGGING
     nw_bool control = FALSE;
 #endif
@@ -1137,6 +1178,31 @@ nw_socketReceive(
             recvRes = os_sockRecvfrom(sock->socketData, buffer, length,
                                (struct sockaddr *)&sockAddr, (socklen_t *)&fromLen);
         }
+
+#ifndef OSPL_NO_ZLIB
+
+        if (recvRes > 0) {
+            /* OSPL messages begin with 'S', unless they are compressed */
+            if (buffer[0] != 'S') {
+                zbuff = (unsigned char *)alloca (length);
+                zlen = length;
+                zresult = uncompress (zbuff, &zlen, buffer, recvRes);
+                if (zresult == Z_OK) {
+                    memcpy (buffer, zbuff, zlen);
+                    recvRes = zlen;
+                } else {
+                    if (zresult == Z_DATA_ERROR) {
+                       NW_REPORT_ERROR_1 ("Read from socket", "Unrecognized data beginning 0x%x - continuing anyway.", buffer[0]);
+                    }
+                    else {
+                       /* Decompressor failed. Drop the packet. */
+                       NW_REPORT_ERROR_1 ("Read from socket", "Decompression failed with code %d - dropping packet.", zresult);
+                       recvRes = 0;
+                    }
+                }
+            }
+        }
+#endif   /* OSPL_NO_ZLIB */
 
         if (recvRes > 0) {
             if (sock->loopsback) {

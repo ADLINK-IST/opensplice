@@ -25,6 +25,8 @@
 
     #define THROW_VALUETYPE_ORB_EXCEPTIONS
     #define THROW_VALUETYPE_ORB_AND_USER_EXCEPTIONS(...)
+    
+    #define TAO_STRING_MANAGER TAO::String_Manager
   };
 
 #endif /* ORB_ABSTRACTION */

@@ -25,7 +25,8 @@ nw_bool              nw_socketPartitionsAdd(
                          nw_socketPartitions socketPartitions,
                          sk_partitionId partitionId,
                          sk_address address,
-                         sk_bool connected);
+                         sk_bool connected,
+                         sk_bool compression);
 
 /* Forward declaration */
 NW_CLASS(nw_addressList);
@@ -34,7 +35,8 @@ NW_CLASS(nw_addressList);
 nw_bool              nw_socketPartitionsLookup(
                          nw_socketPartitions socketPartitions,
                          sk_partitionId partitionId,
-                         nw_addressList *addressList);
+                         nw_addressList *addressList,
+                         sk_bool *compression);
 
 
 /* addressList methods */

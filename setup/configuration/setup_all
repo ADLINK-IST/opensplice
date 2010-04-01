@@ -26,6 +26,7 @@ set_var TS_XMLPARSER xml_parser
 # Build driven setup
 #
 set_var INCLUDE_FILTERS yes
+set_var FORCE_DEBUG_SYMBOLS no
 
 #
 # Language driven setup
@@ -69,6 +70,7 @@ set_var INCLUDE_SERVICES_SPLICED yes
 set_var INCLUDE_SERVICES_COMMON yes
 set_var INCLUDE_UTILITIES yes
 set_var INCLUDE_TESTENGINE yes
+set_var INCLUDE_PLUGGABLE_REPORTING yes
 
 #
 # Test setup

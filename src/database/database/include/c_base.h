@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_BASE_H
@@ -399,6 +399,10 @@ c_baseOnOutOfMemory(
     c_baseOutOfMemoryAction action,
     c_voidp arg);
 
+OS_API void
+c_destroy (
+    c_base _this);
+
 #if 0
 /**
  * \brief This operation returns the number of element the specified array
@@ -441,7 +445,7 @@ OS_API void c_baseSerLock   (c_base _this);
 OS_API void c_baseSerUnlock (c_base _this);
 
 /* The following define enables the DAT tool functionality:
- * #define OBJECT_WALK 
+ * #define OBJECT_WALK
  */
 
 #ifndef NDEBUG

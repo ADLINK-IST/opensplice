@@ -271,12 +271,13 @@ getTopic (
     c_object o,
     c_voidp arg)
 {
-    v_dataReaderEntry entry = v_dataReaderEntry(o);
     c_iter *iter = (c_iter *)arg;
     c_bool result = TRUE;
 
-    if (iter != NULL) {
-        *iter = c_iterInsert(*iter,c_keep(entry->topic));
+    if ((iter != NULL) &&
+        (v_objectKind(o) == K_DATAREADERENTRY))
+    {
+        *iter = c_iterInsert(*iter,c_keep(v_dataReaderEntryTopic(o)));
     } else {
         result = FALSE;
     }

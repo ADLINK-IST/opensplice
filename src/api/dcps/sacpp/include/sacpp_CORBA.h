@@ -41,6 +41,7 @@ namespace CORBA
     static void release(LocalObject_ptr p);
     static void add_ref(ValueBase* vb);
     static void remove_ref(ValueBase* vb);
+    static Boolean is_nil(Object_ptr p);
 }
 
 /* ************************************************************************** */
@@ -67,6 +68,12 @@ inline void CORBA::release(CORBA::LocalObject * p)
 {
    DDS::release(p);
 }
+
+inline CORBA::Boolean CORBA::is_nil(CORBA::Object * p)
+{
+   return (p == 0);
+}
+
 
 inline void
 CORBA::add_ref(ValueBase* vb)

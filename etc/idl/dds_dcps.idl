@@ -1,0 +1,24 @@
+#ifndef OSPL_DDS_DCPS_IDL
+#define OSPL_DDS_DCPS_IDL
+
+/*
+$Id:$
+
+There is actually no need for all the below includes. The
+last in the sequence includes all previous files but this
+shows the order of the subsetting.
+*/
+
+// The naming below is bad. We've shipped it this way now though
+// and people could be using them so we're stuck barring a good reason.
+
+#include "dds_builtinTopics.idl"
+
+#include "dds_dcps_builtintopics.idl"
+
+#include "dds_dcps_interfaces.idl"
+
+// This commented out pending hand creation of dds_dcps_pseudo_interfaces*.h
+// #include "dds_dcps_pseudo_interfaces.pidl"
+
+#endif /* OSPL_DDS_DCPS_IDL */

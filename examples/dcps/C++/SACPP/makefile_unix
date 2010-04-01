@@ -5,6 +5,7 @@ INCLUDES+=-I./bld
 INCLUDES+=-I$(OSPL_HOME)/include
 INCLUDES+=-I$(OSPL_HOME)/include/sys
 INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/SACPP
+INCLUDES+=-I$(OSPL_HOME)/etc/idl
 
 # C++ Compiler settings.
 CXX=g++

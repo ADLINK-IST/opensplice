@@ -45,6 +45,7 @@
 #include "v__spliced.h"
 #include "v__leaseManager.h"
 #include "v__crc.h"
+#include "os.h"
 #include "os_report.h"
 
 #define __ERROR(m) printf(m); printf("\n");
@@ -229,11 +230,12 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_groupQueueSample,   K_GROUPQUEUESAMPLE);
     INITTYPE(kernel,kernelModule::v_dataReader,         K_DATAREADER);
     INITTYPE(kernel,kernelModule::v_deliveryService,    K_DELIVERYSERVICE);
+    INITTYPE(kernel,kernelModule::v_deliveryServiceEntry, K_DELIVERYSERVICEENTRY);
     INITTYPE(kernel,kernelModule::v_index,              K_INDEX);
     INITTYPE(kernel,kernelModule::v_filter,             K_FILTER);
     INITTYPE(kernel,kernelModule::v_readerStatus,       K_READERSTATUS);
     INITTYPE(kernel,kernelModule::v_writerStatus,       K_WRITERSTATUS);
-    INITTYPE(kernel,kernelModule::v_partitionStatus,       K_DOMAINSTATUS);
+    INITTYPE(kernel,kernelModule::v_partitionStatus,    K_DOMAINSTATUS);
     INITTYPE(kernel,kernelModule::v_topicStatus,        K_TOPICSTATUS);
     INITTYPE(kernel,kernelModule::v_subscriberStatus,   K_SUBSCRIBERSTATUS);
     INITTYPE(kernel,kernelModule::v_status,             K_PUBLISHERSTATUS);
@@ -252,6 +254,7 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_waitsetEvent,       K_WAITSETEVENT);
     INITTYPE(kernel,kernelModule::v_waitsetEventHistoryDelete,  K_WAITSETEVENTHISTORYDELETE);
     INITTYPE(kernel,kernelModule::v_waitsetEventHistoryRequest, K_WAITSETEVENTHISTORYREQUEST);
+    INITTYPE(kernel,kernelModule::v_waitsetEventPersistentSnapshot, K_WAITSETEVENTPERSISTENTSNAPSHOT);
     INITTYPE(kernel,kernelModule::v_writerSample,       K_WRITERSAMPLE);
     INITTYPE(kernel,kernelModule::v_writerInstance,     K_WRITERINSTANCE);
     /* Networking types */
@@ -265,6 +268,7 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_registration,       K_REGISTRATION);
 
     INITTYPE(kernel,kernelModule::v_historicalDataRequest,K_HISTORICALDATAREQUEST);
+    INITTYPE(kernel,kernelModule::v_persistentSnapshotRequest,K_PERSISTENTSNAPSHOTREQUEST);
 #undef INITTYPE
 
 
@@ -727,12 +731,10 @@ v_unregisterBuiltinTopic(
     v_writer writer;
 
     if (msg != NULL) {
-        if (k->builtin != NULL) {
-            writer = v_builtinWriterLookup(k->builtin,id);
-            if (writer != NULL) {
-                /* No need to fill writerGID, this is done by the writer */
-                v_writerUnregister(writer,msg,v_timeGet(),NULL);
-            }
+        writer = v_builtinWriterLookup(k->builtin,id);
+        if (writer != NULL) {
+            /* No need to fill writerGID, this is done by the writer */
+            v_writerUnregister(writer,msg,v_timeGet(),NULL);
         }
     }
 }
@@ -841,4 +843,60 @@ v_kernelCheckHandleServer (
     c_address serverId)
 {
    return ((c_address)k->handleServer == serverId);
+}
+
+v_persistentSnapshotRequest
+v_persistentSnapshotRequestNew(
+    v_kernel kernel,
+    const c_char* partition_expression,
+    const c_char* topic_expression,
+    const c_char* uri)
+{
+    v_persistentSnapshotRequest request;
+    c_base base;
+
+    request = c_new(v_kernelType(kernel,K_PERSISTENTSNAPSHOTREQUEST));
+    if(request)
+    {
+        base = c_getBase(kernel);
+        if(partition_expression)
+        {
+            request->partitionExpr = c_stringNew(base, partition_expression);
+        }
+        if(topic_expression)
+        {
+            request->topicExpr = c_stringNew(base, topic_expression);
+        }
+        if(uri)
+        {
+            request->uri = c_stringNew(base, uri);
+        }
+    }
+
+    return request;
+}
+
+v_result
+v_kernelCreatePersistentSnapshot(
+    v_kernel _this,
+    const c_char * partition_expression,
+    const c_char * topic_expression,
+    const c_char * uri)
+{
+    v_result result = V_RESULT_OK;
+    C_STRUCT(v_event) event;
+    v_persistentSnapshotRequest request;
+
+    request = v_persistentSnapshotRequestNew(_this, partition_expression, topic_expression, uri);
+    if(request)
+    {
+        event.kind = V_EVENT_PERSISTENT_SNAPSHOT;
+        event.source = v_publicHandle(v_public(_this));
+        event.userData = request;
+        v_observableNotify(v_observable(_this),&event);
+    } else
+    {
+        result = V_RESULT_OUT_OF_MEMORY;
+    }
+    return result;
 }

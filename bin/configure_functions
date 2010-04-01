@@ -44,7 +44,7 @@ function unset_var
     unset $1
 }
 
-function dump_vars
+function dump_env_vars
 {
     i=0
     while [ "$i" -lt "${#varkeys[@]}" ]

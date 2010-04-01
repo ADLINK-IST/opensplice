@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -30,15 +30,15 @@ d_nameSpacesNew(
     d_nameSpaces ns = NULL;
     d_durability durability;
     d_networkAddress master;
-    
+
     if(nameSpace){
         ns = d_nameSpaces(os_malloc(C_SIZEOF(d_nameSpaces)));
-        
+
         if(ns){
             durability = d_adminGetDurability(admin);
             master     = d_networkAddressUnaddressed();
             d_messageInit(d_message(ns), admin);
-            
+
             ns->durabilityKind             = d_nameSpaceGetDurabilityKind(nameSpace);
             ns->alignmentKind              = d_nameSpaceGetAlignmentKind(nameSpace);
             ns->partitions                 = d_nameSpaceGetPartitions(nameSpace);
@@ -48,7 +48,8 @@ d_nameSpacesNew(
             ns->master.systemId            = master->systemId;
             ns->master.localId             = master->localId;
             ns->master.lifecycleId         = master->lifecycleId;
-            
+            ns->isComplete                 = TRUE;
+
             d_networkAddressFree(master);
         }
     }
@@ -60,7 +61,7 @@ d_nameSpacesGetMaster(
         d_nameSpaces nameSpaces)
 {
     d_networkAddress addr = NULL;
-    
+
     if(nameSpaces){
         addr = d_networkAddressNew( nameSpaces->master.systemId,
                                     nameSpaces->master.localId,
@@ -88,7 +89,7 @@ d_nameSpacesGetAlignmentKind(
     d_nameSpaces nameSpaces)
 {
     d_alignmentKind kind = D_ALIGNEE_INITIAL_AND_ALIGNER;
-    
+
     if(nameSpaces){
         kind = nameSpaces->alignmentKind;
     }
@@ -100,7 +101,7 @@ d_nameSpacesGetDurabilityKind(
     d_nameSpaces nameSpaces)
 {
     d_durabilityKind kind = D_DURABILITY_ALL;
-    
+
     if(nameSpaces){
         kind = nameSpaces->durabilityKind;
     }
@@ -112,7 +113,7 @@ d_nameSpacesIsAligner(
     d_nameSpaces nameSpaces)
 {
     c_bool aligner = FALSE;
-    
+
     if(nameSpaces){
         if(nameSpaces->alignmentKind == D_ALIGNEE_INITIAL_AND_ALIGNER){
             aligner = TRUE;
@@ -126,7 +127,7 @@ d_nameSpacesGetTotal(
     d_nameSpaces nameSpaces)
 {
     c_ulong total = 0;
-    
+
     if(nameSpaces){
         total = nameSpaces->total;
     }
@@ -138,7 +139,7 @@ d_nameSpacesGetPartitions(
     d_nameSpaces nameSpaces)
 {
     c_char* partitions = NULL;
-    
+
     if(nameSpaces){
         if(nameSpaces->partitions){
             partitions = os_strdup(nameSpaces->partitions);
@@ -151,7 +152,7 @@ void
 d_nameSpacesFree(
     d_nameSpaces nameSpaces)
 {
-    
+
     if(nameSpaces){
         if(nameSpaces->partitions){
             os_free(nameSpaces->partitions);
@@ -167,7 +168,7 @@ d_nameSpacesGetInitialQuality(
     d_nameSpaces nameSpaces)
 {
     d_quality quality;
-    
+
     if(nameSpaces){
         quality.seconds     = nameSpaces->initialQuality.seconds;
         quality.nanoseconds = nameSpaces->initialQuality.nanoseconds;
@@ -181,7 +182,7 @@ d_nameSpacesCompare(
     d_nameSpaces ns2)
 {
     int r;
-    
+
     if((!ns1) && (!ns2)){
         r = 0;
     } else if(!ns1){

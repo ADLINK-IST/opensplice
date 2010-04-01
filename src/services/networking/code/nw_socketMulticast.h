@@ -27,12 +27,14 @@ nw_socketGetDefaultMulticastInterface(
 void
 nw_socketMulticastInitialize(
     nw_socket socket,
-    sk_bool receiving);
+    sk_bool receiving,
+    sk_address address);
 
 void
 nw_socketMulticastAddPartition(
     nw_socket sock,
-    const char *addressString);
+    const char *addressString,
+    sk_bool receiving);
 
 
 #endif /* NW_SOCKETMULTICAST_H */

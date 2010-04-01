@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -48,20 +48,9 @@
   <ItemGroup>
     <Reference Include="dcpssacs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\lib\dcpssacs.dll</HintPath>
+      <HintPath>$(OSPL_HOME)\lib\dcpssacs.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Xml.Linq">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data.DataSetExtensions">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System" />    
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ErrorHandler.cs" />
@@ -70,34 +59,13 @@
     <Compile Include="pinger.cs" />
     <Compile Include="pingpong.cs" />
     <Compile Include="pingpongDcps.cs" />
+    <Compile Include="pingpongSplDcps.cs" />
     <Compile Include="stats.cs" />
     <Compile Include="time.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="pingpong.idl" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
+  </ItemGroup> 
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
@@ -110,6 +78,6 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>%25OSPL_HOME%25\bin\idlpp -S -d $(ProjectDir) -o dds-types -l cs $(ProjectDir)pingpong.idl</PreBuildEvent>
+    <PreBuildEvent>idlpp -S -l cs -d "$(ProjectDir)\" "$(ProjectDir)pingpong.idl"</PreBuildEvent>
   </PropertyGroup>
 </Project>

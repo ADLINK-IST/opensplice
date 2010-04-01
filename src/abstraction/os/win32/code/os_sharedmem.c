@@ -676,6 +676,8 @@ os_sharedSize(
     case OS_MAP_ON_HEAP:
         result = os_resultUnavailable;
     break;
+    default:
+    break;
     }
     return result;
 }

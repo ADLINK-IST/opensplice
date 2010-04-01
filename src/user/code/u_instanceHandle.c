@@ -221,7 +221,6 @@ u_instanceHandleServerId(
 
     translator.handle = _this;
 
-//    return (translator.lid.lifecycleId & HANDLE_SERIAL_MASK);
     return (translator.lid.lifecycleId & HANDLE_SERVER_MASK);
 }
 

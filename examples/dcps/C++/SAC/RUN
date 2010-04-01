@@ -1,34 +1,35 @@
-ospl start
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
 
 BLOKSIZE=100
 BLOKCOUNT=100
 
-exec/pong PongRead PongWrite &
+$VG_PONG exec/pong PongRead PongWrite &
 
 sleep 2
 
-exec/ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+$VG_PING_M exec/ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
 
 sleep 2
 
-exec/ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+$VG_PING_Q exec/ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
 
 sleep 2
 
-exec/ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+$VG_PING_S exec/ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
 
 sleep 2
 
-exec/ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+$VG_PING_F exec/ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
 
 sleep 2
 
-exec/ping $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
+$VG_PING_B exec/ping $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
 
 sleep 2
 
-exec/ping 1  10 t PongRead PongWrite 
+$VG_PING_T exec/ping 1  10 t PongRead PongWrite 
 
 sleep 4
 
-ospl stop
+$VG_OSPL_STOP ospl stop

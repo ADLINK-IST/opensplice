@@ -1182,6 +1182,13 @@ c_create (
     return base;
 }
 
+void
+c_destroy (
+    c_base _this)
+{
+    /* for future use */
+}
+
 c_base
 c_open (
     const c_char *name,
@@ -1667,6 +1674,7 @@ _c_freeReferences (
                       "c_freeReferences",0,
                       "illegal union switch type detected");
             assert(FALSE);
+            return FALSE;
         break;
         }
 #undef _CASE_

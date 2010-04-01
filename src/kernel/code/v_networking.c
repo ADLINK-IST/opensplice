@@ -15,6 +15,7 @@
 #include "v_participant.h"
 #include "v_statistics.h"
 #include "v__statCat.h"
+#include "v__kernel.h"
 
 #include "os_report.h"
 
@@ -43,15 +44,21 @@ v_networkingNew(
         s = v_networking(v_objectNew(k, K_NETWORKING));
 
         if (v_isEnabledStatistics(k, V_STATCAT_NETWORKING)) {
-			ns = v_statistics(v_networkingStatisticsNew(k));
-		} else {
-			ns = v_statistics(NULL);
-		}
+            ns = v_networkingStatistics(v_networkingStatisticsNew(k));
+        } else {
+            ns = v_networkingStatistics(NULL);
+        }
 
-        v_serviceInit(v_service(s), manager, name, extStateName, q, ns);
+        v_serviceInit(v_service(s),
+                      manager,
+                      name,
+                      extStateName,
+                      q,
+                      v_statistics(ns));
         c_free(q);
-        /* always add, even when s->state==NULL, since v_participantFree always
-           removes the participant.*/
+        /* always add, even when s->state==NULL,
+         * since v_participantFree always removes the participant.
+         */
         v_addParticipant(k, v_participant(s));
         if (v_service(s)->state == NULL) {
             v_serviceFree(v_service(s));

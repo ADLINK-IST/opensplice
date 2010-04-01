@@ -531,7 +531,7 @@ main (
     // Create participant
     //
     dpf = DomainParticipantFactory::get_instance ();
-    dp = dpf->create_participant (myDomain, PARTICIPANT_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+    dp = dpf->create_participant (myDomain, PARTICIPANT_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
     if (dp == NULL) {
         cout << argv[0] << "PING: ERROR - Splice Daemon not running";
         exit (1);
@@ -543,7 +543,7 @@ main (
     dp->get_default_publisher_qos (pQos);
     pQos.partition.name.length (1);
     pQos.partition.name[0] = string_dup (write_partition);
-    p = dp->create_publisher (pQos, NULL, DDS::ANY_STATUS);
+    p = dp->create_publisher (pQos, NULL, DDS::STATUS_MASK_NONE);
 
     //
     // Create PONG subscriber
@@ -551,7 +551,7 @@ main (
     dp->get_default_subscriber_qos (sQos);
     sQos.partition.name.length (1);
     sQos.partition.name[0] = string_dup (read_partition);
-    s = dp->create_subscriber (sQos, NULL, DDS::ANY_STATUS);
+    s = dp->create_subscriber (sQos, NULL, DDS::STATUS_MASK_NONE);
 
     switch (topic_id) {
     case 'm':
@@ -561,14 +561,14 @@ main (
 
         //  Create Topic
         PP_min_dt.register_type (dp, "pingpong::PP_min_msg");
-        PP_min_topic = dp->create_topic ("PP_min_topic", "pingpong::PP_min_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_min_topic = dp->create_topic ("PP_min_topic", "pingpong::PP_min_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_min_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_min_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_min_writer = dynamic_cast<PP_min_msgDataWriter_ptr>( dw );
 
         // Create datareader
-        dr = s->create_datareader (PP_min_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_min_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_min_reader = dynamic_cast<PP_min_msgDataReader_ptr>(dr);
 
         // Add datareader statuscondition to waitset
@@ -583,14 +583,14 @@ main (
 
         //  Create Topic
         PP_seq_dt.register_type (dp, "pingpong::PP_seq_msg");
-        PP_seq_topic = dp->create_topic ("PP_seq_topic", "pingpong::PP_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_seq_topic = dp->create_topic ("PP_seq_topic", "pingpong::PP_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_seq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_seq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_seq_writer = dynamic_cast<PP_seq_msgDataWriter_ptr> (dw);
 
         // Create datareader
-        dr = s->create_datareader (PP_seq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_seq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_seq_reader = dynamic_cast<PP_seq_msgDataReader_ptr>(dr);
     
         // Add datareader statuscondition to waitset
@@ -605,14 +605,14 @@ main (
     
         //  Create Topic
         PP_string_dt.register_type (dp, "pingpong::PP_string_msg");
-        PP_string_topic = dp->create_topic ("PP_string_topic", "pingpong::PP_string_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_string_topic = dp->create_topic ("PP_string_topic", "pingpong::PP_string_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_string_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_string_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_string_writer = dynamic_cast<PP_string_msgDataWriter_ptr> (dw);
 
         // Create datareader
-        dr = s->create_datareader (PP_string_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_string_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_string_reader = dynamic_cast<PP_string_msgDataReader_ptr> (dr);
     
         // Add datareader statuscondition to waitset
@@ -627,14 +627,14 @@ main (
     
         //  Create Topic
         PP_fixed_dt.register_type (dp, "pingpong::PP_fixed_msg");
-        PP_fixed_topic = dp->create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_fixed_topic = dp->create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_fixed_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_fixed_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_fixed_writer = dynamic_cast<PP_fixed_msgDataWriter_ptr> (dw);
 
         // Create datareader
-        dr = s->create_datareader (PP_fixed_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_fixed_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_fixed_reader = dynamic_cast<PP_fixed_msgDataReader_ptr> (dr);
     
         // Add datareader statuscondition to waitset
@@ -649,14 +649,14 @@ main (
     
         //  Create Topic
         PP_array_dt.register_type (dp, "pingpong::PP_array_msg");
-        PP_array_topic = dp->create_topic ("PP_array_topic", "pingpong::PP_array_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_array_topic = dp->create_topic ("PP_array_topic", "pingpong::PP_array_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_array_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_array_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_array_writer = dynamic_cast<PP_array_msgDataWriter_ptr> (dw);
 
         // Create datareader
-        dr = s->create_datareader (PP_array_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_array_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_array_reader = dynamic_cast<PP_array_msgDataReader_ptr> (dr);
     
         // Add datareader statuscondition to waitset
@@ -671,14 +671,14 @@ main (
     
         //  Create Topic
         PP_bseq_dt.register_type (dp, "pingpong::PP_bounded_seq_msg");
-        PP_bseq_topic = dp->create_topic ("PP_bseq_topic", "pingpong::PP_bounded_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_bseq_topic = dp->create_topic ("PP_bseq_topic", "pingpong::PP_bounded_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter (PP_bseq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter (PP_bseq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_bseq_writer = dynamic_cast<PP_bseq_msgDataWriter_ptr> (dw);
 
         // Create datareader
-        dr = s->create_datareader (PP_bseq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dr = s->create_datareader (PP_bseq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_bseq_reader = dynamic_cast<PP_bseq_msgDataReader_ptr> (dr);
     
         // Add datareader statuscondition to waitset
@@ -693,10 +693,10 @@ main (
     
         //  Create Topic
         PP_quit_dt.register_type (dp, "pingpong::PP_quit_msg");
-        PP_quit_topic = dp->create_topic("PP_quit_topic", "pingpong::PP_quit_msg", TOPIC_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        PP_quit_topic = dp->create_topic("PP_quit_topic", "pingpong::PP_quit_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
         // Create datawriter
-        dw = p->create_datawriter(PP_quit_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::ANY_STATUS);
+        dw = p->create_datawriter(PP_quit_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
         PP_quit_writer = dynamic_cast<PP_quit_msgDataWriter_ptr>(dw);
     break;
     default:

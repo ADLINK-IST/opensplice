@@ -15,10 +15,10 @@ typedef c_ulong v_state;
 enum v_writeResult {
     V_WRITE_UNDEFINED,
     V_WRITE_SUCCESS,
+	V_WRITE_SUCCESS_NOT_STORED,
     V_WRITE_REGISTERED,
     V_WRITE_UNREGISTERED,
     V_WRITE_PRE_NOT_MET,
-    V_WRITE_INTRANSIT,
     V_WRITE_ERROR,
     V_WRITE_TIMEOUT,
     V_WRITE_REJECTED,
@@ -320,8 +320,8 @@ enum v_kind {
     K_PUBLISHERSTATUS,   K_SUBSCRIBERSTATUS,
     K_DOMAINSTATUS,      K_TOPICSTATUS,
     K_PARTICIPANTSTATUS, K_KERNELSTATUS,
-    K_PROXY,             K_WAITSETEVENT,
-    K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST,
+    K_PROXY,              K_WAITSETEVENT,
+    K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST, K_WAITSETEVENTPERSISTENTSNAPSHOT,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
     K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
     K_LEASEMANAGER,      K_LEASE,
@@ -334,6 +334,7 @@ enum v_kind {
      * descendents */
     K_NETWORKMAPENTRY,
     K_HISTORICALDATAREQUEST,
+    K_PERSISTENTSNAPSHOTREQUEST,
     /* This constant must always be the last */
     K_TYPECOUNT
 };
@@ -414,6 +415,7 @@ class v_dataReaderQuery extends v_query {
 typedef v_dataReaderQuery v_dataViewQuery;
 
 class v_historicalDataRequest;
+class v_persistentSnapshotRequest;
 
 class v_waitsetEvent {
     attribute v_handle source;
@@ -430,6 +432,10 @@ class v_waitsetEventHistoryDelete extends v_waitsetEvent {
 
 class v_waitsetEventHistoryRequest extends v_waitsetEvent {
     attribute v_historicalDataRequest request;
+};
+
+class v_waitsetEventPersistentSnapshot extends v_waitsetEvent {
+    attribute v_persistentSnapshotRequest request;
 };
 
 class v_waitset extends v_observer {
@@ -1112,6 +1118,43 @@ class v_lifespanAdmin {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Instance pipeline cache implementation                                     */
+/* -------------------------------------------------------------------------- */
+
+enum v_cacheKind { V_CACHE_OWNER,
+                   V_CACHE_TARGETS,
+                   V_CACHE_SOURCES,
+                   V_CACHE_ANY };
+
+struct v_cacheLink {
+    c_voidp                                  next;
+    c_voidp                                  prev;
+};
+
+class v_cacheNode {
+    attribute v_cacheLink                    owner;
+    attribute v_cacheLink                    targets;
+    attribute v_cacheLink                    sources;
+};
+
+class v_cache extends v_cacheNode {
+    attribute v_cacheKind                    kind;
+    attribute c_type                         itemType;
+};
+
+class v_cacheItem extends v_cacheNode {
+    attribute c_voidp                        instance;
+};
+
+typedef v_cacheItem v_writerCacheItem;
+
+class v_groupCacheItem extends v_cacheItem {
+    attribute c_voidp                        groupInstance;
+    attribute c_long                         registrationCount;
+    attribute c_long                         pendingResends;
+};
+
+/* -------------------------------------------------------------------------- */
 /* Reader implementation                                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -1186,6 +1229,7 @@ class v_dataReaderInstance extends v_instance {
     attribute v_owner                        owner;
     attribute c_bool                         hasBeenAlive;
     attribute c_bool                         inNotEmptyList;
+    attribute v_cache                        sourceCache;
 };
 
 class v_dataReaderInstanceTemplate extends v_dataReaderInstance {
@@ -1211,6 +1255,12 @@ class v_historicalDataRequest {
     attribute c_time                         maxSourceTimestamp;
 };
 
+class v_persistentSnapshotRequest {
+    attribute c_string                       topicExpr;
+    attribute c_string                       partitionExpr;
+    attribute c_string                       uri;
+};
+
 class v_reader extends v_collection {
     attribute v_entrySet                     entrySet;
     attribute c_voidp                        subscriber;
@@ -1229,35 +1279,6 @@ class v_reader extends v_collection {
 /* -------------------------------------------------------------------------- */
 
 class v_groupStream;
-
-enum v_cacheKind { V_CACHE_OWNER, V_CACHE_INSTANCE, V_CACHE_ANY };
-
-class v_cacheNode;
-
-struct v_cacheLink {
-    v_cacheNode                              next;
-    c_voidp                                  prev;
-};
-
-class v_cacheNode {
-    attribute v_cacheLink                    owner;
-    attribute v_cacheLink                    instance;
-};
-
-class v_cache extends v_cacheNode {
-    attribute v_cacheKind                    kind;
-};
-
-class v_groupCacheItem extends v_cacheNode {
-    attribute v_instance                     instance;
-    attribute c_voidp                        groupInstance;
-    attribute c_long                         registrationCount;
-    attribute c_long                         pendingResends;
-};
-
-class v_groupCache extends v_cache {
-    attribute c_type                         itemType;
-};
 
 class v_groupSample extends v_lifespanSample {
     attribute v_groupSample                  older;
@@ -1280,11 +1301,12 @@ class v_groupInstance extends v_object {
     attribute c_long                         count; /* write AND disposed messages */
     attribute c_voidp                        group;
     attribute c_voidp                        oldest;
-    attribute v_groupCache                   readerInstanceCache;
-    attribute v_groupCache                   synchronousInstanceCache;
+    attribute v_cache                        targetCache;
+    attribute v_cache                        sourceCache;
     attribute v_registration                 registrations;
     attribute v_registration                 unregisterMessages;
     attribute c_time                         epoch;
+    attribute v_owner                        owner;
 };
 
 class v_groupInstanceTemplate extends v_groupInstance {
@@ -1294,7 +1316,7 @@ class v_groupInstanceTemplate extends v_groupInstance {
 class v_groupEntry {
     attribute v_entry                        entry;
     attribute c_long                         sequenceNumber;
-    attribute v_groupCache                   readerInstanceCache;
+    attribute v_cache                        targetCache;
     attribute v_groupEntry                   next;
 };
 
@@ -1332,7 +1354,6 @@ class v_group extends v_entity {
     attribute v_groupEntrySet topicEntrySet;   /* Normal dataReader entries. */
     attribute v_groupEntrySet networkEntrySet; /* Network interface entries. */
     attribute v_groupEntrySet variantEntrySet; /* Variant keyed dataReader entries. */
-    attribute v_groupEntrySet synchronousEntrySet; /* synchronous dataReader entries. */
     attribute SET<v_groupStream> streams; /* Streams interested in all actions */
 
     /* Group process control. */
@@ -1369,6 +1390,8 @@ class v_group extends v_entity {
 /* Writer implementation                                                      */
 /* -------------------------------------------------------------------------- */
 
+typedef c_octet v_resendScope;
+
 class v_writerSample {
     attribute v_writerSample                 next;
     attribute c_voidp                        prev;
@@ -1376,19 +1399,11 @@ class v_writerSample {
     attribute c_long                         decayCount;
     attribute c_bool                         resend;
     attribute c_bool                         sentBefore;
+    attribute v_resendScope                  resendScope;
 };
 
 class v_writerSampleTemplate extends v_writerSample {
     attribute v_message                      message;
-};
-
-class v_writerCacheItem extends v_cacheNode {
-    attribute v_instance                     instance;
-};
-
-class v_writerCache extends v_cache {
-    attribute v_cacheKind                    kind;
-    attribute c_type                         itemType;
 };
 
 class v_writerInstance extends v_instance {
@@ -1400,7 +1415,7 @@ class v_writerInstance extends v_instance {
     attribute c_long                         sampleSequenceNumber;
     attribute c_voidp                        writer;  /* v_writer, backref */
     attribute c_voidp                        last;    /* v_writerSample, not counted */
-    attribute v_writerCache                  groupInstanceCache;
+    attribute v_cache                        targetCache;
     attribute c_long                         deadlineCount;
     attribute c_bool                         resend;
 };
@@ -1411,7 +1426,7 @@ class v_writerInstanceTemplate extends v_writerInstance {
 
 class v_writerGroup {
     attribute v_group                        group;
-    attribute v_writerCache                  groupInstanceCache;
+    attribute v_cache                        targetCache;
     attribute v_writerGroup                  next;
 };
 
@@ -1425,12 +1440,12 @@ class v_deliveryWaitList {
     attribute c_ulong        sequenceNumber;
     attribute c_mutex        mutex;
     attribute c_cond         cv;
-    attribute ARRAY<c_ulong> systemIds;
+    attribute ARRAY<v_gid>   readerGID;
     attribute c_voidp        guard;
 };
 
 class v_deliveryPublisher {
-    attribute c_ulong systemId;
+    attribute v_gid readerGID;
     attribute c_ulong count;
 };
 
@@ -1727,7 +1742,7 @@ class v_subscriptionInfoTemplate extends v_message {
 
 struct v_deliveryInfo {
     v_gid   writerGID;
-    v_gid   writerInstanceGID;
+    v_gid   readerGID;
     c_ulong sequenceNumber;
 };
 

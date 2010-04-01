@@ -130,14 +130,14 @@ os_mutexDestroy (
 
     assert(mutex != NULL);
     /* assert(mutex->lockCount == 0); */
-    
+
     pipename = os_servicePipeName();
     if (mutex->scope == OS_SCOPE_SHARED) {
         request.kind = OS_SRVMSG_DESTROY_EVENT;
         request._u.id = mutex->id;
         reply.result = os_resultFail;
         reply.kind = OS_SRVMSG_UNDEFINED;
-        
+
         do{
            result = CallNamedPipe(
                                   TEXT(pipename),

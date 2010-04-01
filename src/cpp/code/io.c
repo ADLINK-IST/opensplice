@@ -186,6 +186,7 @@ int Get()
                out_at(cur_lineno, cur_fn);
                autodef_file(curfile());
                autodef_line(curline());
+               Push('\n');
                continue;
             }
             else

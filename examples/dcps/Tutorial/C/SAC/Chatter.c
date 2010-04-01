@@ -99,7 +99,7 @@ main (
         domain, 
         DDS_PARTICIPANT_QOS_DEFAULT, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(participant, "DDS_DomainParticipantFactory_create_participant");  
 
     /* Register the required datatype for ChatMessage. */
@@ -140,7 +140,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(chatMessageTopic, "DDS_DomainParticipant_create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -157,7 +157,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServiceTopic, "DDS_DomainParticipant_create_topic");
 
     /* Adapt the default PublisherQos to write into the "ChatRoom" Partition. */
@@ -175,7 +175,7 @@ main (
     strcpy (pub_qos->partition.name._buffer[0], partitionName);
 
     /* Create a Publisher for the chatter application. */
-    chatPublisher = DDS_DomainParticipant_create_publisher(participant, pub_qos, NULL, DDS_ANY_STATUS);
+    chatPublisher = DDS_DomainParticipant_create_publisher(participant, pub_qos, NULL, DDS_STATUS_MASK_NONE);
     checkHandle(chatPublisher, "DDS_DomainParticipant_create_publisher");
     
     /* Create a DataWriter for the ChatMessage Topic (using the appropriate QoS). */
@@ -184,7 +184,7 @@ main (
         chatMessageTopic, 
         DDS_DATAWRITER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(talker, "DDS_Publisher_create_datawriter (chatMessage)");
     
     /* Create a DataWriter for the NameService Topic (using the appropriate QoS). */
@@ -200,7 +200,7 @@ main (
         nameServiceTopic, 
         dw_qos,
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServer, "DDS_Publisher_create_datawriter (NameService)");
 
     /* Initialize the NameServer attributes located on stack. */

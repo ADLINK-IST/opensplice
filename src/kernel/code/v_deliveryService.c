@@ -115,6 +115,7 @@ v_deliveryServiceNew (
     v_topic topic;
     c_base base;
     c_type type;
+    v_entry entry, found;
 
     assert(C_TYPECHECK(subscriber,v_subscriber));
     base = c_getBase(subscriber);
@@ -149,9 +150,16 @@ v_deliveryServiceNew (
         type = c_resolve(base, "kernelModule::v_subscriptionInfoTemplate");
         _this->subscriptions = c_tableNew(type, "userData.key.systemId,userData.key.localId");
         c_free(type);
+        q->userKey.enable = TRUE;
+        q->userKey.expression = NULL;
         v_readerInit(v_reader(_this),name, subscriber,q, NULL, TRUE);
 
         c_free(q);
+
+        entry = v_entry(v_deliveryServiceEntryNew(_this,topic));
+        found = v_readerAddEntry(v_reader(_this),v_entry(entry));
+        c_free(entry);
+        c_free(found);
 
         v_deliveryServiceEnable(_this);
     } else
@@ -261,6 +269,7 @@ C_STRUCT(MatchingGuardsArg) {
     v_gid readerGID;
     v_kernel kernel;
     c_bool alive;
+    v_deliveryPublisher publication;
 };
 
 static c_bool
@@ -268,44 +277,13 @@ updatePublication (
     v_group g,
     c_voidp arg)
 {
-    c_bool result = TRUE;
     C_STRUCT(MatchingGuardsArg) *a = (C_STRUCT(MatchingGuardsArg) *)arg;
-    v_deliveryPublisher publication, found;
-    c_type type;
 
-    if (g) {
-synch_printf("v_deliveryService::updatePublication: Entry\n");
-        if (c_iterContains(a->groupList,g)) {
-            type = c_subType(a->guard->publications);
-            publication = c_new(type);
-            publication->systemId = a->readerGID.systemId;
-            publication->count = 1;
-            found = c_find(a->guard->publications, publication);
-            if (a->alive) {
-                if (found) {
-                    found->count++;
-                } else {
-synch_printf("v_deliveryService::updatePublication: insert new publication\n");
-                    found = c_insert(a->guard->publications, publication);
-                }
-            } else if (found) {
-                found->count--;
-                if (found->count == 0) {
-synch_printf("v_deliveryService::updatePublication: remove publication\n");
-                    found = c_remove(a->guard->publications, publication, NULL, NULL);
-                    v_deliveryGuardIgnore(a->guard,publication->systemId);
-//                    assert(c_refCount(found) == 1);
-                    c_free(found);
-                }
-            }
-            c_free(publication);
-            c_free(type);
-                
-            result = FALSE; /* stop search. */
-        }
-synch_printf("v_deliveryService::updatePublication: Exit\n");
+    if ((g) && (c_iterContains(a->groupList,g)))
+    {
+        a->publication->count++;
     }
-    return result;
+    return TRUE;
 }
 
 static c_bool
@@ -316,20 +294,52 @@ updateMatchingGuards(
     C_STRUCT(MatchingGuardsArg) *a = (C_STRUCT(MatchingGuardsArg) *)arg;
     c_bool result = TRUE;
 
-synch_printf("v_deliveryService::updateMatchingGuards: Entry\n");
     /* select writers having equal topic and compatible qos policy.
      */
     a->guard = v_deliveryGuard(o);
     a->writer = v_writer(v_gidClaim(a->guard->writerGID, a->kernel));
     if (a->writer) {
         if (a->writer->topic == a->topic) {
-synch_printf("v_deliveryService::updateMatchingGuards: Found matching synchronous DataWriter\n");
-            v_writerGroupWalk(a->writer,updatePublication,arg);
+            /* if this writer has groups matching the reader groups
+             * then update the guards publication list.
+             */
+            c_type type;
+            v_deliveryPublisher publication, found;
+
+            type = c_subType(a->guard->publications);
+            publication = c_new(type);
+            c_free(type);
+            publication->readerGID = a->readerGID;
+            publication->count = 0;
+            if (a->alive) {
+                found = c_remove(a->guard->publications, publication,NULL,NULL);
+                c_free(found);
+                found = c_insert(a->guard->publications, publication);
+                assert(found == publication);
+                a->publication = publication;
+                v_writerGroupWalk(a->writer,updatePublication,arg);
+            } else {
+                found = c_find(a->guard->publications, publication);
+                c_free(publication);
+                publication = found;
+                if (publication) {
+                    publication->count--;
+                }
+            }
+            if ((publication) && (publication->count == 0)) {
+                /* The DataReader is no longer connected so there is no need
+                 * to wait for acknoledgements from this DataReader.
+                 * Remove DataReader from internal admin and inform active
+                 * waitlists to ignore the DataReader.
+                 */
+                found = c_remove(a->guard->publications, publication,NULL,NULL);
+                v_deliveryGuardIgnore(a->guard,publication->readerGID);
+                assert(found == publication);
+                c_free(found);
+            }
         }
         v_gidRelease(a->guard->writerGID, a->kernel);
-    } else {
     }
-synch_printf("v_deliveryService::updateMatchingGuards: Exit\n");
     return result;
 }
 
@@ -342,68 +352,86 @@ v_deliveryServiceRegister(
     v_message found;
     v_group group;
     v_topic topic;
-    v_kernel kernel;
     c_long nrOfPartitions, i;
     c_iter groupList;
     c_value params[1];
     v_subscriptionInfoTemplate rInfo;
 
-    found = c_replace(_this->subscriptions,msg,NULL,NULL);
-    if (found) {
-        /* reevaluate relations. */
-synch_printf("v_deliveryServiceRegister: update synchronous DataReader\n");
-        /* TBD */
-    } else {
-synch_printf("v_deliveryServiceRegister: discovered synchronous DataReader\n");
-        rInfo = (v_subscriptionInfoTemplate)msg;
-        /* At this point the message received anounces the
-         * discovery of synchronous DataReader.
-         * For each new discovery we need to look for matching
-         * DataWriters and for each found DataWriter we will
-         * add the DataReaders node id to the associated
-         * c_deliveryGuard admin.
-         */
-        arg.kernel = v_objectKernel(_this);
-        /* lookup topic */
-        topic = v_lookupTopic(arg.kernel,rInfo->userData.topic_name);
-        /* lookup all topic related groups. */
-        params[0] = c_objectValue(topic);
-        groupList = v_groupSetSelect(arg.kernel->groupSet, "topic = %0", params);
-        /* filter out partition compliant groups. */
-        nrOfPartitions = c_arraySize(rInfo->userData.partition.name);
-        arg.groupList = NULL;
-        group = c_iterTakeFirst(groupList);
-        while (group) {
-            for (i=0; i<nrOfPartitions; i++) {
-                c_string name = v_entityName(group->partition);
-                if (strcmp(name,rInfo->userData.partition.name[i]) == 0) {
-                    arg.groupList = c_iterInsert(arg.groupList,group);
-                    i = nrOfPartitions; /* exit for loop */
-                }
-            }
-            group = c_iterTakeFirst(groupList);
-        }
-        c_iterFree(groupList);
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_deliveryService));
 
-        /* At this point the Topic and all Groups addressed by
-         * the deiscovered DataReader are collected and we can now
-         * update the systemId list of all matching DataWriters.
-         */
-        if (arg.groupList) {
-            arg.readerGID = rInfo->userData.key;
-            arg.topic = topic;
-            arg.writer = NULL;
-            arg.alive = TRUE;
-            c_walk(_this->guards,updateMatchingGuards,&arg);
-            group = c_iterTakeFirst(arg.groupList);
-            while (group) {
-                c_free(group);
-                group = c_iterTakeFirst(arg.groupList);
-            }
-        }
-
-        c_free(topic);
+    if (_this == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_deliveryServiceRegister", 0,
+                  "Received illegal '_this' reference to delivery service.");
+        return;
     }
+    if (msg == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_deliveryServiceRegister", 0,
+                  "Received illegal message: <NULL>.");
+        return;
+    }
+
+    found = c_replace(_this->subscriptions,msg,NULL,NULL);
+    c_free(found);
+
+    rInfo = (v_subscriptionInfoTemplate)msg;
+    /* At this point the message received anounces the
+     * discovery or update of a synchronous DataReader.
+     * For each discovery or update we need to look for matching
+     * DataWriters and for each found DataWriter the publication
+     * list (the Guards list of connected DataReaders) will be updated.
+     */
+    arg.kernel = v_objectKernel(_this);
+    /* All matching DataWriters are found by:
+     * first:  find all local groups for the DataReaders Topic.
+     * second: filterout all groups that are not within the DataReaders
+     *         partition scope.
+     * third:  visit all guards an select those that are associated to a
+     *         DataWriter which writes to at least one of the remaining
+     *         groups.
+     */
+
+    /* lookup all DataReader-Topic related groups. */
+    topic = v_lookupTopic(arg.kernel,rInfo->userData.topic_name);
+    params[0] = c_objectValue(topic);
+    groupList = v_groupSetSelect(arg.kernel->groupSet, "topic = %0", params);
+    /* filter out DataReader Partition incompliant groups. */
+    nrOfPartitions = c_arraySize(rInfo->userData.partition.name);
+    arg.groupList = NULL;
+    group = c_iterTakeFirst(groupList);
+    while (group) {
+        for (i=0; i<nrOfPartitions; i++) {
+            c_string name = v_entityName(group->partition);
+            if (strcmp(name,rInfo->userData.partition.name[i]) == 0) {
+                arg.groupList = c_iterInsert(arg.groupList,group);
+                i = nrOfPartitions; /* exit for loop */
+            }
+        }
+        group = c_iterTakeFirst(groupList);
+    }
+    c_iterFree(groupList);
+
+    /* At this point all Groups addressed by the discovered DataReader
+     * are collected and we can now update the readerID list of all
+     * matching DataWriters.
+     */
+    if (arg.groupList) {
+        arg.readerGID = rInfo->userData.key;
+        arg.topic = topic;
+        arg.writer = NULL;
+        arg.alive = TRUE;
+        c_walk(_this->guards,updateMatchingGuards,&arg);
+        group = c_iterTakeFirst(arg.groupList);
+        while (group) {
+            c_free(group);
+            group = c_iterTakeFirst(arg.groupList);
+        }
+        c_iterFree(arg.groupList);
+    }
+
+    c_free(topic);
 }
 
 void
@@ -415,13 +443,27 @@ v_deliveryServiceUnregister(
     v_message found;
     v_group group;
     v_topic topic;
-    v_kernel kernel;
     c_long nrOfPartitions, i;
     c_iter groupList;
     c_value params[1];
     v_subscriptionInfoTemplate rInfo;
 
-synch_printf("v_deliveryServiceUnregister: \n");
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_deliveryService));
+
+    if (_this == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_deliveryServiceUnregister", 0,
+                  "Received illegal '_this' reference to delivery service.");
+        return;
+    }
+    if (msg == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_deliveryServiceUnregister", 0,
+                  "Received illegal message: <NULL>.");
+        return;
+    }
+
     found = c_remove(_this->subscriptions,msg,NULL,NULL);
     if (found) {
         rInfo = (v_subscriptionInfoTemplate)found;
@@ -432,6 +474,7 @@ synch_printf("v_deliveryServiceUnregister: \n");
          * remove the DataReaders node id from the associated
          * c_deliveryGuard admin.
          */
+
         arg.kernel = v_objectKernel(_this);
         /* lookup topic */
         topic = v_lookupTopic(arg.kernel,rInfo->userData.topic_name);
@@ -469,6 +512,7 @@ synch_printf("v_deliveryServiceUnregister: \n");
                 c_free(group);
                 group = c_iterTakeFirst(arg.groupList);
             }
+            c_iterFree(arg.groupList);
         }
         c_free(found);
     }
@@ -485,10 +529,8 @@ v_deliveryServiceWrite(
 
     template.writerGID = msg->userData.writerGID;
 
-synch_printf("v_deliveryServiceWrite: received delivery acknowledgement for writer %d\n",template.writerGID.systemId);
     found = v_deliveryGuard(c_find(_this->guards,&template));
     if (found) {
-synch_printf("v_deliveryServiceWrite: found Writer\n");
         /* The writer addressed by this delivery message exists
          * on this node so pass the delivery information to the
          * associated writer delivery admin.
@@ -498,5 +540,40 @@ synch_printf("v_deliveryServiceWrite: found Writer\n");
     }
     result = V_WRITE_SUCCESS;
     return result;
+}
+
+v_writeResult
+v_deliveryServiceAckMessage (
+    v_deliveryService _this,
+    v_message message,
+    v_gid gid)
+{
+    struct v_deliveryInfo *info;
+    v_message msg;
+    v_topic topic;
+    v_kernel kernel;
+
+    if ((_this != NULL) && (v_stateTest(v_nodeState(message),L_SYNCHRONOUS))) {
+        kernel = v_objectKernel(_this);
+        topic = v_builtinTopicLookup(kernel->builtin, V_DELIVERYINFO_ID);
+        if (topic) {
+            msg = v_topicMessageNew(topic);
+            if (msg != NULL) {
+                info = v_builtinDeliveryInfoData(kernel->builtin,msg);
+                info->writerGID = message->writerGID;
+                info->readerGID = gid;
+                info->sequenceNumber = message->sequenceNumber;
+                v_writeBuiltinTopic(kernel,V_DELIVERYINFO_ID,msg);
+                c_free(msg);
+            } else {
+                OS_REPORT(OS_WARNING,
+                          "v_deliveryServiceAckMessage", 0,
+                          "Failed to produce built-in delivery message");
+            }
+        } else {
+            /* Valid use-case (topic == NULL) */
+        }
+    }
+    return V_WRITE_SUCCESS;
 }
 

@@ -284,6 +284,11 @@ c_querybaseInit(
         type = c_qConstType(base);
         C_META_ATTRIBUTE_(c_qVar,scope,variable,type);
         c_free(type);
+#if 1
+        type = ResolveType(scope,"c_type");
+        C_META_ATTRIBUTE_(c_qVar,scope,type,type);
+        c_free(type);
+#endif
     c__metaFinalize(scope,FALSE);
     c_free(scope);
     c_free(module);
@@ -955,14 +960,13 @@ c_qVarCompare(
    If the expression is a string constant then it is the enum label and
    will be transformed into the enum value.
 */
-static c_bool
+static void
 transformEnumLabelToValue(
     c_type type,
     c_qExpr expr)
 {
     c_type t;
     c_literal l;
-    c_bool result = FALSE;
 
     t = c_typeActualType(type);
     switch (c_baseObject(t)->kind) {
@@ -976,7 +980,6 @@ transformEnumLabelToValue(
                 c_qConst(expr)->value = l->value;
                 c_free(l);
             }
-            result = TRUE;
         }
     break;
     case M_PRIMITIVE:
@@ -999,7 +1002,6 @@ transformEnumLabelToValue(
                                      c_qConst(expr)->value.is.String);
                     }
                 }
-                result = TRUE;
             }
         }
     break;
@@ -1007,7 +1009,6 @@ transformEnumLabelToValue(
         /* nothing to do here */
     break;
     }
-    return result;
 }
 
 /* this is a generic optimise method that will be executed on all node or
@@ -1040,12 +1041,12 @@ optimizeExpr(
     }
     if (p1->kind == CQ_FIELD) {
         type = c_fieldType(c_qField(p1)->field);
-        *fixed = transformEnumLabelToValue(type,p2) || *fixed;
+        transformEnumLabelToValue(type,p2);
         c_free(type);
     }
     if (p2->kind == CQ_FIELD) {
         type = c_fieldType(c_qField(p2)->field);
-        *fixed = transformEnumLabelToValue(type,p1) || *fixed;
+        transformEnumLabelToValue(type,p1);
         c_free(type);
     }
 }
@@ -1225,6 +1226,9 @@ makeExprQuery(
             r->kind = CQ_CONST;
             c_qConst(r)->value = c_undefinedValue();
             var = c_qVar(c_new(c_qVarType(base)));
+#if 1
+            var->type = NULL;
+#endif
             var->id = id;
             var->keys = c_setNew(c_qKeyType(base));
             var->variable = c_qConst(c_keep(r));
@@ -1335,6 +1339,24 @@ makeKeyQuery (
             assert(foundKey == key);
             c_free(var);
         } else {
+#if 1
+            c_type t;
+            t = c_typeActualType(c_fieldType(field));
+            assert(var->type == NULL);
+            var->type = NULL;
+            switch (c_baseObject(t)->kind) {
+            case M_ENUMERATION:
+                var->type = c_keep(t);
+            break;
+            case M_PRIMITIVE:
+                if (c_primitive(t)->kind == P_BOOLEAN) {
+                    var->type = c_keep(t);
+                }
+            break;
+            default:
+            break;
+            }
+#endif
             c_qConst(var->variable)->value.kind = valueKind;
             *varList = c_iterAppend(*varList,var);
             foundKey = c_insert(var->keys,key);
@@ -1397,6 +1419,13 @@ c_qVarInit(
                 if (c_baseObject(type)->kind == M_ENUMERATION) {
                     l = c_enumValue(c_enumeration(type),v.is.String);
                     if (l != NULL) {
+#if 1
+                        if (var->type == NULL) {
+                            var->type = c_keep(type);
+                        } else {
+                            assert(var->type == type);
+                        }
+#endif
                         parValue = l->value;
                         c_free(l);
                     } else {
@@ -1613,10 +1642,10 @@ c_qExprInitVars (
     case CQ_CONST:
         return c_qConst(e)->value.kind;
     default:
-        assert(FALSE);
         OS_REPORT(OS_ERROR,
                   "Database predicate",0,
                   "Illegal expression kind");
+        assert(FALSE);
     break;
     }
     return V_UNDEFINED;
@@ -1811,6 +1840,48 @@ setArg (
     base = c__getBase(var);
     v = &c_qConst(var->variable)->value;
 
+#if 1
+    if (var->type) {
+        c_literal l;
+        c_type t;
+        t = c_typeActualType(var->type);
+        switch (c_baseObject(t)->kind) {
+        case M_ENUMERATION:
+            l = c_enumValue(c_enumeration(t), par);
+            if (l) {
+                *v = l->value;
+                c_free(l);
+            } else {
+                 OS_REPORT_1(OS_API_INFO,
+                             "c_querybase::setArg",0,
+                             "expected enum value instead of \"%s\".",
+                             par);
+                return FALSE;
+            }
+            return TRUE;
+        break;
+        case M_PRIMITIVE:
+            if (c_primitive(t)->kind == P_BOOLEAN) {
+                if (os_strncasecmp(par, "true",5) == 0) {
+                    *v = c_boolValue(TRUE);
+                } else if (os_strncasecmp(par, "false",6) == 0) {
+                    *v = c_boolValue(FALSE);
+                } else {
+                     OS_REPORT_1(OS_API_INFO,
+                                 "c_querybase::setArg",0,
+                                 "expected boolean value instead of \"%s\".",
+                                 par);
+                    return FALSE;
+                }
+                return TRUE;
+            }
+        break;
+        default:
+            /* nothing to do here */
+        break;
+        }
+    }
+#endif
     switch (v->kind) {
     case V_LONG:
         if (!sscanf(par,"%d",&v->is.Long)) {

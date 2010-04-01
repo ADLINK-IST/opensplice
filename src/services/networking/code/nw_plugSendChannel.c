@@ -49,6 +49,8 @@
 #define NW_MAXBURSTSIZE_UNLIMITED (0x0fffffff)
 #define NW_MAXBURSTSIZE_NONE      NW_MAXBURSTSIZE_UNLIMITED
 
+#define NW_RECEIVING_NODES_HASHSIZE (256)
+
 #define nw_plugDataBufferReliabilityAdminFree(admin) os_free(admin)
 
 /* helper function */
@@ -529,8 +531,6 @@ nw_plugSendChannelCreateReceivingPartitions(
     nw_plugSendChannel sendChannel,
     nw_plugPartitions partitions);
 
-#define NW_RECEIVING_NODES_HASHSIZE (256)
-
 nw_plugChannel
 nw_plugSendChannelNew(
     nw_seqNr seqNr,
@@ -650,8 +650,6 @@ nw_plugSendChannelNew(
     return nw_plugChannel(result);
 }
 
-#undef NW_RECEIVING_NODES_HASHSIZE
-
 
 void
 nw_plugSendChannelFree(
@@ -711,6 +709,7 @@ nw_plugSendChannelCreateReceivingPartitions(
     nw_partitionAddress partitionAddress;
     nw_bool found;
     nw_bool connected;
+    nw_bool compression;
     os_uint32 hash;
 
     NW_CONFIDENCE(sendChannel != NULL);
@@ -722,7 +721,7 @@ nw_plugSendChannelCreateReceivingPartitions(
          partitionId < NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, NULL, &connected, &hash);
+            &found, &partitionAddress, NULL, &connected, &compression, &hash);
 
 		NW_CONFIDENCE(found);
         if (found) {
@@ -730,7 +729,7 @@ nw_plugSendChannelCreateReceivingPartitions(
                 nw_plugReceivingPartitionNew(partitionId, hash);
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(sendChannel)), partitionId, partitionAddress,
-                connected);
+                connected, compression, FALSE);
         } else {
             NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId) = NULL;
         }
@@ -3070,5 +3069,6 @@ nw_plugSendChannelPeriodicAction(
     sendChannel->pss = NULL;
 }
 
+#undef NW_RECEIVING_NODES_HASHSIZE
 #undef NW_CONTROL_MESSAGE_SIZE
 

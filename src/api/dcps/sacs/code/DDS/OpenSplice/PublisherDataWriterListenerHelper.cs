@@ -43,11 +43,8 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                lock (listener)
-                {
-                    IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
-                    listener.OnOfferedDeadlineMissed(dataWriter, status);
-                }
+                IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
+                listener.OnOfferedDeadlineMissed(dataWriter, status);
             }
         }
 
@@ -55,11 +52,8 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                lock (listener)
-                {
-                    IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
-                    listener.OnLivelinessLost(dataWriter, status);
-                }
+                IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
+                listener.OnLivelinessLost(dataWriter, status);
             }
         }
 
@@ -67,19 +61,15 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                lock (listener)
-                {
+                IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
 
-                    IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
+                OfferedIncompatibleQosStatus status = new OfferedIncompatibleQosStatus();
+                status.TotalCount = gapi_status.total_count;
+                status.TotalCountChange = gapi_status.total_count_change;
+                status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
+                CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, ref status.Policies);
 
-                    OfferedIncompatibleQosStatus status = new OfferedIncompatibleQosStatus();
-                    status.TotalCount = gapi_status.total_count;
-                    status.TotalCountChange = gapi_status.total_count_change;
-                    status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                    CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(gapi_status.policies, ref status.Policies);
-
-                    listener.OnOfferedIncompatibleQos(dataWriter, status);
-                }
+                listener.OnOfferedIncompatibleQos(dataWriter, status);
             }
         }
 
@@ -87,12 +77,8 @@ namespace DDS.OpenSplice
         {
             if (listener != null)
             {
-                lock (listener)
-                {
-
-                    IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
-                    listener.OnPublicationMatched(dataWriter, status);
-                }
+                IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
+                listener.OnPublicationMatched(dataWriter, status);
             }
         }
 

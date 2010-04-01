@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -20,7 +20,7 @@
 #include "u__cfData.h"
 #include "u__handle.h"
 #include "u__participant.h"
-#include "u_kernel.h"
+#include "u__kernel.h"
 
 #include "v_public.h"
 #include "v_cfNode.h"
@@ -80,7 +80,7 @@ u_cfNodeClaim(
     v_participant kp;
     v_configuration config;
     u_result r;
-    
+
     if (node != NULL) {
             r = u_participantClaim(node->participant,&kp);
             if (r == U_RESULT_OK) {
@@ -116,7 +116,7 @@ u_cfNodeRelease(
     u_cfNode node)
 {
     u_result r;
-    
+
     if (node != NULL) {
         u_handleRelease(node->configuration);
         r = u_participantRelease(node->participant);

@@ -1,0 +1,11 @@
+// $Id$
+
+module TestModule
+{
+    struct Hello
+    {
+        string the_message;
+    };
+
+    #pragma keylist Hello the_message
+};

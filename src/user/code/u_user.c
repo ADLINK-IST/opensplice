@@ -46,9 +46,11 @@ C_STRUCT(u_user) {
     /*
      * The kernelList attribute holds information about all connected kernels.
      * The kernelCount attribute specifies the max index in the kernelList.
-     * So any search range on the list can be limited to 0..kernelCount.
+     * So any search range on the list can be limited to 1..kernelCount.
      * kernels that are detached are removed from the list and the entry in the
      * list is never used again.
+     * The value 0 is reserved for the 'no kernel' use-case,
+     * so if kernelCount = 0 then no kernels are attached.
      * The reason why kernel entries are never reused and why kernelCount is not
      * the actual number of kernels connected is unclear, it would be more intuitive,
      * maintainable and flexible if entries in the kernelList could be reused and the

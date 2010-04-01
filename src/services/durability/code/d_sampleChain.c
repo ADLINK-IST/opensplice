@@ -16,6 +16,7 @@
 #include "d_message.h"
 #include "d_networkAddress.h"
 #include "d_misc.h"
+#include "os_report.h"
 #include "os.h"
 
 d_sampleChain
@@ -76,6 +77,9 @@ d_sampleChainFree(
                 }
                 break;
             default:
+                OS_REPORT_1(OS_ERROR,"d_sampleChainFree",0,
+                            "Illegal message discriminator value (%d) detected.",
+                            sampleChain->msgBody._d);
                 assert(FALSE);
                 break;
         }

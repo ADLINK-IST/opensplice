@@ -32,7 +32,8 @@ extern "C" {
 #define v_timeIsInfinite(t) (c_timeCompare((t),C_TIME_INFINITE) == C_EQ)
 
 OS_API c_time
-v_timeGet();
+v_timeGet(
+    void);
 
 OS_API c_equality
 v_timeCompare(

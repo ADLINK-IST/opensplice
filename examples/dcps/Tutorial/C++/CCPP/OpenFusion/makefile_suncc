@@ -5,6 +5,7 @@ include ${OSPL_HOME}/custom_lib/ccpp/orbdeps.mak
 INCLUDES=-I./
 INCLUDES+=-I./bld
 INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/CCPP
+INCLUDES+=-I$(OSPL_HOME)/etc/idl
 INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
 INCLUDES+="-I$(TAO_ROOT)/include"
 INCLUDES+=-I$(OSPL_HOME)/include

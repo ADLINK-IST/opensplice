@@ -1,15 +1,15 @@
-# default values for directory and idl-files to process 
+# default values for directory and idl-files to process
 ifeq (,$(findstring win32,$(SPLICE_TARGET)))
   ifdef IDL_DIR
-    IDL_INC_FLAGS = -I$(IDL_DIR) 
+    IDL_INC_FLAGS = -I$(IDL_DIR)
   endif
-  IDL_INC_FLAGS += -I$(OSPL_HOME)/src/api/dcps/ccpp/idl
+  IDL_INC_FLAGS += -I$(OSPL_HOME)/etc/idl
 else
   ifdef IDL_DIR
     TMP_IDL_DIR_INC_FLAG  =-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(IDL_DIR))'
   endif
-  TMP_IDL_CCPP_INC_FLAG +=-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/src/api/dcps/ccpp/idl)'
-  IDL_INC_FLAGS = $(TMP_IDL_DIR_INC_FLAG) $(TMP_IDL_CCPP_INC_FLAG) 
+  TMP_IDL_CCPP_INC_FLAG +=-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/etc/idl)'
+  IDL_INC_FLAGS = $(TMP_IDL_DIR_INC_FLAG) $(TMP_IDL_CCPP_INC_FLAG)
 endif
 
 ifdef OSPL_OUTER_HOME
@@ -23,7 +23,7 @@ endif
 vpath %.idl	$(IDL_DIR)
 
 # idlpp compiler settings.
-IDLPP		:= idlpp 
+IDLPP		:= idlpp
 IDLPPFLAGS	:= $(IDL_INC_FLAGS) -l cpp -S
 
 # idlpp output
@@ -45,7 +45,7 @@ OSPLDCG_ORB_OBJ  = $(DLRL_XML:%.xml=%Object$(OBJ_POSTFIX)) $(DLRL_XML:%.xml=%Obj
 OSPLDCG_ORB_SRC  = $(OSPLDCG_ORB_OBJ:%$(OBJ_POSTFIX)=%.cpp)
 OSPLDCG_ORB_HDR  = $(OSPLDCG_ORB_SRC:%.cpp=%.h) $(OSPLDCG_PREFIX:%.xml=%Object.h)
 
-# This determines what/how it will be processed 
+# This determines what/how it will be processed
 # IDL_H will be generated before the actual compile  (may even include C-file like ..SplLoad.c)
 # IDL_O will be linked into the final target
 IDL_H		= $(IDLPP_HDR) $(OSPLDCG_ORB_HDR)

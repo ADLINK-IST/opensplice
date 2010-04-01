@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_typeSupport.h"
@@ -57,9 +57,9 @@ _TypeSupport_free (
     if (ts->copy_cache) {
         gapi_copyCacheFree(ts->copy_cache);
     }
-    
+
 }
-    
+
 
 _TypeSupport
 _TypeSupportNew (
@@ -96,7 +96,7 @@ _TypeSupportNew (
         newTypeSupport->create_datawriter = create_datawriter;
         newTypeSupport->useTypeinfo = TRUE;
     }
-    
+
     return newTypeSupport;
 }
 
@@ -118,13 +118,13 @@ gapi_typeSupport__alloc (
     )
 {
     _TypeSupport typesupport;
-    
+
     typesupport = _TypeSupportNew(type_name, type_keys, type_desc,
                                   NULL, NULL, NULL, 0L, NULL, NULL, NULL, NULL, NULL);
     if ( typesupport ) {
         typesupport->useTypeinfo = TRUE;
     }
-    
+
     return (gapi_typeSupport)_EntityRelease(typesupport);
 }
 
@@ -208,7 +208,7 @@ _TypeSupportGetDataWriter (
     return typesupport->create_datawriter;
 }
 
-gapi_createDataReader 
+gapi_createDataReader
 _TypeSupportGetDataReader (
     _TypeSupport typesupport
     )
@@ -273,25 +273,25 @@ registerTypeUsingDescriptor (
     assert(typeSupport->type_def);
 
     base = kernelGetBase(u_entity(_DomainParticipantUparticipant(participant)));
-   
+
     if ( base ) {
         if ( typeSupport->useTypeinfo ) {
             serializer = sd_serializerXMLTypeinfoNew(base, TRUE);
         } else {
             serializer = sd_serializerXMLMetadataNew(base);
         }
-     
+
         serData  = sd_serializerFromString(serializer, typeSupport->type_def);
         typeSpec = c_metaObject(sd_serializerDeserializeValidated(serializer, serData));
 
         typeSupport->typeSpec = typeSpec;
-        
+
         if ( sd_serializerLastValidationResult(serializer) == SD_VAL_SUCCESS ) {
             result = GAPI_RETCODE_OK;
         } else {
             result = GAPI_RETCODE_BAD_PARAMETER;
         }
-       
+
         sd_serializedDataFree(serData);
         sd_serializerFree(serializer);
     } else {
@@ -299,7 +299,7 @@ registerTypeUsingDescriptor (
     }
 
     return result;
-}   
+}
 
 static gapi_returnCode_t
 registerTypeUsingLoadFunction (
@@ -308,7 +308,7 @@ registerTypeUsingLoadFunction (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     register_typeActionArg arg;
- 
+
     arg.load_function = typeSupport->type_load;
     if ( u_entityAction(u_entity(_DomainParticipantUparticipant(participant)),
                         register_type_action, (c_voidp)&arg) == U_RESULT_OK ) {
@@ -344,7 +344,7 @@ setDefaultBuiltinSettings (
         typeSupport->reader_copy = builtinInfo->defaultReaderCopy;
     }
 }
-    
+
 gapi_returnCode_t
 gapi_typeSupport_register_type (
     gapi_typeSupport _this,
@@ -371,7 +371,7 @@ gapi_typeSupport_register_type (
             }
         } else if ( typeSupport->type_def && typeSupport->type_load ) {
             result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        } 
+        }
     }
 
     if ( result == GAPI_RETCODE_OK ) {
@@ -403,9 +403,9 @@ gapi_typeSupport_register_type (
                    registry name, this is not allowed */
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
             }
-        } 
+        }
     }
-    
+
     if ( !typeExists ) {
         if ( result == GAPI_RETCODE_OK ) {
              newTypeSupport = _TypeSupportDup(typeSupport);
@@ -431,7 +431,7 @@ gapi_typeSupport_register_type (
                 result = _TypeSupportGenericCopyInit(newTypeSupport, participant);
             }
         }
-        
+
         if ( result == GAPI_RETCODE_OK ) {
             if ( builtinInfo ) {
                 setDefaultBuiltinSettings(newTypeSupport, builtinInfo);
@@ -448,7 +448,7 @@ gapi_typeSupport_register_type (
 
     _EntityRelease(participant);
     _EntityRelease(typeSupport);
-           
+
     return result;
 }
 
@@ -506,7 +506,7 @@ gapi_typeSupport_get_description (
     sd_serializedData serData;
     c_base base;
     c_type type = NULL;
- 
+
     typeSupport = gapi_typeSupportClaim(_this, NULL);
 
     if ( typeSupport ) {
@@ -596,7 +596,7 @@ _TypeSupportEquals (
 
     return equal;
 }
-    
+
 static void *
 allocBufferFromRegistered (
     _TypeSupport typeSupport,
@@ -623,7 +623,7 @@ allocBufferFromRegistered (
 
     return buffer;
 }
-            
+
 
 
 void *
@@ -633,7 +633,7 @@ gapi_typeSupport_allocbuf (
 {
     void *buffer = NULL;
     _TypeSupport typeSupport;
-    
+
     typeSupport = gapi_typeSupportClaim(_this, NULL);
 
     if ( typeSupport ) {
@@ -659,7 +659,7 @@ typedef struct gapi_parserCallbackArg_s {
     void                    *argument;
 } gapi_parserCallbackArg;
 
-static c_bool 
+static c_bool
 gapi_parserCallback (
     sd_typeInfoKind   kind,
     c_char           *name,
@@ -724,7 +724,7 @@ gapi_typeSupport_parse_type_description (
 
     info.callback = callback;
     info.argument = argument;
-    
+
     if ( sd_typeInfoParserParse((c_char *)description, gapi_parserCallback, &info, &errorInfo) ) {
         result = GAPI_RETCODE_OK;
     } else {
@@ -732,7 +732,7 @@ gapi_typeSupport_parse_type_description (
         sd_errorReportFree(errorInfo);
     }
 
-    return result;        
+    return result;
 }
 
 gapi_returnCode_t
@@ -771,7 +771,7 @@ _TypeSupportGenericCopyInit (
 
     typeSupport->copy_in  = gapi_copyInStruct;
     typeSupport->copy_out = gapi_copyOutStruct;
-    
+
     meta_data = _DomainParticipant_get_type_metadescription(participant, typeSupport->type_name);
     typeSupport->copy_cache = gapi_copyCacheNew(meta_data) ;
     c_free(meta_data);
@@ -784,6 +784,6 @@ _TypeSupportGenericCopyInit (
     } else {
         result = GAPI_RETCODE_OUT_OF_RESOURCES;
     }
-    
+
     return result;
 }

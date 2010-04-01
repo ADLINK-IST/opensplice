@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CCPP_DDS_DCPS_H
@@ -17,7 +17,9 @@
 #include "ccpp_GuardCondition.h"
 #include "ccpp_WaitSet.h"
 #include "ccpp_ErrorInfo.h"
+#include "ccpp_dds_builtinTopics.h"
 #include "ccpp_dds_dcps_builtintopics.h"
+
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define TheParticipantFactory            (::DDS::DomainParticipantFactory::get_instance())
@@ -35,9 +37,14 @@ namespace DDS
 {
   const ::DDS::Duration_t DURATION_ZERO               = {0L,0U};
   const ::DDS::Duration_t DURATION_INFINITE           = {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC};
-  const ::DDS::StatusKind ANY_STATUS                  = 0xFFFF;
+  // Note: ANY_STATUS is deprecated, please use spec version specific constants.
+  const ::DDS::StatusKind ANY_STATUS                  = 0x7FE7;
+  // STATUS_MASK_ANY_V1_2 is all standardised status bits as of V1.2 of the 
+  // specification.
+  const ::DDS::StatusKind STATUS_MASK_ANY_V1_2        = 0x7FE7;
+  const ::DDS::StatusKind STATUS_MASK_NONE            = 0x0;
 
-
+  using CORBA::is_nil;
 }
 
 #endif /* CCPP_DDS_DCPS_H */

@@ -10,8 +10,10 @@
  *
  */
 #include "v_groupInstance.h"
+#include "v_groupCache.h"
 #include "v_state.h"
 #include "v_writer.h"
+#include "v_writerCache.h"
 #include "v__group.h"
 #include "v__lifespanAdmin.h"
 #include "c_collection.h"
@@ -25,6 +27,12 @@
 #define _EXTENT_
 #ifdef _EXTENT_
 #include "c_extent.h"
+#endif
+
+#if 0
+#define _ABORT_(condition) if (!(condition)) abort()
+#else
+#define _ABORT_(condition)
 #endif
 
 #define CHECK_REFCOUNT(var, i)
@@ -127,6 +135,77 @@ v_groupInstanceCheckCount(
 
 #endif
 
+static c_bool
+v_groupInstanceValidateRegistrations(
+    v_groupInstance instance)
+{
+    v_registration reg, unreg;
+    c_bool result = TRUE;
+
+    reg = instance->registrations;
+
+    if(reg != NULL){
+        if(!c_checkType(reg, "v_registration")){
+            OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                    "instance->registrations is corrupted.");
+            result = FALSE;
+        } else if(c_refCount(reg) != 1){
+            OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                    "instance->registrations refCount != 1.");
+            result = FALSE;
+        } else {
+            while (reg != NULL) {
+                unreg = reg->next;
+
+                if (unreg != NULL) {
+                    if ((unreg->message == reg->message) ||
+                        (v_gidCompare(unreg->message->writerGID,
+                                      reg->message->writerGID) == C_EQ)) {
+                        OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                                "instance->registrations has duplicate registrations.");
+                        result = FALSE;
+                    }
+                }
+                reg = reg->next;
+            }
+        }
+    }
+    unreg = instance->unregisterMessages;
+    if(unreg != NULL){
+        if(!c_checkType(unreg, "v_registration")){
+            OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                    "instance->unregisterMessages is corrupted.");
+            result = FALSE;
+        } else if(c_refCount(unreg) != 1){
+            OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                    "instance->unregisterMessages refCount != 1.");
+            result = FALSE;
+        } else {
+            while (unreg != NULL) {
+                reg = unreg->next;
+                if (reg != NULL) {
+                    if ((unreg->message == reg->message) ||
+                        (v_gidCompare(unreg->message->writerGID,
+                                      reg->message->writerGID) == C_EQ)) {
+                        OS_REPORT(OS_ERROR, "v_groupInstance", 0,
+                                "instance->unregisterMessages has duplicate registrations.");
+                        result = FALSE;
+                    }
+                }
+                unreg = unreg->next;
+            }
+        }
+    }
+    return result;
+}
+
+#if 0
+#define CHECK_REGISTRATIONS(instance) _ABORT_(v_groupInstanceValidateRegistrations(instance))
+#else
+#define CHECK_REGISTRATIONS(instance)
+#endif
+
+
 static v_groupInstance
 v_groupAllocInstance(
     v_group _this)
@@ -145,27 +224,24 @@ v_groupAllocInstance(
         instance = v_groupInstance(c_new(type));
 #endif
         if (instance) {
-            kernel = v_objectKernel(_this);
-            instance->readerInstanceCache = v_groupCacheNew(kernel,
-                                                            V_CACHE_INSTANCE);
-            if (instance->readerInstanceCache) {
-                instance->synchronousInstanceCache = v_groupCacheNew(kernel,
-                                                                     V_CACHE_INSTANCE);
-                if (instance->synchronousInstanceCache) {
-                    v_object(instance)->kernel = kernel;
-                    v_objectKind(instance) = K_GROUPINSTANCE;
-                    instance->group = (c_voidp)_this;
-                } else {
-                    OS_REPORT(OS_ERROR,
-                              "v_groupAllocInstance",0,
-                              "Failed to allocate synchronousInstanceCache.");
-                    c_free(instance);
-                    instance = NULL;
-                }
-            } else {
+			_ABORT_(c_refCount(instance) == 1);
+	        kernel = v_objectKernel(_this);
+	        v_object(instance)->kernel = kernel;
+	        v_objectKind(instance) = K_GROUPINSTANCE;
+	        instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
+	        instance->sourceCache = v_writerCacheNew(kernel, V_CACHE_SOURCES);
+    	    instance->group = (c_voidp)_this;
+            if (instance->targetCache == NULL) {
                 OS_REPORT(OS_ERROR,
                           "v_groupAllocInstance",0,
-                          "Failed to allocate readerInstanceCache.");
+                          "Failed to allocate targetCache.");
+                c_free(instance);
+                instance = NULL;
+            }
+            if (instance->sourceCache == NULL) {
+                OS_REPORT(OS_ERROR,
+                          "v_groupAllocInstance",0,
+                          "Failed to allocate sourceCache.");
                 c_free(instance);
                 instance = NULL;
             }
@@ -176,9 +252,11 @@ v_groupAllocInstance(
         }
     } else {
         instance = _this->cachedInstance;
+        _ABORT_(c_refCount(instance) == 1);
         _this->cachedInstance = NULL;
         assert(instance->group == (c_voidp)_this);
     }
+    _ABORT_(c_refCount(instance->targetCache) == 1);
 
     return instance;
 }
@@ -191,6 +269,10 @@ v_groupInstanceInit (
     c_array instanceKeyList;
     c_array messageKeyList;
     c_long i, nrOfKeys;
+    v_topicQos topicQos;
+
+    topicQos = v_topicGetQos(v_groupTopic(_this->group));
+
     /*
      * copy the key value of the message into the newly created instance.
      */
@@ -208,12 +290,17 @@ v_groupInstanceInit (
     _this->registrations      = NULL;
     _this->unregisterMessages = NULL;
     _this->oldest             = NULL;
+    _this->messageCount       = 0;
     _this->count              = 0;
     _this->state              = 0;
+    _this->owner.exclusive	  =
+    		(topicQos->ownership.kind == V_OWNERSHIP_EXCLUSIVE);
 
     v_stateSet(_this->state, L_EMPTY);
     assert(v_groupInstanceHead(_this) == NULL);
     v_groupInstanceSetHead(_this,NULL);
+
+    c_free (topicQos);
 }
 
 v_groupInstance
@@ -228,6 +315,7 @@ v_groupInstanceNew(
 
     _this = v_groupAllocInstance(group);
     v_groupInstanceInit(_this,message);
+    CHECK_REGISTRATIONS(_this);
 
     return _this;
 }
@@ -254,6 +342,7 @@ v_groupInstanceFree(
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     if (c_refCount(instance) == 1) {
         c_free(instance->registrations);
@@ -264,8 +353,8 @@ v_groupInstanceFree(
         /* make sure it is removed from any purge list! */
         instance->epoch = C_TIME_ZERO;
 
-        v_cacheDeinit(v_cache(instance->readerInstanceCache));
-        v_cacheDeinit(v_cache(instance->synchronousInstanceCache));
+        v_groupCacheDeinit(instance->targetCache);
+        v_writerCacheDeinit(instance->sourceCache);
         group = v_group(instance->group);
         if (group->cachedInstance == NULL) {
             /*
@@ -302,10 +391,10 @@ v_groupInstanceDisconnect(
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     /* just tear-down the instance pipeline */
-    v_cacheDeinit(v_cache(instance->readerInstanceCache));
-    v_cacheDeinit(v_cache(instance->synchronousInstanceCache));
+    v_writerCacheDeinit(instance->sourceCache);
 }
 
 static v_message
@@ -351,7 +440,7 @@ v_groupInstanceRegister (
     assert(message != NULL);
     assert(C_TYPECHECK(message,v_message));
     CHECK_COUNT(instance);
-
+    CHECK_REGISTRATIONS(instance);
     /* First look if an unregister message exists for the message writer.
      * If an unregister message is found then verify if the register
      * message is newer than the unregister message. If the register
@@ -479,6 +568,8 @@ v_groupInstanceRegister (
     }
 
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
+
     return result;
 }
 
@@ -493,6 +584,7 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
 	v_groupSample sample;
 	v_groupSample sampleFound;
 
+	CHECK_REGISTRATIONS(instance);
 	/* First find the corresponding unregister message, if available */
     unregistration = &instance->unregisterMessages;
     unregistrationFound = NULL;
@@ -524,6 +616,7 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
 	    	c_free(unregistrationFound);
 	    }
     }
+    CHECK_REGISTRATIONS(instance);
 }
 
 
@@ -535,12 +628,14 @@ v_groupInstanceUnregister (
     v_writeResult result;
     v_registration *registration;
     v_registration found;
+    c_equality equality;
 
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert(message != NULL);
     assert(C_TYPECHECK(message,v_message));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     registration = &instance->registrations;
     found = NULL;
@@ -565,6 +660,15 @@ v_groupInstanceUnregister (
             found->next = instance->registrations;
             instance->registrations = found;
         } else {
+
+        	/* If message is currently owning instance, reset owner */
+        	equality = v_gidCompare (message->writerGID, instance->owner.gid);
+        	if (equality == C_EQ) {
+        		instance->owner.strength = 0;
+        		v_gidSetNil(instance->owner.gid);
+        		instance->owner.strength = 0;
+        	}
+
             c_free(found->message);
             found->message = c_keep(message);
             found->next = instance->unregisterMessages;
@@ -589,6 +693,7 @@ v_groupInstanceUnregister (
     }
 
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
     return result;
 }
 
@@ -605,6 +710,7 @@ v_groupInstanceWalkRegistrations (
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert(action != NULL);
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     registration = instance->registrations;
     while ((registration != NULL) && (proceed == TRUE)) {
@@ -612,6 +718,7 @@ v_groupInstanceWalkRegistrations (
         registration = registration->next;
     }
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     return proceed;
 }
@@ -629,6 +736,7 @@ v_groupInstanceWalkUnregisterMessages (
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert(action != NULL);
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     registration = instance->unregisterMessages;
 
@@ -637,6 +745,7 @@ v_groupInstanceWalkUnregisterMessages (
         registration = registration->next;
     }
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     return proceed;
 }
@@ -702,6 +811,7 @@ v_groupInstanceInsert(
     v_state state;
     c_equality equality;
     v_topicQos topicQos;
+    c_long msgStrength;
 
     assert(message != NULL);
     assert(instance != NULL);
@@ -710,6 +820,7 @@ v_groupInstanceInsert(
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     if (message == NULL) {
         return V_WRITE_PRE_NOT_MET;
@@ -718,6 +829,44 @@ v_groupInstanceInsert(
     if (v_messageStateTest(message,L_UNREGISTER) ||
         v_messageStateTest(message,L_REGISTER)) {
         return V_WRITE_SUCCESS;
+    }
+
+    /* Exclusive ownership handling */
+    if (instance->owner.exclusive) {
+    	if (!v_messageQos_isExclusive(message->qos)) {
+    		/* If ownership Qos settings does not match, message should not be inserted */
+    		return V_WRITE_SUCCESS_NOT_STORED;
+    	}else
+    	{
+    		if (v_gidIsValid (instance->owner.gid))
+    		{
+    			/* Instance has a valid owner, check if owner same as from message */
+				equality = v_gidCompare (message->writerGID, instance->owner.gid);
+				if (equality != C_EQ) {
+					/* Instance owner is not same as message, compare strength */
+					msgStrength = v_messageQos_getOwnershipStrength(message->qos);
+					if (msgStrength == instance->owner.strength) {
+						if (equality == C_GT) {
+							/* A writer (which is not the owner) with same ownership strength
+							 * and higher GID becomes new owner to guarantee that same owner
+							 * is selected everywhere */
+							instance->owner.gid = message->writerGID;
+						}
+					}else if (msgStrength > instance->owner.strength) {
+						/* A writer with a higher strength becomes new owner */
+						instance->owner.gid = message->writerGID;
+						instance->owner.strength = msgStrength;
+					}else {
+						/* Messages from a writer with lower strength are discarded */
+						return V_WRITE_SUCCESS_NOT_STORED;
+					}
+				}
+    		}else {
+    			/* Instance has no owner, so assign writer of message */
+    			instance->owner.gid = message->writerGID;
+    			instance->owner.strength = v_messageQos_getOwnershipStrength(message->qos);
+    		}
+    	}
     }
 
     group = v_group(instance->group);
@@ -874,6 +1023,7 @@ v_groupInstanceInsert(
     c_free(sample);
 
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
 
@@ -892,6 +1042,7 @@ v_groupInstanceRemove (
     if (sample != NULL) {
         instance = v_groupInstance(sample->instance);
         CHECK_COUNT(instance);
+        CHECK_REGISTRATIONS(instance);
         if (sample->newer != NULL) {
             v_groupSample(sample->newer)->older = c_keep(sample->older);
         } else {
@@ -918,6 +1069,7 @@ v_groupInstanceRemove (
             v_stateSet(instance->state, L_EMPTY);
         }
         CHECK_COUNT(instance);
+        CHECK_REGISTRATIONS(instance);
         assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
         assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     }
@@ -932,6 +1084,7 @@ v_groupInstancePurge(
 
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert(v_stateTest(instance->state, L_DISPOSED | L_NOWRITERS));
+    CHECK_REGISTRATIONS(instance);
 
     disposeCount = instance->count - instance->messageCount;
     assert(disposeCount >= 0);
@@ -945,6 +1098,7 @@ v_groupInstancePurge(
     assert(disposeCount == 0);
     assert(instance->messageCount <= instance->count);
     v_stateClear(instance->state, L_DISPOSED);
+    CHECK_REGISTRATIONS(instance);
 }
 
 
@@ -969,6 +1123,7 @@ v_groupInstanceGetRegisterMessages(
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     reg = instance->registrations;
     while (reg != NULL) {
@@ -978,6 +1133,7 @@ v_groupInstanceGetRegisterMessages(
         reg = reg->next;
     }
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 }
 
 v_message
@@ -991,6 +1147,7 @@ v_groupInstanceGetRegisterMessageOfWriter(
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     found = NULL;
     reg = instance->registrations;
@@ -1001,6 +1158,7 @@ v_groupInstanceGetRegisterMessageOfWriter(
         reg = reg->next;
     }
     CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
 
     return found;
 
@@ -1016,6 +1174,7 @@ v_groupInstancePurgeTimed(
     c_bool proceed;
 
     assert(C_TYPECHECK(instance,v_groupInstance));
+    CHECK_REGISTRATIONS(instance);
 
     group = v_group(instance->group);
 
@@ -1034,5 +1193,6 @@ v_groupInstancePurgeTimed(
             }
         }
     }
+    CHECK_REGISTRATIONS(instance);
     return;
 }

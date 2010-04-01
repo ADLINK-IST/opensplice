@@ -170,6 +170,8 @@ setInterest (
     gapi_boolean result = TRUE;
     
     if(status){
+        assert(_info->depth >=0 && _info->depth < MAX_LISTENER_DEPTH);
+
         status->listenerInfo[_info->depth].handle = _info->handle;
         status->listenerInfo[_info->depth].mask   = _info->mask;
      
@@ -196,6 +198,7 @@ gapi_statusMask
 _StatusSetListenerMask(
         _Status status)
 {
+    assert(status->depth >=0 && status->depth < MAX_LISTENER_DEPTH);
     return status->listenerInfo[status->depth].mask;
 }
 
@@ -225,6 +228,7 @@ _StatusFindTarget(
     gapi_object result = NULL;
     long i;
 
+    assert(status->depth >=0 && status->depth < MAX_LISTENER_DEPTH);
     for ( i = status->depth; !result && i >= 0; i-- ) {
         if ( (status->listenerInfo[i].mask & mask) != GAPI_STATUS_KIND_NULL ) {
             result = status->listenerInfo[i].handle;
@@ -241,6 +245,8 @@ findListener(
 {
     long result = -1;
     long i;
+
+    assert(status->depth >=0 && status->depth < MAX_LISTENER_DEPTH);
 
     for ( i = status->depth; result == -1 && i >= 0; i-- ) {
         if ( (status->listenerInfo[i].mask & mask) != GAPI_STATUS_KIND_NULL ) {
@@ -260,6 +266,8 @@ findCommonInterest(
    
     _EntityClaim(status);
         
+    assert(status->depth >=0 && status->depth < MAX_LISTENER_DEPTH);
+
     _info.handle = _EntityHandle(status->entity);
     _info.depth  = status->depth;
     _info.mask   = status->listenerInfo[status->depth].mask;
@@ -296,6 +304,8 @@ setEnabledMask(
 {
     long i;
     gapi_statusMask mask = GAPI_STATUS_KIND_NULL;
+
+    assert(status->depth >=0 && status->depth < MAX_LISTENER_DEPTH);
 
     for ( i = 0; i <= status->depth; i++ ) {
         mask |= status->listenerInfo[i].mask;

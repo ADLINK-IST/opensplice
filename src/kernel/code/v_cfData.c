@@ -83,7 +83,7 @@ v_cfDataInit (
         data->value.kind = V_UNDEFINED;
         assert(0); /* not supported! */
 
-        break;
+    break;
     }
     
 }

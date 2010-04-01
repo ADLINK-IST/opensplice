@@ -24,7 +24,7 @@ public class TopicBuiltinTopicDataTypeSupport extends org.opensplice.dds.dcps.Ty
     public TopicBuiltinTopicDataTypeSupport()
     {
         super("DDS/TopicBuiltinTopicDataDataReaderImpl",
-                "DDS/TopicBuiltinTopicDataDataReaderViewImpl",
+            "DDS/TopicBuiltinTopicDataDataReaderViewImpl",
             "DDS/TopicBuiltinTopicDataDataWriterImpl",
             "(LDDS/TopicBuiltinTopicDataTypeSupport;)V",
             "null",

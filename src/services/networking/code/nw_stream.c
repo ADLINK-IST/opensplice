@@ -1498,7 +1498,7 @@ nw_stream_readString(
                 os_free(fragment);
                 fragment = c_iterTakeFirst(fragments);
             }
-            // c_iterFree(fragments); // TODO FIXME, "fragments" still pointing onto first element which has been free-ed already !!
+            /* c_iterFree(fragments); // TODO FIXME, "fragments" still pointing onto first element which has been free-ed already !! */
             assert(totalLength > 0);
             assert(stringStart[totalLength-1] == '\0');
             memcpy(copyPtr,stringStart,totalLength);

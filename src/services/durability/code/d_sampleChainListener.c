@@ -852,6 +852,9 @@ requestGroupFromMasterIfUnknown(
         }
         d_networkAddressFree(master);
     } else {
+        OS_REPORT_4(OS_ERROR, "durability::requestGroupFromMasterIfUnknown", 0,
+                    "Precondition not met: admin=0x%x, nameSpace=0x%x, partition=0x%x, topic=0x%x",
+                    admin, nameSpace, partition, topic);
         assert(FALSE);
     }
     return;
@@ -1128,6 +1131,9 @@ d_sampleChainListenerAction(
                         sampleChain->msgBody._u.link.nrSamples);
                 break;
             default:
+                OS_REPORT_1(OS_ERROR, "d_sampleChainListenerAction", 0,
+                            "Illegal message discriminator value (%d) detected.",
+                            sampleChain->msgBody._d);
                 assert(FALSE);
                 break;
         }

@@ -213,96 +213,94 @@ TestAndList(
     v_handleResult r;
     v_entity e;
     u_entity ue;
+    _Object go;
     _Condition cd;
     _ConditionEntry entry;
     GetTriggerValue getTriggerValue;
 
     if (_this) {
-        if (v_eventTest(_this->kind,V_EVENT_TRIGGER) && (_this->userData)) {
-            /*
-             * _GuardConditionGetTriggerValue(cd) =>
-             *                  cd->triggerValue;
-             */
-            cd = (_Condition)_this->userData;
-            /* The following lookup of the condition is a poor mans patch.
-             * Actually it scould not happen that an event exists while the
-             * originating condition is already detached.
-             * Expected behavior is that the detach of a condition waits
-             * until all events originating from that condition are processed.
-             * In the current implementation this is not possible because guard
-             * conditions only exists in the gapi.
-             * A detach of a guard condition will therefore not invoke the
-             * kernel and therefore will not be aware of any pending events
-             * as these are passed via the kernel.
-             */
-            entry = a->waitset->conditions;
-            while ((entry != NULL) && (entry->condition != cd)) {
-                entry = entry->next;
-            }
-            if (entry) {
-#if 0
-#if 0
-                /* hack: simply assume that an event from a guard conditions
-                 * always imply that the trigger value is true. So in that
-                 * case don't worry about the guards existence don't access it.
+        /* The source field of the event normally contains a handle to the
+         * Condition that generated the event. Since the GuardCondition is
+         * not implemented on kernel level, an event can not have a handle to it
+         * so it uses the handle to the WaitSet instead. That is how we can
+         * distinguish between events coming from GuardConditions and from
+         * other Conditions.
+         */
+        r = v_handleClaim(_this->source,(v_object*)&e);
+        if (r == V_HANDLE_OK) {
+            ue = v_entityGetUserData(e);
+            if (ue) {
+                go = u_entityGetUserData(ue);
+                /* If the event source is our WaitSet, then the event originates
+                 * from a GuardCondition. Otherwise it originates from another
+                 * type of Condition, either a ReadCondition or a StatusCondition.
                  */
-                if (cd->getTriggerValue(cd)) {
-#endif
-                    if (a->conditions->_maximum == a->conditions->_length) {
-                        gapi_sequence_replacebuf(
-                             a->conditions,
-                             (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
-                             a->waitset->length);
-                    }
-                    a->conditions->_buffer[a->conditions->_length++] =
-                              _EntityHandle(cd);
-#if 0
-                }
-#endif
-#else
-                getTriggerValue = cd->getTriggerValue;
+                if (go == (_Object) a->waitset) {
+                    /*
+                     * _GuardConditionGetTriggerValue(cd) =>
+                     *                  cd->triggerValue;
+                     *
+                     * In case the event originates from a GuardCondition, the
+                     * creator of the event pushed a pointer to the corresponding
+                     * _GuardCondition object in the gapi in the userData of the
+                     * event.
+                     */
+                    cd = (_Condition)_this->userData;
 
-                if (_ObjectIsValid(_Object(cd))) {
-                    if (getTriggerValue(cd)) {
-                        if (a->conditions->_maximum == a->conditions->_length) {
-                            gapi_sequence_replacebuf(a->conditions,
-                                             (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
-                                             a->waitset->length);
-                        }
-                        a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                    /* Now we need to check whether this GuardCondition is still
+                     * attached to the WaitSet. The following lookup of the condition
+                     * is a poor mans patch for that purpose. Actually it should
+                     * not happen that an event exists while the originating
+                     * condition is already detached.
+                     * Expected behavior is that the detach of a condition waits
+                     * until all events originating from that condition are processed.
+                     * In the current implementation this is not possible because guard
+                     * conditions only exists in the gapi.
+                     * A detach of a guard condition will therefore not invoke the
+                     * kernel and therefore will not be aware of any pending events
+                     * as these are passed via the kernel.
+                     */
+                    entry = a->waitset->conditions;
+                    while ((entry != NULL) && (entry->condition != cd)) {
+                        entry = entry->next;
                     }
-                }
-#endif
-            }
-        } else {
-            r = v_handleClaim(_this->source,(v_object*)&e);
-            if (r == V_HANDLE_OK) {
-                ue = v_entityGetUserData(e);
-                if (ue) {
-                    cd = u_entityGetUserData(ue);
-                    if (cd) {
-                        /* _ReadConditionGetTriggerValue(cd) =>
-                         *                  u_queryTriggerTest(cd->uQuery);
-                         * _StatusConditionGetTriggerValue(cd) =>
-                         *                  gapi_entity_get_status_changes(entity) &
-                         *                  statuscondition->enabledStatusMask;
-                         */
+                    if (entry) {
                         getTriggerValue = cd->getTriggerValue;
 
                         if (_ObjectIsValid(_Object(cd))) {
                             if (getTriggerValue(cd)) {
-                                if (a->conditions->_maximum == a->conditions->_length) {
-                                    gapi_sequence_replacebuf(a->conditions,
-                                                             (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
-                                                             a->waitset->length);
-                                }
+                                /* gapi_waitSet_wait always initializes the conditions
+                                 * sequence with enough buffer space to store the worst-
+                                 * case number of elements, i.e. the case where all
+                                 * conditions attached to the waitset have triggered.
+                                 */
                                 a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
                             }
                         }
                     }
+                } else {
+                    /* _ReadConditionGetTriggerValue(cd) =>
+                     *                  u_queryTriggerTest(cd->uQuery);
+                     * _StatusConditionGetTriggerValue(cd) =>
+                     *                  gapi_entity_get_status_changes(entity) &
+                     *                  statuscondition->enabledStatusMask;
+                     */
+                    cd = (_Condition) go;
+                    getTriggerValue = cd->getTriggerValue;
+
+                    if (_ObjectIsValid(_Object(cd))) {
+                        if (getTriggerValue(cd)) {
+                            /* gapi_waitSet_wait always initializes the conditions
+                             * sequence with enough buffer space to store the worst-
+                             * case number of elements, i.e. the case where all
+                             * conditions attached to the waitset have triggered.
+                             */
+                            a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                        }
+                    }
                 }
-                v_handleRelease(_this->source);
             }
+            v_handleRelease(_this->source);
         }
     }
 }
@@ -370,6 +368,10 @@ gapi_waitSet_wait(
 
 
     do {
+        /* Make sure the 'conditions' sequence has enough buffer space to store
+         * the worst-case number of elements, i.e. the case where all conditions
+         * attached to the waitset have triggered.
+         */
         gapi_sequence_replacebuf(conditions,
                              (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
                              waitset->length);
@@ -404,7 +406,7 @@ gapi_waitSet_wait(
             }
 
             if (waitset->multidomain) {
-                /* Enter the multi domain wait. */
+                /* Enter the multi-domain wait. */
                 if (infinite) {
                     /* Wait for an event to occur. */
                     osResult = _ObjectWait((_Object)waitset, &waitset->cv);
@@ -426,7 +428,7 @@ gapi_waitSet_wait(
                 if (_ObjectIsValid((_Object)waitset)) {
                     switch (osResult) {
                     case os_resultSuccess:
-                        /* multi domain threads cannot handle event data yet!
+                        /* multi-domain threads cannot handle event data yet!
                          * therefore reevaluate all conditions here until
                          * the problem is fixed.
                          */
@@ -574,7 +576,7 @@ gapi_waitSet_attach_condition(
                  */
                 if (_ConditionKind(condition) == OBJECT_KIND_GUARDCONDITION) {
                     /* The condition is a guard condition and is not part of
-                     * a domain. Therefore the waitset can be attache directly
+                     * a domain. Therefore the waitset can be attached directly
                      * to the guard condition.
                      * The guard condition can immediatly trigger the waitset
                      * upon notification.

@@ -20,7 +20,6 @@ CINCS	+= -I$(OSPL_HOME)/src/database/database/include
 CINCS	+= -I$(OSPL_HOME)/src/database/serialization/include
 CINCS	+= -I$(OSPL_HOME)/src/kernel/include
 CINCS	+= -I$(OSPL_HOME)/src/user/include
-CINCS	+= -I$(OSPL_HOME)/src/license/include
 
 .PHONY: make_idl_preprocessor
 

@@ -283,15 +283,12 @@ c_avlTreeRemove (
     c_avlNode **stack_ptr = &stack[0];
     c_avlNode *nodeplace_to_delete;
     c_avlNode node_to_delete = NULL;
-    c_avlNode node_for_template;
     c_long stack_count = 0;
     c_equality comparison;
 
     assert(this != NULL);
-    assert(template != NULL);
     assert(compareFunction != (c_equality(*)())NULL);
 
-    node_for_template = TONODE(this, template);
     nodeplace = (c_avlNode *)&this->root;
 
     for (;;) {
@@ -303,7 +300,7 @@ c_avlTreeRemove (
             return NULL;
         }
         comparison = compareFunction(TODATA(this, node),
-                                     TODATA(this, node_for_template),
+                                     template,
                                      compareArgument);
         if (comparison == C_EQ) {
             node_to_delete = node;
@@ -318,7 +315,9 @@ c_avlTreeRemove (
     assert(node_to_delete != NULL);
     if (condition != NULL) {
        if (!condition(TODATA(this,node_to_delete),
-                      TODATA(this,node_for_template),conditionArgument)) {
+                      template,
+                      conditionArgument))
+       {
            return NULL;
        }
     }
@@ -426,7 +425,6 @@ c_avlTreeNearest (
     c_long comparison;
 
     assert(this != NULL);
-    assert(template != NULL);
     assert(compareFunction != (c_equality(*)())NULL);
 
     nodeplace = (c_avlNode *)&this->root;

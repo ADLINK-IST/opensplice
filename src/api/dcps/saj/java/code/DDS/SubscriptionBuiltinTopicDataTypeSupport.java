@@ -24,7 +24,7 @@ public class SubscriptionBuiltinTopicDataTypeSupport extends org.opensplice.dds.
     public SubscriptionBuiltinTopicDataTypeSupport()
     {
         super("DDS/SubscriptionBuiltinTopicDataDataReaderImpl",
-                "DDS/SubscriptionBuiltinTopicDataDataReaderViewImpl",
+            "DDS/SubscriptionBuiltinTopicDataDataReaderViewImpl",
             "DDS/SubscriptionBuiltinTopicDataDataWriterImpl",
             "(LDDS/SubscriptionBuiltinTopicDataTypeSupport;)V",
             "null",

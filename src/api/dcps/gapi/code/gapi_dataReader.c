@@ -232,9 +232,6 @@ _DataReaderNew (
     _DataReader _this;
     v_readerQos readerQos;
     u_dataReader uReader;
-    u_subscriber uSubscriber;
-    u_result uResult;
-    v_subscriberQos subscriberQos;
     gapi_string topicName;
     char dataReaderId[256];
     c_bool noError = TRUE;
@@ -963,7 +960,7 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    result = v_handleClaim(from->instanceHandle, &instance);
+    result = v_handleClaim(from->instanceHandle, (v_object*)&instance);
     if (result == V_HANDLE_OK) {
         to->last_instance_handle = u_instanceHandleNew(v_public(instance));
         result = v_handleRelease(from->instanceHandle);

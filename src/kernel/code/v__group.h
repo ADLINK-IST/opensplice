@@ -54,12 +54,25 @@ c_iter
 v_groupGetRegisterMessagesOfWriter(
     v_group _this,
     v_gid writerGid);
+
+/* The following hash defines implement a basic form of
+ * destination identification for resend messages.
+ * The resendScope is a set of these bits specifying the
+ * resend scope.
+ */
+
+#define V_RESEND_TOPIC       (1)
+#define V_RESEND_VARIANT     (2)
+#define V_RESEND_REMOTE      (4)
+#define V_RESEND_DURABLE     (8)
+#define V_RESEND_ALL        (15)
     
 v_writeResult
 v_groupResend(
     v_group _this,
     v_message o,
     v_groupInstance *instancePtr,
+    v_resendScope *resendScope,
     v_networkId writingNetworkId);
 
 #if defined (__cplusplus)

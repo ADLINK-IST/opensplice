@@ -18,6 +18,7 @@
  * - thread priority is sched_get_priority_min (SCHED_OTHER)
  */
 #include <assert.h>
+#include <limits.h>
 
 #ifndef OSPL_ENV_PURIFY
 /**

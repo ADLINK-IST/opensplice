@@ -1820,6 +1820,17 @@ idl_getControl(
     return &idlControl;
 }
 
+static void
+idl_artificialDefaultLabelOpenClose(
+    idl_scope scope,
+    idl_labelVal labelVal,
+    idl_typeSpec typeSpec,
+    void *userData)
+{
+    idl_fileOutPrintf (idl_fileCur(), "    default:\n");
+    idl_fileOutPrintf (idl_fileCur(), "    break;\n");
+}
+
 /**
  * Specifies the callback table for the CORBA C CopyIn generation functions.
  */
@@ -1845,7 +1856,7 @@ idl_genCorbaCCopyout = {
     NULL, /* idl_boundedStringOpenClose */
     NULL, /* idl_sequenceOpenClose */
     NULL, /* idl_constantOpenClose */
-    NULL, /* idl_artificialDefaultLabelOpenClose */
+    idl_artificialDefaultLabelOpenClose,
     NULL  /* userData */
 };
 

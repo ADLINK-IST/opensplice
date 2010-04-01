@@ -102,6 +102,7 @@ void    nw_plugChannelGetPartition(
          nw_partitionAddress *partitionAddress,
          nw_networkSecurityPolicy *securityPolicy,
          nw_bool *connected,
+         nw_bool *compression,
          os_uint32 *hash);
 
 #endif /* NW__PLUGCHANNEL_H */

@@ -21,7 +21,7 @@ IDL_O		 = $(IDL_C:%.cpp=%$(OBJ_POSTFIX))
 
 
 	
-%C.h %C.i %C.cpp : %.idl
+%C.h %C.i %C.cpp %C.inl : %.idl
 #	$(IDL) $(IDL_FLAGS) $<
 	$(ORB_COMPILER) $(ORB_CXXFLAGS) $<
 

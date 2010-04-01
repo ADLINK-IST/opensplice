@@ -30,6 +30,10 @@ nw_plugChannel nw_plugReceiveChannelNew(
 void nw_plugReceiveChannelFree(
                    nw_plugChannel channel);
 
+os_uint32
+nw_plugReceiveChannelLookUpPartitionHash(
+        nw_plugReceiveChannel channel,
+        nw_partitionId partitionHash);
 
 #ifdef _PROFILE_
 os_time *

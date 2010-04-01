@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_OBJECT_H
@@ -31,7 +31,7 @@ extern "C" {
 typedef enum {
     OBJECT_KIND_UNDEFINED                 = 0x00000000,
     OBJECT_KIND_ENTITY                    = 0x00000001,
-    OBJECT_KIND_DOMAINENTITY              = 0x00000003,  
+    OBJECT_KIND_DOMAINENTITY              = 0x00000003,
     OBJECT_KIND_DOMAINPARTICIPANT         = 0x00000005,
     OBJECT_KIND_TYPESUPPORT               = 0x00000008,
     OBJECT_KIND_TOPICDESCRIPTION          = 0x00000010,
@@ -61,6 +61,7 @@ typedef enum {
     OBJECT_KIND_DATAVIEW                  = 0x10000001,
     OBJECT_KIND_FOODATAVIEW               = 0x30000001,
     OBJECT_KIND_DOMAINPARTICIPANTFACTORY  = 0x40000001,
+    OBJECT_KIND_DOMAIN                    = 0x50000001,
     OBJECT_KIND_ERRORINFO                 = 0x60000000
 } _ObjectKind;
 
@@ -199,7 +200,7 @@ void *
 _ObjectGetUserData (
     _Object object);
 
-void 
+void
 _ObjectSetUserData (
     _Object object,
     void *userData);

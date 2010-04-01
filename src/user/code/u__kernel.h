@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -15,6 +15,7 @@
 
 #include "u_participant.h"
 #include "u_kernel.h"
+#include "u_entity.h"
 #include "os.h"
 
 u_result
@@ -45,9 +46,47 @@ u_kernelCheckHandleServer (
     u_kernel _this,
     c_long serverId);
 
+u_kernel
+u_kernelNew (
+    const c_char *uri);
+
+u_kernel
+u_kernelOpen (
+    const c_char *uri,
+    c_long timeout); /* timeout in seconds */
+
+v_kernel
+u_kernelSource (
+    u_kernel _this);
+
+u_result
+u_kernelClose (
+    u_kernel _this);
+
+u_result
+u_kernelFree (
+    u_kernel _this);
+
 os_sharedHandle
 u_kernelSharedMemoryHandle (
     u_kernel kernel);
 
-#endif
+c_voidp
+u_kernelGetCopy (
+    u_kernel _this,
+    u_entityCopy copy,
+    void* copyArg);
 
+const c_char *
+u_kernelUri(
+    u_kernel _this);
+
+c_address
+u_kernelHandleServer(
+    u_kernel _this);
+
+c_voidp
+u_kernelAddress(
+    u_kernel _this);
+
+#endif

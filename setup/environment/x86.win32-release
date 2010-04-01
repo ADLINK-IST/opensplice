@@ -15,6 +15,7 @@ flex_check || ERRS=1
 javac_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
+zlib_check || ERRS=1
 
 if [ -z $REPORT ]
 then

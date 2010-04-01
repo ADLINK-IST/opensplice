@@ -365,6 +365,9 @@ namespace DDS
     const DDS::ULong PUBLICATION_MATCHED_STATUS = (DDS::ULong) 8192UL;
     const DDS::ULong SUBSCRIPTION_MATCHED_STATUS = (DDS::ULong) 16384UL;
 
+    /* Opensplice Extensions */
+    const DDS::ULong ALL_DATA_DISPOSED_TOPIC_STATUS = (DDS::ULong) 0x80000000UL;
+
    struct InconsistentTopicStatus
    {
       DDS::Long total_count;
@@ -1183,6 +1186,7 @@ namespace DDS
       virtual ReturnCode_t set_default_participant_qos (const DomainParticipantQos& qos) = 0;
       virtual ReturnCode_t get_default_participant_qos (DomainParticipantQos& qos) = 0;
       virtual Domain_ptr lookup_domain (const DDS::Char* domain_id) = 0;
+      virtual ReturnCode_t delete_domain (Domain_ptr a_domain) = 0;
 
    protected:
       DomainParticipantFactoryInterface () {};

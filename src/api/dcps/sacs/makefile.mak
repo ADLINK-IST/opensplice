@@ -5,12 +5,12 @@ TARGET_CSLIB = $(DDS_DCPSSACS)
 CS_NAMESPCS	 = DDS DDS/OpenSplice DDS/OpenSplice/Gapi DDS/OpenSplice/Database DDS/OpenSplice/CustomMarshalers
 
 # Input IDL files.
-IDL_DIR     := ../../../ccpp/idl
+IDL_DIR     := $(OSPL_HOME)/etc/idl
 vpath %.idl $(IDL_DIR)
-TOPIC_IDL   := dds_dcps_builtintopics.idl
+TOPIC_IDL   := dds_dcps_builtintopics.idl dds_builtinTopics.idl
 
 # idlpp compiler settings.
-IDLPP       := idlpp 
+IDLPP       = $(WINCMD) idlpp 
 IDL_INC_FLAGS= -I$(IDL_DIR)
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cs -S -o custom-psm
 
@@ -31,7 +31,7 @@ make_idl_preprocessor:
 	cd $(OSPL_HOME)/src/tools/idlpp; make
 
 # Generate the C++ interfaces from the IDL descriptions.
-$(IDL_CS): $(IDL_DIR)/$(TOPIC_IDL)
+%.cs I%Dcps.cs %Dcps.cs : %.idl
 	$(IDLPP) $(IDLPPFLAGS) $<
 
 CSLIBS       += -r:System.dll -r:System.Data.dll -r:System.Xml.dll

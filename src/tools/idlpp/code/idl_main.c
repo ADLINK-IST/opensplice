@@ -38,6 +38,7 @@
 #include "idl_genCxxTypedClassImpl.h"
 #include "idl_genCxxMeta.h"
 #include "idl_genCxxIdl.h"
+#include "idl_genCxxIdlHelper.h"
 
 /* C related support */
 #include "idl_genCorbaCHelper.h"
@@ -268,7 +269,12 @@ preLoadSpliceDdsDefinitions(
         printf ("Variable OSPL_TMPL_PATH not defined\n");
         exit (1);
     }
-    snprintf(fname, sizeof(fname), "%s%c%s", templ_path, OS_FILESEPCHAR, DDS_DCPS_DEF);
+    // preload DDS definitions. Hopefully this loads #includes too.
+    // @todo Sort this out
+    snprintf(fname, sizeof(fname), "%s%c..%cidl%c%s", templ_path, OS_FILESEPCHAR,
+                                                                   OS_FILESEPCHAR,
+                                                                   OS_FILESEPCHAR,
+                                                                   DDS_DCPS_DEF);
     base = idl_parseFile(fname, 0);
 
     /** @todo Free existing file relations                 */
@@ -782,14 +788,14 @@ main (
     if (dcpsTypes) {
         if ((idl_getLanguage() == IDL_LANG_CXX) && (idl_getCorbaMode() == IDL_MODE_STANDALONE)) {
             char fname[1024];
-            /* add include path OSPL_TMPL_PATH as it contains the file dds_dcps.idl needed by
+            /* add include path OSPL_HOME/etc/idl as it contains the file dds_dcps.idl needed by
              * cppgen compiler.
              */
             if (os_getenv("OSPL_HOME") == NULL) {
                 printf ("Variable OSPL_HOME not defined\n");
                 idl_exit(1);
             }
-            snprintf(fname, 1024, "%s/etc/idlpp",os_getenv("OSPL_HOME"));
+            snprintf(fname, 1024, "%s/etc/idl",os_getenv("OSPL_HOME"));
             includeDefinitions = c_iterAppend(includeDefinitions,os_strdup(fname));
         }
         preLoadSpliceDdsDefinitions();
@@ -932,6 +938,10 @@ main (
 
                 /* Expand IDL based application TypeSupport, DataReader and DataWriter interfaces
                  */
+
+                /* Create a list of keys existing only in this idl file */
+                idl_walk(base, filename, traceWalk, idl_genCxxIdlHelperProgram());
+
                 snprintf(fname,
                          (size_t)((int)strlen(basename) + MAX_FILE_POSTFIX_LENGTH),
                          "%sDcps.idl", basename);
@@ -1013,6 +1023,7 @@ main (
                     {
                        dcpsIdlFileName = os_strdup(fname);
                     }
+
                     if (runCppGen (outputDir, cpp_command, dcpsIdlFileName, "") != 0)
                     {
                        unlink(dcpsIdlFileName);

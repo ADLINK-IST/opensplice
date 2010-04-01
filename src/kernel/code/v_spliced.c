@@ -733,24 +733,30 @@ v_splicedProcessSubscriptionInfo(
         rInfo = v_builtinSubscriptionInfoData(kernel->builtin,msg);
         state = v_readerSample(rSample)->sampleState;
 
-        /* Notify the nodal delivery service about any synchronous
-         * DataReader topology changes.
-         */
-        if (rInfo->reliability.synchronous) {
-            if (v_stateTest(state, L_DISPOSED)) {
-                v_deliveryServiceUnregister(kernel->deliveryService,msg);
-            } else {
-                v_deliveryServiceRegister(kernel->deliveryService,msg);
-            }
-        }
         if (v_stateTest(v_readerSample(rSample)->sampleState, L_DISPOSED)) {
             /* The subscription is disposed so the following
              * code will remove and free the registration.
              */
             oldMsg = c_remove(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
                               msg, NULL, NULL);
-            c_free(oldMsg);
+            if (oldMsg) {
+               /* Notify the nodal delivery service about any synchronous
+                * DataReader topology changes.
+                */
+                struct v_subscriptionInfo *rInfo;
+                rInfo = v_builtinSubscriptionInfoData(kernel->builtin,oldMsg);
+                if (rInfo->reliability.synchronous) {
+                    v_deliveryServiceUnregister(kernel->deliveryService,oldMsg);
+                }
+                c_free(oldMsg);
+            }
         } else {
+            /* Notify the nodal delivery service about any synchronous
+             * DataReader topology changes.
+             */
+            if (rInfo->reliability.synchronous) {
+                v_deliveryServiceRegister(kernel->deliveryService,msg);
+            }
             oldMsg = c_replace(spliced->builtinData[V_SUBSCRIPTIONINFO_ID],
                                msg, NULL, NULL);
 
@@ -839,6 +845,7 @@ v_splicedProcessSubscriptionInfo(
                 v_gidRelease(rInfo->key, kernel);
             }
         }
+        c_free(v_dataReaderSampleInstance(rSample));
         c_free(rSample); /* msg is freed here */
         rSample = NULL;
     }
@@ -870,8 +877,6 @@ v_splicedProcessPublicationInfo
     enum v_statusLiveliness newLivState;
     enum v_statusLiveliness oldLivState;
     c_time curTime;
-    c_long disposeCount = 0;
-    c_long noWritersCount = 0;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
@@ -887,7 +892,6 @@ v_splicedProcessPublicationInfo
      * compatible.
      */
     if (oSample != NULL) {
-        v_dataReaderInstance sampleInstance;
         result = 1;
 
         /* Read all subscriptionInfo, with the same topic name, this way
@@ -896,18 +900,6 @@ v_splicedProcessPublicationInfo
         msg = v_dataReaderSampleMessage(oSample);
         oInfo = v_builtinPublicationInfoData(kernel->builtin,msg);
         w = v_writer(v_gidClaim(oInfo->key, kernel));
-
-        /* Obtain the disposed_generation_count and no_writers_generation_count variables
-         * so as to be able to determine the previous state of an instance that may have become
-         * ALIVE having been NOT_ALIVE.  The current state of the instance and previous samples
-         * of the instance are not enough to detect that. We need to be able to handle the case
-         * when an instance is disposed but that information is not receieved by the spliced
-         * before the instance is awoken by the creation of a new writer.
-         */
-
-        sampleInstance = v_dataReaderSampleInstance(oSample);
-        disposeCount = sampleInstance->disposeCount;
-        noWritersCount = sampleInstance->noWritersCount;
 
         if (v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) {
             oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID],
@@ -975,17 +967,7 @@ v_splicedProcessPublicationInfo
                 if (oldInfo != NULL) {
                     if (readerWriterMatch(kernel, rInfo, r, oldInfo, NULL)) {
                         if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                            if (disposeCount > 0 || noWritersCount > 0) {
-                                /* The DDS spec states that if an instance is changed from NOT_ALIVE to ALIVE
-                                 * then either the disposed_generation_count or no_writers_generation_count
-                                 * variables will have been incremented. Use the state of these variables to
-                                 * determine whether the previous state is NOT_ALIVE, in turn leading to
-                                 * the liveliness changed callback being invoked in the correct scenarios.
-                                 */
-                                oldLivState = V_STATUSLIVELINESS_NOTALIVE;
-                            } else {
-                                oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
-                            }
+                            oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
                         } else {
                             oldLivState = V_STATUSLIVELINESS_NOTALIVE;
                         }

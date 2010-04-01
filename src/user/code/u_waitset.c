@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u_waitset.h"
@@ -14,7 +14,7 @@
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__participant.h"
-#include "u_kernel.h"
+#include "u__kernel.h"
 #include "v_waitset.h"
 #include "v_observable.h"
 #include "v_observer.h"
@@ -79,7 +79,7 @@ u_waitsetNew(
         result = u_participantClaim(p,&kp);
         if ((result == U_RESULT_OK) && (kp != NULL)) {
             ke = v_entity(v_waitsetNew(kp));
-            if (ke != NULL) {                
+            if (ke != NULL) {
                 v_observerSetEventMask(v_observer(ke), V_EVENTMASK_ALL);
                 _this = u_entityAlloc(p,u_waitset,ke,TRUE);
                 if (_this != NULL) {
@@ -309,6 +309,7 @@ collectEvents(
     u_waitsetEvent ev;
     v_waitsetEventHistoryDelete evd;
     v_waitsetEventHistoryRequest evr;
+    v_waitsetEventPersistentSnapshot evps;
     list = (c_iter *)arg;
 
     if(e->kind == V_EVENT_HISTORY_DELETE){
@@ -327,6 +328,15 @@ collectEvents(
                     evr->request->resourceLimits,
                     evr->request->minSourceTimestamp,
                     evr->request->maxSourceTimestamp);
+    } else if(e->kind == V_EVENT_PERSISTENT_SNAPSHOT){
+        evps = (v_waitsetEventPersistentSnapshot)e;
+        ev = u_waitsetPersistentSnapshotEventNew(
+            u_entity(e->userData),
+             e->kind,
+             e->source,
+             evps->request->partitionExpr,
+             evps->request->topicExpr,
+             evps->request->uri);
     } else {
         ev = u_waitsetEventNew(u_entity(e->userData), e->kind);
     }

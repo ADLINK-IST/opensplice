@@ -37,6 +37,7 @@
 #include "os_report.h"
 #include "os_heap.h"
 #include "os_time.h"
+#include "d_store.h"
 
 #ifdef INTEGRITY
 #include <include/os_getRSObjects.h>
@@ -479,6 +480,80 @@ d_durabilityDetermineConnectivity(
     return connectivity;
 }
 
+static void
+determineNameSpaceCompleteness(
+		d_durability durability,
+		d_subscriber subscriber)
+{
+	d_configuration configuration;
+    c_long i, nameSpaceCount;
+    d_nameSpace nameSpace;
+    d_store store;
+    os_time sleepTime;
+    d_durabilityKind durabilityKind;
+
+	configuration = d_durabilityGetConfiguration(durability);
+	nameSpaceCount = c_iterLength (configuration->nameSpaces);
+	store = d_subscriberGetPersistentStore(subscriber);
+
+	if (!store) {
+		return;
+	}
+
+    sleepTime.tv_sec        = 0;
+    sleepTime.tv_nsec       = 100000000; /* 100 ms */
+
+	/* Walk namespaces, determine if they are potentially incomplete */
+	for (i=0; i<nameSpaceCount; i++)
+	{
+		nameSpace = c_iterObject(configuration->nameSpaces, i);
+
+		durabilityKind = d_nameSpaceGetDurabilityKind(nameSpace);
+
+		/* If namespace is not persistent, continue */
+		if( (durabilityKind != D_DURABILITY_PERSISTENT) &&
+		                    (durabilityKind != D_DURABILITY_ALL)) {
+			continue;
+		}
+
+		while (!d_nameSpaceIsMasterConfirmed(nameSpace) && durability->splicedRunning == TRUE) {
+			os_nanoSleep (sleepTime);
+		}
+
+		if (d_nameSpaceGetMasterState(nameSpace) ==	D_STATE_COMPLETE)
+		{
+			/* Mark namespace complete */
+			if (d_storeNsMarkComplete (store, nameSpace, TRUE) == D_STORE_RESULT_OK)
+			{
+				d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+						"Local copy of namespace '%s' is complete\n", d_nameSpaceGetName (nameSpace));
+			}else
+			{
+				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+						"Failed to mark local copy of namespace '%s' as complete\n", d_nameSpaceGetName (nameSpace));
+                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                		"Failed to mark local copy of namespace '%s' as complete\n",
+                		d_nameSpaceGetName (nameSpace));
+			}
+		}else
+		{
+			/* Mark namespace incomplete */
+			if (d_storeNsMarkComplete (store, nameSpace, FALSE) == D_STORE_RESULT_OK)
+			{
+				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+						"Local copy of namespace '%s' is not complete\n", d_nameSpaceGetName (nameSpace));
+			}else
+			{
+				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+						"Failed to mark local copy of namespace '%s' as incomplete\n", d_nameSpaceGetName (nameSpace));
+                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                		"Failed to mark local copy of namespace '%s' as incomplete\n",
+                		d_nameSpaceGetName (nameSpace));
+			}
+		}
+	}
+}
+
 void
 d_durabilityHandleInitialAlignment(
     d_durability durability)
@@ -487,6 +562,8 @@ d_durabilityHandleInitialAlignment(
     c_bool complete, fellowNameSpacesKnown;
     os_time sleepTime, reportTime, newTime;
     d_sampleChainListener sampleChainListener;
+    d_configuration configuration;
+
 
     sleepTime.tv_sec        = 0;
     sleepTime.tv_nsec       = 100000000; /* 100 ms */
@@ -497,10 +574,13 @@ d_durabilityHandleInitialAlignment(
     d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN,
             "Waiting for nameSpaces of fellows to get complete...\n");
 
+    /* Find namespaces of fellows */
     while((fellowNameSpacesKnown == FALSE) && (durability->splicedRunning == TRUE) && (d_adminGetFellowCount(durability->admin) > 0)){
         d_adminFellowWalk(durability->admin, checkFellowNameSpacesKnown, &fellowNameSpacesKnown);
         os_nanoSleep(sleepTime);
     }
+
+    /* Start aligning groups */
     if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN, "Fellow nameSpaces complete.\n");
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting groupLocalListener...\n");
@@ -514,12 +594,12 @@ d_durabilityHandleInitialAlignment(
     }
     reportTime = os_timeGet();
 
+    /* Wait until group alignment has finished */
     do{
         complete = d_adminAreLocalGroupsComplete(durability->admin);
 
         if((complete == FALSE) && (durability->splicedRunning == TRUE)){
             os_nanoSleep(sleepTime);
-
 
             if(durability->configuration->tracingVerbosityLevel == D_LEVEL_FINEST){
                 newTime = os_timeGet();
@@ -534,7 +614,11 @@ d_durabilityHandleInitialAlignment(
         }
     } while((complete == FALSE) && (durability->splicedRunning == TRUE));
 
+    /* Durability service has finished initial alignment */
     if(durability->splicedRunning == TRUE){
+
+    	determineNameSpaceCompleteness (durability, subscriber);
+
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Local groups are complete now.\n");
         d_durabilitySetState(durability, D_STATE_COMPLETE);
         u_serviceChangeState(durability->service, STATE_OPERATIONAL);
@@ -890,87 +974,6 @@ d_durabilityWaitForAttachToGroup(
 
 }
 
-c_bool
-d_durabilityWaitForAttachToGroupOld(
-    d_durability durability,
-    v_group group)
-{
-    static c_bool      youHaveBeenWarnedAlready = FALSE;
-    v_serviceStateKind serviceStateKind;
-    c_ulong            maxWaits;
-    c_bool             attached;
-    d_configuration    config;
-    d_table            services;
-    os_time            attachTime;
-    config   = d_durabilityGetConfiguration(durability);
-    services = config->networkServiceNames;
-
-    assert(d_objectIsValid(d_object(durability), D_DURABILITY) == TRUE);
-
-    attached = FALSE;
-
-    if (d_tableSize(services)) {
-        /* there are services that must be attached to the group first */
-        serviceStateKind = u_serviceManagerGetServiceStateKind(
-                                    durability->serviceManager, d_tableFirst(services));
-
-        switch (serviceStateKind) {
-        case STATE_INITIALISING:
-        case STATE_OPERATIONAL:
-        case STATE_NONE: /* also wait with STATE_NONE, because networking might not have been started up yet */
-            maxWaits = config->networkMaxWaitCount;
-            attachTime.tv_sec  = 0;
-            attachTime.tv_nsec = 100000000;
-
-            if (maxWaits) {
-                do {
-                    attached = v_groupNwAttachedGet(group);
-                    if (attached) {
-                    } else {
-                        os_nanoSleep(attachTime);
-                        --maxWaits;
-                    }
-                /* QAC EXPECT 2100; */
-                } while (maxWaits && !attached && durability->splicedRunning);
-                if (attached) {
-                    d_printTimedEvent(durability,
-                            D_LEVEL_FINE, D_THREAD_GROUP_LOCAL_LISTENER,
-                            "Services are attached to group %s.%s\n",
-                            v_partitionName(v_groupPartition(group)),
-                            v_topicName(v_groupTopic(group)));
-                } else {
-                    d_printTimedEvent(durability,
-                            D_LEVEL_SEVERE, D_THREAD_GROUP_LOCAL_LISTENER,
-                            "Services NOT attached to group %s.%s.\n",
-                            v_partitionName(v_groupPartition(group)),
-                            v_topicName(v_groupTopic(group)));
-                    if (youHaveBeenWarnedAlready) {
-                        OS_REPORT_1(OS_WARNING,
-                                    D_CONTEXT_DURABILITY, 1,
-                                    "Service %s attachment to group failed\n",
-                                    d_tableFirst(services));
-                    }
-                }
-            }
-            break;
-        case STATE_TERMINATING:
-        case STATE_TERMINATED:
-        case STATE_DIED:
-        default:
-            d_printTimedEvent(durability,
-                              D_LEVEL_WARNING,
-                              D_THREAD_GROUP_LOCAL_LISTENER,
-                              "Not waiting for services attaching to the group\n");
-            OS_REPORT(OS_WARNING, D_CONTEXT_DURABILITY, 0,
-                      "Not waiting for services attaching to the group.");
-            break;
-        }
-    } else {
-        attached = TRUE;
-    }
-    return attached;
-}
-
 struct updateStatistics {
     d_durabilityStatisticsCallback callback;
     c_voidp userData;
@@ -1004,3 +1007,54 @@ d_durabilityUpdateStatistics(
 
     u_entityAction(u_entity(durability->service), d_durabilityUpdateStatisticsCallback, &update);
 }
+
+u_result
+d_durabilityTakePersistentSnapshot(
+    d_durability durability,
+    c_char* partitionExpr,
+    c_char* topicExpr,
+    c_char* uri)
+{
+    u_result result;
+    d_storeResult storeResult;
+    d_admin admin;
+    d_subscriber subscriber;
+    d_store store;
+    d_serviceState state;
+
+    assert(durability);
+    assert(partitionExpr);
+    assert(topicExpr);
+    assert(uri);
+
+    state = d_durabilityGetState(durability);
+    if(state == D_STATE_COMPLETE)
+    {
+        admin = durability->admin;
+        subscriber = d_adminGetSubscriber(admin);
+        store = d_subscriberGetPersistentStore(subscriber);
+        storeResult = d_storeCreatePersistentSnapshot(store, partitionExpr, topicExpr, uri);
+        /* Map the store result to a u_result */
+        switch(storeResult)
+        {
+        case D_STORE_RESULT_OK:
+            result = U_RESULT_OK;
+            break;
+        case D_STORE_RESULT_OUT_OF_RESOURCES:
+            result = U_RESULT_OUT_OF_MEMORY;
+            break;
+        case D_STORE_RESULT_ILL_PARAM:
+            result = U_RESULT_ILL_PARAM;
+            break;
+        default:
+            result = U_RESULT_PRECONDITION_NOT_MET;
+            break;
+        }
+    } else
+    {
+        result = U_RESULT_PRECONDITION_NOT_MET;
+    }
+    return result;
+}
+
+

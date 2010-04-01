@@ -1,0 +1,9 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_base_incl {
+
+    verbatim(gnuace, macros) {
+    override no_hidden_visibility = 1
+  }
+}

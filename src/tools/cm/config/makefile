@@ -20,7 +20,7 @@ JPACKAGES=org/opensplice/config/meta \
 		  org/opensplice/config/swing \
 		  org/opensplice/config
 
-JFLAGS=-source 1.5
+JFLAGS=-source 1.5 -target 1.5
 
 all link: $(META_FILES) jar
 

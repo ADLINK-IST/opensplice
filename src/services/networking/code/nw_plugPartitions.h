@@ -30,6 +30,7 @@ nw_plugPartitionsGetPartition(
     nw_partitionAddress *partitionAddress,
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
+    nw_bool *compression,
     os_uint32* hash);
 
 

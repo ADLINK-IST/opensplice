@@ -1575,3 +1575,55 @@ gapi_fooDataReader_lookup_instance (
 
     return handle;
 }
+
+gapi_returnCode_t
+gapi_fooDataReader_getInstanceUserData (
+    gapi_fooDataReader _this,
+    gapi_instanceHandle_t instance,
+    c_voidp* data_out)
+{
+    _DataReader datareader;
+    gapi_returnCode_t result;
+
+    datareader = gapi_dataReaderClaim(_this, NULL);
+    if ( datareader ) {
+
+        result = kernelResultToApiResult (
+                    u_dataReaderGetInstanceUserData(
+                    U_DATAREADER_GET(datareader),
+                    instance,
+                    data_out));
+    } else {
+    	result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+
+    _EntityRelease(datareader);
+
+    return result;
+}
+
+gapi_returnCode_t
+gapi_fooDataReader_setInstanceUserData (
+    gapi_fooDataReader _this,
+    gapi_instanceHandle_t instance,
+    c_voidp data)
+{
+    _DataReader datareader;
+    gapi_returnCode_t result;
+
+    datareader = gapi_dataReaderClaim(_this, NULL);
+    if ( datareader  ) {
+
+        result = kernelResultToApiResult (
+                    u_dataReaderSetInstanceUserData(
+                    U_DATAREADER_GET(datareader),
+                    instance,
+                    data));
+    } else {
+    	result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+
+    _EntityRelease(datareader);
+
+    return result;
+}

@@ -6,7 +6,6 @@ KEEP_DIST=yes
 RUN_DBT=no
 RUN_RBT=no
 RUN_EXAMPLES=yes
+VALGRIND=no
 
 . configs/`hostname`/common
-
-export JAVA_HOME=/home/dds/INSTALLED\ FOR\ DDS/jdk1.5.0_16_64

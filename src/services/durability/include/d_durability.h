@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -31,14 +31,14 @@ extern "C" {
 #define d_durability(d) ((d_durability)(d))
 
 typedef void (*d_durabilityStatisticsCallback)(v_durabilityStatistics statistics, c_voidp userData);
-    
+
 int                 main                                (int argc, char* argv[]);
 
 u_service           d_durabilityGetService              (d_durability durability);
 
 d_configuration     d_durabilityGetConfiguration        (d_durability durability);
 
-c_bool              d_durabilityWaitForAttachToGroup    (d_durability durability, 
+c_bool              d_durabilityWaitForAttachToGroup    (d_durability durability,
                                                          v_group group);
 
 d_serviceState      d_durabilityGetState                (d_durability durability);
@@ -53,7 +53,12 @@ void                d_durabilityTerminate               (d_durability durability
 void                d_durabilityUpdateStatistics        (d_durability durability,
                                                          d_durabilityStatisticsCallback callback,
                                                          c_voidp userData);
-
+u_result
+d_durabilityTakePersistentSnapshot(
+    d_durability durability,
+    c_char* partitionExpr,
+    c_char* topicExpr,
+    c_char* uri);
 #if defined (__cplusplus)
 }
 #endif

@@ -122,7 +122,6 @@ u_queryNew(
             }
             u_entityRelease(u_entity(source));
         } else {
-            q_dispose(copy);
             OS_REPORT(OS_WARNING, "u_queryNew", 0,
                       "Claim Query source failed.");
         }

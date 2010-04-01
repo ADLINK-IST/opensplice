@@ -44,15 +44,11 @@ copyReaderViewQosIn (
     gapi_boolean copied = TRUE;
 
     dstQos->userKey.enable = srcQos->view_keys.use_key_list;
-//    if ( srcQos->view_keys.use_key_list ) {
-        dstQos->userKey.expression = gapi_stringSeq_to_String(&srcQos->view_keys.key_list, ",");
-        if ( (srcQos->view_keys.key_list._length > 0UL) && !dstQos->userKey.expression ) {
-            assert(FALSE);
-            copied = FALSE;
-        }
-//    } else {
-//        dstQos->userKey.expression = NULL;
-//    }
+    dstQos->userKey.expression = gapi_stringSeq_to_String(&srcQos->view_keys.key_list, ",");
+    if ( (srcQos->view_keys.key_list._length > 0UL) && !dstQos->userKey.expression ) {
+        assert(FALSE);
+        copied = FALSE;
+    }
 
     return copied;
 }
@@ -65,11 +61,9 @@ copyReaderViewQosOut (
     gapi_boolean copied = TRUE;
 
     dstQos->view_keys.use_key_list = srcQos->userKey.enable;
-//    if ( srcQos->userKey.enable ) {
-        copied = gapi_string_to_StringSeq(srcQos->userKey.expression, ",", &dstQos->view_keys.key_list);
-//    } else {
-//        gapi_stringSeq_set_length(&dstQos->view_keys.key_list, 0L);
-//    }
+    copied = gapi_string_to_StringSeq(srcQos->userKey.expression,
+                                      ",",
+                                      &dstQos->view_keys.key_list);
     return copied;
 }
 

@@ -372,10 +372,11 @@ nw_plugChannelGetPartition(
     nw_partitionAddress *partitionAddress,
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
+    nw_bool *compression,
     os_uint32 *hash)
 {
     nw_plugPartitionsGetPartition(channel->partitions, partitionId, found,
-        partitionAddress, securityPolicy, connected, hash);
+        partitionAddress, securityPolicy, connected, compression, hash);
 
 }
 

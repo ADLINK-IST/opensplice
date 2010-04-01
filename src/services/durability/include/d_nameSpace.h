@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d__types.h"
@@ -33,23 +33,23 @@ int                 d_nameSpaceCompatibilityCompare     (d_nameSpace ns1,
 
 void                d_nameSpaceFree                     (d_nameSpace nameSpace);
 
-void                d_nameSpaceAddElement               (d_nameSpace nameSpace, 
+void                d_nameSpaceAddElement               (d_nameSpace nameSpace,
                                                          const char * name,
-                                                         const char * partition, 
+                                                         const char * partition,
                                                          const char * topic);
-                                         
+
 char *              d_nameSpaceGetName                  (d_nameSpace nameSpace);
 
 c_bool              d_nameSpaceIsEmpty                  (d_nameSpace nameSpace);
 
 c_bool              d_nameSpaceIsIn                     (d_nameSpace nameSpace,
-                                                         d_partition partition, 
+                                                         d_partition partition,
                                                          d_topic topic);
 
-void                d_nameSpaceElementWalk              (d_nameSpace nameSpace, 
+void                d_nameSpaceElementWalk              (d_nameSpace nameSpace,
                                                          c_bool ( * action ) (
-                                                            d_element element, 
-                                                            c_voidp userData), 
+                                                            d_element element,
+                                                            c_voidp userData),
                                                          c_voidp args);
 
 c_bool              d_nameSpaceIsAligner                (d_nameSpace nameSpace) ;
@@ -67,15 +67,32 @@ d_alignmentKind     d_nameSpaceGetAlignmentKind         (d_nameSpace nameSpace);
 
 d_durabilityKind    d_nameSpaceGetDurabilityKind        (d_nameSpace nameSpace);
 
-void                d_nameSpaceSetMaster                (d_nameSpace nameSpace, 
+
+void				d_nameSpaceSetMasterState			(d_nameSpace nameSpace,
+														 d_serviceState serviceState);
+
+d_serviceState		d_nameSpaceGetMasterState			(d_nameSpace nameSpace);
+
+void                d_nameSpaceSetMaster                (d_nameSpace nameSpace,
                                                          d_networkAddress master);
 
 d_networkAddress    d_nameSpaceGetMaster                (d_nameSpace nameSpace);
+
+void				d_nameSpaceMasterConfirmed			(d_nameSpace nameSpace);
+
+void				d_nameSpaceMasterPending			(d_nameSpace nameSpace);
+
+c_bool				d_nameSpaceIsMasterConfirmed		(d_nameSpace nameSpace);
 
 c_bool              d_nameSpaceMasterIsMe               (d_nameSpace nameSpace,
                                                          d_admin admin);
 
 c_bool              d_nameSpaceIsAlignmentNotInitial    (d_nameSpace nameSpace);
+
+c_bool
+d_nameSpaceStringMatches(
+    c_string str,
+    c_string pattern);
 
 #if defined (__cplusplus)
 }

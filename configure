@@ -70,7 +70,7 @@ set_var SPLICE_TARGET $SPLICE_TARGET
 set_var SPLICE_HOST $SPLICE_HOST
 
 setup_pathed_vars
-dump_vars > "$ENVFILE.sh"
+dump_env_vars > "$ENVFILE.sh"
 . "./$ENVFILE.sh"
 print_setup
 

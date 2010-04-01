@@ -107,12 +107,11 @@ namespace DDS
                 DomainParticipantListenerHelper listenerHelper = new DomainParticipantListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                lock (listener)
+                using (DomainParticipantListenerMarshaler listenerMarshaler = 
+                        new DomainParticipantListenerMarshaler(ref gapiListener))
                 {
-                    using (DomainParticipantListenerMarshaler listenerMarshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
-                    {
-                        // Invoke the corresponding gapi function.
-                        IntPtr gapiParticipant = OpenSplice.Gapi.DomainParticipantFactory.create_participant(
+                    // Invoke the corresponding gapi function.
+                    IntPtr gapiParticipant = OpenSplice.Gapi.DomainParticipantFactory.create_participant(
                             GapiPeer,
                             domainId,
                             OpenSplice.Gapi.NativeConstants.GapiParticipantQosDefault,
@@ -121,10 +120,9 @@ namespace DDS
                             IntPtr.Zero,
                             IntPtr.Zero,
                             IntPtr.Zero);
-                        if (gapiParticipant != IntPtr.Zero)
-                        {
-                            participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
-                        }
+                    if (gapiParticipant != IntPtr.Zero)
+                    {
+                        participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
                     }
                 }
             }
@@ -146,7 +144,20 @@ namespace DDS
                     participant = new OpenSplice.DomainParticipant(gapiParticipant);
                 }
             }
-
+            
+            if (participant != null)
+            {
+                DomainParticipantFactoryQos dpfQos = null;
+                ReturnCode result = GetQos(ref dpfQos);
+                if (result == ReturnCode.Ok)
+                {
+                    if (dpfQos.EntityFactory.AutoenableCreatedEntities)
+                    {
+                        participant.Enable();
+                    }
+                }
+            }       
+                
             return participant;
         }
 
@@ -177,24 +188,22 @@ namespace DDS
                         DomainParticipantListenerHelper listenerHelper = new DomainParticipantListenerHelper();
                         listenerHelper.Listener = listener;
                         listenerHelper.CreateListener(out gapiListener);
-                        lock (listener)
+                        using (DomainParticipantListenerMarshaler listenerMarshaler = 
+                                new DomainParticipantListenerMarshaler(ref gapiListener))
                         {
-                            using (DomainParticipantListenerMarshaler listenerMarshaler = new DomainParticipantListenerMarshaler(ref gapiListener))
+                            // Invoke the corresponding gapi function.
+                            IntPtr gapiParticipant = OpenSplice.Gapi.DomainParticipantFactory.create_participant(
+                                    GapiPeer,
+                                    domainId,
+                                    marshaler.GapiPtr,
+                                    listenerMarshaler.GapiPtr,
+                                    mask,
+                                    IntPtr.Zero,
+                                    IntPtr.Zero,
+                                    IntPtr.Zero);
+                            if (gapiParticipant != IntPtr.Zero)
                             {
-                                // Invoke the corresponding gapi function.
-                                IntPtr gapiParticipant = OpenSplice.Gapi.DomainParticipantFactory.create_participant(
-                                        GapiPeer,
-                                        domainId,
-                                        marshaler.GapiPtr,
-                                        listenerMarshaler.GapiPtr,
-                                        mask,
-                                        IntPtr.Zero,
-                                        IntPtr.Zero,
-                                        IntPtr.Zero);
-                                if (gapiParticipant != IntPtr.Zero)
-                                {
-                                    participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
-                                }
+                                participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
                             }
                         }
                     }
@@ -218,6 +227,19 @@ namespace DDS
                 }
             }
 
+            if (participant != null)
+            {
+                DomainParticipantFactoryQos dpfQos = null;
+                ReturnCode result = GetQos(ref dpfQos);
+                if (result == ReturnCode.Ok)
+                {
+                    if (dpfQos.EntityFactory.AutoenableCreatedEntities)
+                    {
+                        participant.Enable();
+                    }
+                }
+            }       
+                
             return participant;
         }
       

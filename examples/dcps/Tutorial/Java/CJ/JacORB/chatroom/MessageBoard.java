@@ -86,7 +86,7 @@ public class MessageBoard {
         ErrorHandler.checkHandle(
             dpf, "DDS.DomainParticipantFactory.get_instance");
         parentDP = dpf.create_participant(
-            domain, PARTICIPANT_QOS_DEFAULT.value, null, ANY_STATUS.value);
+            domain, PARTICIPANT_QOS_DEFAULT.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentDP, "DDS.DomainParticipantFactory.create_participant");
         
@@ -140,7 +140,7 @@ public class MessageBoard {
             chatMessageTypeName, 
             reliableTopicQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             chatMessageTopic, 
             "DDS.DomainParticipant.create_topic (ChatMessage)");
@@ -158,7 +158,7 @@ public class MessageBoard {
             nameServiceTypeName, 
             settingTopicQos.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             nameServiceTopic, 
             "DDS.DomainParticipant.create_topic (NameService)");
@@ -186,7 +186,7 @@ public class MessageBoard {
 
         /* Create a Subscriber for the MessageBoard application. */
         chatSubscriber = participant.create_subscriber(
-            subQos.value, null, ANY_STATUS.value);
+            subQos.value, null, STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             chatSubscriber, "DDS.DomainParticipant.create_subscriber");
         
@@ -196,7 +196,7 @@ public class MessageBoard {
             namedMessageTopic, 
             DATAREADER_QOS_USE_TOPIC_QOS.value, 
             null,
-            ANY_STATUS.value);
+            STATUS_MASK_NONE.value);
         ErrorHandler.checkHandle(
             parentReader, "DDS.Subscriber.create_datareader");
         

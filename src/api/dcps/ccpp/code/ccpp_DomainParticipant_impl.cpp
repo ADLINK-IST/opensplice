@@ -1015,7 +1015,9 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::ignore_subscription (
 char * DDS::DomainParticipant_impl::get_domain_id (
 ) THROW_ORB_EXCEPTIONS
 {
-  CORBA::String_var the_domain_id = gapi_domainParticipant_get_domain_id(_gapi_self);
+  gapi_domainId_t di = gapi_domainParticipant_get_domain_id(_gapi_self);
+  CORBA::String_var the_domain_id = CORBA::string_dup(di);
+  gapi_free(di);
   return the_domain_id._retn ();
 }
 

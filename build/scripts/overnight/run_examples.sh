@@ -12,14 +12,15 @@ echo " Begin running examples - `date`"
 for PROJECT in $EXAMPLES 
 do
     cd "$CUR_PATH/$PROJECT"
-
+    
     run="yes"
     
     for test in $EXCLUDED_TESTS
     do
-	if [ $PROJECT = $test ]; then
-	   run="no"
-	fi
+	    if [ $PROJECT = $test ]
+        then
+	        run="no"
+	    fi
     done
 
     echo " ### Project: $PROJECT Begin ### " > run.log
@@ -30,7 +31,8 @@ do
         status=$?
         
         SUM=`expr $SUM + 1`
-        if [ $status = 0 ]; then
+        if [ $status = 0 ]
+        then
            # ignore the print out from ospl describing the location of the error log
            if [ -n "`egrep -i '(segmentation|killed|timeout|file not found|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error)' $CUR_PATH/$PROJECT/run.log | grep -v '^Error log :'`" ]
            then               
@@ -62,13 +64,13 @@ do
                echo "" >> $RUN_SUMMARY_LOG
             else
                SUCC=`expr $SUCC + 1`
-	       echo " ### Run $PROJECT PASSED ### " >> $RUN_SUMMARY_LOG
-	       echo " ### Run $PROJECT PASSED ### " >> run.log
+	           echo " ### Run $PROJECT PASSED ### " >> run.log
+	           echo " ### Run $PROJECT PASSED ### " >> $RUN_SUMMARY_LOG
             fi
         else
             FAIL=`expr $FAIL + 1`
-	    echo " ### Run $PROJECT FAILED with status: $status ### " >> run.log
-	    echo " ### Run $PROJECT FAILED with status: $status ### " >> $RUN_SUMMARY_LOG
+	        echo " ### Run $PROJECT FAILED with status: $status ### " >> run.log
+	        echo " ### Run $PROJECT FAILED with status: $status ### " >> $RUN_SUMMARY_LOG
         fi  
 	 
         echo " ### Project: $PROJECT End ### " >> run.log
@@ -79,8 +81,17 @@ do
         EXAMPLELOGS=`echo $PROJECT | sed -e 's/standalone/SA/' -e 's/CORBA/C/' -e 's/Java/J/' -e 's/C++/CPP/' -e 's/JacORB//' -e 's/OpenFusion//' -e 's/\///g'`
 
         mkdir $LOGDIR/examples/run/$EXAMPLELOGS
-
         cp $CUR_PATH/$PROJECT/*.log $LOGDIR/examples/run/$EXAMPLELOGS
+
+        if [ "$VALGRIND" = "yes" ]
+        then
+            mkdir $LOGDIR/valgrind/$EXAMPLELOGS
+            (
+                cd $CUR_PATH/$PROJECT;
+                for i in `find . -name "vg_*.txt"`; do cp $i $LOGDIR/valgrind/$EXAMPLELOGS; done;
+                chmod -R +r $LOGDIR/valgrind/$EXAMPLELOGS;
+            )
+        fi
 
 #       cat run.log  >> $RUN_LOG
         sleep 10

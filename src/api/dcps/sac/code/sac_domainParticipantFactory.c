@@ -201,4 +201,19 @@ DDS_DomainParticipantFactory_lookup_domain (
     );
 }
 
+/*     DDS_ReturnCode_t
+ *     delete_domain(
+ *          in Domain a_domain);
+ */
+DDS_ReturnCode_t
+DDS_DomainParticipantFactory_delete_domain (
+    DDS_DomainParticipantFactory _this,
+    DDS_Domain a_domain)
+{
+    return (DDS_ReturnCode_t)gapi_domainParticipantFactory_delete_domain (
+        (gapi_domainParticipantFactory)_this,
+        (gapi_domain)a_domain
+    );
+}
+
 

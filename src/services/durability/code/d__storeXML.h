@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef D__STOREXML_H
@@ -92,6 +92,7 @@ C_STRUCT(d_storeXML){
     c_char* dataBuffer;
     c_char* keyBuffer;
     d_table expungeActions;
+    os_mutex mutex;
 };
 
 void            d_storeDeinitXML                (d_object object);
@@ -115,11 +116,14 @@ d_storeResult   d_storeGetQualityXML            (const d_store store,
 d_storeResult   d_storeBackupXML                (const d_store store,
                                                  const d_nameSpace nameSpace);
 
+d_storeResult	d_storeRestoreBackupXML 		(const d_store store,
+												 const d_nameSpace nameSpace);
+
 d_storeResult   d_storeGroupsReadXML            (const d_store store,
                                                  d_groupList *list);
 
 d_storeResult   d_storeGroupInjectXML           (const d_store store,
-                                                 const c_char* partition, 
+                                                 const c_char* partition,
                                                  const c_char* topic,
                                                  const u_participant participant,
                                                  d_group *group);
@@ -148,11 +152,24 @@ d_storeResult   d_storeMessagesInjectXML        (const d_store store,
 d_storeResult   d_storeInstanceRegisterXML 	    (const d_store store,
                                                  const v_groupAction message);
 
+d_storeResult   d_storeCreatePersistentSnapshotXML  (const d_store store,
+                                                    const c_char* partitionExpr,
+                                                    const c_char* topicExpr,
+                                                    const c_char* uri);
+
 d_storeResult   d_storeInstanceUnregisterXML    (const d_store store,
                                                  const v_groupAction message);
 
 d_storeResult   d_storeOptimizeGroupXML         (const d_store store,
                                                  const d_group group);
+
+d_storeResult	d_storeNsIsCompleteXML 			(const d_store store,
+												 const d_nameSpace nameSpace,
+												 c_bool* isComplete);
+
+d_storeResult	d_storeNsMarkCompleteXML 		(const d_store store,
+												 const d_nameSpace nameSpace,
+												 c_bool isComplete);
 
 #if defined (__cplusplus)
 }

@@ -105,7 +105,7 @@ main (
         domain, 
         PARTICIPANT_QOS_DEFAULT, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(participant.in(), "DDS::DomainParticipantFactory::create_participant");  
 
     /* Register the required datatype for ChatMessage. */
@@ -137,7 +137,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(chatMessageTopic.in(), "DDS::DomainParticipant::create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -151,7 +151,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(nameServiceTopic.in(), "DDS::DomainParticipant::create_topic");
 
     /* Adapt the default SubscriberQos to read from the "ChatRoom" Partition. */
@@ -161,7 +161,7 @@ main (
     sub_qos.partition.name[0UL] = "ChatRoom";
 
     /* Create a Subscriber for the UserLoad application. */
-    chatSubscriber = participant->create_subscriber(sub_qos, NULL, ANY_STATUS);
+    chatSubscriber = participant->create_subscriber(sub_qos, NULL, STATUS_MASK_NONE);
     checkHandle(chatSubscriber.in(), "DDS::DomainParticipant::create_subscriber");
     
     /* Create a DataReader for the NameService Topic (using the appropriate QoS). */
@@ -169,7 +169,7 @@ main (
         nameServiceTopic.in(), 
         DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (NameService)");
 
     /* Narrow the abstract parent into its typed representative. */
@@ -188,7 +188,7 @@ main (
         chatMessageTopic.in(), 
         message_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (ChatMessage)");
     
     /* Narrow the abstract parent into its typed representative. */

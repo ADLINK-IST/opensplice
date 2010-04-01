@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_topicDescription.h"
@@ -60,7 +60,7 @@ _TopicNew (
     v_topicQos topicQos;
     u_participant uParticipant;
     u_topic uTopic;
-    
+
     assert(topicName);
     assert(typeName);
     assert(typesupport);
@@ -78,7 +78,7 @@ _TopicNew (
         unsigned long    len;
         char            *expr;
 
-        len = strlen(prefix) + strlen(topicName) + 1; 
+        len = strlen(prefix) + strlen(topicName) + 1;
         expr = (char *) os_malloc(len);
 
         if ( expr ) {
@@ -135,7 +135,7 @@ _TopicNew (
             newTopic = NULL;
         }
     }
-             
+
     return newTopic;
 }
 
@@ -166,7 +166,7 @@ _TopicFromKernelTopic (
         unsigned long    len;
         char            *stmt;
 
-        len = strlen(prefix) + strlen(topicName) + 1; 
+        len = strlen(prefix) + strlen(topicName) + 1;
         stmt = (char *) os_malloc(len);
 
         if ( stmt ) {
@@ -194,7 +194,7 @@ _TopicFromKernelTopic (
             newTopic = NULL;
         }
     }
-             
+
     return newTopic;
 }
 
@@ -215,7 +215,7 @@ _TopicFromTopic (
 
     assert(topic);
     assert(participant);
-    
+
     uParticipant = _DomainParticipantUparticipant(participant);
     descr = _TopicDescription(topic);
 
@@ -233,7 +233,7 @@ _TopicFromTopic (
         unsigned long    len;
         char            *stmt;
 
-        len = strlen(prefix) + strlen(topicName) + 1; 
+        len = strlen(prefix) + strlen(topicName) + 1;
         stmt = (char *) os_malloc(len);
 
         if ( stmt ) {
@@ -256,7 +256,7 @@ _TopicFromTopic (
     if ( newTopic != NULL ) {
         newTopic->_refCount = 0;
         /* obtain the v_qos of the existing topic */
-        
+
         if ( u_entityQoS(u_entity(U_TOPIC_GET(topic)),
                          (v_qos*)&topicQos) != U_RESULT_OK ) {
             _TopicDescriptionDispose(_TopicDescription(newTopic));
@@ -278,7 +278,7 @@ _TopicFromTopic (
             _TopicDescriptionDispose(_TopicDescription(newTopic));
             newTopic = NULL;
         }
-    } 
+    }
     if ( newTopic ) {
         _EntityStatus(newTopic) = _Status(_TopicStatusNew(newTopic, NULL,0));
         if ( _EntityStatus(newTopic) == NULL ) {
@@ -287,7 +287,7 @@ _TopicFromTopic (
             newTopic = NULL;
         }
     }
-             
+
     return newTopic;
 }
 
@@ -296,10 +296,10 @@ gapi_returnCode_t
 _TopicFree (
     _Topic topic)
 {
-    gapi_returnCode_t result = GAPI_RETCODE_OK; 
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     assert (topic);
-    
+
    _TopicStatusSetListener(_TopicStatus(_Entity(topic)->status),NULL,0);
    _TopicStatusFree(_TopicStatus(_Entity(topic)->status));
    _EntityFreeStatusCondition(_Entity(topic));
@@ -334,11 +334,11 @@ _TopicGetQos (
 {
     v_topicQos topicQos;
     u_topic uTopic;
-    
+
     assert(topic);
 
     uTopic = U_TOPIC_GET(topic);
-        
+
     if (u_entityQoS(u_entity(uTopic),(v_qos*)&topicQos) == U_RESULT_OK) {
         copyTopicQosOut(topicQos,  qos);
         u_topicQosFree(topicQos);
@@ -367,7 +367,7 @@ gapi_topic_set_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     topic = gapi_topicClaim(_this, &result);
 
     if ( topic && qos ) {
@@ -375,7 +375,7 @@ gapi_topic_set_qos (
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    
+
     if ((result == GAPI_RETCODE_OK ) && (_Entity(topic)->enabled)) {
         gapi_topicQos *existing_qos = gapi_topicQos__alloc();
 
@@ -385,7 +385,7 @@ gapi_topic_set_qos (
                                               &context);
         gapi_free(existing_qos);
     }
-    
+
     if ( result == GAPI_RETCODE_OK ) {
         topicQos = u_topicQosNew(NULL);
         if (topicQos) {
@@ -414,7 +414,7 @@ gapi_topic_get_qos (
 {
     _Topic topic;
     gapi_returnCode_t result;
-    
+
     topic = gapi_topicClaim(_this, &result);
     if ( topic && qos ) {
         _TopicGetQos(topic,qos);
@@ -473,9 +473,9 @@ gapi_topic_get_inconsistent_topic_status (
 {
     _Topic topic;
     gapi_returnCode_t result;
-    
+
     topic = gapi_topicClaim(_this, &result);
-    
+
     if (topic != NULL) {
         if (_Entity(topic)->enabled ) {
             result = _TopicGetInconsistentTopicStatus (
@@ -486,7 +486,7 @@ gapi_topic_get_inconsistent_topic_status (
     }
 
     _EntityRelease(topic);
-    
+
     return result;
 }
 
@@ -500,11 +500,11 @@ gapi_topic_set_listener (
     _Topic topic;
 
     topic = gapi_topicClaim(_this, &result);
-     
+
     if ( topic != NULL ) {
         if ( _Entity(topic)->enabled ) {
             _TopicStatus status;
-           
+
             if ( a_listener ) {
                 topic->_Listener = *a_listener;
             } else {
@@ -521,7 +521,7 @@ gapi_topic_set_listener (
     }
 
     _EntityRelease(topic);
-        
+
     return result;
 }
 
@@ -531,9 +531,9 @@ gapi_topic_get_listener (
 {
     _Topic topic;
     struct gapi_topicListener listener;
-    
+
    topic = gapi_topicClaim(_this, NULL);
-     
+
     if ( topic != NULL ) {
         listener = topic->_Listener;
     } else {
@@ -541,7 +541,7 @@ gapi_topic_get_listener (
     }
 
     _EntityRelease(topic);
-    
+
     return listener;
 }
 
@@ -565,7 +565,7 @@ _BuiltinTopicNew (
         unsigned long    len;
         char            *expr;
 
-        len = strlen(prefix) + strlen(topicName) + 1; 
+        len = strlen(prefix) + strlen(topicName) + 1;
         expr = (char *) os_malloc(len);
 
         if ( expr ) {
@@ -684,13 +684,13 @@ copyTopicQosOut (
 {
     assert(srcQos);
     assert(dstQos);
-    
+
     kernelCopyOutDuration(&srcQos->deadline.period,
                           &dstQos->deadline.period);
 
     dstQos->durability.kind =
             srcQos->durability.kind;
-    
+
     dstQos->durability_service.history_kind =
             srcQos->durabilityService.history_kind;
     dstQos->durability_service.history_depth =
@@ -704,7 +704,7 @@ copyTopicQosOut (
 
     kernelCopyOutDuration(&srcQos->durabilityService.service_cleanup_delay,
                           &dstQos->durability_service.service_cleanup_delay);
-    
+
     dstQos->history.kind =
             srcQos->history.kind;
     dstQos->history.depth =
@@ -764,8 +764,8 @@ copyTopicQosOut (
         dstQos->topic_data.value._length  = 0;
         dstQos->topic_data.value._release = FALSE;
         dstQos->topic_data.value._buffer = NULL;
-    }  
-        
+    }
+
     return TRUE;
 }
 
@@ -788,7 +788,7 @@ onInconsistentTopic (
     _Status status;
     _Entity entity;
     c_voidp listenerData;
-   
+
     entity = gapi_entityClaim(target, NULL);
 
     if ( entity ) {
@@ -801,9 +801,9 @@ onInconsistentTopic (
         if ( topic ) {
             status = entity->status;
             result = _TopicGetInconsistentTopicStatus (
-                         _Topic(topic), FALSE, &info); 
-    
-            callback     = status->callbackInfo.on_inconsistent_topic; 
+                         _Topic(topic), FALSE, &info);
+
+            callback     = status->callbackInfo.on_inconsistent_topic;
             listenerData = status->callbackInfo.listenerData;
 
             if ( target != source ) {
@@ -812,11 +812,11 @@ onInconsistentTopic (
             }
             _EntitySetBusy(entity);
             _EntityRelease(entity);
-            callback(listenerData, (gapi_topic)topic, &info); 
+            callback(listenerData, (gapi_topic)topic, &info);
             if ( target != source ) {
                 gapi_objectClearBusy(source);
             }
-            gapi_objectClearBusy(target);            
+            gapi_objectClearBusy(target);
         } else {
             _EntityRelease(entity);
         }
@@ -840,4 +840,4 @@ _TopicNotifyListener(
         }
     }
 }
-    
+

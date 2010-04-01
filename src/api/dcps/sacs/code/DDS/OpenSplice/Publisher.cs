@@ -93,24 +93,21 @@ namespace DDS.OpenSplice
                 PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
                 listenerHelper.Listener = listener;
                 listenerHelper.CreateListener(out gapiListener);
-                lock (listener)
+                using (PublisherDataWriterListenerMarshaler listenerMarshaler =
+                        new PublisherDataWriterListenerMarshaler(ref gapiListener))
                 {
-                    using (PublisherDataWriterListenerMarshaler listenerMarshaler =
-                            new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
+                            GapiPeer,
+                            topicObj.GapiPeer,
+                            Gapi.NativeConstants.GapiDataWriterQosDefault,
+                            listenerMarshaler.GapiPtr,
+                            mask);
+                    if (gapiPtr != IntPtr.Zero)
                     {
-                        IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
-                                GapiPeer,
-                                topicObj.GapiPeer,
-                                Gapi.NativeConstants.GapiDataWriterQosDefault,
-                                listenerMarshaler.GapiPtr,
-                                mask);
-                        if (gapiPtr != IntPtr.Zero)
-                        {
-                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                    as OpenSplice.TypeSupport;
-                            dataWriter = typeSupport.CreateDataWriter(gapiPtr);
-                            dataWriter.SetListener(listenerHelper);
-                        }
+                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
+                                as OpenSplice.TypeSupport;
+                        dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                        dataWriter.SetListener(listenerHelper);
                     }
                 }
             }
@@ -129,6 +126,20 @@ namespace DDS.OpenSplice
                     dataWriter = typeSupport.CreateDataWriter(gapiPtr);
                 }
             }
+
+            if (dataWriter != null)
+            {
+                PublisherQos pubQos = null;
+                ReturnCode result = GetQos(ref pubQos);
+                if (result == ReturnCode.Ok)
+                {
+                    if (pubQos.EntityFactory.AutoenableCreatedEntities)
+                    {
+                        dataWriter.Enable();
+                    }
+                }
+            }       
+                
             return dataWriter;
         }
 
@@ -159,24 +170,21 @@ namespace DDS.OpenSplice
                         PublisherDataWriterListenerHelper listenerHelper = new PublisherDataWriterListenerHelper();
                         listenerHelper.Listener = listener;
                         listenerHelper.CreateListener(out gapiListener);
-                        lock (listener)
+                        using (PublisherDataWriterListenerMarshaler listenerMarshaler =
+                                new PublisherDataWriterListenerMarshaler(ref gapiListener))
                         {
-                            using (PublisherDataWriterListenerMarshaler listenerMarshaler =
-                                    new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                            IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
+                                    GapiPeer,
+                                    topicObj.GapiPeer,
+                                    marshaler.GapiPtr,
+                                    listenerMarshaler.GapiPtr,
+                                    mask);
+                            if (gapiPtr != IntPtr.Zero)
                             {
-                                IntPtr gapiPtr = Gapi.Publisher.create_datawriter(
-                                        GapiPeer,
-                                        topicObj.GapiPeer,
-                                        marshaler.GapiPtr,
-                                        listenerMarshaler.GapiPtr,
-                                        mask);
-                                if (gapiPtr != IntPtr.Zero)
-                                {
-                                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                            as OpenSplice.TypeSupport;
-                                    dataWriter = typeSupport.CreateDataWriter(gapiPtr);
-                                    dataWriter.SetListener(listenerHelper);
-                                }
+                                TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
+                                        as OpenSplice.TypeSupport;
+                                dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                                dataWriter.SetListener(listenerHelper);
                             }
                         }
                     }
@@ -199,6 +207,19 @@ namespace DDS.OpenSplice
                 }
             }
 
+            if (dataWriter != null)
+            {
+                PublisherQos pubQos = null;
+                ReturnCode result = GetQos(ref pubQos);
+                if (result == ReturnCode.Ok)
+                {
+                    if (pubQos.EntityFactory.AutoenableCreatedEntities)
+                    {
+                        dataWriter.Enable();
+                    }
+                }
+            }       
+                
             return dataWriter;
         }
         

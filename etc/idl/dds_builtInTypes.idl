@@ -1,0 +1,18 @@
+#ifndef OSPL_DDS_BUILTINTYPES
+#define OSPL_DDS_BUILTINTYPES
+
+/*
+This file was orginally in  ./src/services/spliced/code/.
+What is it for ? It shouldn't compile without an import like "dds_dcps.idl" should it ... ??
+*/
+
+module DDS {
+
+    struct DCPS_builtin_types {
+        Duration_t              duration;
+        Time_t                  time;
+    };
+
+};
+
+#endif /* OSPL_DDS_BUILTINTYPES */

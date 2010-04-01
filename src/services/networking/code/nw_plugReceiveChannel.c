@@ -1043,6 +1043,7 @@ nw_plugReceiveChannelCreateSendingPartitions(
     nw_partitionAddress partitionAddress;
     nw_bool found;
     nw_bool connected;
+    nw_bool compression;
     nw_networkSecurityPolicy securityPolicy;
     os_uint32 hash;
 
@@ -1053,7 +1054,7 @@ nw_plugReceiveChannelCreateSendingPartitions(
          partitionId < nw_plugPartitionsGetNofPartitions(partitions);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, &securityPolicy, &connected, &hash);
+            &found, &partitionAddress, &securityPolicy, &connected, &compression, &hash);
         NW_CONFIDENCE(found);
 
         /*add hash with partitionid value to the hashTree*/
@@ -1061,7 +1062,7 @@ nw_plugReceiveChannelCreateSendingPartitions(
         if (found) {
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(receiveChannel)), partitionId, partitionAddress,
-                connected);
+                connected, compression, TRUE);
         }
     }
 }
@@ -1657,6 +1658,20 @@ nw_plugReceiveChannelInsertDataReceived(
     }
 }
 
+os_uint32
+nw_plugReceiveChannelLookUpPartitionHash(
+        nw_plugReceiveChannel channel,
+        nw_partitionId partitionHash)
+{
+    os_uint32 partitionHashToId;
+
+    partitionHashToId = (os_uint32)ut_get(
+       channel->partionIdToHashAdmin,
+       (void *)&partitionHash);
+
+    return partitionHashToId;
+}
+
 
 static nw_bool
 nw_plugReceiveChannelReadSocket(
@@ -1677,6 +1692,7 @@ nw_plugReceiveChannelReadSocket(
     char *addressString;
     nw_networkSecurityPolicy networkSecurityPolicy;
     nw_bool connected;
+    nw_bool compression;
     nw_bool crc_correct;
     os_uint32 crc;	
     os_uint32 partitionHashToId;
@@ -1694,13 +1710,17 @@ nw_plugReceiveChannelReadSocket(
         admin = DF_ADMIN(buffer);
         
         TRANSFER_USEDCOUNT(admin); 
-        
+
         readLength = nw_socketReceive(
             nw__plugChannelGetSocket(nw_plugChannel(channel)),
             (sk_address *)&admin->sender.ipAddress, buffer,
             fragmentLength, timeOut);
 
         NW_SECURITY_DECODER_PROCESS(bufferLength /* out */, channel, &(admin->sender), buffer, readLength, fragmentLength);
+
+        /* if security is enabled the readLength includes the security header
+         * the bufferLength is the original readLength without the security header */
+        readLength = bufferLength;
 
         if (readLength >= OS_SIZEOF(nw_plugBuffer)) {
 
@@ -1750,7 +1770,7 @@ nw_plugReceiveChannelReadSocket(
 
                                 connected = FALSE;
                                 sendingPartitionId = partitionHashToId;
-                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &partitionHashToId);
+                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &compression, &partitionHashToId);
 #ifdef FILTER_ON_SENDING_PARTITION
 								if (connected) {
 #endif

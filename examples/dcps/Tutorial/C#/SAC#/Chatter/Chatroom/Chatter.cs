@@ -1,7 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
+using System;
 using System.Threading;
 using DDS;
 using DDS.OpenSplice;
@@ -135,11 +143,7 @@ namespace Chatroom
 
             WriterDataLifecycleQosPolicy writerDataLifecycle = dwQos.WriterDataLifecycle;
             writerDataLifecycle.AutodisposeUnregisteredInstances = false;
-            IDataWriter nsParentWriter = chatPublisher.CreateDataWriter(
-                nameServiceTopic,
-                nsDwQos,
-                null,
-                StatusKind.Any);
+            IDataWriter nsParentWriter = chatPublisher.CreateDataWriter(nameServiceTopic, nsDwQos);
             ErrorHandler.checkHandle(
                 nsParentWriter, "DDS.Publisher.CreateDatawriter (NameService)");
 

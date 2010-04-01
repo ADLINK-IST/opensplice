@@ -6,7 +6,7 @@ CXX		 = g++
 CSC		 = gmcs
 
     # Binary used for filtering
-FILTER           = filter_gcc
+FILTER           =
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -54,10 +54,10 @@ SHCFLAGS         = -fPIC
 CFLAGS_OPT       = -O4 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W -pedantic
+CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long -Wno-variadic-macros
 
 # Set compiler options for single threaded process
-CFLAGS		 = -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CFLAGS		 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
 CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
@@ -89,6 +89,9 @@ LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS = 
 LDLIBS_JAVA = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC= -lodbc
+LDLIBS_ZLIB = -lz
+LDFLAGS_ZLIB =
+CINCS_ZLIB =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .o

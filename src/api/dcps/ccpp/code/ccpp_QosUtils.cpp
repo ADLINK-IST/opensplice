@@ -400,6 +400,7 @@ void DDS::ccpp_ReliabilityQosPolicy_copyIn( const DDS::ReliabilityQosPolicy &fro
         break;
     }
     DDS::ccpp_Duration_copyIn(from.max_blocking_time, to.max_blocking_time);
+    to.synchronous = from.synchronous ? TRUE : FALSE;
 }
 
 void DDS::ccpp_DestinationOrderQosPolicy_copyIn( const DDS::DestinationOrderQosPolicy &from,
@@ -635,6 +636,7 @@ void DDS::ccpp_ReliabilityQosPolicy_copyOut( const gapi_reliabilityQosPolicy &fr
         break;
     }
     DDS::ccpp_Duration_copyOut(from.max_blocking_time, to.max_blocking_time);
+    to.synchronous = from.synchronous ? TRUE : FALSE;
 }
 
 void DDS::ccpp_DestinationOrderQosPolicy_copyOut( const gapi_destinationOrderQosPolicy &from,

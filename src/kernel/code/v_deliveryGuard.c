@@ -30,17 +30,15 @@ getMatchingPublications (
     C_STRUCT(v_deliveryPublisher) template;
     c_type type;
 
-    template.systemId = sInfo->userData.key.systemId;
+    template.readerGID = sInfo->userData.key;
     found = v_deliveryPublisher(c_find(arg,&template));
     if (found) {
-synch_printf("v_deliveryGuardNew: found existing systemId %d\n", sInfo->userData.key.systemId);
         found->count++;
     } else {
-synch_printf("v_deliveryGuardNew: found new systemId %d\n", sInfo->userData.key.systemId);
         type = c_subType(arg);
         p = c_new(type);
         p->count = 1;
-        p->systemId = sInfo->userData.key.systemId;
+        p->readerGID = sInfo->userData.key;
         found = c_insert(arg,p);
     }
     return TRUE;
@@ -90,7 +88,7 @@ v_deliveryGuardNew(
                  */
                 type = c_resolve(c_getBase(_this),
                                  "kernelModule::v_deliveryPublisher");
-                guard->publications = c_tableNew(type, "systemId");
+                guard->publications = c_tableNew(type, "readerGID.systemId,readerGID.localId,readerGID.serial");
                 c_free(type);
 
                 found = c_tableInsert(_this->guards, guard);
@@ -147,12 +145,10 @@ waitlistNotify(
     c_object o,
     c_voidp arg)
 {
-    v_deliveryWaitList _this = (v_deliveryWaitList)o;
     v_deliveryInfoTemplate msg = (v_deliveryInfoTemplate)arg;
     v_result result;
 
-    result = v_deliveryWaitListNotify(v_deliveryWaitList(o),
-                                      msg);
+    result = v_deliveryWaitListNotify(v_deliveryWaitList(o), msg);
     return TRUE;
 }
 
@@ -170,7 +166,6 @@ v_deliveryGuardNotify(
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-synch_printf("v_deliveryGuardNotify: \n");
     if (_this && msg) {
         /* lookup or create a writer specific admin.
          */
@@ -186,29 +181,27 @@ waitlistIgnore(
     c_object o,
     c_voidp arg)
 {
-    v_deliveryWaitList _this = (v_deliveryWaitList)o;
-    c_ulong systemId = (c_ulong)arg;
+    v_gid readerGID = *(v_gid *)arg;
     v_result result;
 
     result = v_deliveryWaitListIgnore(v_deliveryWaitList(o),
-                                      systemId);
+                                      readerGID);
     return TRUE;
 }
 
 v_result
 v_deliveryGuardIgnore(
     v_deliveryGuard _this,
-    c_ulong systemId)
+    v_gid readerGID)
 {
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-synch_printf("v_deliveryGuardIgnore: \n");
     if (_this) {
         /* lookup or create a writer specific admin.
          */
-        c_walk(_this->waitlists,waitlistIgnore,systemId);
+        c_walk(_this->waitlists,waitlistIgnore,&readerGID);
     } else {
         result = V_RESULT_ILL_PARAM;
     }

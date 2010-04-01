@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -50,7 +50,40 @@ int main( int argc, char ** argv)
       char *arg = argv[count];
       if ( arg[0] == '-' )
       {
-         if ( !strcmp( argv[1], "cl" )
+         if ( !strcmp( argv[1], "idlpp" )
+              || !strcmp( argv[1], "tao_idl" )
+              )
+         {
+            switch ( arg[1] )
+            {
+               case 'I' :
+               {
+                  addarg( "-I%s", &arg[2] );
+                  break;
+               }
+               case 'o' :
+               {
+                  if ( arg[2] == '\0' )
+                  {
+                     char *narg=argv[count+1];
+                     int arglen = strlen( narg );
+                     addarg( "%s", "-o" );
+                     addarg( "%s", narg );
+                     count++;
+                  }
+                  else
+                  {
+                     addarg( "%s", arg );
+                  }
+                  break;
+               }
+               default:
+               {
+                  addarg( "%s", argv[count] );
+               }
+            }
+         }
+         else if ( !strcmp( argv[1], "cl" )
               || !strcmp( argv[1], "link" )
               || !strcmp( argv[1], "lib" ))
          {
@@ -77,8 +110,8 @@ int main( int argc, char ** argv)
                   {
                      char *narg=argv[count+1];
                      int arglen = strlen( narg );
-		  
-                     if ( narg[arglen-4] == '.' 
+
+                     if ( narg[arglen-4] == '.'
                           && narg[arglen-3] == 'o'
                           && narg[arglen-2] == 'b'
                           && narg[arglen-1] == 'j' )

@@ -101,6 +101,7 @@ typedef struct jni_cache_t {
     jfieldID readerDataLifecycleQosPolicy_enable_invalid_samples_fid;
     jfieldID reliabilityQosPolicy_kind_fid;
     jfieldID reliabilityQosPolicy_maxBlockingTime_fid;
+    jfieldID reliabilityQosPolicy_synchronous_fid;
     jfieldID resourceLimitsQosPolicy_maxSamples_fid;
     jfieldID resourceLimitsQosPolicy_maxInstances_fid;
     jfieldID resourceLimitsQosPolicy_maxSamplesPerInstance_fid;

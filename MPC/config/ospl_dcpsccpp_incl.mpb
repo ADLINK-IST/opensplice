@@ -1,0 +1,9 @@
+// -*- MPC -*-
+// $Id:$
+
+project {
+    includes += $(OSPL_HOME)/include/dcps/C++/CCPP
+    includes += $(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
+}
+
+

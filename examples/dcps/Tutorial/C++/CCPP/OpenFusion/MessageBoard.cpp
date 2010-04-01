@@ -98,7 +98,7 @@ main (
         domain, 
         PARTICIPANT_QOS_DEFAULT, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentDP, "DDS::DomainParticipantFactory::create_participant");
     
     /* Narrow the normal participant to its extended representative */
@@ -147,7 +147,7 @@ main (
         chatMessageTypeName, 
         reliable_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(chatMessageTopic.in(), "DDS::DomainParticipant::create_topic (ChatMessage)");
     
     /* Set the DurabilityQosPolicy to TRANSIENT. */
@@ -161,7 +161,7 @@ main (
         nameServiceTypeName, 
         setting_topic_qos, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(nameServiceTopic.in(), "DDS::DomainParticipant::create_topic");
     
     /* Create a multitopic that substitutes the userID with its corresponding userName. */
@@ -180,7 +180,7 @@ main (
     sub_qos.partition.name[0] = partitionName;
 
     /* Create a Subscriber for the MessageBoard application. */
-    chatSubscriber = participant->create_subscriber(sub_qos, NULL, ANY_STATUS);
+    chatSubscriber = participant->create_subscriber(sub_qos, NULL, STATUS_MASK_NONE);
     checkHandle(chatSubscriber.in(), "DDS::DomainParticipant::create_subscriber");
     
     /* Create a DataReader for the NamedMessage Topic (using the appropriate QoS). */
@@ -188,7 +188,7 @@ main (
         namedMessageTopic.in(), 
         DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        ANY_STATUS);
+        STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader");
     
     /* Narrow the abstract parent into its typed representative. */

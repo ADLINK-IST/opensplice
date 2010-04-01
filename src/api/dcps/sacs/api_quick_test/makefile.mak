@@ -7,7 +7,7 @@ CS_NAMESPCS	 = . Data
 # Specify the location of the IDL data model, and the generation results of idlpp.
 IDL_DIR     := ../../code/Data
 TOPIC_IDL   := $(notdir $(wildcard $(IDL_DIR)/*.idl))
-IDLPP_CS    := $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs)
+IDLPP_CS    := $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:%.idl=%Dcps.cs) $(TOPIC_IDL:%.idl=%SplDcps.cs)
 
 TARGET_LINK_DIR = ../../exec/$(SPLICE_TARGET)
 

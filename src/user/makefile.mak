@@ -2,6 +2,13 @@ TARGET_DLIB		:= $(DDS_USER)
 
 include		$(OSPL_HOME)/setup/makefiles/target.mak
 
+ifdef INCLUDE_PLUGGABLE_REPORTING
+ifneq (,$(findstring yes,$(INCLUDE_PLUGGABLE_REPORTING)))
+CPPFLAGS	+= -DINCLUDE_PLUGGABLE_REPORTING
+CFLAGS      += -DINCLUDE_PLUGGABLE_REPORTING
+endif
+endif
+
 CPPFLAGS	+= -DOSPL_BUILD_USER
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
 CINCS		+= -I$(OSPL_HOME)/src/database/database/include

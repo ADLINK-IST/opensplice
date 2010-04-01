@@ -291,13 +291,9 @@ v_partitionAdminFitsInterest(
 {
     c_bool result;
 
-#if 1
     c_mutexLock(&da->mutex);
-#endif
     result = !c_tableWalk(da->partitionInterests, checkPartitionInterest, d);
-#if 1
     c_mutexUnlock(&da->mutex);
-#endif
 
     return result;
 }

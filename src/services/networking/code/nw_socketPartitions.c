@@ -122,6 +122,7 @@ NW_STRUCT(nw_partition) {
     sk_partitionId id;
     nw_addressList addressList;
     sk_bool connected;
+    sk_bool compression;
     nw_partition nextInHash;
 };
 
@@ -131,6 +132,7 @@ nw_partitionNew(
     sk_partitionId id,
     sk_address address,
     sk_bool connected,
+    sk_bool compression,
     nw_partition nextInHash) {
 
     nw_partition result = NULL;
@@ -140,6 +142,7 @@ nw_partitionNew(
         result->id = id;
         result->addressList = nw_addressListNew(address);
         result->connected = connected;
+        result->compression = compression;
         result->nextInHash = nextInHash;
     }
 
@@ -209,7 +212,8 @@ nw_socketPartitionsAdd(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
     sk_address address,
-    sk_bool connected)
+    sk_bool connected,
+    sk_bool compression)
 {
     nw_bool result = FALSE;
     nw_bool found = FALSE;
@@ -232,11 +236,10 @@ nw_socketPartitionsAdd(
     }
     if (!found) {
         /* Item has to be appended to the end */
-        *partitionPtr = nw_partitionNew(partitionId, address, connected, NULL);
+        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, NULL);
         result = TRUE;
     } else if (result) {
-        *partitionPtr = nw_partitionNew(partitionId, address, connected,
-            (*partitionPtr)->nextInHash);
+        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, (*partitionPtr)->nextInHash);
     } else {
         result = nw_addressListAppend((*partitionPtr)->addressList, address);
     }
@@ -249,7 +252,8 @@ nw_bool
 nw_socketPartitionsLookup(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
-    nw_addressList *addressList)
+    nw_addressList *addressList,
+    sk_bool *compression)
 {
     /* Not yet implemented */
 
@@ -269,6 +273,7 @@ nw_socketPartitionsLookup(
         } else if (partition->id == partitionId) {
             /* Exact match found, set result to TRUE */
             *addressList = partition->addressList;
+            *compression = partition->compression;
             done = TRUE;
             result = TRUE;
         } else {

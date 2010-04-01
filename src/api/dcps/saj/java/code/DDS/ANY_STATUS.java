@@ -12,8 +12,9 @@
 
 package DDS;
 
-
+/* Note: ANY_STATUS is deprecated, please use spec version specific constants. 
+   e.g. STATUS_MASK_ANY_V1_2 */
 public interface ANY_STATUS
 {
-  public static final int value = (int)(0xFFFFL);
+  public static final int value = (int)(0x7FE7L);
 }

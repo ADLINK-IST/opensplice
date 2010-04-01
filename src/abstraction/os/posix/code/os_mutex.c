@@ -32,7 +32,7 @@ static os_boolean ospl_mtx_prio_inherit = OS_FALSE;
 void
 os_mutexModuleInit()
 {
-    ospl_mtx_prio_inherit = 0;
+//    ospl_mtx_prio_inherit = 0;
 }
 
 void

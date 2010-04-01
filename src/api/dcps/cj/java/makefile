@@ -20,7 +20,7 @@ $(JAVA_FILES): $(JAR_DEPENDENCIES)
 $(JAR_DEPENDENCIES):
 	mkdir -p code
 	cp -r ../../saj/java/code/* code/
-	java org.jacorb.idl.parser -d code -forceOverwrite code/dds_builtinTopics.idl
+	java org.jacorb.idl.parser -d code -forceOverwrite ../../../../../etc/idl/dds_builtinTopics.idl
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 

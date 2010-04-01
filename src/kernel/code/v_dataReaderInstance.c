@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "v_groupCache.h"
 #include "v_dataView.h"
 #include "v_dataReaderEntry.h"
 #include "v_dataReaderSample.h"
@@ -214,12 +215,23 @@ v_dataReaderInstanceSetEpoch (
 }
 
 void
+v_dataReaderInstanceFree(
+    v_dataReaderInstance _this)
+{
+    if (c_refCount(_this) == 1) {
+        v_groupCacheDeinit(_this->sourceCache);
+    }
+    c_free(_this);
+}
+
+void
 v_dataReaderInstanceDeinit(
     v_dataReaderInstance _this)
 {
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     CHECK_COUNT(_this);
 
+    v_groupCacheDeinit(_this->sourceCache);
     v_instanceDeinit(v_instance(_this));
 }
 
@@ -1345,12 +1357,11 @@ v_dataReaderInstanceUnregister (
                 }
                 v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
             }
+            CHECK_COUNT(_this);
+            CHECK_EMPTINESS(_this);
+            CHECK_INVALIDITY(_this);
             v_dataReaderRemoveInstance(v_dataReaderInstanceReader(_this),
                                        _this);
         }
     }
-
-    CHECK_COUNT(_this);
-    CHECK_EMPTINESS(_this);
-    CHECK_INVALIDITY(_this);
 }

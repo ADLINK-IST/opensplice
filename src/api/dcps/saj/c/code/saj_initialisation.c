@@ -1431,8 +1431,18 @@ saj_returnCode saj_InitializeReliabilityQosPolicy(JNIEnv *env)
         )
     );
     
+    SET_CACHED(reliabilityQosPolicy_synchronous_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "synchronous",
+            "Z" /* boolean */
+        )
+    );
+
     if (GET_CACHED(reliabilityQosPolicy_kind_fid) == NULL || 
-        GET_CACHED(reliabilityQosPolicy_maxBlockingTime_fid) == NULL)
+        GET_CACHED(reliabilityQosPolicy_maxBlockingTime_fid) == NULL ||
+        GET_CACHED(reliabilityQosPolicy_synchronous_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }

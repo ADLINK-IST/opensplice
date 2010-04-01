@@ -20,41 +20,35 @@
 #define v_writerCache(o) (C_CAST((o),v_writerCache))
 #define v_writerCacheItem(o) (C_CAST((o),v_writerCacheItem))
 
-v_writerCache
+v_cache
 v_writerCacheNew (
     v_kernel kernel,
     v_cacheKind kind);
 
-void
-v_writerCacheInsert (
-    v_writerCache _this,
-    v_writerCacheItem item);
+#define v_writerCacheInsert(_this,item) \
+        v_cacheInsert(v_cache(_this),v_cacheNode(item))
 
-c_bool
-v_writerCacheWalk (
-    v_writerCache _this,
-    v_cacheWalkAction action,
-    c_voidp arg);
+#define v_writerCacheWalk(_this,action,arg) \
+        v_cacheWalk(v_cache(_this),action,arg)
 
-void
-v_writerCacheDeinit (
-    v_writerCache _this);
+#define v_writerCacheDeinit(_this) \
+        v_cacheDeinit(v_cache(_this))
+
+#define v_writerCacheRemove(_this,item) \
+        v_cacheRemove(v_cache(_this),v_cacheNode(item))
 
 /* Inner class: v_writerCacheItem */
  
 v_writerCacheItem
 v_writerCacheItemNew (
-    v_writerCache cache,
+    v_cache cache,
     v_groupInstance instance);
 
-v_groupInstance
-v_writerCacheItemObject (
-    v_writerCacheItem _this);
+#define v_writerCacheItemInstance(_this) \
+        c_keep(v_writerCacheItem(_this)-instance)
 
-void
-v_writerCacheItemRemove (
-    v_writerCacheItem _this,
-    v_cacheKind kind);
+#define v_writerCacheItemRemove(_this,kind) \
+        v_cacheNodeRemove(v_cacheNode(_this),kind)
 
 #endif
 

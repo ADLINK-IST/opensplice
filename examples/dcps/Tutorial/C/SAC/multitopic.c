@@ -122,7 +122,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
     strcpy (sub_qos->partition.name._buffer[0], partitionName);
 
     /* Create a private Subscriber for the multitopic simulator. */
-    multiSub = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_ANY_STATUS);
+    multiSub = DDS_DomainParticipant_create_subscriber(participant, sub_qos, NULL, DDS_STATUS_MASK_NONE);
     checkHandle(multiSub, "DDS_DomainParticipant_create_subscriber (for multitopic)");
     
     /* Create a DataReader for the FilteredMessage Topic (using the appropriate QoS). */
@@ -131,7 +131,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
         filteredMessageTopic, 
         DDS_DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(chatMessageDR, "DDS_Subscriber_create_datareader (ChatMessage)");
     
     /* Create a DataReader for the nameService Topic (using the appropriate QoS). */
@@ -140,7 +140,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
         nameServiceTopic, 
         DDS_DATAREADER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(nameServiceDR, "DDS_Subscriber_create_datareader (NameService)");
     
     /* Define the SQL expression (using a parameterized value). */
@@ -181,7 +181,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
         type_name, 
         namedMessageQos, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(namedMessageTopic, "DDS_DomainParticipant_create_topic (NamedMessage)");
     
     /* Adapt the default PublisherQos to write into the "ChatRoom" Partition. */
@@ -198,7 +198,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
     strcpy (pub_qos->partition.name._buffer[0], partitionName);
 
     /* Create a private Publisher for the multitopic simulator. */
-    multiPub = DDS_DomainParticipant_create_publisher(participant, pub_qos, NULL, DDS_ANY_STATUS);
+    multiPub = DDS_DomainParticipant_create_publisher(participant, pub_qos, NULL, DDS_STATUS_MASK_NONE);
     checkHandle(multiPub, "DDS_DomainParticipant_create_publisher (for multitopic)");
     
     /* Create a DataWriter for the multitopic. */
@@ -207,7 +207,7 @@ DDS_DomainParticipant_create_simulated_multitopic (
         namedMessageTopic, 
         DDS_DATAWRITER_QOS_USE_TOPIC_QOS, 
         NULL,
-        DDS_ANY_STATUS);
+        DDS_STATUS_MASK_NONE);
     checkHandle(namedMessageDW, "DDS_Publisher_create_datawriter (NamedMessage)");
 
     /* Allocate the DataReaderListener interface. */

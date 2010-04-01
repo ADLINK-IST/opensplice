@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -52,6 +52,34 @@ u_waitsetHistoryDeleteEventNew(
         u_waitsetHistoryDeleteEvent(event)->topicExpr              = os_strdup(topicExpr);
         u_waitsetHistoryDeleteEvent(event)->deleteTime.seconds     = deleteTime.seconds;
         u_waitsetHistoryDeleteEvent(event)->deleteTime.nanoseconds = deleteTime.nanoseconds;
+    }
+    return event;
+}
+
+u_waitsetEvent
+u_waitsetPersistentSnapshotEventNew(
+    u_entity e,
+    c_ulong k,
+    v_handle source,
+    const c_char* partitionExpr,
+    const c_char* topicExpr,
+    const c_char* uri)
+{
+    u_waitsetEvent event;
+
+    event = (u_waitsetEvent)os_malloc(C_SIZEOF(u_waitsetPersistentSnapshotEvent));
+
+    if (event) {
+        event->entity                 = e;
+        event->events                 = k;
+        event->kind                   = U_WAITSET_EVENT_PERSISTENT_SNAPSHOT;
+
+        u_waitsetPersistentSnapshotEvent(event)->partitionExpr      = os_strdup(partitionExpr);
+        u_waitsetPersistentSnapshotEvent(event)->topicExpr          = os_strdup(topicExpr);
+        u_waitsetPersistentSnapshotEvent(event)->uri                = os_strdup(uri);
+        u_waitsetPersistentSnapshotEvent(event)->source.server      = source.server;
+        u_waitsetPersistentSnapshotEvent(event)->source.index       = source.index;
+        u_waitsetPersistentSnapshotEvent(event)->source.serial      = source.serial;
     }
     return event;
 }
@@ -131,6 +159,20 @@ u_waitsetEventFree(
 
                 if(u_waitsetHistoryRequestEvent(event)->filterParams){
                     os_free(u_waitsetHistoryRequestEvent(event)->filterParams);
+                }
+                break;
+            case U_WAITSET_EVENT_PERSISTENT_SNAPSHOT:
+                if(u_waitsetPersistentSnapshotEvent(event)->partitionExpr)
+                {
+                    os_free(u_waitsetPersistentSnapshotEvent(event)->partitionExpr);
+                }
+                if(u_waitsetPersistentSnapshotEvent(event)->topicExpr)
+                {
+                    os_free(u_waitsetPersistentSnapshotEvent(event)->topicExpr);
+                }
+                if(u_waitsetPersistentSnapshotEvent(event)->uri)
+                {
+                    os_free(u_waitsetPersistentSnapshotEvent(event)->uri);
                 }
                 break;
             default:

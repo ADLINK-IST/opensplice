@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef DDS_DCPS_H
@@ -263,6 +263,7 @@ OS_API DDS_Time_t *DDS_Time_t__alloc (void);
  * const StatusKind LIVELINESS_CHANGED_STATUS          = 0x0001 << 12;
  * const StatusKind PUBLICATION_MATCHED_STATUS           = 0x0001 << 13;
  * const StatusKind SUBSCRIPTION_MATCHED_STATUS          = 0x0001 << 14;
+ * const StatusKind ALL_DATA_DISPOSED_TOPIC_STATUS       = 0x0001 << 31;
  */
 typedef DDS_unsigned_long DDS_StatusKind;
 typedef DDS_unsigned_long DDS_StatusMask;
@@ -278,11 +279,15 @@ typedef DDS_unsigned_long DDS_StatusMask;
 #define DDS_DATA_AVAILABLE_STATUS                           1024U
 #define DDS_LIVELINESS_LOST_STATUS                          2048U
 #define DDS_LIVELINESS_CHANGED_STATUS                       4096U
-#define DDS_PUBLICATION_MATCHED_STATUS                        8192U
-#define DDS_SUBSCRIPTION_MATCHED_STATUS                       16384U
+#define DDS_PUBLICATION_MATCHED_STATUS                      8192U
+#define DDS_SUBSCRIPTION_MATCHED_STATUS                     16384U
+   
+/* Opensplice Extensions */
+#define DDS_ALL_DATA_DISPOSED_TOPIC_STATUS                  0x80000000U
 
-#define DDS_ANY_STATUS                                                      0xFFFF
-
+#define DDS_ANY_STATUS                                        0x7FE7
+#define DDS_STATUS_MASK_ANY_V1_2                              0x7FE7
+#define DDS_STATUS_MASK_NONE                                  0x0
 
 /*
  * struct InconsistentTopicStatus {
@@ -2706,6 +2711,15 @@ OS_API DDS_Domain
 DDS_DomainParticipantFactory_lookup_domain (
     DDS_DomainParticipantFactory _this,
     DDS_DomainId_t domain_id);
+
+/*     ReturnCode_t
+ *     delete_domain(
+ *         in Domain a_domain);
+ */
+OS_API DDS_ReturnCode_t
+DDS_DomainParticipantFactory_delete_domain (
+    DDS_DomainParticipantFactory _this,
+    DDS_Domain a_domain);
 
 /*
  * interface TypeSupport

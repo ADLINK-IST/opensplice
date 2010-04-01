@@ -49,6 +49,8 @@ C_STRUCT(d_nameSpace) {
     d_durabilityKind durabilityKind;
     d_quality        quality;
     d_networkAddress master;
+    d_serviceState 	 masterState;
+    c_bool			 masterConfirmed;
     d_table          elements;
 };
 

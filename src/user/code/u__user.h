@@ -13,7 +13,7 @@
 #define U__USER_H
 
 #include "u_user.h"
-#include "u_kernel.h"
+#include "u__kernel.h"
 
 #define OSRPT_CNTXT_USER "user layer"
 
@@ -25,15 +25,6 @@ typedef void (*u_kernelAction)(u_kernel kernel, u_kernelActionArg arg);
 u_kernel
 u_userKernelNew (
     const c_char *uri);
-
-u_kernel
-u_userKernelOpen (
-    const c_char *uri,
-    c_long timeout);
-
-u_result
-u_userKernelClose (
-    u_kernel kernel);
 
 u_result
 u_userKernelFree (

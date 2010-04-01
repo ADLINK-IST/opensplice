@@ -129,7 +129,7 @@ main (
      * Create participant
      */
     dpf = DDS_DomainParticipantFactory_get_instance ();
-    dp = DDS_DomainParticipantFactory_create_participant (dpf, myDomain, DDS_PARTICIPANT_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    dp = DDS_DomainParticipantFactory_create_participant (dpf, myDomain, DDS_PARTICIPANT_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
     if (dp == DDS_OBJECT_NIL) {
         printf ("%s PONG: ERROR - Splice Daemon not running\n", argv[0]);
         exit(1);
@@ -144,7 +144,7 @@ main (
     pQos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     pQos->partition.name._buffer[0] = DDS_string_alloc (strlen (write_partition) + 1);
     strcpy (pQos->partition.name._buffer[0], write_partition);
-    p = DDS_DomainParticipant_create_publisher (dp, pQos, NULL, DDS_ANY_STATUS);
+    p = DDS_DomainParticipant_create_publisher (dp, pQos, NULL, DDS_STATUS_MASK_NONE);
     DDS_free (pQos);
 
     /*
@@ -156,7 +156,7 @@ main (
     sQos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     sQos->partition.name._buffer[0] = DDS_string_alloc (strlen (read_partition) + 1);
     strcpy (sQos->partition.name._buffer[0], read_partition);
-    s = DDS_DomainParticipant_create_subscriber (dp, sQos, NULL, DDS_ANY_STATUS);
+    s = DDS_DomainParticipant_create_subscriber (dp, sQos, NULL, DDS_STATUS_MASK_NONE);
     DDS_free (sQos);
 
     /*
@@ -166,13 +166,13 @@ main (
     /* Create Topic */
     PP_min_dt = pingpong_PP_min_msgTypeSupport__alloc ();
     pingpong_PP_min_msgTypeSupport_register_type (PP_min_dt, dp, "pingpong::PP_min_msg");
-    PP_min_topic = DDS_DomainParticipant_create_topic (dp, "PP_min_topic", "pingpong::PP_min_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_min_topic = DDS_DomainParticipant_create_topic (dp, "PP_min_topic", "pingpong::PP_min_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_min_writer = DDS_Publisher_create_datawriter (p, PP_min_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_min_writer = DDS_Publisher_create_datawriter (p, PP_min_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_min_reader = DDS_Subscriber_create_datareader (s, PP_min_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_min_reader = DDS_Subscriber_create_datareader (s, PP_min_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_min_sc = DDS_DataReader_get_statuscondition (PP_min_reader);
@@ -186,13 +186,13 @@ main (
     /*  Create Topic */
     PP_seq_dt = pingpong_PP_seq_msgTypeSupport__alloc ();
     pingpong_PP_seq_msgTypeSupport_register_type (PP_seq_dt, dp, "pingpong::PP_seq_msg");
-    PP_seq_topic = DDS_DomainParticipant_create_topic (dp, "PP_seq_topic", "pingpong::PP_seq_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_seq_topic = DDS_DomainParticipant_create_topic (dp, "PP_seq_topic", "pingpong::PP_seq_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_seq_writer = DDS_Publisher_create_datawriter (p, PP_seq_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_seq_writer = DDS_Publisher_create_datawriter (p, PP_seq_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_seq_reader = DDS_Subscriber_create_datareader (s, PP_seq_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_seq_reader = DDS_Subscriber_create_datareader (s, PP_seq_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_seq_sc = DDS_DataReader_get_statuscondition (PP_seq_reader);
@@ -206,13 +206,13 @@ main (
     /*  Create Topic */
     PP_string_dt = pingpong_PP_string_msgTypeSupport__alloc ();
     pingpong_PP_string_msgTypeSupport_register_type (PP_string_dt, dp, "pingpong::PP_string_msg");
-    PP_string_topic = DDS_DomainParticipant_create_topic (dp, "PP_string_topic", "pingpong::PP_string_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_string_topic = DDS_DomainParticipant_create_topic (dp, "PP_string_topic", "pingpong::PP_string_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_string_writer = DDS_Publisher_create_datawriter (p, PP_string_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_string_writer = DDS_Publisher_create_datawriter (p, PP_string_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_string_reader = DDS_Subscriber_create_datareader (s, PP_string_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_string_reader = DDS_Subscriber_create_datareader (s, PP_string_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_string_sc = DDS_DataReader_get_statuscondition (PP_string_reader);
@@ -226,13 +226,13 @@ main (
     /*  Create Topic */
     PP_fixed_dt = pingpong_PP_fixed_msgTypeSupport__alloc ();
     pingpong_PP_fixed_msgTypeSupport_register_type (PP_fixed_dt, dp, "pingpong::PP_fixed_msg");
-    PP_fixed_topic = DDS_DomainParticipant_create_topic (dp, "PP_fixed_topic", "pingpong::PP_fixed_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_fixed_topic = DDS_DomainParticipant_create_topic (dp, "PP_fixed_topic", "pingpong::PP_fixed_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_fixed_writer = DDS_Publisher_create_datawriter (p, PP_fixed_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_fixed_writer = DDS_Publisher_create_datawriter (p, PP_fixed_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_fixed_reader = DDS_Subscriber_create_datareader (s, PP_fixed_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_fixed_reader = DDS_Subscriber_create_datareader (s, PP_fixed_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_fixed_sc = DDS_DataReader_get_statuscondition (PP_fixed_reader);
@@ -246,13 +246,13 @@ main (
     /*  Create Topic */
     PP_array_dt = pingpong_PP_array_msgTypeSupport__alloc ();
     pingpong_PP_array_msgTypeSupport_register_type (PP_array_dt, dp, "pingpong::PP_array_msg");
-    PP_array_topic = DDS_DomainParticipant_create_topic (dp, "PP_array_topic", "pingpong::PP_array_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_array_topic = DDS_DomainParticipant_create_topic (dp, "PP_array_topic", "pingpong::PP_array_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_array_writer = DDS_Publisher_create_datawriter (p, PP_array_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_array_writer = DDS_Publisher_create_datawriter (p, PP_array_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_array_reader = DDS_Subscriber_create_datareader (s, PP_array_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_array_reader = DDS_Subscriber_create_datareader (s, PP_array_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_array_sc = DDS_DataReader_get_statuscondition (PP_array_reader);
@@ -266,10 +266,10 @@ main (
     /*  Create Topic */
     PP_quit_dt = pingpong_PP_quit_msgTypeSupport__alloc ();
     pingpong_PP_quit_msgTypeSupport_register_type (PP_quit_dt, dp, "pingpong::PP_quit_msg");
-    PP_quit_topic = DDS_DomainParticipant_create_topic (dp, "PP_quit_topic", "pingpong::PP_quit_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_quit_topic = DDS_DomainParticipant_create_topic (dp, "PP_quit_topic", "pingpong::PP_quit_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
-    PP_quit_reader = DDS_Subscriber_create_datareader (s, PP_quit_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_ANY_STATUS);
+    PP_quit_reader = DDS_Subscriber_create_datareader (s, PP_quit_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Add datareader statuscondition to waitset */
     PP_quit_sc = DDS_DataReader_get_statuscondition (PP_quit_reader);

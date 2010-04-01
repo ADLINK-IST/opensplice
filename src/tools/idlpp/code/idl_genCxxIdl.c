@@ -12,6 +12,7 @@
 #include "idl_program.h"
 #include "idl_scope.h"
 #include "idl_genCxxIdl.h"
+#include "idl_genCxxIdlHelper.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
@@ -114,7 +115,51 @@ idl_moduleOpen (
     idl_scope scope,
     const char *name,
     void *userData)
-{
+ {
+    /* Test whether the module contains a component within the pragma keylist.
+     * If it does not, then the module should not be generated since it will
+     * contain no items (which is itself illegal idl syntax).
+     *
+     * Note that we are comparing against only the keys existing within this idl
+     * file (idl_idlScopeKeyList).  We do not use the result of idl_keyDefDefGet()
+     * since this is a list of keys resulting from the preprocessed idl (which
+     *  will include keys from other idl files that this may include).
+     */
+
+    if (os_iterLength (idl_idlScopeKeyList) == 0) {
+        return idl_abort;
+    } else {
+        c_long li = 0;
+        c_bool scopesMatch = FALSE;
+        idl_scope moduleScope;
+        idl_scopeElement newElement;
+
+        /* the idl_scope parameter to this function does not yet include the scoping
+         * for this module itself, so create a duplicate and add this scoping to it,
+         * before testing whether this module contains one of the keys in this file.
+         */
+        moduleScope = idl_scopeDup(scope);
+        newElement = idl_scopeElementNew (name, idl_tModule);
+        idl_scopePush (moduleScope, newElement);
+
+        /* Loop through the list of keys applying to this idl file and test whether
+         * this particular module contains one of these keys.  If it does, generate
+         * code for the module in the Dcps.idl file.
+         */
+        while (li < os_iterLength (idl_idlScopeKeyList)) {
+            idl_scope keyscope = os_iterObject (idl_idlScopeKeyList, li);
+            scopesMatch = idl_scopeSub (moduleScope, keyscope);
+            if (scopesMatch) {
+                break;
+            }
+            li++;
+        }
+
+        if (scopesMatch == FALSE) {
+            return idl_abort;
+        }
+    }
+
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "module %s {\n", idl_cxxId(name));
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -144,7 +189,7 @@ idl_structureOpen(
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
-	/* keylist defined for this struct */
+        /* keylist defined for this struct */
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet,
             idl_macroNew("namescope", idl_cxxId(idl_scopeElementName(idl_scopeCur(scope)))));
@@ -171,7 +216,7 @@ idl_unionOpen (
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
-	/* keylist defined for this union */
+        /* keylist defined for this union */
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet,
             idl_macroNew("namescope",idl_cxxId(idl_scopeElementName(idl_scopeCur(scope)))));

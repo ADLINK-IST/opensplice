@@ -42,15 +42,15 @@ v_messageQos_new(
     v_writerQos wqos;
     c_base base;
 #ifdef _FAST_ACCESS_
-    c_long offset            = 10, /* byte0 + byte1 + transport_priority + 4*time_offsets */
+    c_long offset     = 10, /* byte0 + byte1 + transport_priority + 4*time_offsets */
 #else
-    c_long offset            = 6, /* byte0 + byte1 + transport_priority */
+    c_long offset     = 6, /* byte0 + byte1 + transport_priority */
 #endif
-           strength_offset   = 0,
-           latency_offset    = 0,
-           deadline_offset   = 0,
-           liveliness_offset = 0,
-           lifespan_offset   = 0;
+    strength_offset   = 0,
+    latency_offset    = 0,
+    deadline_offset   = 0,
+    liveliness_offset = 0,
+    lifespan_offset   = 0;
 
     c_octet byte0 = 0,
             byte1 = 0;

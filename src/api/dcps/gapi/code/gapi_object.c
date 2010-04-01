@@ -104,9 +104,6 @@ _ObjectRegistryNew (
 
             for (i = 0; i < TRASH_LENGTH; i++) registry->trash[i] = NULL;
         } else {
-            if ( registry->active != NULL ) {
-                gapi_setFree(registry->active);
-            }
             os_free(registry);
             registry = NULL;
         }
