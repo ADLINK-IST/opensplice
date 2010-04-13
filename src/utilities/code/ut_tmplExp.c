@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 
 #define NMSIZE		(100)
 

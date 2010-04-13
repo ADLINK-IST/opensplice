@@ -11,7 +11,7 @@ CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
-LDLIBS 	+= -lddsosnet
+#LDLIBS 	+= -lddsosnet
 
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 LDLIBS     += -lposix -lutil

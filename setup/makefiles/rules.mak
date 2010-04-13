@@ -109,7 +109,7 @@ vpath %.l		$(CODE_DIR)
 vpath %.odl		$(CODE_DIR)
 #vpath %.class 	$(LOCAL_CLASS_DIR)
 vpath %.idl	$(CODE_DIR)
-CINCS		 = -I.
+CINCS		= -I.
 CINCS		+= -I../../include
 CINCS		+= -I$(CODE_DIR)
 
@@ -134,18 +134,18 @@ CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC_CORE)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
 endif
 
-CXXINCS	 = -I.
+CXXINCS	= -I.
 CXXINCS	+= -I../../include
 CXXINCS	+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
 CXXINCS	+= -I$(OSPL_HOME)/src/include
-CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 else
 CXXINCS	+= -I$(OSPL_HOME)/src/include
-CXXINCS  += -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
-CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 endif

@@ -18,7 +18,7 @@
 
 #include <os_report.h>
 
-#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
 static os_time (*clockGet)(void) = NULL;
@@ -34,17 +34,21 @@ os_time
 os_timeGet (
     void)
 {
-    struct timespec t;
+    //struct timespec t;
+    struct timeval tv;
     int result;
     os_time rt;
 
     if (clockGet) {
         rt = clockGet ();
     } else {
-        result = clock_gettime (CLOCK_REALTIME, &t);
+        //result = clock_gettime (CLOCK_REALTIME, &t);
+        result = gettimeofday (&tv, NULL);
         if (result == 0) {
-	    rt.tv_sec = t.tv_sec;
-	    rt.tv_nsec = t.tv_nsec;
+	    //rt.tv_sec = t.tv_sec;
+	    rt.tv_sec = tv.tv_sec;
+	    //rt.tv_nsec = t.tv_nsec;
+	    rt.tv_nsec = tv.tv_usec*1000;
         } else {
 	    OS_REPORT_1 (OS_WARNING, "os_timeGet", 1, "clock_gettime failed with error %d", errno);
 	    rt.tv_sec = 0;

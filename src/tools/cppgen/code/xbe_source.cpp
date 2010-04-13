@@ -18,6 +18,7 @@
 #include "Std.h"
 #include "cppgen_iostream.h"
 #include "xbe_time.h"
+#include <sys/time.h>
 
 // ----------------------------------------------------------
 //  DDSSource_Time IMPLEMENTATION
@@ -34,7 +35,7 @@ public:
    DDSSource_Time();
    DDSSource_Time(unsigned long secs, unsigned long usec);
    DDSSource_Time(unsigned long timeValue);
-   DDSSource_Time(const timespec &nativeTimeValue);
+   DDSSource_Time(const timeval &nativeTimeValue);
 
    ~DDSSource_Time();
 
@@ -66,10 +67,10 @@ DDSSource_Time::DDSSource_Time(unsigned long timeValue)
    m_usec = (unsigned long) (timeValue % secsInUsec);
 }
 
-DDSSource_Time::DDSSource_Time(const timespec &timeValue)
+DDSSource_Time::DDSSource_Time(const timeval &timeValue)
 {
-   m_secs = timeValue.tv_sec + (timeValue.tv_nsec / secsInNsec);
-   m_usec = (timeValue.tv_nsec % secsInNsec) /1000;
+   m_secs = timeValue.tv_sec + (timeValue.tv_usec / secsInUsec);
+   m_usec = ((timeValue.tv_usec * 1000) % secsInNsec) /1000;
 }
 
 DDSSource_Time::~DDSSource_Time()
@@ -96,9 +97,11 @@ DDSSource_Time
 DDSSource_Time::get_time_of_day()
 {
 #if !defined(_WIN32)
-   timespec tval;
+   //timespec tval;
+   timeval tval;
 
-   clock_gettime(CLOCK_REALTIME, &tval);
+   //clock_gettime(CLOCK_REALTIME, &tval);
+   gettimeofday(&tval, NULL);
    return DDSSource_Time(tval);
 #else
 

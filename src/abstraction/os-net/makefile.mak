@@ -11,6 +11,7 @@ CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
+LDLIBS	+= -lddsos
 
 LC_FILES := $(notdir $(wildcard ../../$(OS)$(OS_REV)/code/os__*.c))
 LOBJECTS := $(LC_FILES:%.c=%$(OBJ_POSTFIX))

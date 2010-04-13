@@ -10,7 +10,7 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET)
+	@rm -rf bld #/$(SPLICE_TARGET)
 	rm -f $(ACE_TAO_1_4_1_TMPLS)
 	rm -f $(MICO_2_3_11_TMPLS)
 	rm -f $(EORB_3_0_TMPLS)
@@ -30,7 +30,7 @@ analyse:
 
 clean:
 	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; cd $(OSPL_HOME)/src/database; make $@)
-	@rm -rf bld/$(SPLICE_HOST)
+	@rm -rf bld #/$(SPLICE_HOST)
 	rm -f $(ACE_TAO_1_4_1_TMPLS)
 	rm -f $(MICO_2_3_11_TMPLS)
 	rm -f $(EORB_3_0_TMPLS)

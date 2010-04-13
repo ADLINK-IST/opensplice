@@ -10,4 +10,5 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) 
+	@rm -rf bld #/$(SPLICE_TARGET) 
+	@rm -rf $(JAR_TARGET) #/$(JAR_MODULE) 

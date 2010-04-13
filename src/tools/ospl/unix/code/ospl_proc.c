@@ -139,7 +139,7 @@ void show_procs (os_iter processes, int *depth)
     os_iterWalk (processes, show_procInfo, depth);
 }
 
-#ifndef OS_LINUX_DEFS_H
+#ifndef _DARWIN_C_SOURCE /* OS_LINUX_DEFS_H */
 
 /* for Solaris and AIX */
 static int
@@ -184,6 +184,55 @@ read_proc_tree (
     }
         
     return(1);
+}
+#elif defined __APPLE__
+/* for mac os x */
+#include <sys/types.h>
+#include <sys/sysctl.h>
+static int read_proc_tree (
+    uid_t uid,
+    os_iter processes
+    )
+{
+  int i, mib[4];
+  size_t len;
+  struct kinfo_proc *kp;
+  int maxproc;
+  size_t maxproclen = sizeof (maxproclen);
+  int nprocs;
+
+  /* Get maximum number of processes */
+  if (sysctlbyname ("kern.maxproc", &maxproc, &maxproclen, NULL, 0) == -1)
+  {
+    perror ("sysctlbyname (\"kern.maxproc\")");
+    return 1;
+  }
+
+  /* Fill out the first three components of the mib */
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_ALL;
+
+  /* Get a copy of the process table */
+  len = maxproc * sizeof (*kp);
+  kp = malloc (len);
+  if (sysctl (mib, 3, kp, &len, NULL, 0) == -1)
+  {
+    perror ("sysctl");
+    return 1;
+  }
+  nprocs = len / sizeof (*kp);
+
+  for (i = 0; i < nprocs; i++)
+  {
+    if (kp[i].kp_eproc.e_ucred.cr_uid == uid)
+    {
+      procInfo proc;
+      proc = procInfoNew (kp[i].kp_proc.p_comm, kp[i].kp_proc.p_pid, kp[i].kp_eproc.e_ppid, kp[i].kp_proc.p_comm);
+      procInsert (processes, proc);
+    }
+  }
+  return 1;
 }
 #else
 /* for linux */

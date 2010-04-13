@@ -7,4 +7,4 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET)
+	@rm -rf bld #/$(SPLICE_TARGET)

@@ -38,7 +38,9 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) manifest/$(SPLICE_TARGET)
+	@rm -rf bld #/$(SPLICE_TARGET)
+	@rm -rf $(JAR_TARGET) #/$(JAR_MODULE) 
+	@rm -rf manifest #/$(SPLICE_TARGET)
 
 run: jar
 	$(JAVA) -jar $(JAR_TARGET)/$(JAR_MODULE)

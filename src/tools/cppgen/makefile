@@ -9,7 +9,7 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET)
+	@rm -rf bld #/$(SPLICE_TARGET)
 
 else
 
@@ -21,5 +21,5 @@ analyse:
 
 clean:
 	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; cd $(OSPL_HOME)/src/database; make $@)
-	@rm -rf bld/$(SPLICE_HOST)
+	@rm -rf bld #/$(SPLICE_HOST)
 endif

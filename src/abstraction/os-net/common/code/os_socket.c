@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <os_socket.h>
+#include <opsys/include/os_socket.h>
 
 #ifdef VXWORKS_RTP
 #include <sockLib.h>

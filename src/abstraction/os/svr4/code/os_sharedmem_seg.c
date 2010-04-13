@@ -629,7 +629,12 @@ os_svr4_sharedMemoryAttach(
                         errno, name);
             rv = os_resultFail;
         } else if ((map_address = shmat(shmid, request_address, 0)) != request_address) {
-            if (map_address != (void *)-1) {
+/*
+        } else {
+
+            map_address = shmat(shmid, 0, 0);
+*/
+            if (map_address == (void *)-1) {
                 OS_REPORT_2 (OS_ERROR,
                              "os_svr4_sharedMemoryAttach", 1,
                              "shmat failed with error %d (%s)",
@@ -645,6 +650,7 @@ os_svr4_sharedMemoryAttach(
 	    rv = os_resultFail;
 	} else {
             *mapped_address = map_address;
+            fprintf (stderr, "mapped_address = %p\n", *mapped_address);
             rv = os_resultSuccess;
 	}
     }

@@ -22,6 +22,6 @@ analyse:
 
 clean:
 	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; cd $(OSPL_HOME)/src/abstraction; make $@)
-	@rm -rf bld/$(SPLICE_HOST)
+	@rm -rf bld #/$(SPLICE_HOST)
 
 endif

@@ -22,6 +22,6 @@ all compile link metre splint qac: bld/$(SPLICE_HOST)/makefile
 clean:
 	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; cd $(OSPL_HOME)/src/abstraction; make $@)
 	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; cd $(OSPL_HOME)/src/database; make $@)
-	@rm -rf bld/$(SPLICE_HOST)
+	@rm -rf bld #/$(SPLICE_HOST)
 
 endif

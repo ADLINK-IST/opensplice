@@ -792,6 +792,7 @@ install_hde_target ()
     if [ -d "${OSPL_HOME}/src/abstraction/os/${os}/include/" ]
     then
         install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/${os}/include/os_*.h" "${HDE_dir}/include/include"
+        install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/${os}/include/msem.h" "${HDE_dir}/include/include"
     fi
 
     install_ascii_fileset "${OSPL_HOME}/src/abstraction/os/include/os_*.h" "${HDE_dir}/include/sys"

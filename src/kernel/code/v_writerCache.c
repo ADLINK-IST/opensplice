@@ -76,9 +76,11 @@ v_writerCacheWalk (
     v_cacheWalkAction action,
     c_voidp arg)
 {
+  c_bool v_cacheWalkCopy (v_cache cache, v_cacheWalkAction action, c_voidp arg);
+
     assert(C_TYPECHECK(cache,v_writerCache));
 
-    return v_cacheWalk(v_cache(cache),action,arg);
+    return v_cacheWalkCopy(v_cache(cache),action,arg);
 }
 
 void

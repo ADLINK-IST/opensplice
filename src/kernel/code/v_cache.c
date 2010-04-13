@@ -227,6 +227,43 @@ v_cacheWalk (
     return proceed;
 }
 
+c_bool
+v_cacheWalkCopy (
+    v_cache cache,
+    v_cacheWalkAction action,
+    c_voidp arg)
+{
+    v_cacheNode node;
+    c_bool proceed;
+
+    assert(C_TYPECHECK(cache,v_cache));
+
+    v_cacheNodeCheck(v_cacheNode(cache));
+    proceed = TRUE;
+    switch (cache->kind) {
+    case V_CACHE_OWNER:
+        node = v_cacheNode(cache)->owner.next;
+        while ((node != NULL) && (proceed)) {
+            assert(C_TYPECHECK(node,v_cacheNode));
+            proceed = action(node,arg);
+            node = node->owner.next;
+        }
+    break;
+    case V_CACHE_INSTANCE:
+        node = v_cacheNode(cache)->instance.next;
+        while ((node != NULL) && (proceed)) {
+            assert(C_TYPECHECK(node,v_cacheNode));
+            proceed = action(node,arg);
+            node = node->instance.next;
+        }
+    break;
+    default:
+    break;
+    }
+    v_cacheNodeCheck(v_cacheNode(cache));
+    return proceed;
+}
+
 void
 v_cacheNodeRemove (
     v_cacheNode node,

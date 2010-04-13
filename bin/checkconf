@@ -447,6 +447,8 @@ javac_check ()
             set_var PATH "$PATH"
             T_LD_PATH=no
             ;;
+        Darwin)
+            ;;
         *)
             echo "Error - Not yet supported Java setup"
             return 1

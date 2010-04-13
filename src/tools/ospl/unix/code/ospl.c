@@ -619,7 +619,9 @@ main(
                 }
             }
             printf (" Ready\n");
-            retCode = WEXITSTATUS(system (start_command));
+            int systemRetCode = system(start_command);
+            int *systemRetCode_p = &systemRetCode;
+            retCode = WEXITSTATUS(systemRetCode_p);
             if(!blocking)
             {
                 sleep (2); /* take time to first show the license message from spliced */

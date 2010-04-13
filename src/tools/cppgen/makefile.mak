@@ -12,7 +12,7 @@ CFLAGS_OPT = -DNDEBUG -MD
 endif
 endif
 
-LDLIBS += -l$(DDS_CPP) -l$(DDS_OS) 
+LDLIBS += -l$(DDS_CPP) -l$(DDS_OS) $(LDLIBS_CXX)
 CXXFLAGS += -DYY_NEVER_INTERACTIVE
 
 CXXINCS += -I$(OSPL_HOME)/src/cpp/include

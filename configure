@@ -70,6 +70,9 @@ set_var SPLICE_TARGET $SPLICE_TARGET
 set_var SPLICE_HOST $SPLICE_HOST
 
 setup_pathed_vars
+if [ "`uname -s`" = "Darwin" ] ; then
+    export DYLD_LIBRARY_PATH=$LD_LIBRARY_PATH${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+fi
 dump_vars > "$ENVFILE.sh"
 . "./$ENVFILE.sh"
 print_setup

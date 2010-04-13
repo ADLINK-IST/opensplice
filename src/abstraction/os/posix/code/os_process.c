@@ -36,24 +36,38 @@
 #ifndef VXWORKS_RTP
 #include <pthread.h>
 #endif
+#ifdef __APPLE__
+#include <crt_externs.h>
+#endif
 
 /** \brief pointer to environment variables */
+#ifndef __APPLE__
 extern char **environ;
+#endif
 static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandler)0;
 
 #ifndef INTEGRITY
 #define _SIGNALVECTOR_(sig) _ospl_oldSignalVector##sig
 static struct sigaction _SIGNALVECTOR_(SIGINT);
-static struct sigaction _SIGNALVECTOR_(SIGQUIT);
 static struct sigaction _SIGNALVECTOR_(SIGHUP);
+static struct sigaction _SIGNALVECTOR_(SIGPIPE);
+static struct sigaction _SIGNALVECTOR_(SIGALRM);
 static struct sigaction _SIGNALVECTOR_(SIGTERM);
+static struct sigaction _SIGNALVECTOR_(SIGUSR1);
+static struct sigaction _SIGNALVECTOR_(SIGUSR2);
+#ifdef SIGPOLL
+static struct sigaction _SIGNALVECTOR_(SIGPOLL);
+#endif
+static struct sigaction _SIGNALVECTOR_(SIGVTALRM);
+static struct sigaction _SIGNALVECTOR_(SIGPROF);
 
 #define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
 #define OSPL_SIGNALHANDLERTHREAD_EXIT      2 /* Instruct thread to call exit() */
 
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
-static int _ospl_signalpipe[2] = { 0, 0};
+static pthread_mutex_t _ospl_signalHandlerThreadMutex;
+static pthread_cond_t  _ospl_signalHandlerThreadCondition;
 
 /* private functions */
 static void
@@ -64,7 +78,6 @@ signalHandler(
 {
     os_int32 terminate;
     os_terminationType reason;
-    int result;
 
     if (_ospl_termHandler) {
         switch (sig) {
@@ -81,8 +94,18 @@ signalHandler(
         /* The signalHandlerThread will always perform the
          * exit() call.
          */
-        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
-        result = write(_ospl_signalpipe[1], &sig, sizeof(int));
+        /* Do not lock _ospl_signalHandlerThreadMutex when the
+         * signalHandler is called from the _ospl_signalHandlerThread
+         */
+        if (pthread_equal(pthread_self(), _ospl_signalHandlerThreadId)) {
+            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+        } else {
+            pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
+            _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
+            pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+            pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
+        } 
     }
 }
 
@@ -94,49 +117,16 @@ signalHandlerThread(
     void *arg)
 {
     sigset_t sigset;
-    int sig;
-    int result;
 
     sigemptyset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
-    result = -1;
-    while (result == -1) {
-        result = read(_ospl_signalpipe[0], &sig, sizeof(int));
+    pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
+    while (!_ospl_signalHandlerThreadTerminate) {
+        pthread_cond_wait(&_ospl_signalHandlerThreadCondition, &_ospl_signalHandlerThreadMutex);
     }
+    pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
 
-    /* first call previous signal handler, iff not default */
-    switch (sig) {
-    case -1: /* used for terminating this thread! */
-        assert(_ospl_signalHandlerThreadTerminate != OSPL_SIGNALHANDLERTHREAD_EXIT);
-    break;
-    case SIGINT:
-        if ((_SIGNALVECTOR_(SIGINT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGINT).sa_handler(SIGINT);
-        }
-    break;
-    case SIGQUIT:
-        if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGQUIT).sa_handler(SIGQUIT);
-        }
-    break;
-    case SIGHUP:
-        if ((_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGHUP).sa_handler(SIGHUP);
-        }
-    break;
-    case SIGTERM:
-        if ((_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
-        }
-    break;
-    default:
-        assert(0);
-    }
     if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
         exit(0);
     }
@@ -145,6 +135,7 @@ signalHandlerThread(
 
 #define _SIGACTION_(sig) sigaction(sig,&action,&_ospl_oldSignalVector##sig)
 #define _SIGCURRENTACTION_(sig) sigaction(sig, NULL, &_ospl_oldSignalVector##sig)
+#define _SIGDEFAULT_(sig) (_ospl_oldSignalVector##sig.sa_handler == SIG_DFL)
 #endif
 
 /* protected functions */
@@ -154,12 +145,19 @@ os_processModuleInit(void)
 #if !defined INTEGRITY && !defined VXWORKS_RTP
     struct sigaction action;
     pthread_attr_t      thrAttr;
-    int result;
+    pthread_mutexattr_t mtxAttr;
+    pthread_condattr_t  cvAttr;
 
-     result = pipe(_ospl_signalpipe);
+    pthread_mutexattr_init(&mtxAttr);
+    pthread_mutexattr_setpshared (&mtxAttr, PTHREAD_PROCESS_PRIVATE);
+    pthread_mutex_init(&_ospl_signalHandlerThreadMutex, &mtxAttr);
+
+    pthread_condattr_init(&cvAttr);
+    pthread_condattr_setpshared (&cvAttr, PTHREAD_PROCESS_PRIVATE);
+    pthread_cond_init(&_ospl_signalHandlerThreadCondition, &cvAttr);
 
     pthread_attr_init(&thrAttr);
-    pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
+    pthread_attr_setstacksize(&thrAttr, 1024); /* 1KB */
     pthread_create(&_ospl_signalHandlerThreadId, &thrAttr, signalHandlerThread, (void*)0);
 
     /* install signal handlers */
@@ -169,17 +167,54 @@ os_processModuleInit(void)
     action.sa_flags = SA_SIGINFO;
 
     _SIGCURRENTACTION_(SIGINT);
-    _SIGACTION_(SIGINT);
-
-    _SIGCURRENTACTION_(SIGQUIT);
-    _SIGACTION_(SIGQUIT);
+    if (_SIGDEFAULT_(SIGINT)) {
+        _SIGACTION_(SIGINT);
+    }
 
     _SIGCURRENTACTION_(SIGHUP);
-    _SIGACTION_(SIGHUP);
+    if (_SIGDEFAULT_(SIGHUP)) {
+        _SIGACTION_(SIGHUP);
+    }
+
+    _SIGCURRENTACTION_(SIGPIPE);
+    if (_SIGDEFAULT_(SIGPIPE)) {
+        _SIGACTION_(SIGPIPE);
+    }
+
+    _SIGCURRENTACTION_(SIGALRM);
+    if (_SIGDEFAULT_(SIGALRM)) {
+        _SIGACTION_(SIGALRM);
+    }
 
     _SIGCURRENTACTION_(SIGTERM);
-    _SIGACTION_(SIGTERM);
+    if (_SIGDEFAULT_(SIGTERM)) {
+        _SIGACTION_(SIGTERM);
+    }
 
+    _SIGCURRENTACTION_(SIGUSR1);
+    if (_SIGDEFAULT_(SIGUSR1)) {
+        _SIGACTION_(SIGUSR1);
+    }
+
+    _SIGCURRENTACTION_(SIGUSR2);
+    if (_SIGDEFAULT_(SIGUSR2)) {
+        _SIGACTION_(SIGUSR2);
+    }
+#ifdef SIGPOLL
+    _SIGCURRENTACTION_(SIGPOLL);
+    if (_SIGDEFAULT_(SIGPOLL)) {
+        _SIGACTION_(SIGPOLL);
+    }
+#endif
+    _SIGCURRENTACTION_(SIGVTALRM);
+    if (_SIGDEFAULT_(SIGVTALRM)) {
+        _SIGACTION_(SIGVTALRM);
+    }
+
+    _SIGCURRENTACTION_(SIGPROF);
+    if (_SIGDEFAULT_(SIGPROF)) {
+        _SIGACTION_(SIGPROF);
+    }
 #endif
 }
 
@@ -192,19 +227,26 @@ void
 os_processModuleExit(void)
 {
 #if !defined INTEGRITY && !defined VXWORKS_RTP
-    int sig = -1;
-    void *thread_result;
-
     /* deinstall signal handlers */
     _SIGACTION_(SIGINT);
-    _SIGACTION_(SIGQUIT);
     _SIGACTION_(SIGHUP);
+    _SIGACTION_(SIGPIPE);
+    _SIGACTION_(SIGALRM);
     _SIGACTION_(SIGTERM);
+    _SIGACTION_(SIGUSR1);
+    _SIGACTION_(SIGUSR2);
+#ifdef SIGPOLL
+    _SIGACTION_(SIGPOLL);
+#endif
+    _SIGACTION_(SIGVTALRM);
+    _SIGACTION_(SIGPROF);
 
-    _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
-    if (pthread_self() != _ospl_signalHandlerThreadId) {
-        write(_ospl_signalpipe[1], &sig, sizeof(sig));
-        pthread_join(_ospl_signalHandlerThreadId, &thread_result);
+    _ospl_signalHandlerThreadTerminate = 1;
+    if (_ospl_signalHandlerThreadId != pthread_self()) {
+        pthread_mutex_lock(&_ospl_signalHandlerThreadMutex);
+        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
+        pthread_cond_broadcast(&_ospl_signalHandlerThreadCondition);
+        pthread_mutex_unlock(&_ospl_signalHandlerThreadMutex);
     }
 #endif
 }
@@ -398,12 +440,15 @@ os_procCreate(
                                 "scheduling policy can not be set because of privilege problems (%s)", name);
 	        }
 	    } else {
-	        sched_param.sched_priority = procAttr->schedPriority;
-	        if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
-		    OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
-                                "sched_setscheduler failed with error %d (%s)", errno, name);
-	        }
+	        if (getuid() == 0 || geteuid() == 0) {
+	            sched_param.sched_priority = procAttr->schedPriority;
+	            if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
+		        OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
+                                    "sched_setscheduler failed with error %d (%s)", errno, name);
+	            }
+		}
 	    }
+
 	    if (getuid() == 0) {
 	        /* first set the gid */
 	        if (procAttr->userCred.gid) {
@@ -418,6 +463,9 @@ os_procCreate(
 	    snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
 	    putenv(environment);
 	    /* exec executable file */
+#if __APPLE__
+	    char **environ = *_NSGetEnviron ();
+#endif
 	    if (execve(executable_file, argv, environ) == -1) {
 		OS_REPORT_2(OS_WARNING, "os_procCreate", 1, "execve failed with error %d (%s)", errno, executable_file);
 	    }
@@ -569,7 +617,7 @@ os_procAttrGetClass(void)
     int policy;
 
     policy = sched_getscheduler(getpid());
-    switch (policy)
+    switch (policy) 
     {
        case SCHED_FIFO:
        case SCHED_RR:
@@ -579,12 +627,12 @@ os_procAttrGetClass(void)
           class = OS_SCHED_TIMESHARE;
           break;
        case -1:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
+          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1, 
                       "sched_getscheduler failed with error %d", errno);
           class = OS_SCHED_DEFAULT;
-          break;
+          break;          
        default:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
+          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1, 
                       "sched_getscheduler unexpected return value %d", policy);
           class = OS_SCHED_DEFAULT;
           break;
@@ -592,7 +640,6 @@ os_procAttrGetClass(void)
     return class;
 }
 
-#ifndef VXWORKS_RTP
 /** \brief Get the process effective scheduling priority
  *
  * Possible Results:
@@ -604,14 +651,13 @@ os_procAttrGetPriority(void)
     struct sched_param param;
 
     param.sched_priority = 0;
-    if (sched_getparam(getpid(), &param) == -1)
+    if (sched_getparam(getpid(), &param) == -1) 
     {
-       OS_REPORT_1 (OS_WARNING, "os_procAttrGetPriority", 1,
+       OS_REPORT_1 (OS_WARNING, "os_procAttrGetPriority", 1, 
                     "sched_getparam failed with error %d", errno);
     }
     return param.sched_priority;
 }
-#endif
 
 #ifndef _POSIX_MEMLOCK
 #error "Error: the posix implementation on this platform does not support page locking!"

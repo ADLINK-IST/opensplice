@@ -12,7 +12,7 @@
 #ifndef OS__MUTEX_H
 #define OS__MUTEX_H
 
-#include "os_mutex.h"
+#include <os_mutex.h>
 
 void os_mutexModuleInit(void);
 void os_mutexModuleExit(void);
