@@ -29,7 +29,7 @@ namespace test.sacs
         new public bool onDataAvailableCalled = false;
 
         new public bool onRequestedDeadlineMissedCalled = false;
-        public DDS.RequestedDeadlineMissedStatus rdmStatus;
+        //public DDS.RequestedDeadlineMissedStatus rdmStatus;
         new public bool onRequestedIncompatibleQosCalled = false;
         public DDS.RequestedIncompatibleQosStatus rcqStatus;
 

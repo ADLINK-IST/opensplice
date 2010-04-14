@@ -192,7 +192,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_requested_incompatible_qos_status")]
         public static extern ReturnCode get_requested_incompatible_qos_status(
             IntPtr _this,
-            RequestedIncompatibleQosStatus status
+            IntPtr status
             );
 
         /*     SubscriptionMatchedStatus

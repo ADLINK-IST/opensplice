@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/win32/code/os_thread.c
@@ -74,13 +74,13 @@ os_threadMemInit(void)
 {
     void **tlsMemArray;
     BOOL result;
-    
+
     tlsMemArray = malloc (sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
     if (tlsMemArray) {
         memset(tlsMemArray, 0, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
         result = TlsSetValue(tlsIndex, tlsMemArray);
         if (!result) {
-            OS_DEBUG("os_threadMemInit", "Failed to set TLS"); 
+            OS_DEBUG("os_threadMemInit", "Failed to set TLS");
         }
     }
 }
@@ -90,7 +90,7 @@ os_threadMemExit(void)
 {
     void **tlsMemArray;
     int i;
-    
+
     tlsMemArray = (void **)TlsGetValue(tlsIndex);
     if (tlsMemArray != NULL) {
         for (i = 0; i < OS_THREAD_MEM_ARRAY_SIZE; i++) {
@@ -145,7 +145,7 @@ void
 os_threadModuleExit(void)
 {
    LPVOID data = TlsGetValue(tlsIndex);
-   
+
    if (data != NULL) {
       LocalFree((HLOCAL) data);
    }
@@ -186,7 +186,7 @@ os_threadModuleSetHook(
         }
     }
 
-    return result;    
+    return result;
 }
 
 /** \brief Terminate the calling thread
@@ -257,7 +257,7 @@ os_threadCreate(
     os_threadContext *threadContext;
 
     os_int32 effective_priority;
-    
+
     assert(threadId != NULL);
     assert(name != NULL);
     assert(threadAttr != NULL);
@@ -273,7 +273,7 @@ os_threadCreate(
         (SIZE_T)threadAttr->stackSize,
         (LPTHREAD_START_ROUTINE)os_startRoutineWrapper,
         (LPVOID)threadContext,
-        (DWORD)0, &threadIdent); 
+        (DWORD)0, &threadIdent);
     if (threadHandle == 0) {
         OS_DEBUG_1("os_threadCreate", "Failed with System Error Code: %i\n", GetLastError ());
         return os_resultFail;
@@ -291,11 +291,11 @@ os_threadCreate(
      0  : THREAD_PRIORITY_NORMAL
      1  : THREAD_PRIORITY_ABOVE_NORMAL
      2  : THREAD_PRIORITY_HIGHEST
-    15  : THREAD_PRIORITY_TIME_CRITICAL 
+    15  : THREAD_PRIORITY_TIME_CRITICAL
     For realtime threads additional values are allowed : */
-    
-    /* PROCESS_QUERY_INFORMATION rights required 
-     * to call GetPriorityClass 
+
+    /* PROCESS_QUERY_INFORMATION rights required
+     * to call GetPriorityClass
      * Ensure that priorities are efectively in the allowed range depending
      * on GetPriorityClass result */
 	effective_priority = threadAttr->schedPriority;
@@ -318,7 +318,10 @@ os_threadCreate(
 		OS_DEBUG_1("os_threadCreate", "SetThreadPriority failed with %d", (int)GetLastError());
 	}
 
-   CloseHandle (threadHandle);
+   /* ES: dds2086: Close handle should not be performed here. Instead the handle
+    * should not be closed until the os_threadWaitExit(...) call is called.
+    * CloseHandle (threadHandle);
+    */
    return os_resultSuccess;
 }
 
@@ -349,7 +352,7 @@ os_threadWaitExit(
     DWORD tr;
 
     threadHandle = OpenThread(THREAD_QUERY_INFORMATION, FALSE, (DWORD)threadId);
-    
+
     if(threadHandle == NULL){
         OS_DEBUG_1("os_threadWaitExit", "OpenThread Failed %d", (int)GetLastError());
         return os_resultFail;
@@ -372,7 +375,11 @@ os_threadWaitExit(
         *thread_result = (VOID *)tr;
     }
     CloseHandle(threadHandle);
-    
+    /* ES: dds2086: Perform a second close of the handle, this in effect closes
+     * the handle opened by the thread creation in the os_threadCreate(...) call.
+     */
+    CloseHandle(threadHandle);
+
     return os_resultSuccess;
 }
 
@@ -409,7 +416,7 @@ os_threadFigureIdentity(
  *     no sufficient memory is available on heap
  * - returns NULL if
  *     os_threadMemGet (index) returns != NULL
- * - returns reference to allocated heap memory 
+ * - returns reference to allocated heap memory
  *     of the requested size if
  *     memory is successfully allocated
  */
@@ -484,15 +491,15 @@ os_threadMemGet(
 {
     void **tlsMemArray;
     void *data;
-   
+
     data = NULL;
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
         tlsMemArray = TlsGetValue(tlsIndex);
         if (tlsMemArray != NULL) {
             data = tlsMemArray[index];
-        }    
+        }
     }
-   
+
     return data;
 }
 
@@ -524,7 +531,7 @@ os_threadUnprotect(void)
 {
     os_result result;
     os_threadProtectInfo *pi;
-    
+
     pi = os_threadMemGet(OS_THREAD_PROTECT);
     if (pi) {
         pi->protectCount--;
@@ -532,6 +539,6 @@ os_threadUnprotect(void)
     } else {
         result = os_resultFail;
     }
-    
+
     return result;
 }

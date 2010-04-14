@@ -141,7 +141,7 @@ namespace Chatroom
             status = chatPublisher.CopyFromTopicQos(ref nsDwQos, settingTopicQos);
             ErrorHandler.checkStatus(status, "DDS.Publisher.CopyFromTopicQos");
 
-            WriterDataLifecycleQosPolicy writerDataLifecycle = dwQos.WriterDataLifecycle;
+            WriterDataLifecycleQosPolicy writerDataLifecycle = nsDwQos.WriterDataLifecycle;
             writerDataLifecycle.AutodisposeUnregisteredInstances = false;
             IDataWriter nsParentWriter = chatPublisher.CreateDataWriter(nameServiceTopic, nsDwQos);
             ErrorHandler.checkHandle(

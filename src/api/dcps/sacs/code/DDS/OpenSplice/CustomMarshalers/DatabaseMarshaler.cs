@@ -134,7 +134,6 @@ namespace DDS.OpenSplice.CustomMarshalers
         
         public virtual void ReaderCopy(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo readerInfo)
         {
-            // TODO: readerInfo == null should throw an exception
             int samplesToRead = 0;
             IntPtr dataSampleBuf = IntPtr.Zero;
 
@@ -144,12 +143,11 @@ namespace DDS.OpenSplice.CustomMarshalers
                 dataSampleBuf = samples._buffer;
             }
 
-            IntPtr dataBufferPtr = Marshal.ReadIntPtr(readerInfo.data_buffer);
-            GCHandle tmpGCHandleData = GCHandle.FromIntPtr(dataBufferPtr);
+            // Restore GCHandle types from IntPtr types. 
+            GCHandle tmpGCHandleData = GCHandle.FromIntPtr(readerInfo.data_buffer);
             object[] sampleDataArray = tmpGCHandleData.Target as object[];
 
-            IntPtr infoBufferPtr = Marshal.ReadIntPtr(readerInfo.info_buffer);
-            GCHandle tmpGCHandleInfo = GCHandle.FromIntPtr(infoBufferPtr);
+            GCHandle tmpGCHandleInfo = GCHandle.FromIntPtr(readerInfo.info_buffer);
             SampleInfo[] sampleInfoArray = tmpGCHandleInfo.Target as SampleInfo[];
 
             if (sampleDataArray == null || sampleDataArray.Length != samplesToRead)
@@ -162,15 +160,9 @@ namespace DDS.OpenSplice.CustomMarshalers
                 initObjectSeq(sampleInfoArray, targetSampleInfo);
                 sampleInfoArray = targetSampleInfo;
 
-                // Write the new Data Sequence pointer back into C. 
-                GCHandle tmpGCHandle = GCHandle.Alloc(sampleDataArray, GCHandleType.Normal);
-                IntPtr tmpPtr = GCHandle.ToIntPtr(tmpGCHandle);
-                Marshal.WriteIntPtr(readerInfo.data_buffer, tmpPtr);
-
-                // Write the new SampleInfo Sequence pointer back into C. 
-                tmpGCHandle = GCHandle.Alloc(sampleInfoArray, GCHandleType.Normal);
-                tmpPtr = GCHandle.ToIntPtr(tmpGCHandle);
-                Marshal.WriteIntPtr(readerInfo.info_buffer, tmpPtr);
+                // Point the GCHandle types to the newly allocated arrays.
+                tmpGCHandleData.Target = sampleDataArray;
+                tmpGCHandleInfo.Target = sampleInfoArray;
             }
 
             // copy the data into our sampleDataArray and sampleInfoArray

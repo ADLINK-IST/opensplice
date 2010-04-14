@@ -262,8 +262,13 @@ u_entityClaim(
         if (r == U_RESULT_OK) {
             r = u_handleClaim(e->handle,(v_object *)&ve);
             if (r != U_RESULT_OK) {
-                OS_REPORT(OS_ERROR, "u_entityClaim", 0,
+                if (r == U_RESULT_PRECONDITION_NOT_MET) {
+                    OS_REPORT(OS_WARNING, "u_entityClaim", 0,
+                          "Claim failed because the handle has already expired");
+                } else {
+                    OS_REPORT(OS_ERROR, "u_entityClaim", 0,
                           "Illegal handle detected");
+                }
                 u_userUnprotect(u_entity(p));
             }
         } else if (r == U_RESULT_DETACHING) {

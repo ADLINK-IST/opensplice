@@ -25,22 +25,29 @@ namespace DDS.OpenSplice
 {
     public static class FooDataReader // : DataReader
     {
-        public static ReturnCode Read(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode Read(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.read(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        sampleStates,
-                        viewStates,
-                        instanceStates);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            sampleStates,
+                            viewStates,
+                            instanceStates);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -48,23 +55,30 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode Take(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode Take(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
 
                     result = Gapi.FooDataReader.take(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        sampleStates,
-                        viewStates,
-                        instanceStates);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            sampleStates,
+                            viewStates,
+                            instanceStates);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -72,21 +86,26 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode ReadWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
-            int maxSamples, IReadCondition condition)
+        public static ReturnCode ReadWithCondition(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos,
+                int maxSamples, 
+                IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
 
                     result = Gapi.FooDataReader.read_w_condition(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        ((ReadCondition)condition).GapiPeer);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            ((ReadCondition)condition).GapiPeer);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -94,20 +113,25 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode TakeWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
-            int maxSamples, IReadCondition condition)
+        public static ReturnCode TakeWithCondition(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos,
+                int maxSamples, 
+                IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.take_w_condition(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        ((ReadCondition)condition).GapiPeer);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            ((ReadCondition)condition).GapiPeer);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -115,7 +139,10 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode ReadNextSample(DataReader reader, ref object data, ref SampleInfo sampleInfo)
+        public static ReturnCode ReadNextSample(
+                DataReader reader, 
+                ref object data, 
+                ref SampleInfo sampleInfo)
         {
         //    ReturnCode result = Gapi.FooDataReader.read_next_sample(
         //        reader.GapiPeer,
@@ -125,7 +152,10 @@ namespace DDS.OpenSplice
             return ReturnCode.Unsupported;
         }
 
-        public static ReturnCode TakeNextSample(DataReader reader, ref object data, ref SampleInfo sampleInfo)
+        public static ReturnCode TakeNextSample(
+                DataReader reader, 
+                ref object data, 
+                ref SampleInfo sampleInfo)
         {
             //ReturnCode result = Gapi.FooDataReader.take_next_sample(
             //    reader.GapiPeer,
@@ -135,23 +165,31 @@ namespace DDS.OpenSplice
             return ReturnCode.Unsupported;
         }
 
-        public static ReturnCode ReadInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode ReadInstance(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                InstanceHandle instanceHandle, 
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.read_instance(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        instanceHandle,
-                        sampleStates,
-                        viewStates,
-                        instanceStates);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            instanceHandle,
+                            sampleStates,
+                            viewStates,
+                            instanceStates);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -159,23 +197,31 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode TakeInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode TakeInstance(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                InstanceHandle instanceHandle, 
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.take_instance(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        instanceHandle,
-                        sampleStates,
-                        viewStates,
-                        instanceStates);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            instanceHandle,
+                            sampleStates,
+                            viewStates,
+                            instanceStates);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -183,23 +229,31 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode ReadNextInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode ReadNextInstance(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                InstanceHandle instanceHandle, 
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.read_next_instance(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        instanceHandle,
-                        sampleStates,
-                        viewStates,
-                        instanceStates);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            instanceHandle,
+                            sampleStates,
+                            viewStates,
+                            instanceStates);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -207,18 +261,26 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode TakeNextInstance(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos, int maxSamples,
-            InstanceHandle instanceHandle, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        public static ReturnCode TakeNextInstance(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos, 
+                int maxSamples,
+                InstanceHandle instanceHandle, 
+                SampleStateKind sampleStates, 
+                ViewStateKind viewStates, 
+                InstanceStateKind instanceStates)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.take_next_instance(
                         reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
+                        marshaler.dataValuesPtr,
+                        marshaler.sampleInfosPtr,
                         maxSamples,
                         instanceHandle,
                         sampleStates,
@@ -231,21 +293,27 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode ReadNextInstanceWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
-            int maxSamples, InstanceHandle instanceHandle, IReadCondition condition)
+        public static ReturnCode ReadNextInstanceWithCondition(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos,
+                int maxSamples, 
+                InstanceHandle instanceHandle, 
+                IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = new 
+                    DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.read_next_instance_w_condition(
-                        reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
-                        maxSamples,
-                        instanceHandle,
-                        ((ReadCondition)condition).GapiPeer);
+                            reader.GapiPeer,
+                            marshaler.dataValuesPtr,
+                            marshaler.sampleInfosPtr,
+                            maxSamples,
+                            instanceHandle,
+                            ((ReadCondition)condition).GapiPeer);
 
                     marshaler.CopyOut(ref data, ref sampleInfos);
                 }
@@ -253,18 +321,24 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode TakeNextInstanceWithCondition(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos,
-            int maxSamples, InstanceHandle instanceHandle, IReadCondition condition)
+        public static ReturnCode TakeNextInstanceWithCondition(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos,
+                int maxSamples, 
+                InstanceHandle instanceHandle, 
+                IReadCondition condition)
         {
             ReturnCode result = ReturnCode.Ok;
-            using (DataReaderMarshaler marshaler = new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
+            using (DataReaderMarshaler marshaler = 
+                    new DataReaderMarshaler(data, sampleInfos, ref maxSamples, ref result))
             {
                 if (result == ReturnCode.Ok)
                 {
                     result = Gapi.FooDataReader.take_next_instance_w_condition(
                         reader.GapiPeer,
-                        ref marshaler.dataValuesPtr,
-                        ref marshaler.sampleInfosPtr,
+                        marshaler.dataValuesPtr,
+                        marshaler.sampleInfosPtr,
                         maxSamples,
                         instanceHandle,
                         ((ReadCondition)condition).GapiPeer);
@@ -275,7 +349,10 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static ReturnCode ReturnLoan(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos)
+        public static ReturnCode ReturnLoan(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos)
         {
             GCHandle tmpGCHandleData = GCHandle.Alloc(data, GCHandleType.Normal);
             IntPtr dataValuesPtr = GCHandle.ToIntPtr(tmpGCHandleData);
@@ -294,7 +371,10 @@ namespace DDS.OpenSplice
             return result;
         }
 
-        public static bool IsLoan(DataReader reader, ref object[] data, ref SampleInfo[] sampleInfos)
+        public static bool IsLoan(
+                DataReader reader, 
+                ref object[] data, 
+                ref SampleInfo[] sampleInfos)
         {
             GCHandle tmpGCHandleData = GCHandle.Alloc(data, GCHandleType.Normal);
             IntPtr dataValuesPtr = GCHandle.ToIntPtr(tmpGCHandleData);
@@ -313,19 +393,30 @@ namespace DDS.OpenSplice
             return result != 0;
         }
 
-        public static ReturnCode GetKeyValue(DataReader reader, object key, InstanceHandle instanceHandle)
+        public static ReturnCode GetKeyValue(
+                DataReader reader, 
+                ref object key, 
+                InstanceHandle instanceHandle)
         {
-            return Gapi.FooDataReader.get_key_value(
-                reader.GapiPeer,
-                IntPtr.Zero,
-                instanceHandle);
+            GCHandle tmpGCHandleData = GCHandle.Alloc(key, GCHandleType.Normal);
+            ReturnCode result =  Gapi.FooDataReader.get_key_value(
+                    reader.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandleData),
+                    instanceHandle);
+            tmpGCHandleData.Free();
+            return result;
         }
 
-        public static InstanceHandle LookupInstance(DataReader reader, object instance)
+        public static InstanceHandle LookupInstance(
+                DataReader reader, 
+                object instance)
         {
-            return Gapi.FooDataReader.lookup_instance(
-                reader.GapiPeer,
-                IntPtr.Zero);
+            GCHandle tmpGCHandleData = GCHandle.Alloc(instance, GCHandleType.Normal);            
+            InstanceHandle handle = Gapi.FooDataReader.lookup_instance(
+                    reader.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandleData));
+            tmpGCHandleData.Free();
+            return handle;
         }
     }
 }

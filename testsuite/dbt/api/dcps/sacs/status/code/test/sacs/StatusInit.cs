@@ -28,7 +28,7 @@ namespace test.sacs
             DDS.ReturnCode rc;
             result = new Test.Framework.TestResult("Initialization success", string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
-            factory = DDS.DomainParticipantFactory.Instance;
+             factory = DDS.DomainParticipantFactory.Instance;
             if (factory == null)
             {
                 result.Result = "DomainParticipantFactory could not be initialized.";

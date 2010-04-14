@@ -167,6 +167,8 @@ if %ERROR% EQU 1 SET FAIL=1
 if %TIMEOUT% EQU 1 SET FAIL=1
 if %NOCLASSDEFFOUND% EQU 1 SET FAIL=1
 if %ASSERTFAILED% EQU 1 SET FAIL=1
+if EXIST %OSPL_HOME%examples\%EXAMPLE%\ospl-error.log SET FAIL=1
+if EXIST %OSPL_HOME%examples\%EXAMPLE%\ospl-error.log echo ospl-error.log found for %EXAMPLE% >> %RUN_SUMMARY_LOG%
 REM Append result to %LOGFILE%
 if %FAIL% EQU 1 (echo Run %EXAMPLE% FAILED >> %LOGFILE%) ELSE (echo Run %EXAMPLE% PASSED >> %LOGFILE%)
 REM Append result to %RUN_SUMMARY_LOG%

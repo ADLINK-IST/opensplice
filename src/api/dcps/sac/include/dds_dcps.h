@@ -281,7 +281,7 @@ typedef DDS_unsigned_long DDS_StatusMask;
 #define DDS_LIVELINESS_CHANGED_STATUS                       4096U
 #define DDS_PUBLICATION_MATCHED_STATUS                      8192U
 #define DDS_SUBSCRIPTION_MATCHED_STATUS                     16384U
-   
+
 /* Opensplice Extensions */
 #define DDS_ALL_DATA_DISPOSED_TOPIC_STATUS                  0x80000000U
 
@@ -2720,6 +2720,14 @@ OS_API DDS_ReturnCode_t
 DDS_DomainParticipantFactory_delete_domain (
     DDS_DomainParticipantFactory _this,
     DDS_Domain a_domain);
+
+/*     ReturnCode_t
+ *     delete_contained_entities(
+ *         );
+ */
+OS_API DDS_ReturnCode_t
+DDS_DomainParticipantFactory_delete_contained_entities (
+    DDS_DomainParticipantFactory _this);
 
 /*
  * interface TypeSupport

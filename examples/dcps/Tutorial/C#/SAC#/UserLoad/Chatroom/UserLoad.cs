@@ -112,8 +112,16 @@ namespace Chatroom
 
             /* Create a DataReader for the NameService Topic
                (using the appropriate QoS). */
+            DataReaderQos nsQos = null;
+            status = chatSubscriber.GetDefaultDataReaderQos(ref nsQos);
+            ErrorHandler.checkStatus(
+                status, "DDS.Subscriber.GetDefaultDataReaderQos");
+            status = chatSubscriber.CopyFromTopicQos(ref nsQos, settingTopicQos);
+            ErrorHandler.checkStatus(
+                status, "DDS.Subscriber.CopyFromTopicQos");
             IDataReader parentReader = chatSubscriber.CreateDataReader(
                 nameServiceTopic,
+                nsQos,
                 null,
                 StatusKind.Any);
             ErrorHandler.checkHandle(
@@ -180,8 +188,8 @@ namespace Chatroom
             ICondition[] guardList = new ICondition[3];
 
             /* Remove all known Users that are not currently active. */
-            NameService[] nsMsgs = new NameService[10];
-            SampleInfo[] nsInfos = new SampleInfo[10];
+            NameService[] nsMsgs = null;
+            SampleInfo[] nsInfos = null;
 
             status = nameServer.Take(ref nsMsgs,
                 ref nsInfos,
@@ -201,8 +209,8 @@ namespace Chatroom
             bool closed = false;
 
             int prevCount = 0;
-            ChatMessage[] msgs = new ChatMessage[20];
-            SampleInfo[] msgInfos = new SampleInfo[20];
+            ChatMessage[] msgs = null;
+            SampleInfo[] msgInfos = null;
 
             while (!closed)
             {
@@ -284,7 +292,7 @@ namespace Chatroom
                     }
                     else
                     {
-                        System.Diagnostics.Debug.Fail("Unknown Condition");
+                        //System.Diagnostics.Debug.Fail("Unknown Condition");
                     }
                 } /* for */
             } /* while (!closed) */

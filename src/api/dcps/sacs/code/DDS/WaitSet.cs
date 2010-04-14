@@ -54,12 +54,13 @@ namespace DDS
         {
             ReturnCode result = ReturnCode.Error;
 
-            using (SequenceMarshaler<ICondition, Condition> marshaler = new SequenceMarshaler<ICondition, Condition>(activeConditions))
+            using (SequenceMarshaler<ICondition, Condition> marshaler = 
+                    new SequenceMarshaler<ICondition, Condition>(activeConditions))
             {
                 result = OpenSplice.Gapi.WaitSet.wait(
-                    GapiPeer,
-                    marshaler.GapiPtr,
-                    ref timeout);
+                        GapiPeer,
+                        marshaler.GapiPtr,
+                        ref timeout);
 
                 if (result == ReturnCode.Ok || result == ReturnCode.Timeout)
                 {
@@ -80,8 +81,8 @@ namespace DDS
         {
             Condition conditionObj = (Condition)condition;
             return OpenSplice.Gapi.WaitSet.attach_condition(
-                GapiPeer,
-                conditionObj.GapiPeer);
+                    GapiPeer,
+                    conditionObj.GapiPeer);
         }
 
         /// <summary>
@@ -94,8 +95,8 @@ namespace DDS
         {
             Condition conditionObj = (Condition)condition;
             return OpenSplice.Gapi.WaitSet.detach_condition(
-                GapiPeer,
-                conditionObj.GapiPeer);
+                    GapiPeer,
+                    conditionObj.GapiPeer);
         }
 
         /// <summary>
@@ -108,11 +109,12 @@ namespace DDS
         {
             ReturnCode result = ReturnCode.Error;
 
-            using (SequenceMarshaler<ICondition, Condition> marshaler = new SequenceMarshaler<ICondition, Condition>())
+            using (SequenceMarshaler<ICondition, Condition> marshaler = 
+                    new SequenceMarshaler<ICondition, Condition>())
             {
                 result = OpenSplice.Gapi.WaitSet.get_conditions(
-                    GapiPeer,
-                    marshaler.GapiPtr);
+                        GapiPeer,
+                        marshaler.GapiPtr);
 
                 if (result == ReturnCode.Ok)
                 {

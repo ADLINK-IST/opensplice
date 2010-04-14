@@ -437,10 +437,6 @@ namespace PingPong
                          */
                         while (!(timeout_flag || finish_flag))
                         {
-                            DDS.ICondition[] conds = null;
-                            result = w.GetConditions(ref conds);
-                            ErrorHandler.checkStatus(result, "getCondition did not work !");
-
                             result = w.Wait(ref conditionList, wait_timeout);
                             //ErrorHandler.checkStatus(result, "wait did not work condition list is probably null!");
                             if (conditionList != null)
@@ -503,10 +499,10 @@ namespace PingPong
                     }
 
                     System.Console.WriteLine(String.Format("{0,-6} {1, 10} {2, 6} {3, 6} {4, 6} {5, 10} {6, 6} {7, 6} {8, 6} {9, 10} {10, 6} {11, 6} {12, 6}",
-                        block,roundtrip.count,roundtrip.average,roundtrip.min, roundtrip.max,write_access.count, write_access.average,write_access.min, 
-                        write_access.max, read_access.count, read_access.average, read_access.min, read_access.max));
+                        block,roundtrip.count,roundtrip.average,roundtrip.min, roundtrip.max,write_access.count,
+                        write_access.average,write_access.min, write_access.max, read_access.count, read_access.average,
+                        read_access.min, read_access.max));
                     Console.Out.Flush();
-
                     write_access.init_stats();
                     read_access.init_stats();
                     roundtrip.init_stats();

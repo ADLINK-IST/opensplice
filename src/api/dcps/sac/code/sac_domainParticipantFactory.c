@@ -201,7 +201,7 @@ DDS_DomainParticipantFactory_lookup_domain (
     );
 }
 
-/*     DDS_ReturnCode_t
+/*     ReturnCode_t
  *     delete_domain(
  *          in Domain a_domain);
  */
@@ -216,4 +216,19 @@ DDS_DomainParticipantFactory_delete_domain (
     );
 }
 
+/*     ReturnCode_t
+ *     delete_contained_entities(
+ *          );
+ */
+DDS_ReturnCode_t
+DDS_DomainParticipantFactory_delete_contained_entities (
+    DDS_DomainParticipantFactory _this)
+{
+    gapi_returnCode_t result;
 
+    result = gapi_domainParticipantFactory_delete_contained_entities (
+        (gapi_domainParticipantFactory)_this,
+        NULL,
+        NULL);
+    return (DDS_ReturnCode_t)result;
+}

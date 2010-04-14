@@ -729,6 +729,9 @@ module DDS {
 
         ReturnCode_t delete_domain(
             in Domain a_domain);
+
+        ReturnCode_t delete_contained_entities(
+            );
         // @discrepancy End discrepancy - this method existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
     };
 

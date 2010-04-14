@@ -15,7 +15,7 @@ TARGET_LINK_DIR = ../../exec/$(SPLICE_TARGET)
 
 CODE_DIR	:= ../../MessageBoard/ChatRoom
 
-all link: idlgen csapi csc Chatter.exe
+all link: idlgen csapi csc Chatter.exe UserLoad.exe
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -46,3 +46,7 @@ $(IDLPP_CS): $(IDL_DIR)/$(TOPIC_IDL)
 Chatter.exe: ../../Chatter/Chatroom/Chatter.cs ../../Chatter/Chatroom/ErrorHandler.cs $(IDLPP_CS)
 	$(CSC) $(CSFLAGS) -out:Chatter.exe $(CSTARGET_EXEC) $(CSLIBS) $^
 	cp Chatter.exe $(TARGET_LINK_DIR)
+
+UserLoad.exe: ../../UserLoad/Chatroom/UserLoad.cs ../../UserLoad/Chatroom/ErrorHandler.cs $(IDLPP_CS)
+	$(CSC) $(CSFLAGS) -out:UserLoad.exe $(CSTARGET_EXEC) $(CSLIBS) $^
+	cp UserLoad.exe $(TARGET_LINK_DIR)

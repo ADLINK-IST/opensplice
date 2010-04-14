@@ -89,4 +89,5 @@ public interface DomainParticipantFactoryOperations
 
   DDS.Domain lookup_domain (String domain_id);
   int delete_domain (DDS.Domain a_domain);
+  int delete_contained_entities ();
 } // interface DomainParticipantFactoryOperations

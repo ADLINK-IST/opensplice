@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -85,7 +85,7 @@ be_interface::be_interface
       m_tc_dtor_val = (DDS_StdString) "0";
       m_tc_put_val = (DDS_StdString) "0";
       m_tc_get_val = (DDS_StdString) "0";
-      m_tc_assign_val = (DDS_StdString) "0";      
+      m_tc_assign_val = (DDS_StdString) "0";
    }
 
    m_any_op_id = barScopedName;
@@ -170,7 +170,7 @@ void be_interface::GenerateStaticMFs (be_ClientHeader & source)
    << " obj);" << nl;
 
    // _is_a on servants, _local_is_a on local objects
-   
+
    os << tab << "DDS::Boolean ";
    if (local ())
    {
@@ -181,7 +181,7 @@ void be_interface::GenerateStaticMFs (be_ClientHeader & source)
    // _narrow
 
    os << tab << "static " << ptrClass << " _narrow (DDS::Object"
-      << DDSPtrExtension << " obj" << XBE_Ev::arg (XBE_ENV_ARGN) 
+      << DDSPtrExtension << " obj" << XBE_Ev::arg (XBE_ENV_ARGN)
       << ");" << nl;
 
    // _unchecked_narrow
@@ -206,7 +206,7 @@ void be_interface::GenerateStaticMFs (be_ClientHeader & source)
 
    if (!local())
    {
-      os << tab << "static void _assert_stub (" << localName 
+      os << tab << "static void _assert_stub (" << localName
          << DDSPtrExtension << " & obj);" << nl;
    }
 }
@@ -232,8 +232,8 @@ void be_interface::GenerateCopyConstructor (be_ClientHeader & source)
    ostream & os = source.Stream ();
    be_Tab tab (source);
 
-   os << tab << BaseClassname () << " (const " 
-      << BaseClassname () << " &) {};" << nl;
+   os << tab << BaseClassname () << " (const "
+      << BaseClassname () << " &);" << nl;
 }
 
 void be_interface::GenerateAssignmentOperator (be_ClientHeader & source)
@@ -245,7 +245,7 @@ void be_interface::GenerateAssignmentOperator (be_ClientHeader & source)
       << BaseClassname () << " &);" << nl;
 }
 
-void be_interface::GenerateVirtualMFs 
+void be_interface::GenerateVirtualMFs
 (
    be_Source& source,
    const DDS_StdString& implclassname
@@ -291,7 +291,7 @@ void be_interface::GenerateStaticMFs (be_ClientImplementation & source)
    be_Tab tab(source);
 
    // Static init of local object rep id string
-   
+
    UTL_String * repID = get_decl_pragmas().get_repositoryID();
    assert(repID);
    os << tab << "const char * " << scopedName << "::_local_id = " << "\"" << repID->get_string() << "\";" << nl;
@@ -325,16 +325,16 @@ void be_interface::GenerateStaticMFs (be_ClientImplementation & source)
    os << tab << "   }" << nl;
    os << tab << nl;
    tab.outdent ();
-   
+
    GenerateHierachySearch (source);
-   
+
    os << tab << "   return false;" << nl;
    os << tab << "}" << nl << nl;
 
    // _narrow
-   
-   os << tab << ptrClass << " " << scopedName 
-      << "::_narrow (DDS::Object_ptr p" 
+
+   os << tab << ptrClass << " " << scopedName
+      << "::_narrow (DDS::Object_ptr p"
       << XBE_Ev::arg (XBE_ENV_ARGN) << ")" << nl;
    os << tab << "{" << nl;
    tab.indent ();
@@ -343,7 +343,7 @@ void be_interface::GenerateStaticMFs (be_ClientImplementation & source)
       << XBE_Ev::arg (XBE_ENV_VARN) << "))" << nl;
    os << tab << "{" << nl;
    tab.indent ();
-   
+
    if (local ())
    {
       os << tab  << "result = dynamic_cast < " << ptrClass << "> (p);" << nl;
@@ -377,7 +377,7 @@ void be_interface::GenerateStaticMFs (be_ClientImplementation & source)
       }
       else
       {
-         os << tab << "result = new " << baseClassname 
+         os << tab << "result = new " << baseClassname
             << "_stub (p);" << nl;
       }
    }
@@ -389,13 +389,13 @@ void be_interface::GenerateStaticMFs (be_ClientImplementation & source)
 
    // _unchecked_narrow
 
-   os << tab << ptrClass << " " << scopedName 
+   os << tab << ptrClass << " " << scopedName
       << "::_unchecked_narrow (DDS::Object_ptr p"
       << XBE_Ev::arg (XBE_ENV_ARGN) << ")" << nl;
    os << tab << "{" << nl;
    tab.indent ();
    os << tab << ptrClass << " result;" << nl;
-   
+
    if (local())
    {
       os << tab  << "result = dynamic_cast < " << ptrClass << "> (p);" << nl;
@@ -688,7 +688,7 @@ void be_interface::Generate (be_ClientHeader& source)
 
       GenerateObjectVirtuals(source);
 
-      // _this 
+      // _this
 
       os << tab << localName << DDSPtrExtension << " _this () { return this; }" << nl;
 
@@ -733,14 +733,14 @@ void be_interface::GenerateStreamOps (be_ClientHeader& source)
 
    os << tab << DLLMACRO << "inline void" << nl
       << "IOP::put (DDS::Codec::OutStream& os, const "
-      << ScopedName() << "_ptr v" << XBE_Ev::arg (XBE_ENV_ARGN) 
+      << ScopedName() << "_ptr v" << XBE_Ev::arg (XBE_ENV_ARGN)
       << ")" << nl;
    os << "{" << nl;
    tab.indent ();
    os << tab << "DDS::Codec::Param putArg = ";
    os << "{ " << Scope(TypeCodeTypeName()) << ", ";
    os << "v->get_ior(), DDS::PARAM_IN };" << nl;
-   os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+   os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
       << ");" << nl;
    tab.outdent ();
    os << "}" << nl << nl;
@@ -761,8 +761,8 @@ void be_interface::GenerateStreamOps (be_ClientHeader& source)
    //os << "&v->get_ior(), DDS::PARAM_OUT };" << nl;
 
    os << "&v->get_ior(), DDS::PARAM_INOUT };" << nl;
-   
-   os << tab << "is.get (&getArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+
+   os << tab << "is.get (&getArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
       << ");" << nl;
    tab.outdent();
    os << "}" << nl << nl;
@@ -826,7 +826,7 @@ void be_interface::Generate (be_ClientImplementation& source)
    if (!local())
    {
       os << tab << "void " << Scope(localName)
-         << "::_assert_stub (" << localName 
+         << "::_assert_stub (" << localName
          << DDSPtrExtension << " & obj )" << nl;
       os << tab << "{" << nl;
       tab.indent ();
@@ -909,13 +909,13 @@ IMPL_NARROW_FROM_DECL(be_interface_fwd)
 
 be_interface_fwd::be_interface_fwd()
 {
-   isAtModuleScope(pbfalse); 
+   isAtModuleScope(pbfalse);
 }
 
 be_interface_fwd::be_interface_fwd
 (
-   idl_bool local, 
-   UTL_ScopedName *n, 
+   idl_bool local,
+   UTL_ScopedName *n,
    const UTL_Pragmas &p
 )
 :
@@ -1358,7 +1358,7 @@ ostream & be_interface::put_for_sequence
       << "{ " << Scope(TypeCodeTypeName()) << ", (" << arg << "[" << index
       << "]) ? " << arg << "[" << index << "]->get_ior() : 0, DDS::PARAM_IN };"
       << nl;
-   os <<  tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+   os <<  tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
       << ");" << nl;
 
    return os;
@@ -1378,15 +1378,15 @@ ostream & be_interface::get_for_sequence
    << arg << "[" << index << "]);" << nl;
    os << tab << "DDS::Codec::Param getArg = "
    << "{ " << Scope(TypeCodeTypeName()) << ", &"
-      
+
    // eCPP896 this fixes leaks in null ref tests gen code
    // This should not have been IN at all but OUT in the first place
    // however may need to discriminate between OUT and INOUT
    //   << arg << "[" << index << "]->get_ior(), DDS::PARAM_IN };"
    << arg << "[" << index << "]->get_ior(), DDS::PARAM_INOUT };"
-      
+
    << nl;
-   os << tab << "is.get (&getArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+   os << tab << "is.get (&getArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
       << ");" << nl;
    os << tab << arg << "[" << index << "]->unbind ();" << nl;
    os << tab.outdent();
@@ -1444,7 +1444,7 @@ void be_interface::generate_tc_ctor_val (be_Source & source)
    // DDS::Object_ptr to set the ior read in.
    //
 
-   os << "   return (DDS::Object_ptr) new " << ScopedName () << DDSStubExtension 
+   os << "   return (DDS::Object_ptr) new " << ScopedName () << DDSStubExtension
       << " ();" << nl;
    os << "}" << nl << nl;
 }

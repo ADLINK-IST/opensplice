@@ -5,7 +5,7 @@ namespace test.sacs
     /// <date>Jun 2, 2005</date>
     public class Listener7 : Test.Framework.TestCase
     {
-        DDS.ReturnCode rc;
+        DDS.ReturnCode rc = DDS.ReturnCode.Ok;
         
         public Listener7()
             : base("sacs_listener_tc7", "sacs_listener", "listener", "Listener multithread test."

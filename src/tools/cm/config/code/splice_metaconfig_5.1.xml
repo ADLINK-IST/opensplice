@@ -2433,14 +2433,14 @@
                 This element is used to configure the various parameters of the Discovery Channel,
                 which is used to discover all participating entities in the current Domain.
             ]]></comment>
-            <leafBoolean name="Active" minOccurrences="0" maxOccurrences="1">
+            <attributeBoolean name="enabled" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element can be used to enable or disable the Discovery Channel. In case the Discovery
                     Channel is disabled, entities will only detect each others presence implicitly once messages
                     are received for the first time.
                 ]]></comment>
                 <default>true</default>
-            </leafBoolean>
+            </attributeBoolean>
             <leafInt name="PortNr" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
                     This element specifies the Port number used by the Discovery Channel.

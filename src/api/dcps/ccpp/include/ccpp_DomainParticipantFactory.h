@@ -59,6 +59,9 @@ namespace DDS
             ::DDS::Domain_ptr a_domain
         ) THROW_ORB_EXCEPTIONS;
 
+        virtual ::DDS::ReturnCode_t delete_contained_entities (
+        ) THROW_ORB_EXCEPTIONS;
+
         virtual ::DDS::ReturnCode_t set_qos (
           const ::DDS::DomainParticipantFactoryQos & qos
         ) THROW_ORB_EXCEPTIONS;

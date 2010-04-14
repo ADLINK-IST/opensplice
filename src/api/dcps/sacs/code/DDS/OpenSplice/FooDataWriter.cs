@@ -24,151 +24,185 @@ namespace DDS.OpenSplice
 {
     public static class FooDataWriter // : DataWriter
     {
-        public static InstanceHandle RegisterInstance(DataWriter writer, object instanceData)
+        public static InstanceHandle RegisterInstance(
+                DataWriter writer, 
+                object instanceData)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             InstanceHandle result = Gapi.FooDataWriter.register_instance(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle));
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle));
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static InstanceHandle RegisterInstanceWithTimestamp(DataWriter writer, object instanceData, Time sourceTimestamp)
+        public static InstanceHandle RegisterInstanceWithTimestamp(
+                DataWriter writer, 
+                object instanceData, 
+                Time sourceTimestamp)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             InstanceHandle result = Gapi.FooDataWriter.register_instance_w_timestamp(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                ref sourceTimestamp);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    ref sourceTimestamp);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode UnregisterInstance(DataWriter writer, object instanceData, InstanceHandle instanceHandle)
+        public static ReturnCode UnregisterInstance(
+                DataWriter writer, 
+                object instanceData, 
+                InstanceHandle instanceHandle)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.unregister_instance(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode UnregisterInstanceWithTimestamp(DataWriter writer, object instanceData,
-            InstanceHandle instanceHandle, Time sourceTimestamp)
+        public static ReturnCode UnregisterInstanceWithTimestamp(
+                DataWriter writer, 
+                object instanceData,
+                InstanceHandle instanceHandle, 
+                Time sourceTimestamp)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.unregister_instance_w_timestamp(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle,
-                ref sourceTimestamp);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle,
+                    ref sourceTimestamp);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode Write(DataWriter writer, object instanceData, InstanceHandle instanceHandle)
+        public static ReturnCode Write(
+                DataWriter writer, 
+                object instanceData, 
+                InstanceHandle instanceHandle)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.write(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode WriteWithTimestamp(DataWriter writer, object instanceData, InstanceHandle instanceHandle, Time sourceTimestamp)
+        public static ReturnCode WriteWithTimestamp(
+                DataWriter writer, 
+                object instanceData, 
+                InstanceHandle instanceHandle, 
+                Time sourceTimestamp)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.write_w_timestamp(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle,
-                ref sourceTimestamp);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle,
+                    ref sourceTimestamp);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode Dispose(DataWriter writer, object instanceData, InstanceHandle instanceHandle)
+        public static ReturnCode Dispose(
+                DataWriter writer, 
+                object instanceData, 
+                InstanceHandle instanceHandle)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.dispose(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode DisposeWithTimestamp(DataWriter writer, object instanceData,
-            InstanceHandle instanceHandle, Time sourceTimestamp)
+        public static ReturnCode DisposeWithTimestamp(
+                DataWriter writer, 
+                object instanceData,
+                InstanceHandle instanceHandle, 
+                Time sourceTimestamp)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.dispose_w_timestamp(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle,
-                ref sourceTimestamp);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle,
+                    ref sourceTimestamp);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode WriteDispose(DataWriter writer, object instanceData, InstanceHandle instanceHandle)
+        public static ReturnCode WriteDispose(
+                DataWriter writer, 
+                object instanceData, 
+                InstanceHandle instanceHandle)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.writedispose(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode WriteDisposeWithTimestamp(DataWriter writer, object instanceData,
-            InstanceHandle instanceHandle, Time sourceTimestamp)
+        public static ReturnCode WriteDisposeWithTimestamp(
+                DataWriter writer, 
+                object instanceData,
+                InstanceHandle instanceHandle, 
+                Time sourceTimestamp)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.writedispose_w_timestamp(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle,
-                ref sourceTimestamp);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle,
+                    ref sourceTimestamp);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static ReturnCode GetKeyValue(DataWriter writer, object key, InstanceHandle instanceHandle)
+        public static ReturnCode GetKeyValue(
+                DataWriter writer, 
+                ref object key, 
+                InstanceHandle instanceHandle)
         {
-            // TODO: is the "key" an instanceData?
             GCHandle tmpGCHandle = GCHandle.Alloc(key, GCHandleType.Normal);
             ReturnCode result = Gapi.FooDataWriter.get_key_value(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle),
-                instanceHandle);
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle),
+                    instanceHandle);
             tmpGCHandle.Free();
 
             return result;
         }
 
-        public static InstanceHandle LookupInstance(DataWriter writer, object instanceData)
+        public static InstanceHandle LookupInstance(
+                DataWriter writer, 
+                object instanceData)
         {
             GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
             InstanceHandle result = Gapi.FooDataWriter.lookup_instance(
-                writer.GapiPeer,
-                GCHandle.ToIntPtr(tmpGCHandle));
+                    writer.GapiPeer,
+                    GCHandle.ToIntPtr(tmpGCHandle));
             tmpGCHandle.Free();
 
             return result;

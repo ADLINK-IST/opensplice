@@ -19,6 +19,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using DDS.OpenSplice;
 
 namespace DDS.OpenSplice.CustomMarshalers
 {
@@ -31,7 +32,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class TopicListenerMarshaler : IMarshaler
+    internal class TopicListenerMarshaler : GapiMarshaler
     {
         private static Type topicListenerType = typeof(OpenSplice.Gapi.gapi_topicListener);
         public static readonly int Size = Marshal.SizeOf(topicListenerType);
@@ -39,33 +40,25 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_listener_data = (int)Marshal.OffsetOf(topicListenerType, "listener_data");
         private static int offset_on_inconsistent_topic = (int)Marshal.OffsetOf(topicListenerType, "on_inconsistent_topic");
 
-        private bool cleanupRequired;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
-
         public TopicListenerMarshaler(ref OpenSplice.Gapi.gapi_topicListener listener)
             : this()
         {
-            CopyIn(ref listener, gapiPtr, 0);
+            CopyIn(ref listener, GapiPtr, 0);
             cleanupRequired = true;
         }
 
-        public TopicListenerMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
+        public TopicListenerMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired)
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
 
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal static void CopyIn(ref OpenSplice.Gapi.gapi_topicListener from, IntPtr to, int offset)
@@ -84,7 +77,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class PublisherDataWriterListenerMarshaler : IMarshaler
+    internal class PublisherDataWriterListenerMarshaler : GapiMarshaler
     {
         private static Type type = typeof(OpenSplice.Gapi.gapi_publisherDataWriterListener);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -95,33 +88,25 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_on_liveliness_lost = (int)Marshal.OffsetOf(type, "on_liveliness_lost");
         private static int offset_on_publication_match = (int)Marshal.OffsetOf(type, "on_publication_match");
 
-        private bool cleanupRequired;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
-
         public PublisherDataWriterListenerMarshaler(ref OpenSplice.Gapi.gapi_publisherDataWriterListener listener)
             : this()
         {
-            CopyIn(ref listener, gapiPtr, 0);
+            CopyIn(ref listener, GapiPtr, 0);
             cleanupRequired = true;
         }
 
-        public PublisherDataWriterListenerMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
+        public PublisherDataWriterListenerMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired)
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
 
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal static void CopyIn(ref OpenSplice.Gapi.gapi_publisherDataWriterListener from, IntPtr to, int offset)
@@ -144,7 +129,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
     }
 
-    internal class DataReaderListenerMarshaler : IMarshaler
+    internal class DataReaderListenerMarshaler : GapiMarshaler
     {
         private static Type type = typeof(OpenSplice.Gapi.gapi_dataReaderListener);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -158,33 +143,25 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_on_subscription_match = (int)Marshal.OffsetOf(type, "on_subscription_match");
         private static int offset_on_sample_lost = (int)Marshal.OffsetOf(type, "on_sample_lost");
 
-        private bool cleanupRequired;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
-
         public DataReaderListenerMarshaler(ref OpenSplice.Gapi.gapi_dataReaderListener listener)
             : this()
         {
-            CopyIn(ref listener, gapiPtr, 0);
+            CopyIn(ref listener, GapiPtr, 0);
             cleanupRequired = true;
         }
 
-        public DataReaderListenerMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
+        public DataReaderListenerMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired)
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
 
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal static void CopyIn(ref OpenSplice.Gapi.gapi_dataReaderListener from, IntPtr to, int offset)
@@ -210,7 +187,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
     }
 
-    internal class SubscriberListenerMarshaler : IMarshaler
+    internal class SubscriberListenerMarshaler : GapiMarshaler
     {
         private static Type type = typeof(OpenSplice.Gapi.gapi_subscriberListener);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -218,33 +195,25 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_dataReader = (int)Marshal.OffsetOf(type, "dataReader");
         private static int offset_on_data_on_readers = (int)Marshal.OffsetOf(type, "on_data_on_readers");
 
-        private bool cleanupRequired;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
-
         public SubscriberListenerMarshaler(ref OpenSplice.Gapi.gapi_subscriberListener listener)
             : this()
         {
-            CopyIn(ref listener, gapiPtr, 0);
+            CopyIn(ref listener, GapiPtr, 0);
             cleanupRequired = true;
         }
 
-        public SubscriberListenerMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
+        public SubscriberListenerMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired)
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
 
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal static void CopyIn(ref OpenSplice.Gapi.gapi_subscriberListener from, IntPtr to, int offset)
@@ -261,7 +230,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class DomainParticipantListenerMarshaler : IMarshaler
+    internal class DomainParticipantListenerMarshaler : GapiMarshaler
     {
         private static Type type = typeof(OpenSplice.Gapi.gapi_domainParticipantListener);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -281,33 +250,25 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_on_sample_lost = (int)Marshal.OffsetOf(type, "on_sample_lost");
         private static int offset_on_data_on_readers = (int)Marshal.OffsetOf(type, "on_data_on_readers");
 
-        private bool cleanupRequired;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
-
         public DomainParticipantListenerMarshaler(ref OpenSplice.Gapi.gapi_domainParticipantListener listener)
             : this()
         {
-            CopyIn(ref listener, gapiPtr, 0);
+            CopyIn(ref listener, GapiPtr, 0);
             cleanupRequired = true;
         }
 
-        public DomainParticipantListenerMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
+        public DomainParticipantListenerMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired)
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
 
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         public static void CopyIn(ref Gapi.gapi_domainParticipantListener from, IntPtr to, int offset)

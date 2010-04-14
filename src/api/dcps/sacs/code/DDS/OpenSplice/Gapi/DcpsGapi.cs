@@ -207,7 +207,7 @@ namespace DDS.OpenSplice.Gapi
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void gapi_listener_LivelinessLostListener(IntPtr entityData, IntPtr writerPtr, LivelinessLostStatus status);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate void gapi_listener_OfferedIncompatibleQosListener(IntPtr entityData, IntPtr writerPtr, gapi_offeredRequestedIncompatibleQosStatus gapi_status);
+    internal delegate void gapi_listener_OfferedIncompatibleQosListener(IntPtr entityData, IntPtr writerPtr, IntPtr gapi_status);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void gapi_listener_PublicationMatchedListener(IntPtr entityData, IntPtr writerPtr, PublicationMatchedStatus status);
 
@@ -225,7 +225,7 @@ namespace DDS.OpenSplice.Gapi
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void gapi_listener_LivelinessChangedListener(IntPtr entityData, IntPtr readerPtr, LivelinessChangedStatus status);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate void gapi_listener_RequestedIncompatibleQosListener(IntPtr entityData, IntPtr readerPtr, gapi_offeredRequestedIncompatibleQosStatus gapi_status);
+    internal delegate void gapi_listener_RequestedIncompatibleQosListener(IntPtr entityData, IntPtr readerPtr, IntPtr gapi_status);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void gapi_listener_SampleRejectedListener(IntPtr entityData, IntPtr readerPtr, SampleRejectedStatus status);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

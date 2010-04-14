@@ -62,6 +62,13 @@ do
                echo "" >> $RUN_SUMMARY_LOG
                echo "See run_results.txt for full details of failures " >> $RUN_SUMMARY_LOG           
                echo "" >> $RUN_SUMMARY_LOG
+            elif [ -f $CUR_PATH/$PROJECT/ospl-error.log ]
+                then
+                    FAIL=`expr $FAIL + 1` 
+                    echo "" >> $RUN_SUMMARY_LOG
+                    echo "Run $PROJECT FAILED ospl-error.log found " >> run.log                  
+                    echo "Run $PROJECT FAILED ospl-error.log found " >> $RUN_SUMMARY_LOG     
+                    echo "" >> $RUN_SUMMARY_LOG       
             else
                SUCC=`expr $SUCC + 1`
 	           echo " ### Run $PROJECT PASSED ### " >> run.log

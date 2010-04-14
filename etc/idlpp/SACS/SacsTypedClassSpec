@@ -190,7 +190,7 @@ $sp($(spaces))        ref $(typename)[] dataValues,
 $sp($(spaces))        ref SampleInfo[] sampleInfos);
 
 $sp($(spaces))    ReturnCode GetKeyValue(
-$sp($(spaces))        $(typename) key,
+$sp($(spaces))        ref $(typename) key,
 $sp($(spaces))        InstanceHandle handle);
 
 $sp($(spaces))    InstanceHandle LookupInstance(
@@ -259,7 +259,7 @@ $sp($(spaces))        InstanceHandle instanceHandle,
 $sp($(spaces))        Time sourceTimestamp);
 
 $sp($(spaces))    ReturnCode GetKeyValue(
-$sp($(spaces))        $(typename) key,
+$sp($(spaces))        ref $(typename) key,
 $sp($(spaces))        InstanceHandle instanceHandle);
 
 $sp($(spaces))    InstanceHandle LookupInstance(

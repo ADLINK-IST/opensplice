@@ -56,7 +56,6 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-            System.Console.WriteLine("1");
             rc = typeSupport.RegisterType(participant, "my_type");
             if (rc != DDS.ReturnCode.Ok)
             {
@@ -64,8 +63,6 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-
-            System.Console.WriteLine("2");
             if (participant.GetDefaultTopicQos(ref topQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default TopicQos could not be resolved.";
@@ -80,7 +77,6 @@ namespace test.sacs
                 return result;
             }
 
-            System.Console.WriteLine("3");
             if (participant.GetDefaultSubscriberQos(ref sqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default SubscriberQos could not be resolved.";
@@ -95,7 +91,6 @@ namespace test.sacs
                 return result;
             }
 
-            System.Console.WriteLine("4");
             if (subscriber.GetDefaultDataReaderQos(ref dqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataReaderQos could not be resolved.";
@@ -112,7 +107,6 @@ namespace test.sacs
                 return result;
             }
 
-            System.Console.WriteLine("5");
             if (participant.GetDefaultPublisherQos(ref pubQosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default PublisherQos could not be resolved.";
@@ -127,7 +121,6 @@ namespace test.sacs
                 return result;
             }
 
-            System.Console.WriteLine("6");
             if (publisher.GetDefaultDataWriterQos(ref wqosHolder) != DDS.ReturnCode.Ok)
             {
                 result.Result = "Default DataWriterQos could not be resolved.";
@@ -143,10 +136,7 @@ namespace test.sacs
             }
             try
             {
-                System.Console.WriteLine("7");
                 System.Threading.Thread.Sleep(3000);
-
-                System.Console.WriteLine("8");
             }
             catch (System.Exception e)
             {
@@ -160,15 +150,10 @@ namespace test.sacs
             }
             listener.Reset();
 
-            System.Console.WriteLine("9");
             mod.tst t = new mod.tst();
             t.long_1 = 1;
             t.long_2 = 2;
             t.long_3 = 3;
-
-            // TODO: JLS - Fix this test.
-            result.Result = "THIS TEST DOES NOT WORK YET...QosPolicyCountSequenceMarshaler.CopyOut throws exception in listener thread.";
-            return result;
 
             rc = datawriter.Write(t, DDS.InstanceHandle.Nil);
             if (rc != DDS.ReturnCode.Ok)
@@ -180,21 +165,16 @@ namespace test.sacs
             try
             {
 
-                System.Console.WriteLine("10");
                 System.Threading.Thread.Sleep(3000);
-
-                System.Console.WriteLine("111");
             }
             catch (System.Exception e)
             {
 
-                System.Console.WriteLine("123");
                 System.Console.WriteLine(e);
             }
             if (!listener.onDataAvailableCalled)
             {
 
-                System.Console.WriteLine("11");
                 result.Result = "on_data_available does not work properly.";
                 this.Cleanup(factory, participant);
                 return result;

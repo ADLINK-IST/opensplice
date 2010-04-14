@@ -410,4 +410,26 @@ SAJ_FUNCTION(jniDeleteDomain) (
     return (jint)rc;
 }
 
+/*
+ * Method: jniDeleteContainedEntities
+ * Param :
+ * Return: return code
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniDeleteContainedEntities)(
+    JNIEnv  *env,
+    jobject this)
+{
+    gapi_returnCode_t rc;
+    gapi_domainParticipantFactory factory;
+
+    factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
+    rc = gapi_domainParticipantFactory_delete_contained_entities(
+        factory,
+        saj_destroy_user_data_callback,
+        (void *)env);
+
+    return (jint)rc;
+}
+
 #undef SAJ_FUNCTION

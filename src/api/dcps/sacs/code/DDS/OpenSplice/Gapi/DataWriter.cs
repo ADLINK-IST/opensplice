@@ -110,7 +110,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriter_get_offered_incompatible_qos_status")]
         public static extern ReturnCode get_offered_incompatible_qos_status(
             IntPtr _this,
-            OfferedIncompatibleQosStatus status
+            IntPtr status
             );
 
         /*     PublicationMatchedStatus

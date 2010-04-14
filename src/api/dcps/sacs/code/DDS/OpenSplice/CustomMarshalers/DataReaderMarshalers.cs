@@ -66,18 +66,14 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         public void CopyOut(ref object[] dataValues, ref SampleInfo[] sampleInfos)
         {
-            if (dataValuesPtr != dataValuesPtrCache)
+            if (dataValueHandle.Target != dataValues)
             {
-                GCHandle tmpGCHandle = GCHandle.FromIntPtr(dataValuesPtr);
-                dataValues = tmpGCHandle.Target as object[];
-                tmpGCHandle.Free();
+                dataValues = dataValueHandle.Target as object[];
             }
 
-            if (sampleInfosPtr != sampleInfosPtrCache)
+            if (sampleInfoHandle.Target != sampleInfos)
             {
-                GCHandle tmpGCHandle = GCHandle.FromIntPtr(sampleInfosPtr);
-                sampleInfos = tmpGCHandle.Target as SampleInfo[];
-                tmpGCHandle.Free();
+                sampleInfos = sampleInfoHandle.Target as SampleInfo[];
             }
         }
 

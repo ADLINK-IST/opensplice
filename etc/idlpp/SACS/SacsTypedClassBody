@@ -468,14 +468,16 @@ $sp($(spaces))        return result;
 $sp($(spaces))    }
 
 $sp($(spaces))    public ReturnCode GetKeyValue(
-$sp($(spaces))            $(typename) key,
+$sp($(spaces))            ref $(typename) key,
 $sp($(spaces))            InstanceHandle handle)
 $sp($(spaces))    {
-$sp($(spaces))        return
-$sp($(spaces))            DDS.OpenSplice.FooDataReader.GetKeyValue(
+$sp($(spaces))        object keyObj = key;
+$sp($(spaces))        ReturnCode result = DDS.OpenSplice.FooDataReader.GetKeyValue(
 $sp($(spaces))                    this,
-$sp($(spaces))                    key,
+$sp($(spaces))                    ref keyObj,
 $sp($(spaces))                    handle);
+$sp($(spaces))        if (keyObj != key) key = keyObj as $(typename);
+$sp($(spaces))        return result;
 $sp($(spaces))    }
 
 $sp($(spaces))    public InstanceHandle LookupInstance(
@@ -633,13 +635,15 @@ $sp($(spaces))                    sourceTimestamp);
 $sp($(spaces))    }
 
 $sp($(spaces))    public ReturnCode GetKeyValue(
-$sp($(spaces))            $(typename) key,
+$sp($(spaces))            ref $(typename) key,
 $sp($(spaces))            InstanceHandle instanceHandle)
 $sp($(spaces))    {
+$sp($(spaces))        object keyObj = key;
 $sp($(spaces))        ReturnCode result = DDS.OpenSplice.FooDataWriter.GetKeyValue(
 $sp($(spaces))                                this,
-$sp($(spaces))                                key,
+$sp($(spaces))                                ref keyObj,
 $sp($(spaces))                                instanceHandle);
+$sp($(spaces))        if (keyObj != key) key = keyObj as $(typename);
 $sp($(spaces))        return result;
 $sp($(spaces))    }
 

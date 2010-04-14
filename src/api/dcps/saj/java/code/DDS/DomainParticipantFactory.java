@@ -19,6 +19,7 @@ public class DomainParticipantFactory
 	extends org.opensplice.dds.dcps.SajSuperClass
 	implements DomainParticipantFactoryOperations
 {
+
 	/**
      * The one and only instance of the DomainParticipantFactory.
      */
@@ -41,8 +42,18 @@ public class DomainParticipantFactory
     public static synchronized DDS.DomainParticipantFactory get_instance() {
     	if (theParticipantFactory == null) {
             try{
+                OSPLShutdown sh;
+
                 System.loadLibrary("dcpssaj");
                 theParticipantFactory = jniGetInstance();
+                /* ES: dds2025: 04/13/2010: Install a shutdown hook to ensure
+                 * all entities are cleaned up when the JVM terminates as the
+                 * normal exit handlers are executed at a point where the JVM
+                 * has already terminated and JNI callbacks to detach threads
+                 * (managed by several entities) will fail with a lock up.
+                 */
+                sh = new OSPLShutdown();
+                Runtime.getRuntime().addShutdownHook(sh);
             } catch(UnsatisfiedLinkError ule){
                 /*Library could not be loaded.*/
                 System.err.println("DDS.DomainParticipantFactory.get_instance() failed: " + ule.getMessage());
@@ -123,6 +134,10 @@ public class DomainParticipantFactory
         return jniDeleteDomain(a_domain);
     }
 
+    public int delete_contained_entities () {
+        return jniDeleteContainedEntities();
+    }
+
     private native static DomainParticipantFactory jniGetInstance();
     private native DDS.DomainParticipant jniCreateParticipant(String domainId, DDS.DomainParticipantQos qos, DDS.DomainParticipantListener a_listener,int mask);
     private native int jniDeleteParticipant(DDS.DomainParticipant a_participant);
@@ -135,4 +150,24 @@ public class DomainParticipantFactory
 
     private native DDS.Domain jniLookupDomain(String domain_id);
     private native int jniDeleteDomain(DDS.Domain a_domain);
+    private native int jniDeleteContainedEntities();
 } // DomainParticipantFactory
+
+class OSPLShutdown extends Thread
+{
+
+    public OSPLShutdown()
+    {
+    }
+
+    public void run()
+    {
+        int status;
+
+        status = DomainParticipantFactory.get_instance().delete_contained_entities();
+        if (status != RETCODE_OK.value)
+        {
+            System.err.println("Error in DomainParticipantFactory.delete_contained_entities, status = " + status);
+        }
+    }
+}

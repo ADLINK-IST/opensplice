@@ -55,7 +55,8 @@ namespace DDS.OpenSplice
                 listenerHelper.CreateListener(out gapiListener);
                 lock (listener)
                 {
-                    using (PublisherDataWriterListenerMarshaler marshaler = new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    using (PublisherDataWriterListenerMarshaler marshaler = 
+                            new PublisherDataWriterListenerMarshaler(ref gapiListener))
                     {
                         result = Gapi.DataWriter.set_listener(
                             GapiPeer,
@@ -137,25 +138,46 @@ namespace DDS.OpenSplice
             return Gapi.DataWriter.wait_for_acknowledgments(GapiPeer, ref maxWait);
         }
         
-        public ReturnCode GetLivelinessLostStatus(ref LivelinessLostStatus status)
+        public ReturnCode GetLivelinessLostStatus(
+                ref LivelinessLostStatus status)
         {
             if (status == null) status = new LivelinessLostStatus();
             return Gapi.DataWriter.get_liveliness_lost_status(GapiPeer, status);
         }
         
-        public ReturnCode GetOfferedDeadlineMissedStatus(ref OfferedDeadlineMissedStatus status)
+        public ReturnCode GetOfferedDeadlineMissedStatus(
+                ref OfferedDeadlineMissedStatus status)
         {
             if (status == null) status = new OfferedDeadlineMissedStatus();
             return Gapi.DataWriter.get_offered_deadline_missed_status(GapiPeer, status);
         }
         
-        public ReturnCode GetOfferedIncompatibleQosStatus(ref OfferedIncompatibleQosStatus status)
+        public ReturnCode GetOfferedIncompatibleQosStatus(
+                ref OfferedIncompatibleQosStatus status)
         {
-            if (status == null) status = new OfferedIncompatibleQosStatus();
-            return Gapi.DataWriter.get_offered_incompatible_qos_status(GapiPeer, status);
+            ReturnCode result;
+
+            using (OfferedIncompatibleQosStatusMarshaler marshaler = 
+                    new OfferedIncompatibleQosStatusMarshaler())
+            {
+                if (status == null) status = new OfferedIncompatibleQosStatus();
+                if (status.Policies == null) status.Policies = new QosPolicyCount[28];
+                marshaler.CopyIn(status);
+                
+                result = Gapi.DataWriter.get_offered_incompatible_qos_status(
+                        GapiPeer, marshaler.GapiPtr);
+
+                if (result == ReturnCode.Ok)
+                {
+                    marshaler.CopyOut(ref status);
+                }
+            }
+
+            return result;
         }
         
-        public ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status)
+        public ReturnCode GetPublicationMatchedStatus(
+                ref PublicationMatchedStatus status)
         {
             if (status == null) status = new PublicationMatchedStatus();
             return Gapi.DataWriter.get_publication_matched_status(GapiPeer, status);
@@ -170,7 +192,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SequenceInstanceHandleMarshaler marshaler = new SequenceInstanceHandleMarshaler())
+            using (SequenceInstanceHandleMarshaler marshaler = 
+                    new SequenceInstanceHandleMarshaler())
             {
                 result = Gapi.DataWriter.get_matched_subscriptions(
                         GapiPeer,

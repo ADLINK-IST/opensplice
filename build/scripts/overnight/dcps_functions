@@ -18,6 +18,7 @@ setupBuildInfo()
    echo "REV=$REV" >> $LOGDIR/BUILDINFO
    echo "VER=$VER" >> $LOGDIR/BUILDINFO
    echo "DEP=$DEP" >> $LOGDIR/BUILDINFO
+   echo "HIGHLIGHTED=$HIGHLIGHTED" >> $LOGDIR/BUILDINFO
 
    cp $LOGDIR/BUILDINFO $WORKDIR/build/etc/
 }

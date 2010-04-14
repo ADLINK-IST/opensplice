@@ -449,6 +449,20 @@ DDS::DomainParticipantFactory::delete_domain (
 }
 
 DDS::ReturnCode_t
+DDS::DomainParticipantFactory::delete_contained_entities (
+    ) THROW_ORB_EXCEPTIONS
+{
+    DDS::ReturnCode_t status;
+
+    status = gapi_domainParticipantFactory_delete_contained_entities(
+        _gapi_self,
+        DDS::ccpp_CallBack_DeleteUserData,
+        NULL);
+
+    return status;
+}
+
+DDS::ReturnCode_t
 DDS::DomainParticipantFactory::set_default_participant_qos (
     const DDS::DomainParticipantQos & qos
 ) THROW_ORB_EXCEPTIONS

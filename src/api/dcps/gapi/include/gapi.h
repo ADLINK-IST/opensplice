@@ -2761,6 +2761,16 @@ gapi_domainParticipantFactory_delete_participant (
     gapi_domainParticipantFactory _this,
     const gapi_domainParticipant a_participant);
 
+/*     ReturnCode_t
+ *     delete_contained_entities(
+ *         );
+ */
+OS_API gapi_returnCode_t
+gapi_domainParticipantFactory_delete_contained_entities(
+    gapi_domainParticipantFactory _this,
+    gapi_deleteEntityAction action,
+    void *action_arg);
+
 OS_API gapi_returnCode_t
 gapi_domainParticipantFactory_delete_participant_w_action (
     gapi_domainParticipantFactory _this,

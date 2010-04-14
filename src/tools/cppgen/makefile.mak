@@ -25,7 +25,7 @@ LDFLAGS += -L.
 .PHONY:
 
 libstdc++.a:
-	ln -s `g++ -print-file-name=libstdc++.a`
+	ln -sf `g++ -print-file-name=libstdc++.a`
 
 cppgen:libstdc++.a
 endif

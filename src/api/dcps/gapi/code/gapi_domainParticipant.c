@@ -1669,8 +1669,8 @@ gapi_domainParticipant_delete_historical_data (
 }
 
 
-static gapi_returnCode_t
-deleteContainedEntities (
+gapi_returnCode_t
+_DomainParticipantDeleteContainedEntitiesNoClaim (
     _DomainParticipant _this,
     gapi_deleteEntityAction action,
     void *action_arg)
@@ -1679,89 +1679,94 @@ deleteContainedEntities (
     void *userData;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
-    /* delete all publishers in the publisherSet */
-    /* first delete their contained entities and then themself */
-    iterSet = gapi_setFirst (_this->publisherSet);
-    while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-        _Publisher publisher = _Publisher(gapi_setIterObject(iterSet));
-        result = gapi_publisher_delete_contained_entities(_EntityHandle(publisher), action, action_arg);
+    if(!_this)
+    {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    } else
+    {
+        /* delete all publishers in the publisherSet */
+        /* first delete their contained entities and then themself */
+        iterSet = gapi_setFirst (_this->publisherSet);
+        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
+            _Publisher publisher = _Publisher(gapi_setIterObject(iterSet));
+            result = gapi_publisher_delete_contained_entities(_EntityHandle(publisher), action, action_arg);
 
-        if(result == GAPI_RETCODE_OK){
-            _EntityClaimNotBusy(publisher);
-            userData = _ObjectGetUserData(_Object(publisher));
-            _PublisherPrepareDelete(publisher);
-            _PublisherFree(publisher);
-            gapi_setIterRemove(iterSet);
-            if ( action ) {
-                action(userData, action_arg);
+            if(result == GAPI_RETCODE_OK){
+                _EntityClaimNotBusy(publisher);
+                userData = _ObjectGetUserData(_Object(publisher));
+                _PublisherPrepareDelete(publisher);
+                _PublisherFree(publisher);
+                gapi_setIterRemove(iterSet);
+                if ( action ) {
+                    action(userData, action_arg);
+                }
             }
         }
-    }
-    gapi_setIterFree(iterSet);
+        gapi_setIterFree(iterSet);
 
-    /* delete all subsribers in the subscriberSet */
-    /* first delete their contained entities and then themself */
-    iterSet = gapi_setFirst (_this->subscriberSet);
-    while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-        _Subscriber subscriber = _Subscriber(gapi_setIterObject(iterSet));
-        result = gapi_subscriber_delete_contained_entities(_EntityHandle(subscriber), action, action_arg);
+        /* delete all subsribers in the subscriberSet */
+        /* first delete their contained entities and then themself */
+        iterSet = gapi_setFirst (_this->subscriberSet);
+        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
+            _Subscriber subscriber = _Subscriber(gapi_setIterObject(iterSet));
+            result = gapi_subscriber_delete_contained_entities(_EntityHandle(subscriber), action, action_arg);
 
-        if(result == GAPI_RETCODE_OK){
-            _EntityClaimNotBusy(subscriber);
-            userData = _ObjectGetUserData(_Object(subscriber));
-            _SubscriberPrepareDelete(subscriber);
-            _SubscriberFree (subscriber);
+            if(result == GAPI_RETCODE_OK){
+                _EntityClaimNotBusy(subscriber);
+                userData = _ObjectGetUserData(_Object(subscriber));
+                _SubscriberPrepareDelete(subscriber);
+                _SubscriberFree (subscriber);
+                gapi_setIterRemove (iterSet);
+                if ( action ) {
+                    action(userData, action_arg);
+                }
+            }
+        }
+        gapi_setIterFree (iterSet);
+
+        /* Delete all ContentFilteredTopics in the topicDescriptionSet */
+        /* Call descructors based of their types */
+        iterSet = gapi_setFirst (_this->topicDescriptionSet);
+
+        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
+            _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
+            _EntityClaimNotBusy(topicDescription);
+            userData = _ObjectGetUserData(_Object(topicDescription));
+            if (_ObjectGetKind(_Object(topicDescription)) == OBJECT_KIND_CONTENTFILTEREDTOPIC ) {
+                _ContentFilteredTopicPrepareDelete(_ContentFilteredTopic(topicDescription));
+                _ContentFilteredTopicFree(_ContentFilteredTopic(topicDescription));
+                gapi_setIterRemove (iterSet);
+                if ( action ) {
+                    action(userData, action_arg);
+                }
+            } else {
+                _EntityRelease(topicDescription);
+                gapi_setIterNext(iterSet);
+            }
+        }
+        gapi_setIterFree (iterSet);
+
+        /* Delete all topicsdescriptions in the topicDescriptionSet */
+        /* Call descructors based of their types */
+        iterSet = gapi_setFirst (_this->topicDescriptionSet);
+
+        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
+            _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
+            _EntityClaimNotBusy(topicDescription);
+            userData = _ObjectGetUserData(_Object(topicDescription));
+            if ( _ObjectGetKind(_Object(topicDescription)) == OBJECT_KIND_TOPIC ) {
+                _TopicPrepareDelete(_Topic(topicDescription));
+                _TopicFree(_Topic(topicDescription));
+            } else /* plain topicDescription or multi-topic (unimplemented) */{
+                _TopicDescriptionFree (topicDescription);
+            }
             gapi_setIterRemove (iterSet);
             if ( action ) {
                 action(userData, action_arg);
             }
         }
+        gapi_setIterFree (iterSet);
     }
-    gapi_setIterFree (iterSet);
-
-    /* Delete all ContentFilteredTopics in the topicDescriptionSet */
-    /* Call descructors based of their types */
-    iterSet = gapi_setFirst (_this->topicDescriptionSet);
-
-    while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-        _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
-        _EntityClaimNotBusy(topicDescription);
-        userData = _ObjectGetUserData(_Object(topicDescription));
-        if (_ObjectGetKind(_Object(topicDescription)) == OBJECT_KIND_CONTENTFILTEREDTOPIC ) {
-            _ContentFilteredTopicPrepareDelete(_ContentFilteredTopic(topicDescription));
-            _ContentFilteredTopicFree(_ContentFilteredTopic(topicDescription));
-            gapi_setIterRemove (iterSet);
-            if ( action ) {
-                action(userData, action_arg);
-            }
-        } else {
-            _EntityRelease(topicDescription);
-            gapi_setIterNext(iterSet);
-        }
-    }
-    gapi_setIterFree (iterSet);
-
-    /* Delete all topicsdescriptions in the topicDescriptionSet */
-    /* Call descructors based of their types */
-    iterSet = gapi_setFirst (_this->topicDescriptionSet);
-
-    while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-        _TopicDescription topicDescription = (_TopicDescription)gapi_setIterObject(iterSet);
-        _EntityClaimNotBusy(topicDescription);
-        userData = _ObjectGetUserData(_Object(topicDescription));
-        if ( _ObjectGetKind(_Object(topicDescription)) == OBJECT_KIND_TOPIC ) {
-            _TopicPrepareDelete(_Topic(topicDescription));
-            _TopicFree(_Topic(topicDescription));
-        } else /* plain topicDescription or multi-topic (unimplemented) */{
-            _TopicDescriptionFree (topicDescription);
-        }
-        gapi_setIterRemove (iterSet);
-        if ( action ) {
-            action(userData, action_arg);
-        }
-    }
-    gapi_setIterFree (iterSet);
-
     return result;
 }
 
@@ -1781,7 +1786,7 @@ gapi_domainParticipant_delete_contained_entities (
     participant = gapi_domainParticipantClaim(_this, &result);
 
     if ( participant != NULL ) {
-        result = deleteContainedEntities(participant, action, action_arg);
+        result = _DomainParticipantDeleteContainedEntitiesNoClaim(participant, action, action_arg);
         _EntityRelease(participant);
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
@@ -2809,7 +2814,7 @@ _DomainParticipantCleanup (
 
     _EntityClaimNotBusy(_this);
 
-    deleteContainedEntities(_this, NULL, NULL);
+    _DomainParticipantDeleteContainedEntitiesNoClaim(_this, NULL, NULL);
 
     _DomainParticipantFree(_this);
 }

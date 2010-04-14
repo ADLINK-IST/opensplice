@@ -718,6 +718,96 @@ gapi_domainParticipantFactory_delete_domain (
 
     return result;
 }
+
+/*     ReturnCode_t
+ *     delete_contained_entities(
+ *         );
+ */
+gapi_returnCode_t
+gapi_domainParticipantFactory_delete_contained_entities(
+    gapi_domainParticipantFactory _this,
+    gapi_deleteEntityAction action,
+    void *action_arg)
+{
+    gapi_context context;
+    _DomainParticipantFactory factory;
+    gapi_returnCode_t result;
+    c_iter list;
+    _DomainParticipant participant;
+    gapi_boolean prepOk;
+    void *userData;
+
+    GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_DELETE_CONTAINED_ENTITIES);
+    factory = gapi_domainParticipantFactoryClaim(_this, &result);
+    if(!factory)
+    {
+        result = GAPI_RETCODE_ERROR;
+    } else if(factory != TheFactory)
+    {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    } else /* Everything is ok, let's continue */
+    {
+        os_mutexLock(&factory->mtx);
+        list = factory->DomainParticipantList;
+        participant = _DomainParticipant(c_iterTakeFirst(list));
+        while(participant && result == GAPI_RETCODE_OK)
+        {
+            if(participant != gapi_domainParticipantClaimNB(_ObjectToHandle(_Object(participant)), NULL))
+            {
+                result = GAPI_RETCODE_ERROR;
+            }
+            if(result == GAPI_RETCODE_OK)
+            {
+                /* Delete all contained entities of the participant */
+                result = _DomainParticipantDeleteContainedEntitiesNoClaim (
+                    participant,
+                    action,
+                    action_arg);
+            }
+            /* Now delete the participant itself */
+            if(result == GAPI_RETCODE_OK)
+            {
+                userData = _ObjectGetUserData(_Object(participant));
+                prepOk = _DomainParticipantPrepareDelete(
+                    participant,
+                    &context);
+                if(prepOk)
+                {
+                    result = _DomainParticipantFree (participant);
+                } else
+                {
+                    result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                }
+            }
+            if(result == GAPI_RETCODE_OK)
+            {
+                /* Perform userdata cleanup, if needed */
+                if(action)
+                {
+                    action(userData, action_arg);
+                }
+                /* do NOT do an entity release if the delete was successful,
+                 * because the free takes care of it
+                 * _EntityRelease(participant);
+                 */
+                /* goto the next participant in the list */
+                participant = _DomainParticipant(c_iterTakeFirst(list));
+            } else
+            {
+                /* Failed to clean the participant, so re-insert it into the
+                 * list and abort
+                 */
+                c_iterInsert(list, participant);
+                _EntityRelease(participant);
+            }
+        }
+        os_mutexUnlock(&factory->mtx);
+    }
+    _EntityRelease(factory);
+
+    return result;
+}
+
 static c_equality
 gapi_compareTypesupport(
     _DomainParticipant participant,

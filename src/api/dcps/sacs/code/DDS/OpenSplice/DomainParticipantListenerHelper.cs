@@ -90,21 +90,13 @@ namespace DDS.OpenSplice
         private void PrivateOfferedIncompatibleQos(
                 IntPtr entityData, 
                 IntPtr writerPtr, 
-                Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
+                IntPtr gapi_status)
         {
             if (listener != null)
             {
                 IDataWriter dataWriter = (IDataWriter)OpenSplice.SacsSuperClass.fromUserData(writerPtr);
-
                 OfferedIncompatibleQosStatus status = new OfferedIncompatibleQosStatus();
-                    
-                status.TotalCount = gapi_status.total_count;
-                status.TotalCountChange = gapi_status.total_count_change;
-                status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(
-                        gapi_status.policies, 
-                        ref status.Policies);
-
+                OfferedIncompatibleQosStatusMarshaler.CopyOut(gapi_status, ref status, 0);
                 listener.OnOfferedIncompatibleQos(dataWriter, status);
             }
         }
@@ -147,21 +139,13 @@ namespace DDS.OpenSplice
         private void PrivateRequestedIncompatibleQos(
                 IntPtr entityData, 
                 IntPtr enityPtr, 
-                Gapi.gapi_offeredRequestedIncompatibleQosStatus gapi_status)
+                IntPtr gapi_status)
         {
             if (listener != null)
             {
                 IDataReader dataReader = (IDataReader)OpenSplice.SacsSuperClass.fromUserData(enityPtr);
-
                 RequestedIncompatibleQosStatus status = new RequestedIncompatibleQosStatus();
-
-                status.TotalCount = gapi_status.total_count;
-                status.TotalCountChange = gapi_status.total_count_change;
-                status.LastPolicyId = (QosPolicyId)gapi_status.last_policy_id;
-                CustomMarshalers.QosPolicyCountSequenceMarshaler.CopyOut(
-                        gapi_status.policies, 
-                        ref status.Policies);
-
+                RequestedIncompatibleQosStatusMarshaler.CopyOut(gapi_status, ref status, 0);
                 listener.OnRequestedIncompatibleQos(dataReader, status);
             }
         }

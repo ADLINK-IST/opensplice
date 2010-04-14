@@ -20,10 +20,11 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
+using DDS.OpenSplice;
 
 namespace DDS.OpenSplice.CustomMarshalers
 {
-    internal class BuiltinTopicKeyMarshaler : IMarshaler
+    internal class BuiltinTopicKeyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(DDS.OpenSplice.Gapi.BuiltinTopicKey);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -32,31 +33,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_LocalId = (int)Marshal.OffsetOf(type, "LocalId");
         private static readonly int offset_Serial = (int)Marshal.OffsetOf(type, "Serial");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public BuiltinTopicKeyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public BuiltinTopicKeyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(int[] from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(int[] from, IntPtr to, int offset)
@@ -89,7 +82,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref int[] to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref int[] to, int offset)
@@ -101,38 +94,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class UserDataQosPolicyMarshaler : IMarshaler
+    internal class UserDataQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_userDataQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_value = (int)Marshal.OffsetOf(type, "value");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public UserDataQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public UserDataQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(UserDataQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(UserDataQosPolicy from, IntPtr to, int offset)
@@ -159,7 +144,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref UserDataQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref UserDataQosPolicy to, int offset)
@@ -169,45 +154,37 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class EntityFactoryQosPolicyMarshaler : IMarshaler
+    internal class EntityFactoryQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_entityFactoryQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_autoenable_created_entities = (int)Marshal.OffsetOf(type, "autoenable_created_entities");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public EntityFactoryQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public EntityFactoryQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(EntityFactoryQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(EntityFactoryQosPolicy from, IntPtr to, int offset)
         {
             DDS.ReturnCode result = DDS.ReturnCode.Ok;
             if (from != null) {
-            // Set autoenable_created_entities field
+                // Set autoenable_created_entities field
                 BaseMarshaler.Write(to, offset + offset_autoenable_created_entities, from.AutoenableCreatedEntities);
             } else {
                 result = DDS.ReturnCode.BadParameter;
@@ -228,7 +205,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref EntityFactoryQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref EntityFactoryQosPolicy to, int offset)
@@ -240,7 +217,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class ShareQosPolicyMarshaler : IMarshaler
+    internal class ShareQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_shareQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -248,31 +225,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_name = (int)Marshal.OffsetOf(type, "name");
         private static readonly int offset_enable = (int)Marshal.OffsetOf(type, "enable");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public ShareQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public ShareQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(ShareQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(ShareQosPolicy from, IntPtr to, int offset)
@@ -303,7 +272,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref ShareQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref ShareQosPolicy to, int offset)
@@ -315,7 +284,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class SchedulingQosPolicyMarshaler : IMarshaler
+    internal class SchedulingQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_schedulingQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -324,31 +293,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_scheduling_priority_kind = (int)Marshal.OffsetOf(type, "scheduling_priority_kind");
         private static readonly int offset_scheduling_priority = (int)Marshal.OffsetOf(type, "scheduling_priority");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public SchedulingQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public SchedulingQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(SchedulingQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(SchedulingQosPolicy from, IntPtr to, int offset)
@@ -382,7 +343,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref SchedulingQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref SchedulingQosPolicy to, int offset)
@@ -402,7 +363,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class PresentationQosPolicyMarshaler : IMarshaler
+    internal class PresentationQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_presentationQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -411,31 +372,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_coherent_access = (int)Marshal.OffsetOf(type, "coherent_access");
         private static readonly int offset_ordered_access = (int)Marshal.OffsetOf(type, "ordered_access");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public PresentationQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public PresentationQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(PresentationQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(PresentationQosPolicy from, IntPtr to, int offset)
@@ -464,7 +417,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref PresentationQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref PresentationQosPolicy to, int offset)
@@ -476,38 +429,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class PartitionQosPolicyMarshaler : IMarshaler
+    internal class PartitionQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_partitionQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_name = (int)Marshal.OffsetOf(type, "name");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public PartitionQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public PartitionQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(PartitionQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(PartitionQosPolicy from, IntPtr to, int offset)
@@ -534,7 +479,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref PartitionQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref PartitionQosPolicy to, int offset)
@@ -544,38 +489,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class GroupDataQosPolicyMarshaler : IMarshaler
+    internal class GroupDataQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_groupDataQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_value = (int)Marshal.OffsetOf(type, "value");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public GroupDataQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public GroupDataQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(GroupDataQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(GroupDataQosPolicy from, IntPtr to, int offset)
@@ -602,7 +539,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref GroupDataQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref GroupDataQosPolicy to, int offset)
@@ -612,38 +549,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class TopicDataQosPolicyMarshaler : IMarshaler
+    internal class TopicDataQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_topicDataQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_value = (int)Marshal.OffsetOf(type, "value");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public TopicDataQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public TopicDataQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(TopicDataQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(TopicDataQosPolicy from, IntPtr to, int offset)
@@ -670,7 +599,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref TopicDataQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref TopicDataQosPolicy to, int offset)
@@ -680,38 +609,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class DurabilityQosPolicyMarshaler : IMarshaler
+    internal class DurabilityQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_durabilityQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public DurabilityQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public DurabilityQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(DurabilityQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(DurabilityQosPolicy from, IntPtr to, int offset)
@@ -737,7 +658,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref DurabilityQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref DurabilityQosPolicy to, int offset)
@@ -750,7 +671,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class DurabilityServiceQosPolicyMarshaler : IMarshaler
+    internal class DurabilityServiceQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_durabilityServiceQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -762,31 +683,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_max_instances = (int)Marshal.OffsetOf(type, "max_instances");
         private static readonly int offset_max_samples_per_instance = (int)Marshal.OffsetOf(type, "max_samples_per_instance");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public DurabilityServiceQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public DurabilityServiceQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(DurabilityServiceQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(DurabilityServiceQosPolicy from, IntPtr to, int offset)
@@ -817,7 +730,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref DurabilityServiceQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref DurabilityServiceQosPolicy to, int offset)
@@ -839,38 +752,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class DeadlineQosPolicyMarshaler : IMarshaler
+    internal class DeadlineQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_deadlineQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_period = (int)Marshal.OffsetOf(type, "period");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public DeadlineQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public DeadlineQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(DeadlineQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(DeadlineQosPolicy from, IntPtr to, int offset)
@@ -896,7 +801,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref DeadlineQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref DeadlineQosPolicy to, int offset)
@@ -906,38 +811,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class LatencyBudgetQosPolicyMarshaler : IMarshaler
+    internal class LatencyBudgetQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_latencyBudgetQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_duration = (int)Marshal.OffsetOf(type, "duration");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public LatencyBudgetQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public LatencyBudgetQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(LatencyBudgetQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(LatencyBudgetQosPolicy from, IntPtr to, int offset)
@@ -963,7 +860,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref LatencyBudgetQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref LatencyBudgetQosPolicy to, int offset)
@@ -973,7 +870,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class LivelinessQosPolicyMarshaler : IMarshaler
+    internal class LivelinessQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_livelinessQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -981,31 +878,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
         private static readonly int offset_lease_duration = (int)Marshal.OffsetOf(type, "lease_duration");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public LivelinessQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public LivelinessQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(LivelinessQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(LivelinessQosPolicy from, IntPtr to, int offset)
@@ -1032,7 +921,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref LivelinessQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref LivelinessQosPolicy to, int offset)
@@ -1046,7 +935,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class ReliabilityQosPolicyMarshaler : IMarshaler
+    internal class ReliabilityQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_reliabilityQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1055,31 +944,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_max_blocking_time = (int)Marshal.OffsetOf(type, "max_blocking_time");
         private static readonly int offset_synchronous = (int)Marshal.OffsetOf(type, "synchronous");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public ReliabilityQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public ReliabilityQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(ReliabilityQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(ReliabilityQosPolicy from, IntPtr to, int offset)
@@ -1107,7 +988,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref ReliabilityQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref ReliabilityQosPolicy to, int offset)
@@ -1120,38 +1001,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class DestinationOrderQosPolicyMarshaler : IMarshaler
+    internal class DestinationOrderQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_destinationOrderQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public DestinationOrderQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public DestinationOrderQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(DestinationOrderQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(DestinationOrderQosPolicy from, IntPtr to, int offset)
@@ -1177,7 +1050,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref DestinationOrderQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref DestinationOrderQosPolicy to, int offset)
@@ -1188,7 +1061,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class HistoryQosPolicyMarshaler : IMarshaler
+    internal class HistoryQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_historyQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1196,31 +1069,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
         private static readonly int offset_depth = (int)Marshal.OffsetOf(type, "depth");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public HistoryQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public HistoryQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(HistoryQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(HistoryQosPolicy from, IntPtr to, int offset)
@@ -1247,7 +1112,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref HistoryQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref HistoryQosPolicy to, int offset)
@@ -1261,7 +1126,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class ResourceLimitsQosPolicyMarshaler : IMarshaler
+    internal class ResourceLimitsQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_resourceLimitsQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1270,31 +1135,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_max_instances = (int)Marshal.OffsetOf(type, "max_instances");
         private static readonly int offset_max_samples_per_instance = (int)Marshal.OffsetOf(type, "max_samples_per_instance");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public ResourceLimitsQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public ResourceLimitsQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(ResourceLimitsQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(ResourceLimitsQosPolicy from, IntPtr to, int offset)
@@ -1322,7 +1179,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref ResourceLimitsQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref ResourceLimitsQosPolicy to, int offset)
@@ -1334,38 +1191,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class TransportPriorityQosPolicyMarshaler : IMarshaler
+    internal class TransportPriorityQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_transportPriorityQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_value = (int)Marshal.OffsetOf(type, "value");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public TransportPriorityQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public TransportPriorityQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(TransportPriorityQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(TransportPriorityQosPolicy from, IntPtr to, int offset)
@@ -1391,7 +1240,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref TransportPriorityQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref TransportPriorityQosPolicy to, int offset)
@@ -1401,38 +1250,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class LifespanQosPolicyMarshaler : IMarshaler
+    internal class LifespanQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_lifespanQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_duration = (int)Marshal.OffsetOf(type, "duration");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public LifespanQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public LifespanQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(LifespanQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(LifespanQosPolicy from, IntPtr to, int offset)
@@ -1458,7 +1299,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref LifespanQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref LifespanQosPolicy to, int offset)
@@ -1468,38 +1309,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class OwnershipQosPolicyMarshaler : IMarshaler
+    internal class OwnershipQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_ownershipQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public OwnershipQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public OwnershipQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(OwnershipQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(OwnershipQosPolicy from, IntPtr to, int offset)
@@ -1525,7 +1358,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref OwnershipQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref OwnershipQosPolicy to, int offset)
@@ -1538,38 +1371,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class TimeBasedFilterQosPolicyMarshaler : IMarshaler
+    internal class TimeBasedFilterQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_timeBasedFilterQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_minimum_separation = (int)Marshal.OffsetOf(type, "minimum_separation");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public TimeBasedFilterQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public TimeBasedFilterQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(TimeBasedFilterQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(TimeBasedFilterQosPolicy from, IntPtr to, int offset)
@@ -1595,7 +1420,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref TimeBasedFilterQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref TimeBasedFilterQosPolicy to, int offset)
@@ -1605,7 +1430,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class ReaderDataLifecycleQosPolicyMarshaler : IMarshaler
+    internal class ReaderDataLifecycleQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_readerDataLifecycleQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1614,31 +1439,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_autopurge_disposed_samples_delay = (int)Marshal.OffsetOf(type, "autopurge_disposed_samples_delay");
         private static readonly int offset_enable_invalid_samples = (int)Marshal.OffsetOf(type, "enable_invalid_samples");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public ReaderDataLifecycleQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public ReaderDataLifecycleQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(ReaderDataLifecycleQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(ReaderDataLifecycleQosPolicy from, IntPtr to, int offset)
@@ -1666,7 +1483,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref ReaderDataLifecycleQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref ReaderDataLifecycleQosPolicy to, int offset)
@@ -1678,38 +1495,30 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class OwnershipStrengthQosPolicyMarshaler : IMarshaler
+    internal class OwnershipStrengthQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_ownershipStrengthQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
 
         private static readonly int offset_value = (int)Marshal.OffsetOf(type, "value");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public OwnershipStrengthQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public OwnershipStrengthQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(OwnershipStrengthQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(OwnershipStrengthQosPolicy from, IntPtr to, int offset)
@@ -1735,7 +1544,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref OwnershipStrengthQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref OwnershipStrengthQosPolicy to, int offset)
@@ -1745,7 +1554,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class WriterDataLifecycleQosPolicyMarshaler : IMarshaler
+    internal class WriterDataLifecycleQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_writerDataLifecycleQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1757,31 +1566,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_autounregister_instance_delay =
             (int)Marshal.OffsetOf(type, "autounregister_instance_delay");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public WriterDataLifecycleQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public WriterDataLifecycleQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(WriterDataLifecycleQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(WriterDataLifecycleQosPolicy from, IntPtr to, int offset)
@@ -1818,7 +1619,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref WriterDataLifecycleQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref WriterDataLifecycleQosPolicy to, int offset)
@@ -1831,7 +1632,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class SubscriptionKeyQosPolicyMarshaler : IMarshaler
+    internal class SubscriptionKeyQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_subscriptionKeyQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1839,31 +1640,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_use_key_list = (int)Marshal.OffsetOf(type, "use_key_list");
         private static readonly int offset_key_list = (int)Marshal.OffsetOf(type, "key_list");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public SubscriptionKeyQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public SubscriptionKeyQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(SubscriptionKeyQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(SubscriptionKeyQosPolicy from, IntPtr to, int offset)
@@ -1891,7 +1684,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref SubscriptionKeyQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref SubscriptionKeyQosPolicy to, int offset)
@@ -1902,7 +1695,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
     }
 
-    internal class ReaderLifespanQosPolicyMarshaler : IMarshaler
+    internal class ReaderLifespanQosPolicyMarshaler : GapiMarshaler
     {
         private static readonly Type type = typeof(OpenSplice.Gapi.gapi_readerLifespanQosPolicy);
         public static readonly int Size = Marshal.SizeOf(type);
@@ -1910,31 +1703,23 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_use_lifespan = (int)Marshal.OffsetOf(type, "use_lifespan");
         private static readonly int offset_duration = (int)Marshal.OffsetOf(type, "duration");
 
-        private bool cleanupRequired = false;
-        private readonly IntPtr gapiPtr;
-        public IntPtr GapiPtr
-        {
-            get { return gapiPtr; }
-        }
+        public ReaderLifespanQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
 
-        public ReaderLifespanQosPolicyMarshaler()
-        {
-            gapiPtr = OpenSplice.Gapi.GenericAllocRelease.Alloc(Size);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             if (cleanupRequired) 
             {
-                CleanupIn(gapiPtr, 0);
+                CleanupIn(GapiPtr, 0);
             }
-            OpenSplice.Gapi.GenericAllocRelease.Free(gapiPtr);
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
         }
 
         internal DDS.ReturnCode CopyIn(ReaderLifespanQosPolicy from)
         {
             cleanupRequired = true;
-            return CopyIn(from, gapiPtr, 0);
+            return CopyIn(from, GapiPtr, 0);
         }
 
         internal static DDS.ReturnCode CopyIn(ReaderLifespanQosPolicy from, IntPtr to, int offset)
@@ -1961,7 +1746,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
         internal void CopyOut(ref ReaderLifespanQosPolicy to)
         {
-            CopyOut(gapiPtr, ref to, 0);
+            CopyOut(GapiPtr, ref to, 0);
         }
 
         internal static void CopyOut(IntPtr from, ref ReaderLifespanQosPolicy to, int offset)

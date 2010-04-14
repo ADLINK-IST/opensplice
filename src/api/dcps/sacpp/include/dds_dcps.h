@@ -533,7 +533,7 @@ namespace DDS
       Listener () {};
       ~Listener () {};
    private:
-      Listener (const Listener &) {};
+      Listener (const Listener &);
       Listener & operator = (const Listener &);
    };
 
@@ -560,7 +560,7 @@ namespace DDS
       TopicListener () {};
       ~TopicListener () {};
    private:
-      TopicListener (const TopicListener &) {};
+      TopicListener (const TopicListener &);
       TopicListener & operator = (const TopicListener &);
    };
 
@@ -587,7 +587,7 @@ namespace DDS
       ExtTopicListener () {};
       ~ExtTopicListener () {};
    private:
-      ExtTopicListener (const ExtTopicListener &) {};
+      ExtTopicListener (const ExtTopicListener &);
       ExtTopicListener & operator = (const ExtTopicListener &);
    };
 
@@ -617,7 +617,7 @@ namespace DDS
       DataWriterListener () {};
       ~DataWriterListener () {};
    private:
-      DataWriterListener (const DataWriterListener &) {};
+      DataWriterListener (const DataWriterListener &);
       DataWriterListener & operator = (const DataWriterListener &);
    };
 
@@ -643,7 +643,7 @@ namespace DDS
       PublisherListener () {};
       ~PublisherListener () {};
    private:
-      PublisherListener (const PublisherListener &) {};
+      PublisherListener (const PublisherListener &);
       PublisherListener & operator = (const PublisherListener &);
    };
 
@@ -677,7 +677,7 @@ namespace DDS
       DataReaderListener () {};
       ~DataReaderListener () {};
    private:
-      DataReaderListener (const DataReaderListener &) {};
+      DataReaderListener (const DataReaderListener &);
       DataReaderListener & operator = (const DataReaderListener &);
    };
 
@@ -705,7 +705,7 @@ namespace DDS
       SubscriberListener () {};
       ~SubscriberListener () {};
    private:
-      SubscriberListener (const SubscriberListener &) {};
+      SubscriberListener (const SubscriberListener &);
       SubscriberListener & operator = (const SubscriberListener &);
    };
 
@@ -734,7 +734,7 @@ namespace DDS
       DomainParticipantListener () {};
       ~DomainParticipantListener () {};
    private:
-      DomainParticipantListener (const DomainParticipantListener &) {};
+      DomainParticipantListener (const DomainParticipantListener &);
       DomainParticipantListener & operator = (const DomainParticipantListener &);
    };
 
@@ -761,7 +761,7 @@ namespace DDS
       ExtDomainParticipantListener () {};
       ~ExtDomainParticipantListener () {};
    private:
-      ExtDomainParticipantListener (const ExtDomainParticipantListener &) {};
+      ExtDomainParticipantListener (const ExtDomainParticipantListener &);
       ExtDomainParticipantListener & operator = (const ExtDomainParticipantListener &);
    };
 
@@ -789,7 +789,7 @@ namespace DDS
       Condition () {};
       ~Condition () {};
    private:
-      Condition (const Condition &) {};
+      Condition (const Condition &);
       Condition & operator = (const Condition &);
    };
 
@@ -824,7 +824,7 @@ namespace DDS
       WaitSetInterface () {};
       ~WaitSetInterface () {};
    private:
-      WaitSetInterface (const WaitSetInterface &) {};
+      WaitSetInterface (const WaitSetInterface &);
       WaitSetInterface & operator = (const WaitSetInterface &);
    };
 
@@ -852,7 +852,7 @@ namespace DDS
       GuardConditionInterface () {};
       ~GuardConditionInterface () {};
    private:
-      GuardConditionInterface (const GuardConditionInterface &) {};
+      GuardConditionInterface (const GuardConditionInterface &);
       GuardConditionInterface & operator = (const GuardConditionInterface &);
    };
 
@@ -882,7 +882,7 @@ namespace DDS
       StatusCondition () {};
       ~StatusCondition () {};
    private:
-      StatusCondition (const StatusCondition &) {};
+      StatusCondition (const StatusCondition &);
       StatusCondition & operator = (const StatusCondition &);
    };
 
@@ -949,7 +949,7 @@ namespace DDS
       ReadCondition () {};
       ~ReadCondition () {};
    private:
-      ReadCondition (const ReadCondition &) {};
+      ReadCondition (const ReadCondition &);
       ReadCondition & operator = (const ReadCondition &);
    };
 
@@ -979,7 +979,7 @@ namespace DDS
       QueryCondition () {};
       ~QueryCondition () {};
    private:
-      QueryCondition (const QueryCondition &) {};
+      QueryCondition (const QueryCondition &);
       QueryCondition & operator = (const QueryCondition &);
    };
 
@@ -1066,7 +1066,7 @@ namespace DDS
       Entity () {};
       ~Entity () {};
    private:
-      Entity (const Entity &) {};
+      Entity (const Entity &);
       Entity & operator = (const Entity &);
    };
 
@@ -1129,7 +1129,7 @@ namespace DDS
       DomainParticipant () {};
       ~DomainParticipant () {};
    private:
-      DomainParticipant (const DomainParticipant &) {};
+      DomainParticipant (const DomainParticipant &);
       DomainParticipant & operator = (const DomainParticipant &);
    };
 
@@ -1157,7 +1157,7 @@ namespace DDS
       Domain () {};
       ~Domain () {};
    private:
-      Domain (const Domain &) {};
+      Domain (const Domain &);
       Domain & operator = (const Domain &);
    };
 
@@ -1187,12 +1187,13 @@ namespace DDS
       virtual ReturnCode_t get_default_participant_qos (DomainParticipantQos& qos) = 0;
       virtual Domain_ptr lookup_domain (const DDS::Char* domain_id) = 0;
       virtual ReturnCode_t delete_domain (Domain_ptr a_domain) = 0;
+      virtual ReturnCode_t delete_contained_entities () = 0;
 
    protected:
       DomainParticipantFactoryInterface () {};
       ~DomainParticipantFactoryInterface () {};
    private:
-      DomainParticipantFactoryInterface (const DomainParticipantFactoryInterface &) {};
+      DomainParticipantFactoryInterface (const DomainParticipantFactoryInterface &);
       DomainParticipantFactoryInterface & operator = (const DomainParticipantFactoryInterface &);
    };
 
@@ -1221,7 +1222,7 @@ namespace DDS
       TypeSupport () {};
       ~TypeSupport () {};
    private:
-      TypeSupport (const TypeSupport &) {};
+      TypeSupport (const TypeSupport &);
       TypeSupport & operator = (const TypeSupport &);
    };
 
@@ -1248,7 +1249,7 @@ namespace DDS
       TypeSupportFactory () {};
       ~TypeSupportFactory () {};
    private:
-      TypeSupportFactory (const TypeSupportFactory &) {};
+      TypeSupportFactory (const TypeSupportFactory &);
       TypeSupportFactory & operator = (const TypeSupportFactory &);
    };
 
@@ -1278,7 +1279,7 @@ namespace DDS
       TopicDescription () {};
       ~TopicDescription () {};
    private:
-      TopicDescription (const TopicDescription &) {};
+      TopicDescription (const TopicDescription &);
       TopicDescription & operator = (const TopicDescription &);
    };
 
@@ -1311,7 +1312,7 @@ namespace DDS
       Topic () {};
       ~Topic () {};
    private:
-      Topic (const Topic &) {};
+      Topic (const Topic &);
       Topic & operator = (const Topic &);
    };
 
@@ -1342,7 +1343,7 @@ namespace DDS
       ContentFilteredTopic () {};
       ~ContentFilteredTopic () {};
    private:
-      ContentFilteredTopic (const ContentFilteredTopic &) {};
+      ContentFilteredTopic (const ContentFilteredTopic &);
       ContentFilteredTopic & operator = (const ContentFilteredTopic &);
    };
 
@@ -1372,7 +1373,7 @@ namespace DDS
       MultiTopic () {};
       ~MultiTopic () {};
    private:
-      MultiTopic (const MultiTopic &) {};
+      MultiTopic (const MultiTopic &);
       MultiTopic & operator = (const MultiTopic &);
    };
 
@@ -1416,7 +1417,7 @@ namespace DDS
       Publisher () {};
       ~Publisher () {};
    private:
-      Publisher (const Publisher &) {};
+      Publisher (const Publisher &);
       Publisher & operator = (const Publisher &);
    };
 
@@ -1457,7 +1458,7 @@ namespace DDS
       DataWriter () {};
       ~DataWriter () {};
    private:
-      DataWriter (const DataWriter &) {};
+      DataWriter (const DataWriter &);
       DataWriter & operator = (const DataWriter &);
    };
 
@@ -1500,7 +1501,7 @@ namespace DDS
       Subscriber () {};
       ~Subscriber () {};
    private:
-      Subscriber (const Subscriber &) {};
+      Subscriber (const Subscriber &);
       Subscriber & operator = (const Subscriber &);
    };
 
@@ -1552,7 +1553,7 @@ namespace DDS
       DataReader () {};
       ~DataReader () {};
    private:
-      DataReader (const DataReader &) {};
+      DataReader (const DataReader &);
       DataReader & operator = (const DataReader &);
    };
 
@@ -1608,11 +1609,11 @@ namespace DDS
       ErrorInfoInterface () {};
       ~ErrorInfoInterface () {};
    private:
-      ErrorInfoInterface (const ErrorInfoInterface &) {};
+      ErrorInfoInterface (const ErrorInfoInterface &);
       ErrorInfoInterface & operator = (const ErrorInfoInterface &);
    };
 
-   class DataReaderView
+   class SACPP_API DataReaderView
    :
    virtual public Entity
    {
@@ -1637,7 +1638,7 @@ namespace DDS
       DataReaderView () {};
       ~DataReaderView () {};
    private:
-      DataReaderView (const DataReaderView &) {};
+      DataReaderView (const DataReaderView &);
       DataReaderView & operator = (const DataReaderView &);
    };
 }

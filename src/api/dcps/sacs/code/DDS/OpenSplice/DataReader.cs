@@ -55,21 +55,22 @@ namespace DDS.OpenSplice
                 listenerHelper.CreateListener(out gapiListener);
                 lock (listener)
                 {
-                    using (DataReaderListenerMarshaler marshaler = new DataReaderListenerMarshaler(ref gapiListener))
+                    using (DataReaderListenerMarshaler marshaler = 
+                            new DataReaderListenerMarshaler(ref gapiListener))
                     {
                         result = Gapi.DataReader.set_listener(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            mask);
+                                GapiPeer,
+                                marshaler.GapiPtr,
+                                mask);
                     }
                 }
             }
             else
             {
                 result = Gapi.DataReader.set_listener(
-                    GapiPeer,
-                    IntPtr.Zero,
-                    mask);
+                        GapiPeer,
+                        IntPtr.Zero,
+                        mask);
             }
 
             return result;
@@ -220,31 +221,53 @@ namespace DDS.OpenSplice
             }
         }
         
-        public ReturnCode GetSampleRejectedStatus(ref SampleRejectedStatus status)
+        public ReturnCode GetSampleRejectedStatus(
+                ref SampleRejectedStatus status)
         {
             if (status == null) status = new SampleRejectedStatus();
             return Gapi.DataReader.get_sample_rejected_status(GapiPeer, status);
         }
         
-        public ReturnCode GetLivelinessChangedStatus(ref LivelinessChangedStatus status)
+        public ReturnCode GetLivelinessChangedStatus(
+                ref LivelinessChangedStatus status)
         {
             if (status == null) status = new LivelinessChangedStatus();
             return Gapi.DataReader.get_liveliness_changed_status(GapiPeer, status);
         }
         
-        public ReturnCode GetRequestedDeadlineMissedStatus(ref RequestedDeadlineMissedStatus status)
+        public ReturnCode GetRequestedDeadlineMissedStatus(
+                ref RequestedDeadlineMissedStatus status)
         {
             if (status == null) status = new RequestedDeadlineMissedStatus();
             return Gapi.DataReader.get_requested_deadline_missed_status(GapiPeer, status);
         }
         
-        public ReturnCode GetRequestedIncompatibleQosStatus(ref RequestedIncompatibleQosStatus status)
+        public ReturnCode GetRequestedIncompatibleQosStatus(
+                ref RequestedIncompatibleQosStatus status)
         {
-            if (status == null) status = new RequestedIncompatibleQosStatus();
-            return Gapi.DataReader.get_requested_incompatible_qos_status(GapiPeer, status);
+            ReturnCode result;
+
+            using (RequestedIncompatibleQosStatusMarshaler marshaler = 
+                    new RequestedIncompatibleQosStatusMarshaler())
+            {
+                if (status == null) status = new RequestedIncompatibleQosStatus();
+                if (status.Policies == null) status.Policies = new QosPolicyCount[28];
+                marshaler.CopyIn(status);
+                
+                result = Gapi.DataReader.get_requested_incompatible_qos_status(
+                        GapiPeer, marshaler.GapiPtr);
+
+                if (result == ReturnCode.Ok)
+                {
+                    marshaler.CopyOut(ref status);
+                }
+            }
+
+            return result;
         }
         
-        public ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status)
+        public ReturnCode GetSubscriptionMatchedStatus(
+                ref SubscriptionMatchedStatus status)
         {
             if (status == null) status = new SubscriptionMatchedStatus();
             return Gapi.DataReader.get_subscription_matched_status(GapiPeer, status);
@@ -265,7 +288,8 @@ namespace DDS.OpenSplice
         {
             ReturnCode result;
 
-            using (SequenceInstanceHandleMarshaler marshaler = new SequenceInstanceHandleMarshaler())
+            using (SequenceInstanceHandleMarshaler marshaler = 
+                    new SequenceInstanceHandleMarshaler())
             {
                 result = Gapi.DataReader.get_matched_publications(
                         GapiPeer,

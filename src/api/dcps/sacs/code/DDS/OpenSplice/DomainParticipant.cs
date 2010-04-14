@@ -35,8 +35,7 @@ namespace DDS.OpenSplice
             : base(gapiPtr)
         {
             listenerHelper = new DomainParticipantListenerHelper();
-            builtinTopicRegisterTypeSupport(this);
-            builtinTopicCreateWrappers(this);
+            BuiltinTopicRegisterTypeSupport(this);
         }
 
         /**
@@ -46,8 +45,7 @@ namespace DDS.OpenSplice
             : base(gapiPtr)
         {
             this.listenerHelper = listenerHelper;
-            builtinTopicRegisterTypeSupport(this);
-            builtinTopicCreateWrappers(this);
+            BuiltinTopicRegisterTypeSupport(this);
         }
 
         /**
@@ -57,7 +55,7 @@ namespace DDS.OpenSplice
          *     "DDS::PublicationBuiltinTopicData"
          *     "DDS::SubscriptionBuiltinTopicData"
          */
-        internal static ReturnCode builtinTopicRegisterTypeSupport(DomainParticipant participant)
+        internal static ReturnCode BuiltinTopicRegisterTypeSupport(DomainParticipant participant)
         {
             ReturnCode result;
 
@@ -116,82 +114,53 @@ namespace DDS.OpenSplice
         }
 
         /**
-         * Wrap the four builtin topics in C# objects:
-         *     "DCPSParticipant"
-         *     "DCPSTopic"
-         *     "DCPSPublication"
-         *     "DCPSSubscription"
+         * Determine by name whether a topic is a builtin topic.
          */
-        internal static void builtinTopicCreateWrappers(DomainParticipant participant)
+        internal static string[] BuiltinTopicNames = {
+                "DCPSParticipant",
+                "DCPSTopic",
+                "DCPSPublication",
+                "DCPSSubscription" };
+        
+        internal static bool IsBuiltinTopic(string name)
         {
-            // Lookup the "DCPSParticipant" topic.
-            IntPtr gapiPtr = Gapi.DomainParticipant.lookup_topicdescription(participant.GapiPeer, "DCPSParticipant");
-            if (gapiPtr == IntPtr.Zero)
+            bool result = false;
+            for (int i = 0; i < BuiltinTopicNames.Length && !result; i++)
             {
-                DDS.OpenSplice.OS.Report(
-                        DDS.OpenSplice.ReportType.OS_ERROR,
-                        "DDS.OpenSplice.DomainParticipant.builtinTopicCreateWrappers",
-                        "DDS/OpenSplice/DomainParticipant.cs",
-                        DDS.ErrorCode.Error,
-                        "Failed to wrap builtin topic: DCPSParticipant");
+                if (name == BuiltinTopicNames[i])
+                {
+                    result = true;
+                }
             }
-            else
-            {
-                // Wrap the gapi topic in a C# object.
-                new Topic(gapiPtr);
-                
-                // And lookup the "DCPSTopic" topic.
-                gapiPtr = Gapi.DomainParticipant.lookup_topicdescription(participant.GapiPeer, "DCPSTopic");
-            }
-            if (gapiPtr == IntPtr.Zero)
-            {
-                DDS.OpenSplice.OS.Report(
-                        DDS.OpenSplice.ReportType.OS_ERROR,
-                        "DDS.OpenSplice.DomainParticipant.builtinTopicCreateWrappers",
-                        "DDS/OpenSplice/DomainParticipant.cs",
-                        DDS.ErrorCode.Error,
-                        "Failed to wrap builtin topic: DCPSTopic");
-            }
-            else
-            {
-                // Wrap the gapi topic in a C# object.
-                new Topic(gapiPtr);
-                
-                // And lookup the "DCPSTopic" topic.
-                gapiPtr = Gapi.DomainParticipant.lookup_topicdescription(participant.GapiPeer, "DCPSPublication");
-            }
-            if (gapiPtr == IntPtr.Zero)
-            {
-                DDS.OpenSplice.OS.Report(
-                        DDS.OpenSplice.ReportType.OS_ERROR,
-                        "DDS.OpenSplice.DomainParticipant.builtinTopicCreateWrappers",
-                        "DDS/OpenSplice/DomainParticipant.cs",
-                        DDS.ErrorCode.Error,
-                        "Failed to wrap builtin topic: DCPSPublication");
-            }
-            else
-            {
-                // Wrap the gapi topic in a C# object.
-                new Topic(gapiPtr);
-                
-                // And lookup the "DCPSTopic" topic.
-                gapiPtr = Gapi.DomainParticipant.lookup_topicdescription(participant.GapiPeer, "DCPSSubscription");
-            }
-            if (gapiPtr == IntPtr.Zero)
-            {
-                DDS.OpenSplice.OS.Report(
-                        DDS.OpenSplice.ReportType.OS_ERROR,
-                        "DDS.OpenSplice.DomainParticipant.builtinTopicCreateWrappers",
-                        "DDS/OpenSplice/DomainParticipant.cs",
-                        DDS.ErrorCode.Error,
-                        "Failed to wrap builtin topic: DCPSSubscription");
-            }
-            else
-            {
-                // Wrap the gapi topic in a C# object.
-                new Topic(gapiPtr);
-            }
+            return result;
+        }
 
+        /**
+         * Wrap the selected builtin topics in a C# object.
+         */
+        internal Topic BuiltinTopicCreateWrapper(string biTopicName)
+        {
+            Topic wrapper = null;
+            
+            // Lookup the "DCPSParticipant" topic.
+            IntPtr gapiPtr = Gapi.DomainParticipant.lookup_topicdescription(
+                    this.GapiPeer, biTopicName);
+            if (gapiPtr == IntPtr.Zero)
+            {
+                string msg = string.Format("Failed to wrap builtin topic: {0}", biTopicName);
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.DomainParticipant.builtinTopicCreateWrapper",
+                        "DDS/OpenSplice/DomainParticipant.cs",
+                        DDS.ErrorCode.Error,
+                        msg);
+            }
+            else
+            {
+                // Wrap the gapi topic in a C# object.
+                wrapper = new Topic(gapiPtr);
+            }
+            return wrapper;
         }
         
         public ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask)
@@ -554,7 +523,6 @@ namespace DDS.OpenSplice
                         {
                             Topic topic = new OpenSplice.Topic(topic_gapiPtr);
                         }
-
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSParticipant");
                     if (reader_gapiPtr != IntPtr.Zero){
@@ -567,7 +535,6 @@ namespace DDS.OpenSplice
                         {
                             Topic topic = new OpenSplice.Topic(topic_gapiPtr);
                         }
-
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSPublication");
                     if (reader_gapiPtr != IntPtr.Zero){
@@ -580,7 +547,6 @@ namespace DDS.OpenSplice
                         {
                             Topic topic = new OpenSplice.Topic(topic_gapiPtr);
                         }
-
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSSubscription");
                     if (reader_gapiPtr != IntPtr.Zero){
@@ -593,7 +559,6 @@ namespace DDS.OpenSplice
                         {
                             Topic topic = new OpenSplice.Topic(topic_gapiPtr);
                         }
-
                     }
                 }
 
@@ -791,12 +756,17 @@ namespace DDS.OpenSplice
 
                 if (topicDesc == null)
                 {
-                    DDS.OpenSplice.OS.Report(
-                            DDS.OpenSplice.ReportType.OS_ERROR,
-                            "DDS.OpenSplice.DomainParticipant.LookupTopicDescription",
-                            "DDS/OpenSplice/DomainParticipant.cs",
-                            DDS.ErrorCode.EntityUnknown,
-                            "TopicDescription Entity has no C# wrapper.");
+                    if (IsBuiltinTopic(name))
+                    {
+                        topicDesc = BuiltinTopicCreateWrapper(name);
+                    } else {
+                        DDS.OpenSplice.OS.Report(
+                                DDS.OpenSplice.ReportType.OS_ERROR,
+                                "DDS.OpenSplice.DomainParticipant.LookupTopicDescription",
+                                "DDS/OpenSplice/DomainParticipant.cs",
+                                DDS.ErrorCode.EntityUnknown,
+                                "TopicDescription Entity has no C# wrapper.");
+                    }
                 }
             }
 
