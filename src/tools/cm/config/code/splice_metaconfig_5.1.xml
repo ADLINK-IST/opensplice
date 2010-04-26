@@ -61,6 +61,16 @@
             <maxLength>0</maxLength>
             <default>OpenSpliceV5</default>
         </leafString>
+        <leafString name="Role" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This (optional) element specifies the role of the instantiated domain. For dynamic discovery, this role will 
+                be used to define the communication scope of instantiated domains on other nodes in the system. The purpose 
+                of specifying roles within the system is to 'overlay' the underlying physical network with a node's scope-of-interest 
+                that allows to bound topology discovery effort and related overhead in large scale (WAN) systems. 
+            ]]></comment>
+            <maxLength>0</maxLength>
+            <default>DefaultRole</default>
+        </leafString>
         <element name="Lease" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
                     The Lease parameters specify how the Domain service as well as the services started by the
@@ -2431,7 +2441,12 @@
         <element name="Discovery" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
                 This element is used to configure the various parameters of the Discovery Channel,
-                which is used to discover all participating entities in the current Domain.
+                which is used to discover all relevant participating entities in the current Domain. 
+                The purpose of the discovery process is to build-up and maintain a notion of all 
+                relevant active nodes within the domain.  The relevance of discovered remote nodes 
+                can be defined statically (by definition of the so-called Global Partition) and/or
+                can be dynamically expanded and maintained by the dynamic-discovery process driven 
+                by the node's Role and Scope.
             ]]></comment>
             <attributeBoolean name="enabled" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
@@ -2441,6 +2456,21 @@
                 ]]></comment>
                 <default>true</default>
             </attributeBoolean>
+            <attributeString name="Scope" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This attribute controls the dynamic discovery behaviour of this node within the current Domain. 
+                    If it is not set, dynamic discovery will be disabled and the networking service will only 
+                    communicate with nodes that can be reached through the predefined Global Partition. If the Scope 
+                    attribute is specified, dynamic discovery is enabled and the networking service will be able to 
+                    communicate with all nodes in the system that have a Role that matches the Scope expression. 
+                    The Scope expression can contain a comma separated list of wild-card role-expressions. If the 
+                    role of any  discovered node matches any of the wild-card expressions, the remote node is 
+                    considered a match and will become part of the communication reach (i.e. the Global Partition) 
+                    of the current domain.
+                ]]></comment>
+                <maxLength>512</maxLength>
+                <default></default>
+            </attributeString>
             <leafInt name="PortNr" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
                     This element specifies the Port number used by the Discovery Channel.
@@ -2449,6 +2479,17 @@
                 <maximum>65536</maximum>
                 <default>3369</default>
             </leafInt>
+            <leafString name="ProbeList" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element contains the addresses of the nodes that will be contacted to retrieve an initial 
+                    list of participating nodes in the current domain that match the specified Scope. Multiple 
+                    ProbeList addresses can be entered by separating them by a colon (,), semicolon (;) or space( ) .
+                    The addresses can be entered as dotted decimal notation or as the symbolic hostname, in which 
+                    case the middleware will try to resolve the corresponding IP address. 
+                ]]></comment>
+                <maxLength>512</maxLength>
+                <default></default>
+            </leafString>
             <element name="Sending" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element describes all properties for the transmitting side

@@ -36,6 +36,7 @@ NW_CLASS(nw_messageBoxMessage);
 NW_STRUCT(nw_messageBoxMessage) {
     nw_networkId networkId;
     nw_address address;
+    c_string list;
     nw_messageBoxMessageType messageType;
     nw_messageBoxMessage next;
 };
@@ -83,6 +84,7 @@ nw_messageBoxPushMessage(
     nw_messageBox messageBox,
     nw_networkId networkId,
     nw_address address,
+    c_string list,
     nw_messageBoxMessageType messageType)
 {
     nw_messageBoxMessage newMessage;
@@ -92,6 +94,7 @@ nw_messageBoxPushMessage(
     newMessage = (nw_messageBoxMessage)os_malloc(sizeof(*newMessage));
     newMessage->networkId = networkId;
     newMessage->address = address;
+    newMessage->list = list;
     newMessage->messageType = messageType;
     
     if (messageBox->firstMessage == NULL) {
@@ -269,6 +272,7 @@ nw_plugChannelProcessMessageBox(
     nw_plugChannel channel,
     nw_networkId *networkId /* out */,
     nw_address *address,
+    c_string *list,
     nw_messageBoxMessageType *messageType /* out */)
 {
     nw_bool result = FALSE;
@@ -280,6 +284,7 @@ nw_plugChannelProcessMessageBox(
         *networkId = message->networkId;
         *messageType = message->messageType;
         *address = message->address;
+        *list = message->list;
         os_free(message);
     }
     return result;
@@ -342,7 +347,7 @@ nw_plugChannelNotifyNodeStarted(
     nw_networkId networkId,
     nw_address address)
 {
-    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NW_MBOX_NODE_STARTED);
+    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_STARTED);
 }
 
 void
@@ -351,7 +356,7 @@ nw_plugChannelNotifyNodeStopped(
     nw_networkId networkId,
     nw_address address)
 {
-    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NW_MBOX_NODE_STOPPED);
+    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_STOPPED);
 }
 
 void
@@ -360,7 +365,37 @@ nw_plugChannelNotifyNodeDied(
     nw_networkId networkId,
     nw_address address)
 {
-    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NW_MBOX_NODE_DIED);
+    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_DIED);
+}
+
+void
+nw_plugChannelNotifyGpAdd(
+    nw_plugChannel channel,
+    nw_networkId networkId,
+    nw_address address)
+{
+    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_GP_ADD);
+}
+
+void
+nw_plugChannelNotifyGpAddList(
+    nw_plugChannel channel,
+    c_string probelist)
+{
+    NW_TRACE_1(
+        Discovery, 2, 
+        "Adding ProbeList %s",probelist);
+
+    nw_messageBoxPushMessage(channel->messageBox, 0, 0, probelist, NW_MBOX_GP_ADDLIST);
+}
+
+void
+nw_plugChannelNotifyGpRemove(
+    nw_plugChannel channel,
+    nw_networkId networkId,
+    nw_address address)
+{
+    nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_GP_REMOVE);
 }
 
 

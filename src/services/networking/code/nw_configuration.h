@@ -149,5 +149,6 @@ void nw_nameListFree(
 /* Domain parameters */
 c_float nw_configurationGetDomainLeaseExpiryTime();
 c_float nw_configurationGetDomainLeaseUpdateTime();
+c_string nw_configurationGetDomainRole();
 
 

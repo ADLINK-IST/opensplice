@@ -521,7 +521,7 @@ namespace DDS.OpenSplice
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
-                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                            new OpenSplice.Topic(topic_gapiPtr);
                         }
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSParticipant");
@@ -533,7 +533,7 @@ namespace DDS.OpenSplice
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
-                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                            new OpenSplice.Topic(topic_gapiPtr);
                         }
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSPublication");
@@ -545,7 +545,7 @@ namespace DDS.OpenSplice
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
-                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                            new OpenSplice.Topic(topic_gapiPtr);
                         }
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSSubscription");
@@ -557,7 +557,7 @@ namespace DDS.OpenSplice
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
-                            Topic topic = new OpenSplice.Topic(topic_gapiPtr);
+                            new OpenSplice.Topic(topic_gapiPtr);
                         }
                     }
                 }

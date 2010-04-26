@@ -165,59 +165,6 @@
         </tr>      
         <tr>
           <td>
-            dds2025
-          </td>
-          <td>
-            <b>CRTRL C in Java does not interrupt</b><br/>
-            <i>
-When CTRL-C is pressed the JVM reacts to this signal and starts the exit handling, however the way we deal with the exit handling in the JAVA and OpenSplice combination gives some problems, hence the existence of this ticket. So to get around the java application not termination when CTRL-C is used the following steps need to be taken
-
-- A shutdown hook (standard JAVA mechanism) needs to be installed within the JAVA application
-- This shutdown hook should delete all (application created) participants and it's contents.
-
-An example of such shutdown hook (tailored for the customers Client.java code:
-<pre>
-// Example shutdown hook class
-class OSPLShutdown extends Thread
-{
-    private Client client;
-
-    public OSPLShutdown(Client client)
-    {
-        this.client = client;
-    }
-
-    public void run()
-    {
-        int status;
-
-        if(client.participant != null)
-        {
-            status = client.participant.delete_contained_entities();
-            if ( status != RETCODE_OK.value && status != RETCODE_NO_DATA.value)
-            {
-                System.out.println("Error in delete_contained_entities, status = " + status);
-            }
-
-            status = TheParticipantFactory.value.delete_participant(client.participant);
-            if ( status != RETCODE_OK.value && status != RETCODE_NO_DATA.value)
-            {
-                System.out.println("Error in delete_participant, status = " + status);
-            }
-        }
-    }
-}
-</pre>
-Installing the shutdown hook (preferably called before any OpenSplice call):
-<pre>
-        OSPLShutdown sh = new OSPLShutdown(this);
-        Runtime.getRuntime().addShutdownHook(sh);
-</pre>
-            </i>
-          </td>
-        </tr>      
-        <tr>
-          <td>
             dds2046
           </td>
           <td>

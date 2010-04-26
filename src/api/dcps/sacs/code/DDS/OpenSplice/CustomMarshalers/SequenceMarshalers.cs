@@ -108,6 +108,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
             // free array
             OpenSplice.Gapi.GenericAllocRelease.Free(arrayPtr);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(ref QosPolicyCount[] to)
@@ -452,6 +453,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
             // free array
             OpenSplice.Gapi.GenericAllocRelease.Free(arrayPtr);
+            BaseMarshaler.Write(nativePtr, offset + offset__buffer, IntPtr.Zero);
         }
 
         internal void CopyOut(ref string[] to)

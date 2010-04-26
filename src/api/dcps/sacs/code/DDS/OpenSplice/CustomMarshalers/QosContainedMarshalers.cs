@@ -280,6 +280,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             IntPtr ptr = new IntPtr((long)from + offset + offset_name);
             if (to == null) to = new ShareQosPolicy();
             to.Name = Marshal.PtrToStringAnsi(ptr);
+            if (to.Name == null) to.Name = String.Empty;
             to.Enable = BaseMarshaler.ReadBoolean(from, offset + offset_enable);
         }
     }

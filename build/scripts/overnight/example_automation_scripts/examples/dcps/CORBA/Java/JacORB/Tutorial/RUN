@@ -1,23 +1,23 @@
 echo start OpenSplice
 
-ospl start
+$VG_OSPL_START ospl start
 
 sleep 10
 
 echo start MessageBoard
-java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.MessageBoard &
+$VG_MESSAGEBOARD java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.MessageBoard &
 
 sleep 2
 
 echo start Chatter
-java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter 
+$VG_CHATTER java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter
 
 sleep 4
 
 echo start Chatter with terminate message
-java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter -1
+$VG_CHATTER_T java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter -1
 
 sleep 4
 
 
-ospl stop
+$VG_OSPL_STOP ospl stop

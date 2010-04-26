@@ -222,6 +222,14 @@
 #define NWCF_ROOT_DiscoveryChannel    "Discovery"
 /* The enabled attribute and default value is defined under Channels/Channel  */
 
+/* ------------- Channels/Channel/Discovery/Scope --------------------------- */
+#define NWCF_ATTRIB_Scope            "Scope"                       /* string */
+#define NWCF_DEF_Scope               ("")
+
+/* ------------- Channels/Channel/Discovery/ProbeList --------------------------- */
+#define NWCF_NAME_ProbeList         "ProbeList"                       /* string */
+#define NWCF_DEF_Scope             ("")
+
 /* ------------- Channels/Channel/Discovery/Sending/Interval ---------------- */
 #define NWCF_NAME_Interval            "Interval"                       /* ulong */
 #define NWCF_DEF_Interval             (333U)
@@ -249,7 +257,7 @@
 
 /* ------------------------- Partitioning/GlobalPartition ------------------- */
 #define NWCF_ROOT_GlobalPartition      NWCF_SUBROOT(NWCF_ROOT_Partitioning, "GlobalPartition")
-#define NWCF_DEF_GlobalAddress         NWCF_BROADCAST_EXPR
+#define NWCF_DEF_GlobalAddress         "localhost"
 
 /* ------------------------- Partitioning/Partitions ------------------------ */
 #define NWCF_ROOT_NWPartitions         NWCF_SUBROOT(NWCF_ROOT_Partitioning, "NetworkPartitions")

@@ -1762,6 +1762,41 @@ nw_configurationGetDomainFloatParameter(
     return result;
 }
 
+static c_string
+nw_configurationGetDomainStringParameter(
+    const c_char *parameterPath,
+    const c_char *parameterName,
+    c_string defaultValue)
+{
+    c_string result;
+    c_bool success = FALSE;
+    u_cfData data;
+
+    data = nw_configurationGetDomainParameterData(parameterPath, parameterName);
+    if (data) {
+        success = u_cfDataStringValue(data, &result);
+        if (success) {
+            NW_TRACE_3(Configuration, 1,
+                       "Retrieved parameter %s/%s, using value %s",
+                       parameterPath, parameterName, result);
+        } else {
+            NW_REPORT_WARNING_3("retrieving configuration parameters",
+                                "incorrect format for string parameter %s/%s,  "
+                                "switching to default value %s",
+                                parameterPath, parameterName, defaultValue);
+        }
+        u_cfDataFree(data);
+    }
+
+    if (!(int)success) {
+        result = defaultValue;
+        NW_TRACE_3(Configuration, 2,
+            "Could not retrieve parameter %s/%s, switching to default value %s",
+            parameterPath, parameterName, defaultValue);
+    }
+
+    return result;
+}
 
 
 
@@ -1832,6 +1867,7 @@ nw_configurationGetDomainFloatAttribute(
 #define LEASE_PATH         "Lease"
 #define EXPIRYTIME_NAME    "ExpiryTime"
 #define UPDATEFACTOR_NAME  "update_factor"
+#define ROLE_NAME          "Role"
 
 #define DEF_EXPIRYTIME     (10.0F)
 #define MIN_EXPIRYTIME     ( 0.2F)
@@ -1839,6 +1875,8 @@ nw_configurationGetDomainFloatAttribute(
 #define DEF_UPDATEFACTOR   (0.10F)
 #define MIN_UPDATEFACTOR   (0.05F)
 #define MAX_UPDATEFACTOR   (0.90F)
+
+#define DEF_ROLE           ("")
 
 static c_float
 nw_configurationGetUpdateFactor()
@@ -1883,4 +1921,14 @@ nw_configurationGetDomainLeaseUpdateTime()
 
    return result;
 }
+
+c_string
+nw_configurationGetDomainRole()
+{
+    c_string result;
+
+    result =  nw_configurationGetDomainStringParameter(NULL, ROLE_NAME, DEF_ROLE);
+    return result;
+}
+
 

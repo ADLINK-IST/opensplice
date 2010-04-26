@@ -418,7 +418,9 @@ os_report(
           }
        }
     } 
-    
+    va_end(args);
+
+    va_start(args, description);    
     if (reportPluginAdmin != NULL){ 
        vsnprintf (extended_description, sizeof(extended_description)-1, description, args);    
        sprintf (xml_description,  
@@ -447,10 +449,12 @@ os_report(
           }
        }    
     }
-    
-    os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);
-    
     va_end(args);
+
+    va_start(args, description);    
+    os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);    
+    va_end(args);
+
     va_start(args, description);
     if (reportType == OS_API_INFO) {
        char sourceLine[512];

@@ -30,8 +30,17 @@ VG_PING_S="valgrind --log-file=$VG_LOG_DIR/vg_ping_s.txt $VALGRIND_OPTIONS"
 VG_PING_B="valgrind --log-file=$VG_LOG_DIR/vg_ping_b.txt $VALGRIND_OPTIONS"
 VG_PING_F="valgrind --log-file=$VG_LOG_DIR/vg_ping_f.txt $VALGRIND_OPTIONS"
 VG_PING_T="valgrind --log-file=$VG_LOG_DIR/vg_ping_t.txt $VALGRIND_OPTIONS"
+VG_MESSAGEBOARD="valgrind --log-file=$VG_LOG_DIR/vg_messageboard.txt $VALGRIND_OPTIONS"
+VG_CHATTER="valgrind --log-file=$VG_LOG_DIR/vg_chatter.txt $VALGRIND_OPTIONS"
+VG_CHATTER_T="valgrind --log-file=$VG_LOG_DIR/vg_chatter_t.txt $VALGRIND_OPTIONS"
 VG_OSPL_START="valgrind --log-file=$VG_LOG_DIR/vg_ospl_start.txt $VALGRIND_OPTIONS"
 VG_OSPL_STOP="valgrind --log-file=$VG_LOG_DIR/vg_ospl_stop.txt $VALGRIND_OPTIONS"
+
+# --trace-children=yes only required for DLRL tests which are run as "sh" commands
+VG_WHITELIST_EDITOR="valgrind --log-file=$VG_LOG_DIR/vg_whitelisteditor.txt --trace-children=yes $VALGRIND_OPTIONS"
+VG_WHITELIST_VIEWER="valgrind --log-file=$VG_LOG_DIR/vg_whitelistviewer.txt --trace-children=yes $VALGRIND_OPTIONS"
+VG_WHITELIST_MESSAGEBOARD="valgrind --log-file=$VG_LOG_DIR/vg_whitelistmessageboard.txt --trace-children=yes $VALGRIND_OPTIONS"
+
 
 #Used after an ospl start as valgrind slows spliced 
 #and other service startup by a considerable amount
@@ -54,6 +63,12 @@ export VG_OSPL_START \
        VG_PING_B \
        VG_PING_F \
        VG_PING_T \
+       VG_MESSAGEBOARD \
+       VG_CHATTER \
+       VG_CHATTER_T \
+       VG_WHITELIST_EDITOR \
+       VG_WHITELIST_VIEWER \
+       VG_WHITELIST_MESSAGEBOARD \
        VG_OSPL_STOP \
        VG_SPLICED \
        VG_DURABILITY \

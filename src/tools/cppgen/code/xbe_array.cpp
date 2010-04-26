@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -129,7 +129,7 @@ void be_array::Initialize ()
          DDS_StdString anonName;
          initialized = pbtrue;
 
-         // Construct anonymous local name 
+         // Construct anonymous local name
 
          if (!localName.length ())
          {
@@ -177,12 +177,12 @@ void be_array::Initialize ()
                sliceType += dim;
             }
          }
-  
-         isPrimitiveArray = 
+
+         isPrimitiveArray =
          (
             baseType->IsPrimitiveType ()
             && baseType->IsFixedLength () // eliminates ANY, etc..
-            && !baseType->IsEnumeratedType () 
+            && !baseType->IsEnumeratedType ()
             && baseType->IsFixedLengthPrimitiveType ()
          );
 
@@ -291,7 +291,7 @@ void be_array::GenerateAuxTypes (be_ClientHeader & source)
       // forany type
 
       os << tab << "typedef "
-         << ((n_dims() == 1) ? "DDS_DCPS_Array_forany" : "DDS_DCPSM_Array_forany")
+         << ((n_dims() == 1) ? "DDS_DCPS_Array_forany" : "DDS_DCPS_MArray_forany")
          << "< " << LocalName() << ", " << LocalName() << "_slice, struct "
          << LocalName() << "_uniq_> " << LocalName() << "_forany;" << nl;
 
@@ -551,7 +551,7 @@ void be_array::GenerateAuxTypes (be_ClientImplementation & source)
    os << tab << "return " << name << "_alloc ();" << nl;
    tab.outdent ();
    os << "}" << nl << nl;
-   
+
    os << "template <>" << nl;
    os << "void DDS_DCPS_ArrayHelper < " << name << ", " << name << "_slice, "
       << name << "_uniq_>::copy (" << name << "_slice *to, const "
@@ -595,7 +595,7 @@ void be_array::Generate (be_ClientImplementation& source)
    if (s_IsPointerWhenArrayElement (*btype))
    {
       os << tab << "for (DDS::ULong i = 0; i < " << MatrixSize ()
-         << "; i++)" << nl; 
+         << "; i++)" << nl;
       os << tab << "{" << nl;
       tab.indent ();
       if (btype->IsStringType ())
@@ -731,7 +731,7 @@ void be_array::GenerateGlobal (be_ClientHeader& source)
    os << "template <>" << nl;
    os << name << "_slice* DDS_DCPS_ArrayHelper < " << name << ", " << name
       << "_slice, " << name << "_uniq_>::alloc ();" << nl;
-   
+
    os << "template <>" << nl;
    os << "void DDS_DCPS_ArrayHelper < " << name << ", " << name << "_slice, "
       << name << "_uniq_>::copy (" << name << "_slice *to, const "
@@ -1470,7 +1470,7 @@ ostream &be_array::put_for_sequence
    DDS_StdString put_val = BE_Globals::ScopeOf(ScopedName()) + "::"
       + TypeCodeTypeName() + "->put_val";
 
-   os << tab << put_val << "(os, (void*)&" << arg << "[" << index << "]," 
+   os << tab << put_val << "(os, (void*)&" << arg << "[" << index << "],"
       << " DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;
@@ -1488,7 +1488,7 @@ ostream &be_array::get_for_sequence
    DDS_StdString get_val = BE_Globals::ScopeOf(ScopedName()) + "::"
       + TypeCodeTypeName() + "->get_val";
 
-   os << tab << get_val << "(is, (void*)&" << arg << "[" << index << "], " 
+   os << tab << get_val << "(is, (void*)&" << arg << "[" << index << "], "
       << "DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;
@@ -1506,7 +1506,7 @@ ostream &be_array::put_for_array
    DDS_StdString put_val = BE_Globals::ScopeOf(ScopedName()) + "::"
       + TypeCodeTypeName() + "->put_val";
 
-   os << tab << put_val << "(os, (void*)&p[" << index << "]," 
+   os << tab << put_val << "(os, (void*)&p[" << index << "],"
       << " DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;
@@ -1524,7 +1524,7 @@ ostream &be_array::get_for_array
    DDS_StdString get_val = BE_Globals::ScopeOf(ScopedName()) + "::"
       + TypeCodeTypeName() + "->get_val";
 
-   os << tab << get_val << "(is, (void*)&p[" << index << "], " 
+   os << tab << get_val << "(is, (void*)&p[" << index << "], "
       << "DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;
@@ -1602,7 +1602,7 @@ void be_array::putter
    DDS_StdString size = BE_Globals::ulong_to_string(MatrixSize() *
                         baseType->get_elem_size());
    DDS_StdString index = (DDS_StdString)"i" + uids;
-                                                                                
+
    os << tab << "for (DDS::ULong " << index << " = 0; " << index
       << " < " << length << "; " << index << "++)" << nl;
    os << tab << "{" << nl;

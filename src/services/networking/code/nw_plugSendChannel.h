@@ -67,6 +67,17 @@ nw_bool        nw_plugSendChannelMessageStart(
                    nw_partitionId partitionId,
                    nw_signedLength *bytesLeft,
                    plugSendStatistics pss);
+
+/* Starting the writing of a message (to a specific node), returns a buffer of length to write into */
+nw_bool        nw_plugSendChannelWriteToMessageStart(
+                    nw_plugChannel channel,
+                    nw_data *buffer,
+                    nw_length *length,
+                    nw_partitionId partitionId,
+                    nw_networkId destination,
+                    nw_signedLength *bytesLeft, /* in/out */
+                    plugSendStatistics pss);
+
                    
 /* Retrieve a buffer for copying data into if the previous buffer was not
  * sufficiently long. NOTE: This function currently flushes the available

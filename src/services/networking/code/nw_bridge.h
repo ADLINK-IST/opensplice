@@ -118,6 +118,16 @@ void              nw_bridgeNotifyNodeDied(
                       nw_bridge bridge,
                       v_networkId networkId,
                       nw_address address);
+
+void              nw_bridgeNotifyGpAdd(
+                      nw_bridge bridge,
+                      v_networkId networkId,
+                      nw_address address);
+
+void              nw_bridgeNotifyGpRemove(
+                      nw_bridge bridge,
+                      v_networkId networkId,
+                      nw_address address);
                      
 
 /* Convenience */

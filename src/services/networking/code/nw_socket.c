@@ -42,9 +42,19 @@
 
 
 /* ------------------------------ Debug function ---------------------------- */
+/*
+#define NW_HEXDUMP(message, partitionId, data, length)    \
+        NW_TRACE_4(Test, 6, "%s: %u bytes to partitionId %u\n%s", message, length, partitionId, nw_dumpToString(data, length));
+
+#define NW_HEXDUMPTO(message, address, data, length)    \
+        NW_TRACE_4(Test, 6, "%s: %u bytes to Address ox%x\n%s", message, length, address, nw_dumpToString(data, length));
+*/
 
 #define NW_HEXDUMP(message, partitionId, data, length)    \
-        NW_TRACE_3(Test, 6, "%s: %u bytes to partitionId %u\n", message, length, partitionId);
+        NW_TRACE_3(Test, 6, "%s: %u bytes to partitionId %u", message, length, partitionId);
+
+#define NW_HEXDUMPTO(message, address, data, length)    \
+        NW_TRACE_3(Test, 6, "%s: %u bytes to Address ox%x", message, length, address);
 
 
 /* ------------------------------- main class ------------------------------- */
@@ -519,8 +529,11 @@ nw_socketAddPartition(
     unsigned int size, i;
     const char *currentAddress;
 
-    NW_TRACE_2(Test, 3, "Adding address expression \"%s\" to partition %d",
-        addressString, partitionId);
+    /* don't log for NULL pointer or empty string */
+    if (addressString && *addressString ) { 
+        NW_TRACE_2(Test, 3, "Adding address expression \"%s\" to partition %d",
+            addressString, partitionId);
+    }
 
     addressNameList = nw_stringListNew(addressString, NW_ADDRESS_SEPARATORS);
 
@@ -922,7 +935,7 @@ nw_socketSendDataTo(
     NW_CONFIDENCE(sock != NULL);
     NW_CONFIDENCE(sizeof(receiverAddress) == sizeof(sockAddrP2P.sin_addr));
     
-    NW_HEXDUMP("nw_socketSendDataTo", 0, buffer, length);
+    NW_HEXDUMPTO("nw_socketSendDataTo", receiverAddress, buffer, length);
     /* Do the writing */
     NW_PROF_LAPSTART(SendTo);
     sockAddrP2P = sock->sockAddrData;
@@ -960,7 +973,7 @@ nw_socketSendDataToPartition(
     sk_length result = 0;
     os_int32 sendRes, sendResAll;
     os_int sendToSucceeded;
-    nw_addressList addressList;
+    nw_addressList addressList = NULL;
     sk_address partitionAddress;
     struct sockaddr_in sockAddrForPartition;
     nw_bool found;
@@ -977,7 +990,7 @@ nw_socketSendDataToPartition(
 
     found = nw_socketPartitionsLookup(sock->partitions, partitionId,
         &addressList, &compression);
-    NW_CONFIDENCE(found);
+    //NW_CONFIDENCE(found);
 
 #ifndef OSPL_NO_ZLIB
     /* Compress the payload if so enabled, unless it's just little */
@@ -1012,7 +1025,8 @@ nw_socketSendDataToPartition(
 
         sockAddrForPartition.sin_addr.s_addr = (in_addr_t)partitionAddress;
 
-    NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_SEND);
+        NW_TRACE_1(Test, 5, "SendTo expanded to 0x%x ", partitionAddress);
+        NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_SEND);
 
         sendRes = os_sockSendto(sock->socketData, buffer, length,
           (const struct sockaddr *)&sockAddrForPartition,

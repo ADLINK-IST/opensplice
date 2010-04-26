@@ -643,6 +643,48 @@ nw_bridgeNotifyNodeDied(
     }
 }
 
+void
+nw_bridgeNotifyGpAdd(
+    nw_bridge bridge,
+    v_networkId networkId,
+    nw_address address)
+{
+    nw_seqNr i;
+    nw_plugChannel channel;
+
+    NW_CONFIDENCE(sizeof(networkId) == sizeof(nw_networkId));
+    for (i=0; i<bridge->nofChannels; i++) {
+        channel = NW_CHANNEL_BY_ID(bridge, i);
+        if (channel != NULL) {
+            nw_plugChannelNotifyGpAdd(channel,
+                                            (nw_networkId)networkId,
+                                            address);
+        }
+    }
+}
+
+
+void
+nw_bridgeNotifyGpRemove(
+    nw_bridge bridge,
+    v_networkId networkId,
+    nw_address address)
+{
+    nw_seqNr i;
+    nw_plugChannel channel;
+
+    NW_CONFIDENCE(sizeof(networkId) == sizeof(nw_networkId));
+    for (i=0; i<bridge->nofChannels; i++) {
+        channel = NW_CHANNEL_BY_ID(bridge, i);
+        if (channel != NULL) {
+            nw_plugChannelNotifyGpRemove(channel,
+                                            (nw_networkId)networkId,
+                                            address);
+        }
+    }
+}
+
+
 
 
 nw_channelType

@@ -1736,7 +1736,7 @@ nw_plugReceiveChannelReadSocket(
 						crc = ut_crcCalculate(nw_plugChannel(channel)->crc,
 								  ((os_char*)buffer)+sizeof(NW_STRUCT(nw_plugBuffer)),
 								  readLength-sizeof(NW_STRUCT(nw_plugBuffer)));
-						crc_correct = (crc == nw_plugBuffer(buffer)->receivingNodeId);
+						crc_correct = (crc == nw_plugBuffer(buffer)->crc);
 					} else {
 						crc = 0;
 						crc_correct = 1;
@@ -1826,7 +1826,7 @@ nw_plugReceiveChannelReadSocket(
 						NW_REPORT_WARNING_3("receive data",
 							 "received data with an incorrect calculated crc %x receive crc %x packet length: %d",
 							 crc,
-							 nw_plugBuffer(buffer)->receivingNodeId,
+							 nw_plugBuffer(buffer)->crc,
 							 readLength-sizeof(NW_STRUCT(nw_plugBuffer)));
 
 
@@ -1908,10 +1908,11 @@ nw_CheckMessageBox( nw_plugChannel channel )
     nw_address sendingAddress;
     nw_seqNr sendingNodeId;
     nw_plugSendingPartitionNode currentNode;
+    c_string list;
 
     /* Walk over all messages in the messageBox */
     messageReceived = nw_plugChannelProcessMessageBox(channel,
-        &sendingNodeId, &sendingAddress, &messageType);
+        &sendingNodeId, &sendingAddress, &list, &messageType);
     while (messageReceived) {
         switch (messageType) {
             case NW_MBOX_NODE_STARTED:
@@ -1952,12 +1953,17 @@ nw_CheckMessageBox( nw_plugChannel channel )
                     currentNode = currentNode->next;
                 }
             break;
+            case NW_MBOX_GP_ADD:
+            case NW_MBOX_GP_ADDLIST:
+            case NW_MBOX_GP_REMOVE:
+                /* Don't handle here */
+            break;
             case NW_MBOX_UNDEFINED:
                 NW_CONFIDENCE(messageType != NW_MBOX_UNDEFINED);
             break;
         }
         messageReceived = nw_plugChannelProcessMessageBox(channel,
-            &sendingNodeId, &sendingAddress, &messageType);
+            &sendingNodeId, &sendingAddress, &list, &messageType);
     }
 }
 

@@ -733,8 +733,11 @@ install_hde_target ()
 		  install_ascii_file "${release}/osplconf${suffix_script}" "${HDE_dir}/bin"
         if [ "${host}" = "x86.win32" ]
         then
-		      install_ascii_file "${release}/osplctrl${suffix_script}" "${HDE_dir}/bin"
-		      install_ascii_file "${release}/run.vbs" "${HDE_dir}/bin"
+            install_ascii_file "${release}/examples${suffix_script}" "${HDE_dir}/bin"
+            install_ascii_file "${release}/c#-pingpong-example${suffix_script}" "${HDE_dir}/bin"
+            install_ascii_file "${release}/c#-chat-tutorial${suffix_script}" "${HDE_dir}/bin"
+            install_ascii_file "${release}/osplctrl${suffix_script}" "${HDE_dir}/bin"
+            install_ascii_file "${release}/run.vbs" "${HDE_dir}/bin"
             if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
             then
 		          install_ascii_file "${release}/osplmmstat${suffix_script}" "${HDE_dir}/bin"
@@ -1365,26 +1368,33 @@ install_hde_target ()
     then
         echo "*         For standalone C#"
         mkdir ${HDE_dir}/examples/dcps/standalone/CS
-        echo "*           For PingPong... "
-        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong
-        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/*.sln" \
-            ${HDE_dir}/examples/dcps/standalone/CS
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.cs" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.csproj*" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.cs" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.csproj*" \
-            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+
+#Add back once the c# ping pong works removed for the 5.1 release
+#        echo "*           For PingPong... "
+#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/*.sln" \
+#            ${HDE_dir}/examples/dcps/standalone/CS
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.cs" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.csproj*" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.cs" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.csproj*" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+#        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/README.txt" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
+#        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/RUN.bat" \
+#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
+
         echo "*           Ready"
         echo "*           For Tutorial... "
         mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
@@ -1400,6 +1410,10 @@ install_hde_target ()
         mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Chatroom
         mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
         mkdir ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Properties
+
+        install_ascii_file    "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/README.txt" \
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
+
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/*.sln" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/*.csproj" \
@@ -1694,16 +1708,6 @@ install_rts_target ()
     fi
 
     #
-    # Copy Windows service installer and resources into place
-    #
-    #if [ "${target}" = "x86.win32" ]; then
-    #    echo "*     For Service Installer ... "
-    #    install_bin_file ${OSPL_HOME}/install/service_installer ${RTS_dir} bin ServiceUtil${suffix_exe}
-    #    install_ascii_file ${OSPL_HOME}/install/service_installer/service_info.txt ${RTS_dir}/etc
-    #    echo "*     Ready"
-    #fi
-
-    #
     # Copy script files
     #
     echo "*     Copy script files"
@@ -1711,14 +1715,14 @@ install_rts_target ()
     if [ -d "${release}" ]
     then
         mkdir -p ${RTS_dir}/bin
-        install_bin_file $release ${RTS_dir} bin osplconf${suffix_script}
+		install_ascii_file "${release}/osplconf${suffix_script}" "${RTS_dir}/bin"
         if [ "${host}" = "x86.win32" ]
         then
-            install_bin_file $release ${RTS_dir} bin osplctrl${suffix_script}
-            install_bin_file $release ${RTS_dir} bin run.vbs
+            install_ascii_file "${release}/osplctrl${suffix_script}" "${RTS_dir}/bin"
+            install_ascii_file "${release}/run.vbs" "${RTS_dir}/bin"
             if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
             then
-                install_bin_file $release ${RTS_dir} bin osplmmstat${suffix_script}
+		          install_ascii_file "${release}/osplmmstat${suffix_script}" "${RTS_dir}/bin"
             fi
         fi
     else

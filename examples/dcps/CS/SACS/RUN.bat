@@ -10,27 +10,23 @@ set SLEEP10=@ping -n 10 localhost
 
 %SLEEP10% >NUL
 
-start exec\$SPLICE_TARGET\pong.exe PongRead PongWrite
+start Pong\bin\Debug\Pong.exe PongRead PongWrite
 
 %SLEEP4% >NUL
 
-exec\$SPLICE_TARGET\ping.exe %BLOKCOUNT% %BLOKSIZE% m PongRead PongWrite
+Ping\bin\Debug\Ping.exe %BLOKCOUNT% %BLOKSIZE% m PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\$SPLICE_TARGET\ping.exe %BLOKCOUNT% %BLOKSIZE% q PongRead PongWrite
+Ping\bin\Debug\Ping.exe %BLOKCOUNT% %BLOKSIZE% s PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\$SPLICE_TARGET\ping.exe %BLOKCOUNT% %BLOKSIZE% s PongRead PongWrite
+Ping\bin\Debug\Ping.exe %BLOKCOUNT% %BLOKSIZE% f PongRead PongWrite
 
 %SLEEP2% >NUL
 
-exec\$SPLICE_TARGET\ping.exe %BLOKCOUNT% %BLOKSIZE% f PongRead PongWrite
-
-%SLEEP2% >NUL
-
-exec\$SPLICE_TARGET\ping.exe 1  10 t PongRead PongWrite 
+Ping\bin\Debug\Ping.exe 1  10 t PongRead PongWrite 
 
 %SLEEP4% >NUL
 

@@ -101,8 +101,10 @@ namespace DDS.OpenSplice.CustomMarshalers
                 Type t,
                 DatabaseMarshaler marshaler)
         {
+            DatabaseMarshaler tmp;
+            
             // Check if a Marshaler for this type already exists, and if not, add it.
-            if (!typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out marshaler))
+            if (!typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out tmp))
             {
                 // Add the new marshaler to the list of known marshalers.
                 typeMarshalers.Add(new KeyValuePair<IDomainParticipant, Type>(participant, t), marshaler);

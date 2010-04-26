@@ -86,13 +86,17 @@ typedef enum nw_messageBoxMessageType_e {
     NW_MBOX_UNDEFINED,
     NW_MBOX_NODE_STARTED,
     NW_MBOX_NODE_STOPPED,
-    NW_MBOX_NODE_DIED
+    NW_MBOX_NODE_DIED,
+    NW_MBOX_GP_ADD,       /* Add IP to global partition */
+    NW_MBOX_GP_ADDLIST,   /* Add list of IP's to global partition */
+    NW_MBOX_GP_REMOVE     /* Remove IP from global partiton */
 } nw_messageBoxMessageType;
 
 nw_bool nw_plugChannelProcessMessageBox(
          nw_plugChannel channel,
          nw_networkId *networkId /* out */,
          nw_address *address,
+         c_string *list,
          nw_messageBoxMessageType *messageType /* out */);
 
 void    nw_plugChannelGetPartition(

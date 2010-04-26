@@ -1,22 +1,22 @@
 echo start OpenSplice
 
-ospl start
+$VG_OSPL_START ospl start
 
 sleep 10
 
 echo start MessageBoard
-./exec/MessageBoard&
+$VG_MESSAGEBOARD ./exec/MessageBoard&
 
 sleep 2
 
 echo start Chatter
-./exec/Chatter
+$VG_CHATTER ./exec/Chatter
 
 sleep 4
 
 echo start Chatter with terminate message
-./exec/Chatter -1
+$VG_CHATTER_T ./exec/Chatter -1
 
 sleep 4
 
-ospl stop
+$VG_OSPL_STOP ospl stop

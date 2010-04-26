@@ -130,7 +130,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             SampleStateKind sample_states,
             ViewStateKind view_states,
             InstanceStateKind instance_states);
@@ -151,7 +151,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             SampleStateKind sample_states,
             ViewStateKind view_states,
             InstanceStateKind instance_states);
@@ -172,7 +172,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             SampleStateKind sample_states,
             ViewStateKind view_states,
             InstanceStateKind instance_states);
@@ -193,7 +193,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             SampleStateKind sample_states,
             ViewStateKind view_states,
             InstanceStateKind instance_states);
@@ -212,7 +212,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             IntPtr a_condition);
 
         /* ReturnCode_t
@@ -229,7 +229,7 @@ namespace DDS.OpenSplice.Gapi
             IntPtr data_values,
             IntPtr info_seq,
             int max_samples,
-            InstanceHandle a_handle,
+            long a_handle,
             IntPtr a_condition);
 
         /* ReturnCode_t
@@ -264,14 +264,14 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode get_key_value(
             IntPtr _this,
             IntPtr key_holder,
-            InstanceHandle handle);
+            long handle);
 
         /* InstanceHandle_t
          * lookup_instance(
          *     in Data instance);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataReader_lookup_instance")]
-        public static extern InstanceHandle lookup_instance(
+        public static extern long lookup_instance(
             IntPtr _this,
             IntPtr instance_data);
     }

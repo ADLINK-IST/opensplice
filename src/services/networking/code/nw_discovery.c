@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -27,17 +27,167 @@
 #include "nw__plugChannel.h"
 #include "nw_plugSendChannel.h"
 #include "nw_plugReceiveChannel.h"
+#include "nw_stringList.h"
 #include "nw_bridge.h" /* for v_gidToGlobalId */
 #include "nw_report.h"
 #include "kernelModule.h"
 #include "u_networkReader.h"
 #include "v_networkReader.h"
 
+
+NW_CLASS(nw_discovery);
 NW_STRUCT(nw_discovery) {
     NW_EXTENDS(nw_runnable);
     nw_plugNetwork network;
 };
-NW_CLASS(nw_discovery);
+
+
+typedef enum nw_discoveryState_e {
+    NW_DISCSTATE_KNOWN,
+    NW_DISCSTATE_ALIVE,
+    NW_DISCSTATE_FULL
+} nw_discoveryStateType;
+
+NW_CLASS(nw_aliveNodesHashItem);
+NW_STRUCT(nw_aliveNodesHashItem) {
+    v_networkId networkId;
+    nw_address address;
+    nw_name role;
+    nw_discoveryStateType state;
+    c_time maxHeartbeatIntervalAllowed;
+    c_time lastHeartbeatReceivedTime;
+    nw_bool hasDied;
+    nw_aliveNodesHashItem next;
+};
+
+
+NW_CLASS(nw_nodeListItem);
+NW_STRUCT(nw_nodeListItem) {
+    v_networkId networkId;
+    nw_address address;
+    nw_nodeListItem next;
+};
+
+static nw_nodeListItem
+nw_nodeListAdd(nw_nodeListItem next, v_networkId networkId, nw_address address)
+{
+    nw_nodeListItem result = os_malloc(sizeof(*result));
+    if ( result ) {
+        result->networkId = networkId;
+        result->address = address;
+        result->next = next;
+    }
+
+    return result;
+}
+
+/* --------------------- helper class: nw_messageBox ------------------------ */
+typedef enum nw_discMessageType_e {
+    NW_DISCBOX_DOREQ,
+    NW_DISCBOX_SENDLIST,
+    NW_DISCBOX_RESPOND
+} nw_discMessageType;
+
+
+NW_CLASS(nw_discMessage);
+NW_STRUCT(nw_discMessage) {
+    nw_networkId networkId ;
+    nw_address address ;
+    nw_name expression;
+    nw_nodeListItem nodeList;
+    nw_discMessage next;
+    nw_discMessageType messageType;
+};
+
+NW_CLASS(nw_discMessageBox);
+NW_STRUCT(nw_discMessageBox) {
+    c_mutex mutex;
+    /* fifo queue */
+    nw_discMessage firstMessage;
+    nw_discMessage lastMessage;
+};
+
+static nw_discMessageBox
+nw_messageBoxNew(
+    void)
+{
+    nw_discMessageBox result;
+
+    result = (nw_discMessageBox)os_malloc(sizeof(*result));
+    if (result != NULL) {
+        c_mutexInit(&result->mutex, PRIVATE_MUTEX);
+        result->firstMessage = NULL;
+        result->lastMessage = NULL;
+    }
+    return result;
+}
+
+static void
+nw_messageBoxFree(
+    nw_discMessageBox messageBox)
+{
+    nw_discMessage toFree;
+
+    if (messageBox != NULL) {
+        while (messageBox->firstMessage != NULL) {
+            toFree = messageBox->firstMessage;
+            messageBox->firstMessage = toFree->next;
+            os_free(toFree);
+        }
+        os_free(messageBox);
+    }
+}
+
+static void
+nw_messageBoxPushMessage(
+    nw_discMessageBox messageBox,
+    nw_networkId networkId,
+    nw_address address,
+    nw_name expression,
+    nw_nodeListItem nodeList,
+    nw_discMessageType messageType)
+{
+    nw_discMessage newMessage;
+    nw_discMessage *prevNextPtr;
+
+    c_mutexLock(&messageBox->mutex);
+    newMessage = (nw_discMessage)os_malloc(sizeof(*newMessage));
+    newMessage->networkId = networkId; /* transfer ownership */
+    newMessage->address = address;
+    newMessage->expression = expression; /* transfer ownership */
+    newMessage->messageType = messageType;
+    newMessage->nodeList = nodeList; /* transfer ownership */
+    if (messageBox->firstMessage == NULL) {
+        prevNextPtr = &(messageBox->firstMessage);
+    } else {
+        prevNextPtr = &(messageBox->lastMessage->next);
+    }
+    newMessage->next = NULL;
+    *prevNextPtr = newMessage;
+    messageBox->lastMessage = newMessage;
+    c_mutexUnlock(&(messageBox->mutex));
+}
+
+static nw_discMessage
+nw_messageBoxPopMessage(
+    nw_discMessageBox messageBox)
+{
+    nw_discMessage result = NULL;
+
+    c_mutexLock(&(messageBox->mutex));
+    if (messageBox->firstMessage != NULL) {
+        result = messageBox->firstMessage;
+        messageBox->firstMessage = result->next;
+        if (messageBox->firstMessage == NULL) {
+            messageBox->lastMessage = NULL;
+        }
+    }
+    c_mutexUnlock(&(messageBox->mutex));
+
+    return result;
+}
+
+
 
 /* -------------------------- Baseclass (abstract) -------------------------- */
 
@@ -77,6 +227,86 @@ nw_discoveryFinalize(
     nw_plugNetworkExcarnate(discovery->network);
 }
 
+static nw_bool
+nw_rolescopeMatching(
+    c_string str,
+    c_string pattern )
+
+{
+	c_bool   stop = FALSE;
+    nw_bool  match =  TRUE;
+    c_string strRef = NULL;
+    c_string patternRef = NULL;
+
+    while ((*str != 0) && (*pattern != 0) && (stop == FALSE)) {
+        if (*pattern == '*') {
+            pattern++;
+            while ((*str != 0) && (*str != *pattern)) {
+                str++;
+            }
+            if (*str != 0) {
+                strRef = str+1; /* just behind the matching char */
+                patternRef = pattern-1; /* on the '*' */
+            }
+        } else if (*pattern == '?') {
+            pattern++;
+            str++;
+        } else if (*pattern++ != *str++) {
+            if (strRef == NULL) {
+                match = FALSE;
+                stop = TRUE;
+            } else {
+                str = strRef;
+                pattern = patternRef;
+                strRef = NULL;
+            }
+        }
+    }
+    if ((*str == (char)0) && (stop == FALSE)) {
+        while (*pattern == '*') {
+            pattern++;
+        }
+        if (*pattern != (char)0) {
+             match = FALSE;
+        }
+    } else {
+        match = FALSE;
+    }
+    /*
+    NW_REPORT_WARNING_3("match result",
+                "Pattern: %s String: %s Match: %d",
+                t2, t1, match);*/
+    return match;
+}
+
+
+/* Role matches the scope if the Role is a wildcard match with
+   any of the comma seperated parts of the scope expression  */
+static nw_bool
+nw_RoleScopeMatch(
+    c_string Role,
+    nw_stringList scopeList)
+{
+    const char *partscope = "";
+    unsigned int size, i;
+    nw_bool result = FALSE;
+
+    size = nw_stringListGetSize(scopeList);
+    i = 0;
+    while ( i<size && !result ) {
+        partscope = nw_stringListGetValue(scopeList, i);
+        result = nw_rolescopeMatching(Role,(c_string)partscope);
+        i++;
+    }
+    NW_TRACE_3(
+        Discovery, 6,
+        "nw_RoleScopeMatch: Role %s, partscope %s, match %u ",
+        Role,partscope,result);
+
+
+    return result;
+}
+
 
 /* --------------------- discoveryWriter (concrete) ------------------------- */
 
@@ -90,45 +320,14 @@ NW_STRUCT(nw_discoveryWriter) {
     nw_plugChannel sendChannel;
     /* trigger for responding to new nodes */
     nw_bool respondToNode;
+    nw_name role;
+    nw_name scope;
+    nw_name probeList;
+    nw_discMessageBox mbox;
     /* Lock and condVar for inter-thread communication */
     c_mutex mutex;
     c_cond condition;
 };
-
-static void
-nw_discoveryWriterWriteMessageToNetwork(
-    nw_discoveryWriter discoveryWriter,
-    nw_data message,
-    nw_length length)
-{
-    nw_data messageBuffer;
-    nw_length bufferLength;
-    nw_signedLength maxBytes;
-    nw_bool result;
-
-    NW_TRACE(Discovery, 6, "Sending heartbeat to the network");
-    /* First retrieve a buffer to write in */
-    maxBytes = 0; /* don't flush. */
-    result = nw_plugSendChannelMessageStart(discoveryWriter->sendChannel,
-                                            &messageBuffer,
-                                            &bufferLength,
-                                            0,
-                                            &maxBytes,
-                                            NULL);
-    if (result) {
-        /* Copy the message into the buffer */
-        NW_CONFIDENCE(bufferLength >= length);
-        memcpy((void *)messageBuffer, message, length);
-        /* Update buffer position and size */
-        messageBuffer = &(messageBuffer[length]);
-        /* Do write and flush immediately */
-        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer, NULL);
-        maxBytes = bufferLength;
-        result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
-                                                 TRUE, &maxBytes, NULL);
-    }
-    NW_CONFIDENCE(result);
-}
 
 #define NW_DISCOVERY_STARTING_SIGN 'a'
 #define NW_DISCOVERY_ALIVE_SIGN    'l'
@@ -157,6 +356,219 @@ NW_CLASS(nw_discoveryMessage);
         time.seconds = (c_long)((factor) * (interval)) / 1000U;                \
         time.nanoseconds = (1000000U * ((c_ulong)((factor) * (interval)) % 1000U))
 
+
+/* tags used for the optional parts of the discovery messages:
+ * These are encode as:
+ * a byte representing the tag
+ * a byte representing the length os the content
+ * the indicated number of bytes worth of content
+ */
+#define NW_DISCTAG_SENTINEL     (0)
+#define NW_DISCTAG_ROLE         (1)
+#define NW_DISCTAG_REQ          (2)
+#define NW_DISCTAG_IPV4LIST     (3)
+
+
+static void
+nw_discoveryWriterWriteMessageToNetwork(
+    nw_discoveryWriter discoveryWriter,
+    nw_data message,
+    nw_length length)
+{
+    nw_data messageBuffer;
+    nw_length bufferLength;
+    nw_signedLength maxBytes;
+    nw_bool result;
+    nw_length len;
+
+    NW_TRACE_1(Discovery, 6, "Sending heartbeat to the network with role \"%s\"",discoveryWriter->role);
+    /* First retrieve a buffer to write in */
+    maxBytes = 0; /* don't flush. */
+    result = nw_plugSendChannelMessageStart(discoveryWriter->sendChannel,
+                                            &messageBuffer,
+                                            &bufferLength,
+                                            0,
+                                            &maxBytes,
+                                            NULL);
+    if (result) {
+        /* Copy the message into the buffer */
+        NW_CONFIDENCE(bufferLength >= length);
+        memcpy((void *)messageBuffer, message, length);
+        /* Update buffer position and size */
+        messageBuffer = &(messageBuffer[length]);
+        bufferLength -= length;
+        /* insert role item in message */
+        len = strlen(discoveryWriter->role);
+        NW_CONFIDENCE(bufferLength >= (len+3));
+        *(messageBuffer++) = NW_DISCTAG_ROLE;
+        *(messageBuffer++) = (os_uchar)len/256;
+        *(messageBuffer++) = (os_uchar)(len&0xff);
+        memcpy(messageBuffer,discoveryWriter->role,len);
+        messageBuffer += len;
+        bufferLength -= (len+3);
+        *(messageBuffer++) = NW_DISCTAG_SENTINEL;
+        bufferLength -= 1;
+
+        /* Do write and flush immediately */
+        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer, NULL);
+        maxBytes = bufferLength;
+        result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
+                                                 TRUE, &maxBytes, NULL);
+    }
+    NW_CONFIDENCE(result);
+}
+
+
+static void
+nw_discoveryWriterWriteReqToDestination(
+    nw_discoveryWriter discoveryWriter,
+    nw_data message,
+    nw_length length,
+    nw_networkId destination,
+    nw_name expression
+    )
+{
+    nw_data messageBuffer;
+    nw_length bufferLength;
+    nw_signedLength maxBytes;
+    nw_bool result;
+    nw_length len;
+
+    NW_TRACE_2(Discovery, 2, "Sending discoveryrequest \"%s\" to node 0x%x", expression, destination);
+    /* First retrieve a buffer to write in */
+    maxBytes = 0; /* don't flush. */
+    result = nw_plugSendChannelWriteToMessageStart(discoveryWriter->sendChannel,
+                                            &messageBuffer,
+                                            &bufferLength,
+                                            0,
+                                            destination,
+                                            &maxBytes,
+                                            NULL);
+    if (result) {
+        /* Copy the message into the buffer */
+        NW_CONFIDENCE(bufferLength >= length);
+        memcpy((void *)messageBuffer, message, length);
+        /* Update buffer position and size */
+        messageBuffer = &(messageBuffer[length]);
+        bufferLength -= length;
+        /* insert role item in message */
+        len = strlen(discoveryWriter->role);
+        NW_CONFIDENCE(bufferLength >= (len+3));
+        *(messageBuffer++) = NW_DISCTAG_ROLE;
+        *(messageBuffer++) = (os_uchar)len/256;
+        *(messageBuffer++) = (os_uchar)(len&0xff);
+        memcpy(messageBuffer,discoveryWriter->role,len);
+        messageBuffer += len;
+        bufferLength -= (len+3);
+        /* insert req item in message */
+        len = strlen(expression);
+        NW_CONFIDENCE(bufferLength >= (len+3));
+        *(messageBuffer++) = NW_DISCTAG_REQ;
+        *(messageBuffer++) = (os_uchar)len/256;
+        *(messageBuffer++) = (os_uchar)(len&0xff);
+        memcpy(messageBuffer,expression,len);
+        messageBuffer += len;
+        bufferLength -= (len+3);
+        *(messageBuffer++) = NW_DISCTAG_SENTINEL;
+        bufferLength -= 1;
+
+        /* Do write and flush immediately */
+        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer, NULL);
+        maxBytes = bufferLength;
+        result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
+                                                 TRUE, &maxBytes, NULL);
+    }
+    NW_CONFIDENCE(result);
+}
+
+static void
+nw_discoveryWriterWriteNodelistToDestination(
+    nw_discoveryWriter discoveryWriter,
+    nw_data message,
+    nw_length length,
+    nw_networkId destination,
+    nw_nodeListItem NodeList)
+{
+    nw_data messageBuffer;
+    nw_length bufferLength;
+    nw_signedLength maxBytes;
+    nw_bool result;
+    nw_data len_field;
+    nw_address address;
+    nw_networkId hostId;
+    nw_length len;
+    nw_nodeListItem oldItem;
+
+    NW_TRACE_1(Discovery, 2, "Sending matching nodelist to node 0x%x", destination);
+    /* First retrieve a buffer to write in */
+    maxBytes = 0; /* don't flush. */
+    result = nw_plugSendChannelWriteToMessageStart(discoveryWriter->sendChannel,
+                                            &messageBuffer,
+                                            &bufferLength,
+                                            0,
+                                            destination,
+                                            &maxBytes,
+                                            NULL);
+    if (result) {
+        /* Copy the message into the buffer */
+        NW_CONFIDENCE(bufferLength >= length);
+        memcpy((void *)messageBuffer, message, length);
+        /* Update buffer position and size */
+        messageBuffer = &(messageBuffer[length]);
+        bufferLength -= length;
+        /* insert role item in message */
+        len = strlen(discoveryWriter->role);
+        NW_CONFIDENCE(bufferLength >= (len+3));
+        *(messageBuffer++) = NW_DISCTAG_ROLE;
+        *(messageBuffer++) = (os_uchar)len/256;
+        *(messageBuffer++) = (os_uchar)(len&0xff);
+        memcpy(messageBuffer,discoveryWriter->role,len);
+        messageBuffer += len;
+        bufferLength -= (len+3);
+        /* insert nodelist in message */
+        NW_CONFIDENCE(bufferLength >= 3);
+        *(messageBuffer++) = NW_DISCTAG_IPV4LIST;
+        len_field = messageBuffer; /* length placeholder */
+        messageBuffer += 2;
+        bufferLength -= 3;
+        len = 0;
+        NW_TRACE(Discovery, 4, "Sending List start ");
+        while (NodeList != NULL ) {
+            NW_CONFIDENCE(bufferLength >= 8);
+            address = nw_plugHostToNetwork(NodeList->address);
+            memcpy(messageBuffer,&address, 4);
+            messageBuffer += 4;
+            hostId = nw_plugHostToNetwork(NodeList->networkId);
+            memcpy(messageBuffer,&hostId, 4);
+            messageBuffer += 4;
+            bufferLength -= 8;
+            len += 8;
+            oldItem = NodeList;
+            NodeList = NodeList->next;
+            os_free(oldItem);
+
+            NW_TRACE_2(Discovery, 4, "Sending List Item 0x%x  address: 0x%x ", hostId, address );
+        }
+        /* now fill in the length */
+        *(len_field++) = (os_uchar)len/256;
+        *(len_field++) = (os_uchar)(len&0xff);
+        *(messageBuffer++) = NW_DISCTAG_SENTINEL;
+        bufferLength -= 1;
+
+
+        /* Do write and flush immediately */
+        nw_plugSendChannelMessageEnd(discoveryWriter->sendChannel, messageBuffer, NULL);
+        maxBytes = bufferLength;
+        result = nw_plugSendChannelMessagesFlush(discoveryWriter->sendChannel,
+                                                 TRUE, &maxBytes, NULL);
+    }
+    NW_CONFIDENCE(result);
+}
+
+
+
+
+
 static void *
 nw_discoveryWriterMain(
     nw_runnable runnable,
@@ -173,6 +585,7 @@ nw_discoveryWriterMain(
     static c_time heartbeatTime;
     NW_STRUCT(nw_discoveryMessage) discoveryMessage;
     os_uint32 i;
+    nw_discMessage msg;
 
     c_char* path;
 
@@ -220,13 +633,17 @@ nw_discoveryWriterMain(
     discoveryMessage.heartbeatInterval.seconds = nw_plugHostToNetwork(heartbeatTime.seconds);
     discoveryMessage.heartbeatInterval.nanoseconds = nw_plugHostToNetwork(heartbeatTime.nanoseconds);
 
+    if ( discoveryWriter->scope ) {
+        nw_plugChannelNotifyGpAddList(nw_plugChannel(discoveryWriter->sendChannel), discoveryWriter->probeList);
+    }
+
     c_mutexLock(&discoveryWriter->mutex);
 
     /* First give a salvo of starting messages so everybody knows about me */
     discoveryMessage.sign = NW_DISCOVERY_STARTING_SIGN;
 
     NW_TRACE_1(
-        Discovery, 2, 
+        Discovery, 2,
         "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
@@ -244,11 +661,30 @@ nw_discoveryWriterMain(
     respondCount = 0;
 
     NW_TRACE_1(
-        Discovery, 2, 
+        Discovery, 2,
         "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
     while (!terminationRequested) {
+        while ( (msg = nw_messageBoxPopMessage(discoveryWriter->mbox)) != NULL ) {
+            switch (msg->messageType) {
+                case NW_DISCBOX_DOREQ:
+                    /* send request to the indicated network _id , with the given expression */
+                    nw_plugChannelNotifyGpAdd(discoveryWriter->sendChannel, msg->networkId, msg->address);
+                    nw_discoveryWriterWriteReqToDestination(discoveryWriter,
+                        (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE,msg->networkId, msg->expression);
+                break;
+                case NW_DISCBOX_SENDLIST:
+                    /* send the provide list to the indicated network _id  */
+                    nw_discoveryWriterWriteNodelistToDestination(discoveryWriter,
+                        (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE,msg->networkId, msg->nodeList);
+                break;
+                case NW_DISCBOX_RESPOND:
+                    discoveryWriter->respondToNode = TRUE;
+                break;
+            }
+        }
+
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
             (nw_data)&discoveryMessage, NW_DISCOVERY_MESSAGE_SIZE);
         if (discoveryWriter->respondToNode) {
@@ -273,7 +709,7 @@ nw_discoveryWriterMain(
     discoveryMessage.sign = NW_DISCOVERY_STOPPING_SIGN;
 
     NW_TRACE_1(
-        Discovery, 2, 
+        Discovery, 2,
         "Liveliness state set to %s",
         NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
@@ -315,7 +751,19 @@ nw_discoveryWriterNew(
             nw_discoveryFinalize);      /* my own finalize func */
         os_free(schedPath);
         /* Initialize self */
+
+        result->scope = NWCF_DEFAULTED_ATTRIB(String, name, Scope, "","");
+        if (*(result->scope) == '\0') {
+            result->scope = NULL;
+        }
+        NW_TRACE_1(Discovery, 2, "Scope W#1 %s",result->scope);
+        result->role = nw_configurationGetDomainRole();
+        result->probeList = NWCF_DEFAULTED_PARAM(String, name, ProbeList, "");
+
+
+        result->mbox = nw_messageBoxNew();
         result->networkId = networkId;
+
         result->sendChannel = nw_plugNetworkNewSendChannel(
             ((nw_discovery)result)->network, name,NULL,NULL);
         result->respondToNode = FALSE;
@@ -325,16 +773,6 @@ nw_discoveryWriterNew(
     }
 
     return result;
-}
-
-void
-nw_discoveryWriterRespondToStartingNode(
-    nw_discoveryWriter discoveryWriter)
-{
-    c_mutexLock(&discoveryWriter->mutex);
-    discoveryWriter->respondToNode = TRUE;
-    c_condBroadcast(&discoveryWriter->condition);
-    c_mutexUnlock(&discoveryWriter->mutex);
 }
 
 
@@ -352,19 +790,42 @@ nw_discoveryWriterTrigger(
     }
 }
 
+void
+nw_discoveryWriterRespondToStartingNode(
+    nw_discoveryWriter discoveryWriter,
+    nw_networkId networkId)
+{
+    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, 0, NULL, NULL, NW_DISCBOX_RESPOND);
+    nw_discoveryWriterTrigger((nw_runnable)discoveryWriter);
+}
+
+void
+nw_discoveryWriterSendRequest(
+    nw_discoveryWriter discoveryWriter,
+    nw_networkId networkId,
+    nw_address address,
+    nw_name expression)
+{
+    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, address, expression, NULL, NW_DISCBOX_DOREQ);
+    nw_discoveryWriterTrigger((nw_runnable)discoveryWriter);
+}
+
+void
+nw_discoveryWriterSendList(
+    nw_discoveryWriter discoveryWriter,
+    nw_networkId networkId,
+    nw_nodeListItem nodeList
+    )
+{
+    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, 0, NULL, nodeList, NW_DISCBOX_SENDLIST);
+    nw_discoveryWriterTrigger((nw_runnable)discoveryWriter);
+}
+
+
 /* --------------------- discoveryReader (concrete) ------------------------- */
 
 static void nw_discoveryReaderFinalize(nw_runnable runnable);
 
-NW_CLASS(nw_aliveNodesHashItem);
-NW_STRUCT(nw_aliveNodesHashItem) {
-    v_networkId networkId;
-    nw_address address;
-    c_time maxHeartbeatIntervalAllowed;
-    c_time lastHeartbeatReceivedTime;
-    nw_bool hasDied;
-    nw_aliveNodesHashItem next;
-};
 
 
 NW_STRUCT(nw_discoveryReader) {
@@ -373,10 +834,16 @@ NW_STRUCT(nw_discoveryReader) {
     nw_discoveryAction startedAction;
     nw_discoveryAction stoppedAction;
     nw_discoveryAction diedAction;
+    nw_discoveryAction gpAddAction;
+    nw_discoveryAction gpRemoveAction;
+    nw_discoveryWriter discoveryWriter;
     nw_discoveryMsgArg arg;
     /* Discovery behaviour */
     nw_seqNr deathDetectionCount;
     /* Keep administration of alive nodes */
+    nw_name role;
+    nw_name scope;
+    nw_stringList scopeList;
     nw_seqNr aliveNodesCount;
     nw_seqNr diedNodesCount;
     nw_seqNr aliveNodesHashSize;
@@ -467,15 +934,14 @@ nw_discoveryReaderLookupOrCreateNode(
             currentItem = *currentItemPtr;
         } else if (currentItem->networkId == networkId) {
             found = TRUE;
-            NW_CONFIDENCE(currentItem->address == address);
         } else {
             insertionNeeded = TRUE;
         }
     }
     if (!found) {
         newItem = (nw_aliveNodesHashItem)os_malloc(sizeof(*newItem));
-        newItem->networkId = networkId;
         newItem->address = address;
+        newItem->networkId = networkId;
         newItem->next = currentItem;
         *currentItemPtr = newItem;
     }
@@ -493,6 +959,39 @@ nw_aliveNodesHashItemFree(
     os_free(hashItem);
 }
 
+static nw_nodeListItem
+nw_discoveryReaderBuildNodeList(
+    nw_discoveryReader discoveryReader,
+    nw_name scope)
+{
+    nw_seqNr i;
+    nw_aliveNodesHashItem hashItem;
+    nw_stringList scopeList;
+    nw_nodeListItem result = NULL;
+
+    NW_TRACE_1(Discovery, 5, "building nodelist for scope %s",scope);
+
+
+    scopeList = nw_stringListNew(scope, ";, ");
+    for (i=0; i<discoveryReader->aliveNodesHashSize; i++) {
+        hashItem = NW_ALIVENODESHASH_ITEMBYINDEX(discoveryReader, i);
+        while (hashItem != NULL) {
+            if (!hashItem->hasDied) {
+                if (nw_RoleScopeMatch(hashItem->role,scopeList)) {
+
+                    NW_TRACE_2(Discovery, 4, "adding to list host 0x%x address 0x%x",hashItem->networkId,hashItem->address);
+                    result = nw_nodeListAdd(result,hashItem->networkId,hashItem->address);
+                }
+            }
+            hashItem = hashItem->next;
+        }
+    }
+    return result;
+}
+
+
+
+
 static void
 nw_discoveryReaderReceivedHeartbeat(
     nw_discoveryReader discoveryReader,
@@ -508,99 +1007,258 @@ nw_discoveryReaderReceivedHeartbeat(
     c_equality eq;
     nw_aliveNodesHashItem itemFound;
     nw_bool wasCreated;
+    nw_bool endReached = FALSE;
     os_uint32 i;
+    nw_name  role = "";
+    nw_name  reqscope = NULL;
+    nw_data  Nodelist = NULL;
+    nw_seqNr NodelistLen;
+    os_uchar tag;
+    os_uint32 len;
 
     NW_CONFIDENCE(messageBuffer != NULL);
-    NW_CONFIDENCE(bufferLength == NW_DISCOVERY_MESSAGE_SIZE);
+    NW_CONFIDENCE(bufferLength >= NW_DISCOVERY_MESSAGE_SIZE);
 
     memcpy(&discoveryMessage, messageBuffer, NW_DISCOVERY_MESSAGE_SIZE);
+    messageBuffer += NW_DISCOVERY_MESSAGE_SIZE;
+    bufferLength -= NW_DISCOVERY_MESSAGE_SIZE;
     networkId = nw_plugNetworkToHost(discoveryMessage.networkId);
 
-    NW_TRACE_2(
-        Discovery, 6, 
-        "Received heartbeat from node with id 0x%x, "
-        "state is %s", 
-        networkId, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+    while (!endReached && bufferLength >= 3 ) {
+        tag = *(messageBuffer++);
+        len =(*(messageBuffer))*256 + *(messageBuffer+1);
+        messageBuffer += 2;
+        bufferLength -= 3;
 
-    switch (discoveryMessage.sign) {
-        case NW_DISCOVERY_STOPPING_SIGN:
-            nw_discoveryReaderRemoveNode(discoveryReader, networkId, address,
-                &itemFound);
-            if (itemFound != NULL) {
-                /* Take action if node has not died before */
-                if (!itemFound->hasDied) {
-                    discoveryReader->aliveNodesCount--;
-                    NW_TRACE_1(Discovery, 2, "Removed alive node 0x%x because it has stoppend", networkId);
-                    if (discoveryReader->stoppedAction != NULL) {
-                        discoveryReader->stoppedAction(networkId, address,
-                            receivedTime, discoveryReader->aliveNodesCount,
-                            discoveryReader->arg);
-                    }
-                } else {
-                    discoveryReader->diedNodesCount--;
-                    NW_TRACE_1(Discovery, 2, "Removed dead node 0x%x because it has stopped", networkId);
-                }
-                nw_aliveNodesHashItemFree(itemFound);
-            }
+        switch (tag) {
+            case NW_DISCTAG_SENTINEL:
+                endReached = TRUE;
             break;
-        case NW_DISCOVERY_STARTING_SIGN:
-        case NW_DISCOVERY_ALIVE_SIGN:
-            heartbeatInterval.seconds = nw_plugNetworkToHost(discoveryMessage.heartbeatInterval.seconds);
-            heartbeatInterval.nanoseconds = nw_plugNetworkToHost(discoveryMessage.heartbeatInterval.nanoseconds);
-            nw_discoveryReaderLookupOrCreateNode(discoveryReader, networkId,
-                address, &itemFound, &wasCreated);
-            NW_CONFIDENCE(itemFound != NULL);
-            if (wasCreated) {
-                /* New item, initialize it */
-                itemFound->maxHeartbeatIntervalAllowed = heartbeatInterval;
-                for (i=1; i<discoveryReader->deathDetectionCount; i++) {
-                    itemFound->maxHeartbeatIntervalAllowed =
-                        c_timeAdd(itemFound->maxHeartbeatIntervalAllowed,
-                                  heartbeatInterval);
-                }
-                itemFound->lastHeartbeatReceivedTime = receivedTime;
-                itemFound->hasDied = FALSE;
-                discoveryReader->aliveNodesCount++;
-                NW_TRACE_1(Discovery, 2, "New node detected with id 0x%x", networkId);
-                NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
-                    heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
-                NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
-                    itemFound->maxHeartbeatIntervalAllowed.seconds,
-                    itemFound->maxHeartbeatIntervalAllowed.nanoseconds/1000000U);
-                if (discoveryReader->startedAction != NULL) {
-                    discoveryReader->startedAction(networkId, address,
-                        receivedTime, discoveryReader->aliveNodesCount,
-                        discoveryReader->arg);
-                }
-            } else {
-                if (!itemFound->hasDied) {
-                    diffTime = c_timeSub(receivedTime,
-                        itemFound->lastHeartbeatReceivedTime);
-                    eq = c_timeCompare(diffTime, itemFound->maxHeartbeatIntervalAllowed);
-                    
-                    if (eq == C_GT && !discoveryReader->reconnectAllowed) {
-                        /* It has taken too long for this node to send a heartbeat */
-                        itemFound->hasDied = TRUE;
+            case NW_DISCTAG_ROLE:
+                role = os_malloc(len+1);
+                memcpy(role,messageBuffer,len);
+                role[len] = 0;
+            break;
+            case NW_DISCTAG_REQ:
+                reqscope = os_malloc(len+1);
+                memcpy(reqscope,messageBuffer,len);
+                reqscope[len] = 0;
+            break;
+            case NW_DISCTAG_IPV4LIST:
+                Nodelist = messageBuffer;
+                NodelistLen = len;
+            break;
+        }
+        messageBuffer += len;
+        bufferLength -= len;
+    }
+
+
+
+    /* filter out heartbeats that are not in our scope,
+     * if we have defined one.
+     */
+    if ((!discoveryReader->scope) ||
+        nw_RoleScopeMatch(role,discoveryReader->scopeList)) {
+
+        NW_TRACE_4(
+            Discovery, 6,
+            "Received heartbeat from node with id 0x%x, address 0x%x, role %s "
+            "state is %s",
+            networkId, address, role, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+
+        switch (discoveryMessage.sign) {
+            case NW_DISCOVERY_STOPPING_SIGN:
+                nw_discoveryReaderRemoveNode(discoveryReader, networkId, address,
+                    &itemFound);
+                if (itemFound != NULL) {
+                    /* Take action if node has not died before */
+                    if (!itemFound->hasDied) {
                         discoveryReader->aliveNodesCount--;
-                        discoveryReader->diedNodesCount++;
-                        NW_TRACE_1(Discovery, 2, "Declared node 0x%x dead; "
-                            "heartbeat received but too late", networkId);
-                        if (discoveryReader->diedAction != NULL) {
-                            discoveryReader->diedAction(networkId, address,
+                        NW_TRACE_1(Discovery, 2, "Removed alive node 0x%x because it has stoppend", networkId);
+                        if (discoveryReader->stoppedAction != NULL) {
+                            discoveryReader->stoppedAction(networkId, address,
+                                receivedTime, discoveryReader->aliveNodesCount,
+                                discoveryReader->arg);
+                        }
+                        if (discoveryReader->scope &&
+                            discoveryReader->gpRemoveAction!= NULL) {
+                            discoveryReader->gpRemoveAction(networkId, address,
                                 receivedTime, discoveryReader->aliveNodesCount,
                                 discoveryReader->arg);
                         }
                     } else {
-                        itemFound->lastHeartbeatReceivedTime = receivedTime;
+                        discoveryReader->diedNodesCount--;
+                        NW_TRACE_1(Discovery, 2, "Removed dead node 0x%x because it has stopped", networkId);
                     }
+                    nw_aliveNodesHashItemFree(itemFound);
+                }
+                break;
+            case NW_DISCOVERY_STARTING_SIGN:
+            case NW_DISCOVERY_ALIVE_SIGN:
+                heartbeatInterval.seconds = nw_plugNetworkToHost(discoveryMessage.heartbeatInterval.seconds);
+                heartbeatInterval.nanoseconds = nw_plugNetworkToHost(discoveryMessage.heartbeatInterval.nanoseconds);
+                nw_discoveryReaderLookupOrCreateNode(discoveryReader,
+                    networkId,address, &itemFound, &wasCreated);
+                NW_CONFIDENCE(itemFound != NULL);
+                if (wasCreated) {
+                    /* New item, initialize it */
+                    itemFound->maxHeartbeatIntervalAllowed = heartbeatInterval;
+                    for (i=1; i<discoveryReader->deathDetectionCount; i++) {
+                        itemFound->maxHeartbeatIntervalAllowed =
+                            c_timeAdd(itemFound->maxHeartbeatIntervalAllowed,
+                                      heartbeatInterval);
+                    }
+                    itemFound->lastHeartbeatReceivedTime = receivedTime;
+                    itemFound->hasDied = FALSE;
+                    itemFound->role = role;
+                    itemFound->networkId = networkId;
+
+                    discoveryReader->aliveNodesCount++;
+                    NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role %s", networkId, address, role);
+                    NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
+                        heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
+                    NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
+                        itemFound->maxHeartbeatIntervalAllowed.seconds,
+                        itemFound->maxHeartbeatIntervalAllowed.nanoseconds/1000000U);
+                    if (discoveryReader->scope &&
+                        discoveryReader->gpAddAction!= NULL) {
+                        discoveryReader->gpAddAction(networkId, address,
+                            receivedTime, discoveryReader->aliveNodesCount,
+                            discoveryReader->arg);
+                    }
+                    if ( Nodelist || (discoveryReader->scope == NULL) ) {
+                        itemFound->state = NW_DISCSTATE_FULL;
+                    } else {
+                        itemFound->state = NW_DISCSTATE_ALIVE;
+                        /* request a nodelist */
+                        nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, networkId, address, discoveryReader->scope);
+                    }
+                    if (discoveryReader->startedAction != NULL) {
+                        discoveryReader->startedAction(networkId, address,
+                            receivedTime, discoveryReader->aliveNodesCount,
+                            discoveryReader->arg);
+                    }
+
                 } else {
-                    NW_TRACE_1(Discovery, 4, "Ignoring message from dead node 0x%x", networkId);
+                    if( itemFound->state == NW_DISCSTATE_KNOWN ) {
+                        /* New known item, initialize it */
+                        itemFound->maxHeartbeatIntervalAllowed = heartbeatInterval;
+                        for (i=1; i<discoveryReader->deathDetectionCount; i++) {
+                            itemFound->maxHeartbeatIntervalAllowed =
+                                c_timeAdd(itemFound->maxHeartbeatIntervalAllowed,
+                                          heartbeatInterval);
+                        }
+                        itemFound->lastHeartbeatReceivedTime = receivedTime;
+                        itemFound->hasDied = FALSE;
+                        itemFound->role = role;
+                        itemFound->networkId = networkId;
+                        if ( Nodelist ) {
+                            itemFound->state = NW_DISCSTATE_FULL;
+                        } else {
+                            itemFound->state = NW_DISCSTATE_ALIVE;
+                        }
+
+                        discoveryReader->aliveNodesCount++;
+                        NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role %s", networkId, address, role);
+                        NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
+                            heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
+                        NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
+                            itemFound->maxHeartbeatIntervalAllowed.seconds,
+                            itemFound->maxHeartbeatIntervalAllowed.nanoseconds/1000000U);
+                        if (discoveryReader->startedAction != NULL) {
+                            discoveryReader->startedAction(networkId, address,
+                                receivedTime, discoveryReader->aliveNodesCount,
+                                discoveryReader->arg);
+                        }
+                    } else {
+                        if ( Nodelist ) {
+                            itemFound->state = NW_DISCSTATE_FULL;
+                        }
+                    }
+
+                    if (!itemFound->hasDied) {
+                        diffTime = c_timeSub(receivedTime,
+                            itemFound->lastHeartbeatReceivedTime);
+                        eq = c_timeCompare(diffTime, itemFound->maxHeartbeatIntervalAllowed);
+
+                        if (eq == C_GT && !discoveryReader->reconnectAllowed) {
+                            /* It has taken too long for this node to send a heartbeat */
+                            itemFound->hasDied = TRUE;
+                            discoveryReader->aliveNodesCount--;
+                            discoveryReader->diedNodesCount++;
+                            NW_TRACE_1(Discovery, 2, "Declared node 0x%x dead; "
+                                "heartbeat received but too late", networkId);
+                            if (discoveryReader->diedAction != NULL) {
+                                discoveryReader->diedAction(networkId, address,
+                                    receivedTime, discoveryReader->aliveNodesCount,
+                                    discoveryReader->arg);
+                            }
+                            if (discoveryReader->scope &&
+                                discoveryReader->gpRemoveAction!= NULL) {
+                                discoveryReader->gpRemoveAction(networkId, address,
+                                    receivedTime, discoveryReader->aliveNodesCount,
+                                    discoveryReader->arg);
+                            }
+                        } else {
+                            itemFound->lastHeartbeatReceivedTime = receivedTime;
+                        }
+                    } else {
+                        NW_TRACE_1(Discovery, 4, "Ignoring message from dead node 0x%x", networkId);
+                    }
+                }
+                break;
+            default:
+                NW_CONFIDENCE(FALSE);
+                break;
+        }
+
+        /* lookup or insert nodes for the nodelist.
+         * if new set them to NW_DISCSTATE_KNOWN.
+         */
+        while ( discoveryReader->scope && Nodelist && NodelistLen > 0 ) {
+            nw_address nodeAddress;
+            nw_address nodeId;
+            memcpy(&nodeAddress,Nodelist,4);
+            Nodelist += 4;
+            memcpy(&nodeId,Nodelist,4);
+            nodeId = nw_plugNetworkToHost(nodeId);
+            nodeAddress = nw_plugNetworkToHost(nodeAddress);
+            Nodelist += 4;
+            NodelistLen -= 8;
+            NW_TRACE_2(Discovery, 4, "Processing Incoming Nodelistitem Id 0x%x, address 0x%x", nodeId, nodeAddress);
+            if (nodeId != discoveryReader->receiveChannel->nodeId) {
+                nw_discoveryReaderLookupOrCreateNode(discoveryReader,
+                    nodeId,nodeAddress,&itemFound, &wasCreated);
+                if( wasCreated ) {
+                    NW_TRACE_3(Discovery, 2, "Received from hostid:0x%x: New NodeId:0x%x, address:0x%x",networkId, nodeId, nodeAddress);
+                    itemFound->state = NW_DISCSTATE_KNOWN;
+                    itemFound->networkId = nodeId;
+                    itemFound->hasDied = TRUE;
+                    if (discoveryReader->scope &&
+                        discoveryReader->gpAddAction!= NULL) {
+                        discoveryReader->gpAddAction(nodeId, nodeAddress,
+                            receivedTime, discoveryReader->aliveNodesCount,
+                            discoveryReader->arg);
+                    }
+
+                    nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, nodeId, nodeAddress, discoveryReader->scope);
                 }
             }
-            break;
-        default:
-            NW_CONFIDENCE(FALSE);
-            break;
+        }
+
+        /* create new nodelist based on scope expression
+         * and send it.
+         */
+        if ( discoveryReader->scope && reqscope ) {
+            /* Create a copy list which has the scope applied */
+            nw_nodeListItem list = nw_discoveryReaderBuildNodeList(discoveryReader,reqscope);
+
+            nw_discoveryWriterSendList(discoveryReader->discoveryWriter,networkId,list); /* transfer ownership of list */
+            reqscope = NULL;
+        }
+    } else {
+        NW_TRACE_1(Discovery, 4, "Ignoring out of scope role %s", role);
     }
 }
 
@@ -626,7 +1284,7 @@ nw_discoveryReaderCheckForDiedNodes(
                     hashItem->networkId, diffTime.seconds, diffTime.nanoseconds/1000000U);
                 eq = c_timeCompare(diffTime, hashItem->maxHeartbeatIntervalAllowed);
                 if (eq == C_GT) {
-                    if ( discoveryReader->reconnectAllowed) {  
+                    if ( discoveryReader->reconnectAllowed) {
                         nw_discoveryReaderRemoveNode(discoveryReader, hashItem->networkId, hashItem->address,&itemFound);
                         NW_CONFIDENCE(itemFound != NULL);
                     } else {
@@ -634,7 +1292,9 @@ nw_discoveryReaderCheckForDiedNodes(
                         discoveryReader->diedNodesCount++;
                     }
                     /* Take action if node has not died before */
-                    discoveryReader->aliveNodesCount--;
+                    if (hashItem->state != NW_DISCSTATE_KNOWN ) {
+                        discoveryReader->aliveNodesCount--;
+                    }
                     NW_TRACE_3(Discovery, 2, "Declared node 0x%x dead, "
                         "no heartbeat received during interval %d.%3.3u", hashItem->networkId,
                         diffTime.seconds, diffTime.nanoseconds/1000000);
@@ -644,12 +1304,23 @@ nw_discoveryReaderCheckForDiedNodes(
                             discoveryReader->aliveNodesCount,
                             discoveryReader->arg);
                     }
-                    if (discoveryReader->reconnectAllowed) {  
+                    if (discoveryReader->scope &&
+                        discoveryReader->gpRemoveAction!= NULL) {
+                        discoveryReader->gpRemoveAction(hashItem->networkId,
+                            hashItem->address, checkTime,
+                            discoveryReader->aliveNodesCount,
+                            discoveryReader->arg);
+                    }
+                    if (discoveryReader->reconnectAllowed) {
                         nw_aliveNodesHashItemFree(itemFound);
                     }
                 }
             } else {
                 NW_TRACE_1(Discovery, 5, "Ignoring dead node 0x%x", hashItem->networkId);
+            }
+
+            if ( discoveryReader->scope && hashItem->state != NW_DISCSTATE_FULL ) {
+                nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, hashItem->networkId, hashItem->address, discoveryReader->scope);
             }
             hashItem = hashItem->next;
         }
@@ -688,14 +1359,16 @@ nw_discoveryReaderMain(
             if (messageBuffer != NULL) {
                 /* Determine the contents of the message and update the admin */
                 nw_discoveryReaderReceivedHeartbeat(discoveryReader, messageBuffer,
-                                                    bufferLength, 
+                                                    bufferLength,
                                                     sender.ipAddress,
                                                     now);
             }
             if (discoveryReader->checkRequested) {
                 nw_discoveryReaderCheckForDiedNodes(discoveryReader, now);
                 discoveryReader->checkRequested = FALSE;
+
             }
+
         }
     }
 
@@ -716,6 +1389,9 @@ nw_discoveryReaderNew(
     nw_discoveryAction startedAction,
     nw_discoveryAction stoppedAction,
     nw_discoveryAction diedAction,
+    nw_discoveryAction gpAddAction,
+    nw_discoveryAction gpRemoveAction,
+    nw_discoveryWriter discoveryWriter,
     nw_discoveryMsgArg arg)
 {
     nw_discoveryReader result = NULL;
@@ -743,9 +1419,20 @@ nw_discoveryReaderNew(
 
         /* Initialize myself */
         /* Set the private members */
+
+        result->role = nw_configurationGetDomainRole();
+        result->scope = NWCF_DEFAULTED_ATTRIB(String, name, Scope, "","");
+        if (*(result->scope) == '\0') {
+            result->scope = NULL;
+        }
+        result->scopeList = nw_stringListNew(result->scope, ";, ");
+
         result->startedAction = startedAction;
         result->stoppedAction = stoppedAction;
         result->diedAction = diedAction;
+        result->gpAddAction = gpAddAction;
+        result->gpRemoveAction = gpRemoveAction;
+        result->discoveryWriter  = discoveryWriter;
         result->arg = arg;
         result->checkRequested = FALSE;
         result->receiveChannel = nw_plugNetworkNewReceiveChannel(
@@ -776,7 +1463,7 @@ nw_discoveryReaderNew(
             NW_ALIVENODESHASH_ITEMBYINDEX(result, i) = NULL;
         }
 
-        result->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
+        result->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed);
         /* Do not start in the constructor, but let somebody else start me */
     }
 

@@ -29,7 +29,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Data instance_data);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_register_instance")]
-        public static extern InstanceHandle register_instance(
+        public static extern long register_instance(
             IntPtr _this,
             IntPtr instance_data);
 
@@ -39,7 +39,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Time_t source_timestamp);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_register_instance_w_timestamp")]
-        public static extern InstanceHandle register_instance_w_timestamp(
+        public static extern long register_instance_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
             ref Time source_timestamp);
@@ -53,7 +53,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode unregister_instance(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle handle);
+            long handle);
 
         /* ReturnCode_t
          * unregister_instance_w_timestamp(
@@ -65,7 +65,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode unregister_instance_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle handle,
+            long handle,
             ref Time source_timestamp);
 
         /* ReturnCode_t
@@ -77,7 +77,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode write(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle handle);
+            long handle);
 
         /* ReturnCode_t
          * write_w_timestamp(
@@ -89,7 +89,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode write_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle handle,
+            long handle,
             ref Time source_timestamp);
 
         /* ReturnCode_t
@@ -101,7 +101,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode dispose(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle instance_handle);
+            long instance_handle);
 
         /* ReturnCode_t
          * dispose_w_timestamp(
@@ -113,7 +113,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode dispose_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle instance_handle,
+            long instance_handle,
             ref Time source_timestamp);
 
         /* ReturnCode_t
@@ -125,7 +125,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode writedispose(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle instance_handle);
+            long instance_handle);
 
         /* ReturnCode_t
          * writedispose_w_timestamp(
@@ -137,7 +137,7 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode writedispose_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
-            InstanceHandle instance_handle,
+            long instance_handle,
             ref Time source_timestamp);
 
         /* ReturnCode_t
@@ -149,14 +149,14 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode get_key_value(
             IntPtr _this,
             IntPtr key_holder,
-            InstanceHandle handle);
+            long handle);
 
         /* InstanceHandle_t
          *   lookup_instance(
          *       in Data instance_data);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_lookup_instance")]
-        public static extern InstanceHandle lookup_instance(
+        public static extern long lookup_instance(
             IntPtr _this,
             IntPtr instance_data);
     }

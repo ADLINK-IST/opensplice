@@ -94,6 +94,7 @@ onNewGroupReaderAction(
     controller = actionArg->controller;
     group = actionArg->group;
 
+    
     /* Lookup an entry from the new group to check if we have not been
      * notified of this before... */
     entry = v_networkReaderLookupEntry(reader, group);
@@ -169,6 +170,7 @@ onNewGroup(
     newGroups = v_serviceTakeNewGroups(kservice);
     group = v_group(c_iterTakeFirst(newGroups));
     actionArg.controller = controller;
+    
     while (group) {
         actionArg.group = group;
         u_entityAction(u_entity(controller->reader), onNewGroupReaderAction,
@@ -188,6 +190,7 @@ nw_controllerOnNewGroup(
     u_result result;
     u_service service = u_service(o);
 
+    NW_TRACE(Test, 4,"New Groups detected, processing");
     if (userData &&
         ((event == V_EVENT_NEW_GROUP) || (event == V_EVENT_UNDEFINED))) {
         result = u_entityAction(u_entity(service),onNewGroup,userData);
@@ -245,7 +248,7 @@ onNodeStarted(
 
     /* Advertise my existence */
     /* Note: this will be p2p in the future */
-    nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter);
+    nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter,networkId);
     /* Tell the bridge about this new node */
     nw_bridgeNotifyNodeStarted(controller->bridge, networkId, address);
     if (aliveCount == 1) {
@@ -309,6 +312,55 @@ onNodeDied(
         NW_TRACE(Discovery, 1, "Switched off forwarding to the network");
     }
 }
+
+/* Callback for notification of extension of the global partition */
+static void
+onGpAdd(
+    v_networkId networkId,
+    nw_address address,
+    c_time detectedTime,
+    os_uint32 aliveCount,
+    nw_discoveryMsgArg arg)
+{
+    nw_controller controller = (nw_controller)arg;
+    (void)detectedTime;
+
+    NW_CONFIDENCE(controller->discoveryReader != NULL);
+    NW_CONFIDENCE(controller->discoveryWriter != NULL);
+
+    NW_TRACE_1(Discovery, 1, "Extended global partition expression to include 0x%x",
+        networkId);
+    NW_REPORT_INFO_1(1,"Topology Discovery: Extended global partition expression to include 0x%x",
+                        networkId);
+
+    /* Tell the bridge about this extension */
+    nw_bridgeNotifyGpAdd(controller->bridge, networkId, address);
+}
+
+/* Callback for notification of extension of the global partition */
+static void
+onGpRemove(
+    v_networkId networkId,
+    nw_address address,
+    c_time detectedTime,
+    os_uint32 aliveCount,
+    nw_discoveryMsgArg arg)
+{
+    nw_controller controller = (nw_controller)arg;
+    (void)detectedTime;
+
+    NW_CONFIDENCE(controller->discoveryReader != NULL);
+    NW_CONFIDENCE(controller->discoveryWriter != NULL);
+
+    NW_TRACE_1(Discovery, 1, "Trimmed global partition expression to exclude 0x%x",
+        networkId);
+    NW_REPORT_INFO_1(1,"Topology Discovery: Trimmed global partition expression to exclude 0x%x",
+                        networkId);
+
+    /* Tell the bridge about this extension */
+    nw_bridgeNotifyGpRemove(controller->bridge, networkId, address);
+}
+
 
 static void
 onFatal(void)
@@ -425,7 +477,7 @@ nw_controllerInitializeChannels(
         if (useDiscovery) {
             controller->discoveryWriter = nw_discoveryWriterNew(controller->networkId, NW_DISCOVERY_PATH);
             controller->discoveryReader = nw_discoveryReaderNew(controller->networkId,
-               NW_DISCOVERY_PATH, onNodeStarted, onNodeStopped, onNodeDied, controller);
+               NW_DISCOVERY_PATH, onNodeStarted, onNodeStopped, onNodeDied, onGpAdd, onGpRemove,controller->discoveryWriter,controller);
 #ifdef NW_LOOPBACK
             if (nw_configurationUseLoopback()) {
                 u_networkReaderRemoteActivityDetected(controller->reader);
@@ -632,11 +684,13 @@ nw_controllerInitializePartitions(
 
     addressType = sk_getAddressType(partitionAddress);
     if (addressType == SK_TYPE_UNKNOWN) {
-        NW_REPORT_ERROR_2("initializing network",
-            "Incorrect address %s read from configuration, using default %s",
-            partitionAddress, NWCF_DEF(GlobalAddress));
-        os_free(partitionAddress);
-        partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
+        if (strcmp(partitionAddress,"")!= 0 ) {
+            NW_REPORT_ERROR_2("initializing network",
+                "Incorrect address %s read from configuration, using default %s",
+                partitionAddress, NWCF_DEF(GlobalAddress));
+            os_free(partitionAddress);
+            partitionAddress = nw_stringDup( NWCF_DEF(GlobalAddress));
+        }
     }
 
     /* might return NULL */
@@ -755,6 +809,7 @@ nw_controllerNew(
     if (result != NULL) {
         /* Initialize self */
         nw_controllerInitialize(result, service, onFatal, usrData);
+
     }
 
     return result;
@@ -779,19 +834,21 @@ nw_controllerStart(
     c_ulong mask;
 
     if (controller) {
-
         /* First start all channelUser threads */
         for (i=0; i<controller->nofChannelUsers; i++) {
             nw_runnableStart((nw_runnable)NW_CHANNELUSER_BY_ID(controller, i));
         }
-
+        
         /* Set the listener of the service */
         u_dispatcherGetEventMask(u_dispatcher(controller->service), &mask);
         u_dispatcherSetEventMask(u_dispatcher(controller->service),
             mask | V_EVENT_NEW_GROUP);
-        u_entityAction(u_entity(controller->service), fillNewGroups, NULL);
         u_dispatcherInsertListener(u_dispatcher(controller->service),
             nw_controllerOnNewGroup, controller);
+
+        /* Execute fillNewGroups AFTER the listener has been inserted */
+        u_entityAction(u_entity(controller->service), fillNewGroups, NULL);
+
 
         /* Start announcing my existence */
         if (controller->discoveryWriter != NULL) {

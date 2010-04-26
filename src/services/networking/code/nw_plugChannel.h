@@ -46,5 +46,20 @@ void                 nw_plugChannelNotifyNodeDied(
                          nw_networkId networkId,
                          nw_address address);
 
+void                 nw_plugChannelNotifyGpAdd(
+                         nw_plugChannel channel,
+                         nw_networkId networkId,
+                         nw_address address);
+
+void                 nw_plugChannelNotifyGpAddList(
+                        nw_plugChannel channel,
+                        c_string probelist);
+
+
+void                 nw_plugChannelNotifyGpRemove(
+                         nw_plugChannel channel,
+                         nw_networkId networkId,
+                         nw_address address);
+
 #endif /* NW_PLUGCHANNEL_H */
 

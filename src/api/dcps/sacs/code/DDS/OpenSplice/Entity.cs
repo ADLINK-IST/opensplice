@@ -41,7 +41,7 @@ namespace DDS.OpenSplice
             {
                 IntPtr gapiPtr = Gapi.Entity.get_statuscondition(GapiPeer);
                 IStatusCondition statusCondition = (IStatusCondition)SacsSuperClass.fromUserData(gapiPtr);
-                if (gapiPtr != null && statusCondition == null)
+                if (statusCondition == null)
                 {
                     statusCondition = new StatusCondition(gapiPtr);
                 }

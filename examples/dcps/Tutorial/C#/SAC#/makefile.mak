@@ -13,7 +13,7 @@ IDLPP_CS    := $(TOPIC_IDL:%.idl=%.cs) $(TOPIC_IDL:%.idl=I%Dcps.cs) $(TOPIC_IDL:
 
 TARGET_LINK_DIR = ../../exec/$(SPLICE_TARGET)
 
-CODE_DIR	:= ../../MessageBoard/ChatRoom
+CODE_DIR	:= ../../MessageBoard/Chatroom
 
 all link: idlgen csapi csc Chatter.exe UserLoad.exe
 

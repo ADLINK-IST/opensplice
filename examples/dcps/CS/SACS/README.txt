@@ -34,17 +34,18 @@ Configurable:
      simultanious with them interfering with each other. It also enables 
      creating larger loops, by chaining several PONG tests to one PING test.
      
-The command line to start ping executable is :
-        ping [blocks nof_cycles topic_id WRITE_PARTITION READ_PARTITION]
+The command line to start Ping executable is :
+        Ping [blocks nof_cycles topic_id WRITE_PARTITION READ_PARTITION]
         >> starting ping with no options is the same as :
-        ping    20       100        's'    PING              PONG
+        Ping    20       100        's'    PING              PONG
 
 The command line to start pong executable is :        
-        pong [READ_PARTITION WRITE_PARTITION]
+        Pong [READ_PARTITION WRITE_PARTITION]
         >> starting pong with no options is the same as :
-        pong    PING              PONG
+        Pong    PING              PONG
         
         
-To build the example, simply use the provided Makefile (tested for GNU make).
-The RUN script provides a model of how the ping-pong example can be run
+The example can be built using the PingPong.sln file.
+
+The RUN.bat file provides a model of how the ping-pong example can be run
 (including OpenSplice daemon start/stop)

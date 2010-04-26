@@ -33,6 +33,8 @@ NW_STRUCT(nw_plugBuffer) {
     nw_length length;
     /* Id of the receiving node in case of P2P communication */
     nw_seqNr receivingNodeId;
+    /* crc over the remainder of the message */
+    nw_seqNr crc;
 };
 #define NW_CURRENT_PROTOCOL_VERSION '2'
 
@@ -50,7 +52,7 @@ NW_STRUCT(nw_plugBuffer) {
         buffer->length = nw_plugHostToNetwork(value)
 
 #define nw_plugBufferGetReceivingNodeId(buffer) \
-        nw_plugNetworkToHost(buffer->receivinNodeId)
+        nw_plugNetworkToHost(buffer->receivingNodeId)
 
 #define nw_plugBufferSetReceivingNodeId(buffer, value) \
         buffer->receivingNodeId = nw_plugHostToNetwork(value)
