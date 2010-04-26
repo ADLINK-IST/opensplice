@@ -36,8 +36,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="builtin_topics\dds_builtintopics.cs" />
+    <Compile Include="builtin_topics\dds_builtintopicsDcps.cs" />
+    <Compile Include="builtin_topics\dds_builtintopicsSplDcps.cs" />
     <Compile Include="builtin_topics\dds_dcps_builtintopics.cs" />
     <Compile Include="builtin_topics\dds_dcps_builtintopicsDcps.cs" />
+    <Compile Include="builtin_topics\dds_dcps_builtintopicsSplDcps.cs" />
+    <Compile Include="builtin_topics\Idds_builtintopicsDcps.cs" />
     <Compile Include="builtin_topics\Idds_dcps_builtintopicsDcps.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="DataReaderListener.cs" />
@@ -51,10 +56,9 @@
     <Compile Include="OpenSplice\ContentFilteredTopic.cs" />
     <Compile Include="OpenSplice\CustomMarshalers\DatabaseSequenceMarshaler.cs" />
     <Compile Include="OpenSplice\CustomMarshalers\DataReaderMarshalers.cs" />
+    <Compile Include="OpenSplice\CustomMarshalers\StatusMarshaler.cs" />
     <Compile Include="OpenSplice\Gapi\MetaDataInterface.cs" />
     <Compile Include="OpenSplice\Gapi\Object.cs" />
-    <Compile Include="OpenSplice\IMarshalerTypeGenerator.cs" />
-    <Compile Include="OpenSplice\MarshalerTypeGenerator.cs" />
     <Compile Include="OpenSplice\SubscriberListenerHelper.cs" />
     <Compile Include="OpenSplice\DomainParticipantListenerHelper.cs" />
     <Compile Include="OpenSplice\PublisherDataWriterListenerHelper.cs" />
@@ -135,6 +139,9 @@
     <VisualStudio />
   </ProjectExtensions>
   <PropertyGroup>
-    <PreBuildEvent>idlpp  -I"$(ProjectDir)../../../ccpp/idl" -S -l cs -d $(ProjectDir)\builtin_topics -o custom-psm "$(ProjectDir)../../../ccpp/idl/dds_dcps_builtintopics.idl"</PreBuildEvent>
+    <PreBuildEvent>idlpp -I "$(OSPL_TMPL_PATH)/" -S -l cs -d $(ProjectDir)builtin_topics -o custom-psm "$(OSPL_TMPL_PATH)/dds_dcps_builtintopics.idl"
+idlpp -I "$(OSPL_TMPL_PATH)/" -S -l cs -d $(ProjectDir)builtin_topics -o custom-psm "$(OSPL_TMPL_PATH)/dds_builtinTopics.idl"
+
+</PreBuildEvent>
   </PropertyGroup>
 </Project>
