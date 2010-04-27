@@ -36,13 +36,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="builtin_topics\dds_builtintopics.cs" />
-    <Compile Include="builtin_topics\dds_builtintopicsDcps.cs" />
-    <Compile Include="builtin_topics\dds_builtintopicsSplDcps.cs" />
+    <Compile Include="builtin_topics\dds_builtinTopics.cs" />
+    <Compile Include="builtin_topics\dds_builtinTopicsDcps.cs" />
+    <Compile Include="builtin_topics\dds_builtinTopicsSplDcps.cs" />
     <Compile Include="builtin_topics\dds_dcps_builtintopics.cs" />
     <Compile Include="builtin_topics\dds_dcps_builtintopicsDcps.cs" />
     <Compile Include="builtin_topics\dds_dcps_builtintopicsSplDcps.cs" />
-    <Compile Include="builtin_topics\Idds_builtintopicsDcps.cs" />
+    <Compile Include="builtin_topics\Idds_builtinTopicsDcps.cs" />
     <Compile Include="builtin_topics\Idds_dcps_builtintopicsDcps.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="DataReaderListener.cs" />
