@@ -48,12 +48,24 @@ csharp_check ()
     REQUIRED_VERSION="v2.0.50727"
     echo -n "C#: "
     pathcheck csc.exe
-    if [ $? != 0 ]
+
+    CSC_NOT_FOUND=$?
+
+    if [ $CSC_NOT_FOUND == 0 ]
+    then
+        CSC_EXE=`which csc`
+        if [ "$CSC_EXE" = "/usr/bin/csc" -o  "$CSC_EXE" = "/bin/csc" ]
+        then
+            CSC_NOT_FOUND=1
+        fi
+    fi
+
+    if [ $CSC_NOT_FOUND != 0 ]
     then
         MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
         if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
         then
-            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            echo "Error - no valid Microsoft.NET Framwork compiler found. Please *PREFIX* its location to your PATH"
             return 1
         fi
         VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
@@ -95,14 +107,7 @@ csharp_check ()
         done
         if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i/csc.exe" ]
         then
-            echo "Error - no valid Microsoft.NET Framwork compiler installed"
-            return 1
-        fi
-    else
-        CSC_EXE=`which csc`
-        if [ "$CSC_EXE" = "/usr/bin/csc" -o  "$CSC_EXE" = "/bin/csc" ]
-        then
-            echo "Error - Microsoft.NET Framwork compiler not installed please add to PATH"
+            echo "Error - no valid Microsoft.NET Framwork compiler found. Please *PREFIX* its location to your PATH"
             return 1
         fi
     fi
@@ -860,7 +865,7 @@ zlib_check ()
     then
         echo "Error - No ZLIB_HOME set"
         return 1
-    fi  
+    fi
     if [ ! -f "$ZLIB_HOME/zlib.h" ]
     then
         echo "Error - No ZLIB_HOME/zlib.h found"
