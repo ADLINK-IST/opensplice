@@ -21,19 +21,15 @@
 #include <os_report.h>
 #include <os_heap.h>
 #include <os_stdlib.h>
-
-static reportfn_t os_report;
-static mallocfn_t os_malloc;
-
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
 
 void
-os_socketModuleInit( reportfn_t reportfn, mallocfn_t mallocfn )
+os_socketModuleInit()
 {
     WORD wVersionRequested;
     WSADATA wsaData;
     int err;
-    os_report = reportfn;
-    os_malloc = mallocfn;
 
     wVersionRequested = MAKEWORD (OS_SOCK_VERSION, OS_SOCK_REVISION);
  
@@ -189,15 +185,26 @@ os_sockQueryInterfaces(
     os_uint listSize,
     os_uint *validElements)
 {
+
     os_result result = os_resultSuccess;
+    os_result addressInfoResult =0;
     INTERFACE_INFO *allInterfacesBuf;
     INTERFACE_INFO *intf;
     unsigned long returnedBytes;
     unsigned int listIndex;
     os_socket ifcs;
-    int retVal;
+    int retVal, done;
 
-    
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+    PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+    PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
+    unsigned long outBufLen = 0;
+    /* Set the flags to pass to GetAdaptersAddresses*/
+    unsigned long flags = GAA_FLAG_INCLUDE_PREFIX;
+    /* default to unspecified address family (both ipv4 and ipv6)*/
+    unsigned long family = AF_UNSPEC;
+    int i = 0;
+
     ifcs = os_sockNew (AF_INET, SOCK_DGRAM);
     if (ifcs >= -1) {
         allInterfacesBuf = os_malloc(MAX_INTERFACES * sizeof(INTERFACE_INFO));
@@ -207,10 +214,49 @@ os_sockQueryInterfaces(
         *validElements = returnedBytes/sizeof(INTERFACE_INFO);
         listIndex = 0;
         while ((listIndex < listSize) && (listIndex < *validElements)) {
+            done = 0;
             intf = &allInterfacesBuf[listIndex];
-            _snprintf(ifList[listIndex].name,
-                      OS_IFNAMESIZE, "0x%x",
-                      ntohl(intf->iiAddress.AddressIn.sin_addr.S_un.S_addr));
+
+            outBufLen = sizeof (IP_ADAPTER_ADDRESSES);
+            pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
+            if (GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen)
+                    == ERROR_BUFFER_OVERFLOW) {
+                    os_free(pAddresses);
+                    pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
+            }
+
+            addressInfoResult = GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen);
+
+            if (addressInfoResult == NO_ERROR) {
+                pCurrAddresses = pAddresses;
+                while (pCurrAddresses && !done) {
+                    struct in_addr adapter_addr;
+                    /* adapter needs to be enabled*/
+                    if (pCurrAddresses->OperStatus == IfOperStatusUp) {
+                        pUnicast = pCurrAddresses->FirstUnicastAddress;
+                        while (pUnicast && !done) {
+                            adapter_addr = ((struct sockaddr_in*)pUnicast->Address.lpSockaddr)->sin_addr;
+                            /* check if interface ip matches adapter ip */
+                            if (intf->iiAddress.AddressIn.sin_addr.S_un.S_addr == adapter_addr.S_un.S_addr) {
+                                _snprintf(ifList[listIndex].name,
+                                          OS_IFNAMESIZE, "%wS",
+                                          pCurrAddresses->FriendlyName);
+                                done = 1;
+                            }
+                            pUnicast = pUnicast->Next;
+                        }
+                    }
+                    pCurrAddresses = pCurrAddresses->Next;
+                }
+                os_free(pAddresses);
+
+            }
+            /* if no name is found set this */
+            if (!done) {
+                _snprintf(ifList[listIndex].name,
+                          OS_IFNAMESIZE, "0x%x",
+                          ntohl(intf->iiAddress.AddressIn.sin_addr.S_un.S_addr));
+            }
             ifList[listIndex].flags = intf->iiFlags;
             ifList[listIndex].address = intf->iiAddress.Address;
 
@@ -225,6 +271,41 @@ os_sockQueryInterfaces(
         os_sockFree (ifcs);
     }
     return result;
+}
+
+
+/* We need this on windows to make sure the main thread of MFC applications
+ * calls os_osInit().
+ */
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL,  /* handle to DLL module */
+    DWORD fdwReason,     /* reason for calling function */
+    LPVOID lpReserved )  /* reserved */
+{
+    /* Perform actions based on the reason for calling.*/
+    switch( fdwReason ) {
+    case DLL_PROCESS_ATTACH:
+        /* Initialize once for each new process.
+         * Return FALSE to fail DLL load.
+         */
+        /* os_init will be called when the library is loaded */
+        os_socketModuleInit();
+    break;
+    case DLL_THREAD_ATTACH:
+         /* Do thread-specific initialization.
+          */
+    break;
+    case DLL_THREAD_DETACH:
+         /* Do thread-specific cleanup.
+          */
+    break;
+    case DLL_PROCESS_DETACH:
+        /* Perform any necessary cleanup.
+         */
+        os_socketModuleExit();
+    break;
+    }
+    return TRUE;  /* Successful DLL_PROCESS_ATTACH.*/
 }
 
 #undef MAX_INTERFACES

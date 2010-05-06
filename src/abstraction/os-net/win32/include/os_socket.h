@@ -58,7 +58,7 @@ typedef int os_socket;
 #define OS_SOCKET_BIND_FOR_MULTICAST 1
 
 
-#define OS_IFNAMESIZE        	16
+#define OS_IFNAMESIZE        	128
 #define OS_SOCKET_HAS_SA_LEN 	0
 
 /* List of socket error numbers */

@@ -26,6 +26,7 @@ v_configurationNew(
     config = v_configuration(v_objectNew(kernel,K_CONFIGURATION));
     v_publicInit(v_public(config));
     config->root = NULL;
+    config->uri = NULL;
     config->idCounter = 0;
     
     return config;
@@ -37,7 +38,6 @@ v_configurationFree(
 {
     assert(config != NULL);
     assert(C_TYPECHECK(config, v_configuration));
-    
     v_publicFree(v_public(config));
     c_free(config);
 }
@@ -61,8 +61,38 @@ v_configurationGetRoot(
 {
     assert(config != NULL);
     assert(C_TYPECHECK(config, v_configuration));
-    
+
     return c_keep(config->root);
+}
+
+void
+v_configurationSetUri(
+    v_configuration config,
+    const c_char *uri)
+{
+    assert(config != NULL);
+    assert(C_TYPECHECK(config, v_configuration));
+    if (config->uri != NULL) {
+        c_free(config->uri);
+
+    }
+    if (uri != NULL) {
+        config->uri = c_stringNew(c_getBase(config), uri);
+    } else {
+        config->uri = NULL;
+    }
+}
+
+const c_char *
+v_configurationGetUri(
+    v_configuration config)
+{
+    const c_char *result = NULL;
+    if(config != NULL) {
+        assert(C_TYPECHECK(config, v_configuration));
+        result = config->uri;
+    }
+    return result;
 }
 
 c_ulong

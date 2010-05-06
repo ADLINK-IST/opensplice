@@ -40,8 +40,8 @@ void
 _DomainFree(
     _Domain _this);
 
-gapi_domainId_t
-_DomainGetDomainIdNoCopy(
-    _Domain _this);
+u_kernel
+_DomainGetKernel(
+     _Domain _this);
 
 #endif

@@ -79,7 +79,6 @@ typedef struct os_reportInfo_s {
     char *description;
 } os_reportInfo;
 
-#if !defined OSPL_BUILD_OSNET || ! defined WIN32
 OS_API void
 os_report(
     os_reportType reportType,
@@ -89,7 +88,6 @@ os_report(
     os_int32      reportCode,
     const char   *description,
     ...);
-#endif
 
 OS_API void
 os_reportSetApiInfo(

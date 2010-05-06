@@ -21,6 +21,7 @@ set_var DDS_CPP ddscpp
 set_var TS_TECOMMON te_common
 set_var TS_TESTFRAME testframe
 set_var TS_XMLPARSER xml_parser
+set_var CS_ASSEMBLY_NAME dcpssacsAssembly
 
 #
 # Build driven setup

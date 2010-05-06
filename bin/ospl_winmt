@@ -6,9 +6,9 @@ while [ $# -gt 0 ]; do
 
   if [ "${arg:0:1}" = "-" ]; then
     if [ "${arg:1:8}" = "manifest" ]; then
-      a=`$_CYGPATH -d "$1"`;
+      a=`$_CYGPATH -u "$1"`;
       if [ "$a" = "" ]; then
-        a=`$_CYGPATH -w "$1"`;
+        a=`$_CYGPATH -u "$1"`;
       fi
       CMD="$CMD -manifest $a";
     else
@@ -16,9 +16,9 @@ while [ $# -gt 0 ]; do
         arg_path=${arg%;*};
         arg_tail=${arg:${#arg_path}};
         arg_path=${arg_path#-outputresource:};
-        a=`$_CYGPATH -d "$arg_path"`;
+        a=`$_CYGPATH -u "$arg_path"`;
         if [ "$a" = "" ]; then
-          a=`$_CYGPATH -w "$arg_path"`;
+          a=`$_CYGPATH -u "$arg_path"`;
         fi
         CMD="$CMD -outputresource:$a$arg_tail";
       else

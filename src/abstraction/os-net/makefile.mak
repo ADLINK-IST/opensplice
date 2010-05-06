@@ -10,7 +10,7 @@ CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
 # CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
-LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
+LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW) -l$(DDS_OS)
 
 LC_FILES := $(notdir $(wildcard ../../$(OS)$(OS_REV)/code/os__*.c))
 LOBJECTS := $(LC_FILES:%.c=%$(OBJ_POSTFIX))

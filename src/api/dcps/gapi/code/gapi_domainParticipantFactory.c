@@ -200,6 +200,7 @@ gapi_domainParticipantFactory_create_participant(
     _DomainParticipantFactory factory;
     _DomainParticipant newParticipant = NULL;
     gapi_context context;
+    gapi_domainId_t domainId2 = NULL;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_CREATE_PARTICIPANT);
 
@@ -219,16 +220,29 @@ gapi_domainParticipantFactory_create_participant(
         qos = &factory->defaultQos;
     }
     if (gapi_domainParticipantQosIsConsistent(qos, &context) == GAPI_RETCODE_OK) {
-        newParticipant = _DomainParticipantNew (domainId, qos,
+        if ((domainId == NULL) || (strlen(domainId) == 0)) {
+            domainId2 = gapi_strdup(os_getenv("OSPL_URI"));
+            if (domainId2 == NULL) {
+                domainId2 = gapi_strdup(DOMAIN_NAME);
+            }
+        } else {
+            domainId2 = gapi_strdup(domainId);
+        }
+
+        newParticipant = _DomainParticipantNew (domainId2, qos,
                                                 a_listener, mask, factory,
                                                 thread_start_action,
                                                 thread_stop_action,
                                                 thread_action_arg,
                                                 &context);
+
         if ( newParticipant ) {
             c_iterInsert (factory->DomainParticipantList, newParticipant);
             _ObjectRegistryRegister(factory->registry, (_Object)newParticipant);
         }
+
+        gapi_free(domainId2);
+
     } else {
         newParticipant = NULL;
     }
@@ -392,88 +406,81 @@ gapi_domainParticipantFactory_delete_participant_w_action_ext(
     return result;
 }
 
-
-/*     DomainParticipant
- *     lookup_participant(
- *         in DomainId_t domainId);
- */
 static c_equality
-gapi_compareDomain(
+gapi_compareParticipantDomainId(
     _DomainParticipant participant,
     gapi_domainId_t domainId)
 {
-    gapi_domainId_t id    = _DomainParticipantGetDomainId(participant);
-    c_equality      equal = C_NE;
-
-    if ( (domainId == NULL) && (id == NULL) ) {
-        equal = C_EQ;
-    } else if ( (domainId != NULL) && (id != NULL) ) {
-        long len = strlen(id) + 1;
-        if ( strncmp(domainId, id, len) == 0 ) {
-            equal = C_EQ;
+    c_equality result = C_NE;
+    if(participant)
+    {
+        /* Participant was created with domain_id = NULL */
+        if ((gapi_domainParticipant_get_domain_id((gapi_domainParticipant)participant) == NULL) && (domainId == NULL)) {
+            result = C_EQ;
         } else {
-            equal = C_NE;
+            /* Participant was created with either a name or uri.
+             * We cannot know which one so it's no use to compare with participant->_DomainId
+             * Instead we ask the kernel, to which the participant is attached, for its name and uri.
+             */
+            u_participant p = _DomainParticipantUparticipant(participant);
+            if ((u_kernelCompareDomainId(u_participantKernel(p), (const c_char*)domainId)) == TRUE) {
+               result = C_EQ;
+            }
         }
-    } else {
-        equal = C_NE;
     }
-
-    return equal;
+    return result;
 }
+
 
 static c_equality
-gapi_compareDomainUri(
+gapi_compareDomainId(
     _Domain domain,
-    gapi_domainId_t domainId2)
+    gapi_domainId_t domainId)
 {
-    gapi_domainId_t domainId1;
-    c_equality equal;
-
-    domainId1 = _DomainGetDomainIdNoCopy(domain);
-    if((domainId2 == NULL) && (domainId1 == NULL))
+    c_equality result = C_NE;
+    if (domain)
     {
-        equal = C_EQ;
-    } else if((domainId2 != NULL) && (domainId1 != NULL))
-    {
-        long len;
-
-        len = strlen(domainId1) + 1;
-        if (strncmp(domainId2, domainId1, len) == 0)
-        {
-            equal = C_EQ;
-        } else
-        {
-            equal = C_NE;
+        if((u_kernelCompareDomainId(_DomainGetKernel(domain), (const c_char*)domainId)) == TRUE) {
+            result = C_EQ;
         }
-    } else
-    {
-        equal = C_NE;
     }
-
-    return equal;
+    return result;
 }
+
 
 gapi_domainParticipant
 gapi_domainParticipantFactory_lookup_participant(
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domainId)
+    const gapi_domainId_t domain_id)
 {
     _DomainParticipantFactory factory;
     _DomainParticipant participant = NULL;
+    gapi_domainId_t domain_id2;
+
+    if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
+        domain_id2 = gapi_strdup(os_getenv("OSPL_URI"));
+        if (domain_id2 == NULL) {
+            domain_id2 = gapi_strdup(DOMAIN_NAME);
+        }
+    } else {
+        domain_id2 = gapi_strdup(domain_id);
+    }
 
     factory = gapi_domainParticipantFactoryClaim(_this, NULL);
 
     if ( factory ) {
         if ( factory == TheFactory ) {
             os_mutexLock(&factory->mtx);
-            participant = c_iterResolve (factory->DomainParticipantList,
-                                         gapi_compareDomain,
-                                         (void *)domainId);
+            participant = c_iterResolve(factory->DomainParticipantList,
+                                                    gapi_compareParticipantDomainId,
+                                                    (void *)domain_id2);
             os_mutexUnlock(&factory->mtx);
         }
     }
 
     _EntityRelease(factory);
+
+    gapi_free(domain_id2);
 
     return (gapi_domainParticipant)_EntityHandle(participant);
 }
@@ -639,11 +646,21 @@ gapi_domainParticipantFactory_get_default_participant_qos(
 gapi_domain
 gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
-    gapi_domainId_t domain_id)
+    const gapi_domainId_t domain_id)
 {
     _DomainParticipantFactory factory;
     _Domain domain = NULL;
     c_iter iterResult;
+    gapi_domainId_t domain_id2 = NULL;
+
+    if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
+        domain_id2 = gapi_strdup(os_getenv("OSPL_URI"));
+        if (domain_id2 == NULL) {
+            domain_id2 = gapi_strdup(DOMAIN_NAME);
+        }
+    } else {
+        domain_id2 = gapi_strdup(domain_id);
+    }
 
     factory = gapi_domainParticipantFactoryClaim(_this, NULL);
     if (factory)
@@ -651,10 +668,10 @@ gapi_domainParticipantFactory_lookup_domain (
         if (factory == TheFactory)
         {
             os_mutexLock(&factory->mtx);
-            domain = c_iterResolve(factory->DomainList, gapi_compareDomainUri, (void*)domain_id);
+            domain = c_iterResolve(factory->DomainList, gapi_compareDomainId, (void*)domain_id2);
             if(!domain)
             {
-                domain = _DomainNew(domain_id);
+                domain = _DomainNew(domain_id2);
                 if(domain)
                 {
                     iterResult = c_iterInsert(factory->DomainList, domain);
@@ -674,6 +691,9 @@ gapi_domainParticipantFactory_lookup_domain (
         }/* else domain remains null */
         _EntityRelease(factory);
     }/* else domain remains null */
+
+    gapi_free(domain_id2);
+
     return (gapi_domain)_ObjectToHandle((_Object)domain);
 }
 

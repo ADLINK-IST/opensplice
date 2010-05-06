@@ -188,7 +188,7 @@ msvs_check ()
 
         LIB="$DOS_CONV_PATH\VC\LIB;"
         SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
-        FrameworkSDKDir=`cygpath -d "$SDK_DIR"`
+	FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
 		PATH="$FrameworkSDKDir/bin:$PATH"
         set_var FrameworkSDKDir "$FrameworkSDKDir"
         set_var LIBPATH "$LIBPATH"

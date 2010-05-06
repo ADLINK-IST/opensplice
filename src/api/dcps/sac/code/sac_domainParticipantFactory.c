@@ -193,7 +193,7 @@ DDS_DomainParticipantFactory_get_qos (
 DDS_Domain
 DDS_DomainParticipantFactory_lookup_domain (
     DDS_DomainParticipantFactory _this,
-    DDS_DomainId_t domain_id)
+    const DDS_DomainId_t domain_id)
 {
     return (DDS_Domain)gapi_domainParticipantFactory_lookup_domain (
         (gapi_domainParticipantFactory)_this,

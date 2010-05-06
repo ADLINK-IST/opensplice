@@ -18,7 +18,6 @@ CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)
-LDLIBS 	+= -lddsosnet
 
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 LDLIBS     += -lposix -lutil

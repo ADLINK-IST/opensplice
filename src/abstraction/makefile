@@ -1,6 +1,6 @@
 #
 # Set subsystems to be processed
 #
-SUBSYSTEMS	:= os-net os
+SUBSYSTEMS	:= os os-net 
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

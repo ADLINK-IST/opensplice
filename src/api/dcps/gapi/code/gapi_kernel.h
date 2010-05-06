@@ -13,7 +13,9 @@
 #define GAPI_KERNEL_H
 
 #include "u_entity.h"
+#include "u_kernel.h"
 #include "u_writer.h"
+#include "u_participant.h"
 
 #include "gapi.h"
 

@@ -420,38 +420,6 @@ u_userProtectCount()
     return count;
 }
 
-
-static c_bool
-compareAdminUri(
-    c_object o,
-    c_iterActionArg arg)
-{
-    u_kernel kernel = (u_kernel)o;
-    const c_char *uri = (const c_char *)arg;
-    const c_char *kernelUri;
-    u_result result;
-
-    if (kernel != NULL) {
-        kernelUri = u_kernelUri(kernel);
-        if (uri == NULL) {
-            if (kernelUri != NULL) {
-                uri = "";
-                result = (strcmp(kernelUri, uri) == 0);
-            } else {
-                result = TRUE;
-            }
-        } else {
-            if (kernelUri == NULL) {
-                kernelUri = "";
-            }
-            result = (strcmp(kernelUri, uri) == 0);
-        }
-    } else {
-        result = FALSE;
-    }
-    return result;
-}
-
 u_kernel
 u_userKernelNew(
     const c_char *uri)
@@ -524,7 +492,7 @@ u_userKernelOpen(
         ka = NULL;
         firstFreeIndex = 0;
         for (i=1; i<=u->kernelCount; i++) {
-            if (compareAdminUri(u->kernelList[i].kernel,(void *)uri)) {
+            if (u_kernelCompareDomainId(u->kernelList[i].kernel,(void *)uri)) {
                 ka = &u->kernelList[i];
                 ka->refCount++;
                 result = ka->kernel;

@@ -53,7 +53,6 @@ os_osInit(void)
     if (initCount == 1) {
         os_debugModeInit();
         os_timeModuleInit();
-        os_socketModuleInit( os_report, os_malloc);
         os_processModuleInit();
         os_sharedMemoryInit();
         os_threadModuleInit();
@@ -78,7 +77,6 @@ os_osExit(
         os_threadModuleExit();
         os_sharedMemoryExit();
         os_processModuleExit();
-        os_socketModuleExit();
         os_timeModuleExit();
         os_debugModeExit();
     } else if ((initCount + 1) < initCount){

@@ -35,3 +35,4 @@ make_idl_preprocessor:
 	$(IDLPP) $(IDLPPFLAGS) $<
 
 CSLIBS       += -r:System.dll -r:System.Data.dll -r:System.Xml.dll
+CSTARGET_LIB = -t:module

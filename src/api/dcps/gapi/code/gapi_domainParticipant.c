@@ -362,11 +362,8 @@ _DomainParticipantNew (
 
     if (newParticipant != NULL) {
         _EntityInit (_Entity(newParticipant), NULL, NULL, FALSE);
-        if ( domainId ) {
-            newParticipant->_DomainId = gapi_strdup(domainId);
-        } else {
-            newParticipant->_DomainId = NULL;
-        }
+
+        newParticipant->_DomainId = gapi_strdup(domainId);
         memset (&newParticipant->_defTopicQos, 0,
                 sizeof(newParticipant->_defTopicQos));
         gapi_topicQosCopy (&gapi_topicQosDefault,
@@ -2058,7 +2055,7 @@ gapi_domainParticipant_get_domain_id (
     gapi_domainParticipant _this)
 {
     _DomainParticipant participant;
-    gapi_domainId_t domainId = 0;
+    gapi_domainId_t domainId = NULL;
 
     participant = gapi_domainParticipantClaim(_this, NULL);
 

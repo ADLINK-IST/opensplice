@@ -777,7 +777,7 @@ os_unregisterReportService (
     }
     else { 
        if (initFunction != NULL){
-          osr = initFunction (argument, context);
+          osr = initFunction (argument, &context);
 
           if (osr != 0){
              OS_REPORT_2 (OS_ERROR, "os_reportRegisterPlugin", 0,

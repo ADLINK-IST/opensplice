@@ -58,6 +58,15 @@ OS_API v_cfElement
 v_configurationGetRoot (
     v_configuration config);
 
+OS_API void
+v_configurationSetUri (
+    v_configuration config,
+    const c_char *uri);
+
+OS_API const c_char *
+v_configurationGetUri (
+    v_configuration config);
+
 OS_API c_ulong
 v_configurationIdNew (
     v_configuration config);

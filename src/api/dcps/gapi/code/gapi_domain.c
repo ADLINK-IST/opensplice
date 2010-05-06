@@ -22,7 +22,6 @@
 
 C_STRUCT(_Domain) {
     C_EXTENDS(_Object);
-    gapi_domainId_t domainId;
     u_kernel kernel;
 };
 
@@ -37,24 +36,14 @@ _DomainNew(
       _this = _DomainAlloc();
       if (_this)
       {
-         _this->domainId = os_strdup(domainId);
-         if(!_this->domainId)
-         {
-            _this->kernel = NULL;
-            _DomainFree(_this);
-            _this = NULL;
-         } else
-         {
-            _this->kernel = u_userKernelOpen((c_char *)domainId, 1);/* 1 = timeout */
-            if(!_this->kernel)
-            {
-               _DomainFree(_this);
-               _this = NULL;
-            }
-         }
+          _this->kernel = u_userKernelOpen((c_char *)domainId, 1);/* 1 = timeout */
+          if(!_this->kernel)
+          {
+              _DomainFree(_this);
+              _this = NULL;
+          }
       }
    }
-
    return _this;
 }
 
@@ -64,11 +53,6 @@ _DomainFree(
 {
     if(_this)
     {
-        if(_this->domainId)
-        {
-            os_free(_this->domainId);
-            _this->domainId = NULL;
-        }
         if(_this->kernel)
         {
             u_userKernelClose(_this->kernel);
@@ -79,18 +63,14 @@ _DomainFree(
     }
 }
 
-gapi_domainId_t
-_DomainGetDomainIdNoCopy(
-    _Domain _this)
+u_kernel
+_DomainGetKernel(
+     _Domain _this)
 {
-    gapi_domainId_t result;
-
-    if(_this)
+    u_kernel result = NULL;
+    if (_this)
     {
-        result = _this->domainId;
-    } else
-    {
-        result = NULL;
+        result =  _this->kernel;
     }
     return result;
 }

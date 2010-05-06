@@ -74,7 +74,7 @@ void              sk_interfaceInfoFreeAll(
                       os_uint nofInterfaces);
 
 /* Returned string never longer than SK_INTF_MAX_NAME_LEN */
-#define SK_INTF_MAX_NAME_LEN (16)
+#define SK_INTF_MAX_NAME_LEN (128)
 const char *      sk_interfaceInfoGetName(
                       const sk_interfaceInfo interfaceInfo);
 

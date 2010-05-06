@@ -34,9 +34,9 @@ typedef void (*reportfn_t) (os_reportType reportType,
                             const char *description,
                             ...);
 
-typedef void *(*mallocfn_t) (os_size_t size);
+//typedef void *(*mallocfn_t) (os_size_t size);
 
-OS_API void os_socketModuleInit(reportfn_t reportfn, mallocfn_t mallocfn);
+OS_API void os_socketModuleInit();
 
 OS_API void os_socketModuleExit();
 

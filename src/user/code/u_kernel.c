@@ -30,14 +30,6 @@
 #include "v_cfAttribute.h"
 #include "v_cfData.h"
 
-#define DOMAIN_NAME   "The default Domain"
-#define DATABASE_NAME "defaultDomainDatabase"
-#define KERNEL_NAME   "defaultDomainKernel"
-#define DATABASE_SIZE (0xA00000)
-
-#define IGNORE_THREAD_MESSAGE os_threadMemFree(OS_WARNING)
-#define PRINT_THREAD_MESSAGE(context) printThreadMessage(context)
-
 static void
 printThreadMessage(
     const char *context)
@@ -56,6 +48,7 @@ C_STRUCT(u_kernel) {
     os_sharedHandle shm;
     c_iter          participants;
     c_char          *uri;
+    c_char	    *name;
     os_lockPolicy   lockPolicy;
 };
 
@@ -457,7 +450,7 @@ u_kernelNew(
         }
     } else {
         os_sharedAttrInit(&shm_attr);
-        if ((uri != NULL) && (strlen(uri) > 0)) {
+        if (strlen(uri) > 0) {
             s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
                 u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
@@ -573,6 +566,7 @@ u_kernelNew(
                 }
                 os_sharedDestroyHandle(shm);
             } else {
+                v_configurationSetUri(configuration, uri);
                 if (rootElement != NULL) {
                     v_configurationSetRoot(configuration, rootElement);
                     v_setConfiguration(kernel, configuration);
@@ -604,6 +598,8 @@ u_kernelNew(
                     uKernel->uri = os_malloc(strlen(uri) + 1);
                     strcpy(uKernel->uri, uri);
                 }
+                uKernel->name = os_malloc(strlen(domainCfg.name) + 1);
+                strcpy(uKernel->name, domainCfg.name);
                 OS_REPORT_3(OS_INFO,"The OpenSplice domain service", 0,
                             "+++++++++++++++++++++++++++++++++++++++++++\n"
                             "              ++ The service has successfully started. ++\n"
@@ -645,6 +641,8 @@ u_kernelOpen(
     C_STRUCT(domain) domainCfg;
     os_mutexAttr     mutexAttr;
     os_time          pollDelay = {1,0};
+    const c_char     *name = NULL;
+    v_configuration  config;
 
     o = NULL;
     base = NULL;
@@ -659,31 +657,29 @@ u_kernelOpen(
     domainCfg.prioInherEnabled = FALSE;
 
     os_sharedAttrInit(&shm_attr);
-    if (uri != NULL) {
-        if (strlen(uri) > 0) {
-            s = cfg_parse_ospl(uri, &processConfig);
-            if (s == CFGPRS_OK) {
-                u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+    if ((uri != NULL) && (strlen(uri) > 0)) {
+        s = cfg_parse_ospl(uri, &processConfig);
+        if (s == CFGPRS_OK) {
+            u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
 #ifdef INCLUDE_PLUGGABLE_REPORTING
-                u_usrReportPluginReadAndRegister (processConfig);
+            u_usrReportPluginReadAndRegister (processConfig);
 #endif
-    	        u_usrClockInit (processConfig);
-                if (domainCfg.prioInherEnabled) {
-                    os_mutexSetPriorityInheritanceMode(OS_TRUE);
-                }
-                shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
-            } else {
-                /* assume that the uri is the domain id */
-                shm = os_sharedCreateHandle(uri, &shm_attr);
+            u_usrClockInit (processConfig);
+            if (domainCfg.prioInherEnabled) {
+                os_mutexSetPriorityInheritanceMode(OS_TRUE);
             }
-            if (processConfig != NULL) {
-                cf_elementFree(processConfig);
-            }
-        } else {
             shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
+            name = domainCfg.name;
+        } else {
+            /* assume that the uri is the domain name */
+            shm = os_sharedCreateHandle(uri, &shm_attr);
+        }
+        if (processConfig != NULL) {
+            cf_elementFree(processConfig);
         }
     } else {
         shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
+        name = domainCfg.name;
     }
     if (shm == NULL) {
         if (timeout >= 0) {
@@ -736,14 +732,37 @@ u_kernelOpen(
             os_mutexInit(&o->mutex,&mutexAttr);
             o->kernel = kernel;
             o->shm = shm;
-            if (uri == NULL) {
-                o->uri = NULL;
-            } else {
-                o->uri = os_malloc(strlen(uri) + 1);
-                strcpy(o->uri, uri);
-            }
             o->participants = NULL;
             o->lockPolicy = OS_LOCK_DEFAULT; /* don't care! */
+            if ((uri != NULL) && (name == NULL)) {
+                /* Assume uri is the domain name, try to get the real uri from v_configuration */
+            	name = uri;
+                config = v_getConfiguration(kernel);
+                uri = v_configurationGetUri(config);
+                if (uri != NULL && (strlen(uri) > 0)) {
+                    s = cfg_parse_ospl(uri, &processConfig);
+                    if (s == CFGPRS_OK) {
+                        u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+                        u_usrReportPluginReadAndRegister (processConfig);
+#endif
+                        u_usrClockInit (processConfig);
+                        if (domainCfg.prioInherEnabled) {
+                            os_mutexSetPriorityInheritanceMode(OS_TRUE);
+                        }
+                    }
+            	}
+            }
+            /* Recheck 'uri', maybe it is retrieved from v_configuration */
+            if (uri != NULL) {
+                o->uri = os_malloc(strlen(uri) + 1);
+                strcpy(o->uri, uri);
+            } else {
+                o->uri = NULL;
+            }
+            assert(name);
+            o->name = os_malloc(strlen(name) + 1);
+            strcpy(o->name, name);
         }
     }
     os_free(domainCfg.name);
@@ -957,16 +976,42 @@ u_kernelRemove(
     return r;
 }
 
-const c_char *
-u_kernelUri(
-    u_kernel kernel)
+c_bool
+u_kernelCompareDomainId(
+    u_kernel _this,
+    const c_char* id)
 {
-    if (kernel != NULL) {
-        return kernel->uri;
+    const c_char *domainId;
+    const c_char *kernelURI;
+    const c_char *kernelName;
+    u_result result;
+
+    if (_this != NULL) {
+        domainId = id;
+        kernelURI = _this->uri;
+        kernelName = _this->name;
+        if ((domainId == NULL) && ((kernelURI == NULL) || kernelName == NULL)) {
+            result = TRUE;
+        } else if (domainId != NULL)  {
+            if (kernelName == NULL) {
+                kernelName = "";
+            }
+            result = (strcmp(domainId, kernelName) == 0);
+            if (!result) {
+                if (kernelURI == NULL) {
+                    kernelURI = "";
+                }
+                result = (strcmp(domainId, kernelURI) == 0);
+            }
+        } else {
+            result = FALSE;
+        }
     } else {
-        return "";
+        result = FALSE;
     }
+    return result;
 }
+
 
 u_result
 u_kernelDetachParticipants(

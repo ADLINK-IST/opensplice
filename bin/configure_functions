@@ -1,3 +1,26 @@
+function generateReleaseInfo
+{
+    . $OSPL_HOME/release_info/RELEASE_tmpl
+    BASE_VERSION=`echo $PACKAGE_VERSION | tr -d '[:alpha:]'`
+    LAST_COMMIT_DATE=`git log --pretty=format:%cD HEAD -n1`
+    DAYS_EPOCH=`date --date="$D" '+%s 60 / 60 / 24 / p' | dc`
+    CURRENT_DATE=`date +%Y-%m-%d`
+
+    #Commercial version is Major.Minor.Patch, just add Days since epoch to it
+    CONV_VERSION=${BASE_VERSION}.${DAYS_EPOCH}
+
+    #Opensource format is Major.Minor.DATE, Date is to big so we remove and
+    #replace with days since epoch and then a 0 to make up the 4 number group
+    if git config --get remote.origin.url | grep opensplice > /dev/null
+    then
+        CONV_VERSION=`echo $BASE_VERSION | cut -d. -f-2`".${DAYS_EPOCH}.0"
+    fi
+
+    sed -e "s@#RELEASE_DATE#@${CURRENT_DATE}@g" \
+        -e "s/#CS_DLL_VERSION#/${CONV_VERSION}/g" \
+        $OSPL_HOME/release_info/RELEASE_tmpl > $OSPL_HOME/release_info/RELEASE
+}
+
 function set_var                  
 {
     found=0
@@ -329,4 +352,5 @@ cleanup ()
     unset cleanup
     unset varkeys
     unset varvals
+    unset generateReleaseInfo
 }

@@ -77,10 +77,6 @@ u_kernelGetCopy (
     u_entityCopy copy,
     void* copyArg);
 
-const c_char *
-u_kernelUri(
-    u_kernel _this);
-
 c_address
 u_kernelHandleServer(
     u_kernel _this);

@@ -147,6 +147,14 @@ OS_API u_result     u_participantDeleteHistoricalData (u_participant p,
                                                        const c_char* partitionExpr,
                                                        const c_char* topicExpr);
 
+/** \brief Retrieves the kernel associated to the given participants.
+ *
+ * \param _this The participant to operate on.
+ * \return U_RESULT_OK on a succesful operation or
+ *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
+ */
+OS_API u_kernel u_participantKernel(u_participant _this);
+
 #undef OS_API
 
 #if defined (__cplusplus)

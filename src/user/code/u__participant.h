@@ -90,16 +90,6 @@ u_result
 u_participantRelease(
     u_participant _this);
 
-/** \brief Retrieves the kernel associated to the given participants.
- *
- * \param _this The participant to operate on.
- * \return U_RESULT_OK on a succesful operation or
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
-OS_API u_kernel
-u_participantKernel(
-    u_participant _this);
-
 /** \brief Detaches the participant from the associated kernel
  *
  * This method will free the associated kernel participant and detach

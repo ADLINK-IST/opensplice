@@ -412,11 +412,11 @@
             <comment><![CDATA[
                 This tag specifies the library to be loaded.
             ]]></comment>
-            <attributeString name="file_name" required="true">
+            <attributeString name="file_name" required="false">
                 <comment><![CDATA[
                     This attribute specifies the library to be loaded.
                 ]]></comment>
-                <default>my_reporter.so</default>
+                <default></default>
                 <maxLength>0</maxLength>
             </attributeString>
         </element>
@@ -427,14 +427,24 @@
                 initially after loading the library to perform initialization of 
                 the report facility if needed.
             ]]></comment>
-            <attributeString name="symbol_name" required="true">
+            <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be 
                     assigned to the report Initialize operation. This operation 
                     will be invoked initially after loading the library to 
                     perform initialization of the report facility if needed.
                 ]]></comment>
-                <default>my_reporter.so</default>
+                <default></default>
+                <maxLength>0</maxLength>
+            </attributeString>
+            <attributeString name="argument" required="false">
+                <comment><![CDATA[
+                    This attribute is a string value that is passed to the function
+                    specified by the symbol_name.  The string value has no meaning
+                    to the service and is used to pass any context-specific 
+                    information that may be required.
+                ]]></comment>
+                <default></default>
                 <maxLength>0</maxLength>
             </attributeString>
         </element>
@@ -444,13 +454,13 @@
                 the report Report operation. This operation will be invoked 
                 on all reports performed by the DDS service.
             ]]></comment>
-            <attributeString name="symbol_name" required="true">
+            <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be 
                     assigned to the report Report operation. This operation will 
                     be invoked on all reports performed by the DDS service.
                 ]]></comment>
-                <default>my_reporter.so</default>
+                <default></default>
                 <maxLength>0</maxLength>
             </attributeString>
         </element>
@@ -461,14 +471,14 @@
                 invoked upon process termination to perform de-initialization 
                 of the report facility if needed.
             ]]></comment>
-            <attributeString name="symbol_name" required="true">
+            <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be assigned 
                     to the report Finalize operation. This operation will be 
                     invoked upon process termination to perform de-initialization 
                     of the report facility if needed.
                 ]]></comment>
-                <default>my_reporter.so</default>
+                <default></default>
                 <maxLength>0</maxLength>
             </attributeString>
         </element>

@@ -27,6 +27,9 @@ fi
 
 reset_old_vars
 set_home
+#Keep generateReleaseInfo after set_home
+generateReleaseInfo
+#Keep source_package_info after generateReleaseInfo
 source_package_info
 
 if [ -z "$1" -a -z "$SPLICE_PLATFORM" ]

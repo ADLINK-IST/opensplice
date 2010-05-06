@@ -870,6 +870,27 @@ install_hde_target ()
     fi
 
     #
+    # Create and sign a Global Assembly for the SACS Dll
+    #
+    if [ "${INCLUDE_API_DCPS_SACS}" = "yes" ]
+    then        
+        if [ "${target}" = "x86.win32" ]
+        then
+            echo "*     Create and sign a Global Assembly for the SACS DLL"
+            cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
+            csoutdir=`cygpath -d "${HDE_dir}/lib/"`
+            csdllfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.dll"`
+            csoutfile="${csoutdir}${CS_ASSEMBLY_NAME}.dll"
+              
+            al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutfile}" "${csdllfile}"
+        fi
+        # This needs to be changed when we support C# for linux and add an else part 
+        # that will set all these variables correctly and call the appropriate mono 
+        # executable for the assembly linker.
+        echo "*     Ready"
+    fi
+
+    #
     # Copy documentation
     #
     printf "*     Copy documentation... "
@@ -1368,32 +1389,32 @@ install_hde_target ()
     then
         echo "*         For standalone C#"
         mkdir ${HDE_dir}/examples/dcps/standalone/CS
-
-#Add back once the c# ping pong works removed for the 5.1 release
-#        echo "*           For PingPong... "
-#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong
-#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-#        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/*.sln" \
-#            ${HDE_dir}/examples/dcps/standalone/CS
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.cs" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.csproj*" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.cs" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-#        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.csproj*" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
-#        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/README.txt" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
-#        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/RUN.bat" \
-#            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
+        echo "*           For PingPong... "
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        mkdir ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/*.sln" \
+            ${HDE_dir}/examples/dcps/standalone/CS
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/*.idl" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping        
+        sed -e "s/__CS_ASSEMBLY_NAME__/${CS_ASSEMBLY_NAME}/g" \
+            -e "s/__CS_DLL_VERSION__/${CS_DLL_VERSION}/g" \
+            ${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Ping/Ping.csproj > ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Ping/Ping.csproj
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/*.cs" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong        
+        sed -e "s/__CS_ASSEMBLY_NAME__/${CS_ASSEMBLY_NAME}/g" \
+            -e "s/__CS_DLL_VERSION__/${CS_DLL_VERSION}/g" \
+            ${OSPL_HOME}/examples/dcps/CS/SACS/PingPong/Pong/Pong.csproj > ${HDE_dir}/examples/dcps/standalone/CS/PingPong/Pong/Pong.csproj
+        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/README.txt" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
+        install_ascii_file    "${OSPL_HOME}/examples/dcps/CS/SACS/RUN.bat" \
+            ${HDE_dir}/examples/dcps/standalone/CS/PingPong/
 
         echo "*           Ready"
         echo "*           For Tutorial... "
@@ -1416,17 +1437,20 @@ install_hde_target ()
 
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/*.sln" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/*.csproj" \
-            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter
+        
+        sed -e "s/__CS_ASSEMBLY_NAME__/${CS_ASSEMBLY_NAME}/g" \
+            -e "s/__CS_DLL_VERSION__/${CS_DLL_VERSION}/g" \
+        ${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Chatter.csproj > ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Chatter.csproj
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Chatroom/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Chatroom
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Data/*.idl" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Data
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/Chatter/Properties/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/Chatter/Properties
-
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/*.csproj" \
-            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard
+        
+        sed -e "s/__CS_ASSEMBLY_NAME__/${CS_ASSEMBLY_NAME}/g" \
+            -e "s/__CS_DLL_VERSION__/${CS_DLL_VERSION}/g" \
+        ${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/MessageBoard.csproj > ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/MessageBoard.csproj
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Chatroom/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Chatroom
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Data/*.idl" \
@@ -1434,12 +1458,13 @@ install_hde_target ()
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/MessageBoard/Properties/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/MessageBoard/Properties
 
-        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/*.csproj" \
-            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad
+        sed -e "s/__CS_ASSEMBLY_NAME__/${CS_ASSEMBLY_NAME}/g" \
+            -e "s/__CS_DLL_VERSION__/${CS_DLL_VERSION}/g" \
+        ${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/UserLoad.csproj > ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/UserLoad.csproj
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Chatroom/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Chatroom
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#//UserLoad/Data/*.idl" \
-            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data       
+            ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Properties/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Properties
         echo "*           Ready"
@@ -1558,7 +1583,7 @@ install_hde_target ()
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${HDE_dir}/redist
-        cp -rp ${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86 ${HDE_dir}/redist
+        cp -rp "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${HDE_dir}/redist"
         cp "${OSPL_HOME}/install/bin/install_vcredist.bat" "${HDE_dir}/redist/vcredist_x86"
         echo "Ready"
     fi
@@ -1580,15 +1605,7 @@ install_hde_target ()
         echo "CPATH=\$OSPL_HOME/include:\$OSPL_HOME/include/sys:\$CPATH" >> ${RELF}
         echo "OSPL_TMPL_PATH=\$OSPL_HOME/etc/idlpp" >> ${RELF}
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> ${RELF}
-        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
-        then
-            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> ${RELF}
-        fi
-        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
-        then
-            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
-        fi
-        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI CLASSPATH" >> $RELF
+        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
 
         if [ "$VALGRIND" = "yes" ]
         then
@@ -1606,14 +1623,6 @@ install_hde_target ()
         echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%OSPL_HOME%\host\lib;%PATH%" >> $RELF
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
         echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
-        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
-        then
-            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
-        fi
-        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
-        then
-            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
-        fi
         echo "Ready"
     fi
 }
@@ -1795,10 +1804,27 @@ install_rts_target ()
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${RTS_dir}/redist
-        cp -rp ${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86 ${RTS_dir}/redist
+        cp -rp "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${RTS_dir}/redist"
         cp "${OSPL_HOME}/install/bin/install_vcredist.bat" "${RTS_dir}/redist/vcredist_x86"
         echo "Ready"
     fi
+
+    #
+    # Create and sign a Global Assembly for the SACS Dll
+    #    
+    if [ "${target}" = "x86.win32" ]
+    then
+        printf "*     Create and sign a Global Assembly for the SACS DLL ..."
+        cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
+        csoutdir=`cygpath -d "${RTS_dir}/lib"`
+        csdllfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.dll"`
+                    
+        al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutdir}\${CS_ASSEMBLY_NAME}.dll" "${csdllfile}"
+    fi
+    # This needs to be changed when we support C# for linux and add an else part 
+    # that will set all these variables correctly and call the appropriate mono 
+    # executable for the assembly linker.
+    echo "*     Ready"    
 
     if [ "${target}" != "x86.win32" ]
     then
@@ -1810,15 +1836,7 @@ install_rts_target ()
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
         echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\$LD_LIBRARY_PATH" >> $RELF
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
-        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
-        then
-            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpssaj.jar" >> $RELF
-        fi
-        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
-        then
-            echo "CLASSPATH=\$CLASSPATH:\$OSPL_HOME/jar/dcpscj.jar" >> ${RELF}
-        fi
-        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI CLASSPATH" >> $RELF
+        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI" >> $RELF
         echo "Ready"
     else
         printf "*     Prepare default release.bat ... "
@@ -1830,14 +1848,6 @@ install_rts_target ()
         echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
         echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
-        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
-        then
-            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
-        fi
-        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
-        then
-            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
-        fi
         echo "Ready"
     fi
 }

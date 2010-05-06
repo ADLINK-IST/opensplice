@@ -31,9 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="dcpssacs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="__CS_ASSEMBLY_NAME__, Version=__CS_DLL_VERSION__, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(OSPL_HOME)\lib\dcpssacs.dll</HintPath>
+      <HintPath>$(OSPL_HOME)\lib\__CS_ASSEMBLY_NAME__.dll</HintPath>
     </Reference>
     <Reference Include="System" />   
   </ItemGroup>

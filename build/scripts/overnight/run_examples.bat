@@ -36,6 +36,9 @@ cd "%OSPL_HOME%"
 
 ECHO Set OSPL runtime environment
 call release.bat
+mkdir "%OSPL_HOME%\etc\tmp"
+IF "%TMP%"=="" set TMP=%OSPL_HOME%\etc\tmp
+IF "%TEMP%"=="" set TEMP=%OSPL_HOME%\etc\tmp
 
 ECHO Change to the examples directory
 

@@ -54,11 +54,9 @@ extern "C" {
  * - returns NULL if
  *     memory with required size could not be allocated
  */
-#if ! defined OSPL_BUILD_OSNET || ! defined WIN32
 OS_API void *
 os_malloc(
     os_size_t size);
-#endif
 
 /** \brief Reallocate memory from heap
  *
