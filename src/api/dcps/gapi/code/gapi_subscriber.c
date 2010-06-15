@@ -839,19 +839,16 @@ gapi_subscriber_set_default_datareader_qos (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_DATAREADER_QOS);
 
     subscriber = gapi_subscriberClaim(_this, &result);
-
-    if ( subscriber ) {
-        if ( qos ) {
-            result = gapi_dataReaderQosIsConsistent(qos, &context);
-            if ( result == GAPI_RETCODE_OK ) {
-                gapi_dataReaderQosCopy (qos, &subscriber->_defDataReaderQos);
-            }
-        } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+    if (result == GAPI_RETCODE_OK) {
+        if (qos == GAPI_SUBSCRIBER_QOS_DEFAULT) {
+            qos = &gapi_subscriberQosDefault;
         }
+        result = gapi_dataReaderQosIsConsistent(qos, &context);
+        if (result == GAPI_RETCODE_OK) {
+            gapi_dataReaderQosCopy (qos, &subscriber->_defDataReaderQos);
+        }
+        _EntityRelease(subscriber);
     }
-
-    _EntityRelease(subscriber);
 
     return result;
 }
@@ -865,11 +862,15 @@ gapi_subscriber_get_default_datareader_qos (
     gapi_returnCode_t result;
 
     subscriber = gapi_subscriberClaim(_this, &result);
-
-    if ( subscriber && qos ) {
-        gapi_dataReaderQosCopy (&subscriber->_defDataReaderQos, qos);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos) {
+            gapi_dataReaderQosCopy (&subscriber->_defDataReaderQos, qos);
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+        _EntityRelease(subscriber);
     }
-    _EntityRelease(subscriber);
+
     return result;
 }
 

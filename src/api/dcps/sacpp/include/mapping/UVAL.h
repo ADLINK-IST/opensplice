@@ -13,6 +13,7 @@
 #ifndef _SACPP_MAPPING_UVAL_H_
 #define _SACPP_MAPPING_UVAL_H_
 
+#include "sacpp_if.h"
 #include "sacpp_Memory.h"
 
 // Unbounded value type sequence
@@ -275,4 +276,5 @@ template <class T> inline void DDS_DCPSUValSeq<T>::replace
    m_release = rel;
 }
 
+#undef SACPP_API
 #endif

@@ -59,7 +59,8 @@ OS_API v_writeResult
 v_dataReaderEntryWrite(
     v_dataReaderEntry _this, 
     v_message o, 
-    v_instance *instance);
+    v_instance *instance,
+    c_time lastDisposeAll);
     
 OS_API void               
 v_dataReaderEntryAddIncompatibleWriter(
@@ -74,6 +75,16 @@ v_dataReaderEntryRemoveIncompatibleWriter(
 OS_API void               
 v_dataReaderEntryUpdatePurgeLists(
     v_dataReaderEntry _this);
+
+OS_API void
+v_dataReaderEntryAbortTransaction(
+    v_dataReaderEntry _this,
+    v_gid writerGID);
+ 
+OS_API v_result
+v_dataReaderEntryDisposeAll (
+    v_dataReaderEntry _this,
+    c_time timestamp);
 
 #undef OS_API
 

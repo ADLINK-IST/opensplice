@@ -12,6 +12,7 @@
 #ifndef SACPP_MAPPING_IFACE_H_
 #define SACPP_MAPPING_IFACE_H_
 
+#include "sacpp_if.h"
 // Template classes used to implement interface _var, _out
 // and _mgr types.
 // See section 1.3.7 of IDL to C++ mapping specification.
@@ -231,7 +232,7 @@ template <class Type> inline
 DDS_DCPSInterface_mgr<Type>::DDS_DCPSInterface_mgr (const DDS_DCPSInterface_mgr<Type> & p)
    : m_ptr (p.m_ptr), m_rel (p.m_rel)
 {
-} 
+}
 
 template <class Type> inline
 DDS_DCPSInterface_mgr<Type> & DDS_DCPSInterface_mgr<Type>::operator = (Type* p)
@@ -247,14 +248,14 @@ DDS_DCPSInterface_mgr<Type> & DDS_DCPSInterface_mgr<Type>::operator = (Type* p)
    return *this;
 }
 
-template <class Type> inline DDS_DCPSInterface_mgr<Type> & 
+template <class Type> inline DDS_DCPSInterface_mgr<Type> &
 DDS_DCPSInterface_mgr<Type>::operator = (const DDS_DCPSInterface_mgr<Type>& m)
 {
    if (m_rel && (*m_ptr))
    {
       DDS::release (*m_ptr);
    }
-   
+
    m_ptr = m.m_ptr;
    m_rel = m.m_rel;
 
@@ -321,4 +322,5 @@ template <class Type> inline Type *& DDS_DCPSInterface_mgr<Type>::out ()
    return *m_ptr;
 }
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_IFACE_H */

@@ -36,6 +36,10 @@ v_statusNotifyInconsistentTopic (
     v_status _this);
 
 OS_API c_bool
+v_statusNotifyAllDataDisposed (
+    v_status _this);
+
+OS_API c_bool
 v_statusNotifyDataAvailable (
     v_status _this);
 

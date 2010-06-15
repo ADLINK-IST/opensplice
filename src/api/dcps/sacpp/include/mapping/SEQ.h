@@ -12,6 +12,8 @@
 #ifndef SACPP_MAPPING_SEQ_H
 #define SACPP_MAPPING_SEQ_H
 
+#include "sacpp_if.h"
+
 template <class T> class DDS_DCPSSequence_var
 {
 public:
@@ -34,7 +36,7 @@ public:
       return *this;
    }
 
-   DDS_DCPSSequence_var<T> & operator = 
+   DDS_DCPSSequence_var<T> & operator =
    (
       const DDS_DCPSSequence_var<T> & that
    )
@@ -147,4 +149,5 @@ public:
    T *& m_ptr;
 };
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_SEQ_H */

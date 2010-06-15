@@ -39,12 +39,14 @@ main (
     pingpong_PP_string_msgDataWriter           PP_string_writer   = DDS_OBJECT_NIL;
     pingpong_PP_fixed_msgDataWriter            PP_fixed_writer    = DDS_OBJECT_NIL;
     pingpong_PP_array_msgDataWriter            PP_array_writer    = DDS_OBJECT_NIL;
+	pingpong_PP_bseq_msgDataWriter          PP_bseq_writer = DDS_OBJECT_NIL;
 
     pingpong_PP_min_msgDataReader              PP_min_reader      = DDS_OBJECT_NIL;
     pingpong_PP_seq_msgDataReader              PP_seq_reader      = DDS_OBJECT_NIL;
     pingpong_PP_string_msgDataReader           PP_string_reader   = DDS_OBJECT_NIL;
     pingpong_PP_fixed_msgDataReader            PP_fixed_reader    = DDS_OBJECT_NIL;
     pingpong_PP_array_msgDataReader            PP_array_reader    = DDS_OBJECT_NIL;
+	pingpong_PP_bseq_msgDataReader      PP_bseq_reader    = DDS_OBJECT_NIL;
     pingpong_PP_quit_msgDataReader             PP_quit_reader     = DDS_OBJECT_NIL;
 
     pingpong_PP_min_msgTypeSupport             PP_min_dt;
@@ -52,6 +54,7 @@ main (
     pingpong_PP_string_msgTypeSupport          PP_string_dt;
     pingpong_PP_fixed_msgTypeSupport           PP_fixed_dt;
     pingpong_PP_array_msgTypeSupport           PP_array_dt;
+	pingpong_PP_bseq_msgTypeSupport            PP_bseq_dt;
     pingpong_PP_quit_msgTypeSupport            PP_quit_dt;
 
     DDS_sequence_pingpong_PP_min_msg           PP_min_dataList    = { 0, 0, DDS_OBJECT_NIL, FALSE };
@@ -59,6 +62,7 @@ main (
     DDS_sequence_pingpong_PP_string_msg        PP_string_dataList = { 0, 0, DDS_OBJECT_NIL, FALSE };
     DDS_sequence_pingpong_PP_fixed_msg         PP_fixed_dataList  = { 0, 0, DDS_OBJECT_NIL, FALSE };
     DDS_sequence_pingpong_PP_array_msg         PP_array_dataList  = { 0, 0, DDS_OBJECT_NIL, FALSE };
+	DDS_sequence_pingpong_PP_bseq_msg          PP_bseq_dataList   = { 0, 0, DDS_OBJECT_NIL, FALSE };
     DDS_sequence_pingpong_PP_quit_msg          PP_quit_dataList   = { 0, 0, DDS_OBJECT_NIL, FALSE };
 
     DDS_StatusCondition                        PP_min_sc;
@@ -66,6 +70,7 @@ main (
     DDS_StatusCondition                        PP_string_sc;
     DDS_StatusCondition                        PP_fixed_sc;
     DDS_StatusCondition                        PP_array_sc;
+	DDS_StatusCondition                        PP_bseq_sc;
     DDS_StatusCondition                        PP_quit_sc;
 
     DDS_Topic                                  PP_min_topic       = DDS_OBJECT_NIL;
@@ -73,6 +78,7 @@ main (
     DDS_Topic                                  PP_string_topic    = DDS_OBJECT_NIL;
     DDS_Topic                                  PP_fixed_topic     = DDS_OBJECT_NIL;
     DDS_Topic                                  PP_array_topic     = DDS_OBJECT_NIL;
+	DDS_Topic                                  PP_bseq_topic      = DDS_OBJECT_NIL;
     DDS_Topic                                  PP_quit_topic      = DDS_OBJECT_NIL;
 
 	DDS_ConditionSeq                          *conditionList;
@@ -259,6 +265,26 @@ main (
     DDS_StatusCondition_set_enabled_statuses (PP_array_sc, DDS_DATA_AVAILABLE_STATUS);
     result = DDS_WaitSet_attach_condition (w, PP_array_sc);
 
+	/*
+     * PP_bseq_msg
+     */
+
+    /*  Create Topic */
+    PP_bseq_dt = pingpong_PP_bseq_msgTypeSupport__alloc ();
+    pingpong_PP_bseq_msgTypeSupport_register_type (PP_bseq_dt, dp, "pingpong::PP_bseq_msg");
+    PP_bseq_topic = DDS_DomainParticipant_create_topic (dp, "PP_bseq_topic", "pingpong::PP_bseq_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+
+    /* Create datawriter */
+    PP_bseq_writer = DDS_Publisher_create_datawriter (p, PP_bseq_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+
+    /* Create datareader */
+    PP_bseq_reader = DDS_Subscriber_create_datareader (s, PP_bseq_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+
+    /* Add datareader statuscondition to waitset */
+    PP_bseq_sc = DDS_DataReader_get_statuscondition (PP_bseq_reader);
+    DDS_StatusCondition_set_enabled_statuses (PP_bseq_sc, DDS_DATA_AVAILABLE_STATUS);
+    result = DDS_WaitSet_attach_condition (w, PP_bseq_sc);
+
     /*
      * PP_quit_msg
      */
@@ -352,6 +378,19 @@ main (
                     } else {
                         printf ("PONG: PING_array triggered, but no data available\n");
                     }
+                } else if (conditionList->_buffer[i] == PP_bseq_sc) {
+                    /* printf ("PONG: PING_bseq arrived\n"); */
+                    result = pingpong_PP_bseq_msgDataReader_take (PP_bseq_reader, &PP_bseq_dataList, &infoList, DDS_LENGTH_UNLIMITED,
+                                 DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
+                    jmax = PP_bseq_dataList._length;
+                    if (jmax != 0) {
+                        for (j = 0; j < jmax; j++) {
+                            result = pingpong_PP_bseq_msgDataWriter_write (PP_bseq_writer, &PP_bseq_dataList._buffer[j], DDS_HANDLE_NIL);
+                        }
+                        result = pingpong_PP_bseq_msgDataReader_return_loan (PP_bseq_reader, &PP_bseq_dataList, &infoList);
+                    } else {
+                        printf ("PONG: PING_bseq triggered, but no data available\n");
+                    }
                 } else if (conditionList->_buffer[i] == PP_quit_sc) {
     		    /* printf ("PONG: PING_quit arrived\n"); */
                     result = pingpong_PP_quit_msgDataReader_take (PP_quit_reader, &PP_quit_dataList, &infoList, 1,
@@ -388,6 +427,8 @@ main (
     result = DDS_Publisher_delete_datawriter (p, PP_fixed_writer);
     result = DDS_Subscriber_delete_datareader (s, PP_array_reader);
     result = DDS_Publisher_delete_datawriter (p, PP_array_writer);
+	result = DDS_Subscriber_delete_datareader (s, PP_bseq_reader);
+    result = DDS_Publisher_delete_datawriter (p, PP_bseq_writer);
     result = DDS_Subscriber_delete_datareader (s, PP_quit_reader);
     result = DDS_DomainParticipant_delete_subscriber (dp, s);
     result = DDS_DomainParticipant_delete_publisher (dp, p);
@@ -396,6 +437,7 @@ main (
     result = DDS_DomainParticipant_delete_topic (dp, PP_string_topic);
     result = DDS_DomainParticipant_delete_topic (dp, PP_fixed_topic);
     result = DDS_DomainParticipant_delete_topic (dp, PP_array_topic);
+	result = DDS_DomainParticipant_delete_topic (dp, PP_bseq_topic);
     result = DDS_DomainParticipant_delete_topic (dp, PP_quit_topic);
     result = DDS_DomainParticipantFactory_delete_participant (dpf, dp);
     DDS_free (w);
@@ -404,6 +446,7 @@ main (
     DDS_free (PP_string_dt);
     DDS_free (PP_fixed_dt);
     DDS_free (PP_array_dt);
+	DDS_free (PP_bseq_dt);
     DDS_free (PP_quit_dt);
     DDS_free (dpQos);
     DDS_free (tQos);

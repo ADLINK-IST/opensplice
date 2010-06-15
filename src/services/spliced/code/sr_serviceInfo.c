@@ -401,6 +401,8 @@ cfgGetInfo(
             (void)cfgGetPriorityKind(si, info);
             (void)cfgGetRestartRule(si, info);
         }
+    } else {
+        OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, "Service %s disabled", si->name);
     }
 
     return !((int)r);
@@ -427,8 +429,6 @@ sr_serviceInfoNew(
         if (si != NULL) {
             result = cfgGetInfo(si, info, defaultConfigURI);
             if (result) {
-                OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED, 
-                    0, "Error in configuration for service %s -> skipped", si->name);
                 sr_serviceInfoFree(si);
                 si = NULL;
             }

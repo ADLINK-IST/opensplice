@@ -152,31 +152,22 @@
         </tr>      
         <tr>
           <td>
-            dds1577
+            dds2179
           </td>
           <td>
-            <b>Report Plug-in - using a blank name</b><br/>
+            <b>OpenSplice DDS fails to start on Windows after unexpected shutdown of OpenSplice daemon</b><br/>
             <i>
-              The library name for the report plugin can be blank but if it is blank
-              then an error occurs in existing code when trying to resolve function
-              names, this error causes a failure.
+              OpenSplice DDS fails to start after an unexpected termination of the OpenSplice 
+              daemon (either through the operating system stopping unexpectedly or using Task Manager to kill it).
+              When OpenSplice is stopped using ospl stop, it cleans up termporary files that are used to store information
+              about the database file (shared memory segment). When re-starting OpenSplice these files are identified and used,
+              but they are no longer valid. This issue is marked for resolution soon. <br><br>
+              A manual solution to this problem is to remove the files from the temporary directory as indicated by ospl-error.log and restart the daemon. 
             </i>
           </td>
         </tr>      
-        <tr>
-          <td>
-            dds2046
-          </td>
-          <td>
-            <b>Application with listeners does not terminate</b><br/>
-            <i>
-              When an application attach listeners, then it does not terminate and just hangs after the main thread finished.
-              This occurs in both java and c++.
-              <br>Workaround is to delete all the DCPS objects (Datareaders, listeners, Topics...) before terminating your application.
-            </i>
-          </td>
-        </tr>
       </table>
+
 
       <br/>
       <hr>

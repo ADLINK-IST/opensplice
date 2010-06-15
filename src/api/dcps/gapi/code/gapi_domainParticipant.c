@@ -36,6 +36,9 @@
 #include "u_user.h"
 #include "u_waitsetEvent.h"
 
+/* kernel includes */
+#include "v_event.h"
+
 #define U_PARTICIPANT_GET(t)       u_participant(U_ENTITY_GET(t))
 #define U_PARTICIPANT_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
 
@@ -48,11 +51,19 @@ typedef struct DeleteActionInfo_s {
     void                    *argument;
 } DeleteActionInfo;
 
+typedef enum {
+   STOPPED,
+   STARTING,
+   RUNNING,
+   STOPPING
+} threadState_t; 
+
 typedef struct ListenerThreadInfo_s {
     os_mutex                  mutex;
+    os_cond                   cond;
     os_threadId               threadId;
     u_waitset                 waitset;
-    gapi_boolean              running;
+    threadState_t             threadState;
     gapi_listenerThreadAction startAction;
     gapi_listenerThreadAction stopAction;
     void                      *actionArg;
@@ -276,6 +287,7 @@ initListenerThreadInfo (
     gapi_boolean initialized = FALSE;
     os_result osResult;
     os_mutexAttr osMutexAttr;
+    os_condAttr osCondAttr;
     u_cfElement cfg;
     u_cfData cfg_data;
     c_ulong cfg_value;
@@ -284,11 +296,16 @@ initListenerThreadInfo (
 
     osResult = os_mutexAttrInit (&osMutexAttr);
     osMutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
+    osResult = os_condAttrInit (&osCondAttr);
+    osCondAttr.scopeAttr = OS_SCOPE_PRIVATE;
     osResult = os_mutexInit (&info->mutex, &osMutexAttr);
+    if ( osResult == os_resultSuccess ) {
+       osResult = os_condInit (&info->cond, &info->mutex, &osCondAttr);
+    }
 
     if ( osResult == os_resultSuccess ) {
         info->threadId     = 0;
-        info->running      = FALSE;
+        info->threadState  = STOPPED;
         info->waitset      = NULL;
         info->startAction = threadStartAction;
         info->stopAction  = threadStopAction;
@@ -302,8 +319,6 @@ initListenerThreadInfo (
             if ( info->waitset ) {
                 initialized = TRUE;
             }
-        } else {
-            gapi_setFree(info->toAddList);
         }
 
         /* read stackSize from configuration */
@@ -331,15 +346,67 @@ static void
 deinitListenerThreadInfo (
     ListenerThreadInfo *info)
 {
+    os_mutexLock(&info->mutex);
     if ( info->waitset ) {
         u_waitsetFree(info->waitset);
+        info->waitset = NULL;
     }
 
     if ( info->toAddList ) {
         gapi_setFree(info->toAddList);
+        info->toAddList = NULL;
     }
+    os_mutexUnlock(&info->mutex);
+    os_condDestroy (&info->cond);
     os_mutexDestroy (&info->mutex);
 }
+
+/**
+ * Determines the name of the process.
+ * @param context   The gapi_context from where this function is called (only
+ *                  for error-reporting.
+ * @return          A heap-allocated string (has to be freed by os_free), or
+ *                  NULL if failed. The string will have to form that
+ *                  os_procFigureIdentity returns.
+ */
+#define _GAPI_DP_INITIAL_LEN (32)
+static char*
+determineProcIdentity (
+    const gapi_context *context)
+{
+    char *result, *realloced;
+    os_int32 size;
+
+    result = (char*)os_malloc(_GAPI_DP_INITIAL_LEN);
+    if(result){
+        size = os_procFigureIdentity(result, _GAPI_DP_INITIAL_LEN);
+        if(size >= _GAPI_DP_INITIAL_LEN){
+            /* Output was truncated, only realloc once, since the identity is
+             * not changing. */
+            realloced = (char*)os_realloc(result, size + 1);
+            if(realloced){
+                result = realloced;
+                size = os_procFigureIdentity(result, size + 1);
+            } else {
+                os_free(result);
+                result = NULL;
+                gapi_errorReport(context, GAPI_ERRORCODE_OUT_OF_RESOURCES);
+            }
+        }
+        /* No else, since fall-through for second os_procFigureIdentity-call */
+        if (size < 0){
+            /* An error occurred */
+            os_free(result);
+            result = NULL;
+            gapi_errorReport(context, GAPI_ERRORCODE_ERROR);
+        }
+    } else {
+        gapi_errorReport(context, GAPI_ERRORCODE_OUT_OF_RESOURCES);
+    }
+
+    return result;
+}
+#undef _GAPI_DP_INITIAL_LEN
 
 _DomainParticipant
 _DomainParticipantNew (
@@ -357,6 +424,7 @@ _DomainParticipantNew (
     v_participantQos participantQos = NULL;
     u_participant uParticipant;
     char participantId[256];
+    char *procIdentity;
 
     newParticipant = allocateParticipant();
 
@@ -401,10 +469,27 @@ _DomainParticipantNew (
     }
 
     if (newParticipant != NULL) {
-        int id = os_procIdToInteger (os_procIdSelf());
-
-        snprintf (participantId, sizeof (participantId), "DPCS Appl %d_%d_"PA_ADDRFMT,
-            id, (int)os_threadIdSelf(), (PA_ADDRCAST)newParticipant);
+        procIdentity = determineProcIdentity(context);
+        if(procIdentity && procIdentity[0] != '\0'){
+            if (procIdentity[0] != '<') {
+                /* A name was found, so use that as an identifier */
+                snprintf(participantId, sizeof(participantId), "%s",
+                        procIdentity);
+            } else {
+                /* Only PID was returned, decorate with some extra info */
+                snprintf(participantId, sizeof(participantId),
+                        "DCPS Appl %s %d_"PA_ADDRFMT, procIdentity,
+                        (int) os_threadIdSelf(), (PA_ADDRCAST) newParticipant);
+            }
+        } else {
+            /* Memory claim failed or empty string, fill in something useful */
+            snprintf(participantId, sizeof(participantId),
+                    "DCPS Appl <%d> %d_"PA_ADDRFMT, os_procIdToInteger(os_procIdSelf()),
+                    (int) os_threadIdSelf(), (PA_ADDRCAST) newParticipant);
+        }
+        if(procIdentity){
+            os_free(procIdentity);
+        }
         uParticipant = u_participantNew (domainId, 1, participantId, (v_qos)participantQos, FALSE);
         if ( uParticipant != NULL ) {
              U_PARTICIPANT_SET(newParticipant, uParticipant);
@@ -616,11 +701,16 @@ _DomainParticipantRegisterType (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     const BuiltinTopicTypeInfo *builtinInfo;
     _Topic topic;
+    gapi_context context;
+    u_topic uTopic = NULL;
+    c_iter topicList;
+    v_duration vDuration  = {1, 0};
 
     assert(participant);
     assert(typeSupport);
     assert(registryName);
 
+    GAPI_CONTEXT_SET(context, participant, GAPI_METHOD_REGISTER_TYPE);
     result = gapi_mapAdd(participant->typeSupportMap,
                         (gapi_object)gapi_strdup(registryName),
                         (gapi_object)typeSupport);
@@ -629,20 +719,37 @@ _DomainParticipantRegisterType (
         if ( builtinInfo ) {
             topic = _DomainParticipantFindBuiltinTopic(participant, builtinInfo->topicName);
             if ( !topic ) {
-                topic = _BuiltinTopicNew(participant, builtinInfo->topicName, typeSupport->type_name);
-                if ( topic ) {
-                    result = gapi_mapAdd(participant->builtinTopicMap,
-                                (gapi_object)builtinInfo->topicName,
-                                (gapi_object)topic);
+                topicList = u_participantFindTopic (U_PARTICIPANT_GET(participant), builtinInfo->topicName, vDuration);
+                if (topicList) {
+                    assert(c_iterLength(topicList) == 1);
+                    uTopic = u_topic(c_iterTakeFirst(topicList));
+                    c_iterFree (topicList);
+                }
+                if(uTopic)
+                {
+                    topic = _TopicFromKernelTopic (
+                        uTopic,
+                        builtinInfo->topicName,
+                        builtinInfo->typeName,
+                        typeSupport,
+                        participant,
+                        &context);
+                    if ( topic ) {
+                        result = gapi_mapAdd(participant->builtinTopicMap,
+                                    (gapi_object)builtinInfo->topicName,
+                                    (gapi_object)topic);
 
-                    if ( participant->deleteActionInfo.action ) {
-                        _TopicSetDeleteAction(topic,
-                                              participant->deleteActionInfo.action,
-                                              participant->deleteActionInfo.argument);
-                    }
-                    _EntityRelease(topic);
-                    if ( result != GAPI_RETCODE_OK ) {
-                        _TopicFree(topic);
+                        if ( participant->deleteActionInfo.action ) {
+                            _TopicSetDeleteAction(topic,
+                                                  participant->deleteActionInfo.action,
+                                                  participant->deleteActionInfo.argument);
+                        }
+                        _EntityRelease(topic);
+                        if ( result != GAPI_RETCODE_OK ) {
+                            _TopicFree(topic);
+                            result = GAPI_RETCODE_ERROR;
+                        }
+                    } else {
                         result = GAPI_RETCODE_ERROR;
                     }
                 } else {
@@ -2105,19 +2212,16 @@ gapi_domainParticipant_set_default_publisher_qos (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_PUBLISHER_QOS);
 
     participant = gapi_domainParticipantClaim(_this, &result);
-
-    if ( participant && qos ) {
-        if ( _Entity(participant)->enabled ) {
-            result = gapi_publisherQosIsConsistent(qos, &context);
-            if ( result == GAPI_RETCODE_OK ) {
-                gapi_publisherQosCopy (qos, &participant->_defPublisherQos);
-            }
-        } else {
-            result = GAPI_RETCODE_NOT_ENABLED;
+    if (result == GAPI_RETCODE_OK) {
+        if (qos == GAPI_PUBLISHER_QOS_DEFAULT) {
+            qos = &gapi_publisherQosDefault;
         }
+        result = gapi_publisherQosIsConsistent(qos, &context);
+        if (result == GAPI_RETCODE_OK) {
+            gapi_publisherQosCopy (qos, &participant->_defPublisherQos);
+        }
+        _EntityRelease(participant);
     }
-
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2135,12 +2239,14 @@ gapi_domainParticipant_get_default_publisher_qos (
     gapi_returnCode_t result;
 
     participant = gapi_domainParticipantClaim(_this, &result);
-
-    if ( participant && _Entity(participant)->enabled && qos ) {
-        gapi_publisherQosCopy (&participant->_defPublisherQos, qos);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos) {
+            gapi_publisherQosCopy (&participant->_defPublisherQos, qos);
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+        _EntityRelease(participant);
     }
-
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2161,23 +2267,16 @@ gapi_domainParticipant_set_default_subscriber_qos (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_SUBSCRIBER_QOS);
 
     participant = gapi_domainParticipantClaim(_this, &result);
-
-    if ( participant ) {
-        if ( qos ) {
-            if ( _Entity(participant)->enabled ) {
-                result = gapi_subscriberQosIsConsistent(qos, &context);
-                if ( result == GAPI_RETCODE_OK ) {
-                    gapi_subscriberQosCopy (qos, &participant->_defSubscriberQos);
-                }
-            } else {
-                result = GAPI_RETCODE_NOT_ENABLED;
-            }
-        } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+    if (result == GAPI_RETCODE_OK) {
+        if (qos == GAPI_SUBSCRIBER_QOS_DEFAULT) {
+            qos = &gapi_subscriberQosDefault;
         }
+        result = gapi_subscriberQosIsConsistent(qos, &context);
+        if (result == GAPI_RETCODE_OK) {
+            gapi_subscriberQosCopy (qos, &participant->_defSubscriberQos);
+        }
+        _EntityRelease(participant);
     }
-
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2195,12 +2294,14 @@ gapi_domainParticipant_get_default_subscriber_qos (
     gapi_returnCode_t result;
 
     participant = gapi_domainParticipantClaim(_this, &result);
-
-    if ( (participant != NULL) && _Entity(participant)->enabled && qos ) {
-        gapi_subscriberQosCopy (&participant->_defSubscriberQos, qos);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos) {
+            gapi_subscriberQosCopy (&participant->_defSubscriberQos, qos);
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+        _EntityRelease(participant);
     }
-
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2221,22 +2322,16 @@ gapi_domainParticipant_set_default_topic_qos (
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_TOPIC_QOS);
 
     participant = gapi_domainParticipantClaim(_this, &result);
-    if ( participant ) {
-        if ( qos ) {
-            if ( _Entity(participant)->enabled ) {
-                result = gapi_topicQosIsConsistent(qos, &context);
-                if ( result == GAPI_RETCODE_OK ) {
-                    gapi_topicQosCopy (qos, &participant->_defTopicQos);
-                }
-            } else {
-                result = GAPI_RETCODE_NOT_ENABLED;
-            }
-        } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+    if (result == GAPI_RETCODE_OK) {
+        if (qos == GAPI_TOPIC_QOS_DEFAULT) {
+            qos = &gapi_topicQosDefault;
         }
+        result = gapi_topicQosIsConsistent(qos, &context);
+        if (result == GAPI_RETCODE_OK) {
+            gapi_topicQosCopy (qos, &participant->_defTopicQos);
+        }
+        _EntityRelease(participant);
     }
-
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2254,10 +2349,14 @@ gapi_domainParticipant_get_default_topic_qos (
     gapi_returnCode_t result;
 
     participant = gapi_domainParticipantClaim(_this, &result);
-    if ( participant && _Entity(participant)->enabled && qos ) {
-        gapi_topicQosCopy (&participant->_defTopicQos, qos);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos) {
+            gapi_topicQosCopy (&participant->_defTopicQos, qos);
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+        _EntityRelease(participant);
     }
-    _EntityRelease(participant);
 
     return result;
 }
@@ -2510,15 +2609,26 @@ listenerEventThread (
         info->startAction(info->actionArg);
     }
 
-    while ( info->running ) {
+    os_mutexLock(&info->mutex);
+
+    if ( info->threadState == STARTING )
+    {
+       info->threadState = RUNNING;
+       os_condBroadcast(&info->cond);
+    }
+
+    while ( info->threadState == RUNNING ) {
         gapi_setIter iter;
 
-        os_mutexLock(&info->mutex);
         iter = gapi_setFirst(info->toAddList);
         while ( gapi_setIterObject(iter) ) {
            gapi_object handle = (gapi_object) gapi_setIterObject(iter);
            _Entity entity;
-
+            /* ES: The info->mutex can not be claimed before the gapi entity
+             * can be claimed as this violates the locking strategy within
+             * the gapi. So we will unlock the mutex while we have the entity
+             * claim.
+             */
             os_mutexUnlock(&info->mutex);
             entity = gapi_entityClaim(handle, NULL);
             if ( entity ) {
@@ -2542,19 +2652,24 @@ listenerEventThread (
         u_waitsetWaitEvents(info->waitset,&list);
         if ( list ) {
             u_waitsetEvent event = u_waitsetEvent(c_iterTakeFirst(list));
-            while ( event ) {
-                u_entity uEntity = event->entity;
-                gapi_entity source = (gapi_entity)(u_entityGetUserData(uEntity));
-
-                gapi_entityNotifyEvent(source, event->events);
-
+            while ( event) {
+                if(!(event->events & V_EVENT_TRIGGER))
+                {
+                    u_entity uEntity = event->entity;
+                    gapi_entity source = (gapi_entity)(u_entityGetUserData(uEntity));
+                    gapi_entityNotifyEvent(source, event->events);
+                }
                 u_waitsetEventFree(event);
                 event = u_waitsetEvent(c_iterTakeFirst(list));
             }
             c_iterFree(list);
             list = NULL;
         }
+        os_mutexLock(&info->mutex);
     }
+    info->threadState = STOPPED;
+    os_condBroadcast(&info->cond);
+    os_mutexUnlock(&info->mutex);
 
     if ( info->stopAction ) {
         info->stopAction(info->actionArg);
@@ -2575,7 +2690,8 @@ startListenerEventThread (
 
     info = &participant->listenerThreadInfo;
 
-    info->running = TRUE;
+    info->threadState = STARTING;
+    os_condBroadcast(&info->cond);
 
     osResult = os_threadAttrInit(&osThreadAttr);
     if ( osResult == os_resultSuccess ) {
@@ -2590,11 +2706,9 @@ startListenerEventThread (
         if ( osResult == os_resultSuccess ) {
             result = TRUE;
         } else {
-            info->running = FALSE;
             OS_REPORT(OS_ERROR, "startListenerEventThread", 0, "failed to start listener thread");
         }
     } else {
-        info->running = FALSE;
         OS_REPORT(OS_ERROR, "startListenerEventThread", 0, "failed to init thread attributes");
     }
 
@@ -2607,17 +2721,57 @@ stopListenerEventThread (
 {
     ListenerThreadInfo *info;
     gapi_boolean        result = FALSE;
+    gapi_returnCode_t gResult = GAPI_RETCODE_OK;
 
     info = &participant->listenerThreadInfo;
 
-    if ( info->running ) {
-        info->running = FALSE;
+    os_mutexLock(&info->mutex);
+    switch ( info->threadState )
+    {
+       case STARTING:
+       {
+          /* Someone is stopping the listener before its really started */
+          info->threadState = STOPPING;
+          os_condBroadcast(&info->cond);
+          do
+          {
+             os_condWait(&info->cond, &info->mutex );
+          } while ( info->threadState != STOPPED );
+          os_mutexUnlock(&info->mutex);
 
-        if ( info->waitset ) {
-            u_waitsetNotify(info->waitset, NULL);
-            os_threadWaitExit(info->threadId, NULL);
-            result = TRUE;
-        }
+          result = TRUE;
+          break;
+       }
+       case RUNNING:
+       {
+          info->threadState = STOPPING;
+          os_condBroadcast(&info->cond);
+          u_waitsetNotify(info->waitset, NULL);
+          os_mutexUnlock(&info->mutex);
+          _EntityRelease(participant);
+          os_threadWaitExit(info->threadId, NULL);
+          gapi_domainParticipantClaimNB(_ObjectToHandle(participant), &gResult);
+          if(gResult != GAPI_RETCODE_OK)
+          {
+             OS_REPORT(OS_WARNING, "stopListenerEventThread", 0, "failed to reclaim participant");
+          }
+          result = TRUE;
+          break;
+       }
+       case STOPPING:
+       {
+          do
+          {
+             os_condWait(&info->cond, &info->mutex );
+          } while ( info->threadState != STOPPED );
+          result = TRUE;
+          os_mutexUnlock(&info->mutex);
+          break;
+       }
+       default:
+       {
+          os_mutexUnlock(&info->mutex);
+       }
     }
 
     return result;
@@ -2634,14 +2788,31 @@ _DomainParticipantAddListenerInterest (
     info = &participant->listenerThreadInfo;
 
     os_mutexLock(&info->mutex);
-    gapi_setAdd(info->toAddList, _EntityHandle(status->entity));
-    os_mutexUnlock(&info->mutex);
 
-    if ( info->running ) {
-        u_waitsetNotify(info->waitset, NULL);
-    } else {
-        startListenerEventThread(participant);
+    switch ( info->threadState )
+    {
+       case RUNNING:
+       case STARTING:
+       {
+          gapi_setAdd(info->toAddList, _EntityHandle(status->entity));
+          u_waitsetNotify(info->waitset, NULL);
+          break;
+       }
+       case STOPPING:
+       case STOPPED:
+       {
+          while ( info->threadState == STOPPING ) 
+          {
+             os_condWait(&info->cond, &info->mutex );
+          };
+
+          gapi_setAdd(info->toAddList, _EntityHandle(status->entity));
+          startListenerEventThread(participant);
+          break;
+       }
     }
+
+    os_mutexUnlock(&info->mutex);
 
     return result;
 }
@@ -2657,14 +2828,17 @@ _DomainParticipantRemoveListenerInterest (
 
     info = &participant->listenerThreadInfo;
 
+    
+    os_mutexLock(&info->mutex);
     if ( info->waitset ) {
-        if ( info->running ) {
+
+        if ( info->threadState == RUNNING ) {
             if ( u_waitsetDetach(info->waitset, status->userEntity) == U_RESULT_OK ) {
                 result = TRUE;
             }
         }
     }
-
+    os_mutexUnlock(&info->mutex);
     return result;
 }
 

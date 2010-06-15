@@ -8,4 +8,5 @@ RUN_RBT=no
 RUN_EXAMPLES=yes
 VALGRIND=no
 
+export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.0.3
 . configs/`hostname`/common

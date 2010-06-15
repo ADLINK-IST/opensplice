@@ -40,10 +40,6 @@
 
 #define v_dataViewInstanceTemplate(_this) ((v_dataViewInstanceTemplate)(_this))
 
-#define v_dataViewInstance_t(scope) \
-        c_type(c_resolve(c_getBase(scope), \
-                          "kernelModule::v_dataViewInstance"))
-
 #define v_dataViewInstanceEmpty(_this) \
         (v_dataViewInstance(_this)->sampleCount == 0)
 

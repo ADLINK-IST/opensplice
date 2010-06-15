@@ -169,12 +169,6 @@ module DDS {
         ShareQosPolicy share;
     };
 
-    // tmp workaround
-    struct ScarabWorkaround {
-    long to_remove;
-    };
-    #pragma keylist ScarabWorkaround to_remove
-
 };
 
 #endif /* DDS_DCPS_BUILTINTOPICS_IDL */

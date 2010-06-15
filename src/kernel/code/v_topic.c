@@ -32,6 +32,7 @@
 #include "v__policy.h"
 #include "os_heap.h"
 #include "v_topic.h"
+#include "v__participant.h"
 
 #ifdef _EXTENT_
 #include "c_extent.h"
@@ -830,6 +831,25 @@ v_topicNotifyInconsistentTopic(
     }
 }
 
+void
+v_topicNotifyAllDataDisposed(
+    v_topic topic)
+{
+    C_STRUCT(v_event) e;
+    c_bool changed;
+
+    assert(C_TYPECHECK(topic,v_topic));
+
+    changed = v_statusNotifyAllDataDisposed(v_entity(topic)->status);
+    if (changed) {
+        e.kind = V_EVENT_ALL_DATA_DISPOSED;
+        e.source = v_publicHandle(v_public(topic));
+        e.userData = NULL;
+        v_observerNotify(v_observer(topic), &e, NULL);
+        v_observableNotify(v_observable(topic), &e);
+    }
+}
+
 v_result
 v_topicGetInconsistentTopicStatus(
     v_topic _this,
@@ -851,6 +871,33 @@ v_topicGetInconsistentTopicStatus(
             v_statusReset(status, V_EVENT_INCONSISTENT_TOPIC);
         }
         v_topicStatus(status)->inconsistentTopic.totalChanged = 0;
+        v_observerUnlock(v_observer(_this));
+    }
+
+    return result;
+}
+
+v_result
+v_topicGetAllDataDisposedStatus(
+    v_topic _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_result result;
+    v_status status;
+
+    assert(C_TYPECHECK(_this,v_topic));
+
+    result = V_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        v_observerLock(v_observer(_this));
+        status = v_entity(_this)->status;
+        result = action(&v_topicStatus(status)->allDataDisposed, arg);
+        if (reset) {
+            v_statusReset(status, V_EVENT_ALL_DATA_DISPOSED);
+        }
+        v_topicStatus(status)->allDataDisposed.totalChanged = 0;
         v_observerUnlock(v_observer(_this));
     }
 
@@ -982,4 +1029,33 @@ v_partitionDetermineTopicAccessMode(
         retVal = V_ACCESS_MODE_READ_WRITE;
     }
     return retVal;
+}
+
+v_result v_topicDisposeAllData(v_topic topic)
+{
+   v_message msg;
+   v_participant participant;
+   v_kernel kernel;
+   v_result res = V_RESULT_OUT_OF_MEMORY;
+
+   assert(topic != NULL);
+   assert(C_TYPECHECK(topic,v_topic));
+
+   kernel = v_objectKernel(topic);
+   participant = kernel->builtin->participant;
+   msg = v_participantCreateCandMCommand( participant );
+   if ( msg != NULL )
+   {
+      res = v_participantCandMCommandSetDisposeAllData( participant, 
+                                                        msg, 
+                                                        v_entity(topic)->name,
+                                                        "*" );
+      if ( res == V_RESULT_OK )
+      {
+         res = v_participantWriteCandMCommand( participant, msg );
+      }
+
+      c_free(msg);
+   }
+   return (res);
 }

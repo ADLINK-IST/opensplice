@@ -19,6 +19,7 @@
 #include "d__durability.h"
 #include "d_durability.h"
 #include "d_nameSpace.h"
+#include "d_policy.h"
 #include "d_table.h"
 #include "d_misc.h"
 #include "d_object.h"
@@ -123,6 +124,7 @@ d_configurationDeinit(
 {
     d_configuration configuration;
     d_nameSpace ns;
+    d_policy policy;
     c_char* name;
 
     assert(d_objectIsValid(object, D_CONFIGURATION) == TRUE);
@@ -132,6 +134,15 @@ d_configurationDeinit(
 
         if(configuration->persistentStoreDirectory){
             os_free(configuration->persistentStoreDirectory);
+        }
+        if(configuration->policies){
+            policy = d_policy(c_iterTakeFirst(configuration->policies));
+
+            while(policy){
+                d_policyFree(policy);
+                policy = d_policy(c_iterTakeFirst(configuration->policies));
+            }
+            c_iterFree(configuration->policies);
         }
         if(configuration->nameSpaces){
             ns = d_nameSpace(c_iterTakeFirst(configuration->nameSpaces));
@@ -201,6 +212,7 @@ d_configurationInit(
     u_cfElement element)
 {
     d_nameSpace ns;
+    d_policy policy;
     c_long i;
     c_bool found;
 
@@ -332,18 +344,26 @@ d_configurationInit(
             d_configurationValueFloat  (config, element, "Network/ResendTimeRange/#text", d_configurationSetNetworkResendTimeRange);
             d_configurationSetNetworkWaitForAttachment(config, element, "Network/WaitForAttachment", "ServiceName/#text");
 
-            config->nameSpaces = d_configurationResolveNameSpaces(element, "NameSpaces/NameSpace");
+            config->policies = d_configurationResolvePolicies (element, "NameSpaces/Policy");
+            config->nameSpaces = d_configurationResolveNameSpaces(config, element, "NameSpaces/NameSpace");
         } else {
             d_printTimedEvent(durability, D_LEVEL_CONFIG, D_THREAD_MAIN,
                 "Configuration defaults applied. No actual one found...\n");
         }
 
-        if(c_iterLength(config->nameSpaces) == 0) {
-            ns = d_nameSpaceNew("NoName0", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_ALL);
-            d_nameSpaceAddElement(ns, "all", "*", "*");
-            config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
+        if(c_iterLength(config->policies) == 0) {
+            /* If no policies are found, create a default policy for all namespaces */
+            policy = d_policyNew("*", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_ALL);
+            config->policies = c_iterInsert(config->policies, policy);
+        }
+
+        if (c_iterLength(config->nameSpaces) == 0) {
+            /* If no namespaces are found, create a default namespace for all partitions */
+            ns = d_nameSpaceNew(config, "NoName");
+            config->nameSpaces = c_iterInsert (config->nameSpaces, ns);
+            d_nameSpaceAddElement (ns, "NoName", "*", "*");
         } else {
-            /*Make sure the V_BUILTIN_PARTITION is part of the namespace*/
+            /* Make sure the V_BUILTIN_PARTITION is part of the namespace */
             found = FALSE;
 
             for(i=0; i<c_iterLength(config->nameSpaces) && !found; i++){
@@ -353,11 +373,13 @@ d_configurationInit(
             }
 
             if(!found){
-                ns = d_nameSpaceNew("AutoBuiltinPartition", D_ALIGNEE_INITIAL_AND_ALIGNER, D_DURABILITY_TRANSIENT);
+                /* Create new namespace for builtin partition (will automatically select policy) */
+                ns = d_nameSpaceNew_w_policy("AutoBuiltinPartition", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_TRANSIENT);
                 d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, "*");
                 config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
             }
         }
+
         d_configurationReport(config, durability);
     }
 }
@@ -395,9 +417,6 @@ d_configurationNameSpacesCombine(
             break;
     }
     switch(d_nameSpaceGetAlignmentKind(ns)){
-        case D_ALIGNEE_INITIAL_AND_ALIGNER:
-            alignee = "INITIAL_AND_ALIGNER";
-            break;
         case D_ALIGNEE_INITIAL:
             alignee = "INITIAL";
             break;
@@ -1840,129 +1859,6 @@ d_configurationValueString(
 }
 
 c_bool
-d_configurationGroupInInitialAligneeNS(
-    d_configuration configuration,
-    d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
-{
-    d_nameSpace ns;
-    c_bool inNameSpace;
-    c_ulong count, i;
-
-    assert(d_objectIsValid(d_object(configuration), D_CONFIGURATION) == TRUE);
-
-    inNameSpace = FALSE;
-    count       = c_iterLength(configuration->nameSpaces);
-
-    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
-        ns = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-        inNameSpace = d_configurationInNameSpace(ns, partition, topic, kind, FALSE);
-
-        if(inNameSpace == TRUE){
-            switch(d_nameSpaceGetAlignmentKind(ns)){
-                case D_ALIGNEE_INITIAL_AND_ALIGNER:
-                case D_ALIGNEE_INITIAL:
-                    break;
-                default:
-                    inNameSpace = FALSE;
-                    break;
-            }
-
-        }
-    }
-    if(inNameSpace == FALSE){
-        inNameSpace = isBuiltinGroup(partition, topic);
-    }
-    return inNameSpace;
-}
-
-c_bool
-d_configurationGroupInAligneeNS(
-    d_configuration configuration,
-    d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
-{
-    d_nameSpace ns;
-    c_bool inNameSpace;
-    c_ulong count, i;
-
-    assert(d_objectIsValid(d_object(configuration), D_CONFIGURATION) == TRUE);
-
-    inNameSpace = FALSE;
-    count       = c_iterLength(configuration->nameSpaces);
-
-    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
-        ns = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-        inNameSpace = d_configurationInNameSpace(ns, partition, topic, kind, FALSE);
-    }
-    if(inNameSpace == FALSE){
-        inNameSpace = isBuiltinGroup(partition, topic);
-    }
-    return inNameSpace;
-}
-
-c_bool
-d_configurationGroupInActiveAligneeNS(
-    d_configuration configuration,
-    d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
-{
-    d_nameSpace ns;
-    c_bool inNameSpace;
-    c_ulong count, i;
-
-    assert(d_objectIsValid(d_object(configuration), D_CONFIGURATION) == TRUE);
-
-    inNameSpace = FALSE;
-    count       = c_iterLength(configuration->nameSpaces);
-
-    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
-        ns = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-        inNameSpace = d_configurationInNameSpace(ns, partition, topic, kind, FALSE);
-
-        if(inNameSpace){
-            if(d_nameSpaceGetAlignmentKind(ns) == D_ALIGNEE_ON_REQUEST){
-                inNameSpace = FALSE;
-            }
-        }
-    }
-    if(inNameSpace == FALSE){
-        inNameSpace = isBuiltinGroup(partition, topic);
-    }
-    return inNameSpace;
-}
-
-
-c_bool
-d_configurationGroupInAlignerNS(
-    d_configuration configuration,
-    d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
-{
-    d_nameSpace ns;
-    c_bool inNameSpace;
-    c_ulong count, i;
-
-    assert(d_objectIsValid(d_object(configuration), D_CONFIGURATION) == TRUE);
-
-    inNameSpace = FALSE;
-    count       = c_iterLength(configuration->nameSpaces);
-
-    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
-        ns = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-        inNameSpace = d_configurationInNameSpace(ns, partition, topic, kind, TRUE);
-    }
-    if(inNameSpace == FALSE){
-        inNameSpace = isBuiltinGroup(partition, topic);
-    }
-    return inNameSpace;
-}
-
-c_bool
 d_configurationInNameSpace(
     d_nameSpace ns,
     d_partition partition,
@@ -2025,28 +1921,31 @@ d_configurationInNameSpace(
 }
 
 c_iter
-d_configurationResolveNameSpaces(
+d_configurationResolvePolicies(
     u_cfElement  elementParent,
-    const c_char * nameSpaceName )
+    const c_char * policyName )
 {
-    c_iter      iter, result;
-    u_cfElement element;
-    c_char *    durabilityKind;
-    c_char *    alignmentKind;
-    c_char *    name;
-    c_bool      found;
-    d_nameSpace ns;
-    d_alignmentKind akind;
-    d_durabilityKind dkind;
-    c_long length;
+    c_iter              iter, result;
+    u_cfElement         element;
+    c_char *            durabilityKind;
+    c_char *            aligner;
+    c_char *            alignmentKind;
+    c_char *            namespace;
+    c_bool              found;
+    d_policy            policy;
+    c_bool              isAligner;
+    d_alignmentKind     akind;
+    d_durabilityKind    dkind;
+    c_long              length;
 
     result = c_iterNew(NULL);
-    iter = u_cfElementXPath(elementParent, nameSpaceName);
+    iter = u_cfElementXPath(elementParent, policyName);
     element = c_iterTakeFirst(iter);
 
     while (element) {
-        found = u_cfElementAttributeStringValue(element, "durabilityKind", &durabilityKind);
 
+        /* Parse durability kind element */
+        found = u_cfElementAttributeStringValue(element, "durability", &durabilityKind);
         if(found){
             if(os_strcasecmp(durabilityKind, "TRANSIENT") == 0){
                 dkind = D_DURABILITY_TRANSIENT;
@@ -2062,8 +1961,22 @@ d_configurationResolveNameSpaces(
             dkind = D_DURABILITY_ALL;
         }
 
-        found = u_cfElementAttributeStringValue(element, "alignmentKind", &alignmentKind);
+        /* Parse aligner element */
+        found = u_cfElementAttributeStringValue(element, "aligner", &aligner);
+        if (found){
+            if (os_strcasecmp(aligner, "TRUE") == 0){
+                isAligner = TRUE;
+            }else {
+                isAligner = FALSE;
+            }
+            os_free(aligner);
+        }else
+        {
+            isAligner = TRUE;
+        }
 
+        /* Parse alignment kind element */
+        found = u_cfElementAttributeStringValue(element, "alignee", &alignmentKind);
         if(found){
             if(os_strcasecmp(alignmentKind, "ON_REQUEST") == 0){
                 akind = D_ALIGNEE_ON_REQUEST;
@@ -2072,20 +1985,165 @@ d_configurationResolveNameSpaces(
             } else if(os_strcasecmp(alignmentKind, "LAZY") == 0){
                 akind = D_ALIGNEE_LAZY;
             } else {
-                akind = D_ALIGNEE_INITIAL_AND_ALIGNER;
+                akind = D_ALIGNEE_INITIAL;
             }
             os_free(alignmentKind);
         } else {
-            akind = D_ALIGNEE_INITIAL_AND_ALIGNER;
+            akind = D_ALIGNEE_INITIAL;
         }
-        found = u_cfElementAttributeStringValue(element, "name", &name);
 
+        /* Parse namespace element */
+        found = u_cfElementAttributeStringValue(element, "nameSpace", &namespace);
+        if(!found){
+
+            /* TODO: Moet dit niet verplaatst worden naar functionaliteit voor het ondervangen van
+             * een namespace zonder naam (backwards compatibility)
+             */
+            length = c_iterLength(result);
+            namespace = os_malloc(17);
+            sprintf(namespace, "NoName%d", length);
+        }
+
+        /* Create new policy */
+        policy = d_policyNew (namespace, isAligner, akind, dkind);
+        os_free(namespace);
+
+        result = c_iterInsert(result, policy);
+
+        u_cfElementFree(element);
+        element = (u_cfElement)c_iterTakeFirst(iter);
+    }
+    c_iterFree(iter);
+
+    return result;
+}
+
+static c_bool
+resolveNameSpaceDeprecated (
+    u_cfElement element,
+    d_durabilityKind* durabilityKind_out,
+    d_alignmentKind* alignmentKind_out,
+    c_bool* isAligner_out)
+{
+    c_bool useDeprecated;
+    c_bool              isAligner;
+    d_alignmentKind     akind;
+    d_durabilityKind    dkind;
+    c_char *            durabilityKind;
+    c_char *            alignmentKind;
+    c_bool              found;
+
+    useDeprecated = FALSE;
+    isAligner = FALSE;
+
+    /* Parse durability kind element */
+    found = u_cfElementAttributeStringValue(element, "durabilityKind", &durabilityKind);
+    if(found){
+        useDeprecated = TRUE;
+
+        if(os_strcasecmp(durabilityKind, "TRANSIENT") == 0){
+            dkind = D_DURABILITY_TRANSIENT;
+        } else if(os_strcasecmp(durabilityKind, "TRANSIENT_LOCAL") == 0){
+            dkind = D_DURABILITY_TRANSIENT_LOCAL;
+        } else if(os_strcasecmp(durabilityKind, "PERSISTENT") == 0){
+            dkind = D_DURABILITY_PERSISTENT;
+        } else {
+            dkind = D_DURABILITY_ALL;
+        }
+        os_free(durabilityKind);
+    } else {
+        dkind = D_DURABILITY_ALL;
+    }
+
+    /* Parse alignment kind element */
+    found = u_cfElementAttributeStringValue(element, "alignmentKind", &alignmentKind);
+    if(found){
+        useDeprecated = TRUE;
+
+        if(os_strcasecmp(alignmentKind, "ON_REQUEST") == 0){
+            akind = D_ALIGNEE_ON_REQUEST;
+        } else if(os_strcasecmp(alignmentKind, "INITIAL") == 0){
+            akind = D_ALIGNEE_INITIAL;
+        } else if (os_strcasecmp(alignmentKind, "INITIAL_AND_ALIGNER") == 0){
+            akind = D_ALIGNEE_INITIAL;
+            isAligner = TRUE;
+        } else if(os_strcasecmp(alignmentKind, "LAZY") == 0){
+            akind = D_ALIGNEE_LAZY;
+        } else {
+            akind = D_ALIGNEE_INITIAL;
+        }
+        os_free(alignmentKind);
+    } else {
+        akind = D_ALIGNEE_INITIAL;
+    }
+
+    *durabilityKind_out = dkind;
+    *alignmentKind_out = akind;
+    *isAligner_out = isAligner;
+
+    return useDeprecated;
+}
+
+c_iter
+d_configurationResolveNameSpaces(
+    d_configuration config,
+    u_cfElement  elementParent,
+    const c_char * nameSpaceName )
+{
+    c_iter      iter, result;
+    u_cfElement element;
+    c_char *    name;
+    c_bool      found;
+    d_nameSpace ns;
+    c_long length;
+
+    /* For deprecated configuration */
+    c_bool              isAligner;
+    d_alignmentKind     akind;
+    d_durabilityKind    dkind;
+    c_bool              useDeprecated;
+
+    result = c_iterNew(NULL);
+    iter = u_cfElementXPath(elementParent, nameSpaceName);
+    element = c_iterTakeFirst(iter);
+    useDeprecated = FALSE;
+
+    while (element) {
+        useDeprecated =
+                useDeprecated || resolveNameSpaceDeprecated (
+                                            element,
+                                            &dkind,
+                                            &akind,
+                                            &isAligner);
+
+        /* Parse name element */
+        found = u_cfElementAttributeStringValue(element, "name", &name);
         if(!found){
             length = c_iterLength(result);
-            name = os_malloc(10);
+            name = os_malloc(17);
+
             sprintf(name, "NoName%d", length);
+
+            useDeprecated = TRUE;
         }
-        ns = d_nameSpaceNew(name, akind, dkind);
+
+        /* If deprecated, create namespace with private policy */
+        if (useDeprecated){
+
+            /* Verify that new and old configurations are not mixed */
+            if (c_iterLength (config->policies)) {
+                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
+                    "Durability namespace configuration uses both deprecated and new notation. See deployment manual.");
+            }else {
+                OS_REPORT(OS_WARNING, D_CONTEXT, 0,
+                    "Durability namespace configuration uses deprecated notation. See deployment manual.");
+            }
+
+            ns = d_nameSpaceNew_w_policy (name, isAligner, akind, dkind);
+        }else {
+            ns = d_nameSpaceNew(config, name);
+        }
+
         os_free(name);
         d_configurationResolvePartition(ns, element, "NoName", "Partition", "*");
         result = c_iterInsert(result, ns);
@@ -2098,35 +2156,3 @@ d_configurationResolveNameSpaces(
     return result;
 }
 
-d_nameSpace
-d_configurationGetNameSpaceForGroup(
-    d_configuration configuration,
-    d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
-{
-    d_nameSpace nameSpace;
-    c_long i;
-    d_durabilityKind dkind;
-    assert(d_objectIsValid(d_object(configuration), D_CONFIGURATION) == TRUE);
-    nameSpace = NULL;
-
-    for(i=0; (i<c_iterLength(configuration->nameSpaces)) && (nameSpace == NULL); i++){
-        nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
-
-        if(d_nameSpaceIsIn(nameSpace, partition, topic) == TRUE){
-            dkind = d_nameSpaceGetDurabilityKind(nameSpace);
-
-            if(dkind != D_DURABILITY_ALL){
-                if( (!((dkind == D_DURABILITY_TRANSIENT) && (kind == D_DURABILITY_PERSISTENT))) &&
-                    (dkind != kind))
-                {
-                    nameSpace = NULL;
-                }
-            }
-        } else {
-            nameSpace = NULL;
-        }
-    }
-    return nameSpace;
-}

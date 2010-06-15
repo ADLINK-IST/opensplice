@@ -46,38 +46,94 @@ d_nameSpacesRequestListenerNew(
 }
 
 static void
-determineMasters(
+cleanNameSpaces (
+    c_iter nameSpaces)
+{
+    d_nameSpaces ns;
+
+    /* Clean old nameSpaces list if exists */
+    if (nameSpaces) {
+        ns = d_nameSpaces(c_iterTakeFirst(nameSpaces));
+
+        while(ns){
+            d_nameSpacesFree(ns);
+            ns = d_nameSpaces(c_iterTakeFirst(nameSpaces));
+        }
+
+        c_iterFree (nameSpaces);
+    }
+}
+
+struct updateNsWalkData
+{
+    c_iter nameSpaces;
+    d_nameSpacesRequestListener listener;
+};
+
+static void
+updateNameSpacesWalk (
+    d_nameSpace n,
+    c_iterActionArg userData)
+{
+    d_nameSpacesRequestListener listener;
+    d_admin admin;
+    d_nameSpaces ns;
+    d_networkAddress master;
+    struct updateNsWalkData* walkData;
+
+    walkData = (struct updateNsWalkData*)userData;
+    listener = walkData->listener;
+    admin = d_listenerGetAdmin(d_listener(listener));
+
+    /* Create nameSpaces object from namespace, update total later */
+    ns = d_nameSpacesNew(admin, n, d_nameSpaceGetInitialQuality(n), 0);
+    master = d_nameSpaceGetMaster(n);
+    d_nameSpacesSetMaster(ns, master);
+    d_networkAddressFree(master);
+
+    /* Add namespaces object to listener */
+    walkData->nameSpaces = c_iterAppend (walkData->nameSpaces, ns);
+}
+
+static void
+updateNameSpacesTotalWalk (
+    void* o,
+    c_iterActionArg userData)
+{
+    c_ulong total;
+    d_nameSpaces ns;
+
+    ns = d_nameSpaces(o);
+
+    total = *((c_ulong*)userData);
+
+    d_nameSpacesSetTotal(ns, total);
+}
+
+/* TODO: NOT THREAD SAFE */
+static c_iter
+updateNameSpaces(
     d_nameSpacesRequestListener listener)
 {
     d_admin admin;
-    d_durability durability;
-    d_configuration config;
-    c_long count, i;
-    d_nameSpace n;
-    d_nameSpaces ns;
-    d_networkAddress master;
+    c_ulong total;
+    c_iter nameSpaces;
+    struct updateNsWalkData walkData;
 
-    assert(d_listenerIsValid(d_listener(listener), D_NAMESPACES_REQ_LISTENER));
+    admin = d_listenerGetAdmin (d_listener(listener));
 
-    admin      = d_listenerGetAdmin(d_listener(listener));
-    durability = d_adminGetDurability(admin);
-    config     = d_durabilityGetConfiguration(durability);
-    count      = c_iterLength(config->nameSpaces);
+    /* Update nameSpaces */
+    nameSpaces = c_iterNew (NULL);
+    walkData.listener = listener;
+    walkData.nameSpaces = nameSpaces;
 
-    assert(count == c_iterLength(listener->nameSpaces));
+    d_adminNameSpaceWalk (admin, updateNameSpacesWalk, &walkData);
+    total = c_iterLength (walkData.nameSpaces);
 
-    for(i=0; i<count; i++){
-        n = d_nameSpace(c_iterObject(config->nameSpaces, i));
-        ns = d_nameSpaces(c_iterObject(listener->nameSpaces, i));
-        master = d_nameSpaceGetMaster(n);
+    /* Update totals */
+    c_iterWalk (walkData.nameSpaces, updateNameSpacesTotalWalk, &total);
 
-        while(!master){
-            master = d_nameSpaceGetMaster(n);
-        }
-        d_nameSpacesSetMaster(ns, master);
-        d_networkAddressFree(master);
-    }
-    return;
+    return walkData.nameSpaces;
 }
 
 void
@@ -86,12 +142,6 @@ d_nameSpacesRequestListenerInit(
     d_subscriber subscriber)
 {
     d_admin admin;
-    d_durability durability;
-    d_configuration config;
-    d_nameSpaces ns;
-    d_nameSpace n;
-    c_ulong count, i;
-    d_networkAddress master;
     os_threadAttr attr;
 
     os_threadAttrInit(&attr);
@@ -106,20 +156,6 @@ d_nameSpacesRequestListenerInit(
                          d_nameSpacesRequestListenerDeinit);
 
     admin      = d_subscriberGetAdmin(subscriber);
-    durability = d_adminGetDurability(admin);
-    config     = d_durabilityGetConfiguration(durability);
-    count      = c_iterLength(config->nameSpaces);
-
-    listener->nameSpaces = c_iterNew(NULL);
-
-    for(i=0; i<count; i++){
-        n = d_nameSpace(c_iterObject(config->nameSpaces, i));
-        ns = d_nameSpacesNew(admin, n, d_nameSpaceGetInitialQuality(n), count);
-        master = d_nameSpaceGetMaster(n);
-        d_nameSpacesSetMaster(ns, master);
-        d_networkAddressFree(master);
-        listener->nameSpaces = c_iterAppend(listener->nameSpaces, ns);
-    }
 }
 
 void
@@ -137,21 +173,9 @@ void
 d_nameSpacesRequestListenerDeinit(
     d_object object)
 {
-    d_nameSpaces ns;
-    d_nameSpacesRequestListener listener;
-
     assert(d_listenerIsValid(d_listener(object), D_NAMESPACES_REQ_LISTENER));
 
-    if(object){
-        listener = d_nameSpacesRequestListener(object);
-        ns = d_nameSpaces(c_iterTakeFirst(listener->nameSpaces));
-
-        while(ns){
-            d_nameSpacesFree(ns);
-            ns = d_nameSpaces(c_iterTakeFirst(listener->nameSpaces));
-        }
-        c_iterFree(listener->nameSpaces);
-    }
+    /* Obsolete ? */
 }
 
 c_bool
@@ -182,6 +206,7 @@ d_nameSpacesRequestListenerAction(
     d_networkAddress addr;
     d_nameSpacesRequest request;
     c_bool added;
+    c_iter nameSpaces;
 
     assert(d_listenerIsValid(d_listener(listener), D_NAMESPACES_REQ_LISTENER));
 
@@ -197,6 +222,9 @@ d_nameSpacesRequestListenerAction(
             D_THREAD_NAMESPACES_REQUEST_LISTENER,
             "Received nameSpacesRequest from fellow %d.\n",
             message->senderAddress.systemId);
+
+    /* Update nameSpaces list for listener */
+    nameSpaces = updateNameSpaces(d_nameSpacesRequestListener(listener));
 
     if(!fellow){
         fellow = d_fellowNew(addr, message->senderState);
@@ -220,15 +248,16 @@ d_nameSpacesRequestListenerAction(
         }
     }
     d_fellowUpdateStatus(fellow, message->senderState, v_timeGet());
-    determineMasters(d_nameSpacesRequestListener(listener));
-    count = c_iterLength(d_nameSpacesRequestListener(listener)->nameSpaces);
+
+    count = c_iterLength(nameSpaces);
 
     for(i=0; i<count; i++){
-        ns = d_nameSpaces(c_iterObject(d_nameSpacesRequestListener(listener)->nameSpaces, i));
+        ns = d_nameSpaces(c_iterObject(nameSpaces, i));
         d_messageInit(d_message(ns), admin);
         d_messageSetAddressee(d_message(ns), addr);
         d_publisherNameSpacesWrite(publisher, ns, addr);
     }
+    cleanNameSpaces (nameSpaces);
     d_fellowFree(fellow);
     d_networkAddressFree(addr);
 
@@ -244,23 +273,32 @@ d_nameSpacesRequestListenerReportNameSpaces(
     d_nameSpaces ns;
     d_admin admin;
     d_publisher publisher;
+    c_iter nameSpaces;
 
     assert(d_listenerIsValid(d_listener(listener), D_NAMESPACES_REQ_LISTENER));
 
     if(listener){
         addr = d_networkAddressUnaddressed();
         admin = d_listenerGetAdmin(d_listener(listener));
-        publisher = d_adminGetPublisher(admin);
-        determineMasters(listener);
-        count = c_iterLength(listener->nameSpaces);
 
+        assert (admin);
+
+        publisher = d_adminGetPublisher(admin);
+
+        /* Get list of namespaces */
+        nameSpaces = updateNameSpaces(listener);
+
+        count = c_iterLength(nameSpaces);
         for(i=0; i<count; i++){
-            ns = d_nameSpaces(c_iterObject(listener->nameSpaces, i));
+            ns = d_nameSpaces(c_iterObject(nameSpaces, i));
             d_messageInit(d_message(ns), admin);
             d_messageSetAddressee(d_message(ns), addr);
             d_publisherNameSpacesWrite(publisher, ns, addr);
         }
         d_networkAddressFree(addr);
+
+        /* Free namespace list */
+        cleanNameSpaces (nameSpaces);
     }
     return;
 }

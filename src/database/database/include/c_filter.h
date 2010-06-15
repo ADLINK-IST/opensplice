@@ -20,6 +20,10 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 C_CLASS(c_filter);
@@ -42,5 +46,9 @@ c_qPredEval(
     c_object o);
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* C_FILTER_H */

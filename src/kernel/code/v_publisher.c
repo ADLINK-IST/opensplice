@@ -112,6 +112,7 @@ v_publisherNew(
             p->qos         = q;
             p->suspendTime = C_TIME_INFINITE;
             p->participant = participant;
+            p->transactionId = 0;
             c_lockInit(&p->lock,SHARED_LOCK);
             v_participantAdd(participant,v_entity(p));
             assert(c_refCount(p) == 3);  /* as handle, by participant and the local variable p */
@@ -374,6 +375,7 @@ v_publisherAddWriter(
         v_writerPublish(w,d);
         c_free(d);
     }
+    v_writerCoherentBegin(w,v_publisherTransactionId(p));
     c_setInsert(p->writers,w);
     c_lockUnlock(&p->lock);
     c_iterFree(iter);
@@ -392,6 +394,14 @@ v_publisherRemoveWriter(
     assert(C_TYPECHECK(w,v_writer));
 
     c_lockWrite(&p->lock);
+#if 0
+    /* following statement enables deletion of writers within
+     * a transaction and still consider written samples to be
+     * part of the transaction.
+     * Not seen as correct behavior (yet).
+     */
+    v_writerCoherentEnd(w);
+#endif
     found = c_remove(p->writers,w,NULL,NULL);
     c_lockUnlock(&p->lock);
     c_free(found);
@@ -566,13 +576,46 @@ v_publisherResume (
     return resumed;
 }
 
+static c_bool
+beginTransaction (
+    c_object o,
+    c_voidp arg)
+{
+    v_writer w = v_writer(o);
+    c_ulong id = *(c_ulong *)arg;
+
+    v_writerCoherentBegin(w,id);
+    return TRUE;
+}
+
 void
 v_publisherCoherentBegin (
     v_publisher p)
 {
+    v_kernel kernel;
+
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
+    
+    c_lockWrite(&p->lock);
+    if (p->transactionId == 0) {
+        kernel = v_objectKernel(p);
+        p->transactionId = v_kernelGetTransactionId(kernel);
+        c_walk(p->writers, beginTransaction, (c_voidp)&p->transactionId);
+    }
+    c_lockUnlock(&p->lock);
+}
 
+static c_bool
+endTransaction (
+    c_object o,
+    c_voidp arg)
+{
+    v_writer w = v_writer(o);
+
+    v_writerCoherentEnd(w);
+
+    return TRUE;
 }
 
 void
@@ -581,6 +624,13 @@ v_publisherCoherentEnd (
 {
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
+
+    c_lockWrite(&p->lock);
+    if (p->transactionId != 0) {
+        p->transactionId = 0;
+        c_walk(p->writers, endTransaction, NULL);
+    }
+    c_lockUnlock(&p->lock);
 }
 
 v_publisherQos

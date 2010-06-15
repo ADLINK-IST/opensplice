@@ -16,18 +16,17 @@
 #include "v_kernelStatistics.h"
 #include "v_maxValue.h"
 
-static c_type kernelStatisticsType = NULL;
-
 v_kernelStatistics v_kernelStatisticsNew(v_kernel k)
 {
     v_kernelStatistics ks;
+    c_type kernelStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k,v_kernel));
 
-    if (kernelStatisticsType == NULL) {
-        kernelStatisticsType = c_resolve(c_getBase((c_object)k), "kernelModule::v_kernelStatistics");
-    }
+    /* not necessary to cache this type since it is looked up only once per process */
+    kernelStatisticsType = c_resolve(c_getBase((c_object)k), "kernelModule::v_kernelStatistics");
+
     ks = v_kernelStatistics(v_new(k, kernelStatisticsType));
     v_kernelStatisticsInit(ks);
     return ks;

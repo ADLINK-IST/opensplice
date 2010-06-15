@@ -399,6 +399,14 @@ c_baseOnOutOfMemory(
     c_baseOutOfMemoryAction action,
     c_voidp arg);
 
+OS_API typedef void (*c_baseLowOnMemoryAction)(c_voidp arg);
+
+OS_API void
+c_baseOnLowOnMemory(
+    c_base base,
+    c_baseLowOnMemoryAction action,
+    c_voidp arg);
+
 OS_API void
 c_destroy (
     c_base _this);

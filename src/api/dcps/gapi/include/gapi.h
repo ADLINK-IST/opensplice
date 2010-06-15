@@ -393,6 +393,8 @@ typedef gapi_unsigned_long gapi_statusMask;
 #define GAPI_PUBLICATION_MATCH_STATUS               8192U
 #define GAPI_SUBSCRIPTION_MATCH_STATUS              16384U
 
+#define GAPI_ALL_DATA_DISPOSED_STATUS               1U<<31
+
 #define GAPI_ANY_STATUS              0x7FE7
 #define GAPI_STATUS_ANY_V1_2         0x7FE7
 
@@ -406,6 +408,17 @@ typedef C_STRUCT(gapi_inconsistentTopicStatus) {
     gapi_long total_count;
     gapi_long total_count_change;
 } gapi_inconsistentTopicStatus;
+
+/*
+ * struct AllDataDisposedStatus {
+ *     long total_count;
+ *     long total_count_change;
+ * };
+ */
+typedef C_STRUCT(gapi_allDataDisposedTopicStatus) {
+    gapi_long total_count;
+    gapi_long total_count_change;
+} gapi_allDataDisposedTopicStatus;
 
 /*
  * struct SampleLostStatus {
@@ -720,9 +733,7 @@ typedef void (*gapi_listener_AllDataDisposedListener)
 struct gapi_topicListener {
     void *listener_data;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
-#ifdef _DDS1631API_
     gapi_listener_AllDataDisposedListener on_all_data_disposed;
-#endif
 };
 OS_API struct gapi_topicListener *
 gapi_topicListener__alloc (void);
@@ -860,6 +871,7 @@ OS_API struct gapi_subscriberListener *gapi_subscriberListener__alloc (void);
 struct gapi_domainParticipantListener {
     void *listener_data;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
+    gapi_listener_AllDataDisposedListener on_all_data_disposed;
     gapi_listener_OfferedDeadlineMissedListener on_offered_deadline_missed;
     gapi_listener_OfferedIncompatibleQosListener on_offered_incompatible_qos;
     gapi_listener_LivelinessLostListener on_liveliness_lost;
@@ -3002,6 +3014,25 @@ OS_API gapi_returnCode_t
 gapi_topic_get_inconsistent_topic_status (
     gapi_topic _this,
     gapi_inconsistentTopicStatus *status);
+
+/*     // Access the status
+ *     ReturnCode_t
+ *     get_all_data_disposed_topic_status( inout AllDataDisposedTopicStatus);
+ */
+OS_API gapi_returnCode_t
+gapi_topic_get_all_data_disposed_topic_status (
+    gapi_topic _this,
+    gapi_allDataDisposedTopicStatus *status);
+
+
+/*     // Access the status
+ *     ReturnCode_t
+ *     get_all_data_disposed_status( inout AllDataDispsoedStatus);
+ */
+OS_API gapi_returnCode_t
+gapi_topic_get_all_data_disposed_status (
+    gapi_topic _this,
+    gapi_allDataDisposedTopicStatus *status);
 
 /*     ReturnCode_t
  *     set_listener(

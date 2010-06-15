@@ -1,0 +1,57 @@
+// -*- MPC -*-
+// $Id$
+
+project(ccpp*idl): ccpp_typesupport {
+  after += ospl_testlib
+  idlflags += -Sp
+  IDL_Files {
+    Space.idl
+    SpaceDcps.idl
+  }
+
+  TypeSupport_Files {
+    Space.idl
+  }
+
+  custom_only = 1
+}
+
+project(ccpp*proc1): ccpp_dcps_application {
+  after += ccpp*idl
+
+  Source_Files {
+    dds1619_A_proc1.cpp
+  }
+  Header_Files {
+    CPPProc1.h
+    ext_participant_listener_impl.h
+  }
+  Source_Files {
+    SpaceC.cpp
+    SpaceDcpsC.cpp
+    SpaceDcps_impl.cpp
+    SpaceSplDcps.cpp
+  }
+  IDL_Files {
+  }
+}
+
+project(ccpp*proc2): ccpp_dcps_application {
+  after += ccpp*idl
+
+  Source_Files {
+    dds1619_A_proc2.cpp
+  }
+  Header_Files {
+     CPPProc2.h
+     ext_participant_listener_impl.h
+  }
+  Source_Files {
+    SpaceC.cpp
+    SpaceDcpsC.cpp
+    SpaceDcps_impl.cpp
+    SpaceSplDcps.cpp
+  }
+  IDL_Files {
+  }
+}

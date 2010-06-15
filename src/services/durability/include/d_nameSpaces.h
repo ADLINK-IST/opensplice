@@ -51,8 +51,13 @@ d_quality           d_nameSpacesGetInitialQuality   (d_nameSpaces nameSpaces);
 
 d_networkAddress    d_nameSpacesGetMaster           (d_nameSpaces nameSpaces);
 
+char*               d_nameSpacesGetName             (d_nameSpaces nameSpaces);
+
 void                d_nameSpacesSetMaster           (d_nameSpaces nameSpaces,
                                                      d_networkAddress master);
+
+void                d_nameSpacesSetTotal            (d_nameSpaces nameSpaces,
+                                                     c_ulong total);
 
 #if defined (__cplusplus)
 }

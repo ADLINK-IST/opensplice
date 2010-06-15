@@ -55,6 +55,7 @@ extern "C" {
 #define L_STATECHANGED     (0x0001U << 13) /* 8192 */
 #define L_VALIDDATA        (0x0001U << 14) /* 16384 */
 #define L_SYNCHRONOUS      (0x0001U << 15) /* 32768 */
+#define L_TRANSACTION      (0x0001U << 16) /* 32768*2 */
 
 /*
  * Sets all bits in state that are set in mask.

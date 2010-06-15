@@ -41,6 +41,12 @@ saj_statusCopyOutInconsistentTopicStatus(
     jobject* jstatus);
 
 saj_returnCode
+saj_statusCopyOutAllDataDisposedTopicStatus(
+    JNIEnv *env,
+    gapi_allDataDisposedTopicStatus* status,
+    jobject* jstatus);
+
+saj_returnCode
 saj_statusCopyOutLivelinessLostStatus(
     JNIEnv *env,
     gapi_livelinessLostStatus* status,

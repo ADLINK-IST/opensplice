@@ -48,7 +48,8 @@ nw_ReceiveChannelStatisticsNew()
 		s->nofFreePacketBuffers=0;
 		s->nofUsedPacketBuffers=0;
 
-
+        s->nofBytesBeforeDecompression=0;
+        s->nofBytesAfterDecompression=0;
     }
     return s;
 }
@@ -86,6 +87,9 @@ nw_SendChannelStatisticsNew()
 		s->numberOfBytesNotInterested=0;
 		v_fullCounterInit(&(s->adminQueueAcks));
 		v_fullCounterInit(&(s->adminQueueData));
+
+        s->nofBytesBeforeCompression=0;
+        s->nofBytesAfterCompression=0;
     }
     return s;
 }
@@ -119,6 +123,9 @@ nw_SendChannelStatisticsReset(nw_SendChannelStatistics s)
 		s->numberOfBytesNotInterested=0;
 		v_fullCounterInit(&(s->adminQueueAcks));
 		v_fullCounterInit(&(s->adminQueueData));
+
+        s->nofBytesBeforeCompression=0;
+        s->nofBytesAfterCompression=0;
     }
 }
 
@@ -151,6 +158,9 @@ nw_ReceiveChannelStatisticsReset(nw_ReceiveChannelStatistics s)
 		s->numberOfBytesNotInterested=0;
 		s->nofFreePacketBuffers=0;
 		s->nofUsedPacketBuffers=0;
+
+        s->nofBytesBeforeDecompression=0;
+        s->nofBytesAfterDecompression=0;
     }
 }
 void
@@ -249,6 +259,12 @@ nw_ReceiveChannelUpdate(
         if(nws->nofUsedPacketBuffers != 0){
             s->nofUsedPacketBuffers = nws->nofUsedPacketBuffers;
         }
+        if(nws->nofBytesBeforeDecompression != 0){
+            s->nofBytesBeforeDecompression = nws->nofBytesBeforeDecompression;
+        }
+        if(nws->nofBytesAfterDecompression != 0){
+            s->nofBytesAfterDecompression = nws->nofBytesAfterDecompression;
+        }
     }
     return;
 }
@@ -325,10 +341,17 @@ nw_SendChannelUpdate(
             s->numberOfBytesNotInterested = nws->numberOfBytesNotInterested;
         }
 
-            s->adminQueueAcks = nws->adminQueueAcks;
+        s->adminQueueAcks = nws->adminQueueAcks;
 
 
-           s->adminQueueData = nws->adminQueueData;
+        s->adminQueueData = nws->adminQueueData;
+
+        if(nws->nofBytesBeforeCompression != 0){
+            s->nofBytesBeforeCompression = nws->nofBytesBeforeCompression;
+        }
+        if(nws->nofBytesAfterCompression != 0){
+            s->nofBytesAfterCompression = nws->nofBytesAfterCompression;
+        }
 
     }
     return;

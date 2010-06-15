@@ -71,7 +71,7 @@ u_splicedRelease(
 }
 
 #ifndef INTEGRITY
-#define DAEMON_PATH "Domain/Daemon"
+#define DAEMON_PATH "Daemon"
 static int
 lockPages(
     v_spliced kSpliced)
@@ -100,7 +100,7 @@ lockPages(
             if (iterLength == 1) {
                 service = v_cfElement(c_iterTakeFirst(iter));
                 c_iterFree(iter);
-                iter = v_cfElementXPath(service, "MemoryLocking/#text");
+                iter = v_cfElementXPath(service, "Locking/#text");
                 iterLength = c_iterLength(iter);
                 if (iterLength == 1) {
                     data = v_cfData(c_iterTakeFirst(iter));
@@ -109,21 +109,21 @@ lockPages(
                         if (value.is.Boolean) {
                             lock = 1;
                             OS_REPORT(OS_INFO,"lockPages", 0,
-                                "Daemon: MemoryLocking enabled for spliced");
+                                "Daemon: Locking enabled for spliced");
                         }
                     } else {
                         OS_REPORT(OS_WARNING,"lockPages", 0,
-                            "Failed to retrieve MemoryLocking for Daemon: MemoryLocking disabled");
+                            "Failed to retrieve Locking for Daemon: Locking disabled");
                     }
                 } else {
                     OS_REPORT(OS_INFO,"lockPages", 0,
-                        "Splicedaemon: MemoryLocking disabled");
+                        "Daemon: Locking disabled");
                     c_iterFree(iter);
                 }
             } else {
                 c_voidp e;
                 OS_REPORT(OS_WARNING,"lockPages", 0,
-                    "Could not get configuration for Daemon (non-existent or too many): MemoryLocking disabled");
+                    "No configuration specified for Daemon. Therefore the default will be used: Locking disabled");
                 do{
                     e = c_iterTakeFirst(iter);
                     c_free(e);
@@ -185,6 +185,16 @@ static u_result
 u_splicedDeinit(
     u_spliced spliced)
 {
+    u_result r;
+    v_spliced s;
+
+    r = u_splicedClaim(spliced, &s);
+    if ((r == U_RESULT_OK) && (s != NULL))
+    {
+       v_splicedCAndMCommandDispatcherQuit(s);
+       r = u_splicedRelease(spliced);
+    }
+    
     return u_serviceDeinit(u_service(spliced));
 }
 
@@ -352,6 +362,24 @@ u_splicedBuiltinResendManager(
     r = u_splicedClaim(spliced, &s);
     if ((r == U_RESULT_OK) && (s != NULL)) {
         v_splicedBuiltinResendManager(s);
+        r = u_splicedRelease(spliced);
+    } else {
+        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
+                  "Could not claim spliced.");
+    }
+    return r;
+}
+
+u_result
+u_splicedBuiltinCAndMCommandDispatcher(
+    u_spliced spliced)
+{
+    u_result r;
+    v_spliced s;
+
+    r = u_splicedClaim(spliced, &s);
+    if ((r == U_RESULT_OK) && (s != NULL)) {
+        v_splicedBuiltinCAndMCommandDispatcher(s);
         r = u_splicedRelease(spliced);
     } else {
         OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,

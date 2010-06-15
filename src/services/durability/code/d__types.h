@@ -44,6 +44,7 @@ typedef enum d_level {
 C_CLASS(d_durability);
 C_CLASS(d_configuration);
 C_CLASS(d_nameSpace);
+C_CLASS(d_policy);
 C_CLASS(d_element);
 C_CLASS(d_table);
 C_CLASS(d_group);

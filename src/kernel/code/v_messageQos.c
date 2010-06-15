@@ -31,13 +31,10 @@
                      d[4]=s[7];d[5]=s[6];d[6]=s[5];d[7]=s[4]
 #endif
 
-static c_type _v_messageQos_t = NULL;
-
 v_messageQos
 v_messageQos_new(
     v_writer writer)
 {
-    static c_type type = NULL;
     v_messageQos _this;
     v_writerQos wqos;
     c_base base;
@@ -63,8 +60,9 @@ v_messageQos_new(
 
     wqos = writer->qos;
     base = c_getBase(writer);
-    if (type == NULL) {
-        type = c_metaArrayTypeNew(c_metaObject(base),
+
+    if (writer->msgQosType == NULL) {
+        writer->msgQosType = c_metaArrayTypeNew(c_metaObject(base),
                                   "C_ARRAY<c_octet>",
                                   c_octet_t(base),
                                   0);
@@ -85,9 +83,9 @@ v_messageQos_new(
     byte1 |= _LSHIFT_(pqos->presentation.access_scope,
                       MQ_BYTE1_PRESENTATION_OFFSET);
     byte1 |= _LSHIFT_(pqos->presentation.coherent_access,
-                      MQ_BYTE1_ORDERED_ACCESS_OFFSET);
-    byte1 |= _LSHIFT_(pqos->presentation.ordered_access,
                       MQ_BYTE1_COHERENT_ACCESS_OFFSET);
+    byte1 |= _LSHIFT_(pqos->presentation.ordered_access,
+                      MQ_BYTE1_ORDERED_ACCESS_OFFSET);
 
     if (wqos->ownership.kind == V_OWNERSHIP_EXCLUSIVE) {
         strength_offset = offset;
@@ -137,7 +135,7 @@ v_messageQos_new(
     }
 #endif
 
-    _this = c_newArray((c_collectionType)type,offset);
+    _this = c_newArray((c_collectionType)writer->msgQosType,offset);
 
     if (_this) {
         ((c_octet *)_this)[0] = byte0;
@@ -188,47 +186,6 @@ v_messageQos_new(
                   "Failed to allocate messageQos.");
     }
     return _this;
-}
-
-v_messageQos
-v_messageQos_copy (
-    v_messageQos src)
-{
-    static c_type type = NULL;
-    v_messageQos _this;
-    c_base base;
-    c_long size;
-
-    size = c_arraySize(src);
-
-    base = c_getBase(src);
-    if (type == NULL) {
-        type = c_metaArrayTypeNew(c_metaObject(base),
-                                  "C_ARRAY<c_octet>",
-                                  c_octet_t(base),
-                                  0);
-    }
-
-    _this = c_newArray((c_collectionType)type,size);
-    if (_this) {
-        memcpy(_this,src,size);
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_messageQos_copy",0,
-                  "Failed to allocate messageQos.");
-    }
-
-    return _this;
-}
-
-c_type
-v_messageQos_t (
-    c_base base)
-{
-    if (_v_messageQos_t == NULL) {
-        _v_messageQos_t = c_resolve(base,"kernelModule::v_messageQos");
-    }
-    return _v_messageQos_t;
 }
 
 /**

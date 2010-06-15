@@ -221,12 +221,12 @@ gapi_domainParticipantFactory_create_participant(
     }
     if (gapi_domainParticipantQosIsConsistent(qos, &context) == GAPI_RETCODE_OK) {
         if ((domainId == NULL) || (strlen(domainId) == 0)) {
-            domainId2 = gapi_strdup(os_getenv("OSPL_URI"));
-            if (domainId2 == NULL) {
-                domainId2 = gapi_strdup(DOMAIN_NAME);
+            domainId2 = os_getenv("OSPL_URI");
+            if(!domainId2) {
+                domainId2 = DOMAIN_NAME;
             }
         } else {
-            domainId2 = gapi_strdup(domainId);
+            domainId2 = domainId;
         }
 
         newParticipant = _DomainParticipantNew (domainId2, qos,
@@ -240,8 +240,6 @@ gapi_domainParticipantFactory_create_participant(
             c_iterInsert (factory->DomainParticipantList, newParticipant);
             _ObjectRegistryRegister(factory->registry, (_Object)newParticipant);
         }
-
-        gapi_free(domainId2);
 
     } else {
         newParticipant = NULL;
@@ -458,12 +456,12 @@ gapi_domainParticipantFactory_lookup_participant(
     gapi_domainId_t domain_id2;
 
     if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
-        domain_id2 = gapi_strdup(os_getenv("OSPL_URI"));
-        if (domain_id2 == NULL) {
-            domain_id2 = gapi_strdup(DOMAIN_NAME);
+        domain_id2 = os_getenv("OSPL_URI");
+        if (!domain_id2) {
+            domain_id2 = DOMAIN_NAME;
         }
     } else {
-        domain_id2 = gapi_strdup(domain_id);
+        domain_id2 = domain_id;
     }
 
     factory = gapi_domainParticipantFactoryClaim(_this, NULL);
@@ -479,8 +477,6 @@ gapi_domainParticipantFactory_lookup_participant(
     }
 
     _EntityRelease(factory);
-
-    gapi_free(domain_id2);
 
     return (gapi_domainParticipant)_EntityHandle(participant);
 }
@@ -597,6 +593,9 @@ gapi_domainParticipantFactory_set_default_participant_qos(
     if ( factory ) {
         if ( factory == TheFactory ) {
             os_mutexLock(&factory->mtx);
+            if (qos == GAPI_PARTICIPANT_QOS_DEFAULT) {
+              qos = &gapi_domainParticipantQosDefault;
+            }
             result = gapi_domainParticipantQosIsConsistent(qos, &context);
             if ( result == GAPI_RETCODE_OK ) {
                 gapi_domainParticipantQosCopy(qos, &factory->defaultQos);
@@ -654,12 +653,12 @@ gapi_domainParticipantFactory_lookup_domain (
     gapi_domainId_t domain_id2 = NULL;
 
     if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
-        domain_id2 = gapi_strdup(os_getenv("OSPL_URI"));
-        if (domain_id2 == NULL) {
-            domain_id2 = gapi_strdup(DOMAIN_NAME);
+        domain_id2 = os_getenv("OSPL_URI");
+        if(!domain_id2) {
+            domain_id2 = DOMAIN_NAME;
         }
     } else {
-        domain_id2 = gapi_strdup(domain_id);
+        domain_id2 = domain_id;
     }
 
     factory = gapi_domainParticipantFactoryClaim(_this, NULL);
@@ -691,8 +690,6 @@ gapi_domainParticipantFactory_lookup_domain (
         }/* else domain remains null */
         _EntityRelease(factory);
     }/* else domain remains null */
-
-    gapi_free(domain_id2);
 
     return (gapi_domain)_ObjectToHandle((_Object)domain);
 }

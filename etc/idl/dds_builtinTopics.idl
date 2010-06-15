@@ -10,9 +10,9 @@ This file was the one orginally in ./src/api/dcps/saj/code/.
 
 module DDS {
 
-    // @discrepancy Add octet sequence definition originally from ./etc/idlpp/dds_dcps.idl
-    // Presumably meant to avoid warnings from deprecated anonymous types
-    // on composite type members
+    // Added octet sequence definition.
+    // Prevents IDL compiler warnings from deprecated anonymous types
+    // on composite type members.
     typedef sequence<octet> octSeq;
 
     typedef BUILTIN_TOPIC_KEY_TYPE_NATIVE BuiltinTopicKey_t[3];
@@ -24,21 +24,18 @@ module DDS {
     };
 
     struct UserDataQosPolicy {
-        // @discrepancy sequence<octet> replaced with non anonymous alternative
-        //octSeq value; - doesn't compile
-        sequence<octet> value;
+        octSeq value;
+        // replaced deprected anonymous sequence<octet> value;
     };
 
     struct TopicDataQosPolicy {
-        // @discrepancy sequence<octet> replaced with non anonymous alternative
-        //octSeq value; - doesn't compile
-        sequence<octet> value;
+        octSeq value;
+        // replaced deprected anonymous sequence<octet> value;
     };
 
     struct GroupDataQosPolicy {
-        // @discrepancy sequence<octet> replaced with non anonymous alternative
-        //octSeq value; - doesn't compile
-        sequence<octet> value;
+        octSeq value;
+        // replaced deprected anonymous sequence<octet> value;
     };
 
     struct TransportPriorityQosPolicy {

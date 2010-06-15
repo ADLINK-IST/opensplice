@@ -16,10 +16,12 @@
 #include "v_maxValue.h"
 #include "os_report.h"
 
-
+/* Legitimate use of static variable to hold type information in this case.
+ * This type information may be accessed multiple times depending on how many
+ * channels are set up, but this is only ever in the same single instance of
+ * the networking service, so will not affect multi domain support.
+ */
 static c_type networkQueueStatisticsType = NULL;
-
-
 
 v_networkQueueStatistics v_networkQueueStatisticsNew(v_kernel k, const c_char *name)
 {

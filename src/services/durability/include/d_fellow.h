@@ -91,7 +91,7 @@ c_bool                  d_fellowAreNameSpacesComplete   (d_fellow fellow);
 
 c_ulong                 d_fellowNameSpaceCount          (d_fellow fellow);
 
-void                    d_fellowNameSpaceWalk           (d_fellow fellow,
+c_bool                  d_fellowNameSpaceWalk           (d_fellow fellow,
                                                          c_bool ( * action ) (
                                                             d_nameSpace nameSpace, 
                                                             c_voidp userData),

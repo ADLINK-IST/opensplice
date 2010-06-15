@@ -12,6 +12,8 @@
 #ifndef SACPP_MAPPING_STRUCT_H
 #define SACPP_MAPPING_STRUCT_H
 
+#include "sacpp_if.h"
+
 template <class Type> class DDS_DCPSStruct_var
 {
 public:
@@ -125,4 +127,5 @@ public:
    Type *& m_ptr;
 };
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_STRUCT_H */

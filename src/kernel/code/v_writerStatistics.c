@@ -13,20 +13,17 @@
 #include "v__statisticsInterface.h"
 #include "v_writerStatistics.h"
 
-static c_type writerStatisticsType = NULL;
-
 v_writerStatistics
 v_writerStatisticsNew(
     v_kernel k)
 {
     v_writerStatistics ws;
+    c_type writerStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (writerStatisticsType == NULL) {
-        writerStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_writerStatistics");
-    }
+    writerStatisticsType = v_kernelType(k,K_WRITERSTATISTICS);
     ws = v_writerStatistics(v_new(k, writerStatisticsType));
     v_writerStatisticsInit(ws);
     return ws;

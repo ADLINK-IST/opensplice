@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <os_report.h>
@@ -52,12 +52,12 @@ typedef void *os_reportPlugin_context;
 
 typedef int
 (*os_reportPlugin_initialize)(
-    const char *argument, 
+    const char *argument,
     os_reportPlugin_context context);
 
-typedef int 
+typedef int
 (*os_reportPlugin_report)(
-    os_reportPlugin_context, 
+    os_reportPlugin_context,
     const char *report);
 
 typedef int
@@ -302,7 +302,7 @@ os_defaultReport(
 {
     os_time ostime;
     char extended_description[512];
-    char procIdentity[64];
+    char procIdentity[256];
     char threadIdentity[64];
     char node[64];
     char date_time[128];
@@ -314,7 +314,7 @@ os_defaultReport(
     case OS_WARNING:
       /* Check info_file is NULL here to keep user loggging */
       /* plugin simple in integrtity */
-      if ( info_log == NULL ) 
+      if ( info_log == NULL )
       {
         info_log = os_open_info_file();
       }
@@ -327,7 +327,7 @@ os_defaultReport(
     default:
       /* Check error_file is NULL here to keep user loggging */
       /* plugin simple in integrtity */
-      if ( error_log == NULL ) 
+      if ( error_log == NULL )
       {
         error_log = os_open_error_file();
       }
@@ -417,42 +417,42 @@ os_report(
                                                    description, args);
           }
        }
-    } 
-    va_end(args);
-
-    va_start(args, description);    
-    if (reportPluginAdmin != NULL){ 
-       vsnprintf (extended_description, sizeof(extended_description)-1, description, args);    
-       sprintf (xml_description,  
-                "<%s>\n"                   
-                "<DESCRIPTION>%s</DESCRIPTION>\n"  
-                "<CONTEXT>%s</CONTEXT>\n"          
-                "<FILE>%s</FILE>\n"                
-                "<LINE>%d</LINE>\n"                
-                "<CODE>%d</CODE>\n"                
-                "</%s>\n",                           
-                os_reportTypeText[reportType],   
-                extended_description,                     
-                reportContext,                   
-                fileName,                        
-                lineNo,                          
-                reportCode,                      
-                os_reportTypeText[reportType]);
-        
-        
-       for (i = 0; i < reportPluginAdmin->size; i++){ 
-          if (reportPluginAdmin->reportArray[i] != NULL) {     
-             if (reportPluginAdmin->reportArray[i]->report_symbol != 0) {
-                reportPluginAdmin->reportArray[i]->report_symbol 
-                (reportPluginAdmin->reportArray[i]->plugin_context, xml_description);
-             }
-          }
-       }    
     }
     va_end(args);
 
-    va_start(args, description);    
-    os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);    
+    va_start(args, description);
+    if (reportPluginAdmin != NULL){
+       vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
+       sprintf (xml_description,
+                "<%s>\n"
+                "<DESCRIPTION>%s</DESCRIPTION>\n"
+                "<CONTEXT>%s</CONTEXT>\n"
+                "<FILE>%s</FILE>\n"
+                "<LINE>%d</LINE>\n"
+                "<CODE>%d</CODE>\n"
+                "</%s>\n",
+                os_reportTypeText[reportType],
+                extended_description,
+                reportContext,
+                fileName,
+                lineNo,
+                reportCode,
+                os_reportTypeText[reportType]);
+
+
+       for (i = 0; i < reportPluginAdmin->size; i++){
+          if (reportPluginAdmin->reportArray[i] != NULL) {
+             if (reportPluginAdmin->reportArray[i]->report_symbol != 0) {
+                reportPluginAdmin->reportArray[i]->report_symbol
+                (reportPluginAdmin->reportArray[i]->plugin_context, xml_description);
+             }
+          }
+       }
+    }
+    va_end(args);
+
+    va_start(args, description);
+    os_defaultReport(reportType, reportContext, file_name, lineNo, reportCode, description, args);
     va_end(args);
 
     va_start(args, description);
@@ -557,7 +557,7 @@ os_reportSetApiInfoDescription(
             if (report->description) {
                 va_start(args, description);
                 vsnprintf(report->description, OS_MAX_DESCRIPTIONSIZE-1, descriptionCopy, args);
-                va_end(args);  
+                va_end(args);
             }
         }
     }
@@ -740,7 +740,7 @@ os_unregisterReportService (
     osr = os_libraryAttrInit(&attr);
 
     if (library_file_name != NULL){
-       libraryHandle = os_libraryOpen (library_file_name, &attr);    
+       libraryHandle = os_libraryOpen (library_file_name, &attr);
     }
 
     if (libraryHandle == NULL) {
@@ -749,7 +749,7 @@ os_unregisterReportService (
     }
 
     initFunction =  (os_reportPlugin_initialize)os_libraryGetSymbol (libraryHandle, initialize_method_name);
-  
+
     if (initFunction == NULL) {
        OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
                     "Unable to resolve report intialize function: %s", initialize_method_name);
@@ -763,7 +763,7 @@ os_unregisterReportService (
     }
 
     reportFunction = (os_reportPlugin_report)os_libraryGetSymbol (libraryHandle, report_method_name);
-  
+
     if (reportFunction == NULL) {
        OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
                     "Unable to resolve report Report function: %s", report_method_name);
@@ -771,19 +771,19 @@ os_unregisterReportService (
 
     if (initFunction == NULL && finalizeFunction == NULL && reportFunction == NULL){
        OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
-                    "No functions resolved for report Plugin : %s", library_file_name);        
-    
+                    "No functions resolved for report Plugin : %s", library_file_name);
+
        return -1;
     }
-    else { 
+    else {
        if (initFunction != NULL){
           osr = initFunction (argument, &context);
 
           if (osr != 0){
              OS_REPORT_2 (OS_ERROR, "os_reportRegisterPlugin", 0,
-                          "Initialize report plugin failed : %s : Return code %d\n", initialize_method_name, osr);            
+                          "Initialize report plugin failed : %s : Return code %d\n", initialize_method_name, osr);
              return -1;
-          }            
+          }
        }
     }
 
@@ -791,28 +791,28 @@ os_unregisterReportService (
        reportPluginAdmin = os_reportPluginAdminNew (OS_REPORTPLUGINS_MAX);
     }
 
-    
+
     if (reportPluginAdmin->length < reportPluginAdmin->size){
 
-       reportPluginAdmin->reportArray[reportPluginAdmin->length] = os_malloc(sizeof(struct os_reportPlugin_s));  
-      
+       reportPluginAdmin->reportArray[reportPluginAdmin->length] = os_malloc(sizeof(struct os_reportPlugin_s));
+
        rplugin = reportPluginAdmin->reportArray[reportPluginAdmin->length++];
 
        rplugin->initialize_symbol = initFunction;
        rplugin->report_symbol = reportFunction;
-       rplugin->finalize_symbol = finalizeFunction; 
+       rplugin->finalize_symbol = finalizeFunction;
        rplugin->plugin_context = context;
-        
-       *plugin = rplugin;       
+
+       *plugin = rplugin;
 
        OS_REPORT_1 (OS_INFO, "os_reportRegisterPlugin", 0,
-                    "Report Plugin successfully registered : %s", library_file_name);   
+                    "Report Plugin successfully registered : %s", library_file_name);
 
-       return 0;       
+       return 0;
     }
-    
+
     OS_REPORT_1 (OS_WARNING, "os_reportRegisterPlugin", 0,
-                 "Failed to register report plugin : %s", library_file_name);  
+                 "Failed to register report plugin : %s", library_file_name);
 
     return -1;
 #else
@@ -829,7 +829,7 @@ os_unregisterReportService (
     os_reportPlugin_t rplugin;
     os_result osr;
 
-    if (reportPluginAdmin != NULL){  
+    if (reportPluginAdmin != NULL){
        rplugin = (os_reportPlugin_t)plugin;
 
        /* Verify if the plugin is a valid address within the bounds of the reportArray.
@@ -852,23 +852,23 @@ os_unregisterReportService (
                 OS_REPORT_1 (OS_ERROR,
                              "os_reportUnregisterPlugin", 0,
                              "Finalize report plugin failed : Return code %d\n",
-                             osr);            
+                             osr);
                 return -1;
-             }            
+             }
           }
           OS_REPORT (OS_INFO,
                      "os_reportUnregisterPlugin", 0,
-                     "Successfully finalized report plugin"); 
+                     "Successfully finalized report plugin");
           return 0;
        } else {
           OS_REPORT (OS_WARNING,
                      "os_reportUnregisterPlugin", 0,
-                     "Finalize report plugin failed"); 
+                     "Finalize report plugin failed");
        }
     } else {
        OS_REPORT (OS_WARNING,
                   "os_reportUnregisterPlugin", 0,
-                  "Finalize report plugin failed"); 
+                  "Finalize report plugin failed");
     }
     return -1;
 #else

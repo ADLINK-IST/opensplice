@@ -151,7 +151,7 @@ lockPages(
             if (iterLength == 1) {
                 service = v_cfElement(c_iterTakeFirst(iter));
                 c_iterFree(iter);
-                iter = v_cfElementXPath(service, "MemoryLocking/#text");
+                iter = v_cfElementXPath(service, "Locking/#text");
                 iterLength = c_iterLength(iter);
                 if (iterLength == 1) {
                     data = v_cfData(c_iterTakeFirst(iter));
@@ -159,23 +159,23 @@ lockPages(
                         if (value.is.Boolean) {
                             lock = 1;
                             OS_REPORT_1(OS_INFO,"lockPages", 0,
-                                "service '%s': MemoryLocking enabled", name);
+                                "service '%s': Locking enabled", name);
                         }
                     } else {
                         OS_REPORT_1(OS_WARNING,"lockPages", 0,
-                            "Failed to retrieve MemoryLocking for service '%s': MemoryLocking disabled", name);
+                            "Failed to retrieve Locking for service '%s': Locking disabled", name);
                     }
                 } else {
                     OS_REPORT_1(OS_INFO,"lockPages", 0,
-                        "service '%s': MemoryLocking disabled", name);
+                        "service '%s': Locking disabled", name);
                 }
             } else if (iterLength > 1) {
                 OS_REPORT_2(OS_WARNING,"lockPages", 0,
-                    "Multiple configuration found for service '%s' (too many: %d): MemoryLocking disabled",
+                    "Multiple configuration found for service '%s' (too many: %d): Locking disabled",
                     name, iterLength);
             } else {
                 OS_REPORT_1(OS_WARNING,"lockPages", 0,
-                    "Could not get configuration for service '%s' (non-existent): MemoryLocking disabled",
+                    "Could not get configuration for service '%s' (non-existent): Locking disabled",
                     name);
             }
             c_iterFree(iter);

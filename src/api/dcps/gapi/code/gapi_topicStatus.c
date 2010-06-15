@@ -36,6 +36,8 @@ _TopicStatusNew (
                     _listener->listener_data;
             status->callbackInfo.on_inconsistent_topic =
                     _listener->on_inconsistent_topic;
+            status->callbackInfo.on_all_data_disposed =
+                    _listener->on_all_data_disposed;
             active = TRUE;
         }           
  
@@ -79,6 +81,8 @@ _TopicStatusSetListener(
                 _listener->listener_data;
         status->callbackInfo.on_inconsistent_topic =
                 _listener->on_inconsistent_topic;
+        status->callbackInfo.on_all_data_disposed =
+                _listener->on_all_data_disposed;
     } else {
         mask = GAPI_STATUS_KIND_NULL;
     }

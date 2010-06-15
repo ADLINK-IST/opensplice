@@ -19,6 +19,8 @@
 #include "c_base.h"
 #include "c_mmbase.h"
 #include "c__extent.h"
+#include "c_module.h"
+#include "c_avltree.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -35,15 +37,89 @@ extern "C" {
 #define c__getType(o) c_getType(o)
 
 #define _TYPE_CACHE_(_type) \
-        static c_type _##_type##_t = NULL; \
         c_type \
         _type##_t (c_base _this) \
         { \
-            if (!_##_type##_t) { \
-                _##_type##_t = c_resolve(_this,#_type); \
+            if (!_this->baseCache.typeCache._type##_t) { \
+               _this->baseCache.typeCache._type##_t = c_resolve(_this,#_type); \
             } \
-            return c_keep(_##_type##_t); \
+            return c_keep(_this->baseCache.typeCache._type##_t); \
         }
+
+
+C_STRUCT(c_queryCache) {
+    c_type c_qConst_t;
+    c_type c_qType_t;
+    c_type c_qVar_t;
+    c_type c_qField_t;
+    c_type c_qFunc_t;
+    c_type c_qPred_t;
+    c_type c_qKey_t;
+    c_type c_qRange_t;
+    c_type c_qExpr_t;
+};
+
+C_STRUCT(c_fieldCache) {
+    c_type c_field_t;
+    c_collectionType c_fieldPath_t;
+    c_collectionType c_fieldRefs_t;
+};
+
+C_STRUCT(c_typeCache) {
+    c_type c_object_t;
+    c_type c_voidp_t;
+    c_type c_bool_t;
+    c_type c_address_t;
+    c_type c_octet_t;
+    c_type c_char_t;
+    c_type c_short_t;
+    c_type c_long_t;
+    c_type c_longlong_t;
+    c_type c_uchar_t;
+    c_type c_ushort_t;
+    c_type c_ulong_t;
+    c_type c_ulonglong_t;
+    c_type c_float_t;
+    c_type c_double_t;
+    c_type c_string_t;
+    c_type c_wchar_t;
+    c_type c_wstring_t;
+    c_type c_array_t;
+    c_type c_type_t;
+    c_type c_valueKind_t;
+    c_type c_member_t;
+    c_type c_literal_t;
+    c_type c_constant_t;
+    c_type c_unionCase_t;
+    c_type c_property_t;
+};
+
+C_STRUCT(c_baseCache) {
+    C_STRUCT(c_queryCache) queryCache;
+    C_STRUCT(c_fieldCache) fieldCache;
+    C_STRUCT(c_typeCache) typeCache;
+};
+
+C_STRUCT(c_base) {
+    C_EXTENDS(c_module);
+    c_mm      mm;
+    c_long    confidence;
+    c_avlTree bindings;
+    c_mutex   bindLock;
+    c_mutex   serLock; /* currently only used for defining enums from sd_serializerXMLTypeinfo.c */
+    c_mutex   extentBugLock; /* this lock must be removed when extents are created properly*/
+    c_type    metaType[M_COUNT];
+    c_type    string_type;
+    C_STRUCT(c_baseCache) baseCache;
+
+#ifndef NDEBUG
+#ifdef OBJECT_WALK
+    c_object  firstObject;
+    c_object  lastObject;
+#endif
+#endif
+};
+
 
 /** @fn c_getMetaType (c_base base, c_metaKind kind)
     @brief Lookup the database meta data description of the specified meta type kind.

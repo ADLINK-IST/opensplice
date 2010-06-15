@@ -211,7 +211,7 @@ deleteAction(
         partition = v_partitionName(v_groupPartition(group));
         topic = v_topicName(v_groupTopic(group));
 
-        if(d_configurationGroupInAligneeNS(config,
+        if(d_adminGroupInAligneeNS        (admin,
                                            partition,
                                            topic,
                                            D_DURABILITY_ALL) == TRUE){

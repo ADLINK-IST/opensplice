@@ -112,6 +112,16 @@ v_topicGetInconsistentTopicStatus(
     v_statusAction action,
     c_voidp arg);
 
+OS_API v_result 
+v_topicDisposeAllData(v_topic topic);
+
+OS_API v_result
+v_topicGetAllDataDisposedStatus(
+   v_topic _this,
+   c_bool reset,
+   v_statusAction action,
+   c_voidp arg);
+
 #undef OS_API
 
 #if defined (__cplusplus)

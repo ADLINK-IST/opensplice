@@ -14,18 +14,6 @@
 #include "v_cache.h"
 #include "os_report.h"
 
-static c_type _v_cache = NULL;
-
-c_type
-v_cache_t (
-    c_base base)
-{
-    if (_v_cache == NULL) {
-        _v_cache = c_resolve(base,"kernelModule::v_cache");
-    }
-    return c_keep(_v_cache);
-}
-
 #ifdef NDEBUG
 #define v_cacheNodeCheck(c)
 #else
@@ -83,6 +71,7 @@ v_cacheNodeNew (
 
 v_cache
 v_cacheNew (
+    v_kernel kernel,
     c_type type,
     v_cacheKind kind)
 {
@@ -96,7 +85,7 @@ v_cacheNew (
     if (type) {
         base = c_getBase(type);
         if (base) {
-            cache_t = v_cache_t(base);
+            cache_t = c_keep(v_kernelType(kernel,K_CACHE));
             cache = c_new(cache_t);
             c_free(cache_t);
             if (cache) {

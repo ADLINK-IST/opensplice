@@ -237,7 +237,11 @@ void            d_configurationSetDuration                  (v_duration * timeOu
 void            d_configurationSetTime                      (os_time * timeOut,
                                                              c_float seconds );
 
-c_iter          d_configurationResolveNameSpaces            (u_cfElement  elementParent,
+c_iter          d_configurationResolvePolicies              (u_cfElement  elementParent,
+                                                             const c_char * policyName);
+
+c_iter          d_configurationResolveNameSpaces            (d_configuration config,
+                                                             u_cfElement  elementParent,
                                                              const c_char * nameSpaceName);
 
 void            d_configurationResolvePartition             (d_nameSpace  nameSpace,

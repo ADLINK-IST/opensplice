@@ -16,6 +16,7 @@
 #include "d_lock.h"
 #include "d_store.h"
 #include "d_nameSpace.h"
+#include "d_admin.h"
 #include "d_configuration.h"
 #include "d_table.h"
 #include "d_actionQueue.h"
@@ -3144,6 +3145,8 @@ processExpungeAction(
     topic     = g->topic;
     cleanupCount = 0;
     totalCount = 0;
+    deleteTime.nanoseconds = 0;
+    deleteTime.seconds = 0;
 
     fdes = openPersistentFile(persistentStore, partition, topic, "r");
     tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
@@ -3276,12 +3279,14 @@ typedef struct unregisterFindData
 /* Search for a writer in registration list */
 static void
 unregisterLookupWalk (
-		v_message message,
+		void* o,
 		c_iterActionArg userData)
 {
 	c_bool messageFound;
 	unregisterFindData* walkData;
+	v_message message;
 
+	message = v_message(o);
 	messageFound = FALSE;
 	walkData = (unregisterFindData*)userData;
 
@@ -3371,6 +3376,7 @@ d_storeXMLOptimizeGroup(
     message = NULL;
     perData = NULL;
     result = D_STORE_RESULT_OK;
+    tmpfdes = NULL;
     len = openFile(persistentStore, group, &fdes);
 
     /* Do not create temporary file for optimizing when no optimization is required */
@@ -3829,7 +3835,6 @@ d_storeOpenXML(
     d_storeResult result;
     d_storeXML storeXML;
     c_char* resultDir;
-    c_ulong count, i;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_XML);
@@ -3870,13 +3875,8 @@ d_storeOpenXML(
                         (os_uint32)((c_long)strlen(store->config->persistentStoreDirectory)+1));
             d_storeXMLInitGroups(storeXML);
 
-            count = c_iterLength(store->config->nameSpaces);
-
-            for(i=0; i<count; i++){
-                correctGroupQuality(
-                    d_nameSpace(c_iterObject(store->config->nameSpaces, i)),
-                    storeXML->groups);
-            }
+            /* Walk namespaces in administration */
+            d_adminNameSpaceWalk (store->admin, correctGroupQuality, storeXML->groups);
         }
 
         d_lockUnlock(d_lock(store));
@@ -4499,6 +4499,25 @@ d_storeInstanceRegisterXML(
     return result;
 }
 
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
+
 d_storeResult
 d_storeCreatePersistentSnapshotXML(
     const d_store store,
@@ -4515,6 +4534,7 @@ d_storeCreatePersistentSnapshotXML(
     c_ulong i;
     d_nameSpace nameSpace;
     d_durabilityKind dkind;
+    c_iter nameSpaces;
 
     assert(store);
     assert(topicExpr);
@@ -4532,8 +4552,6 @@ d_storeCreatePersistentSnapshotXML(
             result = D_STORE_RESULT_PRECONDITION_NOT_MET;
         } else
         {
-
-
             result = groupsReadXMLUnsafe(store, &listIter);
             while(result == D_STORE_RESULT_OK && listIter)
             {
@@ -4566,10 +4584,13 @@ d_storeCreatePersistentSnapshotXML(
                                 /* Store the complete file for the namespace */
                                 if(result == D_STORE_RESULT_OK)
                                 {
-                                    length = c_iterLength(store->config->nameSpaces);
+                                    /* Collect namespaces */
+                                    nameSpaces = c_iterNew(NULL);
+                                    d_adminNameSpaceWalk (store->admin, collectNsWalk, nameSpaces);
+                                    length = c_iterLength(nameSpaces);
                                     for(i = 0; i < length; i++)
                                     {
-                                        nameSpace = d_nameSpace(c_iterObject(store->config->nameSpaces, i));
+                                        nameSpace = d_nameSpace(c_iterObject(nameSpaces, i));
                                         dkind = d_nameSpaceGetDurabilityKind(nameSpace);
                                         if(dkind == D_DURABILITY_PERSISTENT || dkind == D_DURABILITY_ALL)
                                         {
@@ -4583,6 +4604,10 @@ d_storeCreatePersistentSnapshotXML(
                                             }
                                         }
                                     }
+
+                                    /* Free namespace list */
+                                    c_iterWalk(nameSpaces, deleteNsWalk, NULL);
+                                    c_iterFree(nameSpaces);
                                 }
                             }
                         } else

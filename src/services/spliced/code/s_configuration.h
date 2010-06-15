@@ -28,7 +28,9 @@ extern "C" {
 #define S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
 #define S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT     ""
 
-    
+#define S_CFG_C_AND_M_COMMAND_SCHEDULING_PRIORITY_DEFAULT (0)
+#define S_CFG_C_AND_M_COMMANDSCHEDULING_CLASS_DEFAULT     ""
+   
 #define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (1.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_DEFAULT (10.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM (60.0F)
@@ -55,6 +57,8 @@ C_STRUCT(s_configuration)
     os_threadAttr kernelManagerScheduling;
     os_threadAttr garbageCollectorScheduling;
     os_threadAttr resendManagerScheduling;
+    os_threadAttr cAndMCommandScheduling;
+    c_bool        enableCandMCommandThread;
 };
 
 #define s_configuration(config) ((s_configuration)(config))

@@ -23,6 +23,7 @@
 #include "v__writer.h"
 #include "v__reader.h"
 #include "v__builtin.h"
+#include "v__partition.h"
 
 #include "os_report.h"
 
@@ -404,7 +405,7 @@ v_deliveryServiceRegister(
     while (group) {
         for (i=0; i<nrOfPartitions; i++) {
             c_string name = v_entityName(group->partition);
-            if (strcmp(name,rInfo->userData.partition.name[i]) == 0) {
+            if (v_partitionStringMatchesExpression(name,rInfo->userData.partition.name[i])) {
                 arg.groupList = c_iterInsert(arg.groupList,group);
                 i = nrOfPartitions; /* exit for loop */
             }
@@ -488,11 +489,12 @@ v_deliveryServiceUnregister(
         while (group) {
             for (i=0; i<nrOfPartitions; i++) {
                 c_string name = v_entityName(group->partition);
-                if (strcmp(name,rInfo->userData.partition.name[i]) == 0) {
+                if (v_partitionStringMatchesExpression(name,rInfo->userData.partition.name[i])) {
                     arg.groupList = c_iterInsert(arg.groupList,group);
                     i = nrOfPartitions; /* exit for loop */
                 }
             }
+            c_free(group);
             group = c_iterTakeFirst(groupList);
         }
         c_iterFree(groupList);

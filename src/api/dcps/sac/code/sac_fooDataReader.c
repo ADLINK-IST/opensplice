@@ -44,20 +44,25 @@ sequenceIsValid (
 
 static DDS_boolean
 checkParameters (
-    DDS_long           maxSamples,
+    DDS_long           *maxSamples_inout,
     DDS_sequence      *_dataSeq,
     DDS_SampleInfoSeq *infoSeq,
     DDS_ReturnCode_t  *retval)
 {
     _Sequence *dataSeq = (_Sequence*) _dataSeq;
+    DDS_long maxSamples;
     
+    assert (maxSamples_inout);
+
+    maxSamples = *maxSamples_inout;
+
     if ( !sequenceIsValid(dataSeq) ||
          !sequenceIsValid(infoSeq) ||
          (maxSamples < -1) ) {
         *retval = DDS_RETCODE_BAD_PARAMETER;
         return FALSE;
     }
-    
+
     /* Rule 1 : Both sequences must have equal len,
      * max_len and owns properties.
      */
@@ -85,10 +90,18 @@ checkParameters (
         *retval = DDS_RETCODE_PRECONDITION_NOT_MET;
         return FALSE;
     }
+
+    /* If length is unlimited, but release is true, maxSamples equals the
+     * maximum for the sequence (scdds2032).
+     */
+    else if ((maxSamples == DDS_LENGTH_UNLIMITED) && infoSeq->_release) {
+    	maxSamples = infoSeq->_maximum;
+    }
     
     /* In all other cases, the provided sequences are valid.
      */
     *retval = DDS_RETCODE_OK;
+    *maxSamples_inout = maxSamples;
     return TRUE;
 }
 
@@ -97,14 +110,14 @@ DDS__FooDataReader_read (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
     const DDS_InstanceStateMask instance_states)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_read (
                 (gapi_dataReader)_this,
@@ -125,14 +138,14 @@ DDS__FooDataReader_take (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
     const DDS_InstanceStateMask instance_states)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_take (
                 (gapi_dataReader)_this,
@@ -153,12 +166,12 @@ DDS__FooDataReader_read_w_condition (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_ReadCondition a_condition)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_read_w_condition (
                 (gapi_dataReader)_this,
@@ -177,12 +190,12 @@ DDS__FooDataReader_take_w_condition (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_ReadCondition a_condition)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_take_w_condition (
                 (gapi_dataReader)_this,
@@ -229,7 +242,7 @@ DDS__FooDataReader_read_instance (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
@@ -237,7 +250,7 @@ DDS__FooDataReader_read_instance (
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_read_instance (
                 (gapi_dataReader)_this,
@@ -259,7 +272,7 @@ DDS__FooDataReader_take_instance (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
@@ -267,7 +280,7 @@ DDS__FooDataReader_take_instance (
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_take_instance (
                 (gapi_dataReader)_this,
@@ -289,7 +302,7 @@ DDS__FooDataReader_read_next_instance (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
@@ -297,7 +310,7 @@ DDS__FooDataReader_read_next_instance (
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_read_next_instance (
                 (gapi_dataReader)_this,
@@ -319,7 +332,7 @@ DDS__FooDataReader_take_next_instance (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_SampleStateMask sample_states,
     const DDS_ViewStateMask view_states,
@@ -327,7 +340,7 @@ DDS__FooDataReader_take_next_instance (
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_take_next_instance (
                 (gapi_dataReader)_this,
@@ -349,13 +362,13 @@ DDS__FooDataReader_read_next_instance_w_condition (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_ReadCondition a_condition)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_read_next_instance_w_condition (
                 (gapi_dataReader)_this,
@@ -375,13 +388,13 @@ DDS__FooDataReader_take_next_instance_w_condition (
     DDS_DataReader _this,
     DDS_sequence data_values,
     DDS_SampleInfoSeq *info_seq,
-    const DDS_long max_samples,
+    DDS_long max_samples,
     const DDS_InstanceHandle_t a_handle,
     const DDS_ReadCondition a_condition)
 {
     DDS_ReturnCode_t result;
 
-    if ( checkParameters(max_samples, data_values, info_seq, &result) ) {
+    if ( checkParameters(&max_samples, data_values, info_seq, &result) ) {
         result = (DDS_ReturnCode_t)
             gapi_fooDataReader_take_next_instance_w_condition (
                 (gapi_dataReader)_this,

@@ -771,12 +771,38 @@ static void CallBackWrapper_TopicListener_InconsistentTopic
   }
 }
 
+static void CallBackWrapper_TopicListener_AllDataDisposed
+(
+    void *listener_data,
+    gapi_topic a_gapi_topic
+)
+{
+  DDS::TopicListener_ptr listener;
+  DDS::ExtTopicListener_ptr extListener;
+  DDS::Topic_ptr a_topic;
+
+  a_topic = Topic_Lookup(a_gapi_topic);
+
+  listener = reinterpret_cast<DDS::TopicListener_ptr>(listener_data);
+  if (listener)
+  {
+     extListener = DDS::ExtTopicListener::_narrow(listener);
+     assert( extListener != NULL );
+     extListener->on_all_data_disposed(a_topic);
+  }
+  if (a_topic)
+  {
+     CORBA::release(a_topic);
+  }
+}
+
 void DDS::ccpp_TopicListener_copyIn(
         const DDS::TopicListener_ptr & from,
         gapi_topicListener & to)
 {
-  to.listener_data = from;
-  to.on_inconsistent_topic         = CallBackWrapper_TopicListener_InconsistentTopic;
+   to.listener_data = from;
+   to.on_inconsistent_topic = CallBackWrapper_TopicListener_InconsistentTopic;
+   to.on_all_data_disposed = CallBackWrapper_TopicListener_AllDataDisposed;
 }
 
 
@@ -806,6 +832,31 @@ static void CallBackWrapper_DomainParticipantListener_InconsistentTopic
   if (a_topic)
   {
     CORBA::release(a_topic);
+  }
+}
+
+static void CallBackWrapper_DomainParticipantListener_AllDataDisposed
+(
+    void *listener_data,
+    gapi_topic a_gapi_topic
+)
+{
+  DDS::DomainParticipantListener_ptr listener;
+  DDS::Topic_ptr a_topic;
+  DDS::ExtTopicListener *extListener;
+
+  a_topic = Topic_Lookup(a_gapi_topic);
+
+  listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
+  if (listener)
+  {
+     extListener = DDS::ExtTopicListener::_narrow(listener);
+     assert( extListener != NULL );
+     extListener->on_all_data_disposed(a_topic);
+  }
+  if (a_topic)
+  {
+     CORBA::release(a_topic);
   }
 }
 
@@ -1134,6 +1185,7 @@ void DDS::ccpp_DomainParticipantListener_copyIn(
     to.on_subscription_match         = CallBackWrapper_DomainParticipantListener_SubscriptionMatched;
     to.on_sample_lost                = CallBackWrapper_DomainParticipantListener_SampleLost;
     to.on_data_on_readers            = CallBackWrapper_DomainParticipantListener_DataOnReaders;
+    to.on_all_data_disposed          = CallBackWrapper_DomainParticipantListener_AllDataDisposed;
 }
 
 

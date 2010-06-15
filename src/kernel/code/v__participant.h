@@ -34,6 +34,17 @@ v_participantResendManagerRemoveWriter(
     v_participant _this,
     v_writer w);
 
+   v_message v_participantCreateCandMCommand(v_participant participant);
+
+   v_result v_participantCandMCommandSetDisposeAllData(
+      v_participant participant, 
+      v_message msg, 
+      char *topicExpr,
+      char *partitionExpr);
+
+   v_result v_participantWriteCandMCommand(v_participant participant,
+                                           v_message msg);
+
 #if defined (__cplusplus)
 }
 #endif

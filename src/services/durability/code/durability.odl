@@ -51,11 +51,17 @@ module durabilityModule2 {
     };
    
     enum d_alignmentKind {
-        D_ALIGNEE_INITIAL_AND_ALIGNER, 
         D_ALIGNEE_INITIAL, 
         D_ALIGNEE_LAZY,
         D_ALIGNEE_ON_REQUEST
     };
+
+	enum d_mergePolicy {
+		D_MERGE_IGNORE,
+		D_MERGE_MERGE,
+		D_MERGE_DELETE,
+		D_MERGE_REPLACE
+	};
    
     struct d_message_s {
         d_networkAddress_s addressee;           /* the destination         */
@@ -85,8 +91,10 @@ module durabilityModule2 {
     
     struct d_nameSpaces_s{
         d_message_s        parentMsg;
+		c_string		   name;
         c_string           partitions;
         d_durabilityKind   durabilityKind;
+		c_bool			   aligner;
         d_alignmentKind    alignmentKind;
         d_quality          initialQuality;
         c_ulong            total;

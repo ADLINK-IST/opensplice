@@ -37,6 +37,10 @@ namespace DDS
         ::DDS::InconsistentTopicStatus & a_status
       ) THROW_ORB_EXCEPTIONS;
 
+      virtual DDS::ReturnCode_t get_all_data_disposed_topic_status (
+        ::DDS::AllDataDisposedTopicStatus & a_status
+      ) THROW_ORB_EXCEPTIONS;
+
       virtual ::DDS::ReturnCode_t get_qos (
         ::DDS::TopicQos & qos
       ) THROW_ORB_EXCEPTIONS;

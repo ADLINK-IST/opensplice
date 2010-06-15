@@ -713,13 +713,14 @@ os_procIdSelf(void)
  * Postcondition:
  * - \b procIdentity is ""
  *     the process identity could not be determined
- * - \b procIdentity is "<decimal number>" | "0x<hexadecimal number>"
+ * - \b procIdentity is "<decimal number>"
  *     only the process numeric identity could be determined
- * - \b procIdentity is "<process name> (<decimal number>)" | "<process name> (0x<hexadecimal number>)"
+ * - \b procIdentity is "name <pid>"
  *     the process name and numeric identity could be determined
  *
  * \b procIdentity will not be filled beyond the specified \b procIdentitySize
  */
+#define _OS_PROC_PROCES_NAME_LEN (64)
 os_int32
 os_procFigureIdentity(
     char *procIdentity,
@@ -731,13 +732,56 @@ os_procFigureIdentity(
     process_name = getenv("SPLICE_PROCNAME");
 
     if (process_name != NULL) {
-        size = snprintf(procIdentity, procIdentitySize, "%s (%d)", process_name, (int)_getpid());
+        size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
+                process_name, os_procIdToInteger(os_procIdSelf()));
     } else {
-        size = snprintf(procIdentity, procIdentitySize, "%d", (int)_getpid());
+        char *tmp;
+        DWORD nSize;
+        DWORD allocated = 0;
+
+        do {
+            /* While procIdentitySize could be used (since the caller cannot
+             * store more data anyway, it is not used. This way the amount that
+             * needs to be allocated to get the full-name can be determined. */
+            allocated++;
+            tmp = (char*) os_realloc(process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
+            if(tmp){
+                process_name = tmp;
+
+                /* First parameter NULL retrieves module-name of executable */
+                nSize = GetModuleFileNameA (NULL, process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
+            } else {
+                /* Memory-claim denied, revert to default */
+                size = 0;
+                if(process_name){
+                    os_free(process_name);
+                    process_name = NULL; /* Will break loop */
+                }
+            }
+
+        /* process_name will only be guaranteed to be NULL-terminated if nSize <
+         * (allocated * _OS_PROC_PROCES_NAME_LEN), so continue until that's true */
+        } while (process_name && nSize >= (allocated * _OS_PROC_PROCES_NAME_LEN));
+
+        if(process_name){
+            size = snprintf(procIdentity, procIdentitySize, "%s <%d>", process_name,
+                    os_procIdToInteger(os_procIdSelf()));
+            os_free(process_name);
+        } else {
+            /* Resolving failed, reverting to default */
+            size = 0;
+        }
+    }
+
+    if(size == 0){
+        /* No processname could be determined, so default to PID */
+        size = snprintf(procIdentity, procIdentitySize, "<%d>",
+                os_procIdToInteger(os_procIdSelf()));
     }
 
     return size;
 }
+#undef _OS_PROC_PROCES_NAME_LEN
 
 /** \brief Get the process effective scheduling class
  *

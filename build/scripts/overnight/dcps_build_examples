@@ -80,9 +80,11 @@ else
     then
         INSTALLERDIR=$WORKDIR/build/install
         . $WORKDIR/build/release_info/RELEASE
+        LICENSE_FILE=""
     else
         echo "Setting OUTER_BASE to $BASE..."
         OUTER_BASE=$BASE
+        LICENSE_FILE=$OUTER_BASE/../../../etc/license.lic
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
         . $DEPWORKDIR/release_info/RELEASE
@@ -144,6 +146,12 @@ else
         
     echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
     cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
+    
+    if [ -n "$LICENSE_FILE" ]
+    then
+        echo "Copying License into $WORKDIR/installed/HDE/$SHORTSETUP/etc ...."
+        cp $LICENSE_FILE $WORKDIR/installed/HDE/$SHORTSETUP/etc/.
+    fi
 
     echo "DEP is $DEP....."
 
@@ -258,17 +266,7 @@ else
 
         echo "set CLASSPATH=%CLASSPATH%;%JACORB_HOME%\lib\endorsed\jacorb.jar;%JACORB_HOME%\lib\endorsed\logkit.jar;%JACORB_HOME%\lib\idl.jar" >> setenv.bat
 
-        if [ $HOSTNAME == "DDS1-WIN2K3" ]
-        then
-            VS80DIR="C:\Program Files\Microsoft Visual Studio 8\Common7\Tools"
-            echo "set VS80COMNTOOLS=$VS80DIR" >> setenv.bat
-        else
-            if [ $HOSTNAME == "dds2-win2k3" -o $HOSTNAME == "dds3-win2k3" ]
-            then
-                VS90DIR="C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools"
-                echo "set VS90COMNTOOLS=$VS90DIR" >> setenv.bat
-            fi
-        fi
+        echo "set VS_ENV_SCRIPT=$VS_ENV_SCRIPT" >> setenv.bat
 
         XPATH=`cygpath -w "$BASE"`
 

@@ -15,18 +15,17 @@
 #include "v_cmsoapStatistics.h"
 #include "v_maxValue.h"
 
-static c_type cmsoapStatisticsType = NULL;
-
 v_cmsoapStatistics v_cmsoapStatisticsNew(v_kernel k)
 {
     v_cmsoapStatistics cs;
+    c_type cmsoapStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (cmsoapStatisticsType == NULL) {
-        cmsoapStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_cmsoapStatistics");
-    }
+    /* not necessary to cache this type since it is looked up only once per process */
+    cmsoapStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_cmsoapStatistics");
+
     cs = v_cmsoapStatistics(v_new(k, cmsoapStatisticsType));
     v_cmsoapStatisticsInit(cs);
     return cs;

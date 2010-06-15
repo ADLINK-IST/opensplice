@@ -57,18 +57,6 @@
 #define TIME_TO_MSEC(time, msec) \
     msec = (c_ulonglong)(V_SEC_TO_MSEC(time.seconds) + V_NSEC_TO_MSEC(time.nanoseconds))
 
-static c_type _v_networkQueue_t = NULL;
-
-c_type
-v_networkQueue_t (
-    c_base base)
-{
-    if (_v_networkQueue_t == NULL) {
-        _v_networkQueue_t = c_resolve(base,"kernelModule::v_networkQueue");
-    }
-    return _v_networkQueue_t;
-}
-
 static void
 v_networkQueueUpdateNextWakeup(
     v_networkQueue queue,

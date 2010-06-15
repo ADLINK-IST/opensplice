@@ -22,6 +22,7 @@
 #include "d_subscriber.h"
 #include "d_group.h"
 #include "d_newGroup.h"
+#include "d_nameSpace.h"
 #include "d_nameSpaces.h"
 #include "d_groupsRequest.h"
 #include "d_nameSpacesRequest.h"
@@ -42,6 +43,7 @@
 #include "v_service.h"
 #include "v_group.h"
 #include "v_public.h"
+#include "v_builtin.h"
 #include "u_entity.h"
 #include "os_heap.h"
 #include "os_mutex.h"
@@ -52,7 +54,6 @@
  * TODO: Determine the compatibility of the namespaces of two fellows before
  * allowing communication between them.
  */
-
 
 void
 d_adminUpdateStatistics(
@@ -112,6 +113,8 @@ d_adminNew(
         assert(admin->readerRequests);
 
         admin->alignerGroupCount = 0;
+
+        admin->nameSpaces = c_iterNew(NULL);
 
         d_printTimedEvent(durability, D_LEVEL_FINER,
                             D_THREAD_MAIN, "Initializing protocol topics...\n");
@@ -196,6 +199,7 @@ d_adminNew(
         assert(admin->nameSpacesTopic);
         assert(admin->nameSpacesRequestTopic);
         assert(admin->deleteDataTopic);
+		assert(admin->nameSpaces);
 
         /* 100 ms */
         sleepTime.tv_sec  = 0;
@@ -243,16 +247,30 @@ d_adminNew(
             admin->publisher  = d_publisherNew(admin);
             assert(admin->publisher);
 
-            d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN,
-                                "Initializing protocol subscriber...\n");
-            admin->subscriber = d_subscriberNew(admin);
-            assert(admin->subscriber);
         } else {
             d_adminFree(admin);
             admin = NULL;
         }
     }
     return admin;
+}
+
+void
+d_adminInitSubscriber(
+    d_admin admin)
+{
+    d_durability durability;
+
+    durability = d_adminGetDurability(admin);
+
+    /* Initialize protocol subscriber. Needs to be seperated from d_adminNew because
+     * of dependency between store (which is created by subscriber) and nameSpaces
+     * list in admin.
+     */
+    d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN,
+                        "Initializing protocol subscriber...\n");
+    admin->subscriber = d_subscriberNew(admin);
+    assert(admin->subscriber);
 }
 
 c_bool
@@ -328,7 +346,7 @@ d_adminAddLocalGroup(
             d_durabilityUpdateStatistics(admin->durability, d_statisticsUpdateAdmin, info);
             d_adminStatisticsInfoFree(info);
             admin->alignerGroupCount++;
-            d_adminNotifyListeners(admin, D_GROUP_LOCAL_NEW, NULL, group);
+            d_adminNotifyListeners(admin, D_GROUP_LOCAL_NEW, NULL, NULL, group);
             result = TRUE;
         }
     }
@@ -381,6 +399,7 @@ d_adminDeinit(
     d_admin admin;
     d_durability durability;
     d_adminEvent event;
+    d_nameSpace nameSpace;
 
     assert(d_objectIsValid(object, D_ADMIN) == TRUE);
 
@@ -537,6 +556,19 @@ d_adminDeinit(
             d_networkAddressFree(admin->myAddress);
             admin->myAddress = NULL;
         }
+
+        if (admin->nameSpaces)
+        {
+            nameSpace = d_nameSpace(c_iterTakeFirst(admin->nameSpaces));
+
+            while(nameSpace){
+                d_nameSpaceFree(nameSpace);
+                nameSpace = d_nameSpace(c_iterTakeFirst(admin->nameSpaces));
+            }
+            c_iterFree (admin->nameSpaces);
+            admin->nameSpaces = NULL;
+        }
+
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN,
                                                 "Admin destroyed\n");
     }
@@ -602,7 +634,7 @@ d_adminAddFellow(
                     D_THREAD_MAIN,
                     "New fellow '%u' added to admin.\n",
                     addr->systemId);
-            d_adminNotifyListeners(admin, D_FELLOW_NEW, fellow, NULL);
+            d_adminNotifyListeners(admin, D_FELLOW_NEW, fellow, NULL, NULL);
             d_networkAddressFree(addr);
             added = TRUE;
 
@@ -668,9 +700,351 @@ d_adminRemoveFellow(
             d_adminStatisticsInfoFree(info);
         }
         d_lockUnlock(d_lock(admin));
-        d_adminNotifyListeners(admin, D_FELLOW_REMOVED, fellow, NULL);
+        d_adminNotifyListeners(admin, D_FELLOW_REMOVED, fellow, NULL, NULL);
     }
     return result;
+}
+
+
+struct findNsWalkData
+{
+    const char* name;
+    c_bool found;
+};
+
+static void
+findNsWalk (
+    void* o, void* userData)
+{
+    struct findNsWalkData* walkData = (struct findNsWalkData*)userData;
+    if (!walkData->found && !strcmp (d_nameSpaceGetName(d_nameSpace(o)), walkData->name))
+    {
+        walkData->found = TRUE;
+    }
+}
+
+/* Dynamic namespace functionality */
+
+c_bool
+d_adminAddNameSpace(
+    d_admin admin,
+    d_nameSpace nameSpace)
+{
+    d_durability durability;
+    struct findNsWalkData walkData;
+
+    /* For convenient logging output */
+    const char* akindStr[3] =
+        {"INITIAL", "LAZY", "ON_REQUEST"};
+    const char* dkindStr[5] =
+        {"VOLATILE", "TRANSIENT_LOCAL", "TRANSIENT", "PERSISTENT", "ALL"};
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+    assert(d_objectIsValid(d_object(nameSpace), D_NAMESPACE) == TRUE);
+
+    durability = d_adminGetDurability(admin);
+
+    if (admin && nameSpace)
+    {
+        d_lockLock(d_lock(admin));
+
+        /* Check if namespace with that name is already in list */
+        walkData.name = d_nameSpaceGetName(nameSpace);
+
+        if (walkData.name)
+        {
+            walkData.found = FALSE;
+            c_iterWalk (admin->nameSpaces, findNsWalk, &walkData);
+
+            if (!walkData.found)
+            {
+                /* Keep ns */
+                d_objectKeep (d_object(nameSpace));
+
+                d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+                        "Add namespace '%s' to administration with policy {aligner=%d, alignee=%s, durability=%s}\n",
+                        d_nameSpaceGetName(nameSpace),
+                        d_nameSpaceIsAligner(nameSpace),
+                        akindStr[d_nameSpaceGetAlignmentKind(nameSpace)],
+                        dkindStr[d_nameSpaceGetDurabilityKind(nameSpace)]);
+
+                /* Add namespace to admin */
+                c_iterAppend (admin->nameSpaces, nameSpace);
+
+                d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Namespace '%s' added to administration, notifying listeners...\n", d_nameSpaceGetName(nameSpace));
+
+                /* New namespace event */
+                d_adminNotifyListeners(admin, D_NAMESPACE_NEW, NULL, nameSpace, NULL);
+            }else
+            {
+                d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Namespace '%s' already in administration\n", d_nameSpaceGetName(nameSpace));
+            }
+        }
+
+        d_lockUnlock(d_lock(admin));
+    }
+
+    return TRUE;
+}
+
+d_nameSpace
+d_adminGetNameSpaceForGroup(
+        d_admin admin,
+        d_partition partition,
+        d_topic topic,
+        d_durabilityKind kind)
+{
+    d_nameSpace nameSpace;
+    c_long i;
+    d_durabilityKind dkind;
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+    nameSpace = NULL;
+
+    d_lockLock (d_lock(admin));
+
+    for(i=0; (i<c_iterLength(admin->nameSpaces)) && (nameSpace == NULL); i++){
+        nameSpace = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+
+        if(d_nameSpaceIsIn(nameSpace, partition, topic) == TRUE){
+            dkind = d_nameSpaceGetDurabilityKind(nameSpace);
+
+            if(dkind != D_DURABILITY_ALL){
+                if( (!((dkind == D_DURABILITY_TRANSIENT) && (kind == D_DURABILITY_PERSISTENT))) &&
+                    (dkind != kind))
+                {
+                    nameSpace = NULL;
+                }
+            }
+        } else {
+            nameSpace = NULL;
+        }
+    }
+
+    d_lockUnlock (d_lock(admin));
+
+    return nameSpace;
+}
+
+static c_bool
+isBuiltinGroup(
+    d_partition partition,
+    d_topic topic)
+{
+    c_bool result = FALSE;
+    assert(partition);
+    assert(topic);
+
+    if(strcmp(partition, V_BUILTIN_PARTITION) == 0){
+        if( (strcmp(topic, V_PARTICIPANTINFO_NAME) == 0) ||
+            (strcmp(topic, V_TOPICINFO_NAME) == 0) ||
+            (strcmp(topic, V_PUBLICATIONINFO_NAME) == 0) ||
+            (strcmp(topic, V_SUBSCRIPTIONINFO_NAME) == 0))
+        {
+            result = TRUE;
+        }
+    }
+    return result;
+}
+
+c_bool
+d_adminInNameSpace(
+        d_nameSpace ns,
+        d_partition partition,
+        d_topic topic,
+        d_durabilityKind kind,
+        c_bool aligner)
+{
+    c_bool result;
+    d_durabilityKind dkind;
+
+    result = FALSE;
+    dkind = d_nameSpaceGetDurabilityKind(ns);
+
+    switch(kind){
+        case D_DURABILITY_PERSISTENT:
+            switch(dkind){
+                case D_DURABILITY_ALL:
+                case D_DURABILITY_PERSISTENT:
+                case D_DURABILITY_TRANSIENT:
+                    result = TRUE;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case D_DURABILITY_TRANSIENT:
+            switch(dkind){
+                case D_DURABILITY_ALL:
+                case D_DURABILITY_TRANSIENT:
+                    result = TRUE;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case D_DURABILITY_ALL:
+            result = TRUE;
+            break;
+        default:
+            assert(FALSE);
+            break;
+    }
+    if(result == TRUE){
+        result = FALSE;
+
+        if(d_nameSpaceIsIn(ns, partition, topic) == TRUE){
+            if(aligner == TRUE) {
+                if(d_nameSpaceIsAligner(ns) == TRUE){
+                    result = TRUE;
+                }
+            } else {
+                result = TRUE;
+            }
+        }
+    }
+    if(result == FALSE){
+        result = isBuiltinGroup(partition, topic);
+    }
+    return result;
+}
+
+c_bool
+d_adminGroupInAligneeNS(
+    d_admin admin,
+    d_partition partition,
+    d_topic topic,
+    d_durabilityKind kind)
+{
+    d_nameSpace ns;
+    c_bool inNameSpace;
+    c_ulong count, i;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    inNameSpace = FALSE;
+
+    d_lockLock (d_lock(admin));
+    count       = c_iterLength(admin->nameSpaces);
+    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
+        ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+    }
+    d_lockUnlock(d_lock(admin));
+
+    if(inNameSpace == FALSE){
+        inNameSpace = isBuiltinGroup(partition, topic);
+    }
+
+    return inNameSpace;
+}
+
+c_bool
+d_adminGroupInActiveAligneeNS(
+    d_admin admin,
+    d_partition partition,
+    d_topic topic,
+    d_durabilityKind kind)
+{
+    d_nameSpace ns;
+    c_bool inNameSpace;
+    c_ulong count, i;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    inNameSpace = FALSE;
+
+    d_lockLock (d_lock(admin));
+    count       = c_iterLength(admin->nameSpaces);
+    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
+        ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+
+        if(inNameSpace){
+            if(d_nameSpaceGetAlignmentKind(ns) == D_ALIGNEE_ON_REQUEST){
+                inNameSpace = FALSE;
+            }
+        }
+    }
+    d_lockUnlock (d_lock(admin));
+
+    if(inNameSpace == FALSE){
+        inNameSpace = isBuiltinGroup(partition, topic);
+    }
+    return inNameSpace;
+}
+
+c_bool
+d_adminGroupInAlignerNS(
+    d_admin admin,
+    d_partition partition,
+    d_topic topic,
+    d_durabilityKind kind)
+{
+    d_nameSpace ns;
+    c_bool inNameSpace;
+    c_ulong count, i;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    inNameSpace = FALSE;
+
+    d_lockLock(d_lock(admin));
+
+    count       = c_iterLength(admin->nameSpaces);
+    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
+        ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, TRUE);
+    }
+
+    d_lockUnlock(d_lock(admin));
+
+    if(inNameSpace == FALSE){
+        inNameSpace = isBuiltinGroup(partition, topic);
+    }
+    return inNameSpace;
+}
+
+c_bool
+d_adminGroupInInitialAligneeNS(
+    d_admin admin,
+    d_partition partition,
+    d_topic topic,
+    d_durabilityKind kind)
+{
+    d_nameSpace ns;
+    c_bool inNameSpace;
+    c_ulong count, i;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    inNameSpace = FALSE;
+
+    d_lockLock (d_lock(admin));
+
+    count       = c_iterLength(admin->nameSpaces);
+
+    for(i=0; (i<count) && (inNameSpace == FALSE); i++){
+        ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+
+        if(inNameSpace == TRUE){
+            switch(d_nameSpaceGetAlignmentKind(ns)){
+                case D_ALIGNEE_INITIAL:
+                    break;
+                default:
+                    inNameSpace = FALSE;
+                    break;
+            }
+
+        }
+    }
+
+    d_lockUnlock(d_lock(admin));
+
+    if(inNameSpace == FALSE){
+        inNameSpace = isBuiltinGroup(partition, topic);
+    }
+    return inNameSpace;
 }
 
 d_durability
@@ -945,6 +1319,24 @@ d_adminGetFellowCount(
     return result;
 }
 
+c_ulong
+d_adminGetNameSpacesCount(
+    d_admin admin)
+{
+    c_ulong result;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+    result = 0;
+
+    if(admin){
+        d_lockLock(d_lock(admin));
+        result = c_iterLength(admin->nameSpaces);
+        d_lockUnlock(d_lock(admin));
+    }
+    return result;
+}
+
+
 c_bool
 d_adminFellowWalk(
     d_admin admin,
@@ -964,6 +1356,22 @@ d_adminFellowWalk(
     }
     return result;
 }
+
+void
+d_adminNameSpaceWalk(
+    d_admin admin,
+    void (*action) (d_nameSpace nameSpace, c_voidp userData),
+    c_voidp userData)
+{
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    if(admin){
+        d_lockLock(d_lock(admin));
+        c_iterWalk(admin->nameSpaces, (c_iterWalkAction)action, userData);
+        d_lockUnlock(d_lock(admin));
+    }
+}
+
 
 void
 d_adminCleanupFellows(
@@ -992,7 +1400,7 @@ d_adminCleanupFellows(
                                     "Removing fellow: %u\n", address->systemId);
         d_networkAddressFree(address);
         fellow = d_adminRemoveFellow(admin, fellow);
-        d_adminNotifyListeners(admin, D_FELLOW_LOST, fellow, NULL);
+        d_adminNotifyListeners(admin, D_FELLOW_LOST, fellow, NULL, NULL);
         d_fellowFree(fellow);
         fellow = c_iterTakeFirst(data.fellows);
     }
@@ -1069,6 +1477,7 @@ d_adminNotifyListeners(
     d_admin admin,
     c_ulong mask,
     d_fellow fellow,
+    d_nameSpace nameSpace,
     d_group group)
 {
     d_adminEvent event;
@@ -1076,7 +1485,7 @@ d_adminNotifyListeners(
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
 
     if(admin){
-        event = d_adminEventNew(mask, fellow, group);
+        event = d_adminEventNew(mask, fellow, nameSpace, group);
         os_mutexLock(&admin->eventMutex);
         admin->eventQueue = c_iterAppend(admin->eventQueue, event);
         os_condSignal(&admin->eventCondition);
@@ -1088,6 +1497,7 @@ d_adminEvent
 d_adminEventNew(
     c_ulong event,
     d_fellow fellow,
+    d_nameSpace nameSpace,
     d_group group)
 {
     d_adminEvent evt = NULL;
@@ -1125,6 +1535,15 @@ d_adminEventNew(
     } else {
         evt->group = NULL;
     }
+    if (nameSpace)
+    {
+        assert(d_objectIsValid(d_object(nameSpace), D_NAMESPACE) == TRUE);
+        evt->nameSpace = nameSpace;
+    }else
+    {
+        evt->nameSpace = NULL;
+    }
+
     return evt;
 }
 
@@ -1181,7 +1600,7 @@ d_adminEventThreadStart(
                 listener = d_eventListener(c_iterObject(admin->eventListeners, i));
 
                 if((listener->interest & event->event) == event->event){
-                    result = listener->func(event->event, event->fellow,
+                    result = listener->func(event->event, event->fellow, event->nameSpace,
                                                 event->group, listener->args);
                 }
             }

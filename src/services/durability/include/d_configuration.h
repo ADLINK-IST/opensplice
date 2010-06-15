@@ -54,6 +54,7 @@ C_STRUCT(d_configuration){
     c_ulong       persistentQueueSize;
     os_threadAttr persistentScheduling;
     c_iter        nameSpaces;
+    c_iter        policies;
     os_time       startTime;
     c_ulong       persistentUpdateInterval;
 
@@ -97,67 +98,12 @@ d_configuration d_configurationNew                  (d_durability service,
  */
 void            d_configurationFree                 (d_configuration configuration);
 
-/**
- * Determines whether the supplied partition-topic combination is in the
- * alignee namespace for non-volatile data.
- *
- * @param configuration The configuration that contains the namespaces.
- * @param partition The partition to check.
- * @param topic The topic to check.
- * @param kind The durability kind.
- * @return TRUE if it is in the namespace, FALSE otherwise.
- */
-c_bool          d_configurationGroupInAligneeNS         (d_configuration configuration,
-                                                         d_partition partition,
-                                                         d_topic topic,
-                                                         d_durabilityKind kind);
-
-
-/**
- * Determines whether the supplied partition-topic combination is in the
- * alignee namespace for non-volatile data and the
- * alignmentKind != D_ALIGNMENT_ON_REQUEST.
- *
- * @param configuration The configuration that contains the namespaces.
- * @param partition The partition to check.
- * @param topic The topic to check.
- * @param kind The durability kind.
- * @return TRUE if it is in the namespace, FALSE otherwise.
- */
-c_bool          d_configurationGroupInActiveAligneeNS   (d_configuration configuration,
-                                                         d_partition partition,
-                                                         d_topic topic,
-                                                         d_durabilityKind kind);
-
-/**
- * Determines whether the supplied partition-topic combination is in the
- * aligner namespace for persistent data.
- *
- * @param configuration The configuration that contains the namespaces.
- * @param partition The partition to check.
- * @param topic The topic to check.
- * @return TRUE if it is in the namespace, FALSE otherwise.
- */
-c_bool          d_configurationGroupInAlignerNS         (d_configuration configuration,
-                                                         d_partition partition,
-                                                         d_topic topic,
-                                                         d_durabilityKind kind);
-
-c_bool          d_configurationGroupInInitialAligneeNS  (d_configuration configuration,
-                                                         d_partition partition,
-                                                         d_topic topic,
-                                                         d_durabilityKind kind);
 
 c_bool          d_configurationInNameSpace              (d_nameSpace ns,
                                                          d_partition partition,
                                                          d_topic topic,
                                                          d_durabilityKind kind,
                                                          c_bool aligner);
-
-d_nameSpace     d_configurationGetNameSpaceForGroup     (d_configuration configuration,
-                                                         d_partition partition,
-                                                         d_topic topic,
-                                                         d_durabilityKind kind);
 
 #if defined (__cplusplus)
 }

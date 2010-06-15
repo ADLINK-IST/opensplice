@@ -51,6 +51,115 @@
 #include <os_abstract.h>
 #include <stdio.h>
 
+/* Number of escape-characters. This determines the size of the arrays used for
+ * the replacements. */
+#define CMX_XML_NUM_ESCAPE_CHARS (5)
+/* Array containing the characters that need to be escaped. The character will
+ * be replaced by the string in CMX_XML_REPLACE_CHARS[] with the same index, so
+ * indices of this array must match the indices of CMX_XML_REPLACE_CHARS[]. */
+static c_char CMX_XML_ESCAPE_CHARS[CMX_XML_NUM_ESCAPE_CHARS] = {'\'', '"', '&', '>', '<'};
+/* Array containing the replacement strings of the characters that need to be
+ * escaped, as specified in CMX_XML_ESCAPE_CHARS[]. The escaped character will
+ * be replaced by the string in CMX_XML_REPLACE_CHARS[] with the same index, so
+ * indices of this array must match the indices of CMX_XML_ESCAPE_CHARS[]. */
+static c_char* CMX_XML_REPLACE_CHARS[CMX_XML_NUM_ESCAPE_CHARS] = {"&apos;", "&quot;", "&amp;", "&gt;", "&lt;"};
+/* Array containing the strlen's of the replace-sequences. Indices must match
+ * with CMX_XML_REPLACE_CHARS[].*/
+static c_ulong CMX_XML_REPLACE_CHARS_LEN[CMX_XML_NUM_ESCAPE_CHARS] = {6, 6, 5, 4, 4};
+
+/* Please note that the understanding documentation is written for HTML display.
+ *
+ * The strange part reads:
+ * '''->'&apos;',
+ * '"'->'&quot;',
+ * '&'->'&amp;',
+ * '>'->'&gt;' and
+ * '<'->'&lt;'.
+ */
+/**
+ * Escapes a string so it can be stored in an XML-container.
+ *
+ * It will replace all occurrences of characters in CMX_XML_ESCAPE_CHARS[] with
+ * the strings in the same index in CMX_XML_REPLACE_CHARS[]. It will thus replace
+ * &apos;&apos;&apos;-&gt;&apos;&amp;apos;&apos;,
+ * &apos;&apos;&apos;-&gt;&apos;&amp;quot;&apos;,
+ * &apos;&amp;&apos;-&gt;&apos;&amp;amp;&apos;,
+ * &apos;&gt;&apos;-&gt;&apos;&amp;gt;&apos; and
+ * &apos;&lt;&apos;-&gt;&apos;&amp;lt;&apos;.
+ * @param string The string to be escaped.
+ * @return An escaped copy of string. Needs to be freed with os_free().
+ */
+static c_char*
+getXMLEscapedString(
+    const c_char* string)
+{
+    c_ulong strLen = 0;
+    c_ulong extraStrLen = 0;
+    c_ulong i, j, inserts;
+    c_char* result = NULL;
+    c_bool match, shouldReplace = FALSE;
+
+    if(string){
+        /* Calculate length of resulting string */
+        strLen = 0;
+
+        while(string[strLen] != '\0'){
+            match = FALSE;
+
+            for(j = 0; !match && j < CMX_XML_NUM_ESCAPE_CHARS; j++){
+                if(string[strLen] == CMX_XML_ESCAPE_CHARS[j]){
+                    /* Count extra length. The original character is counted
+                     * by strLen, so count with original character excluded. */
+                    extraStrLen += CMX_XML_REPLACE_CHARS_LEN[j] - 1;
+                    match = TRUE;   /* And we can stop looking */
+                }
+            }
+            strLen++;
+            shouldReplace |= match;
+        }
+
+        if(shouldReplace){
+            /* Replacements needed, so allocate memory for result-string */
+            result = (c_char*)os_malloc(strLen + extraStrLen + 1);
+
+            if(result){
+                inserts = 0;
+
+                /* Now insert the escapes */
+                for(i = 0; i < strLen; i++){
+                    match = FALSE;
+
+                    for(j = 0; !match && j < CMX_XML_NUM_ESCAPE_CHARS; j++){
+                        if(string[i] == CMX_XML_ESCAPE_CHARS[j]){
+                            strncpy(&result[i + inserts], CMX_XML_REPLACE_CHARS[j], CMX_XML_REPLACE_CHARS_LEN[j]);
+                            /* Count extra length. The original character is counted
+                             * by strLen, so count with original character excluded. */
+                            inserts += CMX_XML_REPLACE_CHARS_LEN[j] - 1;
+                            match = TRUE;   /* We can stop looking */
+                        }
+                    }
+
+                    if(!match){
+                        /* No replace happened, so include original character */
+                        result[i + inserts] = string[i];
+                    }
+                }
+                /* NUL-terminate result */
+                result[strLen + extraStrLen] = '\0';
+            } else {
+                /* Memory-claim denied, return NULL */
+                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
+                        "Heap-memory claim of size %d denied, cannot generate escaped XML string.",
+                        strLen + extraStrLen + 1);
+            }
+        } else {
+            /* No replacements needed, so just duplicate the string */
+            result = os_strdup(string);
+        }
+    }
+    return result;
+}
+
 void
 cmx_entityNewFromAction(
     v_entity entity,
@@ -89,13 +198,15 @@ cmx_entityNewFromWalk(
                 enabled = "FALSE";
             }
             if(entity->name != NULL){
+                c_char* escapedString = getXMLEscapedString(entity->name);
                 sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
                             (c_address)proxy,
                             v_public(entity)->handle.index,
                             v_public(entity)->handle.serial,
-                            entity->name,
+                            escapedString,
                             enabled,
                             special);
+                os_free(escapedString);
             }
             else{
                 sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",

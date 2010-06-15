@@ -9,9 +9,9 @@ call setenv.bat
 
 ECHO Set Microsoft Visual Studio Environment using VS supplied batch file 
 
-IF NOT "%VS80COMNTOOLS%"=="" call "%VS80COMNTOOLS%"\vsvars32.bat
+IF "%VS_ENV_SCRIPT%"=="" EXIT 1
 
-IF "%VS80COMNTOOLS%"=="" call "%VS90COMNTOOLS%"\vsvars32.bat
+IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%"
 
 cd "%OSPL_HOME%"
 

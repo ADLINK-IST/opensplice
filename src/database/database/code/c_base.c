@@ -108,23 +108,8 @@ C_STRUCT(c_arrayHeader) {
 static const c_long HEADERSIZE = ALIGNSIZE(C_SIZEOF(c_header));
 static const c_long ARRAYHEADERSIZE = ALIGNSIZE(C_SIZEOF(c_arrayHeader));
 
-C_STRUCT(c_base) {
-    C_EXTENDS(c_module);
-    c_mm      mm;
-    c_long    confidence;
-    c_avlTree bindings;
-    c_mutex   bindLock;
-    c_mutex   serLock; /* currently only used for defining enums from sd_serializerXMLTypeinfo.c */
-    c_mutex   extentBugLock; /* this lock must be removed when extents are created properly*/
-    c_type    metaType[M_COUNT];
-    c_type    string_type;
-#ifndef NDEBUG
-#ifdef OBJECT_WALK
-    c_object  firstObject;
-    c_object  lastObject;
-#endif
-#endif
-};
+
+
 
 C_STRUCT(c_baseBinding) {
     C_EXTENDS(c_avlNode);
@@ -181,8 +166,7 @@ c_stringNew(
 }
 
 /* The following Macro and subsequent instances implements the
- * following type caches (static c_type reference) and a getter
- * methods.
+ * following type caches in c_base and getter methods.
  *
  * c_octet_t(c_base _this)
  * c_char_t(c_base _this)
@@ -280,6 +264,59 @@ c_newMetaClass(
 }
 
 static void
+c_queryCacheInit (C_STRUCT(c_queryCache) *queryCache)
+{
+    queryCache->c_qConst_t = NULL;
+    queryCache->c_qType_t = NULL;
+    queryCache->c_qVar_t = NULL;
+    queryCache->c_qField_t = NULL;
+    queryCache->c_qFunc_t = NULL;
+    queryCache->c_qPred_t = NULL;
+    queryCache->c_qKey_t = NULL;
+    queryCache->c_qRange_t = NULL;
+    queryCache->c_qExpr_t = NULL;
+}
+
+static void
+c_fieldCacheInit (C_STRUCT(c_fieldCache) *fieldCache)
+{
+    fieldCache->c_field_t = NULL;
+    fieldCache->c_fieldPath_t = NULL;
+    fieldCache->c_fieldRefs_t = NULL;
+}
+
+static void
+c_typeCacheInit (C_STRUCT(c_typeCache) *typeCache)
+{
+    typeCache->c_object_t = NULL;
+    typeCache->c_voidp_t = NULL;
+    typeCache->c_bool_t = NULL;
+    typeCache->c_address_t = NULL;
+    typeCache->c_octet_t = NULL;
+    typeCache->c_char_t = NULL;
+    typeCache->c_short_t = NULL;
+    typeCache->c_long_t = NULL;
+    typeCache->c_longlong_t = NULL;
+    typeCache->c_uchar_t = NULL;
+    typeCache->c_ushort_t = NULL;
+    typeCache->c_ulong_t = NULL;
+    typeCache->c_ulonglong_t = NULL;
+    typeCache->c_float_t = NULL;
+    typeCache->c_double_t = NULL;
+    typeCache->c_string_t = NULL;
+    typeCache->c_wchar_t = NULL;
+    typeCache->c_wstring_t = NULL;
+    typeCache->c_array_t = NULL;
+    typeCache->c_type_t = NULL;
+    typeCache->c_valueKind_t = NULL;
+    typeCache->c_member_t = NULL;
+    typeCache->c_literal_t = NULL;
+    typeCache->c_constant_t = NULL;
+    typeCache->c_unionCase_t = NULL;
+    typeCache->c_property_t = NULL;
+}
+
+static void
 c_baseInit (
     c_base base)
 {
@@ -353,6 +390,10 @@ c_baseInit (
     c_module(base)->scope = c_scope(c_new(scopeType));
     c_mutexInit(&c_module(base)->mtx, SHARED_MUTEX);
     c_scopeInit(c_module(base)->scope);
+
+    c_queryCacheInit (&base->baseCache.queryCache);
+    c_fieldCacheInit (&base->baseCache.fieldCache);
+    c_typeCacheInit (&base->baseCache.typeCache);
 
 /** Declare c_string type, this is required to be able to bind objects to names. **/
     o = c_metaObject(c_new(base->metaType[M_COLLECTION]));
@@ -2100,11 +2141,26 @@ c_baseOnOutOfMemory(
     c_voidp arg)
 {
     if (base) {
-	c_mm mm;
-	mm = c_baseMM(base);
-	if (mm) {
+        c_mm mm;
+        mm = c_baseMM(base);
+        if (mm) {
             c_mmOnOutOfMemory(mm,action,arg);
-	}
+        }
+    }
+}
+
+void
+c_baseOnLowOnMemory(
+    c_base base,
+    c_baseLowOnMemoryAction action,
+    c_voidp arg)
+{
+    if (base) {
+        c_mm mm;
+        mm = c_baseMM(base);
+        if (mm) {
+            c_mmOnLowOnMemory(mm,action,arg);
+        }
     }
 }
 

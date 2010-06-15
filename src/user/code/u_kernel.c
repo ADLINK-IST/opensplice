@@ -50,6 +50,7 @@ C_STRUCT(u_kernel) {
     c_char          *uri;
     c_char	    *name;
     os_lockPolicy   lockPolicy;
+    os_uint32       protectCount;
 };
 
 C_STRUCT(domain) {
@@ -372,7 +373,7 @@ u_kernelClaim (
     u_result result;
 
     if ((_this != NULL) && (kernel != NULL)) {
-        result = u_userProtect(NULL);
+        result = u_kernelProtect(_this);
         if (result == U_RESULT_OK) {
             *kernel = v_kernel(_this->kernel);
         } else {
@@ -394,7 +395,7 @@ u_kernelRelease (
     u_result result;
 
     if (_this != NULL) {
-        result = u_userUnprotect(NULL);
+        result = u_kernelUnprotect(_this);
         if (result != U_RESULT_OK) {
             OS_REPORT(OS_ERROR,"u_kernelRelease",0,
                       "Protect process failed");
@@ -431,7 +432,12 @@ u_kernelNew(
     processConfig = NULL;
     shm = NULL;
 
-    r = u_userProtect(NULL);
+    result = os_threadProtect();
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR,OSRPT_CNTXT_USER,0,
+                  "u_kernelNew:os_threadProtect() failed.");
+        return uKernel;
+    }
 
     domainCfg.name = os_malloc(strlen(DOMAIN_NAME) + 1);
     strcpy(domainCfg.name, DOMAIN_NAME);
@@ -592,6 +598,7 @@ u_kernelNew(
                 uKernel->shm = shm;
                 uKernel->participants = NULL;
                 uKernel->lockPolicy = domainCfg.lockPolicy;
+                uKernel->protectCount = 0;
                 if (uri == NULL) {
                     uKernel->uri = NULL;
                 } else {
@@ -618,7 +625,11 @@ u_kernelNew(
     if (processConfig != NULL) {
         cf_elementFree(processConfig);
     }
-    r = u_userUnprotect(NULL);
+    result = os_threadUnprotect();
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR,OSRPT_CNTXT_USER,0,
+                  "u_kernelNew:os_threadUnprotect() failed.");
+    }
 
     os_free(domainCfg.name);
 
@@ -732,6 +743,7 @@ u_kernelOpen(
             os_mutexInit(&o->mutex,&mutexAttr);
             o->kernel = kernel;
             o->shm = shm;
+            o->protectCount = 0;
             o->participants = NULL;
             o->lockPolicy = OS_LOCK_DEFAULT; /* don't care! */
             if ((uri != NULL) && (name == NULL)) {
@@ -782,10 +794,10 @@ u_kernelClose (
         /* All participants of this kernel must be disabled! */
         r = kernelDisable(k);
         if (r == U_RESULT_OK) {
-            protectCount = u_userProtectCount();
+            protectCount = u_kernelProtectCount(k);
             while (protectCount > 0) {
                 os_nanoSleep(pollDelay);
-                protectCount = u_userProtectCount();
+                protectCount = u_kernelProtectCount(k);
             }
             v_kernelDetach(k->kernel);
             result = os_sharedMemoryDetach(k->shm);
@@ -825,8 +837,9 @@ u_kernelFree (
     os_time pollDelay = {1,0};
 
     if (k != NULL) {
-        r = u_userProtect(NULL);
-        if (r == U_RESULT_OK) {
+        r = u_kernelProtect(k);
+	
+        if (r ==  U_RESULT_OK) {
             laps = 4;
             count = v_kernelUserCount(k->kernel);
 
@@ -875,13 +888,23 @@ u_kernelFree (
             } else {
                 result = os_resultSuccess;
             }
+
             assert(c_iterLength(k->participants) == 0);
             c_iterFree(k->participants);
             k->participants = NULL;
             os_free(k->uri);
             k->uri = NULL;
             os_free(k);
-            r = u_userUnprotect(NULL);
+            result = os_threadUnprotect();
+
+            if (result != os_resultSuccess) {
+                OS_REPORT(OS_ERROR,OSRPT_CNTXT_USER,0,
+                          "u_kernelFree:os_threadUnprotect() failed.");
+                r = U_RESULT_INTERNAL_ERROR;
+            }
+        } else {
+            OS_REPORT(OS_ERROR,OSRPT_CNTXT_USER,0,
+                      "u_kernelFree:os_kernelProtect() failed.");
         }
 
     } else {
@@ -896,6 +919,83 @@ u_kernelFree (
 
     return r;
 }
+
+u_result
+u_kernelProtect(
+    u_kernel _this)
+{
+    u_result r;
+    os_result osr;
+    c_ulong count; 
+
+    if( _this ) {
+        osr = os_threadProtect();
+        if (osr == os_resultSuccess) {
+            count = pa_increment(&_this->protectCount);
+            r = U_RESULT_OK;
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "u_kernelprotect",0,
+                      "os_threadProtect() failed.");
+            r = U_RESULT_INTERNAL_ERROR;
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_kernelProtect",0,
+                "Kernel == NULL.");
+        r = U_RESULT_NOT_INITIALISED;
+    }
+    return r;
+}
+
+u_result
+u_kernelUnprotect(
+    u_kernel _this)
+{
+    u_result r;
+    os_result osr;
+    os_uint32 newCount; /* Only used for checking 0-boundary */
+
+    if (_this) {
+        osr = os_threadUnprotect();
+        if (osr == os_resultSuccess) {
+            newCount = pa_decrement(&_this->protectCount);
+
+            /* Detect passing of 0 boundary
+             * (more likely here than with increment)
+             */
+            assert(newCount + 1 > newCount);
+            r = U_RESULT_OK;
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "u_kernelUnprotect",0,
+                      "os_threadUnprotect() failed.");
+            assert(osr == os_resultSuccess);
+            r = U_RESULT_INTERNAL_ERROR;
+        }
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_kernelProtect",0,
+                "Kernel == NULL.");
+            r = U_RESULT_INTERNAL_ERROR;
+    }
+    return r;
+}
+
+c_long
+u_kernelProtectCount(
+    u_kernel _this)
+{
+    c_long count;
+
+    if ( _this ){
+        count = _this->protectCount;
+    } else {
+        count = 0;
+    }
+    return count;
+}
+
 
 c_voidp
 u_kernelGetCopy(

@@ -17,18 +17,15 @@
 #include "v_maxValue.h"
 #include "v_fullCounter.h"
 
-static c_type readerStatisticsType = NULL;
-
 v_readerStatistics v_readerStatisticsNew(v_kernel k)
 {
     v_readerStatistics rs;
+    c_type readerStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (readerStatisticsType == NULL) {
-        readerStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_readerStatistics");
-    }
+    readerStatisticsType = v_kernelType(k,K_READERSTATISTICS);
     rs = v_readerStatistics(v_new(k, readerStatisticsType));
     v_readerStatisticsInit(rs);
     return rs;

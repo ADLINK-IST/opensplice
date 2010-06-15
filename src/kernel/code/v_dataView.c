@@ -42,10 +42,6 @@
 
 /* ------------------------------- private ---------------------------------- */
 
-static c_type v_dataView_t = NULL;
-static c_type v_dataViewSample_t = NULL;
-static c_type v_dataViewInstance_t = NULL;
-
 static v_readerQos
 v_dataViewQosFromReader(
     v_reader reader)
@@ -75,9 +71,12 @@ dataViewSampleTypeNew(
     c_char *name;
     c_long length,sres;
     c_char *metaName;
+    v_kernel kernel;
 
     assert(C_TYPECHECK(dataReader,v_dataReader));
     assert(dataReader);
+
+    kernel = v_objectKernel(dataReader);
 
     base = c_getBase(dataReader);
 
@@ -85,17 +84,6 @@ dataViewSampleTypeNew(
         OS_REPORT(OS_ERROR,
                   "v_dataView::dataViewSampleTypeNew",0,
                   "failed to retrieve base");
-        return NULL;
-    }
-
-    if (v_dataViewSample_t == NULL) {
-        v_dataViewSample_t = v_dataViewSample_t(base);
-    }
-
-    if (v_dataViewSample_t == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "v_dataView::dataViewSampleTypeNew",0,
-                  "failed to retrieve v_dataViewSample_t type");
         return NULL;
     }
 
@@ -113,7 +101,7 @@ dataViewSampleTypeNew(
     if (metaName) {
         sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
         if (sampleType) {
-            c_class(sampleType)->extends = c_keep(v_dataViewSample_t);
+           c_class(sampleType)->extends = c_keep(v_kernelType(kernel,K_DATAVIEWSAMPLE));
             o = c_metaDeclare(c_metaObject(sampleType),"sample",M_ATTRIBUTE);
             if (o) {
                 c_property(o)->type = c_keep(readerSampleType);
@@ -159,6 +147,7 @@ dataViewSampleTypeNew(
 
 static c_type
 dataViewInstanceTypeNew(
+    v_kernel kernel,
     c_type viewSampleType)
 {
     c_metaObject o;
@@ -180,17 +169,6 @@ dataViewInstanceTypeNew(
         return NULL;
     }
 
-    if (v_dataViewInstance_t == NULL) {
-        v_dataViewInstance_t = v_dataViewInstance_t(base);
-    }
-
-    if (v_dataViewInstance_t == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "v_dataView::dataViewInstanceTypeNew",0,
-                  "failed to retrieve v_dataViewInstance_t type");
-        return NULL;
-    }
-
     metaName = c_metaName(c_metaObject(viewSampleType));
     if (metaName == NULL) {
         OS_REPORT(OS_ERROR,
@@ -203,7 +181,7 @@ dataViewInstanceTypeNew(
 
     instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
     if (instanceType) {
-        c_class(instanceType)->extends = c_keep(v_dataViewInstance_t);
+        c_class(instanceType)->extends = c_keep(v_kernelType(kernel,K_DATAVIEWINSTANCE));
         o = c_metaObject(c_metaDeclare(c_metaObject(instanceType),
                                        "sample",
                                        M_ATTRIBUTE));
@@ -271,7 +249,7 @@ v_dataViewInit(
 
     dataViewSampleType = dataViewSampleTypeNew(dataReader);
     assert(dataViewSampleType != NULL);
-    dataViewInstanceType = dataViewInstanceTypeNew(dataViewSampleType);
+    dataViewInstanceType = dataViewInstanceTypeNew(kernel, dataViewSampleType);
     assert(dataViewInstanceType != NULL);
     if (qos->userKey.enable) {
         if (qos->userKey.expression) {
@@ -337,13 +315,7 @@ v_dataViewNew(
     assert(C_TYPECHECK(dataReader,v_dataReader));
 
     kernel = v_objectKernel(dataReader);
-    if (v_dataView_t == NULL) {
-        v_dataView_t = v_dataView_t(kernel);
-        if (v_dataView_t == NULL) {
-            return NULL;
-        }
-    }
-    dataView = v_dataView(c_new(v_dataView_t));
+    dataView = v_dataView(c_new(v_kernelType(kernel,K_DATAVIEW)));
     if (dataView) {
         v_object(dataView)->kernel = kernel;
         v_objectKind(dataView) = K_DATAVIEW;

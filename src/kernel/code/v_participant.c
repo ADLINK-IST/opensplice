@@ -108,9 +108,8 @@ v_participantInit(
     p->resendQuit = FALSE;
     c_mutexInit(&p->resendMutex, SHARED_MUTEX);
     c_condInit(&p->resendCond, &p->resendMutex, SHARED_COND);
-    writerProxyType = v_proxy_t(p);
+    writerProxyType = v_kernelType(kernel,K_PROXY);
     p->resendWriters = c_tableNew(writerProxyType, "source.index,source.serial");
-    c_free(writerProxyType);
 
     p->builtinSubscriber = NULL;
     if (!v_observableAddObserver(v_observable(kernel),v_observer(p), NULL)) {
@@ -631,4 +630,70 @@ v_participantResendManagerRemoveWriter(
     found = c_remove(p->resendWriters, &wp, NULL, NULL);
     c_free(found); /* remove local reference transferred from collection */
     c_mutexUnlock(&p->resendMutex);
+}
+
+
+v_message v_participantCreateCandMCommand(v_participant participant)
+{
+    v_message msg;
+    v_kernel kernel;
+    v_topic topic;
+
+    assert(participant != NULL);
+    assert(C_TYPECHECK(participant,v_participant));
+
+    kernel = v_objectKernel(participant);
+    topic = v_builtinTopicLookup(kernel->builtin, V_C_AND_M_COMMAND_ID);
+    msg = v_topicMessageNew(topic);
+    return msg;
+}
+
+v_result v_participantCandMCommandSetDisposeAllData(v_participant participant,
+                                                    v_message msg,
+                                                    char *topicExpr,
+                                                    char *partitionExpr)
+{
+    v_kernel kernel;
+    v_topic topic;
+    c_base base;
+    v_controlAndMonitoringCommand *command;
+    struct v_commandDisposeAllData *disposeCmd; 
+
+    assert(participant != NULL);
+    assert(C_TYPECHECK(participant,v_participant));
+    assert(msg != NULL );
+    assert(C_TYPECHECK(msg,v_message));
+
+    kernel = v_objectKernel(participant);
+    topic = v_builtinTopicLookup(kernel->builtin, V_C_AND_M_COMMAND_ID);
+    command = v_builtinControlAndMonitoringCommandData(kernel->builtin, msg);
+    command->u._d = V_COMMAND_DISPOSE_ALL_DATA;
+    base = c_getBase(c_object(topic));
+
+    disposeCmd = &command->u._u.dispose_all_data_info;
+    disposeCmd->topicExpr = c_stringNew(base, topicExpr);
+    disposeCmd->partitionExpr = c_stringNew(base, partitionExpr);
+
+    return ( ( disposeCmd->topicExpr != NULL 
+               && disposeCmd->partitionExpr != NULL ) 
+             ? V_RESULT_OK 
+             : V_RESULT_OUT_OF_MEMORY );
+}
+
+v_result v_participantWriteCandMCommand(v_participant participant, v_message msg)
+{
+   v_writeResult wres;
+   v_writer builtinWriter;
+
+   assert(participant != NULL);
+   assert(C_TYPECHECK(participant,v_participant));
+   assert(msg != NULL);
+   assert(C_TYPECHECK(msg,v_message));
+
+   builtinWriter = v_builtinWriterLookup(v_objectKernel(participant)->builtin,
+                                         V_C_AND_M_COMMAND_ID);
+   wres = v_writerWrite(builtinWriter, msg, v_timeGet(), NULL);
+   return ( wres == V_WRITE_SUCCESS 
+            ? V_RESULT_OK 
+              : V_RESULT_INTERNAL_ERROR );
 }

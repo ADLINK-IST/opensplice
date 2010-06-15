@@ -15,18 +15,17 @@
 #include "v_durabilityStatistics.h"
 #include "v_maxValue.h"
 
-static c_type durabilityStatisticsType = NULL;
-
 v_durabilityStatistics v_durabilityStatisticsNew(v_kernel k)
 {
     v_durabilityStatistics ds;
-    
+    c_type durabilityStatisticsType;
+
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (durabilityStatisticsType == NULL) {
-        durabilityStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_durabilityStatistics");
-    }
+    /* not necessary to cache this type since it is looked up only once per process */
+    durabilityStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_durabilityStatistics");
+
     ds = v_durabilityStatistics(v_new(k, durabilityStatisticsType));
     v_durabilityStatisticsInit(ds);
     return ds;

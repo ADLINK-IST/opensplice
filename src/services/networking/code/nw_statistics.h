@@ -50,6 +50,9 @@ C_STRUCT(nw_SendChannelStatistics){
 	c_ulong            numberOfBytesNotInterested;
 	v_fullCounter	   adminQueueData;
 	v_fullCounter	   adminQueueAcks;
+
+    c_ulong            nofBytesBeforeCompression;
+    c_ulong            nofBytesAfterCompression;
 };
 
 #define nw_SendChannelStatistics(s) ((nw_SendChannelStatistics)(s))
@@ -88,6 +91,9 @@ C_STRUCT(nw_ReceiveChannelStatistics){
 	c_ulong            numberOfBytesNotInterested;
 	c_ulong			   nofUsedPacketBuffers;
 	c_ulong			   nofFreePacketBuffers;
+
+    c_ulong            nofBytesBeforeDecompression;
+    c_ulong            nofBytesAfterDecompression;
 };
 
 C_CLASS(nw_SendChannelStatisticsArgs);

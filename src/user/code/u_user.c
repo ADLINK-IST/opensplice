@@ -268,6 +268,40 @@ u_result
 u_userDetach()
 {
     return U_RESULT_OK;
+/*
+    u_kernelAdmin ka;
+    u_user u;
+    u_result r;
+    c_object object;
+    c_long i;
+
+    u = u__userLock();
+    if ( u ){
+        r = U_RESULT_OK;
+        for (i=1; i<=u->kernelCount; i++) {
+            ka = &u->kernelList[i];
+            if (ka->kernel) {
+                ka->refCount = 0;
+                object = c_iterTakeFirst(ka->keepList);
+                while (object) {
+                    c_free(object);
+                    object = c_iterTakeFirst(ka->keepList);
+                }
+                c_iterFree(ka->keepList);
+                ka->keepList = NULL;
+                u_kernelClose(ka->kernel);
+                ka->kernel = NULL;
+            }
+        }
+        u__userUnlock();
+    } else {
+        OS_REPORT(OS_ERROR,
+                "u_userDetach",0,
+                "User layer not initialized");
+        r = U_RESULT_NOT_INITIALISED;
+    }
+    return r;
+*/
 }
 
 u_result
@@ -337,89 +371,6 @@ u_userInitialise()
     return rm;
 }
 
-u_result
-u_userProtect(
-    u_entity e)
-{
-    u_user u;
-    u_result r;
-    os_result osr;
-
-    /* While theoretically not necessary to have a lock on the user-object for
-     * this call, it is an easy way to assure that the protect only succeeds
-     * if the user-layer is active. */
-    u = u__userLock();
-    if( u ){
-        osr = os_threadProtect();
-        if (osr == os_resultSuccess) {
-            pa_increment(&u->protectCount);
-            r = U_RESULT_OK;
-        } else {
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-
-        u__userUnlock();
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userProtect",0,
-                "User layer not initialized.");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
-
-u_result
-u_userUnprotect(
-    u_entity e)
-{
-    u_user u;
-    u_result r;
-    os_result osr;
-    os_uint32 newCount; /* Only used for checking 0-boundary */
-
-    /* The unprotect is not locked on user->mutex on purpose. No unsafe concur-
-     * rent code is executed and this way, threads in user-protected space can
-     * always leave protected area, even when others are having a lock (i.e.
-     * in case of a u_userDetach()). */
-    if(user){
-        u = u_user(user);
-        osr = os_threadUnprotect();
-        if (osr == os_resultSuccess) {
-            newCount = pa_decrement(&u->protectCount);
-            /* Detect passing of 0 boundary (more likely here than with increment) */
-            assert(newCount + 1 > newCount);
-            r = U_RESULT_OK;
-        } else {
-            assert(osr == os_resultSuccess);
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "u_userUnprotect",0,
-                  "User layer not initialized.");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
-
-c_long
-u_userProtectCount()
-{
-    u_user u;
-    c_long count;
-
-    u = u__userLock();
-    if ( u ){
-        count = u->protectCount;
-
-        u__userUnlock();
-    } else {
-        count = 0;
-    }
-
-    return count;
-}
-
 u_kernel
 u_userKernelNew(
     const c_char *uri)
@@ -428,6 +379,7 @@ u_userKernelNew(
     u_kernelAdmin ka;
     u_user u;
     os_sharedHandle shm;
+    os_result osr;
 
     _this = u_kernelNew(uri);
     if(_this) {
@@ -446,7 +398,12 @@ u_userKernelNew(
                  */
                 ka->keepList = NULL;
                 ka->lowerBound = (c_address)os_sharedAddress(shm);
-                os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                osr = os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                if (osr != os_resultSuccess) {
+                    OS_REPORT(OS_ERROR,
+                            "u_userKernelNew",0,
+                            "shared memory size cannot be determined");
+                }
                 ka->upperBound += ka->lowerBound;
             } else {
                 OS_REPORT_1(OS_ERROR,
@@ -477,6 +434,7 @@ u_userKernelOpen(
     u_kernelAdmin ka;
     os_sharedHandle shm;
     c_long i, firstFreeIndex;
+    os_result osr;
 
     result = NULL;
 
@@ -520,7 +478,12 @@ u_userKernelOpen(
                      */
                     ka->keepList = NULL;
                     ka->lowerBound = (c_address)os_sharedAddress(shm);
-                    os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                    osr = os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                    if (osr != os_resultSuccess) {
+                        OS_REPORT(OS_ERROR,
+                                "u_userKernelNew",0,
+                                "shared memory size cannot be determined");
+                    }
                     ka->upperBound += ka->lowerBound;
                 } else {
                     /* If timeout = -1, don't report */

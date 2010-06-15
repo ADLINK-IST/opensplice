@@ -36,6 +36,7 @@ v_cacheNodeNew (
 
 OS_API v_cache
 v_cacheNew (
+    v_kernel kernel,
     c_type nodeType,
     v_cacheKind kind);
 

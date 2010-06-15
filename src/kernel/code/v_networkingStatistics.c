@@ -15,18 +15,17 @@
 
 #include "v_networkingStatistics.h"
 
-static c_type networkingStatisticsType = NULL;
-
 v_networkingStatistics v_networkingStatisticsNew(v_kernel k)
 {
     v_networkingStatistics _this;
+    c_type networkingStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (networkingStatisticsType == NULL) {
-        networkingStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkingStatistics");
-    }
+    /* not necessary to cache this type since it is looked up only once per process */
+    networkingStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkingStatistics");
+
     _this = v_networkingStatistics(v_new(k, networkingStatisticsType));
     v_networkingStatisticsInit(_this,k);
     return _this;
@@ -43,12 +42,8 @@ void v_networkingStatisticsInit(v_networkingStatistics _this, v_kernel k)
 
     _this->numberOfErrors = 0;
     _this->channelsCount = 0;
-    //_this->channels =NULL;
     _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(k)),"kernelModule::v_networkChannelStatistics"),64);
-    /*
-    for (i=0;i<64;i++) {
-    	_this->channels[i] = NULL;
-    }*/
+
 }
 
 void v_networkingStatisticsDeinit(v_networkingStatistics _this)

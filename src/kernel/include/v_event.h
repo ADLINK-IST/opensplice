@@ -51,7 +51,7 @@
 #define V_EVENT_HISTORY_DELETE          (0x00000001U << 19) /* 524288 */
 #define V_EVENT_HISTORY_REQUEST         (0x00000001U << 20) /* 1048576 */
 #define V_EVENT_PERSISTENT_SNAPSHOT     (0x00000001U << 21) /* 2097152 */
-
+#define V_EVENT_ALL_DATA_DISPOSED       (0x00000001U << 22) /* 4194304 */
 #define V_EVENTMASK_ALL                 (0xffffffffU)
 
 #define v_eventTest(events,kind) (((events)&(kind))==(kind))

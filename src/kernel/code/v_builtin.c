@@ -58,20 +58,9 @@ v_builtinWritersDisable(
     _this->writers[V_TOPICINFO_ID] = NULL;
     _this->writers[V_PARTICIPANTINFO_ID] = NULL;
     _this->writers[V_SUBSCRIPTIONINFO_ID] = NULL;
+    _this->writers[V_C_AND_M_COMMAND_ID] = NULL;
     _this->writers[V_HEARTBEATINFO_ID] = NULL;
     _this->writers[V_DELIVERYINFO_ID] = NULL;
-}
-
-static c_type _v_builtin_t = NULL;
-
-c_type
-v_builtin_t (
-    c_base base)
-{
-    if (_v_builtin_t == NULL) {
-        _v_builtin_t = c_resolve(base,"kernelModule::v_builtin");
-    }
-    return _v_builtin_t;
 }
 
 v_builtin
@@ -89,7 +78,7 @@ v_builtinNew(
     c_long i;
 
     base = c_getBase(kernel);
-    type = v_builtin_t(base);
+    type = c_resolve(base,"kernelModule::v_builtin");
 
     if (type) {
         _this = (v_builtin)c_new(type);
@@ -100,6 +89,8 @@ v_builtinNew(
             tQos = v_topicQosNew(kernel, NULL);
             tQos->durability.kind = V_DURABILITY_TRANSIENT;
             tQos->reliability.kind = V_RELIABILITY_RELIABLE;
+            tQos->reliability.max_blocking_time.seconds = 0;
+            tQos->reliability.max_blocking_time.nanoseconds = 100000000;
             tQos->durabilityService.service_cleanup_delay = C_TIME_ZERO;
 
             if (_this->kernelQos->builtin.enabled) {
@@ -124,6 +115,10 @@ v_builtinNew(
                    v_topicNew(kernel, V_HEARTBEATINFO_NAME,
                               "kernelModule::v_heartbeatInfo",
                               "id.localId,id.systemId", NULL);
+            _this->topics[V_C_AND_M_COMMAND_ID] =
+                   v_topicNew(kernel, V_C_AND_M_COMMAND_NAME,
+                              "kernelModule::v_controlAndMonitoringCommand",
+                              "key.localId,key.systemId", tQos);
             _this->topics[V_DELIVERYINFO_ID] =
                    v_topicNew(kernel, V_DELIVERYINFO_NAME,
                               "kernelModule::v_deliveryInfo",
@@ -193,6 +188,16 @@ v_builtinNew(
                                  V_HEARTBEATINFO_NAME "HeartbeatInfoWriter",
                                  _this->topics[V_HEARTBEATINFO_ID],
                                  NULL /* default qos */, TRUE);
+
+                wQos = v_writerQosNew(kernel, NULL);
+                wQos->durability.kind = V_DURABILITY_TRANSIENT;
+                wQos->reliability.kind = V_RELIABILITY_RELIABLE;
+
+                _this->writers[V_C_AND_M_COMMAND_ID] =
+                     v_writerNew(_this->publisher,
+                                 V_C_AND_M_COMMAND_NAME "Writer",
+                                 _this->topics[V_C_AND_M_COMMAND_ID],
+                                 wQos, TRUE);
 
                 wQos->durability.kind = V_DURABILITY_VOLATILE;
                 wQos->reliability.kind = V_RELIABILITY_RELIABLE;

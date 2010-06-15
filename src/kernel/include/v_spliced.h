@@ -59,10 +59,18 @@ v_splicedStartHeartbeat(
     v_spliced spliced,
     v_duration period,
     v_duration renewal);
-    
+
 OS_API c_bool
 v_splicedStopHeartbeat(
     v_spliced spliced);
+
+OS_API void
+v_splicedCAndMCommandDispatcherQuit(
+   v_spliced spliced);
+
+OS_API void
+v_splicedBuiltinCAndMCommandDispatcher(
+   v_spliced spliced);
 
 #undef OS_API
 

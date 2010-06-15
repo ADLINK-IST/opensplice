@@ -41,10 +41,10 @@ void addarg( char *pattern, char *val )
    }
 }
 
-
 int main( int argc, char ** argv)
 {
    int count;
+   int i;
    for ( count=1 ; count < argc; count++ )
    {
       char *arg = argv[count];
@@ -52,7 +52,7 @@ int main( int argc, char ** argv)
       {
          if ( !strcmp( argv[1], "idlpp" )
               || !strcmp( argv[1], "tao_idl" )
-              )
+         )
          {
             switch ( arg[1] )
             {
@@ -83,9 +83,28 @@ int main( int argc, char ** argv)
                }
             }
          }
+         else if ( !strcmp( argv[1], "mt" ))
+         {
+            if (!strcmp( arg, "-manifest" ))
+            {
+               char *narg=argv[count+1];
+               int arglen = strlen( narg );
+               addarg( "%s", arg );
+               addarg( "%s", narg );
+               count++;
+            }
+            else if (!strncmp( arg, "-outputresource:", 16 ))
+            {
+               addarg( "-outputresource:%s", &arg[16]);
+            }
+            else
+            {
+               addarg( "%s", argv[count] );
+            }
+         }
          else if ( !strcmp( argv[1], "cl" )
-              || !strcmp( argv[1], "link" )
-              || !strcmp( argv[1], "lib" ))
+                   || !strcmp( argv[1], "link" )
+                   || !strcmp( argv[1], "lib" ))
          {
             switch ( arg[1] )
             {
@@ -148,10 +167,18 @@ int main( int argc, char ** argv)
       }
    }
    newargs[argNum] = NULL;
+
+   /*printf("\nRUNNING CMD:");
+   for ( i=0 ; i < argNum; i++ )
+   {
+      printf(" %s", newargs[i]);
+   }
+   printf("\n");
+   fflush(stdout);*/
+
    if ( execvp( argv[1], newargs, environ ) == -1 )
    {
       fprintf(stderr, "ERROR: exec failed %d\n", errno);
       fflush(stderr);
-
    }
 }

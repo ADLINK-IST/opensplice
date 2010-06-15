@@ -31,6 +31,9 @@ NW_STRUCT(plugSendStatistics){
 	c_ulong numberOfAcksSent;
 	v_fullCounter adminQueueAcks;
 	v_fullCounter adminQueueData;
+	int enabled;
+    c_ulong nofBytesBeforeCompression;
+    c_ulong nofBytesAfterCompression;
 /* receive
 	c_ulong numberOfBytesReceived;
 	c_ulong numberOfPacketsReceived;
@@ -41,6 +44,8 @@ NW_STRUCT(plugSendStatistics){
 	c_ulong numberOfBytesDelivered;
 	c_ulong numberOfMessagesNotInterested;
 	c_ulong numberOfBytesNotInterested;
+    c_ulong nofBytesBeforeDecompression;
+    c_ulong nofBytesAfterDecompression;
 	*/
 };
 

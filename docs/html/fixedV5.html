@@ -13,7 +13,7 @@
       </a>
     </p>
 
-    <h1>Fixed Bugs and Changes V5.1</h1>
+    <h1>Fixed Bugs and Changes V5 series</h1>
     <h2>Contents</h2>
     <ul>
       <li><a href="#highlights">Release Highlights</a></li>
@@ -22,12 +22,80 @@
     </ul>
     <hr>
     This page contains a list of all bugfixes and changes incorporated in
-    OpenSplice V5.1 series of releases<br>
+    OpenSplice V5.x series of releases<br>
 
     <h2><a name="highlights">Release Highlights</a></h2>
 
     <p>
-       OpenSplice DDS V5.1 contains some new features:
+       <h3>OpenSplice DDS V5.2 contains the following new features:</h3>
+       <ul>
+		 <li>Dynamic namespaces
+		    <p>
+			The durability service now has the capability to discover namespaces from other nodes at runtime. This can significantly
+			reduce configuration effort in large-scale systems, while also enabling OpenSplice to run in more dynamic environments.
+			</p>
+         </li>
+         <li>Support for Solaris 9 gcc 3.4.2 platform
+         </li>
+         <li>For C# OpenSplice DDS is now available from the Global Assembly Cache
+            <p>
+            For C#, there is now a signed and versioned Assembly called dcpssacsAssembly.dll, created from the 
+            the dcpssacs.dll module, which is added to the Global Assembly cache. In this release, 
+            as part of the installation, this is added to the global assembly cache.
+            </p>
+         </li>
+         <li>OpenSplice can be configured to allow a single application to operate in multiple domains concurrently
+            <p>
+             See the OpenSplice Documentation Set for detailed information. 
+            </p>
+         </li>
+         <li>Support for coherent updates
+            <p>
+             Implementation available for the coherent access PRESENTATION QoS policy for INSTANCE (existing)
+             and TOPIC (new) access_scopes <br><br>
+             See the OpenSplice Documentation Set for detailed information. 
+            </p>
+         </li>
+         <li>Now provides a way to dispose all the instances of a topic in one call and to notify the
+         receivers in one notification.
+            <p>
+             This functionality allows an application to dispose of all of the instances
+             for a particular topic without the overhead of using an individual 
+             dispose call for each instance individually. Its effect is equivalent to
+             invoking a separate dispose operation for each individual instance
+             on the DataWriter that owns it<br<br>
+             See the OpenSplice Documentation Set for detailed information. 
+            </p>
+         </li>
+       </ul>
+    </p>
+    <p>
+       <h3>OpenSplice DDS V5.1.1 contains the following new features:</h3>
+       <ul>
+         <li>Support for Windows 7 platform
+            <p>
+             Added Windows 7 32 bit support with Microsoft Visual Studio 2008.
+            </p>
+         </li>
+         <li>Support for OpenFusion Real Time ORB Java Edition
+            <p>
+             OpenFusion Real Time ORB Java Edition is now tested with OpenSplice DDS. Additional
+             examples have been provided to allow users to get started quickly. In a future release
+             documentation updates will be made to the manuals.
+            </p>
+         </li>
+         <li>Symbolic network interface names supported on Window
+            <p>
+             With Linux or Unix platforms, it is possible to specify the symbolic name
+             of a networking interface to be used, like eth0, eth1, wlan0 etc. In this
+             release this concept is now supported on Windows using "friendly names",
+             which are unique symbolic names tied to each interface. 
+            </p>
+         </li>
+       </ul>
+    </p>
+    <p>
+       <h3>OpenSplice DDS V5.1 contains the following new features:</h3>
        <ul>
          <li>Compiled with JAVA6
             <p>
@@ -51,7 +119,7 @@
          <li>Domain identification
             <p>
              A DomainId consists of a string that represents either a URI to the
-             location of the configuration file (e.g. “file:///projects/DDS/ospl.xml”) or the
+             location of the configuration file (e.g. 'file:///projects/DDS/ospl.xml') or the
              Domain name as specified in the configuration file. The actual value returned is
              dependent of the value used when creating the DomainParticipant, also see the
              DomainParticipantFactory create_participant operation. If a DomainParticipant
@@ -81,7 +149,7 @@
             systems,  static-unicast node pre-definition is not practical nor
             sufficient and dynamic-multicast based discovery is typically not
             supported or even allowed. The new dynamic discovery is based on
-            overlaying the physical network with a notion of “Roles” and “Scopes”
+            overlaying the physical network with a notion of 'Roles' and 'Scopes'
             that represent 'area-of-interest regions' within the WAN domain such
             that only nodes within the defined scope-of-interest will be
             automatically discovered and their state maintained. In this way,
@@ -98,6 +166,459 @@
 
 
     <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
+    <p><h3>5.2</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            6488<br>
+            dds1513
+          </td>
+          <td>
+            <b>OpenSplice can be configured to allow a single application to operate in multiple domains</b><br/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            6457<br>
+            dds1542
+          </td>
+          <td>
+            <b>Generation of additional inappropriate files from idlpp</b><br/>
+            <i>
+              If A.idl depends on B.idl, and A.idl defines a "pragma keylist", 
+              then we need to apply idlpp on B.idl too so that BSplDcps.h is generated.
+              However idlpp will also generate BDcps.idl which only contains 
+              namespaces and no struct.<br/><br/>
+              <b>Solution: </b>idlpp amended to generate only the appropriate files.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1619
+          </td>
+          <td>
+            <b>DDS shall provide a way to dispose all the instances of a topic in one call
+             and to notify the receivers in one notification</b><br/>
+            <i>See new features in 5.2 above.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1929
+          </td>
+          <td>
+            <b>Dynamic namespaces for durability</b>
+            <i>
+              <br/><br/>
+              <b>Solution: </b>OpenSplice DDS now supports more dynamic environments by 
+			  introducing dynamic namespaces. With a dynamic namespaces, the durability service 
+			  can determine at runtime if a previously unknown namespace discovered from another 
+			  node needs to be maintained and\or aligned locally. For more information see the related 
+			  documentation.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1958
+          </td>
+          <td>
+            <b>Warning when opensplice is close to exceeding its amount of configured shared memory</b>
+            <i>
+              <br/><br/>
+              <b>Solution: </b>OpenSplice DDS will now print a warning to the ospl-info.log file 
+              if the available, non fragmented shared memory is below 10% of the total available shared memory size.
+              This warning will only be printed once.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2099
+          </td>
+          <td>
+            <b>Process not terminating if several listeners attached to serveral entities</b><br/>
+            <i>
+              Using a domain participant in combination with a listener caused a deadlock situation
+              to occur within OpenSplice DDS in situations where the listener was processing events while the
+              DomainParticipant was already being deleted. The deletion operation would claim a mutex and 
+              perform various clean functions including stopping the listener thread and then waiting for it to
+              terminate. Meanwhile the listener thread could be processing some events and require the mutex lock
+              in use by the participant delete function.
+              <br/><br/>
+              <b>Solution: </b> Fix the delete function of the participant to release the mutex
+              while waiting for the listener thread to exit and reclaim it once the exit function returned.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7122<br>
+            dds2131
+          </td>
+          <td>
+            <b>Unclear error reports when osplconf updates the configuration</b><br/>
+            <i>
+              Configuration not parsed properly. <br/><br/>
+              <b>Solution: </b>Fixed an error in an XPath expression that is used 
+              internally to parse part of the configuration and improved the warning
+              messages that appear in the info-log file.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2145
+          </td>
+          <td>
+            <b>Developers needed to add dcpssacs.dll to the PATH to use C#</b>
+            <br><br> 
+            <b>Solution: </b>For C#, there is now a signed and versioned Assembly called dcpssacsAssembly.dll, created from the 
+            the dcpssacs.dll module, which is added to the Global Assembly cache. In this release, 
+            as part of the installation, this is added to the Global Assembly cache. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2154
+          </td>
+          <td>
+            <b>SPLICE_ORB environment variable not set</b><br/>
+            <i>
+              In order to build the CORBA C++ example you require the SPLICE_ORB to be
+              set. This is not done in release.com for Unix systems. <br/><br/>
+              <b>Solution: </b>Added the variable to release.com.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7131/
+            dds2157
+          </td>
+          <td>
+            <b>OpenSplice release.com loads jar files at the end of CLASSPATH</b><br/><br/>
+            <i>
+               <b>Solution: </b>script fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7157/
+            dds2158
+          </td>
+          <td>
+            <b>Incorrect parameter passing in report plugin.</b><br/>
+            <i>
+               Parameter passing in the Report Plugin intialise function was incorrect.<br><br>
+               <b>Solution: </b>Small code error fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7156/
+            dds2159
+          </td>
+          <td>
+            <b>Missing report configuration in osplconf.</b><br/>
+            <i>
+               osplconf tool was not up to date with the deployment guide and did not
+               allow some of the configuration items to be set.<br><br>
+               <b>Solution: </b>Updated the configuration to match the deployment guide.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7158/
+            dds2160
+          </td>
+          <td>
+            <b>spliced crashes when adding a report plugin</b><br/><br/>
+            <i>
+               <b>Solution: </b>Small code error fixed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2163
+          </td>
+          <td>
+            <b>When using the pragma 'cats' in combination with multiple listed fields,
+             the IDLP Pre-processor would crash and not generate any code</b><br/>
+            <i>There was a bug within the IDL Pre-Processor idlpp which occured
+              when the 'cats' pragma directive was being evaluated and incorrectly take 2 fields from a list.
+              This caused a null pointer to be retrieved from the list in the next iteration,
+              where a valid field was expected, and idl would crash when the pointer was dereferenced.
+              <br/><br/>
+              <b>Solution: </b> The double take from the list has been removed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2167
+          </td>
+          <td>
+            <b>Example C#Visual Studio Solution and Project files should be valid for both VS2005 and VS2008</b><br/>
+            <i>In 5.1, the C# example projects would only support Visual Studio 2008
+              <br/><br/>
+              <b>Solution: </b> Projects are now created with Visual Studio 2008.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2173
+          </td>
+         <td>
+             <b>Coherent updates</b><br/>
+            <i>See new features in 5.2 above.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2188
+          </td>
+          <td>
+            <b>Builtin topic default QoS incorrect in relation to reliability.max_blocking_time</b><br/>
+            <i>
+              The specification specifies that the max_blocking_time of the reliability QoS should be 100ms.
+              Currently it isset to 0ms.
+              <br/><br/>
+              <b>Solution: </b>Updated code to set QoS to 100ms.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7190/<br>
+            dds2192
+          </td>
+          <td>
+            <b>Instances are unregistered on the DataWriter when its liveliness expires</b><br/>
+            <i>
+              All instances are unregistered on the DataWriter when its 
+              liveliness expires, but this is wrong behaviour. It causes write
+              calls with an instance-handle to return PRECONDITION_NOT_MET
+              after liveliness expires.
+              <br/><br/>
+              <b>Solution: </b>A DataWriter no longer unregisters its instances
+              when its liveliness expires. A DataReader does reset the ownership
+              of an instance when liveliness of DataWriter expires in case of 
+              exclusive ownership.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7186/<br>
+            dds2204
+          </td>
+          <td>
+            <b>Communication between different subnetworks not supported</b><br/>
+            <i>
+              To be able to communicate between different subnetworks the 
+              DontRoute networking service configuration option needs to be set
+              to false for all channels including discovery. Even though the 
+              networking service supports this configuration, the configurator 
+              tool did not offer this option for discovery. The same goes for
+              other send/receive options that are available for channels. 
+              <br/><br/>
+              <b>Solution: </b>The configurator has been extended to support all
+              send/receive options for networking discovery as for the channels.
+            </i>
+          </td>
+        </tr>
+      </table>
+    </p>
+    <p><h3>5.1.1</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds2078
+          </td>
+          <td>
+            <b>Disabled factories default QoS settings not returned.</b><br/>
+            <i>
+              Default Qos settings for factories are not returned if the factory is in
+              a disabled state. If the caller did not initialize the Qos parameter 
+              (assuming get_default_qos would do that), then an uninitialized QoS 
+              would be returned. <br/><br/>
+              <b>Solution: </b>Removed the check for disabled factories, so that they 
+              are handled like enabled factories.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7104<br>
+            dds2108
+          </td>
+          <td>
+            <b>make_hde will not copy host libs for linux cross compile</b><br/>
+            <i>
+              If the host and target operating systems are the same, in this case Linux, 
+              but the target architectures are different the make_hde will not copy the host lib's. <br/><br/>
+              <b>Solution: </b>Changed the check in the make_hde script.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2133
+          </td>
+          <td>
+            <b>PATH environment variable corrupted by checkconf script on Windows build
+            when using Visual Studio 2008</b><br/>
+            <i>
+              The ospli/bin/checkconf script, which is included by configure, 
+              is responsible for checking build requirements and prepares the 
+              environment for building OpenSplice. The part of the script that 
+              checks the Microsoft toolchain contains an error when Visual Studio 2008
+              is detected. It uses 'cygpath -d' (line: 186) to translate a path 
+              but this returns the windows representation of the path (including c:\).
+              The result is then appended to the Unix PATH environment variable,
+              which uses ':' as a field seperator. This corrupts the PATH variable
+              which causes the build to fail.<br/><br/>
+              <b>Solution: </b>Script amended to handle windows paths correctly.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2165
+          </td>
+          <td>
+            <b>Set default QoS behaviour not compliant with the OMG specification.</b><br/>
+            <i>The factory operations set_default_xxx_qos() (where xxx represents
+            an entity type, i.e. topic, publisher, subscriber, datawriter and datareader)
+            do not work according to the DDS spec when their corresponding XXX_QOS_DEFAULT
+            label is passed as parameter. According to the DDS specification, the 
+            set_default_xxx_qos operation should in that case: "The special value
+            XXX_QOS_DEFAULT may be passed to this operation to indicate that the
+            default QoS should be reset back to the initial values the factory would
+            use, that is the values that would be used if the set_default_xxx_qos
+            operation had never been called."
+            <br><br> In OpenSplice DDS these operations either 
+            do nothing and return RETCODE_OK (e.g. set_default_publisher_qos), 
+            or return a RETCODE_BAD_PARAMETER (e.g. set_default_subscriber_qos).<br><br> 
+            <b>Solution: </b>Updated the functionality to behave as per the specification. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2177
+          </td>
+          <td>
+            <b>PartitionID changed to be byte swapped before being sent out over the network</b><br/>
+          </td>
+        </tr>
+      </table>
+    </p>
+    <p><h3>5.1.0p1</h3>
+      <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            7053<br/>
+            dds2046
+          </td>
+          <td>
+            <b>When an application attach listeners, then it does not terminate and just hangs after the main thread finished.</b><br/>
+            <i>
+              Java 'hangs' on exit when not all DDS entities have been deleted.<br/><br/>
+              <b>Solution: </b>A shutdown hook is now installed on the JVM. 
+              The shutdown hook is installed during the first successful call on 
+              the DomainParticipantFactory.get_instance() operation. This 
+              shutdown hook will ensure all contained entities of the 
+              DomainParticipantFactory are deleted before the final shutdown 
+              of the JVM commences. Before this fix the contained entities 
+              where deleted during/after the final shutdown of the JVM which 
+              caused various JVM resources to be accessed by OpenSplice while 
+              they were no longer available.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7141<br/>
+            dds2143
+          </td>
+          <td>
+            <b>Code generation with OSPL IDL pre-processor fails for specific key types</b><br/>
+            <i>
+              The IDL pre-processor rejects usage of character arrays as key 
+              fields in IDL. This occurs even though the character array has 
+              been marked to be interpreted as a string internally by the 
+              middleware via a '#pragma cats' definition. The IDL pre-processor 
+              fails to recognize the '#pragma cats' definition during key field 
+              validation if it is located in a different module and/or in an 
+              included IDL file. Furthermore the IDL pre-processor incorrectly 
+              validates character arrays when they are used in combination with 
+              typedefs.<br/><br/>
+              <b>Solution: </b>The IDL pre-processor now is able to recognize 
+              the '#pragma cats' definition regardless of it's location and 
+              will also correctly resolve any used typedefs in determining 
+              whether or not a key field is a character array.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            7140<br/>
+            dds2144
+          </td>
+          <td>
+            <b>TIMEOUT when writing a topic with synchronous reliability activated</b><br/>
+            <i>
+              When activating the synchronous reliability on DataReaders and 
+              DataWriters, the write returns an error code 10 (TIMEOUT) even 
+              with large timeout (5 secs).<br/><br/>
+              <b>Solution: </b>A fix has been implemented to prevent synchronous 
+              writers from blocking on ACKs from non-matching readers (i.e. 
+              subscribed on other topics). 
+              This was because when the writer was created, *all* synchronous 
+              readers were injected into its administration. But as the 
+              non-matching readers never received messages from this writer, 
+              they would never acknowledge and the writer would wait 
+              infinitely (until timeout).
+            </i>
+          </td>
+        </tr>
+      </table>
+    </p>
     <p><h3>5.1.0</h3>
       <table width="90%">
         <tr>
@@ -184,7 +705,7 @@
             <i>
               OpenSplice V4 and before only support URI as domain ID<br/><br/>
               <b>Solution:</b>A DomainId consists of a string that represents either a URI to the
-               location of the configuration file (e.g. “file:///projects/DDS/ospl.xml”) or the
+               location of the configuration file (e.g. file:///projects/DDS/ospl.xml) or the
                Domain name as specified in the configuration file. The actual value returned is
                dependent of the value used when creating the DomainParticipant, also see the
                DomainParticipantFactory create_participant operation. If a DomainParticipant
@@ -696,8 +1217,8 @@
         </tr>
         <tr>
           <td>
-            DDS_8<br/>
-            dds1617
+            DDS_4<br/>
+            dds1578
           </td>
           <td>
             <b>Network level compression</b><br/>

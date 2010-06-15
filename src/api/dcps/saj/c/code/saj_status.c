@@ -104,6 +104,26 @@ saj_statusCopyOutInconsistentTopicStatus(
 }
 
 saj_returnCode
+saj_statusCopyOutAllDataDisposedTopicStatus(
+    JNIEnv *env,
+    gapi_allDataDisposedTopicStatus* status,
+    jobject* jstatus)
+{
+    jclass cls;
+    jmethodID mid;
+    
+    cls = GET_CACHED(allDataDisposedTopicStatus_class);
+    mid = GET_CACHED(allDataDisposedTopicStatus_constructor_mid);
+    
+    *jstatus = (*env)->NewObject(env, cls, mid, 
+                                            (jint)status->total_count, 
+                                            (jint)status->total_count_change);
+    saj_exceptionCheck(env);
+    
+    return SAJ_RETCODE_OK;
+}
+
+saj_returnCode
 saj_statusCopyOutLivelinessLostStatus(
     JNIEnv *env,
     gapi_livelinessLostStatus* status,

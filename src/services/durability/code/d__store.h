@@ -97,6 +97,7 @@ typedef d_storeResult 	(*d_storeNsMarkCompleteFunc)		(const d_store store,
 
 C_STRUCT(d_store){
     C_EXTENDS(d_lock);
+    d_admin                         admin;
     d_configuration             	config;
     d_storeType                 	type;
 

@@ -355,6 +355,10 @@ namespace DDS
                   const gapi_inconsistentTopicStatus & from,
                   ::DDS::InconsistentTopicStatus &to);
 
+    OS_DCPS_API void ccpp_AllDataDisposedTopicStatus_copyOut(
+                  const gapi_allDataDisposedTopicStatus & from,
+                  ::DDS::AllDataDisposedTopicStatus &to);
+
     OS_DCPS_API void ccpp_OfferedDeadlineMissedStatus_copyOut(
                   const gapi_offeredDeadlineMissedStatus & from,
                   ::DDS::OfferedDeadlineMissedStatus &to);

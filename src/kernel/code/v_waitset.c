@@ -72,9 +72,8 @@ v_waitsetNew(
         v_observerInit(v_observer(_this),"Waitset", NULL, TRUE);
         _this->participant = p;
         _this->eventCache = NULL;
-        proxyType = v_proxy_t(p);
+        proxyType = v_kernelType(kernel,K_PROXY);
         _this->observables = c_setNew(proxyType);
-        c_free(proxyType);
         v_observerSetEventData(v_observer(_this), NULL);
         v_participantAdd(p, v_entity(_this));
     }

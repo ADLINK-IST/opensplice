@@ -305,7 +305,7 @@ inline char*& DDS::String_out::ptr ()
 
 // Unbounded string sequence
 
-class DDS_DCPSUStrSeq
+class SACPP_API DDS_DCPSUStrSeq
 {
 public:
 

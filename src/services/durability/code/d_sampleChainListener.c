@@ -149,6 +149,7 @@ findAligner(
     }
 
     if((fellowComplete == TRUE) && (helper->fellow) && (status != D_ALIGN_FALSE)){
+
         /*fellow complete and aligner  and old complete fellow exists.*/
         count = d_fellowRequestCountGet(helper->fellow);
         fellowAddress = d_fellowGetAddress(fellow);
@@ -175,6 +176,7 @@ findAligner(
         }
         d_networkAddressFree(fellowAddress);
     } else if((fellowComplete == TRUE) && (status != D_ALIGN_FALSE)){
+
         /*Fellow complete and no old complete fellow exists*/
         d_tableFree(helper->chain->fellows);
         helper->chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
@@ -487,7 +489,7 @@ d_sampleChainListenerReportGroup(
         quality      = d_groupGetQuality(group);
         kind         = d_groupGetKind(group);
 
-        inNameSpace = d_configurationGroupInAlignerNS(config, partition, topic, kind);
+        inNameSpace = d_adminGroupInAlignerNS(admin, partition, topic, kind);
 
         if((inNameSpace == TRUE) || (completeness != D_GROUP_COMPLETE)) {
             d_printTimedEvent(durability, D_LEVEL_FINER,
@@ -597,6 +599,7 @@ c_bool
 d_sampleChainListenerNotifyFellowRemoved(
     c_ulong event,
     d_fellow fellow,
+    d_nameSpace ns,
     d_group group,
     c_voidp userData)
 {
@@ -892,8 +895,8 @@ d_sampleChainListenerInsertRequest(
         assert(d_tableFind(listener->chains, chain) == NULL);
 
         configuration    = d_durabilityGetConfiguration(durability);
-        nameSpace        = d_configurationGetNameSpaceForGroup(
-                                            configuration,
+        nameSpace        = d_adminGetNameSpaceForGroup(
+                                            admin,
                                             chain->request->partition,
                                             chain->request->topic,
                                             chain->request->durabilityKind);
@@ -906,11 +909,12 @@ d_sampleChainListenerInsertRequest(
         } else {
             data.master = NULL;
         }
+
         d_adminFellowWalk(admin, findAligner, &data);
 
         if(d_tableSize(chain->fellows) == 0){
-            iAmAligner    = d_configurationGroupInAlignerNS(
-                                configuration,
+            iAmAligner    = d_adminGroupInAlignerNS(
+                                admin,
                                 chain->request->partition,
                                 chain->request->topic,
                                 chain->request->durabilityKind);

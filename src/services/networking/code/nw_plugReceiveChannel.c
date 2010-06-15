@@ -11,6 +11,7 @@
  */
 /* interface */
 #include "nw__plugReceiveChannel.h"
+#include <time.h>
 
 /* implementation */
 #include "os_heap.h"
@@ -1536,11 +1537,17 @@ nw_plugReceiveChannelCommunicateControlReceived(
     do {
         message = nw_plugControlBufferGetNextMessage(buffer, message, &more);
         NW_CONFIDENCE(message != NULL);
-        partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+        partitionHash = nw_plugControlMessageGetPartitionId(message);
+        partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
 
-        partitionHashToId = (os_uint32)ut_get(channel->partionIdToHashAdmin,
-        		 (void *)&partitionHash);
-
+        if (partitionHashToId == -1) {
+            partitionHashToId = 0;
+            NW_REPORT_WARNING_1("receive data",
+                                "PartitionId with hash 0x%x not found, using globalPartition",
+                                partitionHash);
+        }
+       /* partitionHashToId = (os_uint32)ut_get(channel->partionIdToHashAdmin,
+        		 (void *)&partitionHash);*/
 
         nw_plugInterChannelPostAckReceivedMessage(interChannel,
             sendingNodeId,
@@ -1665,9 +1672,18 @@ nw_plugReceiveChannelLookUpPartitionHash(
 {
     os_uint32 partitionHashToId;
 
-    partitionHashToId = (os_uint32)ut_get(
+    /*partitionHashToId = (os_uint32)ut_get(
        channel->partionIdToHashAdmin,
-       (void *)&partitionHash);
+       (void *)&partitionHash);*/
+
+    partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
+
+    if (partitionHashToId == -1) {
+        partitionHashToId = 0;
+        NW_REPORT_WARNING_1("receive data",
+                            "PartitionId with hash 0x%x not found, using globalPartition",
+                            partitionHash);
+    }
 
     return partitionHashToId;
 }
@@ -1698,7 +1714,8 @@ nw_plugReceiveChannelReadSocket(
     os_uint32 partitionHashToId;
     os_uint32 partitionHash;
 
- 
+
+
     *dataRead = OS_TRUE; /* nw_bool is typedef-ed os_boolean */
     NW_CONFIDENCE(sizeof(sk_address) == sizeof(admin->sender.ipAddress));
 
@@ -1714,9 +1731,9 @@ nw_plugReceiveChannelReadSocket(
         readLength = nw_socketReceive(
             nw__plugChannelGetSocket(nw_plugChannel(channel)),
             (sk_address *)&admin->sender.ipAddress, buffer,
-            fragmentLength, timeOut);
+            fragmentLength, timeOut, channel->prs);
 
-        NW_SECURITY_DECODER_PROCESS(bufferLength /* out */, channel, &(admin->sender), buffer, readLength, fragmentLength);
+        NW_SECURITY_DECODER_PROCESS(bufferLength, channel, &(admin->sender), buffer, readLength, fragmentLength);
 
         /* if security is enabled the readLength includes the security header
          * the bufferLength is the original readLength without the security header */
@@ -1754,23 +1771,40 @@ nw_plugReceiveChannelReadSocket(
 
 							if (dataLength > 0) {
 							    if (channel->prs != NULL) {
-                                    channel->prs->numberOfBytesReceived += dataLength;
-                                    channel->prs->numberOfPacketsReceived++;
+							        if (channel->prs->enabled) {
+							            channel->prs->numberOfBytesReceived += dataLength;
+							            channel->prs->numberOfPacketsReceived++;
+							        }
                                 }
 
 								NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
-								sendingPartitionId = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
-								/*convert hash to partitionId*/
 
-                                partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+								partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
+								partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
 
+								if (partitionHashToId == -1) {
+								    partitionHashToId = 0;
+                                    NW_REPORT_WARNING_1("receive data",
+                                                        "PartitionId with hash 0x%x not found, using globalPartition",
+                                                        partitionHash);
+								}
+
+								/*convert hash to partitionId
                                 partitionHashToId = (os_uint32)ut_get(
                                         channel->partionIdToHashAdmin,
                                         (void *)&partitionHash);
 
+                                if (partitionHashToId == NULL) {
+                                    partitionHashToId = 0;
+                                    NW_REPORT_WARNING_1("receive data",
+                                                        "PartitionId with hash 0x%x not found, using globalPartition",
+                                                        partitionHash);
+                                }*/
+
+
                                 connected = FALSE;
                                 sendingPartitionId = partitionHashToId;
-                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &compression, &partitionHashToId);
+                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &compression, &partitionHash);
 #ifdef FILTER_ON_SENDING_PARTITION
 								if (connected) {
 #endif
@@ -1869,6 +1903,8 @@ nw_plugReceiveChannelReadSocket(
     }
     return result;
 }
+
+
 
 
 static nw_plugBufferDefragAdmin
@@ -1981,7 +2017,7 @@ nw_plugReceiveChannelProcessIncoming(nw_plugChannel channel)
 
     nw_CheckMessageBox(channel);
     while (result && dataRead ) {
-    	dataRead = OS_FALSE; /* reset */ 
+    	dataRead = OS_FALSE; /* reset */
         result = nw_plugReceiveChannelReadSocket(nw_plugReceiveChannel(channel), &zeroTime, &dataRead);
    }
 }
@@ -2132,8 +2168,10 @@ nw_plugReceiveChannelMessageEnd(
 /*    NW_CONFIDENCE(receiveChannel->inUse);*/
     NW_CONFIDENCE(receiveChannel->prs == prs);
     if(receiveChannel->prs != NULL) {
-                	receiveChannel->prs->nofUsedPacketBuffers = receiveChannel->nofUsedBuffers;
-                	receiveChannel->prs->nofFreePacketBuffers = receiveChannel->nofFreeBuffers;
+        if (receiveChannel->prs->enabled) {
+            receiveChannel->prs->nofUsedPacketBuffers = receiveChannel->nofUsedBuffers;
+            receiveChannel->prs->nofFreePacketBuffers = receiveChannel->nofFreeBuffers;
+        }
     }
     receiveChannel->inUse = FALSE;
     receiveChannel->prs = NULL;

@@ -803,7 +803,9 @@ nw_plugSendChannelCreateReceivingNode(
         prevNextInHash, prevNextInList);
 
     if (sendChannel->pss != NULL) {
-        sendChannel->pss->numberOfKnownNodes++;
+        if (sendChannel->pss->enabled) {
+            sendChannel->pss->numberOfKnownNodes++;
+        }
     }
 
     for (partitionId = 0;
@@ -1064,8 +1066,16 @@ nw_plugSendChannelMessagesFlush(
 			 * for another partition after it. */
 			partition = NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel,nw_plugDataBufferGetPartitionId(buffer));
 			
-			/*partition id name to hash*/
-			buffer->partitionId = partition->partitionHash;
+			 /*partition id name to hash*/
+			 nw_plugDataBufferSetPartitionId(buffer,partition->partitionHash);
+
+			 /* Valid Partition so Send data to network */
+			 receivingNodeId = nw_plugBufferGetReceivingNodeId(nw_plugBuffer(buffer));
+
+			 /* crc check */
+             if (sendChannel->crc_check) {
+                 nw_plugBuffer(buffer)->crc = ut_crcCalculate(channel->crc,((os_char*)buffer)+sizeof(NW_STRUCT(nw_plugBuffer)),bytesSent-sizeof(NW_STRUCT(nw_plugBuffer)));
+             }
 
 			/* Encode the buffer before sent to network. If the encoding fails due to malicious configuration
 			 * the message will be dropped. If dealing with reliability, the message-buffer will not be resent. */
@@ -1079,14 +1089,6 @@ nw_plugSendChannelMessagesFlush(
 			} else {
 				/* never reached, if encoding failed */            
 
-				/* Valid Partition so Send data to network */
-
-
-
-            /* crc check */
-            if (sendChannel->crc_check) {
-            	nw_plugBuffer(buffer)->crc = ut_crcCalculate(channel->crc,((os_char*)buffer)+sizeof(NW_STRUCT(nw_plugBuffer)),bytesSent-sizeof(NW_STRUCT(nw_plugBuffer)));
-            }
 
 
 #ifdef NW_DEBUGGING
@@ -1103,13 +1105,14 @@ nw_plugSendChannelMessagesFlush(
                              nw_plugDataBufferGetPartitionId(buffer));
                 }*/
 
-                receivingNodeId = nw_plugBufferGetReceivingNodeId(nw_plugBuffer(buffer));
+
 
                 if ( receivingNodeId == 0 ){
                     nw_periodicCheckMessageBox(channel); /* make sure to have processed all messages, as they might contain the mapping for this write_to*/
                     nw_socketSendDataToPartition(
                         nw__plugChannelGetSocket(channel),
                         partition->partitionId,
+                        pss,
                         buffer,
                         bytesSent);
                 } else {
@@ -1130,8 +1133,10 @@ nw_plugSendChannelMessagesFlush(
                     }
                 }
                 if (pss != NULL) {
-                	pss->numberOfPacketsSent++;
-                	pss->numberOfBytesSent += bytesSent;
+                    if (pss->enabled) {
+                        pss->numberOfPacketsSent++;
+                        pss->numberOfBytesSent += bytesSent;
+                    }
                 }
 
 #ifdef NW_DEBUGGING
@@ -1185,7 +1190,6 @@ nw_plugSendChannelWriteToMessageStart(
     nw_signedLength *bytesLeft, /* in/out */
     plugSendStatistics pss)
 {
-	/*null check for pss*/
 	nw_plugSendChannel sendChannel = nw_plugSendChannel(channel);
     nw_plugReceivingPartition partition;
     nw_length sendLength;
@@ -1270,7 +1274,9 @@ nw_plugSendChannelWriteToMessageStart(
                 sendChannel->currentFragmentsInMsgCount++;
                 sendChannel->currentFragmentLength += NW_MESSAGEHOLDER_SIZE;
                 if (sendChannel->pss != NULL) {
-                    sendChannel->pss->numberOfMessagesPacked++;
+                    if (sendChannel->pss->enabled) {
+                        sendChannel->pss->numberOfMessagesPacked++;
+                    }
                 }
             }
         }
@@ -1345,7 +1351,9 @@ nw_plugSendChannelGetNextFragment(
         sendChannel->currentFragmentSeqNr = 1;
         sendChannel->fragmenting = TRUE;
         if (sendChannel->pss != NULL) {
-              sendChannel->pss->numberOfMessagesFragmented++;
+              if (sendChannel->pss->enabled) {
+                  sendChannel->pss->numberOfMessagesFragmented++;
+              }
         }
     } else {
         NW_CONFIDENCE(sendChannel->currentFragmentSeqNr > 0);
@@ -1453,10 +1461,11 @@ nw_plugSendChannelMessageEnd(
         NW_ALIGN(NW_PLUGDATABUFFER_DATA_ALIGNMENT, messageLength);
 
     if (sendChannel->pss != NULL) {
-        sendChannel->pss->numberOfPacketsInResendBuffer = sendChannel->totNofRelBuffers- sendChannel->nofFreeRelBuffers;
-        sendChannel->pss->numberOfBytesInResendBuffer = sendChannel->pss->numberOfPacketsInResendBuffer * nw__plugChannelGetFragmentLength(channel);
+        if (sendChannel->pss->enabled) {
+            sendChannel->pss->numberOfPacketsInResendBuffer = sendChannel->totNofRelBuffers- sendChannel->nofFreeRelBuffers;
+            sendChannel->pss->numberOfBytesInResendBuffer = sendChannel->pss->numberOfPacketsInResendBuffer * nw__plugChannelGetFragmentLength(channel);
+        }
     }
-
     sendChannel->pss = NULL;
 }
 
@@ -2464,7 +2473,9 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                         NW_CONFIDENCE( receivingNode->address == sendingAddress);
                         nw_plugReceivingNodeStopped(receivingNode);
                         if (sendChannel->pss != NULL) {
-                           sendChannel->pss->numberOfKnownNodes--;
+                           if (sendChannel->pss->enabled) {
+                               sendChannel->pss->numberOfKnownNodes--;
+                           }
                         }
                     }
                 break;
@@ -2479,7 +2490,9 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                             receivingNode->nodeId, addressString);
                         nw_plugReceivingNodeNotResponding(receivingNode);
                         if (sendChannel->pss != NULL) {
-                           sendChannel->pss->numberOfKnownNodes--;
+                           if (sendChannel->pss->enabled) {
+                               sendChannel->pss->numberOfKnownNodes--;
+                           }
                         }
                     }
                     
@@ -2577,7 +2590,11 @@ nw_periodicProcessIncomingAcks( nw_plugChannel channel )
                 nw__plugChannelGetName(channel),remoteRecvBuffer);
         }
     } while (!done);
-    sendChannelStatisticsCounterInc(adminQueueAcks,sendChannel->pss,ackcounter);
+    if (sendChannel->pss != NULL) {
+        if (sendChannel->pss->enabled) {
+            sendChannelStatisticsCounterInc(adminQueueAcks,sendChannel->pss,ackcounter);
+        }
+    }
     /* teller add adminQueueAcks */
 }
 
@@ -2717,7 +2734,11 @@ nw_periodicProcessReceivedData( nw_plugChannel channel )
 
     } while (!done);
     /* add adminQueueData fullcounters */
-    sendChannelStatisticsCounterInc(adminQueueData,sendChannel->pss,datacounter);
+    if (sendChannel->pss != NULL) {
+        if (sendChannel->pss->enabled) {
+            sendChannelStatisticsCounterInc(adminQueueData,sendChannel->pss,datacounter);
+        }
+    }
 
     NW_TRACE_2(Send, 4, "plugChannel %s: sendthread: sendACK MAX output: %d",
         nw__plugChannelGetName(channel),sendChannel->RecvBufferInUse);
@@ -2904,7 +2925,9 @@ nw_periodicSendAcksBundled( nw_plugChannel channel,
                         (sk_address)receivingNode->address,
                         controlBuffer, length);
                     if (sendChannel->pss != NULL) {
-                    sendChannel->pss->numberOfAcksSent++;
+                        if (sendChannel->pss->enabled) {
+                            sendChannel->pss->numberOfAcksSent++;
+                        }
                     }
                     firstMessage = NW_PLUGCONTROLBUFFER_FIRSTMESSAGE(controlBuffer);
                     remainingSize = UI(sendChannel->controlWriteBufferEnd) -
@@ -2937,7 +2960,9 @@ nw_periodicSendAcksBundled( nw_plugChannel channel,
             (sk_address)receivingNode->address,
             controlBuffer, length);
         if (sendChannel->pss != NULL) {
+            if (sendChannel->pss->enabled) {
                sendChannel->pss->numberOfAcksSent++;
+            }
         }
     }
 }
@@ -3026,8 +3051,10 @@ nw_periodicResend( nw_plugChannel channel,
                                     (sk_address)receivingNode->address);
 
                                 if (sendChannel->pss != NULL) {
-                                    sendChannel->pss->numberOfBytesResent+= length;
-                                    sendChannel->pss->numberOfPacketsResent++;
+                                    if (sendChannel->pss->enabled) {
+                                        sendChannel->pss->numberOfBytesResent+= length;
+                                        sendChannel->pss->numberOfPacketsResent++;
+                                    }
                                 }
 #ifdef NW_DEBUGGING
                             }

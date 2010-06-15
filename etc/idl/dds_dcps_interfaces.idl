@@ -118,6 +118,11 @@ module DDS {
         long total_count_change;
     };
 
+    struct AllDataDisposedTopicStatus {
+        long total_count;
+        long total_count_change;
+    };
+
     struct SampleLostStatus {
         long total_count;
         long total_count_change;

@@ -15,18 +15,15 @@
 #include "v__statisticsInterface.h"
 #include "v_queryStatistics.h"
 
-static c_type queryStatisticsType = NULL;
-
 v_queryStatistics v_queryStatisticsNew(v_kernel k)
 {
     v_queryStatistics qs;
+    c_type queryStatisticsType;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (queryStatisticsType == NULL) {
-        queryStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_queryStatistics");
-    }
+    queryStatisticsType = v_kernelType(k,K_QUERYSTATISTICS);
     qs = v_queryStatistics(v_new(k, queryStatisticsType));
     v_queryStatisticsInit(qs);
     return qs;

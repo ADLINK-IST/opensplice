@@ -308,6 +308,9 @@ d_actionGetExecTime(
     if(action){
         execTime.tv_sec  = action->execTime.tv_sec;
         execTime.tv_nsec = action->execTime.tv_nsec;
+    }else {
+        execTime.tv_sec = 0;
+        execTime.tv_nsec = 0;
     }
     return execTime;
 }
@@ -323,7 +326,11 @@ d_actionGetSleepTime(
     if(action){
         sleepTime.tv_sec  = action->sleepTime.tv_sec;
         sleepTime.tv_nsec = action->sleepTime.tv_nsec;
+    }else {
+        sleepTime.tv_sec = 0;
+        sleepTime.tv_nsec = 0;
     }
+
     return sleepTime;
 }
 

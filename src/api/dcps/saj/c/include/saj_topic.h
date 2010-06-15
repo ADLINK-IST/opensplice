@@ -18,6 +18,14 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_TopicImpl_jniGetInconsistent
 
 /*
  * Class:     org_opensplice_dds_dcps_TopicImpl
+ * Method:    jniGetAllDataDisposedTopicStatus
+ * Signature: (LDDS/AllDataDisposedTopicStatusHolder;)I
+ */
+JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_TopicImpl_jniGetAllDataDisposedTopicStatus
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_opensplice_dds_dcps_TopicImpl
  * Method:    jniGetQos
  * Signature: (LDDS/TopicQosHolder;)I
  */

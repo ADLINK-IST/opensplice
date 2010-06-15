@@ -169,4 +169,9 @@ void
 v_groupInstanceDisconnect(
     v_groupInstance _this);
 
+v_result
+v_groupInstanceDispose (
+    v_groupInstance instance,
+    c_time timestamp);
+
 #endif

@@ -318,7 +318,7 @@ _DataWriterGetQos (
  *     set_qos(
  *         in DataWriterQos qos);
  *
- * Function will operate indepenedent of the enable flag
+ * Function will operate independent of the enable flag
  */
 gapi_returnCode_t
 gapi_dataWriter_set_qos (

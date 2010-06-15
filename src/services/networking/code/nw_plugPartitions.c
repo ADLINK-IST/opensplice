@@ -139,6 +139,33 @@ nw_plugPartitionsGetNofPartitions(
     return plugPartitions->nofPartitions;
 }
 
+nw_partitionId
+nw_plugPartitionsGetPartitionIdByHash(
+        nw_plugPartitions plugPartitions,
+        nw_partitionId hash)
+{
+    nw_bool foundHash = FALSE;
+    nw_partitionId partitionHashToId = -1;
+    nw_seqNr counter = 0;
+    nw_seqNr maxsize = plugPartitions->nofPartitions;
+
+    while(!foundHash) {
+
+        if (counter >= maxsize) {
+            foundHash = TRUE;
+        } else {
+            if (plugPartitions->partitions[counter] != NULL) {
+               if (plugPartitions->partitions[counter]->hash == hash) {
+                    partitionHashToId = plugPartitions->partitions[counter]->id;
+                    foundHash =TRUE;
+                }
+            }
+        }
+        counter++;
+    }
+    return partitionHashToId;
+}
+
 void
 nw_plugPartitionsGetPartition(
     nw_plugPartitions plugPartitions,

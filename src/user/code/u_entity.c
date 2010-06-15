@@ -189,7 +189,7 @@ u_entityDeinit(
             case K_READERSTATUS:
             case K_WRITERSTATUS:     _FREE_(v_status);
             case K_QUERY:
-                OS_REPORT(OS_ERROR, "u_entityFree failure",
+                OS_REPORT(OS_ERROR, "u_entityFree",
                           0, "deinit of abstract class K_QUERY");
             break;
             case K_DATAVIEWQUERY:    _FREE_(v_dataViewQuery);
@@ -200,14 +200,14 @@ u_entityDeinit(
             case K_DATAREADERINSTANCE:
             break;
             default:
-                OS_REPORT_1(OS_ERROR,"u_entityFree failed",0,
+                OS_REPORT_1(OS_ERROR,"u_entityFree",0,
                             "illegal entity kind (%d) specified",
                             v_objectKind(o));
             break;
             }
             result = u_entityRelease(e);
             if (result != U_RESULT_OK) {
-                OS_REPORT(OS_ERROR,"u_entityFree failed",0,
+                OS_REPORT(OS_ERROR,"u_entityFree",0,
                           "Internal error: release entity failed.");
             }
         }/* else 
@@ -226,19 +226,29 @@ u_entityFree(
     u_entity e)
 {
     u_result r;
+    u_kernel k;
 
     if (e == NULL) {
         r = U_RESULT_ILL_PARAM;
     } else {
-        r = u_userProtect(e);
-        if (r == U_RESULT_OK) {
-            r = u_entityDeinit(e);
-            os_free(e);
+        k = u_participantKernel(e->participant);
+        if (k) {
+            r = u_kernelProtect(k);
             if (r == U_RESULT_OK) {
-                r = u_userUnprotect(e);
+                r = u_entityDeinit(e);
+                os_free(e);
+                if (r == U_RESULT_OK) {
+                    r = u_kernelUnprotect(k);
+                } else {
+                    u_kernelUnprotect(k);
+                }
             } else {
-                u_userUnprotect(e);
+                OS_REPORT(OS_ERROR,"u_entityFree",0,
+                          "Internal error: u_kernelProtect() failed.");
             }
+        } else {
+            OS_REPORT(OS_ERROR,"u_entityFree",0,
+                      "Internal error: u_participantKernel() failed.");
         }
     }
     return r;
@@ -250,6 +260,7 @@ u_entityClaim(
 {
     v_entity ve = NULL;
     u_participant p;
+    u_kernel k;
     u_result r;
 
     if (e != NULL) {
@@ -258,26 +269,27 @@ u_entityClaim(
         } else {
             p = e->participant;
         }
-        r = u_userProtect(u_entity(p));
-        if (r == U_RESULT_OK) {
-            r = u_handleClaim(e->handle,(v_object *)&ve);
-            if (r != U_RESULT_OK) {
-                if (r == U_RESULT_PRECONDITION_NOT_MET) {
-                    OS_REPORT(OS_WARNING, "u_entityClaim", 0,
-                          "Claim failed because the handle has already expired");
-                } else {
+        k = u_participantKernel(p);
+        if (k) {
+            r = u_kernelProtect(k);
+            if (r == U_RESULT_OK) {
+                r = u_handleClaim(e->handle,(v_object *)&ve);
+                if (r != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-                          "Illegal handle detected");
+                              "Illegal handle detected");
+                    u_kernelUnprotect(k);
                 }
-                u_userUnprotect(u_entity(p));
+            } else if (r == U_RESULT_DETACHING) {
+                OS_REPORT(OS_WARNING, "u_entityClaim", 0,
+                          "Claim failed because the process "
+                          "is detaching from the kernel.");
+            } else {
+                OS_REPORT(OS_ERROR, "u_entityClaim", 0,
+                          "u_kernelProtect() failed.");
             }
-        } else if (r == U_RESULT_DETACHING) {
-            OS_REPORT(OS_WARNING, "u_entityClaim", 0,
-                      "Claim failed because the process is detaching "
-                      "from the kernel.");
         } else {
-            OS_REPORT(OS_ERROR, "u_entityClaim", 0,
-                      "Claim failed cannot protect kernel access.");
+            OS_REPORT(OS_ERROR,"u_entityClaim",0,
+                      "u_participantKernel() failed.");
         }
     }
     return ve;
@@ -288,6 +300,7 @@ u_entityRelease(
     u_entity e)
 {
     u_participant p;
+    u_kernel k;
     u_result result = U_RESULT_OK;
 
     if (e != NULL) {
@@ -301,7 +314,14 @@ u_entityRelease(
         } else {
             p = e->participant;
         }
-        u_userUnprotect(u_entity(p));
+        k = u_participantKernel(p);
+        if (k) {
+            result = u_kernelUnprotect(k);
+            if (result != U_RESULT_OK) {
+                OS_REPORT(OS_ERROR, "u_entityRelease", 0,
+                          "u_kernelUnprotect() failed.");
+            }
+        }
     } else {
         OS_REPORT(OS_ERROR, "u_entityRelease", 0,
                   "Illegal parameter specified");

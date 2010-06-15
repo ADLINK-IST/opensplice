@@ -19,6 +19,7 @@
 #include <../posix/code/os__process.h>
 #include <os_heap.h>
 #include <os_report.h>
+#include <os_stdlib.h>
 
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -715,30 +716,127 @@ os_procIdSelf(void)
     return (os_procId)getpid();
 }
 
+/* _OS_PROCESS_DEFAULT_CMDLINE_LEN_ is defined as
+ * strlen("/proc/<max_pid>/cmdline" + 1, max_pid = 32768 on Linux, so a reason-
+ * able default is 20 */
+#define _OS_PROCESS_DEFAULT_CMDLINE_LEN_ (20)
+#define _OS_PROCESS_PROCFS_PATH_FMT_     "/proc/%d/cmdline"
+
 /** \brief Figure out the identity of the current process
  *
- * \b os_procFigureIdentity determines the numeric identity
- * of a process. On UNIX the process name can only be determined
- * by access to argv[0]. This is not the case for this implementation.
- * If however started via \b os_procCreate the name of the process
- * can be determined via the environment variable \b SPLICE_PROCNAME
+ * os_procFigureIdentity determines the numeric, and if possible named
+ * identity of a process. It will first check if the environment variable
+ * SPLICE_PROCNAME is set (which is always the case if the process is started
+ * via os_procCreate). If so, that value will be returned. Otherwise it will be
+ * attempted to determine the commandline which started the process through the
+ * procfs. If that fails, the PID will be returned.
+ *
+ * \param procIdentity  Pointer to a char-buffer to which the result can be
+ *                      written. If a name could be resolved, the result will
+ *                      have the format "name <PID>". Otherwise it will just
+ *                      be "<PID>".
+ * \param procIdentitySize Size of the buffer pointed to by procIdentitySize
+ * \return same as snprintf returns
  */
 os_int32
 os_procFigureIdentity(
     char *procIdentity,
     os_uint32 procIdentitySize)
 {
-    os_int32 size;
+    os_int32 size = 0;
     char *process_name;
 
     process_name = getenv("SPLICE_PROCNAME");
     if (process_name != NULL) {
-	size = snprintf(procIdentity, procIdentitySize, "%s (%d)", process_name, (int)getpid());
+        size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
+                process_name, os_procIdToInteger(os_procIdSelf()));
     } else {
-	size = snprintf(procIdentity, procIdentitySize, "%d", (int)getpid());
+        char *procPath;
+
+        procPath = (char*) os_malloc(_OS_PROCESS_DEFAULT_CMDLINE_LEN_);
+        if (procPath) {
+            size = snprintf(procPath, _OS_PROCESS_DEFAULT_CMDLINE_LEN_,
+                    _OS_PROCESS_PROCFS_PATH_FMT_, os_procIdToInteger(os_procIdSelf()));
+            if (size >= _OS_PROCESS_DEFAULT_CMDLINE_LEN_) { /* pid is apparently longer */
+                char *tmp = (char*) os_realloc(procPath, size + 1);
+                if (tmp) {
+                    procPath = tmp;
+                    size = snprintf(procPath, size + 1, _OS_PROCESS_PROCFS_PATH_FMT_,
+                            os_procIdToInteger(os_procIdSelf()));
+                } else {
+                    /* Memory-claim failed, revert to default (just pid) */
+                    os_free(procPath);
+                    size = 0;
+                }
+            }
+            /* procPath is set */
+            if (size > 0) {
+                if (os_access(procPath, OS_ROK) == os_resultSuccess) {
+                    FILE *proc;
+
+                    proc = fopen(procPath, "r");
+                    if (proc) {
+                        char *cmdline = (char*) os_malloc(_OS_PROCESS_DEFAULT_CMDLINE_LEN_);
+                        if (cmdline) {
+                            int r;
+                            int allocated = _OS_PROCESS_DEFAULT_CMDLINE_LEN_;
+                            int readBytes = 0;
+
+                            do {
+                                /* allocated - readBytes == free_bytes_in_buffer from (cmdline + readBytes) onwards */
+                                r = read(fileno(proc),
+                                        (void*) ((os_address) cmdline
+                                                + (os_address) readBytes),
+                                        allocated - readBytes);
+                                if (r == (allocated - readBytes)) {
+                                    /* There may be more data available */
+                                    char *tmp = (char*) os_realloc(cmdline, allocated + _OS_PROCESS_DEFAULT_CMDLINE_LEN_);
+                                    if (tmp) {
+                                        allocated += _OS_PROCESS_DEFAULT_CMDLINE_LEN_;
+                                        cmdline = tmp;
+                                    } else {
+                                        /* Error, back-off */
+                                        size = 0;
+                                        r = -1;
+                                    }
+                                }
+                                readBytes += r;
+                            }
+                            while (r > 0);
+
+                            if (r >= 0) {
+                                size = snprintf(procIdentity, procIdentitySize,
+                                        "%s <%d>", cmdline, os_procIdToInteger(os_procIdSelf()));
+                            }
+                            os_free(cmdline);
+                        } else {
+                            /* Memory-claim failed, revert to default (just pid) */
+                            size = 0;
+                        }
+                        fclose(proc);
+                    } else {
+                        /* Error occurred while opening the file, default to pid */
+                        size = 0;
+                    }
+                } else {
+                    /* No procfs or no read rights for procfs, default to pid */
+                    size = 0;
+                }
+            }
+            os_free(procPath);
+        }
+        if (size == 0) {
+            /* No processname could be determined, so default to PID */
+            size = snprintf(procIdentity, procIdentitySize, "<%d>",
+                    os_procIdToInteger(os_procIdSelf()));
+        }
     }
+
     return size;
 }
+
+#undef _OS_PROCESS_DEFAULT_CMDLINE_LEN_
+#undef _OS_PROCESS_PROCFS_PATH_FMT_
 
 /** \brief Send a signal to the identified process
  *

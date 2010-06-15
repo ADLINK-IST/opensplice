@@ -12,6 +12,8 @@
 #ifndef SACPP_MAPPING_UOBJ_H
 #define SACPP_MAPPING_UOBJ_H
 
+#include "sacpp_if.h"
+
 // Unbounded object reference sequence
 
 template <class T, typename X> class DDS_DCPSUObjSeq
@@ -279,4 +281,5 @@ template <class T, typename X> inline void DDS_DCPSUObjSeq<T, X>::replace
    m_release = rel;
 }
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_UOBJ_H */

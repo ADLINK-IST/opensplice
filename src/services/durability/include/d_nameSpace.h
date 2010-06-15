@@ -21,9 +21,15 @@ extern "C" {
 #define             d_element(o)                        ((d_element)o)
 #define             d_nameSpace(o)                      ((d_nameSpace)o)
 
-d_nameSpace         d_nameSpaceNew                      (const char * name,
+d_nameSpace         d_nameSpaceNew                      (d_configuration config,
+                                                         const char * name);
+
+d_nameSpace         d_nameSpaceNew_w_policy             (const char * name,
+                                                         c_bool aligner,
                                                          d_alignmentKind alignmentKind,
                                                          d_durabilityKind durabilityKind);
+
+d_nameSpace         d_nameSpaceCopy                     (d_nameSpace nameSpace);
 
 int                 d_nameSpaceCompare                  (d_nameSpace ns1,
                                                          d_nameSpace ns2);
@@ -39,6 +45,8 @@ void                d_nameSpaceAddElement               (d_nameSpace nameSpace,
                                                          const char * topic);
 
 char *              d_nameSpaceGetName                  (d_nameSpace nameSpace);
+
+d_policy            d_nameSpaceGetPolicy                (d_nameSpace nameSpace);
 
 c_bool              d_nameSpaceIsEmpty                  (d_nameSpace nameSpace);
 
@@ -56,12 +64,16 @@ c_bool              d_nameSpaceIsAligner                (d_nameSpace nameSpace) 
 
 c_char*             d_nameSpaceGetPartitions            (d_nameSpace nameSpace);
 
+void                d_nameSpaceCopyPartitions           (d_nameSpace to,
+                                                         d_nameSpace from);
+
 void                d_nameSpaceSetInitialQuality        (d_nameSpace nameSpace,
                                                          d_quality quality);
 
 d_quality           d_nameSpaceGetInitialQuality        (d_nameSpace nameSpace);
 
-d_nameSpace         d_nameSpaceFromNameSpaces           (d_nameSpaces ns);
+d_nameSpace         d_nameSpaceFromNameSpaces           (d_configuration config,
+                                                         d_nameSpaces ns);
 
 d_alignmentKind     d_nameSpaceGetAlignmentKind         (d_nameSpace nameSpace);
 

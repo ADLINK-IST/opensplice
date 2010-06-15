@@ -12,6 +12,10 @@
 #ifndef SACPP_MAPPING_H
 #define SACPP_MAPPING_H
 
+#ifdef _WIN32
+#pragma warning( disable: 4251 )
+#endif
+
 #include "sacpp_DDS_DCPS.h"
 #include "sacpp_ValueBase.h"
 #include "sacpp_UserException.h"

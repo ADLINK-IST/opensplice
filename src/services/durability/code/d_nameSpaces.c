@@ -39,6 +39,7 @@ d_nameSpacesNew(
             master     = d_networkAddressUnaddressed();
             d_messageInit(d_message(ns), admin);
 
+            ns->aligner                    = d_nameSpaceIsAligner(nameSpace);
             ns->durabilityKind             = d_nameSpaceGetDurabilityKind(nameSpace);
             ns->alignmentKind              = d_nameSpaceGetAlignmentKind(nameSpace);
             ns->partitions                 = d_nameSpaceGetPartitions(nameSpace);
@@ -49,6 +50,7 @@ d_nameSpacesNew(
             ns->master.localId             = master->localId;
             ns->master.lifecycleId         = master->lifecycleId;
             ns->isComplete                 = TRUE;
+            ns->name                       = os_strdup (d_nameSpaceGetName(nameSpace));
 
             d_networkAddressFree(master);
         }
@@ -83,12 +85,36 @@ d_nameSpacesSetMaster(
     return;
 }
 
+char *
+d_nameSpacesGetName(
+    d_nameSpaces  nameSpaces )
+{
+    char * name;
+
+    name = NULL;
+    if (nameSpaces) {
+        name = nameSpaces->name;
+    }
+    return name;
+}
+
+
+void
+d_nameSpacesSetTotal(
+    d_nameSpaces nameSpaces,
+    c_ulong total)
+{
+    if (nameSpaces)
+    {
+        nameSpaces->total = total;
+    }
+}
 
 d_alignmentKind
 d_nameSpacesGetAlignmentKind(
     d_nameSpaces nameSpaces)
 {
-    d_alignmentKind kind = D_ALIGNEE_INITIAL_AND_ALIGNER;
+    d_alignmentKind kind = D_ALIGNEE_INITIAL;
 
     if(nameSpaces){
         kind = nameSpaces->alignmentKind;
@@ -115,9 +141,7 @@ d_nameSpacesIsAligner(
     c_bool aligner = FALSE;
 
     if(nameSpaces){
-        if(nameSpaces->alignmentKind == D_ALIGNEE_INITIAL_AND_ALIGNER){
-            aligner = TRUE;
-        }
+        aligner = nameSpaces->aligner;
     }
     return aligner;
 }
@@ -154,6 +178,9 @@ d_nameSpacesFree(
 {
 
     if(nameSpaces){
+        if(nameSpaces->name){
+            os_free(nameSpaces->name);
+        }
         if(nameSpaces->partitions){
             os_free(nameSpaces->partitions);
             nameSpaces->partitions = NULL;
@@ -168,6 +195,8 @@ d_nameSpacesGetInitialQuality(
     d_nameSpaces nameSpaces)
 {
     d_quality quality;
+    quality.seconds = 0;
+    quality.nanoseconds = 0;
 
     if(nameSpaces){
         quality.seconds     = nameSpaces->initialQuality.seconds;
@@ -188,6 +217,10 @@ d_nameSpacesCompare(
     } else if(!ns1){
         r = 1;
     } else if(!ns2){
+        r = -1;
+    } else if (ns1->aligner && !(ns2->aligner)){
+        r = 1;
+    }else if (!(ns1->aligner) && ns2->aligner){
         r = -1;
     } else if(ns1->alignmentKind != ns2->alignmentKind){
         if(((c_ulong)ns1->alignmentKind) > ((c_ulong)ns2->alignmentKind)){

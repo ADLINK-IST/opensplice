@@ -214,3 +214,41 @@ u_topicGetInconsistentTopicStatus (
     return result;
 }
 
+
+u_result
+u_topicGetAllDataDisposedStatus (
+    u_topic _this,
+    c_bool reset,
+    v_statusAction action,
+    c_voidp arg)
+{
+    v_topic topic;
+    u_result result;
+    v_result r;
+
+    result = u_topicClaim(_this, &topic);
+
+    if ((result == U_RESULT_OK) && (topic != NULL)) {
+        r = v_topicGetAllDataDisposedStatus(topic,reset,action,arg);
+        u_topicRelease(_this);
+        result = u_resultFromKernel(r);
+    }
+    return result;
+}
+
+u_result
+u_topicDisposeAllData (u_topic _this)
+{
+    v_topic topic;
+    u_result result;
+    v_result r;
+
+    result = u_topicClaim(_this, &topic);
+
+    if ((result == U_RESULT_OK) && (topic != NULL)) {
+        r = v_topicDisposeAllData(topic);
+        u_topicRelease(_this);
+        result = u_resultFromKernel(r);
+    }
+    return result;
+}

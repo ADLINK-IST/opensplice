@@ -13,6 +13,7 @@
 #ifndef SACPP_MAPPING_BFL_H
 #define SACPP_MAPPING_BFL_H
 
+#include "sacpp_if.h"
 // Bounded fixed-length sequence
 
 template <class T, class X, DDS::ULong max> class DDS_DCPSBFLSeq
@@ -77,7 +78,7 @@ template <class T, class X, DDS::ULong max> inline
    m_length (0),
    m_release (TRUE),
    m_buffer (allocbuf(max))
-{} 
+{}
 
 template <class T, class X, DDS::ULong max> inline
    DDS_DCPSBFLSeq<T, X, max>::DDS_DCPSBFLSeq (DDS::ULong len, T* data, DDS::Boolean rel)
@@ -210,4 +211,5 @@ DDS_DCPSBFLSeq<T, X, max>::replace
    m_release = rel;
 }
 
+#undef SACPP_API
 #endif

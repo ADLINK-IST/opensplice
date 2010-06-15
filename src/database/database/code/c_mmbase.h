@@ -71,6 +71,10 @@ typedef void (*c_mmOutOfMemoryAction) (c_voidp arg);
 
 void  c_mmOnOutOfMemory(c_mm mm, c_mmOutOfMemoryAction action, c_voidp arg);
 
+typedef void (*c_mmLowOnMemoryAction) (c_voidp arg);
+
+void  c_mmOnLowOnMemory(c_mm mm, c_mmLowOnMemoryAction action, c_voidp arg);
+
 #undef OS_API
 
 #if defined (__cplusplus)

@@ -98,6 +98,8 @@ v_statusInit(
     case K_TOPICSTATUS:
         v_topicStatus(s)->inconsistentTopic.totalCount = 0;
         v_topicStatus(s)->inconsistentTopic.totalChanged = 0;
+        v_topicStatus(s)->allDataDisposed.totalCount = 0;
+        v_topicStatus(s)->allDataDisposed.totalChanged = 0;
     break;
     case K_SUBSCRIBERSTATUS:
     break;
@@ -187,6 +189,28 @@ v_statusNotifyInconsistentTopic(
 
     v_topicStatus(s)->inconsistentTopic.totalCount++;
     v_topicStatus(s)->inconsistentTopic.totalChanged++;
+
+    return changed;
+}
+
+c_bool
+v_statusNotifyAllDataDisposed(
+    v_status s)
+{
+    c_bool changed;
+
+    assert(s != NULL);
+    assert(C_TYPECHECK(s,v_topicStatus));
+
+    if (s->state & V_EVENT_ALL_DATA_DISPOSED) {
+        changed = FALSE;
+    } else {
+        s->state |= V_EVENT_ALL_DATA_DISPOSED;
+        changed = TRUE;
+    }
+
+    v_topicStatus(s)->allDataDisposed.totalCount++;
+    v_topicStatus(s)->allDataDisposed.totalChanged++;
 
     return changed;
 }

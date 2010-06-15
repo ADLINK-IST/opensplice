@@ -12,6 +12,7 @@
 #ifndef _SACPP_MAPPING_UVL_H_
 #define _SACPP_MAPPING_UVL_H_
 
+#include "sacpp_if.h"
 // Unbounded variable-length sequence
 
 template <class T, typename X> class DDS_DCPSUVLSeq
@@ -26,7 +27,7 @@ public:
 
    DDS_DCPSUVLSeq ();
    DDS_DCPSUVLSeq (DDS::ULong);
-   DDS_DCPSUVLSeq 
+   DDS_DCPSUVLSeq
    (
       DDS::ULong max,
       DDS::ULong len,
@@ -276,4 +277,5 @@ inline const T* DDS_DCPSUVLSeq<T, X>::get_buffer () const
    return m_buffer;
 }
 
+#undef SACPP_API
 #endif

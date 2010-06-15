@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_stdlib.h"
@@ -22,7 +22,7 @@
 #include "code/os_stdlib_getopt.c"
 #include "../common/code/os_stdlib_locate.c"
 
-/** 
+/**
  *  \brief create a directory with default
  *  security descriptor.  The mode parameter
  *  is ignored for this Operating System.
@@ -66,7 +66,7 @@ os_gethostname(
     }
     if (gethostname(hostnamebuf, MAXHOSTNAMELEN) == 0) {
         if ((strlen(hostnamebuf)+1) > (size_t)buffersize) {
-            result = os_resultFail;                      
+            result = os_resultFail;
         } else {
             strncpy(hostname, hostnamebuf, (size_t)buffersize);
             result = os_resultSuccess;
@@ -124,7 +124,7 @@ os_access(
            if ((statbuf.st_mode & permission) == permission) {
                result = os_resultSuccess;
            }
-       } 
+       }
     }
 
     return result;
@@ -457,7 +457,7 @@ os_fileNormalize(
 	char *norm;
 	const char *fpPtr;
 	char *normPtr;
-	
+
 	norm = NULL;
 	if ((filepath != NULL) && (*filepath != '\0')) {
 	    norm = os_malloc(strlen(filepath) + 1);
@@ -478,7 +478,7 @@ os_fileNormalize(
 	    }
 	    *normPtr = '\0';
 	}
-	
+
 	return norm;
 }
 
@@ -487,7 +487,7 @@ os_fsync(
     FILE *fHandle)
 {
     os_result r;
-    
+
     if (FlushFileBuffers((HANDLE)fHandle)) {
         r = os_resultSuccess;
     } else {
@@ -516,9 +516,59 @@ os_getTempDir()
     return dir_name;
 }
 
-int snprintf(char *s, size_t n, const char *format, ...)
+int snprintf(char *s, size_t size, const char *format, ...)
 {
+    int result;
     va_list args;
+
     va_start(args, format);
-    return _vsnprintf(s, n, format, args);
+
+    /* Return-values of _vsnprintf don't match the output on posix platforms,
+     * so this extra code is needed to bring it in accordance. It is made to
+     * behave as follows (copied from printf man-pages):
+     * Upon successful return, this function returns the number of characters
+     * printed (not including the trailing '\0' used to end output to strings).
+     * The function does not write more than size bytes (including the trailing
+     * '\0').  If the output was truncated due to this limit then the return
+     * value is the number of characters (not including the trailing '\0') which
+     * would have been written to the final string if enough space had been
+     * available. Thus, a return value of size or more means that the output was
+     * truncated. If an output error is encountered, a negative value is
+     * returned. */
+    result = _vsnprintf(s, size, format, args);
+
+    if(result == -1){
+        /* Output was truncated, so calculate length of resulting string. The
+         * length of the resulting string is calculated by:
+         * strlen(<format>) - strlen(<format_specifiers>) + strlen(<formatted args>).
+         * This is really hard to do, since the formatted length of the arguments
+         * needs to be determined. Therefore it is implemented by generating the
+         * string on heap until not truncated anymore and returning that length. */
+        char *tmp;
+        int newSize = strlen(format) + size;
+
+        /* 256 would probably be a good starting point, unless input is already
+         * larger. Will be multiplied by two. */
+        newSize = (newSize > 128) ? newSize : 128;
+
+        do{
+            newSize *= 2;
+            tmp = (char*) os_malloc(newSize);
+
+            if(tmp){
+                va_start(args, format);
+                result = _vsnprintf(tmp, newSize, format, args);
+                os_free(tmp); /* Do not set tmp to NULL, since it is used in
+                                 loop-condition to see whether the memory-claim
+                                 succeeded. */
+            } else {
+                /* Memory-claim denied, result == -1. */
+                OS_REPORT_1 (OS_ERROR, "snprintf", 0,
+                            "Memory-claim (heap) of size %d denied",
+                            newSize);
+            }
+        } while(result == -1 && tmp); /* NOTE: *tmp may NOT be read at this point */
+    }
+
+    return result;
 }

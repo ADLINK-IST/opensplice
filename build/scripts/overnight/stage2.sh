@@ -11,7 +11,6 @@ then
     exit 0
 fi
 
-
 #Logs to use when there is a fail
 cat > $LOGDIR/LOGFILES <<EOF
 BUILD=build.txt
@@ -60,28 +59,42 @@ then
 else
     echo "BUILD_DIST=SKIP" >> $RESFILE
 fi
+
 if [ "$KEEP_DIST" = "yes" ]
 then
     echo "KEEP_DIST=TODO" >> $RESFILE
 else
     echo "KEEP_DIST=SKIP" >> $RESFILE
 fi
-if [ "$RUN_DBT" = "yes" ]
+
+if [ "$BUILD_DBT" = "yes" ]
 then
     echo "BUILD/DBT=TODO" >> $RESFILE
-    echo "RUN/DBT=TODO" >> $RESFILE
+    if [ "$RUN_DBT" = "yes" ]
+    then
+        echo "RUN/DBT=TODO" >> $RESFILE
+    else
+        echo "RUN/DBT=SKIP" >> $RESFILE
+    fi
 else
     echo "BUILD/DBT=SKIP" >> $RESFILE
     echo "RUN/DBT=SKIP" >> $RESFILE
 fi
-if [ "$RUN_RBT" = "yes" ]
+
+if [ "$BUILD_RBT" = "yes" ]
 then
     echo "BUILD/RBT=TODO" >> $RESFILE
-    echo "RUN/RBT=TODO" >> $RESFILE
+    if [ "$RUN_RBT" = "yes" ]
+    then
+        echo "RUN/RBT=TODO" >> $RESFILE
+    else
+        echo "RUN/RBT=SKIP" >> $RESFILE
+    fi
 else
     echo "BUILD/RBT=SKIP" >> $RESFILE
     echo "RUN/RBT=SKIP" >> $RESFILE
 fi
+
 if [ "$RUN_EXAMPLES" = "yes" ]
 then
     echo "BUILD/EXAMPLES=TODO" >> $RESFILE
@@ -134,65 +147,7 @@ then
     fi
     ArchiveLogs
 
-    if [ "$RUN_DBT" != "yes" ]
-    then
-        echo "BUILD/DBT=SKIPPED" >> $RESFILE
-        echo "RUN/DBT=SKIPPED" >> $RESFILE
-        BUILD_DBT_STAGE_WORKED=0
-        PERFORM_DBT_STAGE_WORKED=0
-    else
-        $IBSDIR/dcps_build_dbt_tests $ARGS > $LOGDIR/build-dbt-tests.txt 2>&1
-        BUILD_DBT_STAGE_WORKED=$?
-        if test_build_dbt_tests $LOGDIR/build-dbt-tests.txt $BUILD_DBT_STAGE_WORKED
-        then
-            echo "BUILD/DBT=PASS" >> $RESFILE
-        else
-            echo "BUILD/DBT=FAIL" >> $RESFILE
-            BUILD_DBT_STAGE_WORKED=1
-        fi
-        ArchiveLogs
-        
-        $IBSDIR/dcps_perform_dbt_tests $ARGS > $LOGDIR/perform-dbt-tests.txt 2>&1
-        PERFORM_DBT_STAGE_WORKED=$?
-        if test_perform_dbt_tests $LOGDIR/DBT-Results $LOGDIR/perform-dbt-tests.txt $PERFORM_DBT_STAGE_WORKED
-        then
-            echo "RUN/DBT=PASS" >> $RESFILE
-        else
-            echo "RUN/DBT=$DBT_INFO" >> $RESFILE
-            PERFORM_DBT_STAGE_WORKED=1
-        fi
-        ArchiveLogs
-    fi
-
-    if [ "$RUN_RBT" != "yes" ]
-    then
-        echo "BUILD/RBT=SKIPPED" >> $RESFILE
-        echo "RUN/RBT=SKIPPED" >> $RESFILE
-        BUILD_RBT_STAGE_WORKED=0
-        PERFORM_RBT_STAGE_WORKED=0
-    else
-        $IBSDIR/dcps_build_rbt_tests $ARGS > $LOGDIR/build-rbt-tests.txt 2>&1
-        BUILD_RBT_STAGE_WORKED=$?
-        if test_build_rbt_tests $LOGDIR/build-rbt-tests.txt $BUILD_RBT_STAGE_WORKED
-        then
-            echo "BUILD/RBT=PASS" >> $RESFILE
-        else
-            echo "BUILD/RBT=FAIL" >> $RESFILE
-            BUILD_RBT_STAGE_WORKED=1
-        fi
-        ArchiveLogs
-        $IBSDIR/dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests.txt 2>&1
-        PERFORM_RBT_STAGE_WORKED=$?
-        if test_perform_rbt_tests $LOGDIR/RBT-Results $LOGDIR/perform-rbt-tests.txt $PERFORM_RBT_STAGE_WORKED
-        then
-            echo "RUN/RBT=PASS" >> $RESFILE
-        else
-            echo "RUN/RBT=$RBT_INFO" >> $RESFILE
-            PERFORM_RBT_STAGE_WORKED=1
-        fi
-        ArchiveLogs
-    fi
-
+    #Do examples first as they rarly hang and are quite quick
     if [ "$RUN_EXAMPLES" != "yes" ]
     then
         echo "BUILD/EXAMPLES=SKIPPED" >> $RESFILE
@@ -247,6 +202,74 @@ then
         else
             echo "RUN/EXAMPLES=ABORTED" >> $RESFILE
             echo "VALGRIND=ABORTED" >> $RESFILE
+        fi
+        ArchiveLogs
+    fi
+
+    if [ "$BUILD_DBT" != "yes" ]
+    then
+        echo "BUILD/DBT=SKIPPED" >> $RESFILE
+        BUILD_DBT_STAGE_WORKED=0
+    else
+        $IBSDIR/dcps_build_dbt_tests $ARGS > $LOGDIR/build-dbt-tests.txt 2>&1
+        BUILD_DBT_STAGE_WORKED=$?
+        if test_build_dbt_tests $LOGDIR/build-dbt-tests.txt $BUILD_DBT_STAGE_WORKED
+        then
+            echo "BUILD/DBT=PASS" >> $RESFILE
+        else
+            echo "BUILD/DBT=FAIL" >> $RESFILE
+            BUILD_DBT_STAGE_WORKED=1
+        fi
+        ArchiveLogs
+    fi
+
+    if [ "$BUILD_RBT" != "yes" ]
+    then
+        echo "BUILD/RBT=SKIPPED" >> $RESFILE
+        BUILD_RBT_STAGE_WORKED=0
+    else
+        $IBSDIR/dcps_build_rbt_tests $ARGS > $LOGDIR/build-rbt-tests.txt 2>&1
+        BUILD_RBT_STAGE_WORKED=$?
+        if test_build_rbt_tests $LOGDIR/build-rbt-tests.txt $BUILD_RBT_STAGE_WORKED
+        then
+            echo "BUILD/RBT=PASS" >> $RESFILE
+        else
+            echo "BUILD/RBT=FAIL" >> $RESFILE
+            BUILD_RBT_STAGE_WORKED=1
+        fi
+        ArchiveLogs
+    fi
+
+    if [  "$BUILD_RBT" != "yes" -o "$RUN_RBT" != "yes" ]
+    then
+        echo "RUN/RBT=SKIPPED" >> $RESFILE
+        PERFORM_RBT_STAGE_WORKED=0
+    else
+        $IBSDIR/dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests.txt 2>&1
+        PERFORM_RBT_STAGE_WORKED=$?
+        if test_perform_rbt_tests $LOGDIR/RBT-Results $LOGDIR/perform-rbt-tests.txt $PERFORM_RBT_STAGE_WORKED
+        then
+            echo "RUN/RBT=PASS" >> $RESFILE
+        else
+            echo "RUN/RBT=$RBT_INFO" >> $RESFILE
+            PERFORM_RBT_STAGE_WORKED=1
+        fi
+        ArchiveLogs
+    fi
+
+    if [ "$BUILD_DBT" != "yes" -o "$RUN_DBT" != "yes" ]
+    then
+        echo "RUN/DBT=SKIPPED" >> $RESFILE
+        PERFORM_DBT_STAGE_WORKED=0
+    else
+        $IBSDIR/dcps_perform_dbt_tests $ARGS > $LOGDIR/perform-dbt-tests.txt 2>&1
+        PERFORM_DBT_STAGE_WORKED=$?
+        if test_perform_dbt_tests $LOGDIR/DBT-Results $LOGDIR/perform-dbt-tests.txt $PERFORM_DBT_STAGE_WORKED
+        then
+            echo "RUN/DBT=PASS" >> $RESFILE
+        else
+            echo "RUN/DBT=$DBT_INFO" >> $RESFILE
+            PERFORM_DBT_STAGE_WORKED=1
         fi
         ArchiveLogs
     fi

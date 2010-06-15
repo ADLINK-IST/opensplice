@@ -55,9 +55,6 @@
 #include "os.h"
 #include "os_report.h"
 
-#define v_dataReaderQos(_this) \
-        (v_reader(v_dataReader(_this))->qos)
-
 #define v_dataReaderAllInstanceSet(_this) \
         (v_dataReader(_this)->index->objects)
 
@@ -807,6 +804,16 @@ instanceFree(
     return TRUE;
 }
 
+static c_bool
+resetInstanceOwner(
+    c_object obj,
+    c_voidp arg)
+{
+    v_dataReaderInstanceResetOwner(v_dataReaderInstance(obj), *((v_gid*)(arg)));
+
+    return TRUE;
+}
+
 void
 v_dataReaderDeinit (
     v_dataReader _this)
@@ -1469,7 +1476,8 @@ v_dataReaderNotify(
         V_EVENT_DEADLINE_MISSED | \
         V_EVENT_INCOMPATIBLE_QOS | \
         V_EVENT_LIVELINESS_CHANGED | \
-        V_EVENT_DATA_AVAILABLE
+        V_EVENT_DATA_AVAILABLE | \
+        V_EVENT_ALL_DATA_DISPOSED
 
         v_entity(_this)->status->state |= (event->kind & (_NOTIFICATION_MASK_));
 #undef _NOTIFICATION_MASK_
@@ -1705,6 +1713,10 @@ v_dataReaderNotifyLivelinessChanged(
                 case V_STATUSLIVELINESS_NOTALIVE:
                     changed = v_statusNotifyLivelinessChanged(
                             v_entity(_this)->status, 0, 1, wGID);
+
+                    if(v_reader(_this)->qos->ownership.kind == V_OWNERSHIP_EXCLUSIVE){
+                        c_tableWalk(v_dataReaderAllInstanceSet(_this),resetInstanceOwner,&wGID);
+                    }
                 break;
                 default: /* no action! */
                 break;
@@ -1720,6 +1732,10 @@ v_dataReaderNotifyLivelinessChanged(
                         assert(newLivState == V_STATUSLIVELINESS_NOTALIVE);
                         changed = v_statusNotifyLivelinessChanged(
                                 v_entity(_this)->status, -1, 1, wGID);
+
+                        if(v_reader(_this)->qos->ownership.kind == V_OWNERSHIP_EXCLUSIVE){
+                            c_tableWalk(v_dataReaderAllInstanceSet(_this),resetInstanceOwner,&wGID);
+                        }
                     }
                 }
             }

@@ -13,10 +13,13 @@
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 #include "saj_domainParticipantListener.h"
+#include "saj_extDomainParticipantListener.h"
 #include "saj_domainParticipantFactory.h"
 #include "os_process.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_report.h"
+#include "saj_extDomainParticipantListener.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_DomainParticipantFactory_##name
 
@@ -83,6 +86,9 @@ SAJ_FUNCTION(jniCreateParticipant) (
     saj_returnCode rc;
     JavaVM *vm;
 
+    jclass tempClass;
+    jboolean result;
+
     javaDomainParticipant = NULL;
     gapiDomainParticipant = GAPI_OBJECT_NIL;
     domainId = NULL;
@@ -96,13 +102,32 @@ SAJ_FUNCTION(jniCreateParticipant) (
         participantQos = (gapi_domainParticipantQos *)GAPI_PARTICIPANT_QOS_DEFAULT;
         rc = SAJ_RETCODE_OK;
     }
+
+    /* We can check Java instances in the jni layer, so here we check
+     * that if the mask is set to GAPI_ALL_DATA_DISPOSED_STATUS we have
+     * been given an ExtDomainParticipantListener to call. If not then
+     * an error is reported and a GAPI_RETCODE_BAD_PARAMETER status is
+     * returned. */
+    if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+        tempClass = (*env)->FindClass(env, "DDS/ExtDomainParticipantListener");
+        result = (*env)->IsInstanceOf(env, jlistener, tempClass);
+        if(result == JNI_FALSE) {
+            OS_REPORT(OS_ERROR, "dcpssaj", 0, "ExtDomainParticipantListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
+            rc = SAJ_RETCODE_ERROR;
+        }  
+    }
+
         if(rc == SAJ_RETCODE_OK){
             if(jDomainId != NULL){
                 domainId = (*env)->GetStringUTFChars(env, jDomainId, 0);
             }
 
             factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
-            listener = saj_domainParticipantListenerNew(env, jlistener);
+            if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+	        listener = saj_extDomainParticipantListenerNew(env, jlistener);
+            } else {
+                listener = saj_domainParticipantListenerNew(env, jlistener);
+	    }
 
             if(listener != NULL){
                 saj_write_java_listener_address(env, gapiDomainParticipant,

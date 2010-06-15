@@ -16,6 +16,7 @@ ospl-info.log
 ospl-error.log
 /*filter.log
 /*gcc.log
+/*envs-*.sh
 src/tools/ospl/win32/bld/x86.mingw3.2.0-dev
 src/tools/ospl/win32/bld/x86.mingw3.2.0-release
 src/tools/cm/tuner/manifest
@@ -152,3 +153,5 @@ etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassBody
 docs/html/dds
 ospl_wincmd.exe
 release_info/RELEASE
+install/*.HDE.opensplice.xml
+install/*.RTS.opensplice.xml

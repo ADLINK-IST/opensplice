@@ -173,8 +173,8 @@ d_groupRemoteListenerAction(
 
                     /* Group unknown locally, check if it is in the alignee namespace.
                      */
-                    createLocally = d_configurationGroupInAligneeNS(
-                                                config, remote->partition,
+                    createLocally = d_adminGroupInAligneeNS(
+                                                admin, remote->partition,
                                                 remote->topic,
                                                 remote->durabilityKind);
 
@@ -200,8 +200,8 @@ d_groupRemoteListenerAction(
                         /* Group unknown locally, check if it should be aligned
                          * initially.
                          */
-                        createLocally = d_configurationGroupInInitialAligneeNS(
-                                                    config, remote->partition,
+                        createLocally = d_adminGroupInInitialAligneeNS(
+                                                    admin, remote->partition,
                                                     remote->topic,
                                                     remote->durabilityKind);
 

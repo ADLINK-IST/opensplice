@@ -193,7 +193,7 @@ os_procCheckStatus(
 /** \brief Return the integer representation of the given process ID
  *
  * Possible Results:
- * - returns the integer representation of thge given process ID
+ * - returns the integer representation of the given process ID
  */
 OS_API os_int
 os_procIdToInteger(

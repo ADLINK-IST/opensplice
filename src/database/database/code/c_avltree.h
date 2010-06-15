@@ -75,7 +75,7 @@ void     *c_avlTreeReplace (
 
 void     *c_avlTreeRemove (
                c_avlTree    tree,
-               void        *template,
+               void        *templ,
                c_equality (*compareFunction)(),
                void        *compareArgument,
                c_bool     (*condition)(),
@@ -83,13 +83,13 @@ void     *c_avlTreeRemove (
 
 void     *c_avlTreeFind(
                c_avlTree    tree,
-               void        *template,
+               void        *templ,
                c_equality (*compareFunction)(),
                void        *compareArgument);
 
 void     *c_avlTreeNearest (
                c_avlTree    tree,
-               void        *template,
+               void        *templ,
                c_equality (*compareFunction)(),
                void        *compareArgument,
                c_equality   specifier);

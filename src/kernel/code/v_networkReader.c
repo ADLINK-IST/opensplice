@@ -80,7 +80,10 @@ v_networkReaderNew(
         v_readerInit(v_reader(reader), name, subscriber, q, s, TRUE);
         c_free(q); /* ref now in v_reader(queue)->qos */
 
-        queueType = v_networkQueue_t(c_getBase(subscriber));
+        /* This function only ever called once per network instance so no
+         * need to store queueType as static variable.  Look up as needed (once)
+         */
+        queueType = c_resolve(c_getBase(subscriber),"kernelModule::v_networkQueue");
         /* Initialization of self */
         reader->queues = NULL;
         reader->queues = c_arrayNew(queueType, NW_MAX_NOF_QUEUES);
@@ -169,10 +172,11 @@ v_networkReaderCreateQueue(
                 c_free(reader->defaultQueue);
                 reader->defaultQueue = c_keep(queue);
             }
-            /* add channel to the networking statistics also */
-            n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
-            nws = (v_networkingStatistics)v_entity(n)->statistics;
+
             if (ncs != NULL) {
+                /* add channel to the networking statistics also */
+                n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+                nws = (v_networkingStatistics)v_entity(n)->statistics;
                 nws->channels[nws->channelsCount]=ncs;
                 nws->channelsCount++;
             }

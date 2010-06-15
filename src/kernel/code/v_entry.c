@@ -85,7 +85,10 @@ v_entryWrite(
 
     switch(v_objectKind(e->reader)) {
     case K_DATAREADER:
-        writeResult = v_dataReaderEntryWrite(v_dataReaderEntry(e),o,instance);
+        writeResult = v_dataReaderEntryWrite(v_dataReaderEntry(e),
+                                             o,
+                                             instance,
+                                             C_TIME_MIN_INFINITE);
     break;
     case K_NETWORKREADER:
         writeResult = v_networkReaderEntryWrite(v_networkReaderEntry(e),

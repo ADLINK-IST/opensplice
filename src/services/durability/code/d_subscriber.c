@@ -15,6 +15,7 @@
 #include "d_subscriber.h"
 #include "d_admin.h"
 #include "d_durability.h"
+#include "d__durability.h"
 #include "d_configuration.h"
 #include "d_listener.h"
 #include "d_nameSpace.h"
@@ -40,9 +41,28 @@
 #include "v_event.h"
 #include "os_heap.h"
 
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
+
 static c_char*
 getPersistentPartitionExpression(
-    d_configuration config,
+    d_admin admin,
     d_durability durability)
 {
     c_char *result, *expr;
@@ -50,16 +70,22 @@ getPersistentPartitionExpression(
     d_durabilityKind dkind;
     c_ulong length;
     c_long i, j;
+    c_iter nameSpaces;
 
-    assert(config);
     result = NULL;
+    nameSpaces = c_iterNew(NULL);
 
-    if(config){
+    assert (admin);
+
+    /* Collect namespaces */
+    d_adminNameSpaceWalk (admin, collectNsWalk, nameSpaces);
+
+    if(admin){
         length = 0;
         j = 0;
 
-        for(i=0; i<c_iterLength(config->nameSpaces); i++){
-            ns    = d_nameSpace(c_iterObject(config->nameSpaces, i));
+        for(i=0; i<c_iterLength(nameSpaces); i++){
+            ns    = d_nameSpace(c_iterObject(nameSpaces, i));
             dkind = d_nameSpaceGetDurabilityKind(ns);
 
             if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
@@ -79,8 +105,8 @@ getPersistentPartitionExpression(
             result[0] = '\0';
             j = 0;
 
-            for(i=0; i<c_iterLength(config->nameSpaces); i++){
-                ns    = d_nameSpace(c_iterObject(config->nameSpaces, i));
+            for(i=0; i<c_iterLength(nameSpaces); i++){
+                ns    = d_nameSpace(c_iterObject(nameSpaces, i));
                 dkind = d_nameSpaceGetDurabilityKind(ns);
 
                 if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
@@ -95,7 +121,11 @@ getPersistentPartitionExpression(
                 }
             }
         }
+
+        c_iterWalk(nameSpaces, deleteNsWalk, NULL);
+        c_iterFree(nameSpaces);
     }
+
     if(result){
         d_printTimedEvent(durability, D_LEVEL_FINE,
             D_THREAD_PERISTENT_DATA_LISTENER,
@@ -108,6 +138,50 @@ getPersistentPartitionExpression(
     return result;
 }
 
+struct initialQualityWalkData
+{
+    d_subscriber subscriber;
+    unsigned int i;
+};
+
+static void
+nsInitialQualityWalk(
+    d_nameSpace ns,
+    void* userData)
+{
+    d_durability    durability;
+    d_admin         admin;
+    d_subscriber    subscriber;
+    d_quality       quality;
+    d_storeResult   result;
+    c_ulong         i;
+
+    subscriber = d_subscriber(((struct initialQualityWalkData*)userData)->subscriber);
+    admin = subscriber->admin;
+    durability = d_adminGetDurability(admin);
+    i = ((struct initialQualityWalkData*)userData)->i;
+
+     if( (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_PERSISTENT) ||
+         (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_ALL))
+     {
+         result = d_storeGetQuality(subscriber->persistentStore, ns, &quality);
+
+         if(result == D_STORE_RESULT_OK){
+             d_nameSpaceSetInitialQuality(ns, quality);
+             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+              "Initial quality for nameSpace %d is %d.%u.\n",
+              i, quality.seconds, quality.nanoseconds);
+         } else {
+              d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+              "Unable to get quality from persistent store for nameSpace %d.\n",
+              i);
+         }
+     } else {
+         d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+              "nameSpace %d does not hold persistent data.\n", i);
+     }
+     ((struct initialQualityWalkData*)userData)->i++;
+}
 
 d_subscriber
 d_subscriberNew(
@@ -118,10 +192,8 @@ d_subscriberNew(
     d_configuration config;
     v_subscriberQos subscriberQos, psubscriberQos;
     c_char*         partitionExpr;
-    c_long         i;
-    d_nameSpace     ns;
-    d_storeResult   result;
-    d_quality       quality;
+    struct initialQualityWalkData walkData;
+
 
     subscriber = NULL;
 
@@ -133,7 +205,7 @@ d_subscriberNew(
         durability        = d_adminGetDurability(admin);
         config            = d_durabilityGetConfiguration(durability);
         subscriberQos     = d_subscriberQosNew(config->partitionName);
-        partitionExpr     = getPersistentPartitionExpression(config, durability);
+        partitionExpr     = getPersistentPartitionExpression(admin, durability);
         psubscriberQos    = d_subscriberQosNew(partitionExpr);
 
         os_free(partitionExpr);
@@ -144,7 +216,7 @@ d_subscriberNew(
                                                   TRUE);
 
         subscriber->waitset         = d_waitsetNew(subscriber, FALSE, FALSE);
-        subscriber->persistentStore = d_storeOpen(config,D_STORE_TYPE_XML);
+        subscriber->persistentStore = d_storeOpen(durability,D_STORE_TYPE_XML);
 
         if(subscriber->persistentStore) {
             if(psubscriberQos->partition){
@@ -158,29 +230,10 @@ d_subscriberNew(
                 subscriber->persistentSubscriber = NULL;
             }
 
-            for(i=0; i<c_iterLength(config->nameSpaces); i++){
-                ns = d_nameSpace(c_iterObject(config->nameSpaces, i));
+            walkData.subscriber = subscriber;
+            walkData.i = 0;
+            d_adminNameSpaceWalk(admin, nsInitialQualityWalk, &walkData);
 
-                if( (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_PERSISTENT) ||
-                    (d_nameSpaceGetDurabilityKind(ns) == D_DURABILITY_ALL))
-                {
-                    result = d_storeGetQuality(subscriber->persistentStore, ns, &quality);
-
-                    if(result == D_STORE_RESULT_OK){
-                        d_nameSpaceSetInitialQuality(ns, quality);
-                        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
-                         "Initial quality for nameSpace %d is %d.%u.\n",
-                         i, quality.seconds, quality.nanoseconds);
-                    } else {
-                         d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
-                         "Unable to get quality from persistent store for nameSpace %d.\n",
-                         i);
-                    }
-                } else {
-                    d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
-                         "nameSpace %d does not hold persistent data.\n", i);
-                }
-            }
         } else {
             subscriber->persistentSubscriber = NULL;
         }

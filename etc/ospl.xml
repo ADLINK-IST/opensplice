@@ -45,9 +45,10 @@
          </WaitForAttachment>
       </Network>
       <NameSpaces>
-         <NameSpace alignmentKind="Initial_and_Aligner" durabilityKind="Durable">
-            <Partition>*</Partition>
-         </NameSpace>
+        <NameSpace name="defaultNamespace">
+          <Partition>*</Partition>
+        </NameSpace>
+        <Policy nameSpace="defaultNamespace" durability="Durable" alignee="Initial" aligner="True"/>
       </NameSpaces>
    </DurabilityService>
 </OpenSplice>

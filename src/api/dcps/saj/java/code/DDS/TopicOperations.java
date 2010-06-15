@@ -18,6 +18,7 @@ public interface TopicOperations  extends DDS.EntityOperations, DDS.TopicDescrip
 
   // Access the status
   int get_inconsistent_topic_status (DDS.InconsistentTopicStatusHolder status);
+  int get_all_data_disposed_topic_status (DDS.AllDataDisposedTopicStatusHolder status);
   int get_qos (DDS.TopicQosHolder qos);
   int set_qos (DDS.TopicQos qos);
   DDS.TopicListener get_listener ();

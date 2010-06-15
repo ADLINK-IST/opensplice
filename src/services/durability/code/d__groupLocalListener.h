@@ -39,6 +39,7 @@ C_STRUCT(d_groupLocalListener){
     c_long lastSequenceNumber;
     os_mutex masterLock;
     d_eventListener fellowListener;
+    d_eventListener nameSpaceListener;
     d_sampleChainListener sampleChainListener;
     d_waitsetEntity waitsetData;
     d_actionQueue actionQueue;

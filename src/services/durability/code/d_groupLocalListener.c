@@ -74,7 +74,7 @@ checkNameSpaces(
     d_communicationState state;
 
     ready = (c_bool*)args;
-    state = d_fellowGetCommunicationState(fellow);
+    state = d_fellowGetCommunicationState (fellow);
 
     if(state == D_COMMUNICATION_STATE_UNKNOWN){
         *ready = FALSE;
@@ -115,6 +115,7 @@ d_groupLocalListenerDeinit(
         d_groupLocalListenerStop(listener);
         d_actionQueueFree(listener->actionQueue);
         d_actionQueueFree(listener->masterMonitor);
+
         os_mutexDestroy(&(listener->masterLock));
     }
 }
@@ -538,6 +539,7 @@ removeMajorityMaster(
 
     prev = NULL;
     list = info->list;
+    found = FALSE;
 
     while(list && !found){
         if(d_networkAddressEquals(list->address, address)){
@@ -965,6 +967,7 @@ d_groupLocalListenerDetermineMasters(
             d_networkAddressFree(mastership.master);
             d_networkAddressFree(lastMaster);
         }
+
         d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
 
         /* Do the same thing again if there were conflicts.
@@ -1030,9 +1033,9 @@ d_groupLocalListenerDetermineMasters(
     d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
     myState = d_durabilityGetState(durability);
 
-    if(myState != D_STATE_COMPLETE){
-        doGroupsRequest(listener, nameSpaces, iAmAMaster);
-    }
+    /* Request groups */
+    doGroupsRequest(listener, nameSpaces, iAmAMaster);
+
     d_networkAddressFree(unaddressed);
     d_networkAddressFree(myAddress);
 
@@ -1040,6 +1043,25 @@ d_groupLocalListenerDetermineMasters(
 }
 
 /*****************************************************************************/
+
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
 
 static void
 initPersistentData(
@@ -1057,6 +1079,7 @@ initPersistentData(
     c_long i, length;
     d_nameSpace nameSpace;
     d_durabilityKind dkind;
+    c_iter nameSpaces;
     c_bool attached;
     v_group vgroup;
     c_bool nsComplete;
@@ -1066,15 +1089,19 @@ initPersistentData(
     subscriber    = d_adminGetSubscriber(admin);
     store         = d_subscriberGetPersistentStore(subscriber);
     configuration = d_durabilityGetConfiguration(durability);
-    length        = c_iterLength(configuration->nameSpaces);
+    nameSpaces    = c_iterNew(NULL);
     participant   = u_participant(d_durabilityGetService(durability));
     result        = d_storeGroupsRead(store, &list);
+
+    /* Collect namespaces from admin */
+    d_adminNameSpaceWalk(admin, collectNsWalk, (c_voidp)nameSpaces);
+    length        = c_iterLength(nameSpaces);
 
     if(result == D_STORE_RESULT_OK){
 
     	/* Loop namespaces */
         for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
-            nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
+            nameSpace = d_nameSpace(c_iterObject(nameSpaces, i));
 
             if(d_nameSpaceMasterIsMe(nameSpace, admin)){
                 dkind = d_nameSpaceGetDurabilityKind(nameSpace);
@@ -1187,6 +1214,10 @@ initPersistentData(
                             D_THREAD_GROUP_LOCAL_LISTENER,
                             "Could not read groups from persistent store. Persistent data not injected.\n");
     }
+
+    /* Free namespace list */
+    c_iterWalk (nameSpaces, deleteNsWalk, NULL);
+    c_iterFree(nameSpaces);
 }
 
 /*
@@ -1201,12 +1232,18 @@ initMasters(
     d_configuration configuration;
     c_bool fellowGroupsKnown, terminate;
     os_time sleepTime;
+    c_iter nameSpaces;
 
     admin = d_listenerGetAdmin(d_listener(listener));
     durability = d_adminGetDurability(admin);
     configuration = d_durabilityGetConfiguration(durability);
+    nameSpaces = c_iterNew(NULL);
 
-    d_groupLocalListenerDetermineMasters(listener, configuration->nameSpaces);
+    /* Collect namespaces from admin */
+    d_adminNameSpaceWalk(admin, collectNsWalk, (c_voidp)nameSpaces);
+
+    /* Initialize with namespaces from configuration */
+    d_groupLocalListenerDetermineMasters(listener, nameSpaces);
 
     fellowGroupsKnown = FALSE;
     sleepTime.tv_sec  = 0;
@@ -1223,6 +1260,10 @@ initMasters(
     if(!terminate){
         d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN, "Fellow groups complete.\n");
     }
+
+    /* Free namespace list */
+    c_iterWalk (nameSpaces, deleteNsWalk, NULL);
+    c_iterFree(nameSpaces);
 }
 
 struct fellowState {
@@ -1259,12 +1300,12 @@ fellowStateWalk (d_fellow fellow, c_voidp userData)
 	return TRUE;
 }
 
-static c_bool
-fellowStateCleanWalk (struct fellowState* fellowStateObject, c_voidp userData)
+static void
+fellowStateCleanWalk (void* o, c_iterActionArg arg)
 {
+    struct fellowState* fellowStateObject = (struct fellowState*)o;
 	d_networkAddressFree(fellowStateObject->address);
 	os_free (fellowStateObject);
-	return TRUE;
 }
 
 /* Clean fellowstates & iterator */
@@ -1284,7 +1325,6 @@ fetchFellowStates(d_groupLocalListener listener)
 	d_durability durability;
 	struct fellowState* fellowStateObject;
 
-
 	admin =  d_listenerGetAdmin(d_listener(listener));
 	durability = d_adminGetDurability(admin);
 	fellowStates = c_iterNew (NULL);
@@ -1302,10 +1342,10 @@ fetchFellowStates(d_groupLocalListener listener)
 	{
 		fellowStateObject->address = d_adminGetMyAddress(admin);
 		fellowStateObject->state = d_durabilityGetState (durability);
-	}
 
-	/* Insert own address & state to list */
-	c_iterInsert (fellowStates, fellowStateObject);
+        /* Insert own address & state to list */
+        c_iterInsert (fellowStates, fellowStateObject);
+	}
 
 	return fellowStates;
 }
@@ -1344,19 +1384,53 @@ markNameSpace (
 }
 
 /* Walk function that marks namespace master state */
-c_bool nameSpaceMarkWalk (
-		d_nameSpace nameSpace,
-		c_voidp userData)
+static void
+nameSpaceMarkWalk (
+		void* o,
+		c_iterActionArg userData)
 {
 	c_iter fellowStates;
 	d_admin admin;
+	d_nameSpace nameSpace = d_nameSpace(o);
 
 	fellowStates = (c_iter)((struct masterHelper*)userData)->fellowStates;
 	admin = d_listenerGetAdmin(d_listener(((struct masterHelper*)userData)->listener));
 
 	markNameSpace (nameSpace, fellowStates, admin);
+}
 
-	return TRUE;
+static void
+determineNewMasters(
+    d_groupLocalListener listener,
+    c_iter fellowStates,
+    c_iter nameSpaces)
+{
+    c_bool tryChains;
+    struct masterHelper helper;
+    tryChains = FALSE;
+
+    if(d_objectIsValid(d_object(listener), D_LISTENER)){
+        os_mutexLock(&listener->masterLock);
+
+        if(c_iterLength(nameSpaces) > 0){
+            tryChains = d_groupLocalListenerDetermineMasters(listener, nameSpaces);
+
+            helper.listener = listener;
+            helper.fellowStates = fellowStates;
+            helper.nameSpaces = NULL; /* Not used in this walk */
+
+            c_iterWalk (nameSpaces, nameSpaceMarkWalk, &helper);
+
+            /* Cleanup fellow states */
+            freeFellowStates (fellowStates);
+        }
+
+        os_mutexUnlock(&listener->masterLock);
+
+        if(tryChains){
+            d_sampleChainListenerTryFulfillChains(listener->sampleChainListener, NULL);
+        }
+    }
 }
 
 static c_bool
@@ -1365,43 +1439,145 @@ determineNewMastersAction(
     c_bool terminate)
 {
     struct masterHelper* helper;
-    d_groupLocalListener listener;
     c_bool tryChains;
 
+    tryChains = FALSE;
     helper = (struct masterHelper*)(d_actionGetArgs(action));
 
     if(terminate == FALSE){
-        listener = helper->listener;
-
-        if(d_objectIsValid(d_object(listener), D_LISTENER)){
-            os_mutexLock(&listener->masterLock);
-
-            if(c_iterLength(helper->nameSpaces) > 0){
-                tryChains = d_groupLocalListenerDetermineMasters(listener, helper->nameSpaces);
-
-                c_iterWalk (helper->nameSpaces, nameSpaceMarkWalk, helper);
-
-                /* Cleanup fellow states */
-                freeFellowStates (helper->fellowStates);
-            }
-
-            os_mutexUnlock(&listener->masterLock);
-
-            if(tryChains){
-                d_sampleChainListenerTryFulfillChains(listener->sampleChainListener, NULL);
-            }
-        }
+        determineNewMasters (helper->listener, helper->fellowStates, helper->nameSpaces);
     }
+
     c_iterFree(helper->nameSpaces);
     os_free(helper);
 
     return FALSE;
 }
 
+struct nsGroupAlignWalkData
+{
+    d_durability durability;
+    d_nameSpace nameSpace;
+    d_groupLocalListener listener;
+    c_iter groups;
+};
+
+/* Start alignment for existing groups in specific namespace */
+static c_bool
+nsCollectGroupWalk(
+    d_group group,
+    c_voidp userData)
+{
+    struct nsGroupAlignWalkData* walkData = (struct nsGroupAlignWalkData*)userData;
+
+    c_iterAppend (walkData->groups, group);
+
+    return TRUE;
+}
+
+static void
+handleGroupAlignmentWalk (
+    void* o,
+    c_voidp userData)
+{
+    struct nsGroupAlignWalkData* walkData = (struct nsGroupAlignWalkData*)userData;
+
+    d_group group = d_group(o);
+    d_groupLocalListener listener;
+    d_durability durability;
+    d_admin admin;
+    d_nameSpace nameSpace;
+    d_partition partition;
+    d_topic topic;
+    d_durabilityKind dkind;
+
+    durability  = walkData->durability;
+    admin       = d_listenerGetAdmin(d_listener(walkData->listener));
+    partition   = d_groupGetPartition(group);
+    topic       = d_groupGetTopic(group);
+    dkind       = d_groupGetKind(group);
+    listener    = walkData->listener;
+
+    /* Compare namespace in walkdata with namespace from group */
+    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
+    if (!d_nameSpaceCompare (walkData->nameSpace, nameSpace))
+    {
+        /* Start alignment of group when namespaces are equal */
+        d_groupLocalListenerHandleAlignment(
+            listener,
+            group,
+            NULL);
+    }
+
+    os_free (partition);
+    os_free (topic);
+}
+
+static c_bool
+notifyNameSpaceNew(
+    c_ulong event,
+    d_fellow fellow,
+    d_nameSpace ns,
+    d_group group,
+    c_voidp userData)
+{
+    struct masterHelper *helper;
+    struct nsGroupAlignWalkData walkData;
+    d_durability durability;
+    d_admin admin;
+    d_groupLocalListener listener;
+    u_dispatcher dispatcher;
+    os_time sleepTime;
+    c_iter fellowStates;
+    c_iter nameSpaces;
+
+    if(event == D_NAMESPACE_NEW)
+    {
+        listener = d_groupLocalListener(userData);
+        durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
+        dispatcher  = u_dispatcher( d_durabilityGetService(durability));
+
+        assert (listener);
+
+        sleepTime.tv_sec = 0;
+        sleepTime.tv_nsec = 100000000;
+
+        nameSpaces = c_iterNew(ns);
+        helper = (struct masterHelper*)(os_malloc(sizeof(struct masterHelper)));
+        helper->listener = listener;
+        helper->nameSpaces = nameSpaces;
+        fellowStates = fetchFellowStates (listener);
+
+        /* Determine new master for new namespace */
+        determineNewMasters (listener, fellowStates, nameSpaces);
+
+        /* Align new groups */
+        if(d_durabilityMustTerminate(durability) == FALSE){
+            walkData.durability = durability;
+            walkData.listener = listener;
+            walkData.nameSpace = ns;
+            walkData.groups = c_iterNew(NULL);
+            admin = d_listenerGetAdmin(d_listener(listener));
+
+            /* Collect groups */
+            d_adminGroupWalk (admin, nsCollectGroupWalk, &walkData);
+
+            /* Align groups */
+            c_iterWalk (walkData.groups, handleGroupAlignmentWalk, &walkData);
+        }
+
+        c_iterFree (nameSpaces);
+        os_free (helper);
+    }
+
+    return TRUE;
+}
+
 static c_bool
 notifyFellowRemoved(
     c_ulong event,
     d_fellow fellow,
+    d_nameSpace ns,
     d_group group,
     c_voidp userData)
 {
@@ -1414,7 +1590,7 @@ notifyFellowRemoved(
     d_action masterAction;
     os_time sleepTime;
     d_networkAddress masterAddress, fellowAddress;
-    c_iter nameSpaces;
+    c_iter nameSpaces, nsCollect;
     struct masterHelper *helper;
 
     if(event == D_FELLOW_REMOVED){
@@ -1422,7 +1598,6 @@ notifyFellowRemoved(
         admin         = d_listenerGetAdmin(d_listener(listener));
         durability    = d_adminGetDurability(admin);
         configuration = d_durabilityGetConfiguration(durability);
-        length        = c_iterLength(configuration->nameSpaces);
         fellowAddress = d_fellowGetAddress(fellow);
         nameSpaces    = c_iterNew(NULL);
 
@@ -1431,8 +1606,12 @@ notifyFellowRemoved(
                     "Fellow '%d' removed, checking whether new master must be determined.\n",
                     fellowAddress->systemId);
 
+        nsCollect = c_iterNew(NULL);
+        d_adminNameSpaceWalk(admin, collectNsWalk, nsCollect);
+        length        = c_iterLength(nsCollect);
+
         for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
-            nameSpace = d_nameSpace(c_iterObject(configuration->nameSpaces, i));
+            nameSpace = d_nameSpace(c_iterObject(nsCollect, i));
             masterAddress = d_nameSpaceGetMaster(nameSpace);
 
             if((d_networkAddressEquals(masterAddress, fellowAddress)) ||
@@ -1469,7 +1648,12 @@ notifyFellowRemoved(
             c_iterFree(nameSpaces);
         }
         d_networkAddressFree(fellowAddress);
+
+        /* Free namespace list */
+        c_iterWalk (nsCollect, deleteNsWalk, NULL);
+        c_iterFree(nsCollect);
     }
+
     return TRUE;
 
 }
@@ -1507,6 +1691,11 @@ d_groupLocalListenerInit(
     listener->fellowListener = d_eventListenerNew(
                                         D_FELLOW_REMOVED,
                                         notifyFellowRemoved,
+                                        listener);
+
+    listener->nameSpaceListener = d_eventListenerNew(
+                                        D_NAMESPACE_NEW,
+                                        notifyNameSpaceNew,
                                         listener);
 }
 
@@ -1666,7 +1855,6 @@ d_groupLocalReaderRequestAction(
             localGroup = d_adminGetLocalGroup(helper->admin, partition, topic, kind);
 
             if(!localGroup){
-                printf("CallAgain\n");
                 callAgain = TRUE;
             } else {
                 d_printTimedEvent(durability, D_LEVEL_FINER,
@@ -1888,12 +2076,14 @@ d_groupLocalListenerStart(
                         d_durabilitySetState(durability, D_STATE_DISCOVER_PERSISTENT_SOURCE);
                         os_mutexLock(&listener->masterLock);
                         d_adminAddListener(admin, listener->fellowListener);
+                        d_adminAddListener(admin, listener->nameSpaceListener);
+
                         initMasters(listener);
 
                         if(store != NULL){
                             initPersistentData(listener);
                         } else {
-                            OS_REPORT(OS_WARNING, D_CONTEXT, 0, "Persistency not enabled!");
+                            OS_REPORT(OS_WARNING, D_CONTEXT, 0, "Persistence not enabled!");
                         }
                         os_mutexUnlock(&listener->masterLock);
                         d_durabilitySetState(durability, D_STATE_DISCOVER_LOCAL_GROUPS);
@@ -1950,6 +2140,9 @@ d_groupLocalListenerStop(
             d_adminRemoveListener(admin, listener->fellowListener);
             d_eventListenerFree(listener->fellowListener);
             listener->fellowListener = NULL;
+            d_adminRemoveListener(admin, listener->nameSpaceListener);
+            d_eventListenerFree(listener->nameSpaceListener);
+            listener->nameSpaceListener = NULL;
             subscriber = d_adminGetSubscriber(admin);
             waitset = d_subscriberGetWaitset(subscriber);
             result = d_waitsetDetach(waitset, listener->waitsetData);
@@ -2213,7 +2406,7 @@ d_groupLocalListenerHandleAlignment(
 
         if(readerRequest){
             requestRemote = FALSE;
-            nameSpace = d_configurationGetNameSpaceForGroup(config, partition, topic, dkind);
+            nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
 
             if(nameSpace){
                 akind = d_nameSpaceGetAlignmentKind(nameSpace);
@@ -2278,10 +2471,10 @@ d_groupLocalListenerHandleAlignment(
                             chain, TRUE);
 
             }
-        } else if(d_configurationGroupInActiveAligneeNS(config, partition, topic, dkind) == TRUE){
+        } else if(d_adminGroupInActiveAligneeNS(admin, partition, topic, dkind) == TRUE){
             if(completeness != D_GROUP_COMPLETE){
                 if(dkind == D_DURABILITY_PERSISTENT){
-                    nameSpace = d_configurationGetNameSpaceForGroup(config, partition, topic, dkind);
+                    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
                     assert(nameSpace);
                     akind     = d_nameSpaceGetAlignmentKind(nameSpace);
                     inject    = d_nameSpaceMasterIsMe(nameSpace, admin);
@@ -2322,16 +2515,10 @@ d_groupLocalListenerHandleAlignment(
                                 "Injecting data from disk for group %s.%s failed (1).\n",
                                 partition, topic);
                             }
-                        } else if(akind == D_ALIGNEE_INITIAL_AND_ALIGNER){
-                            d_printTimedEvent(durability, D_LEVEL_FINE,
-                                D_THREAD_GROUP_LOCAL_LISTENER,
-                                "Persistent group %s.%s complete, because I am persistent source and already injected data (1).\n",
-                                partition, topic);
-                            result = D_STORE_RESULT_OK;
                         } else if(akind == D_ALIGNEE_INITIAL){
                             d_printTimedEvent(durability, D_LEVEL_FINE,
                                 D_THREAD_GROUP_LOCAL_LISTENER,
-                                "Persistent group %s.%s complete, because I am persistent source and already injected data (2).\n",
+                                "Persistent group %s.%s complete, because I am persistent source and already injected data.\n",
                                 partition, topic);
                             result = D_STORE_RESULT_OK;
                         } else {
@@ -2407,6 +2594,7 @@ d_groupLocalListenerHandleAlignment(
                                 partition, topic, result);
                         }
                     }
+
                     request = d_sampleRequestNew(admin, partition, topic,
                             dkind, stamp, timeRangeActive, zeroTime, networkAttachTime);
                     chain   = d_chainNew(admin, request);
@@ -2415,7 +2603,7 @@ d_groupLocalListenerHandleAlignment(
                                 chain, TRUE);
                 }
             }
-        } else if(d_configurationGroupInAligneeNS(config, partition, topic, dkind) == TRUE){
+        } else if(d_adminGroupInAligneeNS(admin, partition, topic, dkind) == TRUE){
             d_sampleChainListenerReportGroup(listener->sampleChainListener, localGroup);
         } else {
             d_printTimedEvent(durability, D_LEVEL_FINE,

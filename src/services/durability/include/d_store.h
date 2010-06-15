@@ -32,7 +32,7 @@ C_STRUCT(d_groupList){
 #define d_groupList(g) ((d_groupList)(g))
 #define d_store(s) ((d_store)(s))
 
-d_store             d_storeOpen                 (const d_configuration config,
+d_store             d_storeOpen                 (const d_durability durability,
                                                  const d_storeType storeType);
 
 d_storeResult       d_storeClose                (d_store store);

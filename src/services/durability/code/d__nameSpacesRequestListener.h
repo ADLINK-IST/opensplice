@@ -22,7 +22,6 @@ extern "C" {
 
 C_STRUCT(d_nameSpacesRequestListener){
     C_EXTENDS(d_readerListener);
-    c_iter nameSpaces;
 };
 
 void                d_nameSpacesRequestListenerInit     (d_nameSpacesRequestListener listener,

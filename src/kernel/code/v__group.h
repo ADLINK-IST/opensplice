@@ -75,6 +75,11 @@ v_groupResend(
     v_resendScope *resendScope,
     v_networkId writingNetworkId);
 
+v_result
+v_groupDisposeAll (
+    v_group group,
+    c_time timestamp);
+
 #if defined (__cplusplus)
 }
 #endif

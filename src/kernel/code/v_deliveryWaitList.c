@@ -17,18 +17,6 @@
 
 #include "os_report.h"
 
-static c_type _v_gid_t = NULL;
-
-c_type
-v_gid_t(
-    c_base base)
-{
-    if (_v_gid_t == NULL) {
-        _v_gid_t = c_resolve(base,"kernelModule::v_gid");
-    }
-    return c_keep(_v_gid_t);
-}
-
 v_result
 v_deliveryWaitListWait (
     v_deliveryWaitList _this,
@@ -173,7 +161,7 @@ copyReaderGIDsFromPublications(
         size = 0;
     }
     if (size > 0) {
-        arg.readerGID = c_arrayNew(v_gid_t(c_getBase(c_object(_this))),size);
+        arg.readerGID = c_arrayNew(_this->gidType,size);
         arg.index = 0;
         c_walk(_this->publications, copySystemIds, &arg);
     } else {

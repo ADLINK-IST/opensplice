@@ -1330,6 +1330,7 @@
                 which historical data is managed by this Durability service
                 (both transient and persistent).
             ]]></comment>
+            
             <element name="NameSpace" minOccurrences="1" maxOccurrences="0">
                 <comment><![CDATA[
                     A namespace describes a dependency between data in two or
@@ -1340,7 +1341,60 @@
                     be managed by the Durability service. Data that does not
                     match any of the namespaces, is ignored by the Durability service.
                 ]]></comment>
-                <attributeEnum name="durabilityKind" required="true">
+                <attributeString name="name" minOccurrences="1" maxOccurrences="1" required="true">
+                	<comment><![CDATA[
+                		This element specifies the name for a namespace. A name is used
+                    to match a namespace with a policy.
+                	]]></comment>
+                	<maxLength>0</maxLength>
+                	<default>defaultNameSpace</default>
+                </attributeString>          
+                <leafString name="Partition" minOccurrences="1" maxOccurrences="0">
+                    <comment><![CDATA[
+                        This element specifies a partition expression that
+                        matches the namespace. A namespace consists of a set of
+                        partition expressions. Together they determine the
+                        partitions that belong to the namespace. Make sure the
+                        different name-spaces do not have an overlap in partitions.
+                        The default configuration has one namespace containing all
+                        partitions. A partition may contain the
+                        wildcards '*' to match any number of characters and '?'
+                        to match one single character.
+                    ]]></comment>
+                    <maxLength>0</maxLength>
+                    <default>*</default>
+                </leafString>
+            </element>
+          
+            <element name="Policy" minOccurrences="1" maxOccurrences="0">
+                <comment><![CDATA[
+                    A namespace describes a dependency between data in two or
+                    more partitions by means of a partition expression. The
+                    dependency specifies that the data within one of the
+                    partitions has no right to exist separately from the data in
+                    the other partition(s). Namespaces determine which data must
+                    be managed by the Durability service. Data that does not
+                    match any of the namespaces, is ignored by the Durability service.
+                    
+                    A template specifies behaviour for a namespace. It
+                    matches a namespace name with an expression that may contain 
+                    wildcards, thereby allowing dynamic configuration for
+                    namespaces. The order in which templates are specified is 
+                    important, as the first matching template
+                    will be the one that is selected for a namespace.
+                ]]></comment>
+                <attributeString name="nameSpace" required="true">
+                  <comment>
+                    <![CDATA[
+                          The element specifies an expression that matches a namespace name.  
+                          A namespace may contain the wildcards '*' to match any number of 
+                          characters and '?' to match one single character. 
+                      ]]>
+                  </comment>
+                  <maxLength>0</maxLength>
+                  <default>*</default>
+                </attributeString>
+                <attributeEnum name="durability" required="true">
                     <comment><![CDATA[
                         <p>This element specifies how the durability service
                         manages the data within the NameSpace. The original
@@ -1377,16 +1431,14 @@
                     <value>Transient</value>
                     <value>Transient_Local</value>
                 </attributeEnum>
-                <attributeString name="name" required="false">
-                    <comment><![CDATA[
-                        The element determines the name for the NameSpace. This name
-                        will appear in the tracing output of the durability service
-                        and is therefore useful for debugging purposes.
-                    ]]></comment>
-                    <maxLength>0</maxLength>
-                    <default>myNameSpace</default>
-                </attributeString>
-                <attributeEnum name="alignmentKind" required="true">
+                <attributeBoolean name="aligner" required="true">
+                	<comment><![CDATA[
+                		This element determines if the durability service will provide
+                		historical data to other durability services.
+                	]]></comment>
+                	<default>True</default>
+                </attributeBoolean>
+                <attributeEnum name="alignee" required="true">
                     <comment><![CDATA[
                         <p>This element determines how the durability service manages
                         the data that matches the namespace. Scalability of durable
@@ -1398,19 +1450,12 @@
                         <p>The durability service provides the following
                         mechanisms to request and provide historical data:
                         <ul>
-                        <li><b>Initial_And_Aligner</b>: The durability service requests
+                        <li><b>Initial</b>: The durability service requests
                         historical data at startup and caches it locally. Historical
                         data will be available relatively fast for new local data
                         readers and the system is more fault-tolerant. However,
                         caching of historical data requires a relatively large
-                        amount of resources and a long boot time. The Durability
-                        service will also provide historical data to other
-                        Durability services on a request basis.</li>
-                        <li><b>Initial</b>: The same as Initial_And_Aligner, except the
-                        Durability service will not provide other Durability services
-                        with historical data. This is useful when applications
-                        on the current node need all the processing and network
-                        bandwidth and dynamic interference is not allowed.</li>
+                        amount of resources and a long boot time.</li>
                         <li><b>Lazy</b>: The Durability service caches historical data
                         after local application interest arises for the first
                         time and a remote Durability service aligns the first
@@ -1434,9 +1479,8 @@
                         fault-tolerance for the domain.</li>
                         </ul></p>
                     ]]></comment>
-                    <default>Initial_And_Aligner</default>
+                    <default>Initial</default>
                     <value>Initial</value>
-                    <value>Initial_And_Aligner</value>
                     <value>Lazy</value>
                     <value>On_Request</value>
                 </attributeEnum>
@@ -1446,35 +1490,20 @@
                     specific namespace. The following merge policy values are 
                     applicable:
                     <ul>
-                    <li>ignore - No alignment will take place. This is also 
+                    <li>Ignore - No alignment will take place. This is also 
                     the default value if not specified.</li>
-                    <li>merge - Existing data will remain and data from others 
+                    <li>Merge - Existing data will remain and data from others 
                     will be aligned.</li>
-                    <li>reset - Existing data is removed.</li>
-                    <li>replace - Existing data is removed and data from 
+                    <li>Reset - Existing data is removed.</li>
+                    <li>Replace - Existing data is removed and data from 
                     others will be aligned.</li>
                     ]]></comment>
-                    <default>ignore</default>
-                    <value>merge</value>
-                    <value>reset</value>
-                    <value>replace</value>
-                    <value>ignore</value>
+                    <default>Merge</default>
+                    <value>Merge</value>
+                    <value>Reset</value>
+                    <value>Replace</value>
+                    <value>Ignore</value>
                 </attributeEnum>
-                <leafString name="Partition" minOccurrences="1" maxOccurrences="0">
-                    <comment><![CDATA[
-                        This element specifies a partition expression that
-                        matches the namespace. A namespace consists of a set of
-                        partition expressions. Together they determine the
-                        partitions that belong to the namespace. Make sure the
-                        different name-spaces do not have an overlap in partitions.
-                        The default configuration has one namespace containing all
-                        partitions. A partition may contain the
-                        wildcards '*' to match any number of characters and '?'
-                        to match one single character.
-                    ]]></comment>
-                    <maxLength>0</maxLength>
-                    <default>*</default>
-                </leafString>
             </element>
         </element>
         <element name="EntityNames" minOccurrences="0" maxOccurrences="1">
@@ -2372,8 +2401,7 @@
                         <comment><![CDATA[
                             The UDP receive buffer of the best effort channel socket is
                             set to the value given. If many message are lost, the
-                            receive buffer size has to be increased. Best effort is
-                            currently the only channel available.
+                            receive buffer size has to be increased.
                         ]]></comment>
                         <minimum>1024</minimum>
                         <default>1000000</default>
@@ -2505,6 +2533,40 @@
                     This element describes all properties for the transmitting side
                     of the Discovery Channel.
                 ]]></comment>
+                <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the sending side is enabled the network packet will contain a valid crc field. 
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
+                    <leafInt name="DiffServField" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[
+                        This element describes the DiffServ setting the channel will apply to all its
+                        networking messages.
+                        ]]></comment>
+                        <minimum>0</minimum>
+                        <maximum>255</maximum>
+                        <default>0</default>
+                    </leafInt>
+                    <leafBoolean name="DontRoute" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[The IP DONTROUTE
+                              socket option is set to the value specified.]]></comment>
+                        <value>True</value>
+                        <value>False</value>
+                        <default>True</default>
+                    </leafBoolean>
+                    <leafInt name="TimeToLive" minOccurrences="0" maxOccurrences="1">
+                        <comment><![CDATA[For each UDP packet sent out, the IP Time To Live
+                              header value is set to the value specified.]]></comment>
+                        <minimum>0</minimum>
+                        <maximum>255</maximum>
+                        <default>0</default>
+                    </leafInt>
                 <element name="Scheduling" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         This element specifies the scheduling policies used to control the transmitter thread
@@ -2565,6 +2627,17 @@
                 </leafInt>
             </element>
             <element name="Receiving" minOccurrences="0" maxOccurrences="1">
+            <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
+                    <comment><![CDATA[
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       CRCs are specifically designed to protect against common types of errors on communication channels.
+                       When enabled the integrity of delivered network packets from one DDS process to another is assured.
+                       There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
+                    
+                       When the sending side is enabled the network packet will contain a valid crc field. 
+                    ]]></comment>
+                    <default>false</default>
+                    </leafBoolean>
                 <element name="Scheduling" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         This element specifies the scheduling policies used to control the receiver thread

@@ -367,40 +367,42 @@ s_configurationSetLeaseRenewalPeriod(
     s_configurationSetDuration(&(config->leaseRenewalPeriod), frac);
 }
 
-static void
-s_configurationSetKernelManagerSchedulingClass(
-    s_configuration config,
-    const c_char* class)
+static void s_configurationSetSchedulingClass( os_threadAttr *tattr, 
+                                               const c_char* class )
 {
-    if (os_strcasecmp(class, "Timeshare") == 0) {
-        config->kernelManagerScheduling.schedClass = OS_SCHED_TIMESHARE;
-    } else if (os_strcasecmp(class, "Realtime") == 0) {
-        config->kernelManagerScheduling.schedClass = OS_SCHED_REALTIME;
-    } else {
-        config->kernelManagerScheduling.schedClass = OS_SCHED_DEFAULT;
-    }
+   if (os_strcasecmp(class, "Timeshare") == 0)
+   {
+      tattr->schedClass = OS_SCHED_TIMESHARE;
+   } 
+   else if (os_strcasecmp(class, "Realtime") == 0)
+   {
+      tattr->schedClass = OS_SCHED_REALTIME;
+   }
+   else 
+   {
+      tattr->schedClass = OS_SCHED_DEFAULT;
+   }
+}  
+
+static void 
+s_configurationSetKernelManagerSchedulingClass( s_configuration config,
+                                                const c_char* class)
+{
+   s_configurationSetSchedulingClass( &config->kernelManagerScheduling, class );
 }
 
-static void
-s_configurationSetKernelManagerSchedulingPriority(
-    s_configuration config,
-    c_long priority)
+static void s_configurationSetKernelManagerSchedulingPriority(
+   s_configuration config,
+   c_long priority)
 {
     config->kernelManagerScheduling.schedPriority = priority;
 }
 
-static void
-s_configurationSetGCSchedulingClass(
-    s_configuration config,
-    const c_char* class)
+static void s_configurationSetGCSchedulingClass( s_configuration config,
+                                                 const c_char* class)
 {
-    if (os_strcasecmp(class, "Timeshare") == 0) {
-        config->garbageCollectorScheduling.schedClass = OS_SCHED_TIMESHARE;
-    } else if (os_strcasecmp(class, "Realtime") == 0) {
-        config->garbageCollectorScheduling.schedClass = OS_SCHED_REALTIME;
-    } else {
-        config->garbageCollectorScheduling.schedClass = OS_SCHED_DEFAULT;
-    }
+   s_configurationSetSchedulingClass( &config->garbageCollectorScheduling,
+                                      class );
 }
 
 static void
@@ -416,13 +418,7 @@ s_configurationSetResendManagerSchedulingClass(
     s_configuration config,
     const c_char* class)
 {
-    if (os_strcasecmp(class, "Timeshare") == 0) {
-        config->resendManagerScheduling.schedClass = OS_SCHED_TIMESHARE;
-    } else if (os_strcasecmp(class, "Realtime") == 0) {
-        config->resendManagerScheduling.schedClass = OS_SCHED_REALTIME;
-    } else {
-        config->resendManagerScheduling.schedClass = OS_SCHED_DEFAULT;
-    }
+   s_configurationSetSchedulingClass( &config->resendManagerScheduling, class );
 }
 
 static void
@@ -431,6 +427,19 @@ s_configurationSetResendManagerSchedulingPriority(
     c_long priority)
 {
     config->resendManagerScheduling.schedPriority = priority;
+}
+
+static void s_configurationSetCandMCommandSchedulingClass( s_configuration config,
+                                                        const c_char* class)
+{
+   s_configurationSetSchedulingClass( &config->cAndMCommandScheduling, class );
+}
+
+static void
+s_configurationSetCandMCommandSchedulingPriority( s_configuration config,
+                                                  c_long priority)
+{
+    config->cAndMCommandScheduling.schedPriority = priority;
 }
 
 
@@ -557,7 +566,9 @@ s_configurationInit(
         config->tracingRelativeTimestamps   = FALSE;
         config->startTime                   = os_timeGet();
 
-        //s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");
+        config->enableCandMCommandThread    = TRUE;
+
+        /*s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");*/
 
         s_configurationSetTime(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
         s_configurationSetDuration(&(config->leasePeriod), S_CFG_LEASEPERIOD_DEFAULT);
@@ -578,6 +589,11 @@ s_configurationInit(
         config->resendManagerScheduling.stackSize = 512*1024; /* 512KB */
         s_configurationSetResendManagerSchedulingClass(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
         s_configurationSetResendManagerSchedulingPriority(config, S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT);
+
+        os_threadAttrInit(&config->cAndMCommandScheduling);
+        config->cAndMCommandScheduling.stackSize = 512*1024; /* 512KB */
+        s_configurationSetResendManagerSchedulingClass(config, S_CFG_C_AND_M_COMMANDSCHEDULING_CLASS_DEFAULT);
+        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_C_AND_M_COMMAND_SCHEDULING_PRIORITY_DEFAULT);
     }
 }
 
@@ -773,6 +789,46 @@ s_configurationRead(
          s_configurationValueString(config, dcfg, "ResendManager/Scheduling/Class/#text", s_configurationSetResendManagerSchedulingClass);
          s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
 
+         /* Control and Monitoring Command Receiver */
+         iter = u_cfElementXPath(domain,
+                                 "ControlAndMonitoringCommandReceiver[@enabled='false']");
+         node = u_cfNode(c_iterTakeFirst(iter));
+         /* Enabled unless explictly disabled in config */ 
+         config->enableCandMCommandThread=(!node);
+         if ( node != NULL )
+         {
+            u_cfNodeFree(node);
+         }
+         c_iterFree(iter);
+
+         if ( config->enableCandMCommandThread )
+         {
+            iter = u_cfElementXPath(domain,
+                                    "ControlAndMonitoringCommandReceiver[@enabled='true']");
+            node = u_cfNode(c_iterTakeFirst(iter));
+            while (node != NULL)
+            {
+               if (u_cfNodeKind(node) == V_CFELEMENT) 
+               {
+                  attribute = u_cfElementAttribute(u_cfElement(node), "name");
+                  if (attribute)
+                  {
+                     u_cfAttributeStringValue(attribute, &name);
+                     if (name)
+                     {
+                        s_configurationValueString(config, dcfg, "ControlAndMonitoringCommandReceiver/Scheduling/Class/#text", s_configurationSetCandMCommandSchedulingClass);
+                        s_configurationValueLong(config, dcfg, "ControlAndMonitoringCommandReceiver/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
+                        os_free(name);
+                     }
+                     u_cfAttributeFree(attribute);
+                  }
+               }
+               u_cfNodeFree(node);
+               node = u_cfNode(c_iterTakeFirst(iter));
+            }
+            c_iterFree(iter);
+            
+         }
     }
 
 

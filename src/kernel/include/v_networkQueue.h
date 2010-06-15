@@ -23,10 +23,6 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-OS_API c_type
-v_networkQueue_t (
-    c_base base);
-
 OS_API v_networkQueue
 v_networkQueueNew(
     c_base base,

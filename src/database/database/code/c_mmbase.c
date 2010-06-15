@@ -20,6 +20,7 @@
 #include "c_mmbase.h"
 #include "c_mmCache.h"
 
+
 #define C_MM_INITIALIZED          (0xdeadbeef)
 
 #ifndef NDEBUG
@@ -84,6 +85,7 @@ struct c_mm_s {
     c_address    listEnd;
     c_address    end;
     c_ulong      size;
+    c_ulong      lowMemoryWaterMark;
     c_ulong      fails;
     c_mmCacheHeader cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
@@ -100,6 +102,16 @@ struct c_mm_s {
 
     c_mmOutOfMemoryAction outOfMemoryAction;
     c_voidp               outOfMemoryActionArg;
+    c_mmLowOnMemoryAction lowOnMemoryAction;
+    c_voidp               lowOnMemoryActionArg;
+#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+    /* dds1958: ES: Counter for how many low mem warning are issued. Currently this is used
+     * as a threadsafe boolean where 0 is no warning issue and > 0 means a
+     * warning has been issued previously
+     * This value is to be modified with pa_increment only.
+     */
+    c_ulong lowMemWarningCount;
+#endif
 };
 
 struct c_mmChunk {
@@ -226,6 +238,40 @@ c_mmSplitChunk(
 }
 #endif
 
+#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+static void
+c_mmbaseIssueLowMemoryWarning(
+    c_mm mm)
+{
+    os_uint32 warningCount;
+
+    /* dds1958: ES: Check if the warning count is 0 at the moment. If so it
+     * means that no warning has been issued. If the value is not 0 however
+     * then we do not need to continue and do not need to do any increment
+     * and safe out on that code in situations where we get the low memory
+     * warning a lot. The idea is that just doing this check (although not
+     * a definate yes or no to doing the warning) is in the cases where
+     * a warning has already been issued much cheaper then doing the
+     * increment and then checking. Only in the situation where the warning
+     * is issued for the first time, is this check useless. But that is only
+     * 1 time vs many times.
+     */
+    if(mm->lowMemWarningCount == 0)
+    {
+        /*  increment the warning count
+         */
+        warningCount = pa_increment(&mm->lowMemWarningCount);
+        if(warningCount == 1)
+        {
+            OS_REPORT(OS_WARNING,
+                "c_mmbaseIssueLowMemoryWarning",0,
+                "Shared memory is running very low!");
+
+        }
+    }
+}
+#endif
+
 /**
  * Allocate a piece of memory.
  *
@@ -270,7 +316,7 @@ c_mmMalloc(
             mm->mapEnd  = mm->mapEnd + chunkSize;
             chunk->size = size;
             chunk->index = mapIndex;
-	} else {
+	    } else {
             pa_increment(&mm->fails);
             c_mutexUnlock(&mm->mapLock);
             OS_REPORT_2(OS_ERROR,"c_mmbase",0,
@@ -278,17 +324,36 @@ c_mmMalloc(
                         "exceeds available resources (%d)!",
                          chunkSize,
                          (mm->listEnd + chunkSize - mm->mapEnd));
-	    if (chunkSize <= HighWaterMark) {
+            if (chunkSize <= HighWaterMark) {
                 if (mm->outOfMemoryAction) {
-		    mm->outOfMemoryAction(mm->outOfMemoryActionArg);
-		}
-	    }
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+                    mm->outOfMemoryAction(mm->outOfMemoryActionArg);
+#endif
+                }
+            }
             return NULL;
-	}
+	    }
         mm->chunkMapStatus.used   += chunkSize;
         mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used,
                                             mm->chunkMapStatus.maxUsed);
         mm->chunkMapStatus.count++;
+        /* Is there a low on memory action registered? */
+        if (mm->lowOnMemoryAction)
+        {
+            /* Have we passed the memory warning water mark? */
+            if((mm->listEnd - mm->mapEnd) < mm->lowMemoryWaterMark)
+            {
+                /* call the action routine and set a static boolean
+                 * so that the warning is not issued again until we
+                 * dip below the memory threshold
+                 */
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+                mm->lowOnMemoryAction(mm->lowOnMemoryActionArg);
+#else
+               c_mmbaseIssueLowMemoryWarning(mm);
+#endif
+            }
+        }
         c_mutexUnlock(&mm->mapLock);
     } else {
         prvChunk = NULL;
@@ -307,9 +372,9 @@ c_mmMalloc(
                     if (CoreSize(mm) < chunkSize) {
                         /* No resources left in core memory.
                          * But have found a significant bigger freed block so will split the block.
-			 * Unlocking and re-locking is not efficient but at this point
-			 * the operational state must be considered degraded.
-			 */
+			             * Unlocking and re-locking is not efficient but at this point
+			             * the operational state must be considered degraded.
+			             */
                         remnant = c_mmSplitChunk(mm,chunk,size);
                         c_mutexUnlock( &mm->listLock );
                         c_mmFree(mm,ChunkAddress(remnant));
@@ -347,25 +412,45 @@ c_mmMalloc(
                             "required size (%d) exceeds available resources (%d)!",
                              chunkSize,
                              (mm->listEnd + chunkSize - mm->mapEnd));
-	        if (chunkSize <= HighWaterMark) {
+                if (chunkSize <= HighWaterMark) {
                     if (mm->outOfMemoryAction) {
-		        mm->outOfMemoryAction(mm->outOfMemoryActionArg);
-		    }
-	        }
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+                        mm->outOfMemoryAction(mm->outOfMemoryActionArg);
+#endif
+                    }
+                }
                 return NULL;
             }
             mm->listEnd -= chunkSize;
             chunk = (c_mmChunk)mm->listEnd;
             chunk->size = size;
             chunk->index = listIndex;
+            /* Is there a low on memory action registered? */
+            if (mm->lowOnMemoryAction)
+            {
+                /* Have we passed the memory warning water mark? */
+                if((mm->listEnd - mm->mapEnd) < mm->lowMemoryWaterMark)
+                {
+                    /* call the action routine and set a static boolean
+                     * so that the warning is not issued again until we
+                     * dip below the memory threshold
+                     */
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+                mm->lowOnMemoryAction(mm->lowOnMemoryActionArg);
+#else
+               c_mmbaseIssueLowMemoryWarning(mm->lowOnMemoryActionArg);
+#endif
+                }
+            }
             c_mutexUnlock(&mm->mapLock);
-	}
+	    }
         mm->chunkListStatus.used += chunkSize;
         mm->chunkListStatus.maxUsed = GETMAX(mm->chunkListStatus.used,
                                              mm->chunkListStatus.maxUsed);
         mm->chunkListStatus.count++;
         c_mutexUnlock(&mm->listLock);
     }
+
     chunk->next = NULL;
 #ifdef MM_CLUSTER
     chunk->prev = NULL;
@@ -677,6 +762,7 @@ c_mmAdminInit (
     mm->end = ALIGN_ADDRESS((C_ADDRESS(mm->end) / ALIGNMENT ) * ALIGNMENT );
 
     mm->size = C_ADDRESS(mm->end) - C_ADDRESS(mm->start);
+    mm->lowMemoryWaterMark = mm->size/10;/*10% */
 
     for ( mapIndex = ALIGN_COUNT(MAX_BUCKET) - 1; mapIndex >= 0; mapIndex-- ) {
         mm->chunkMap[mapIndex] = NULL;
@@ -715,7 +801,11 @@ c_mmAdminInit (
 
     mm->outOfMemoryAction = NULL;
     mm->outOfMemoryActionArg = NULL;
-
+    mm->lowOnMemoryAction = NULL;
+    mm->lowOnMemoryActionArg = NULL;
+#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+    mm->lowMemWarningCount = 0;
+#endif
     mm->initialized = C_MM_INITIALIZED;
 }
 
@@ -958,7 +1048,20 @@ c_mmOnOutOfMemory(
 {
     if (_this) {
         _this->outOfMemoryAction = action;
-	_this->outOfMemoryActionArg = arg;
+	    _this->outOfMemoryActionArg = arg;
     }
 }
+
+void
+c_mmOnLowOnMemory(
+    c_mm _this,
+    c_mmLowOnMemoryAction action,
+    c_voidp arg)
+{
+    if (_this) {
+        _this->lowOnMemoryAction = action;
+	    _this->lowOnMemoryActionArg = arg;
+    }
+}
+
 

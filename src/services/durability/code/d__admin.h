@@ -55,6 +55,8 @@ C_STRUCT(d_admin){
     os_cond             eventCondition;
     os_threadId         eventThread;
     c_bool              eventThreadTerminate;
+
+    c_iter              nameSpaces;
 };
 
 C_CLASS(d_adminEvent);
@@ -63,6 +65,7 @@ C_STRUCT(d_adminEvent){
     C_EXTENDS(d_object);
     c_ulong  event;
     d_fellow fellow;
+    d_nameSpace nameSpace;
     d_group  group;
 };
 
@@ -101,6 +104,7 @@ c_bool                  d_adminCleanupFellowsAction         (d_fellow fellow,
 
 d_adminEvent            d_adminEventNew                     (c_ulong event,
                                                              d_fellow fellow,
+                                                             d_nameSpace nameSpace,
                                                              d_group group);
 
 void                    d_adminDeinit                       (d_object object);

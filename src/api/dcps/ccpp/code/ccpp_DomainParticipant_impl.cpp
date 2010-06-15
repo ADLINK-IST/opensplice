@@ -410,17 +410,30 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
 
     if (a_listener)
     {
-      gapi_listener = gapi_topicListener__alloc();
-      if (gapi_listener)
-      {
-        ccpp_TopicListener_copyIn(a_listener, *gapi_listener);
-      }
-      else
-      {
-        proceed = false;
-        OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES ,
-            "DomainParticipant::create_topic : Unable to allocate memory for listener");
-      }
+       if (mask & DDS::ALL_DATA_DISPOSED_TOPIC_STATUS
+           && dynamic_cast<DDS::ExtTopicListener *>(a_listener) == NULL)
+       {
+         proceed = false;
+         OS_REPORT( OS_ERROR, "CCPP", ERRORCODE_INCONSISTENT_VALUE,
+                     "ExtTopicListener subclass must be used when the "
+                        "ALL_DATA_DISPOSED_STATUS is set" );
+       }
+
+       if (proceed)
+       {
+          gapi_listener = gapi_topicListener__alloc();
+          if (gapi_listener)
+          {
+             ccpp_TopicListener_copyIn(a_listener, *gapi_listener);
+          }
+          else
+          {
+             proceed = false;
+             OS_REPORT(OS_API_INFO, "CCPP", ERRORCODE_OUT_OF_RESOURCES,
+                       "DomainParticipant::create_topic :"
+                          " Unable to allocate memory for listener");
+          }
+       }
     }
 
     if (proceed)
@@ -929,30 +942,41 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::set_listener (
   DDS::ccpp_UserData_ptr myUD;
   gapi_domainParticipantListener gapi_listener;
 
-  ccpp_DomainParticipantListener_copyIn(a_listener, gapi_listener);
-  if (os_mutexLock(&dp_mutex) == os_resultSuccess)
+  if (mask & ALL_DATA_DISPOSED_TOPIC_STATUS
+      && dynamic_cast<DDS::ExtDomainParticipantListener *>(a_listener) != NULL)
   {
-    result = gapi_domainParticipant_set_listener(_gapi_self, &gapi_listener, mask);
-    if (result == DDS::RETCODE_OK)
-    {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
-      if (myUD)
-      {
-        myUD->setListener(a_listener);
-      }
-      else
-      {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-      }
-    }
-    if (os_mutexUnlock(&dp_mutex) != os_resultSuccess)
-    {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
-    }
+     result = DDS::RETCODE_BAD_PARAMETER;
+     OS_REPORT( OS_ERROR, "CCPP", 0,
+                "ExtDomainParticipantListener must be used when"
+                   " the ALL_DATA_DISPOSED_STATUS bit is set" );
   }
   else
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
+     ccpp_DomainParticipantListener_copyIn(a_listener, gapi_listener);
+     if (os_mutexLock(&dp_mutex) == os_resultSuccess)
+     {
+        result = gapi_domainParticipant_set_listener(_gapi_self, &gapi_listener, mask);
+        if (result == DDS::RETCODE_OK)
+        {
+           myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+           if (myUD)
+           {
+              myUD->setListener(a_listener);
+           }
+           else
+           {
+              OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+           }
+        }
+        if (os_mutexUnlock(&dp_mutex) != os_resultSuccess)
+        {
+           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+        }
+     }
+     else
+     {
+        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
+     }
   }
   return result;
 }

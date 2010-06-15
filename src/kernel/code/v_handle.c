@@ -13,6 +13,7 @@
 #include "v_entity.h"
 #include "v_public.h"
 #include "os_report.h"
+#include "os_abstract.h"
 
 /**
  * All handles are kept in a partly preallocated two dimensional array.
@@ -78,6 +79,42 @@ disableHandleServer(
     v_handleServerSuspend(server);
 }
 
+static void
+issueLowMemoryWarning(
+    c_voidp arg)
+{
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+    os_uint32 warningCount;
+    v_handleServer server;
+
+    server = v_handleServer(arg);
+    /* dds1958: ES: Check if the warning count is 0 at the moment. If so it
+     * means that no warning has been issued. If the value is not 0 however
+     * then we do not need to continue and do not need to do any increment
+     * and safe out on that code in situations where we get the low memory
+     * warning a lot. The idea is that just doing this check (although not
+     * a definate yes or no to doing the warning) is in the cases where
+     * a warning has already been issued much cheaper then doing the
+     * increment and then checking. Only in the situation where the warning
+     * is issued for the first time, is this check useless. But that is only
+     * 1 time vs many times.
+     */
+    if(server->lowMemWarningCount == 0)
+    {
+        /*  increment the warning count
+         */
+        warningCount = pa_increment(&server->lowMemWarningCount);
+        if(warningCount == 1)
+        {
+            OS_REPORT(OS_WARNING,
+                "issueLowMemoryWarning",0,
+                "Shared memory is running very low!");
+
+        }
+    }
+#endif
+}
+
 v_handleServer
 v_handleServerNew (
     c_base base)
@@ -93,13 +130,17 @@ v_handleServerNew (
     if (server) {
         type = c_resolve(base,"kernelModule::v_handleInfoList");
         server->handleInfos = c_arrayNew(type,NROFCOL);
+#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
+        server->lowMemWarningCount = 0;
+#endif
         c_free(type);
         if (server->handleInfos) {
             server->firstFree = NOHANDLE;
             server->lastIndex = NOHANDLE;
             server->suspended = FALSE;
             c_mutexInit(&server->mutex,SHARED_MUTEX);
-            c_baseOnOutOfMemory(base,disableHandleServer,server);
+            c_baseOnOutOfMemory(base, disableHandleServer,server);
+            c_baseOnLowOnMemory(base, issueLowMemoryWarning, server);
         } else {
             c_free(server);
             server = NULL;

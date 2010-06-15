@@ -49,6 +49,10 @@ u_splicedBuiltinResendManager(
     u_spliced spliced);
 
 OS_API u_result
+u_splicedBuiltinCAndMCommandDispatcher(
+   u_spliced spliced);
+
+OS_API u_result
 u_splicedPrepareTermination(
     u_spliced spliced);
 

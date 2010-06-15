@@ -24,6 +24,7 @@
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "u_user.h"
+#include "u_entity.h"
 #include "v_kernel.h"
 
 #define U_TOPIC_GET(t)       u_topic(U_ENTITY_GET(t))
@@ -334,14 +335,20 @@ _TopicGetQos (
 {
     v_topicQos topicQos;
     u_topic uTopic;
+    u_result result;
 
     assert(topic);
 
     uTopic = U_TOPIC_GET(topic);
-
-    if (u_entityQoS(u_entity(uTopic),(v_qos*)&topicQos) == U_RESULT_OK) {
+    result = u_entityQoS(u_entity(uTopic),(v_qos*)&topicQos);
+    if (result == U_RESULT_OK) {
         copyTopicQosOut(topicQos,  qos);
         u_topicQosFree(topicQos);
+    } else
+    {
+        OS_REPORT_1(OS_ERROR,
+                    "Failure during topic QoS get", 0,
+                    "u_entityQoS return with result %d", result);
     }
     return qos;
 }
@@ -428,10 +435,19 @@ gapi_topic_dispose_all_data (
     gapi_topic _this)
 {
     gapi_returnCode_t result;
+    _Topic topic;
+    u_topic uTopic;
+   
+    topic = gapi_topicClaim(_this, &result);
+    if ( topic )
+    {
+       uTopic = U_TOPIC_GET(topic);
+       u_topicDisposeAllData( uTopic );
+       
+    }
 
-    result = GAPI_RETCODE_UNSUPPORTED;
-
-    return result;
+   _EntityRelease(topic);
+   return result;
 }
 
 static v_result
@@ -451,6 +467,23 @@ copyInconsistentTopicStatus (
     return V_RESULT_OK;
 }
 
+static v_result
+copyAllDataDisposedTopicStatus (
+    c_voidp info,
+    c_voidp arg)
+{
+    struct v_allDataDisposedInfo *from;
+    gapi_allDataDisposedTopicStatus *to;
+
+    from = (struct v_allDataDisposedInfo *)info;
+    to = (gapi_allDataDisposedTopicStatus *)arg;
+
+    to->total_count = from->totalCount;
+    to->total_count_change = from->totalChanged;
+
+    return V_RESULT_OK;
+}
+
 gapi_returnCode_t
 _TopicGetInconsistentTopicStatus (
     _Topic _this,
@@ -462,6 +495,21 @@ _TopicGetInconsistentTopicStatus (
                   U_TOPIC_GET(_this),
                   reset,
                   copyInconsistentTopicStatus,
+                  status);
+    return kernelResultToApiResult(uResult);
+}
+
+gapi_returnCode_t
+_TopicGetAllDataDisposedTopicStatus (
+    _Topic _this,
+    c_bool reset,
+    gapi_allDataDisposedTopicStatus *status)
+{
+    u_result uResult;
+    uResult = u_topicGetAllDataDisposedStatus(
+                  U_TOPIC_GET(_this),
+                  reset,
+                  copyAllDataDisposedTopicStatus,
                   status);
     return kernelResultToApiResult(uResult);
 }
@@ -487,6 +535,30 @@ gapi_topic_get_inconsistent_topic_status (
 
     _EntityRelease(topic);
 
+    return result;
+}
+
+gapi_returnCode_t
+gapi_topic_get_all_data_disposed_topic_status (
+    gapi_topic _this,
+    gapi_allDataDisposedTopicStatus *status)
+{
+    _Topic topic;
+    gapi_returnCode_t result;
+    
+    topic = gapi_topicClaim(_this, &result);
+    
+    if (topic != NULL) {
+        if (_Entity(topic)->enabled ) {
+            result = _TopicGetAllDataDisposedTopicStatus (
+                         topic, TRUE, status);
+        } else {
+            result=GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+
+    _EntityRelease(topic);
+    
     return result;
 }
 
@@ -543,56 +615,6 @@ gapi_topic_get_listener (
     _EntityRelease(topic);
 
     return listener;
-}
-
-_Topic
-_BuiltinTopicNew (
-    _DomainParticipant participant,
-    const char *topicName,
-    const char *typeName)
-{
-    _Topic newTopic;
-    gapi_returnCode_t result;
-
-    assert(participant);
-    assert(topicName);
-    assert(typeName);
-
-    newTopic = _TopicAlloc();
-
-    if ( newTopic ) {
-        const char      *prefix = "select * from ";
-        unsigned long    len;
-        char            *expr;
-
-        len = strlen(prefix) + strlen(topicName) + 1;
-        expr = (char *) os_malloc(len);
-
-        if ( expr ) {
-            snprintf(expr, len, "%s%s", prefix, topicName);
-            result = _TopicDescriptionInit(_TopicDescription(newTopic),
-                                           topicName,
-                                           typeName,
-                                           expr,
-                                           participant);
-            os_free(expr);
-        } else {
-            result = GAPI_RETCODE_OUT_OF_RESOURCES;
-        }
-        if ( result == GAPI_RETCODE_OK ) {
-            _EntityStatus(newTopic) =_Status(_TopicStatusNew(newTopic, NULL,0));
-            if ( _EntityStatus(newTopic) != NULL ) {
-                _TopicDescriptionIncUse(_TopicDescription(newTopic));
-            } else {
-                result = GAPI_RETCODE_OUT_OF_RESOURCES;
-            }
-        }
-        if ( result != GAPI_RETCODE_OK ) {
-            _EntityDelete(newTopic);
-            newTopic = NULL;
-        }
-    }
-    return newTopic;
 }
 
 static gapi_boolean
@@ -808,11 +830,59 @@ onInconsistentTopic (
 
             if ( target != source ) {
                 _EntitySetBusy(topic);
+                _EntityRelease(topic); 
+           }
+            _EntitySetBusy(entity);
+            _EntityRelease(entity);
+            callback(listenerData, source, &info); 
+            if ( target != source ) {
+                gapi_objectClearBusy(source);
+            }
+            gapi_objectClearBusy(target);            
+        } else {
+            _EntityRelease(entity);
+        }
+    }
+}
+
+static void
+onAllDataDisposed (
+    gapi_object target,
+    gapi_object source)
+{
+    gapi_listener_AllDataDisposedListener callback;
+    gapi_allDataDisposedTopicStatus info;
+    gapi_returnCode_t result;
+    _Entity topic;
+    _Status status;
+    _Entity entity;
+    c_voidp listenerData;
+   
+    entity = gapi_entityClaim(target, NULL);
+
+    if ( entity ) {
+        if ( target != source ) {
+            topic = gapi_entityClaim(source, NULL);
+        } else {
+            topic = entity;
+        }
+
+        if ( topic ) {
+            result = _TopicGetAllDataDisposedTopicStatus(_Topic(topic),
+                                                         TRUE,
+                                                         &info); 
+
+            status = entity->status;
+            callback     = status->callbackInfo.on_all_data_disposed; 
+            listenerData = status->callbackInfo.listenerData;
+
+            if ( target != source ) {
+                _EntitySetBusy(topic);
                 _EntityRelease(topic);
             }
             _EntitySetBusy(entity);
             _EntityRelease(entity);
-            callback(listenerData, (gapi_topic)topic, &info);
+            callback(listenerData, source); 
             if ( target != source ) {
                 gapi_objectClearBusy(source);
             }
@@ -836,6 +906,14 @@ _TopicNotifyListener(
         target = _StatusFindTarget(status, GAPI_INCONSISTENT_TOPIC_STATUS);
         if ( target != NULL ) {
             onInconsistentTopic(target, _EntityRelease(_this));
+            gapi_entityClaim(handle, NULL);
+        }
+    }
+
+    if ( triggerMask & GAPI_ALL_DATA_DISPOSED_STATUS ) {
+        target = _StatusFindTarget(status, GAPI_ALL_DATA_DISPOSED_STATUS);
+        if ( target != NULL ) {
+            onAllDataDisposed(target, _EntityRelease(_this));
             gapi_entityClaim(handle, NULL);
         }
     }

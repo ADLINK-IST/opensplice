@@ -11,6 +11,7 @@
  */
 #ifndef SACPP_MAPPING_ARRAY_H
 #define SACPP_MAPPING_ARRAY_H
+#include "sacpp_if.h"
 
 template <typename Type, typename SliceType, typename Unique> class DDS_DCPS_ArrayHelper
 {
@@ -245,7 +246,7 @@ template <typename Type, typename SliceType, typename Unique>
 class DDS_DCPS_Array_forany
 {
       typedef DDS_DCPS_ArrayHelper<Type, SliceType, Unique> Helper;
-      
+
    public:
 
       DDS_DCPS_Array_forany()
@@ -329,7 +330,7 @@ template <typename Type, typename SliceType, typename Unique>
 class DDS_DCPS_MArray_forany
 {
       typedef DDS_DCPS_ArrayHelper<Type, SliceType, Unique> Helper;
-      
+
    public:
 
       DDS_DCPS_MArray_forany()
@@ -413,7 +414,7 @@ template <typename Type, typename SliceType, class Var, typename Unique>
 class DDS_DCPS_VLArray_out
 {
       typedef DDS_DCPS_ArrayHelper<Type, SliceType, Unique> Helper;
-      
+
    public:
       DDS_DCPS_VLArray_out(SliceType*& p)
          : m_ptr(p)
@@ -452,4 +453,5 @@ class DDS_DCPS_VLArray_out
       SliceType *& m_ptr;
 };
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_ARRAY_H */

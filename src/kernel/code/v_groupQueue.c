@@ -22,6 +22,7 @@
 #include "v_event.h"
 #include "c_collection.h"
 #include "os_report.h"
+#include "v_message.h"
 
 v_groupQueue
 v_groupQueueNew(

@@ -225,6 +225,10 @@ d_groupGetQuality(
     if(group){
         q.seconds = group->quality.seconds;
         q.nanoseconds = group->quality.nanoseconds;
+    }else
+    {
+        q.seconds = 0;
+        q.nanoseconds = 0;
     }
     return q;
 }

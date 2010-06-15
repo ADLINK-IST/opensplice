@@ -114,13 +114,14 @@ v_observableInit(
     c_bool enable)
 {
     c_type proxyType;
+    v_kernel kernel;
 
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    proxyType = v_proxy_t(o);
+    kernel = v_objectKernel(o);
+    proxyType = v_kernelType(kernel,K_PROXY);
     o->observers = c_setNew(proxyType);
-    c_free(proxyType);
     assert(o->observers);
     c_mutexInit(&o->mutex,SHARED_MUTEX);
     v_entityInit(v_entity(o), name, s, enable);

@@ -23,9 +23,10 @@
             </Alignment>
         </Network>
         <NameSpaces>
-            <NameSpace durabilityKind="Durable" alignmentKind="Initial_and_Aligner">
-                <Partition>*</Partition>
-            </NameSpace>
+          <NameSpace name="defaultNamespace">
+            <Partition>*</Partition>
+          </NameSpace>
+          <Policy nameSpace="defaultNamespace" durability="Durable" alignee="Initial" aligner="True"/>
         </NameSpaces>
     </DurabilityService>
 </OpenSplice>

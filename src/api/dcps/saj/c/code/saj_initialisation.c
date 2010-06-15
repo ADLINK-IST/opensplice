@@ -471,6 +471,8 @@ saj_returnCode saj_InitializeTime_t(JNIEnv *env);
 
 saj_returnCode saj_InitializeInconsistentTopicStatus(JNIEnv *env);
 
+saj_returnCode saj_InitializeGetAllDataDisposedTopicStatus(JNIEnv *env);
+
 saj_returnCode saj_InitializeLivelinessLostStatus(JNIEnv *env);
 
 saj_returnCode saj_InitializeOfferedDeadlineMissedStatus(JNIEnv *env);
@@ -498,6 +500,8 @@ saj_returnCode saj_InitializeTypeSupport(JNIEnv *env);
 saj_returnCode saj_InitializeDataReaderListener(JNIEnv* env);
 
 saj_returnCode saj_InitializeTopicListener(JNIEnv* env);
+
+saj_returnCode saj_InitializeExtTopicListener(JNIEnv* env);
 
 saj_returnCode saj_InitializeDataWriterListener(JNIEnv* env);
 
@@ -745,6 +749,10 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializeGetAllDataDisposedTopicStatus(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializeLivelinessLostStatus(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
@@ -790,6 +798,9 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
         return SAJ_RETCODE_ERROR;
     }
     if(saj_InitializeTopicListener(env) != SAJ_RETCODE_OK){
+        return SAJ_RETCODE_ERROR;
+    }
+    if(saj_InitializeExtTopicListener(env) != SAJ_RETCODE_OK){
         return SAJ_RETCODE_ERROR;
     }
     if(saj_InitializeDataReaderListener(env) != SAJ_RETCODE_OK){
@@ -2593,6 +2604,23 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
     (*env)->DeleteLocalRef(env, tempClass);
     
     /**********************************************************************/
+    tempClass = (*env)->FindClass(env, "DDS/AllDataDisposedTopicStatusHolder");
+    SET_CACHED(allDataDisposedTopicStatusHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/AllDataDisposedTopicStatus;"
+        )
+    );
+
+    if (GET_CACHED(allDataDisposedTopicStatusHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+    (*env)->DeleteLocalRef(env, tempClass);
+    
+    /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/LivelinessLostStatusHolder");
     SET_CACHED(livelinessLostStatusHolder_value_fid,
         (*env)->GetFieldID(
@@ -3117,6 +3145,33 @@ saj_InitializeInconsistentTopicStatus(
 }
 
 saj_returnCode
+saj_InitializeGetAllDataDisposedTopicStatus(
+    JNIEnv *env)
+{
+    saj_returnCode rc;
+    jclass grClass;
+    jclass cls;
+    
+    rc = SAJ_RETCODE_OK;
+    cls = (*env)->FindClass(env, "DDS/AllDataDisposedTopicStatus");
+    grClass = (*(env))->NewGlobalRef (env, cls);
+
+    SET_CACHED(allDataDisposedTopicStatus_class, grClass);
+    
+    if(GET_CACHED(allDataDisposedTopicStatus_class == NULL)){
+        rc = SAJ_RETCODE_ERROR;
+    } else {
+        SET_CACHED(allDataDisposedTopicStatus_constructor_mid, 
+                    (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
+        
+        if(GET_CACHED(allDataDisposedTopicStatus_constructor_mid == NULL)){
+            rc = SAJ_RETCODE_ERROR;
+        }
+    }
+    return rc;
+}
+
+saj_returnCode
 saj_InitializeLivelinessLostStatus(
     JNIEnv *env)
 {
@@ -3506,6 +3561,32 @@ saj_InitializeTopicListener(
         (*env)->DeleteLocalRef(env, cls);
         
         if(GET_CACHED(listener_onInconsistentTopic_mid) != NULL){
+            rc = SAJ_RETCODE_OK;
+        }
+    }
+    return rc;
+}
+
+saj_returnCode
+saj_InitializeExtTopicListener(
+    JNIEnv *env)
+{
+    saj_returnCode rc;
+    jclass cls, grClass;
+    
+    rc = SAJ_RETCODE_ERROR;
+    cls = (*env)->FindClass(env, "DDS/ExtTopicListenerOperations");
+    grClass = (*(env))->NewGlobalRef (env, cls);
+    SET_CACHED(listener_topic_class, grClass);
+ 
+    if(GET_CACHED(listener_topic_class) != NULL){
+        SET_CACHED(listener_onAllDataDisposed_mid, 
+                    (*env)->GetMethodID (env, cls, "on_all_data_disposed",
+                                    "(LDDS/Topic;)V"));
+    
+        (*env)->DeleteLocalRef(env, cls);
+        
+        if(GET_CACHED(listener_onAllDataDisposed_mid) != NULL){
             rc = SAJ_RETCODE_OK;
         }
     }

@@ -253,16 +253,30 @@ v_dataReaderInstanceWrite (
         result = v_dataReaderEntryWrite(
                      v_dataReaderEntry(v_index(_this->index)->entry),
                                        msg,
-                                       (v_instance *)&_this);
+                                       (v_instance *)&_this,
+                                       C_TIME_MIN_INFINITE);
     }
 
     return result;
 }
 
+void
+v_dataReaderInstanceResetOwner(
+    v_dataReaderInstance _this,
+    v_gid wgid)
+{
+    if (_this->owner.exclusive) {
+        if (v_gidEqual(_this->owner.gid, wgid)) {
+            v_gidSetNil(_this->owner.gid);
+        }
+    }
+}
+
 v_dataReaderResult
 v_dataReaderInstanceInsert(
     v_dataReaderInstance _this,
-    v_message message)
+    v_message message,
+    c_time lastDisposeAll )
 {
     v_dataReaderSample sample, s, oldest;
     v_message m;
@@ -301,6 +315,12 @@ v_dataReaderInstanceInsert(
     }
 
     messageState = v_nodeState(message);
+
+    if ( qos->orderby.kind == V_ORDERBY_SOURCETIME
+         && c_timeCompare( message->writeTime, lastDisposeAll ) == C_LT )
+    {
+       messageState |= L_DISPOSED;
+    }
 
     /* All kinds of messages need to update alive writers.
      * The alive writers must always be updated even when the writer is
@@ -773,6 +793,67 @@ v_dataReaderInstanceInsert(
     return V_DATAREADER_INSERTED;
 }
 
+void
+v_dataReaderInstanceFlushTransaction(
+    v_dataReaderInstance _this,
+    c_ulong transactionId)
+{
+    v_dataReaderSample sample, firstSample;
+
+    firstSample = v_dataReaderInstanceHead(_this);
+    sample = firstSample;
+    while (sample != NULL) {
+        if (v_readerSampleTestState(sample,L_TRANSACTION)) {
+            if (v_dataReaderSampleMessage(sample)->transactionId == transactionId) {
+                v_readerSampleClearState(sample,L_TRANSACTION);
+            }
+        }
+        sample = sample->prev;
+    }
+}
+
+void
+v_dataReaderInstanceAbortTransaction(
+    v_dataReaderInstance _this,
+    c_ulong transactionId)
+{
+    v_dataReaderSample sample;
+    c_ulong tid;
+
+    if (transactionId != 0) {
+        sample = v_dataReaderInstanceHead(_this);
+        while (sample != NULL) {
+            if (v_readerSampleTestState(sample,L_TRANSACTION)) {
+                tid = v_dataReaderSampleMessage(sample)->transactionId;
+                if (tid == transactionId) {
+                    /* Remove sample from history. */
+                    if (sample->next) {
+                        assert(v_dataReaderInstanceHead(_this) != sample);
+                        v_dataReaderSample(sample->next)->prev = sample->prev;
+                    } else {
+                        /* _this = head */
+                        assert(v_dataReaderInstanceHead(_this) == sample);
+                        v_dataReaderInstanceSetHead(_this,sample->prev);
+                    }
+                    if (sample->prev) {
+                        assert(v_dataReaderInstanceTail(_this) != sample);
+                        sample->prev->next = sample->next;
+                    } else {
+                        /* sample = tail */
+                        assert(v_dataReaderInstanceTail(_this) == sample);
+                        v_dataReaderInstanceSetTail(_this,sample->next);
+                    }
+                    sample->prev = NULL;
+                    sample->next = NULL;
+                    v_dataReaderSampleRemoveFromLifespanAdmin(sample);
+                    v_dataReaderSampleFree(sample);
+                }
+            }
+            sample = sample->prev;
+        }
+    }
+}
+
 c_bool
 v_dataReaderInstanceTest(
     v_dataReaderInstance _this,
@@ -945,7 +1026,9 @@ v_dataReaderInstanceReadSamples(
     firstSample = v_dataReaderInstanceHead(_this);
     sample = firstSample;
     while ((sample != NULL) && (proceed == TRUE)) {
-        if (sample->readId != readId) {
+        if (!v_readerSampleTestState(sample,L_TRANSACTION) &&
+            (sample->readId != readId))
+        {
             if (query != NULL) {
                 /* The history samples are swapped with the first sample
                  * to make sample-evaluation on instance level work.
@@ -1143,7 +1226,9 @@ v_dataReaderInstanceTakeSamples(
         sample = v_dataReaderInstanceHead(_this);
         while ((proceed == TRUE) && (sample != NULL)) {
             previous = sample->prev;
-            if (sample->readId != readId) {
+            if (!v_readerSampleTestState(sample,L_TRANSACTION) &&
+                (sample->readId != readId))
+            {
                 if (query != NULL) {
                     if (_this->sampleCount > 0) {
                         firstSample = v_dataReaderInstanceHead(_this);
@@ -1365,3 +1450,82 @@ v_dataReaderInstanceUnregister (
         }
     }
 }
+
+void
+v_dataReaderInstanceDispose (
+    v_dataReaderInstance _this,
+    c_time timestamp)
+{
+    v_dataReaderSample sample, s;
+    v_message m;
+    v_readerQos qos;
+    v_dataReader reader;
+    v_index index;
+
+    assert(C_TYPECHECK(_this,v_dataReaderInstance));
+
+    index = v_index(_this->index);
+    reader = v_dataReader(index->reader);
+    qos = v_reader(reader)->qos;
+
+    CHECK_COUNT(_this);
+    CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
+
+    /* Only write and dispose messages do insert a message */
+    if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED))
+    {
+        if (_this->sampleCount == 0) {
+            v_dataReaderInstanceStateSet(_this, L_DISPOSED);
+            /* No valid nor invalid samples exist,
+             * so if invalid samples are applicable then there is a need to
+             * create an invalid sample as sample info carrier to pass the
+             * state change at next read or take operation.
+             */
+#if 0
+            /* Cannot create a sample as a message is required.
+             * So this part is left out.
+             * If invalid samples semantics are required then
+             * create a substitute message and include this part.
+             */
+            if (qos->lifecycle.enable_invalid_samples) {
+                if (v_dataReaderInstanceEmpty(_this)) {
+                    sample = v_dataReaderSampleNew(_this,message);
+                    if (sample) {
+                        v_dataReaderInstanceStateClear(_this, L_EMPTY);
+                        v_dataReaderInstanceSetHead(_this,sample);
+                        v_dataReaderInstanceSetTail(_this,sample);
+                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                    }
+                }
+            }
+#endif
+        } else {
+            /* instance is not empty, valid samples exist.
+             */
+            if (qos->orderby.kind == V_ORDERBY_SOURCETIME) {
+                /* If order by source time then only set disposed if
+                 * message is most recent!
+                 */
+                s = v_dataReaderInstanceTail(_this);
+                m = v_dataReaderSampleMessage(s);
+                if (c_timeCompare(timestamp, m->writeTime) != C_LT) {
+                    v_dataReaderInstanceStateSet(_this, L_DISPOSED);
+                    if (qos->lifecycle.enable_invalid_samples) {
+                        v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                    }
+                }
+            } else {
+                v_dataReaderInstanceStateSet(_this, L_DISPOSED);
+                if (qos->lifecycle.enable_invalid_samples) {
+                    v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                }
+            }
+        }
+    }
+
+    CHECK_COUNT(_this);
+    CHECK_EMPTINESS(_this);
+    CHECK_INVALIDITY(_this);
+}
+

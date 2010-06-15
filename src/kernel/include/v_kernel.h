@@ -82,6 +82,10 @@ typedef enum {
     V_RESULT_UNSUPPORTED
 } v_result;
 
+OS_API c_bool
+v_isEnabledStatistics (
+    v_kernel _this,
+    const char *categoryName);
 
 OS_API v_kernel
 v_kernelNew (

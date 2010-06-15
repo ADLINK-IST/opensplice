@@ -115,22 +115,8 @@ OS_API u_result u_userInitialise();
  * deleted ,the process itself must delete these objects.
  * Calling methods of any disconnected object will result into a error.
  */
-OS_API u_result u_userDetach ();
-
-/** \brief Protect the user against interrupts.
- *
- * This method is used by all other classes within this component whenever
- * the access to the kernel is required. Once access to the kernel is no longer
- * required the method u_userUnprotect must be called.
- */
-OS_API u_result u_userProtect (u_entity e);
-
-/** \brief Protect the user against interrupts.
- *
- * This method is used by all other classes within this component to release
- * the protection against interrupts set by the method u_userProtect.
- */
-OS_API u_result u_userUnprotect (u_entity e);
+OS_API u_result
+u_userDetach ();
 
 OS_API u_kernel
 u_userKernelOpen (
@@ -143,11 +129,15 @@ u_userKernelClose (
 
 /** \brief Increases the refCount of the object only within the lifespan of the process.
  */
-OS_API c_object u_userKeep(c_object o);
+OS_API c_object
+u_userKeep(
+    c_object o);
 
 /** \brief Decreases the refCount of the object.
  */
-OS_API void u_userFree (c_object o);
+OS_API void
+u_userFree (
+    c_object o);
 
 #undef OS_API
 

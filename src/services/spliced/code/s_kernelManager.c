@@ -24,6 +24,7 @@ C_STRUCT(s_kernelManager) {
     int active;
     u_spliced spliced;
     os_threadId resendManager;
+    os_threadId cAndMCommandManager;
 };
 
 /**************************************************************
@@ -56,6 +57,21 @@ resendManager(
     return NULL;
  
 }
+
+static void *
+cAndMCommandManager(
+    void *arg)
+{
+    s_kernelManager km = (s_kernelManager)arg;
+    os_mutexLock(&km->mtx);
+    km->active++;
+    os_condBroadcast(&km->cv);
+    os_mutexUnlock(&km->mtx);
+    u_splicedBuiltinCAndMCommandDispatcher(km->spliced);
+    return NULL;
+ 
+}
+
 
 /**************************************************************
  * constructor/destructor
@@ -118,6 +134,21 @@ s_kernelManagerNew(
                     os_mutexDestroy(&km->mtx);
                     os_condDestroy(&km->cv);
                     status++;
+                }
+            }
+            if (osr == os_resultSuccess ) {
+                config = splicedGetConfiguration(daemon);
+                if (config->enableCandMCommandThread ) {
+                   osr = os_threadCreate(&km->cAndMCommandManager,
+                                         S_THREAD_C_AND_M_COMMANDMANAGER,
+                                         &config->cAndMCommandScheduling,
+                                         cAndMCommandManager, km);
+                   if (osr != os_resultSuccess) {
+                      /* don't care if the following statements succeeds, already in error situation */
+                      os_mutexDestroy(&km->mtx);
+                      os_condDestroy(&km->cv);
+                      status++;
+                   }
                 }
             }
         } else {

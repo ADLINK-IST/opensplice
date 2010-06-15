@@ -680,14 +680,46 @@ gapi_returnCode_t
 gapi_publisher_begin_coherent_changes (
     gapi_publisher _this)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    _Publisher publisher;
+    gapi_returnCode_t result = GAPI_RETCODE_BAD_PARAMETER;
+    u_result uResult;
+
+    publisher  = gapi_publisherClaim(_this, &result);
+
+    if ( publisher != NULL ) {
+        if ( _Entity(publisher)->enabled) {
+            uResult = u_publisherCoherentBegin(U_PUBLISHER_GET(publisher));
+            result = kernelResultToApiResult(uResult);
+        } else {
+            result = GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+    _EntityRelease(publisher);
+
+    return result;
 }
 
 gapi_returnCode_t
 gapi_publisher_end_coherent_changes (
     gapi_publisher _this)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    _Publisher publisher;
+    gapi_returnCode_t result = GAPI_RETCODE_BAD_PARAMETER;
+    u_result uResult;
+
+    publisher  = gapi_publisherClaim(_this, &result);
+
+    if ( publisher != NULL ) {
+        if ( _Entity(publisher)->enabled) {
+            uResult = u_publisherCoherentEnd(U_PUBLISHER_GET(publisher));
+            result = kernelResultToApiResult(uResult);
+        } else {
+            result = GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+    _EntityRelease(publisher);
+
+    return result;
 }
 
 gapi_returnCode_t
@@ -727,26 +759,22 @@ gapi_publisher_set_default_datawriter_qos (
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_DEFAULT_DATAWRITER_QOS);
 
-    publisher  = gapi_publisherClaim(_this, &result);
-
-    if ( publisher ) {
-        if ( qos ) {
-            result = gapi_dataWriterQosIsConsistent(qos, &context);
-            if ( result == GAPI_RETCODE_OK ) {
-                gapi_dataWriterQosCopy (qos, &publisher->_defDataWriterQos);
-            }
-        } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+    publisher = gapi_publisherClaim(_this, &result);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos == GAPI_DATAWRITER_QOS_DEFAULT) {
+            qos = &gapi_dataWriterQosDefault;
         }
+        result = gapi_dataWriterQosIsConsistent(qos, &context);
+        if (result == GAPI_RETCODE_OK) {
+            gapi_dataWriterQosCopy (qos, &publisher->_defDataWriterQos);
+        }
+        _EntityRelease(publisher);
     }
-
-    _EntityRelease(publisher);
 
     return result;
 }
 
 gapi_returnCode_t
-
 gapi_publisher_get_default_datawriter_qos (
     gapi_publisher _this,
     gapi_dataWriterQos *qos)
@@ -755,12 +783,15 @@ gapi_publisher_get_default_datawriter_qos (
     gapi_returnCode_t result;    
         
     publisher  = gapi_publisherClaim(_this, &result);
-
-    if ( publisher && qos ) {
-        gapi_dataWriterQosCopy (&publisher->_defDataWriterQos, qos);
+    if (result == GAPI_RETCODE_OK) {
+        if (qos) {
+            gapi_dataWriterQosCopy (&publisher->_defDataWriterQos, qos);
+        } else {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+        _EntityRelease(publisher);
     }
 
-    _EntityRelease(publisher);
     return result;
 }
 

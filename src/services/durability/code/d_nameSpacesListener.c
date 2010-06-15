@@ -33,39 +33,64 @@
 #include "os_report.h"
 
 struct compatibilityHelper {
-    c_iter nameSpaces;
+    d_fellow fellow;
     c_bool compatible;
+    d_nameSpace ns;
+    d_nameSpace fellowNs; /* For easy debugging */
 };
 
+/* Walk fellow namespaces */
 static c_bool
-areFellowNameSpacesCompatible(
-    d_nameSpace fellowNS,
+isFellowNameSpaceCompatible(
+    d_nameSpace fellowNs,
     c_voidp args)
 {
-    struct compatibilityHelper* helper;
-    d_nameSpace nameSpace;
-    c_ulong i, length;
-    int result;
+    struct compatibilityHelper* walkData;
+    walkData = (struct compatibilityHelper*)args;
 
-    helper    = (struct compatibilityHelper*)args;
-    length    = c_iterLength(helper->nameSpaces);
-    nameSpace = NULL;
-
-    helper->compatible = FALSE;
-
-    for(i=0; i<length && !nameSpace; i++){
-        nameSpace = c_iterObject(helper->nameSpaces, i);
-        result = d_nameSpaceCompatibilityCompare(nameSpace, fellowNS);
-
-        if(result == 0){
-            helper->compatible = TRUE;
-            c_iterTake(helper->nameSpaces, nameSpace);
-        } else {
-            nameSpace = NULL;
-        }
+    /* If nameSpace name is equal, policy of namespace must be equal too */
+    if (!strcmp (d_nameSpaceGetName(fellowNs), d_nameSpaceGetName(walkData->ns))) {
+        walkData->fellowNs = fellowNs;
+        return (d_nameSpaceCompatibilityCompare(walkData->ns, fellowNs) == 0);
     }
 
     return TRUE;
+}
+
+/* Walk admin namespaces */
+static void
+areFellowNameSpacesCompatible(
+    d_nameSpace adminNs,
+    c_voidp args)
+{
+    struct compatibilityHelper* walkData;
+    d_networkAddress address;
+    char* localPartitions;
+    char* remotePartitions;
+
+    walkData    = (struct compatibilityHelper*)args;
+
+    walkData->ns = adminNs;
+
+    if (!d_fellowNameSpaceWalk(walkData->fellow, isFellowNameSpaceCompatible, walkData))
+    {
+        walkData->compatible = FALSE;
+        localPartitions = d_nameSpaceGetPartitions(adminNs);
+        remotePartitions = d_nameSpaceGetPartitions(walkData->fellowNs);
+        address = d_fellowGetAddress (walkData->fellow);
+
+        OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
+            "Namespace '%s' from fellow '%d' is incompatible with local namespace.",
+            d_nameSpaceGetName(adminNs), address->systemId);
+
+        OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
+            "Partition expressions are '%s'(local) and '%s'(remote).",
+            localPartitions, remotePartitions);
+
+        d_networkAddressFree(address);
+        os_free (localPartitions);
+        os_free (remotePartitions);
+    }
 }
 
 static c_bool
@@ -208,6 +233,25 @@ d_nameSpacesListenerStop(
     return d_readerListenerStop(d_readerListener(listener));
 }
 
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
+
 void
 d_nameSpacesListenerAction(
     d_listener listener,
@@ -218,7 +262,7 @@ d_nameSpacesListenerAction(
     d_publisher publisher;
     d_fellow fellow;
     c_bool allowed;
-    d_nameSpace nameSpace;
+    d_nameSpace nameSpace, localNameSpace;
     c_ulong count;
     d_configuration config;
     d_nameSpacesRequest nsRequest;
@@ -235,6 +279,7 @@ d_nameSpacesListenerAction(
     admin      = d_listenerGetAdmin(listener);
     publisher  = d_adminGetPublisher(admin);
     durability = d_adminGetDurability(admin);
+    config     = d_durabilityGetConfiguration(durability);
 
     d_printTimedEvent         (durability, D_LEVEL_FINE,
                                D_THREAD_NAMESPACES_LISTENER,
@@ -271,11 +316,25 @@ d_nameSpacesListenerAction(
     }
     d_fellowUpdateStatus(fellow, message->senderState, v_timeGet());
 
-    if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED){
-        /*Update master of fellow nameSpace...*/
-        nameSpace = d_nameSpaceFromNameSpaces(d_nameSpaces(message));
-        added = d_fellowAddNameSpace(fellow, nameSpace);
+    nameSpace = d_nameSpaceFromNameSpaces(config, d_nameSpaces(message));
 
+    if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED){
+
+        /* Create namespace with local policy (if a match exists) */
+        localNameSpace = d_nameSpaceNew (config, d_nameSpaceGetName(nameSpace));
+
+        /* Copy partitions to local nameSpace */
+        d_nameSpaceCopyPartitions (localNameSpace, nameSpace);
+
+        /* If namespace is created, add to administration */
+        if (localNameSpace)
+        {
+            d_adminAddNameSpace (admin, localNameSpace);
+            d_nameSpaceFree (localNameSpace);
+        }
+
+        /*Update master of fellow nameSpace...*/
+        added = d_fellowAddNameSpace(fellow, nameSpace);
         if(!added){
             d_nameSpaceFree(nameSpace);
         }
@@ -285,7 +344,6 @@ d_nameSpacesListenerAction(
                            message->senderAddress.systemId);
     } else {
         info = d_adminStatisticsInfoNew();
-        nameSpace = d_nameSpaceFromNameSpaces(d_nameSpaces(message));
         d_fellowSetExpectedNameSpaces(fellow, d_nameSpaces(message)->total);
         d_fellowAddNameSpace(fellow, nameSpace);
         count = d_fellowNameSpaceCount(fellow);
@@ -295,10 +353,10 @@ d_nameSpacesListenerAction(
 
             if(allowed == TRUE){
                 config = d_durabilityGetConfiguration(durability);
-                helper.nameSpaces = c_iterCopy(config->nameSpaces);
-                helper.compatible = FALSE;
-                d_fellowNameSpaceWalk(fellow, areFellowNameSpacesCompatible, &helper);
-                c_iterFree(helper.nameSpaces);
+                helper.fellow = fellow;
+                helper.compatible = TRUE;
+
+                d_adminNameSpaceWalk (admin, areFellowNameSpacesCompatible, &helper);
 
                 if(helper.compatible == TRUE){
                     if(config->timeAlignment == TRUE){

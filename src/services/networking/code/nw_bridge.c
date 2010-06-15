@@ -423,7 +423,11 @@ nw_bridgeRead(
                                                 partitionName, topicName, /* TODO: topicName: expensive string duplication each iteration */
                                                 typeLookupArg);
 
-                        prs->numberOfMessagesReceived++;
+                        if (prs != NULL) {
+                            if (prs->enabled) {
+                                prs->numberOfMessagesReceived++;
+                            }
+                        }
 
                     	
                     	NW_REPORT_INFO_2(5, "reading message type %s via %s", topicName, partitionName);
@@ -448,7 +452,11 @@ nw_bridgeRead(
 								} else {
 									/* fast path */
 									v_messageSetAllocTime(*message);
-									prs->numberOfMessagesDelivered++;
+									if (prs != NULL) {
+                                        if (prs->enabled) {
+                                            prs->numberOfMessagesDelivered++;
+                                        }
+									}
 								}
                             }
                         } else {
@@ -458,7 +466,11 @@ nw_bridgeRead(
                         	*message = nw_stream_read(stream, type); /* otherwise *message stays defined and 
 																		causing side effects in next iteration */ 
                             assert(*message == NULL);
-                            prs->numberOfMessagesNotInterested++;
+                            if (prs != NULL) {
+                                if (prs->enabled) {
+                                    prs->numberOfMessagesNotInterested++;
+                                }
+                            }
                         }
                         os_free(topicName);
                     }

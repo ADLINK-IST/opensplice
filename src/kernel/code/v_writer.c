@@ -65,18 +65,6 @@
  * Private functions
  **************************************************************/
 
-static c_type _v_writerGroup_t = NULL;
-
-c_type
-v_writerGroup_t (
-    c_base base)
-{
-    if (_v_writerGroup_t == NULL) {
-        _v_writerGroup_t = c_resolve(base,"kernelModule::v_writerGroup");
-    }
-    return _v_writerGroup_t;
-}
-
 static void
 deadlineUpdate(
     v_writer writer,
@@ -100,15 +88,17 @@ v_writerGroupSetAdd (
 {
     c_type type;
     v_writerGroup proxy;
+    v_kernel kernel;
 
-    type = v_writerGroup_t(c_getBase(g));
+    kernel = v_objectKernel(g);
+
+    type = v_kernelType(kernel,K_WRITERGROUP);
     proxy = c_new(type);
 
     if (proxy) {
         proxy->group = c_keep(g);
         proxy->next = set->firstGroup;
-	    proxy->targetCache = v_writerCacheNew(v_objectKernel(g),
-                                                 V_CACHE_OWNER);
+	    proxy->targetCache = v_writerCacheNew(kernel, V_CACHE_OWNER);
         set->firstGroup = proxy;
     } else {
         OS_REPORT(OS_ERROR,
@@ -295,7 +285,6 @@ groupWrite(
             /* Force resend to all because v_groupWrite does not return
              * the resend scope.
              */
-//            a->resendScope = V_RESEND_ALL;
             a->rejectScope = V_RESEND_ALL;
         }
     }
@@ -582,7 +571,6 @@ writerResend(
             sample = v_writerSampleNew(writer,message);
             if (sample) {
                 v_writerSampleSetSentBefore(sample, TRUE);
-//                v_writerSampleResend(sample,grouparg.resendScope);
                 v_writerSampleResend(sample,grouparg.rejectScope);
                 keepSample(writer,instance,sample);
                 c_free(sample);
@@ -810,6 +798,10 @@ writerDispose(
     message->writeTime = timestamp;
     message->writerGID = v_publicGid(v_public(w));
     message->writerInstanceGID = v_publicGid(NULL);
+    message->transactionId = w->transactionId;
+    if (w->transactionId != 0) {
+        w->transactionCount++;
+    }
 
     qos = w->qos;
     if (!w->infWait) {
@@ -1192,7 +1184,7 @@ createWriterInstanceType(
 
     kernel = v_objectKernel(topic);
     base = c_getBase(kernel);
-    baseType = v_writerInstanceTemplate_t(base);
+    baseType = v_kernelType(kernel,K_WRITERINSTANCETEMPLATE);
     assert(baseType != NULL);
 
     instanceType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
@@ -1350,11 +1342,13 @@ v_writerInit(
     writer->pubQos              = c_keep(v_publisherGetQosRef(p));
     writer->msgQos              = NULL;
     writer->relQos              = NULL;
+    writer->msgQosType          = NULL;
     writer->publisher           = p;
     writer->deadlineList        = NULL;
     writer->sequenceNumber      = 0;
     writer->cachedInstance      = NULL;
     writer->livelinessLease     = NULL;
+    writer->transactionId       = 0;
 
     v_writerGroupSetInit(&writer->groupSet);
     instanceType = createWriterInstanceType(topic);
@@ -1777,7 +1771,6 @@ v_writerNotifyLivelinessLost(
         v_observerNotify(v_observer(w), &e, NULL);
         v_observableNotify(v_observable(w), &e);
     }
-    unregisterAllInstances(w);
     w->alive = FALSE;
     kernel = v_objectKernel(w);
     builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
@@ -1826,7 +1819,12 @@ v_writerRegister(
     message->writeTime = timestamp;
     message->writerGID = v_publicGid(v_public(w));
     message->writerInstanceGID = v_publicGid(NULL);
-
+    message->transactionId = w->transactionId;
+#if 0
+    if (w->transactionId != 0) {
+        w->transactionCount++;
+    }
+#endif
     qos = w->qos;
     if (!w->infWait) {
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
@@ -1926,6 +1924,10 @@ v_writerUnregister(
     assert(message != NULL);
 
     v_observerLock(v_observer(w));
+    message->transactionId = w->transactionId;
+    if (w->transactionId != 0) {
+        w->transactionCount++;
+    }
     result = writerUnregister(w, message, timestamp, instance);
     v_observerUnlock(v_observer(w));
 
@@ -1970,6 +1972,10 @@ v_writerWrite(
     message->writeTime = timestamp;
     message->writerGID = v_publicGid(v_public(w));
     message->writerInstanceGID = v_publicGid(NULL);
+    message->transactionId = w->transactionId;
+    if (w->transactionId != 0) {
+        w->transactionCount++;
+    }
 
     qos = w->qos;
     if (!w->infWait) {
@@ -2128,6 +2134,7 @@ v_writerDispose(
 
     waitlist = NULL;
     v_observerLock(v_observer(_this));
+
     if (_this->deliveryGuard != NULL) {
         waitlist = v_deliveryWaitListNew(_this->deliveryGuard,message);
     }
@@ -2188,6 +2195,10 @@ v_writerWriteDispose(
     message->writeTime = timestamp;
     message->writerGID = v_publicGid(v_public(w));
     message->writerInstanceGID = v_publicGid(NULL);
+    message->transactionId = w->transactionId;
+    if (w->transactionId != 0) {
+        w->transactionCount++;
+    }
 
     qos = w->qos;
     if (!w->infWait) {
@@ -2447,7 +2458,6 @@ resendInstance(
                         v_writerSampleSetSentBefore(sample, TRUE);
                     }
                     if (grouparg.result == V_WRITE_REJECTED) {
-//                        v_writerSampleResend(sample,grouparg.resendScope);
                         v_writerSampleResend(sample,grouparg.rejectScope);
                         /* The sample could not be delivered because
                          * of the lack of resources at the receiver.
@@ -2810,6 +2820,7 @@ instanceResume(
         message->sequenceNumber = w->sequenceNumber++;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->qos = c_keep(w->relQos);
+        message->transactionId = 0;
 
         writerResend(instance, message, TRUE);
         c_free(message);
@@ -2867,4 +2878,73 @@ v_writerResumePublication(
     c_tableWalk(writer->instances, instanceResume, (c_voidp)suspendTime);
     v_observerUnlock(v_observer(writer));
 }
+
+v_result
+v_writerCoherentBegin (
+    v_writer _this,
+    c_ulong id)
+{
+    v_result result;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    v_observerLock(v_observer(_this));
+    if ((_this->transactionId == 0) &&
+        (_this->pubQos->presentation.coherent_access == TRUE))
+    {
+        _this->transactionId = id;
+        _this->transactionCount = 0;
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_PRECONDITION_NOT_MET;
+    }
+    v_observerUnlock(v_observer(_this));
+    return result;
+}
+
+v_result
+v_writerCoherentEnd (
+    v_writer _this)
+{
+    v_message message;
+    v_writerInstance instance;
+    v_result result;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_writer));
+
+    v_observerLock(v_observer(_this));
+
+    if (_this->transactionId != 0) {
+        /* Here write special modified message to publish coherent set size. */
+        /* Create a register message, so the instance pipeline is constructed! */
+        instance = c_read(_this->instances);
+        message = v_writerInstanceCreateMessage(instance);
+        if (message) {
+            v_nodeState(message) = L_TRANSACTION;
+            message->writeTime = v_timeGet();
+            message->writerGID = v_publicGid(v_public(_this));
+            message->sequenceNumber = _this->transactionCount;
+            message->writerInstanceGID = v_publicGid(v_public(instance));
+            message->qos = c_keep(_this->relQos);
+            message->transactionId = _this->transactionId;
+            writerWrite(instance,message,FALSE);
+            result = V_RESULT_OK;
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "v_writerCoherentEnd", 0,
+                      "Could not allocate resources for end transaction message");
+            result = V_RESULT_PRECONDITION_NOT_MET;
+        }
+        _this->transactionId = 0;
+        c_free(instance);
+    } else {
+        result = V_RESULT_PRECONDITION_NOT_MET;
+    }
+    v_observerUnlock(v_observer(_this));
+
+    return result;
+}
+
 

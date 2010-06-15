@@ -1286,18 +1286,11 @@ gapi_publisherQosIsConsistent (
          !validEntityFactoryQosPolicy(&qos->entity_factory, context, GAPI_QOS_PUBLISHER_ID) )
     {
         retcode = GAPI_RETCODE_BAD_PARAMETER;
-    } else if ( qos->presentation.access_scope != GAPI_INSTANCE_PRESENTATION_QOS ) {
+    } else if ( qos->presentation.access_scope == GAPI_GROUP_PRESENTATION_QOS ) {
         gapi_errorUnsupportedQosPolicy(context,
                                        GAPI_QOS_PUBLISHER_ID,
                                        GAPI_PRESENTATION_QOS_POLICY_ID,
                                        GAPI_QOS_POLICY_ATTRIBUTE_ACCESS_SCOPE_ID,
-                                       GAPI_ERRORCODE_UNSUPPORTED_VALUE);
-        retcode = GAPI_RETCODE_UNSUPPORTED;
-    } else if ( qos->presentation.coherent_access == TRUE ) {
-        gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_PUBLISHER_ID,
-                                       GAPI_PRESENTATION_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_COHERENT_ACCESS_ID,
                                        GAPI_ERRORCODE_UNSUPPORTED_VALUE);
         retcode = GAPI_RETCODE_UNSUPPORTED;
     } else if ( qos->presentation.ordered_access == TRUE ) {
@@ -1328,23 +1321,16 @@ gapi_subscriberQosIsConsistent (
          !validShareQosPolicy(&qos->share, context, GAPI_QOS_SUBSCRIBER_ID) ) {
 
         retcode = GAPI_RETCODE_BAD_PARAMETER;
-    } else if ( qos->presentation.access_scope != GAPI_INSTANCE_PRESENTATION_QOS ) {
+    } else if ( qos->presentation.access_scope == GAPI_GROUP_PRESENTATION_QOS ) {
         gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_PUBLISHER_ID,
+                                       GAPI_QOS_SUBSCRIBER_ID,
                                        GAPI_PRESENTATION_QOS_POLICY_ID,
                                        GAPI_QOS_POLICY_ATTRIBUTE_ACCESS_SCOPE_ID,
                                        GAPI_ERRORCODE_UNSUPPORTED_VALUE);
         retcode = GAPI_RETCODE_UNSUPPORTED;
-    } else if ( qos->presentation.coherent_access == TRUE ) {
-        gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_PUBLISHER_ID,
-                                       GAPI_PRESENTATION_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_COHERENT_ACCESS_ID,
-                                       GAPI_ERRORCODE_UNSUPPORTED_VALUE);
-        retcode = GAPI_RETCODE_UNSUPPORTED;
     } else if ( qos->presentation.ordered_access == TRUE ) {
         gapi_errorUnsupportedQosPolicy(context,
-                                       GAPI_QOS_PUBLISHER_ID,
+                                       GAPI_QOS_SUBSCRIBER_ID,
                                        GAPI_PRESENTATION_QOS_POLICY_ID,
                                        GAPI_QOS_POLICY_ATTRIBUTE_ORDERED_ACCESS_ID,
                                        GAPI_ERRORCODE_UNSUPPORTED_VALUE);

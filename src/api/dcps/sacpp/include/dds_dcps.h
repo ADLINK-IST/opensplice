@@ -63,6 +63,7 @@ namespace DDS
    struct PublicationBuiltinTopicData;
    struct SubscriptionBuiltinTopicData;
    struct InconsistentTopicStatus;
+   struct AllDataDisposedTopicStatus;
    struct SampleLostStatus;
    struct SampleRejectedStatus;
    struct LivelinessLostStatus;
@@ -376,6 +377,15 @@ namespace DDS
 
    typedef DDS_DCPSStruct_var <InconsistentTopicStatus> InconsistentTopicStatus_var;
    typedef InconsistentTopicStatus&InconsistentTopicStatus_out;
+
+   struct AllDataDisposedTopicStatus
+   {
+      DDS::Long total_count;
+      DDS::Long total_count_change;
+   };
+
+   typedef DDS_DCPSStruct_var <AllDataDisposedTopicStatus> AllDataDisposedTopicStatus_var;
+   typedef AllDataDisposedTopicStatus&AllDataDisposedTopicStatus_out;
 
    struct SampleLostStatus
    {

@@ -161,6 +161,8 @@ void nw_updatePlugReceiveStatistics(plugReceiveStatistics prs, nw_channelReader 
 	channelReader->rcs->numberOfPacketsReceived = prs->numberOfPacketsReceived;
 	channelReader->rcs->nofFreePacketBuffers = prs->nofFreePacketBuffers;
 	channelReader->rcs->nofUsedPacketBuffers = prs->nofUsedPacketBuffers;
+	channelReader->rcs->nofBytesBeforeDecompression = prs->nofBytesBeforeDecompression;
+	channelReader->rcs->nofBytesAfterDecompression = prs->nofBytesAfterDecompression;
 }
 
 static void
@@ -187,26 +189,27 @@ nw_channelReaderMain(
     channelReader = (nw_channelReader)arg;
     messagesReceived = 0;
     messagesReceivedReport = 0;
-
+    n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
 
     while (!(int)nw_runnableTerminationRequested((nw_runnable)channelReader)) {
 
-        /* lastupdate time compare to resolution time
-         * lastupdate > resolution = update statsistics
-         */
-    	 now = os_hrtimeGet();
-         if (os_timeCompare(now,nextupdate) == OS_MORE) {
-        		 nextupdate = now;
-        		 nextupdate = os_timeAdd(nextupdate,period);
-        		 r = v_reader(reader);
-				 sub = v_subscriber(r->subscriber);
-				 n = v_networking(sub->participant);
-				 nw_updatePlugReceiveStatistics(&prs,channelReader);
-				 if (v_entity(n)->statistics) {
-					 nw_ReceiveChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelReader->stat_channel_id],channelReader->rcs);
-				 }
-         }
 
+
+        if (v_entity(n)->statistics) {
+            if (!prs.enabled) {
+                prs.enabled =1;
+            }
+            /* lastupdate time compare to resolution time
+             * lastupdate > resolution = update statsistics
+             */
+            now = os_hrtimeGet();
+            if (os_timeCompare(now,nextupdate) == OS_MORE) {
+                     nextupdate = now;
+                     nextupdate = os_timeAdd(nextupdate,period);
+                     nw_updatePlugReceiveStatistics(&prs,channelReader);
+                     nw_ReceiveChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelReader->stat_channel_id],channelReader->rcs);
+            }
+         }
   	
         /* Read messages from the network */
         nw_receiveChannelRead(channelReader->receiveChannel,

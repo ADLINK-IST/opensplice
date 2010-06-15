@@ -90,6 +90,9 @@
 #define v_dataReaderUnLock(_this) \
         v_observerUnlock(v_dataReader(_this))
 
+#define v_dataReaderQos(_this) \
+        (v_reader(v_dataReader(_this))->qos)
+
 #ifdef _MSG_STAMP_
 void
 v_dataReaderLogMessage(

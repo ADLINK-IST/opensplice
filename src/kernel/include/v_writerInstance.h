@@ -23,9 +23,6 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-static c_type v_writerInstance_t = NULL;
-static c_type v_writerInstanceTemplate_t = NULL;
-
 /**
  * \brief The <code>v_writerInstance</code> cast methods.
  *
@@ -37,18 +34,6 @@ static c_type v_writerInstanceTemplate_t = NULL;
 #define v_writerInstance(_this) (C_CAST(_this,v_writerInstance))
 
 #define v_writerInstanceTemplate(_this) ((v_writerInstanceTemplate)(_this))
-
-#define v_writerInstance_t(scope) \
-        (v_writerInstance_t != NULL ? \
-        c_type(v_writerInstance_t) : \
-        c_type(c_resolve(c_getBase(scope), \
-                         "kernelModule::v_writerInstance")))
-
-#define v_writerInstanceTemplate_t(scope) \
-        (v_writerInstanceTemplate_t != NULL ? \
-        c_type(v_writerInstanceTemplate_t) : \
-        c_type(c_resolve(c_getBase(scope), \
-                         "kernelModule::v_writerInstanceTemplate")))
 
 #define v_writerInstanceHead(_this) \
         (v_writerSample(v_writerInstanceTemplate(_this)->sample))

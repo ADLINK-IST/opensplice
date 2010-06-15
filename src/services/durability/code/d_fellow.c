@@ -16,6 +16,7 @@
 #include "d_group.h"
 #include "d_nameSpace.h"
 #include "d_configuration.h"
+#include "d_admin.h"
 #include "d_networkAddress.h"
 #include "v_time.h"
 #include "os_heap.h"
@@ -412,6 +413,9 @@ d_fellowGetLastStatusReport(
     if(fellow) {
        s.seconds = fellow->lastStatusReport.seconds;
        s.nanoseconds = fellow->lastStatusReport.nanoseconds;
+    }else {
+        s.seconds = 0;
+        s.nanoseconds = 0;
     }
     return s;
 }
@@ -649,24 +653,26 @@ d_fellowSetExpectedNameSpaces(
     return;
 }
 
-void
+c_bool
 d_fellowNameSpaceWalk(
     d_fellow fellow,
     c_bool ( * action ) (d_nameSpace nameSpace, c_voidp userData),
     c_voidp userData)
 {
-    
+    c_bool result;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     
+    result = TRUE;
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         
         if(fellow->nameSpaces){
-            d_tableWalk(fellow->nameSpaces, action, userData);
+            result = d_tableWalk(fellow->nameSpaces, action, userData);
         }
         d_lockUnlock(d_lock(fellow));
     }
-    return;
+    return result;
 }
 
 void
@@ -766,7 +772,7 @@ isAligner(
     
     helper = (struct alignerHelper*)args;
     
-    helper->aligner = d_configurationInNameSpace(
+    helper->aligner = d_adminInNameSpace(
                                             nameSpace, 
                                             (d_partition)(helper->partition), 
                                             (d_topic)(helper->topic), 
@@ -822,7 +828,7 @@ inNameSpace(
     
     helper = (struct alignerHelper*)args;
     
-    helper->aligner = d_configurationInNameSpace(
+    helper->aligner = d_adminInNameSpace(
                                             nameSpace, 
                                             (d_partition)(helper->partition), 
                                             (d_topic)(helper->topic), 

@@ -18,6 +18,29 @@
 #include "u_entity.h"
 #include "os.h"
 
+/** \brief Protect the user against process termination during kernel access.
+ *
+ * This method is used by all other classes within this component whenever
+ * the access to the kernel is required. Once access to the kernel is no longer
+ * required the method u_kernelUnprotect must be called.
+ */
+u_result
+u_kernelProtect(
+    u_kernel _this);
+
+/** \brief Unprotect the user against process termination after kernel access.
+ *
+ * This method is used by all other classes within this component to release
+ * the protection against termination set by the method u_kernelProtect.
+ */
+u_result
+u_kernelUnprotect(
+    u_kernel _this);
+
+c_long
+u_kernelProtectCount(
+    u_kernel _this);
+
 u_result
 u_kernelClaim (
     u_kernel _this,

@@ -727,7 +727,7 @@ d_publisherNameSpacesWrite(
             d_message(message)->sequenceNumber = publisher->nameSpacesNumber++;
 
             while((!result) && (!terminate)){
-                ur = u_writerWrite(publisher->nameSpacesWriter,
+                 ur = u_writerWrite(publisher->nameSpacesWriter,
                                    message, v_timeGet(), U_INSTANCEHANDLE_NIL);
 
                 if(ur == U_RESULT_OK){
@@ -1045,8 +1045,10 @@ d_publisherNameSpacesWriterCopy(
 
     result = d_publisherMessageWriterCopy(&msgFrom->parentMsg, &msgTo->parentMsg);
 
+    msgTo->name                       = c_stringNew(base, msgFrom->name);
     msgTo->durabilityKind             = msgFrom->durabilityKind;
     msgTo->alignmentKind              = msgFrom->alignmentKind;
+    msgTo->aligner                    = msgFrom->aligner;
     msgTo->total                      = msgFrom->total;
     msgTo->initialQuality.seconds     = msgFrom->initialQuality.seconds;
     msgTo->initialQuality.nanoseconds = msgFrom->initialQuality.nanoseconds;

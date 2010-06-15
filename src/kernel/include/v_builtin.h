@@ -39,6 +39,7 @@ extern "C" {
 #define V_SUBSCRIPTIONINFO_NAME  "DCPSSubscription"
 #define V_DELIVERYINFO_NAME      "DCPSDelivery"
 #define V_HEARTBEATINFO_NAME     "DCPSHeartbeat"
+#define V_C_AND_M_COMMAND_NAME   "DCPSCandMCommand"
 
 /**
  * \brief The <code>v_builtin</code> cast method.

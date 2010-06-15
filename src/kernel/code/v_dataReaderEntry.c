@@ -39,8 +39,6 @@
 
 #include "os_report.h"
 
-static c_type v_publicationHandle_t = NULL;
-
 /**************************************************************
  * Private functions
  **************************************************************/
@@ -154,6 +152,116 @@ onSampleRejected(
         case S_NOT_REJECTED:
             /*nothing to be done*/
         break;
+        }
+    }
+}
+
+C_STRUCT(updateArg) {
+    v_message msg;
+    c_bool found;
+    v_transaction remove;
+    v_dataReaderEntry entry;
+};
+
+static c_bool
+updateTransaction(
+    c_object o,
+    c_voidp arg)
+{
+    v_transaction t = (v_transaction)o;
+    C_STRUCT(updateArg) *a = (C_STRUCT(updateArg) *)arg;
+    c_bool result = TRUE;
+
+    if (t->transactionId == a->msg->transactionId) {
+        if (v_gidEqual(t->writerGID,a->msg->writerGID)) {
+            if (v_stateTest(v_nodeState(a->msg),L_TRANSACTION)) {
+                t->count -= a->msg->sequenceNumber;
+            } else {
+                t->count++;
+            }
+            a->found = TRUE;
+            if (t->count == 0) {
+                a->remove = c_keep(t);
+            }
+        }
+    }
+    return result;
+}
+
+static c_bool
+makeSamplesAvailable (
+    c_object o,
+    c_voidp arg)
+{
+    v_dataReaderInstanceFlushTransaction(v_dataReaderInstance(o),*(c_ulong *)arg);
+    return TRUE;
+}
+
+static void
+transactionListUpdate(
+    v_dataReaderEntry entry,
+    v_message msg)
+{
+    v_transaction item = NULL;
+    C_STRUCT(updateArg) update;
+
+    if ((msg->transactionId != 0) &&
+        (v_reader(v_entry(entry)->reader)->subQos->presentation.coherent_access) &&
+        (!v_messageStateTest(msg,L_REGISTER)))
+    {
+        /* The given message belongs to a transaction and this DataReader
+         * is interested in Coherent Updates so update the transaction adminitration.
+         */
+        update.msg = msg;
+        update.found = FALSE;
+        update.remove = NULL;
+        update.entry = entry;
+        /* Lookup and update transaction info record for the message.
+         */
+        c_walk(entry->transactionList, updateTransaction, &update);
+
+        if (!update.found) {
+            /* No existing transaction info is found,
+             * So this is the first message for this transaction.
+             * Create and insert a new transaction info record for this transaction.
+             */
+            item = c_new(v_kernelType(v_objectKernel(entry),K_TRANSACTION));
+            if (item) {
+                item->writerGID = msg->writerGID;
+                item->count = 1;
+                item->transactionId = msg->transactionId;
+                if (v_stateTest(v_nodeState(msg),L_TRANSACTION)) {
+                    item->count -= msg->sequenceNumber;
+                }
+                if (entry->transactionList == NULL) {
+                    entry->transactionList =
+                        c_listNew(v_kernelType(v_objectKernel(entry),
+                                               K_TRANSACTION));
+                }
+                c_insert(entry->transactionList,item);
+                c_free(item);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_dataReaderEntry",0,
+                          "Failed to insert message in transaction list");
+            }
+        } else if (update.remove) {
+            /* An existing transaction has become complete and can therefore
+             * all data belonging to the transaction can be made available and 
+             * the transaction info record can be removed from the administration.
+             */
+            if (v_entryReaderQos(entry)->userKey.enable) {
+                c_walk(entry->index->notEmptyList,
+                       makeSamplesAvailable,
+                       &msg->transactionId);
+            } else {
+                c_walk(entry->index->objects,
+                       makeSamplesAvailable,
+                       &msg->transactionId);
+            }
+            item = c_remove(entry->transactionList, update.remove, NULL, NULL);
+            c_free(item);
+            c_free(update.remove);
         }
     }
 }
@@ -375,7 +483,8 @@ v_writeResult
 v_dataReaderEntryWrite(
     v_dataReaderEntry _this,
     v_message message,
-    v_instance *instancePtr)
+    v_instance *instancePtr,
+    c_time lastDisposeAll)
 {
     v_writeResult result = V_WRITE_REJECTED;
     v_dataReaderResult res;
@@ -423,6 +532,18 @@ v_dataReaderEntryWrite(
 
     v_statisticsULongValueInc(v_reader, numberOfSamplesArrived, reader);
 
+    if (v_messageStateTest(message,L_TRANSACTION)) {
+        /* The message is a transaction end message.
+         * Store the transaction size in the transaction admin.
+         */
+        transactionListUpdate(_this,message);
+        /*
+         * This message is meaningless for further processing so exit here.
+         */
+        v_observerUnlock(v_observer(reader));
+        return V_WRITE_SUCCESS;
+    }
+
     /* Execute content based filter (if set).
      * For now do not filter on register/unregister messages. The filter must
      * be split into a key part and a non-key part. For register/unregister
@@ -434,7 +555,9 @@ v_dataReaderEntryWrite(
     if (_this->filter != NULL) {
         if (((v_stateTest(state, L_WRITE)) ||
              (v_stateTest(state, L_DISPOSED))) &&
-            (!v_filterEval(_this->filter,message))) {
+            (!v_filterEval(_this->filter,message)))
+        {
+            transactionListUpdate(_this,message);
             v_observerUnlock(v_observer(reader));
             return V_WRITE_SUCCESS;
         }
@@ -553,7 +676,7 @@ v_dataReaderEntryWrite(
         c_bool wasEmpty = v_dataReaderInstanceEmpty(found);
         v_dataReader(reader)->sampleCount -=
                  v_dataReaderInstanceSampleCount(found);
-        res = v_dataReaderInstanceInsert(found,message);
+        res = v_dataReaderInstanceInsert(found,message,lastDisposeAll);
         v_dataReader(reader)->sampleCount +=
                  v_dataReaderInstanceSampleCount(found);
         switch (res) {
@@ -615,10 +738,13 @@ v_dataReaderEntryWrite(
         v_statisticsMaxValueSetValue(v_reader,maxNumberOfSamples,reader,cnt);
     }
 
-    if ((result==V_WRITE_SUCCESS) && (v_stateTest(v_nodeState(message),L_SYNCHRONOUS))) {
-        v_kernel kernel = v_objectKernel(reader);
-        v_gid gid = v_publicGid(v_public(reader));
-        v_deliveryServiceAckMessage(kernel->deliveryService,message,gid);
+    if (result==V_WRITE_SUCCESS) {
+        if (v_stateTest(v_nodeState(message),L_SYNCHRONOUS)) {
+            v_kernel kernel = v_objectKernel(reader);
+            v_gid gid = v_publicGid(v_public(reader));
+            v_deliveryServiceAckMessage(kernel->deliveryService,message,gid);
+        }
+        transactionListUpdate(_this,message);
     }
 
     V_MESSAGE_STAMP(message,readerNotifyTime);
@@ -627,9 +753,117 @@ v_dataReaderEntryWrite(
     return result;
 }
 
+C_CLASS(disposeAllArg);
+C_STRUCT(disposeAllArg) {
+    v_result result;
+    c_time timestamp;
+};
+
+static c_bool
+disposeAll (
+    c_object o,
+    c_voidp arg)
+{
+    v_dataReaderInstance instance = v_dataReaderInstance(o);
+    disposeAllArg a = (disposeAllArg)arg;
+
+    v_dataReaderInstanceDispose(instance,a->timestamp);
+
+    return TRUE;
+}
+
+v_result
+v_dataReaderEntryDisposeAll (
+    v_dataReaderEntry _this,
+    c_time timestamp)
+{
+    C_STRUCT(disposeAllArg) disposeArg;
+    v_reader reader;
+
+    assert(C_TYPECHECK(_this,v_dataReaderEntry));
+
+    reader = v_entryReader(_this);
+    v_observerLock(v_observer(reader));
+
+    /* Purge samples */
+    v_dataReaderEntryUpdatePurgeLists(_this);
+
+    disposeArg.result = V_RESULT_OK;
+    disposeArg.timestamp = timestamp;
+
+    if (reader->qos->userKey.enable) {
+        c_tableWalk(_this->index->notEmptyList, disposeAll, &disposeArg);
+    } else {
+        c_tableWalk(_this->index->objects, disposeAll, &disposeArg);
+    }
+    v_observerUnlock(v_observer(reader));
+
+    return disposeArg.result;
+}
+
 /**************************************************************
  * Protected functions
  **************************************************************/
+static c_bool
+removeSamples (
+    c_object o,
+    c_voidp arg)
+{
+    v_dataReaderInstanceAbortTransaction(v_dataReaderInstance(o),*(c_ulong *)arg);
+    return TRUE;
+}
+
+static void
+abortTransaction (
+    v_dataReaderEntry entry,
+    c_ulong transactionId)
+{
+    c_table instanceSet;
+    v_readerQos qos;
+    v_dataReader reader;
+
+    reader = v_dataReader(v_entry(entry)->reader);
+    qos = v_reader(reader)->qos;
+    if (qos->userKey.enable) {
+        instanceSet = entry->index->notEmptyList;
+    } else {
+        instanceSet = entry->index->objects;
+    }
+    c_walk(instanceSet,removeSamples,&transactionId);
+}
+
+C_STRUCT(findTransactionIdArg) {
+    v_gid writerGID;
+    v_dataReaderEntry entry;
+};
+C_CLASS(findTransactionIdArg);
+
+static c_bool
+findTransactionId(
+    c_object o,
+    c_voidp arg)
+{
+    v_transaction t = (v_transaction)o;
+    findTransactionIdArg a = (findTransactionIdArg)arg;
+    c_bool result = TRUE;
+
+    if (v_gidEqual(a->writerGID,t->writerGID)) {
+        abortTransaction(a->entry,t->transactionId);
+    }
+    return result;
+}
+
+void
+v_dataReaderEntryAbortTransaction(
+    v_dataReaderEntry _this,
+    v_gid writerGID)
+{
+    C_STRUCT(findTransactionIdArg) arg;
+
+    arg.writerGID = writerGID;
+    arg.entry = _this;
+    c_walk(_this->transactionList, findTransactionId, &arg);
+}
 
 /**************************************************************
  * Public functions

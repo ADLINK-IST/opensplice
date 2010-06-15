@@ -45,8 +45,7 @@ C_STRUCT(d_nameSpaceSearch) {
 C_STRUCT(d_nameSpace) {
     C_EXTENDS(d_lock);
     d_name           name;
-    d_alignmentKind  alignmentKind;
-    d_durabilityKind durabilityKind;
+    d_policy         policy;
     d_quality        quality;
     d_networkAddress master;
     d_serviceState 	 masterState;

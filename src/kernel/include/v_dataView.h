@@ -43,10 +43,6 @@ extern "C" {
  */
 #define  v_dataView(o) (C_CAST(o,v_dataView))
 
-#define v_dataView_t(scope) \
-        c_type(c_resolve(c_getBase(scope), \
-                          "kernelModule::v_dataView"))
-
 OS_API v_dataView 
 v_dataViewNew(
     v_dataReader reader,

@@ -33,6 +33,11 @@ nw_plugPartitionsGetPartition(
     nw_bool *compression,
     os_uint32* hash);
 
+nw_partitionId
+nw_plugPartitionsGetPartitionIdByHash(
+        nw_plugPartitions plugPartitions,
+        nw_partitionId hash);
+
 
 nw_bool
 nw_plugPartitionsGetDefaultPartition(

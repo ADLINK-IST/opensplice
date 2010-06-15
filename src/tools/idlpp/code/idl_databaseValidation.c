@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "c_stringSupport.h"
@@ -14,6 +14,7 @@
 #include "idl_databaseValidation.h"
 #include "idl_keyDef.h"
 #include "idl_catsDef.h"
+#include "os.h"
 
 
 /*************************************************************************************************
@@ -51,7 +52,7 @@ static char *errorText [] = {
 static void
 idl_printError(
     const char* filename,
-    char *text) 
+    char *text)
 {
     printf("*** DDS error in file %s: %s\n", filename, text);
 }
@@ -82,7 +83,7 @@ idl_getTypeOfKey(
         }
         fieldName = c_iterTakeFirst(fields);
     }
-    
+
     /* now scope is type of key. But it can be typedef. Determine the actual type. */
     return c_typeActualType(scope);
 }
@@ -102,12 +103,11 @@ idl_isCatsDefFor(
     c_iter catsList;
     os_uint32 catsListSize;
     os_uint32 catsIdx;
-    
+
     if (catsDef != NULL) {
         /* check all cats definition list elements */
         for (catsMapIdx = 0; catsMapIdx < c_iterLength(catsDef->catsList); catsMapIdx++) {
             catsMap = c_iterObject(catsDef->catsList, catsMapIdx);
-     
             if (c_metaCompare(scope, catsMap->scope) == E_EQUAL &&
                 strcmp(typeName, catsMap->typeName) == 0)
             {
@@ -123,12 +123,12 @@ idl_isCatsDefFor(
             }
         }
     }
-            
-    return OS_FALSE;    
-}
-    
 
- 
+    return OS_FALSE;
+}
+
+
+
 /*
  * Check if each usage of a char array as a key has a corresponding
  * "#pragma cats" declaration.
@@ -148,9 +148,15 @@ idl_checkCatsUsage(
     os_uint32 keysListSize;
     os_uint32 keyIdx;
     c_char* keyName;
-    c_type keyType;
-    c_collectionType collType;
-    
+    os_uint32 i;
+    c_iter keyNameList;
+    os_uint32 keyNameListSize;
+    c_structure tmpStructure;
+    c_specifier sp;
+    c_type subType;
+    c_string typeName;
+    c_type spType;
+
     if (keyDef != NULL) {
         /* check all key definition list elements */
         for (keyMapIdx = 0; keyMapIdx < c_iterLength(keyDef->keyList); keyMapIdx++) {
@@ -166,7 +172,7 @@ idl_checkCatsUsage(
                 }
                 /* type can be a typedef. Determine the actual type. */
                 type = c_typeActualType(type);
-                
+
                 /* type should be a structure */
                 if (c_baseObject(type)->kind != M_STRUCTURE) {
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalKeyFields]);
@@ -174,31 +180,68 @@ idl_checkCatsUsage(
                     return OS_FALSE;
                 }
                 structure = c_structure(type);
-                
+
                 /* for each key in keyList, check if type is a char array */
                 keysList = c_splitString(keyMap->keyList, ",");
                 keysListSize = c_iterLength(keysList);
                 for(keyIdx = 0; keyIdx < keysListSize; keyIdx++)
                 {
                     keyName = c_iterTakeFirst(keysList);
-                    keyType = idl_getTypeOfKey(c_type(structure), keyName);
-                    
-                    if (c_baseObject(keyType)->kind == M_COLLECTION) {
-                        collType = c_collectionType(keyType);
-                        if (collType->kind == C_ARRAY &&
-                            c_baseObject(collType->subType)->kind == M_PRIMITIVE &&
-                            c_primitive(collType->subType)->kind == P_CHAR
-                            )
+                    /* We might be dealing with a field of a field definition in
+                     * the keylist, so let's split this up
+                     */
+                    keyNameList = c_splitString(keyName, ".");
+                    keyNameListSize = c_iterLength(keyNameList);
+                    tmpStructure = structure;
+                    for(i = 0; i < keyNameListSize; i++)
+                    {
+
+                        keyName = c_iterTakeFirst(keyNameList);
+                        /* Now get the actual member defined by the name */
+                        sp = c_specifier(c_metaFindByName(
+                            c_metaObject(tmpStructure),
+                            keyName,
+                            CQ_FIXEDSCOPE | CQ_MEMBER | CQ_CASEINSENSITIVE));
+                        if(sp)
                         {
-                            /* check if there is corresponding catsDef */
-                            if (!idl_isCatsDefFor(keyMap->scope,
-                                                  keyMap->typeName,
-                                                  keyName)
-                                )
+                            spType = c_typeActualType(sp->type);
+                            /* If the member is a structure, we need to
+                             * recurse deeper.
+                             */
+                            if(c_baseObject(spType)->kind == M_STRUCTURE)
                             {
-                                snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_NoCorrespondingCats], c_metaObject(structure)->name, keyName);
-                                idl_printError(filename, errorBuffer);
-                                return OS_FALSE;
+                                tmpStructure = c_structure(spType);
+                            }
+                            /* If the member is a collection then we need to
+                             * ensure it is not a character array, but if it
+                             * is we need to ensure a corresponding CATS pragma
+                             * can be located
+                             */
+                            else if(c_baseObject(spType)->kind == M_COLLECTION && c_collectionType(spType)->kind == C_ARRAY)
+                            {
+                                subType = c_typeActualType(c_collectionType(spType)->subType);
+                                if(c_baseObject(subType)->kind == M_PRIMITIVE &&
+                                   c_primitive(subType)->kind == P_CHAR)
+                                {
+
+                                    typeName = c_metaName(c_metaObject(tmpStructure));
+                                    /* check if there is corresponding catsDef */
+                                    if (!idl_isCatsDefFor(c_metaObject(tmpStructure)->definedIn,
+                                                          typeName,
+                                                          keyName))
+                                    {
+                                        snprintf(
+                                            errorBuffer,
+                                            IDL_MAX_ERRORSIZE-1,
+                                            errorText[idl_NoCorrespondingCats],
+                                            c_metaObject(structure)->name,
+                                            keyName);
+                                        idl_printError(filename, errorBuffer);
+                                        return OS_FALSE;
+                                    }
+                                    c_free(typeName);
+                                }
+
                             }
                         }
                     }
@@ -206,7 +249,7 @@ idl_checkCatsUsage(
             }
         }
     }
-    
+
     return OS_TRUE;
 }
 
@@ -218,7 +261,7 @@ idl_checkCatsUsage(
 /*
  * Call all validation checks
  */
-c_bool 
+c_bool
 idl_validateDatabase (
     c_base base,
     const char* filename)

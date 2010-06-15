@@ -14,29 +14,6 @@
 #include "v_groupCache.h"
 #include "os_report.h"
 
-static c_type _v_groupCache_t = NULL;
-static c_type _v_groupCacheItem_t = NULL;
-
-c_type
-v_groupCache_t (
-    c_base base)
-{
-    if (_v_groupCache_t == NULL) {
-        _v_groupCache_t = c_resolve(base,"kernelModule::v_groupCache");
-    }
-    return c_keep(_v_groupCache_t);
-}
-
-c_type
-v_groupCacheItem_t (
-    c_base base)
-{
-    if (_v_groupCacheItem_t == NULL) {
-        _v_groupCacheItem_t = c_resolve(base,"kernelModule::v_groupCacheItem");
-    }
-    return c_keep(_v_groupCacheItem_t);
-}
-
 v_cache
 v_groupCacheNew (
     v_kernel kernel,
@@ -49,8 +26,8 @@ v_groupCacheNew (
     assert(C_TYPECHECK(kernel,v_kernel));
 
     base = c_getBase(kernel);
-    type = v_groupCacheItem_t(base);
-    cache = v_cacheNew(type,kind);
+    type = c_keep(v_kernelType(kernel,K_GROUPCACHEITEM));
+    cache = v_cacheNew(kernel,type,kind);
     c_free(type);
 
     if (!cache) {

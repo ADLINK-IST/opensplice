@@ -24,6 +24,11 @@ public class TopicImpl extends EntityImpl implements DDS.Topic {
     }
 
     /* see DDS.TopicOperations for javadoc */ 
+    public int get_all_data_disposed_topic_status (DDS.AllDataDisposedTopicStatusHolder status) {
+        return jniGetAllDataDisposedTopicStatus(status);
+    }
+
+    /* see DDS.TopicOperations for javadoc */ 
     public int get_qos (DDS.TopicQosHolder qos) {
         return jniGetQos(qos);
     }
@@ -63,6 +68,7 @@ public class TopicImpl extends EntityImpl implements DDS.Topic {
     }
 
     private native int jniGetInconsistentTopicStatus(DDS.InconsistentTopicStatusHolder status);
+    private native int jniGetAllDataDisposedTopicStatus(DDS.AllDataDisposedTopicStatusHolder status);
     private native int jniGetQos(DDS.TopicQosHolder qos);
     private native int jniSetQos(DDS.TopicQos qos);
     private native DDS.TopicListener jniGetListener();

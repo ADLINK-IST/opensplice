@@ -21,11 +21,13 @@ extern "C" {
 #define D_FELLOW_NEW           (0x0001U << 1)
 #define D_FELLOW_REMOVED       (0x0001U << 2)
 #define D_FELLOW_LOST          (0x0001U << 3)
+#define D_NAMESPACE_NEW        (0x0001U << 4)
 
 #define d_eventListener(l) ((d_eventListener)(l))
 
 typedef c_bool      (*d_eventListenerFunc)      (c_ulong event, 
                                                  d_fellow fellow, 
+                                                 d_nameSpace nameSpace,
                                                  d_group group, 
                                                  c_voidp args);
 

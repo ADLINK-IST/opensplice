@@ -55,6 +55,7 @@ c_bool              d_sampleChainRequestWrite               (d_fellow fellow,
 
 c_bool              d_sampleChainListenerNotifyFellowRemoved(c_ulong event,
                                                              d_fellow fellow,
+                                                             d_nameSpace ns,
                                                              d_group group,
                                                              c_voidp userData);
 

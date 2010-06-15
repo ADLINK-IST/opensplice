@@ -17,10 +17,12 @@
 #include "v_maxValue.h"
 #include "os_report.h"
 
-
+/* Legitimate use of static variable to hold type information in this case.
+ * This type information may be accessed multiple times depending on how many
+ * channels are set up, but this is only ever in the same single instance of
+ * the networking service, so will not affect multi domain support.
+ */
 static c_type networkReaderStatisticsType = NULL;
-
-
 
 v_networkReaderStatistics v_networkReaderStatisticsNew(v_kernel k)
 {
@@ -46,15 +48,8 @@ void v_networkReaderStatisticsInit(v_networkReaderStatistics nrs)
     kernel = v_objectKernel(nrs);
     v_statisticsInit(v_statistics(nrs));
     nrs->queuesCount = 0; /* better to get the actual value from networking */
-    //nrs->queues = NULL;
-    //for now length is 32
 
     nrs->queues = c_arrayNew(c_resolve(c_getBase(kernel), "kernelModule::v_networkQueueStatistics"),64);
-   /*
-    for (i=0;i<32;i++) {
-        	nrs->queues[i] = NULL;
-        }
-        */
 }
 
 c_bool v_networkReaderStatisticsReset(v_networkReaderStatistics nrs, const c_char* fieldName)

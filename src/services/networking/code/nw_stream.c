@@ -1929,24 +1929,7 @@ nw_stream_readBegin (
                                              &_this->length,
                                              sender,
                                              prs);
-    
-    {
-    	os_uint32 i=0;
-    	os_uchar buffer[2048];
-    	int start = _this->length > 150 ? _this->length-150 : 0;
-    	memset(buffer, 'Z', sizeof(buffer));
-    	
-    	for (i=start; i<_this->length; ++i) {
-    		int c =  (int)_this->bufferPtr[i];
-    		if (isalnum(c)) {
-    			buffer[i-start] = _this->bufferPtr[i];
-    		} else {
-    			buffer[i-start] = '.';
-    		}
-    	}
-    	buffer[i-start] = '\0';
-    }
-    
+
     return result;
 }
 

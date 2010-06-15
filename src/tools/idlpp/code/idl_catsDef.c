@@ -351,7 +351,6 @@ idl_catsDefConvertAll(
                 replacedIndex = os_malloc(sizeof(os_uint32));
                 *replacedIndex = memberIndex;
                 c_iterInsert(replaceData->replacedIndexes, replacedIndex);
-                memberName = c_iterTakeFirst(memberNames);
             }
             c_iterInsert(replaceInfo, replaceData);
         }

@@ -31,18 +31,18 @@ Configurable:
                  't' (PP_quit_msg)
                 
    - PING and PONG partition: this enables to use several PING-PONG pairs
-     simultanious with them interfering with each other. It also enables 
+     simultaneous with them interfering with each other. It also enables 
      creating larger loops, by chaining several PONG tests to one PING test.
      
 The command line to start Ping executable is :
         Ping [blocks nof_cycles topic_id WRITE_PARTITION READ_PARTITION]
         >> starting ping with no options is the same as :
-        Ping    20       100        's'    PING              PONG
+        Ping    20       100        's'    PongRead              PongWrite
 
 The command line to start pong executable is :        
         Pong [READ_PARTITION WRITE_PARTITION]
         >> starting pong with no options is the same as :
-        Pong    PING              PONG
+        Pong PongRead PongWrite     
         
         
 The example can be built using the PingPong.sln file.

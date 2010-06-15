@@ -21,6 +21,7 @@
 #include "d_nameSpace.h"
 #include "d_configuration.h"
 #include "d_lock.h"
+#include "d__durability.h"
 #include "os_heap.h"
 #include "os_report.h"
 
@@ -92,11 +93,16 @@ d_storeFree(
 
 d_store
 d_storeOpen(
-    const d_configuration config,
+    const d_durability durability,
     d_storeType storeType)
 {
     d_store store;
     d_storeResult result;
+    d_configuration config;
+    d_admin admin;
+
+    config = durability->configuration;
+    admin = durability->admin;
 
     store = NULL;
 
@@ -116,6 +122,7 @@ d_storeOpen(
     if(store != NULL) {
         store->type        = storeType;
         store->config      = config;
+        store->admin       = admin;
 
         if(store->openFunc) {
             result = store->openFunc(store);

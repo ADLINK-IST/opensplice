@@ -15,9 +15,7 @@ all link: jar
 # step 2: invoke jacorb to generate the builtintopics idl
 # step 3: the jar rule will compile this code producing the JAR_MODULE
 
-$(JAVA_FILES): $(JAR_DEPENDENCIES)
-
-$(JAR_DEPENDENCIES):
+$(JAVA_FILES) $(JAR_DEPENDENCIES):
 	mkdir -p code
 	cp -r ../../saj/java/code/* code/
 	java org.jacorb.idl.parser -d code -forceOverwrite ../../../../../etc/idl/dds_builtinTopics.idl

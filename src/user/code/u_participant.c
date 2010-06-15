@@ -753,6 +753,7 @@ u_participantDetach(
     if (p != NULL) {
         r = u_participantClaim(p, &kp);
         if ((r == U_RESULT_OK) && (kp != NULL)) {
+            u_dispatcherDeinit(u_dispatcher(p));
             lm = v_participantGetLeaseManager(kp);
             if (lm != NULL) {
                 v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
@@ -766,9 +767,8 @@ u_participantDetach(
                           "Access to lease manager failed.");
             }
             os_threadWaitExit(p->threadIdResend, NULL);
-            p->kernel = NULL;
-            v_participantFree(kp);
             r = u_participantRelease(p);
+            p->kernel = NULL;
         } else {
             OS_REPORT(OS_WARNING,"u_participantDetach", 0,
                       "Failed to claim Participant.");

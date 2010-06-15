@@ -203,10 +203,13 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_dataReaderQuery,    K_DATAREADERQUERY);
     INITTYPE(kernel,kernelModule::v_dataViewQuery,      K_DATAVIEWQUERY);
     INITTYPE(kernel,kernelModule::v_dataView,           K_DATAVIEW);
+    INITTYPE(kernel,kernelModule::v_dataViewSample,     K_DATAVIEWSAMPLE);
+    INITTYPE(kernel,kernelModule::v_dataViewInstance,   K_DATAVIEWINSTANCE);
     INITTYPE(kernel,kernelModule::v_projection,         K_PROJECTION);
     INITTYPE(kernel,kernelModule::v_mapping,            K_MAPPING);
     INITTYPE(kernel,kernelModule::v_topic,              K_TOPIC);
     INITTYPE(kernel,kernelModule::v_message,            K_MESSAGE);
+    INITTYPE(kernel,kernelModule::v_transaction,        K_TRANSACTION);
     INITTYPE(kernel,kernelModule::v_dataReaderInstance, K_DATAREADERINSTANCE);
     INITTYPE(kernel,kernelModule::v_purgeListItem,      K_PURGELISTITEM);
     INITTYPE(kernel,kernelModule::v_groupPurgeItem,     K_GROUPPURGEITEM);
@@ -218,9 +221,11 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_partitionAdmin,        K_DOMAINADMIN);
     INITTYPE(kernel,kernelModule::v_reader,             K_READER);
     INITTYPE(kernel,kernelModule::v_writer,             K_WRITER);
+    INITTYPE(kernel,kernelModule::v_writerGroup,        K_WRITERGROUP);
     INITTYPE(kernel,kernelModule::v_group,              K_GROUP);
     INITTYPE(kernel,kernelModule::v_groupInstance,      K_GROUPINSTANCE);
     INITTYPE(kernel,kernelModule::v_groupSample,        K_GROUPSAMPLE);
+    INITTYPE(kernel,kernelModule::v_groupCacheItem,     K_GROUPCACHEITEM);
     INITTYPE(kernel,kernelModule::v_cache,              K_CACHE);
     INITTYPE(kernel,kernelModule::v_entry,              K_ENTRY);
     INITTYPE(kernel,kernelModule::v_dataReaderEntry,    K_DATAREADERENTRY);
@@ -241,6 +246,9 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_status,             K_PUBLISHERSTATUS);
     INITTYPE(kernel,kernelModule::v_status,             K_PARTICIPANTSTATUS);
     INITTYPE(kernel,kernelModule::v_kernelStatus,       K_KERNELSTATUS);
+    INITTYPE(kernel,kernelModule::v_readerStatistics,   K_READERSTATISTICS);
+    INITTYPE(kernel,kernelModule::v_writerStatistics,   K_WRITERSTATISTICS);
+    INITTYPE(kernel,kernelModule::v_queryStatistics,    K_QUERYSTATISTICS);
     INITTYPE(kernel,kernelModule::v_lease,              K_LEASE);
     INITTYPE(kernel,kernelModule::v_serviceManager,     K_SERVICEMANAGER);
     INITTYPE(kernel,kernelModule::v_service,            K_SERVICE);
@@ -257,6 +265,8 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_waitsetEventPersistentSnapshot, K_WAITSETEVENTPERSISTENTSNAPSHOT);
     INITTYPE(kernel,kernelModule::v_writerSample,       K_WRITERSAMPLE);
     INITTYPE(kernel,kernelModule::v_writerInstance,     K_WRITERINSTANCE);
+    INITTYPE(kernel,kernelModule::v_writerInstanceTemplate, K_WRITERINSTANCETEMPLATE);
+    INITTYPE(kernel,kernelModule::v_writerCacheItem,    K_WRITERCACHEITEM);
     /* Networking types */
     INITTYPE(kernel,kernelModule::v_networkReader,      K_NETWORKREADER);
     INITTYPE(kernel,kernelModule::v_networkReaderEntry, K_NETWORKREADERENTRY);
@@ -294,6 +304,7 @@ v_kernelNew(
     kernel->livelinessLM = v_leaseManagerNew(kernel);
     kernel->configuration = NULL;
     kernel->userCount = 1;
+    kernel->transactionCount = 0;
 
     kernel->enabledStatisticsCategories =
         c_listNew(c_resolve(base, "kernelModule::v_statisticsCategory"));
@@ -900,3 +911,16 @@ v_kernelCreatePersistentSnapshot(
     }
     return result;
 }
+
+c_ulong
+v_kernelGetTransactionId (
+    v_kernel _this)
+{
+    c_ulong id = pa_increment(&_this->transactionCount);
+    if (id == 0) {
+        /* the value '0' is reserved to specify 'no-transaction' */
+        id = pa_increment(&_this->transactionCount);
+    }
+    return id;
+}
+

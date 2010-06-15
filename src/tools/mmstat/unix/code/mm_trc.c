@@ -59,24 +59,6 @@ C_STRUCT(c_header) {
 #endif
 #endif
 
-C_STRUCT(c_base) {
-    C_EXTENDS(c_module);
-    c_mm      mm;
-    c_long    confidence;
-    c_avlTree bindings;
-    c_mutex   bindLock;
-    c_mutex   serLock; /* currently only used for defining enums from sd_serializerXMLTypeinfo.c */
-    c_mutex   extentBugLock; /* this lock must be removed when extents are created properly*/
-    c_type    metaType[M_COUNT];
-    c_type    string_type;
-#ifndef NDEBUG
-#ifdef OBJECT_WALK
-    c_object  firstObject;
-    c_object  lastObject;
-#endif
-#endif
-};
-
 C_STRUCT(monitor_trc) {
     c_long objectCountLimit;
     char *filterExpression;

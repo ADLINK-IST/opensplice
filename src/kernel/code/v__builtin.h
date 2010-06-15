@@ -48,6 +48,10 @@ extern "C" {
         ((struct v_heartbeatInfo *) \
          v_topicData(v_builtinTopicLookup(_this, V_HEARTBEATINFO_ID),_msg))
 
+#define v_builtinControlAndMonitoringCommandData(_this,_msg) \
+        ((v_controlAndMonitoringCommand *) \
+         v_topicData(v_builtinTopicLookup(_this, V_C_AND_M_COMMAND_ID),_msg))
+
 v_builtin
 v_builtinNew(
     v_kernel kernel);

@@ -27,47 +27,44 @@ C_STRUCT(c_field) {
     c_type      type;
 };
 
-static c_type _c_field_t = NULL;
-static c_collectionType _c_fieldPath_t = NULL;
-static c_collectionType _c_fieldRefs_t = NULL;
-
 c_type
 c_field_t (
     c_base _this)
 {
-    if (_c_field_t == NULL) {
-        _c_field_t = c_resolve(_this,"c_field");
+    if (_this->baseCache.fieldCache.c_field_t == NULL) {
+        _this->baseCache.fieldCache.c_field_t = c_resolve(_this,"c_field");
     }
-    return _c_field_t;
+    return _this->baseCache.fieldCache.c_field_t;
 }
 
 c_collectionType
 c_fieldPath_t (
     c_base _this)
 {
-    if (_c_fieldPath_t == NULL) {
-        _c_fieldPath_t = c_collectionType(
+    if (_this->baseCache.fieldCache.c_fieldPath_t == NULL) {
+        _this->baseCache.fieldCache.c_fieldPath_t = c_collectionType(
                              c_metaArrayTypeNew(c_metaObject(_this),
                                                 "C_ARRAY<c_base>",
                                                 c_getMetaType(_this,M_BASE),
                                                 0));
     }
-    return _c_fieldPath_t;
+    return _this->baseCache.fieldCache.c_fieldPath_t;
 }
 
 c_collectionType
 c_fieldRefs_t (
     c_base _this)
 {
-    if (_c_fieldRefs_t == NULL) {
-        _c_fieldRefs_t = c_collectionType(
+    if (_this->baseCache.fieldCache.c_fieldRefs_t == NULL) {
+        _this->baseCache.fieldCache.c_fieldRefs_t = c_collectionType(
                              c_metaArrayTypeNew(c_metaObject(_this),
                                                 "C_ARRAY<c_address>",
                                                 c_address_t(_this),
                                                 0));
     }
-    return _c_fieldRefs_t;
+    return _this->baseCache.fieldCache.c_fieldRefs_t;
 }
+
 
 void
 c_fieldInit (

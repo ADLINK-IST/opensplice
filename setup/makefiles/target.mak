@@ -16,7 +16,7 @@ TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 $(TARGET): $(OBJECTS)
 	$(LD_SO) $(LDFLAGS) $^ $(LDLIBS) -o $@
 ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
-	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#2"
+	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#2"
 endif
 endif
 endif
@@ -46,7 +46,7 @@ else
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
 endif
 ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
-	ospl_winmt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
+	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
 endif 
 endif
 

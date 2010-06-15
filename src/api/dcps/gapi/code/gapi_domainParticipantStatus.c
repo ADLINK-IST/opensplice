@@ -34,6 +34,7 @@ _DomainParticipantStatusNew (
         if ( _listener ) {
             status->callbackInfo.listenerData = _listener->listener_data;
             status->callbackInfo.on_inconsistent_topic = _listener->on_inconsistent_topic;
+            status->callbackInfo.on_all_data_disposed = _listener->on_all_data_disposed;
             status->callbackInfo.on_requested_deadline_missed = _listener->on_requested_deadline_missed;
             status->callbackInfo.on_requested_incompatible_qos = _listener->on_requested_incompatible_qos;
             status->callbackInfo.on_sample_rejected = _listener->on_sample_rejected;
@@ -84,6 +85,7 @@ _DomainParticipantStatusSetListener(
     if ( _listener ) {            
         status->callbackInfo.listenerData = _listener->listener_data;
         status->callbackInfo.on_inconsistent_topic = _listener->on_inconsistent_topic;
+        status->callbackInfo.on_all_data_disposed = _listener->on_all_data_disposed;
         status->callbackInfo.on_requested_deadline_missed = _listener->on_requested_deadline_missed;
         status->callbackInfo.on_requested_incompatible_qos = _listener->on_requested_incompatible_qos;
         status->callbackInfo.on_sample_rejected = _listener->on_sample_rejected;

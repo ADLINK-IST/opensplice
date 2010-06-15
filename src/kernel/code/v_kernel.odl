@@ -166,7 +166,11 @@ class v_networkChannelStatistics { /* Reachable via v_networkingStatistics only 
     attribute c_ulong            nofUsedPacketBuffers;
     attribute v_fullCounter      adminQueueAcks;
     attribute v_fullCounter      adminQueueData;
-    
+
+    attribute c_ulong            nofBytesBeforeCompression;    
+    attribute c_ulong            nofBytesAfterCompression;    
+    attribute c_ulong            nofBytesBeforeDecompression;    
+    attribute c_ulong            nofBytesAfterDecompression;    
 };
 
 class v_networkingStatistics extends v_statistics  {
@@ -300,17 +304,18 @@ enum v_kind {
     K_QUERY,             K_DATAREADERQUERY,    K_DATAVIEW,
     K_PROJECTION,        K_MAPPING,            K_FILTER,
     K_DEADLINEINSTANCE,
-    K_MESSAGE,
-    K_WRITERINSTANCE,    K_WRITERSAMPLE,
-    K_GROUPINSTANCE,     K_GROUPSAMPLE,
+    K_MESSAGE,           K_TRANSACTION,
+    K_WRITERINSTANCE,    K_WRITERSAMPLE,       K_WRITERCACHEITEM,
+    K_GROUPINSTANCE,     K_GROUPSAMPLE,        K_GROUPCACHEITEM,
     K_DATAREADERINSTANCE,K_READERSAMPLE,
-    K_DATAVIEWINSTANCE,  K_DATAVIEWQUERY,
+    K_DATAVIEWINSTANCE,  K_DATAVIEWQUERY,      K_DATAVIEWSAMPLE,
+    K_WRITERINSTANCETEMPLATE,
     K_TOPIC,
     K_PUBLISHER,         K_SUBSCRIBER,
     K_DOMAIN,            K_DOMAININTEREST,     K_DOMAINADMIN,
     K_READER,            K_WRITER,
     K_ENTRY,             K_DATAREADERENTRY,    K_DELIVERYSERVICEENTRY,
-    K_GROUP,             K_CACHE,
+    K_GROUP,             K_WRITERGROUP,        K_CACHE,
     K_GROUPACTION,       K_GROUPSTREAM,
     K_GROUPQUEUE,        K_GROUPQUEUESAMPLE,
     K_DATAREADER,        K_DELIVERYSERVICE,          K_PARTICIPANT,
@@ -320,6 +325,7 @@ enum v_kind {
     K_PUBLISHERSTATUS,   K_SUBSCRIBERSTATUS,
     K_DOMAINSTATUS,      K_TOPICSTATUS,
     K_PARTICIPANTSTATUS, K_KERNELSTATUS,
+    K_READERSTATISTICS,  K_WRITERSTATISTICS,   K_QUERYSTATISTICS,
     K_PROXY,              K_WAITSETEVENT,
     K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST, K_WAITSETEVENTPERSISTENTSNAPSHOT,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
@@ -501,6 +507,11 @@ struct v_inconsistentTopicInfo {
     c_long                         totalChanged;
 };
 
+struct v_allDataDisposedInfo {
+    c_long                         totalCount;
+    c_long                         totalChanged;
+};
+
 struct v_sampleLostInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
@@ -565,6 +576,7 @@ class v_partitionStatus extends v_status {
 
 class v_topicStatus extends v_status {
     attribute v_inconsistentTopicInfo        inconsistentTopic;
+    attribute v_allDataDisposedInfo          allDataDisposed;
 };
 
 class v_subscriberStatus extends v_status {
@@ -1076,6 +1088,7 @@ class v_message extends v_node {
     attribute v_gid                          writerGID;
     attribute v_gid                          writerInstanceGID;
     attribute c_ulong                        sequenceNumber;
+    attribute c_ulong                        transactionId;
     attribute v_messageQos                   qos;
 #ifdef _MSG_STAMP_
     attribute c_long                         hops;
@@ -1364,6 +1377,7 @@ class v_group extends v_entity {
     attribute c_long                         sequenceNumber;
     attribute c_long                         count;
     attribute c_time                         creationTime;
+    attribute c_time                         lastDisposeAll;
     attribute c_bool                         infWait;
     attribute c_bool                         complete;
 
@@ -1435,8 +1449,6 @@ struct v_writerGroupSet {
 };
 
 class v_deliveryWaitList {
-    attribute v_gid          writerGID;
-    attribute v_gid          writerInstanceGID;
     attribute c_ulong        sequenceNumber;
     attribute c_mutex        mutex;
     attribute c_cond         cv;
@@ -1452,6 +1464,7 @@ class v_deliveryPublisher {
 class v_deliveryGuard {
     attribute v_gid writerGID;
     attribute c_voidp owner;
+    attribute c_type gidType;
     attribute SET<v_deliveryPublisher> publications;
     attribute SET<v_deliveryWaitList> waitlists;
 };
@@ -1465,6 +1478,8 @@ class v_writer extends v_observer {
     attribute SET<v_writerInstance>          instances;
     attribute c_long                         count;
     attribute c_ulong                        sequenceNumber;
+    attribute c_ulong                        transactionId;
+    attribute c_ulong                        transactionCount;
     attribute c_bool                         infWait;
 
     attribute v_deadLineInstanceList         deadlineList;
@@ -1474,6 +1489,7 @@ class v_writer extends v_observer {
     attribute v_publisherQos                 pubQos;
     attribute v_messageQos                   msgQos;
     attribute v_messageQos                   relQos;
+    attribute c_type                         msgQosType;
     attribute c_bool                         alive;           /* alive wrt liveliness policy */
     attribute v_lease                        livelinessLease; /* readonly */
 
@@ -1520,6 +1536,7 @@ class v_publisher extends v_observer {
     attribute c_voidp                        participant;
     attribute v_publisherQos                 qos;
     attribute c_time                         suspendTime; /* inf means not suspended */
+    attribute c_ulong                        transactionId;
 };
 
 class v_participant extends v_observer {
@@ -1635,6 +1652,7 @@ enum v_infoId {
     V_SUBSCRIPTIONINFO_ID,
     V_HEARTBEATINFO_ID,
     V_DELIVERYINFO_ID,
+    V_C_AND_M_COMMAND_ID,
     V_INFO_ID_COUNT
 };
 
@@ -1756,6 +1774,29 @@ struct v_heartbeatInfo {
     v_duration period;
 };
 
+/* Note: Additional values may only be added at the end of this enum
+   otherwise compatiability with previous versions will be broken! */
+enum v_controlAndMonitoringCommandKind {
+    V_COMMAND_DISPOSE_ALL_DATA
+};
+
+/* Note: To preseve compatablity this struct must never be altered, 
+   ( changed api's must be implemented by adding a new struct and registering
+   in the above enum ) */
+struct v_commandDisposeAllData
+{
+   c_string topicExpr;
+   c_string partitionExpr;
+};
+
+typedef struct v_controlAndMonitoringCommand_s 
+{
+    v_builtinTopicKey                        _key;
+    union command_kind switch ( v_controlAndMonitoringCommandKind ) {
+       case V_COMMAND_DISPOSE_ALL_DATA : v_commandDisposeAllData dispose_all_data_info;
+    } u;
+} v_controlAndMonitoringCommand;
+
 /* -------------------------------------------------------------------------- */
 /* Table reader type implementation                                           */
 /* -------------------------------------------------------------------------- */
@@ -1779,6 +1820,12 @@ class v_purgeListItem {
     attribute c_long                         genCount; /* generation equal or older should be removed */
 };
 
+class v_transaction {
+    attribute v_gid                          writerGID;
+    attribute c_ulong                        transactionId;
+    attribute c_long                         count;
+};
+
 class v_dataReaderEntry extends v_entry {
     attribute v_topic                        topic;
     attribute v_index                        index;
@@ -1788,6 +1835,7 @@ class v_dataReaderEntry extends v_entry {
     /* Lists for garbagecollection/autopurging
      * Two lists are used because each of them is time-ordered but the
      * union of the lists is not */
+    attribute LIST<v_transaction>            transactionList;
     attribute LIST<v_purgeListItem>          purgeListDisposed; /* No Writers */
     attribute LIST<v_purgeListItem>          purgeListNotEmpty; /* No Writers */
 };
@@ -1890,7 +1938,7 @@ enum v_groupActionKind {
     V_GROUP_ACTION_WRITE, V_GROUP_ACTION_DISPOSE,
     V_GROUP_ACTION_REGISTER, V_GROUP_ACTION_UNREGISTER,
     V_GROUP_ACTION_LIFESPAN_EXPIRE, V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE,
-    V_GROUP_ACTION_DELETE_DATA
+    V_GROUP_ACTION_DELETE_DATA, V_GROUP_ACTION_DISPOSE_ALL
 };
 
 class v_groupAction extends v_object {
@@ -2055,6 +2103,7 @@ class v_kernel extends v_observable {
     attribute v_deliveryService              deliveryService;
     attribute v_configuration                configuration;
     attribute c_ulong                        userCount;
+    attribute c_ulong                        transactionCount;
 
     attribute v_builtin                      builtin;
 
@@ -2083,8 +2132,11 @@ class v_spliced extends v_service {
     attribute v_lease         hbCheck;  /* lease for next check on heartbeats */
     attribute v_waitset       ws;
     attribute c_bool          quit;
+    attribute c_bool          cAndMCommandDispatcherQuit;
+    attribute v_waitset       cAndMCommandWaitSet;
 
     attribute c_mutex         mtx;
+    attribute c_mutex         cAndMCommandMutex;
     attribute SET<v_message>  missedHB;
 };
 

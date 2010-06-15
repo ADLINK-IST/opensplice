@@ -17,21 +17,21 @@ convert_windows_path ()
         CYGWIN_NT*)
             if [ ! -d "$1" ]
             then
-            	  echo "Error: Path $1 does not exist"
+            	  echo "ERROR: Path $1 does not exist"
             	  return 1
             fi
             #Make it a dos path to remove all spaces
             DOS_CONV_PATH=`cygpath -d "$1"`
             if [ $? != 0 ]
             then
-                echo "Error: Could not convert to dos path $1"
+                echo "ERROR: Could not convert to dos path $1"
                 return 1
             fi
             #Now turn into a unix path for useage
             UNIX_CONV_PATH=`cygpath -u $DOS_CONV_PATH 2>/dev/null`
             if [ $? != 0 ]
             then
-                echo "Error: Could not convert to unix path $1"
+                echo "ERROR: Could not convert to unix path $1"
                 return 1
             fi
             ;;
@@ -125,19 +125,19 @@ msvs_check ()
     then
         if [ -z "$VS_HOME" ]
         then
-            echo "Error - No VS_HOME not set"
+            echo "ERROR - No VS_HOME not set"
             return 1
         fi
         if [ ! -d "$VS_HOME" ]
         then
-            echo "Error - $VS_HOME is not set to a directory"
+            echo "ERROR - $VS_HOME is not set to a directory"
             return 1
         fi
     else
         CL_EXE=`which cl.exe`
         if [ "$?" != "0" ]
         then
-            echo "Error - cl.exe not found"
+            echo "ERROR - cl.exe not found"
             return 1
         fi
   	    VS_HOME=`dirname $CL_EXE`
@@ -159,13 +159,13 @@ msvs_check ()
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
     if [ -z $COMPILER_VER ]
     then
-        echo "Error - Compiler version cannot be determined"
+        echo "ERROR - Compiler version cannot be determined"
         return 1
     fi
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
     if [ $CL_MAJOR -lt 14 ]
     then
-        echo "Error - Only .NET 2005 and above supported"
+        echo "ERROR - Only .NET 2005 and above supported"
         return 1
     fi
 
@@ -211,21 +211,21 @@ gcc_check ()
     pathcheck gcc
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
 
     GCC_MAJOR=`gcc -dumpversion | cut -f 1 -d .`
     if [ $GCC_MAJOR -lt 3 ]
     then
-        echo "Error - Only gcc 3.2 and above is supported"
+        echo "ERROR - Only gcc 3.2 and above is supported"
         return 1
     fi
 
     GCC_MINOR=`gcc -dumpversion | cut -f 2 -d .`
     if [ $GCC_MAJOR -eq 3 -a $GCC_MINOR -lt 2 ]
     then
-        echo "Error - Only gcc 3.2 and above is supported"
+        echo "ERROR - Only gcc 3.2 and above is supported"
         return 1
     fi
 
@@ -242,7 +242,7 @@ valgrind_check ()
         pathcheck valgrind
         if [ $? != 0 ]
         then
-            echo "Error - Not found"
+            echo "ERROR - Not found"
             return 1
         fi
         echo "OK - using version" `valgrind --version`
@@ -268,13 +268,13 @@ sun_cc_studio12_check ()
     pathcheck cc
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
     cc_VER=`cc -V 2>&1 | grep '^cc:' | sed 's/\(.*Sun C \)\([0-9.]*\)\( .*\)/\2/'`
     if [ ${cc_VER} != "5.9" ]
     then
-        echo "Error - Only SunCC 5.9 (Studio 12) is supported"
+        echo "ERROR - Only SunCC 5.9 (Studio 12) is supported"
         return 1
     fi
 
@@ -289,21 +289,21 @@ make_check ()
     pathcheck make
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
 
     MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
     if [ $MAKE_MAJOR -lt 3 ]
     then
-        echo "Error - Only make 3.80 and above is supported"
+        echo "ERROR - Only make 3.80 and above is supported"
         return 1
     fi
 
     MAKE_MINOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d .`
     if [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 80 ]
     then
-        echo "Error - Only make 3.80 and above is supported"
+        echo "ERROR - Only make 3.80 and above is supported"
         return 1
     fi
 
@@ -318,14 +318,14 @@ bison_check ()
     pathcheck bison
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
     BISON_VERSION=`bison -V 2>/dev/null | head -1`
     #BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.' | cut -f 4 -d ' '`
     #if [ $BISON_MAJOR -lt 2 ]
     #then
-    #    echo "Error - Only bison 2.x and above is supported"
+    #    echo "ERROR - Only bison 2.x and above is supported"
     #    return 1
     #fi
 
@@ -340,7 +340,7 @@ flex_check ()
     pathcheck flex
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
 
@@ -353,13 +353,13 @@ flex_check ()
     #FLEX_MAJOR=`echo $FLEX_VERSION | cut -f 1 -d '.'`
     #if [ $FLEX_MAJOR -lt 2 ]
     #then
-    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    echo "ERROR - Only flex 2.5.x and above is supported"
     #    return 1
     #fi
     #FLEX_MINOR=`echo $FLEX_VERSION | cut -f 2 -d '.'`
     #if [ $FLEX_MAJOR -eq 2 -a $FLEX_MINOR -lt 5 ]
     #then
-    #    echo "Error - Only flex 2.5.x and above is supported"
+    #    echo "ERROR - Only flex 2.5.x and above is supported"
     #    return 1
     #fi
 
@@ -375,14 +375,14 @@ binutils_native_check ()
     pathcheck ar
     if [ $? != 0 ]
     then
-        echo "Error - ar Not found"
+        echo "ERROR - ar Not found"
         return 1
     fi
 
     pathcheck ld
     if [ $? != 0 ]
     then
-        echo "Error - ld Not found"
+        echo "ERROR - ld Not found"
         return 1
     fi
 
@@ -427,6 +427,12 @@ javac_check ()
             no_javac
             return $?
         fi
+        pathcheck readlink
+        if [ $? != 0 ]
+        then
+            no_javac
+            return $?
+        fi
         JAVAC_EXE=`readlink -f "$T_JAVAC_EXE"`
     fi
 
@@ -441,16 +447,16 @@ javac_check ()
             JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
         else
-            echo "Error - Only JAVA 1.6 and above is supported"
+            echo "ERROR - Only JAVA 1.6 and above is supported"
             return 1
         fi
         if [ ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
         then
-            echo "Error - Only JAVA 1.6 is supported"
+            echo "ERROR - Only JAVA 1.6 is supported"
             return 1
         fi
     else
-        echo "Error - Only JAVA 1.6 and above is supported"
+        echo "ERROR - Only JAVA 1.6 and above is supported"
         return 1
     fi
 
@@ -481,7 +487,7 @@ javac_check ()
             T_LD_PATH=no
             ;;
         *)
-            echo "Error - Not yet supported Java setup"
+            echo "ERROR - Not yet supported Java setup"
             return 1
             ;;
     esac
@@ -504,10 +510,10 @@ no_javac()
 {
    if [ "$STRICT_CHECKS" = "yes" ]
    then
-       echo "Error - Not found"
+       echo "ERROR - Not found"
        return 1
    else
-       echo "WARNING - Java compiler environment not set, building of all Java related features is disabled."
+       echo "Warning - Java compiler environment not set, building of all Java related features is disabled."
        unset_var INCLUDE_JAVA
        return 0;
    fi
@@ -519,7 +525,7 @@ gmcs_check()
    then
        if [ -n "$MONO_HOME" ]
        then
-           gmcs_check_fn "Error"
+           gmcs_check_fn "ERROR"
            RES=$?
        else
            echo "GMCS: MONO_HOME not set, disabling SACS api build."
@@ -566,11 +572,11 @@ gmcs_check_fn ()
         then
             if ! [ "$GMCS_VERSION" -ge "$GMCS_REQUIRED_VER" ]
             then
-                echo "Error - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
+                echo "ERROR - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
                 return 1
             fi
         else
-            echo "Error - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
+            echo "ERROR - Only GMCS $GMCS_REQUIRED_VERSION and above is supported"
             return 1
         fi
 
@@ -585,7 +591,7 @@ tao_check()
 {
    if [ "$STRICT_CHECKS" = "yes" ]
    then
-       tao_check_fn "Error"
+       tao_check_fn "ERROR"
        RES=$?
    else
        tao_check_fn "Warning"
@@ -686,7 +692,7 @@ gawk_check ()
     pathcheck gawk
     if [ $? != 0 ]
     then
-        echo "Error - Not found"
+        echo "ERROR - Not found"
         return 1
     fi
     GAWK_VERSION=`gawk --version | head -1`
@@ -698,7 +704,7 @@ jacorb_check()
 {
    if [ "$STRICT_CHECKS" = "yes" ]
    then
-       jacorb_check_fn "Error"
+       jacorb_check_fn "ERROR"
        RES=$?
    else
        jacorb_check_fn "Warning"
@@ -863,12 +869,12 @@ zlib_check ()
     echo -n "zlib: "
     if [ -z "$ZLIB_HOME" ]
     then
-        echo "Error - No ZLIB_HOME set"
+        echo "ERROR - No ZLIB_HOME set"
         return 1
     fi
     if [ ! -f "$ZLIB_HOME/zlib.h" ]
     then
-        echo "Error - No ZLIB_HOME/zlib.h found"
+        echo "ERROR - No ZLIB_HOME/zlib.h found"
         return 1
     fi
 

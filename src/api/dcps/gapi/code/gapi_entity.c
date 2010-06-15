@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_report.h"
@@ -28,10 +28,11 @@ _EntityInit (
     _Entity factory,
     gapi_boolean enabled)
 {
-    
+
     entity->enabled  = enabled;
     entity->factory  = factory;
     entity->registry = _ObjectRegistryNew();
+    entity->status = NULL;
 
     entity->StatusCondition = NULL;
 }
@@ -100,18 +101,18 @@ gapi_entity_get_statuscondition (
                 _ENTITY_REGISTER_OBJECT(entity,
                                         (_Object)entity->StatusCondition);
             }
-            
+
             _EntityRelease(entity->StatusCondition);
         }
-        
+
         condition = entity->StatusCondition;
     }
-    
-    _EntityRelease(entity);   
+
+    _EntityRelease(entity);
 
     return (gapi_statusCondition)_EntityHandle(condition);
 }
-                                                                                              
+
 /*
  *     StatusMask
  *     get_status_changes();
@@ -169,7 +170,7 @@ _EntityFreeStatusCondition (
         _EntityClaim(entity->StatusCondition);
         _StatusConditionFree (entity->StatusCondition);
     }
-}    
+}
 
 void
 _EntityRegisterObject (
@@ -200,7 +201,7 @@ gapi_entity_get_instance_handle (
         handle = entity->handle;
     }
     _EntityRelease(entity);
-    
+
     return handle;
 }
 
@@ -210,7 +211,7 @@ _EntityHandleEqual (
     gapi_instanceHandle_t handle)
 {
     gapi_boolean result = FALSE;
-    
+
     assert(entity);
 
     if ( handle == entity->handle ) {
@@ -231,7 +232,7 @@ _EntityNotifyInitialEvents (
     assert(_this);
 
     events = (c_ulong)kernelStatusGet(_this->uEntity);
-    if ( events ) {       
+    if ( events ) {
         status = _this->status;
         assert(status);
         if ( status->enabled ) {
@@ -240,7 +241,7 @@ _EntityNotifyInitialEvents (
         }
     }
 }
-    
+
 void
 gapi_entityNotifyEvent (
     gapi_entity _this,
@@ -249,7 +250,7 @@ gapi_entityNotifyEvent (
     gapi_statusMask triggerMask;
     _Entity entity;
     _Status status;
-    
+
     entity = gapi_entityClaim(_this, NULL);
     if ( entity ) {
         status = entity->status;

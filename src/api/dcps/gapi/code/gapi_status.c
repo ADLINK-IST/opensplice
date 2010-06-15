@@ -343,6 +343,9 @@ _StatusGetMaskStatus (
         if ( eventKindMask & V_EVENT_INCONSISTENT_TOPIC ) {
             StatusMask |= GAPI_INCONSISTENT_TOPIC_STATUS;
         }
+        if ( eventKindMask & V_EVENT_ALL_DATA_DISPOSED ) {
+            StatusMask |= GAPI_ALL_DATA_DISPOSED_STATUS;
+        }
         break;
     case STATUS_KIND_SUBSCRIBER:
         if ( eventKindMask & V_EVENT_DATA_AVAILABLE ) {

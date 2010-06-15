@@ -46,7 +46,7 @@ v_networkingNew(
         if (v_isEnabledStatistics(k, V_STATCAT_NETWORKING)) {
             ns = v_networkingStatistics(v_networkingStatisticsNew(k));
         } else {
-            ns = v_networkingStatistics(NULL);
+            ns = NULL;
         }
 
         v_serviceInit(v_service(s),

@@ -57,7 +57,13 @@ v_dataReaderSampleNew(
     }
     v_readerSample(sample)->instance = (c_voidp)instance;
     v_readerSample(sample)->viewSamples = NULL;
-    v_readerSample(sample)->sampleState = 0;
+    if ((message->transactionId != 0) &&
+        (v_reader(dataReader)->subQos->presentation.coherent_access))
+    {
+        v_readerSample(sample)->sampleState = L_TRANSACTION;
+    } else {
+        v_readerSample(sample)->sampleState = 0;
+    }
 #ifdef _NAT_
     sample->insertTime = v_timeGet();
 #else

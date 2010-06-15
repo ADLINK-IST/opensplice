@@ -55,7 +55,9 @@ OS_API void
 v_topicNotifyInconsistentTopic (
     v_topic _this);
 
-OS_API v_result
+void
+v_topicNotifyAllDataDisposed(
+   v_topic topic);OS_API v_result
 v_topicSetQos (
     v_topic _this,
     v_topicQos qos);

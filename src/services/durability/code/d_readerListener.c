@@ -326,7 +326,6 @@ d_readerListenerInitDataReader(
     c_char *query;
     q_expr expr;
 
-
     assert(d_objectIsValid(d_object(listener), D_LISTENER));
 
     if(listener && subscriber){

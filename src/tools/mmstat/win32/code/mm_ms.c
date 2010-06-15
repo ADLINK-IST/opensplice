@@ -9,12 +9,14 @@
  *   for full copyright notice and license terms.
  *
  */
+#include <time.h>
+#include <os_time.h>
+
 #include <u_user.h>
 #include <c_base.h>
 #include <c__base.h>
 
 #include "mm_ms.h"
-#include <os_time.h>
 
 #define MM_MS_TIME_BUF_HDR_FMT          "%-12s"
 #define MM_MS_TIME_BUF_FMT              "%-12s"

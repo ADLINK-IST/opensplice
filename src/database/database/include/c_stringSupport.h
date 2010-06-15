@@ -21,6 +21,10 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 OS_API c_bool      c_isOneOf        (c_char c, const c_char *symbolList);
@@ -34,6 +38,10 @@ OS_API c_iter      c_splitString    (const c_char *str, const c_char *delimiters
 OS_API c_equality  c_compareString  (const c_char *s1, const c_char *s2);
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif
 

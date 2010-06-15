@@ -24,60 +24,50 @@
 
 #include <errno.h>
 
-static c_type c_qConst_t = NULL;
-static c_type c_qType_t  = NULL;
-static c_type c_qVar_t   = NULL;
-static c_type c_qField_t = NULL;
-static c_type c_qFunc_t  = NULL;
-static c_type c_qPred_t  = NULL;
-static c_type c_qKey_t   = NULL;
-static c_type c_qRange_t = NULL;
-static c_type c_qExpr_t = NULL;
-
 #define c_qConstType(b) \
-        (c_qConst_t != NULL ? \
-         c_keep(c_qConst_t) : \
-         c_keep(c_qConst_t = c_resolve((b),"c_querybase::c_qConst")))
+        (b->baseCache.queryCache.c_qConst_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qConst_t) : \
+         c_keep(b->baseCache.queryCache.c_qConst_t = c_resolve((b),"c_querybase::c_qConst")))
 
 #define c_qTypeType(b) \
-        (c_qType_t != NULL ? \
-         c_keep(c_qType_t) : \
-         c_keep(c_qType_t = c_resolve((b),"c_querybase::c_qType")))
+        (b->baseCache.queryCache.c_qType_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qType_t) : \
+         c_keep(b->baseCache.queryCache.c_qType_t = c_resolve((b),"c_querybase::c_qType")))
 
 #define c_qVarType(b) \
-        (c_qVar_t != NULL ? \
-         c_keep(c_qVar_t) : \
-         c_keep(c_qVar_t = c_resolve((b),"c_querybase::c_qVar")))
+        (b->baseCache.queryCache.c_qVar_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qVar_t) : \
+         c_keep(b->baseCache.queryCache.c_qVar_t = c_resolve((b),"c_querybase::c_qVar")))
 
 #define c_qFieldType(b) \
-        (c_qField_t != NULL ? \
-         c_keep(c_qField_t) : \
-         c_keep(c_qField_t = c_resolve((b),"c_querybase::c_qField")))
+        (b->baseCache.queryCache.c_qField_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qField_t) : \
+         c_keep(b->baseCache.queryCache.c_qField_t = c_resolve((b),"c_querybase::c_qField")))
 
 #define c_qFuncType(b) \
-        (c_qFunc_t != NULL ? \
-         c_keep(c_qFunc_t) : \
-         c_keep(c_qFunc_t = c_resolve((b),"c_querybase::c_qFunc")))
+        (b->baseCache.queryCache.c_qFunc_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qFunc_t) : \
+         c_keep(b->baseCache.queryCache.c_qFunc_t = c_resolve((b),"c_querybase::c_qFunc")))
 
 #define c_qPredType(b) \
-        (c_qPred_t != NULL ? \
-         c_keep(c_qPred_t) : \
-         c_keep(c_qPred_t = c_resolve((b),"c_querybase::c_qPred")))
+        (b->baseCache.queryCache.c_qPred_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qPred_t) : \
+         c_keep(b->baseCache.queryCache.c_qPred_t = c_resolve((b),"c_querybase::c_qPred")))
 
 #define c_qKeyType(b) \
-        (c_qKey_t != NULL ? \
-         c_keep(c_qKey_t) : \
-         c_keep(c_qKey_t = c_resolve((b),"c_querybase::c_qKey")))
+        (b->baseCache.queryCache.c_qKey_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qKey_t) : \
+         c_keep(b->baseCache.queryCache.c_qKey_t = c_resolve((b),"c_querybase::c_qKey")))
 
 #define c_qRangeType(b) \
-        (c_qRange_t != NULL ? \
-         c_keep(c_qRange_t) : \
-         c_keep(c_qRange_t = c_resolve((b),"c_querybase::c_qRange")))
+        (b->baseCache.queryCache.c_qRange_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qRange_t) : \
+         c_keep(b->baseCache.queryCache.c_qRange_t = c_resolve((b),"c_querybase::c_qRange")))
 
 #define c_qExprType(b) \
-        (c_qExpr_t != NULL ? \
-         c_keep(c_qExpr_t) : \
-         c_keep(c_qExpr_t = c_resolve((b),"c_querybase::c_qExpr")))
+         (b->baseCache.queryCache.c_qExpr_t != NULL ? \
+         c_keep(b->baseCache.queryCache.c_qExpr_t) : \
+         c_keep(b->baseCache.queryCache.c_qExpr_t = c_resolve((b),"c_querybase::c_qExpr")))
 
 c_filter
 c_filterNew(

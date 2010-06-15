@@ -44,18 +44,6 @@ v_crcInit(
     }
 }
 
-static c_type _v_crc_t = NULL;
-
-c_type
-v_crc_t(
-    c_base base)
-{
-    if (_v_crc_t == NULL) {
-        _v_crc_t = c_resolve(base, "kernelModule::v_crc");
-    }
-    return _v_crc_t;
-}
-
 /**************************************************************
  * Protected functions
  **************************************************************/
@@ -71,7 +59,7 @@ v_crcNew(
 
     if (k) {
 
-        type = v_crc_t(c_getBase(k));
+        type = c_resolve(c_getBase(k), "kernelModule::v_crc");
         assert(type);
         if (type) {
             crc = c_new(type);

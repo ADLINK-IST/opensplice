@@ -242,8 +242,8 @@ d_sampleRequestListenerAnswer(
     if(!group){
         sendData = FALSE;
     } else {
-        sendData = d_configurationGroupInAlignerNS(
-                                config, request->partition,
+        sendData = d_adminGroupInAlignerNS(
+                                admin, request->partition,
                                 request->topic, request->durabilityKind);
     }
     d_messageSetAddressee(d_message(sampleChain), data.addressee);
@@ -380,7 +380,6 @@ sendAction(
                 }
             }
 
-
             if(listener->mayProceed == TRUE){
                 helper = d_sampleRequestListenerTakeActiveRequest(listener);
 
@@ -391,6 +390,7 @@ sendAction(
                             helper->request->partition,
                             helper->request->topic,
                             d_message(helper->request)->senderAddress.systemId);
+
                     d_sampleRequestListenerAnswer(helper);
                     d_sampleRequestHelperFree(helper);
                 }

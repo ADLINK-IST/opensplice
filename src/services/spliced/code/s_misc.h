@@ -20,7 +20,7 @@ extern "C" {
 #define S_THREAD_KERNELMANAGER     "OSPL Kernel Manager"
 #define S_THREAD_RESENDMANAGER     "OSPL Builtin Resend Manager"
 #define S_THREAD_GARBAGE_COLLECTOR "OSPL Garbage Collector"
-    
+#define S_THREAD_C_AND_M_COMMANDMANAGER "OSPL C and M Command Manager"
 #if defined (__cplusplus)
 }
 #endif

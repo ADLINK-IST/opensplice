@@ -50,9 +50,6 @@
 
 #define v_dataViewSampleTemplate(_this) ((v_dataViewSampleTemplate)(_this))
 
-#define v_dataViewSample_t(scope) \
-        c_type(c_resolve(c_getBase(scope), "kernelModule::v_dataViewSample"))
-
 OS_API v_dataViewSample
 v_dataViewSampleNew (
     v_dataViewInstance instance,

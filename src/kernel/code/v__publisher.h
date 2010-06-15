@@ -21,6 +21,9 @@
 #define v_publisherIsSuspended(_this) \
         (c_timeCompare((_this)->suspendTime, C_TIME_INFINITE) != C_EQ)
 
+#define v_publisherTransactionId(_this) \
+        (v_publisher(_this)->transactionId)
+
 v_publisherQos
 v_publisherGetQosRef(
     v_publisher _this);

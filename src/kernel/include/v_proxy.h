@@ -22,8 +22,6 @@
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-static c_type v_proxy_t = NULL;
-
 /**
  * \brief The <code>v_proxy</code> cast method.
  *
@@ -33,11 +31,6 @@ static c_type v_proxy_t = NULL;
  * one of its subclasses.
  */
 #define v_proxy(_this) (C_CAST(_this,v_proxy))
-
-#define v_proxy_t(_scope) \
-        (v_proxy_t != NULL ? c_type(v_proxy_t) : \
-        c_type(c_resolve(c_getBase(_scope),"kernelModule::v_proxy")))
-
 
 OS_API v_proxy
 v_proxyNew (

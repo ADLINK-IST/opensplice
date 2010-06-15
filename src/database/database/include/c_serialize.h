@@ -20,6 +20,10 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef c_voidp c_serializeActionArg;
@@ -43,5 +47,9 @@ c_deserialize(
     c_serializeActionArg arg);
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif

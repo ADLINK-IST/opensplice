@@ -33,7 +33,7 @@ install_bin_file ()
         cp "${install_bin_file_source}/${install_bin_file_file}" "${install_bin_file_target}/${install_bin_file_dir}"
         echo "Ready"
       else
-	    echo "* ##    file ${install_bin_file_file} not found"
+        echo "* ##    file ${install_bin_file_file} not found"
       fi
     else
       echo "* ##     non-existent ${install_bin_file_source}"
@@ -59,7 +59,7 @@ install_lib_file ()
         cp ${install_lib_file_source}/${install_lib_file_file} ${install_lib_file_target}/${install_lib_file_dir}
         echo "Ready"
       else
-	    echo "* ##    file ${install_lib_file_file} not found"
+        echo "* ##    file ${install_lib_file_file} not found"
       fi
     else
       echo "* ##     non-existent ${install_lib_file_source}"
@@ -649,9 +649,13 @@ install_hde_target ()
     sed -e "s/__RELEASE__/${target_version}/g" \
         -e "s/__EXE__/${target_suffix_exe}/g" \
         ${OSPL_HOME}/etc/ospl_no_network.xml > ${HDE_dir}/etc/config/ospl_no_network.xml
-    sed -e "s/__RELEASE__/${target_version}/g" \
-        -e "s/__EXE__/${target_suffix_exe}/g" \
-        ${OSPL_HOME}/etc/ospl_ddsi.xml > ${HDE_dir}/etc/config/ospl_ddsi.xml
+
+    if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
+    then
+        sed -e "s/__RELEASE__/${target_version}/g" \
+            -e "s/__EXE__/${target_suffix_exe}/g" \
+            ${OSPL_HOME}/etc/ospl_ddsi.xml > ${HDE_dir}/etc/config/ospl_ddsi.xml
+    fi
 
     echo "Ready"
 
@@ -674,7 +678,7 @@ install_hde_target ()
     fi
     echo "Ready"
 
-    if [ "${target_os}" != "${host_os}" ]
+    if [ "${target_os}" != "${host_os}" -o "$target" != "$host" ]
     then
         printf "*         For host ... "
         release=${OSPL_HOME}/lib/${host}${source_env}
@@ -710,7 +714,7 @@ install_hde_target ()
 
     if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
     then
-	printf "*     Copy JAVA host archive files... "
+        printf "*     Copy JAVA host archive files... "
         release=${OSPL_HOME}/jar/${host}${source_env}
         if [ -d "${release}" ]
         then
@@ -730,17 +734,21 @@ install_hde_target ()
     if [ -d "${release}" ]
     then
         mkdir -p ${HDE_dir}/bin
-		  install_ascii_file "${release}/osplconf${suffix_script}" "${HDE_dir}/bin"
+        install_ascii_file "${release}/osplconf${suffix_script}" "${HDE_dir}/bin"
         if [ "${host}" = "x86.win32" ]
         then
-            install_ascii_file "${release}/examples${suffix_script}" "${HDE_dir}/bin"
-            install_ascii_file "${release}/c#-pingpong-example${suffix_script}" "${HDE_dir}/bin"
-            install_ascii_file "${release}/c#-chat-tutorial${suffix_script}" "${HDE_dir}/bin"
-            install_ascii_file "${release}/osplctrl${suffix_script}" "${HDE_dir}/bin"
             install_ascii_file "${release}/run.vbs" "${HDE_dir}/bin"
-            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+
+            if [ "${target}" = "x86.win32" ]
             then
-		          install_ascii_file "${release}/osplmmstat${suffix_script}" "${HDE_dir}/bin"
+                install_ascii_file "${release}/examples${suffix_script}" "${HDE_dir}/bin"
+                install_ascii_file "${release}/c#-pingpong-example${suffix_script}" "${HDE_dir}/bin"
+                install_ascii_file "${release}/c#-chat-tutorial${suffix_script}" "${HDE_dir}/bin"
+                install_ascii_file "${release}/osplctrl${suffix_script}" "${HDE_dir}/bin"
+                if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+                then
+                    install_ascii_file "${release}/osplmmstat${suffix_script}" "${HDE_dir}/bin"
+                fi
             fi
         fi
     else
@@ -1509,7 +1517,7 @@ install_hde_target ()
 
         echo "*           Ready"
 
-        echo "*         For Corba Java"
+        echo "*         For JacORB Corba Java"
         mkdir ${HDE_dir}/examples/dcps/CORBA/Java
         mkdir ${HDE_dir}/examples/dcps/CORBA/Java/JacORB
         echo "*           For PingPong... "
@@ -1542,7 +1550,41 @@ install_hde_target ()
            install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/README_x86.win32.txt" \
                ${HDE_dir}/examples/dcps/CORBA/Java/JacORB/Tutorial README.txt
         fi
+        echo "*        JacORB CORBA  Ready"
+
+        echo "*         For RTORB Corba Java"
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/RTORB
+        echo "*           For PingPong... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/BUILD_rtorb${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong BUILD${suffix_script}
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/RUN${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Java/CJ/JacORB/*.txt" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/PingPong
         echo "*           Ready"
+        echo "*           For Tutorial... "
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial
+        mkdir ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial/chatroom
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/*.idl" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial
+        install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/chatroom/*.java" \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial/chatroom
+        install_ascii_file    ${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/BUILD_rtorb${suffix_script} \
+            ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial BUILD${suffix_script}
+        if [ "${target}" != "x86.win32" ]
+        then
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/README.txt" \
+               ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial
+        else
+           install_ascii_file "${OSPL_HOME}/examples/dcps/Tutorial/Java/CJ/JacORB/README_x86.win32.txt" \
+               ${HDE_dir}/examples/dcps/CORBA/Java/RTORB/Tutorial README.txt
+        fi
+        echo "*         RTORB Java CORBA Ready"
         echo "*         Java Ready"
     fi
 
@@ -1583,7 +1625,7 @@ install_hde_target ()
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${HDE_dir}/redist
-        cp -rp "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${HDE_dir}/redist"
+        cp -r "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${HDE_dir}/redist"
         cp "${OSPL_HOME}/install/bin/install_vcredist.bat" "${HDE_dir}/redist/vcredist_x86"
         echo "Ready"
     fi
@@ -1593,6 +1635,11 @@ install_hde_target ()
         printf "*     Prepare default release.com ... "
         RELF=${HDE_dir}/release.com
         echo "echo \"<<< OpenSplice HDE Release ${target_version} For ${target}${target_env}, Date ${target_date} >>>\"" >> ${RELF}
+        echo 'if [ "$SPLICE_ORB" = "" ]' >> ${RELF}
+        echo "then" >> ${RELF}
+        echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> ${RELF}
+        echo "    export SPLICE_ORB" >> ${RELF}
+        echo "fi"  >> ${RELF}
         echo "OSPL_HOME=\"@@INSTALLDIR@@/HDE/${target}${target_env}\"" >> ${RELF}
         echo "OSPL_TARGET=${target}${target_env}" >> ${RELF}
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> ${RELF}
@@ -1605,7 +1652,15 @@ install_hde_target ()
         echo "CPATH=\$OSPL_HOME/include:\$OSPL_HOME/include/sys:\$CPATH" >> ${RELF}
         echo "OSPL_TMPL_PATH=\$OSPL_HOME/etc/idlpp" >> ${RELF}
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> ${RELF}
-        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$OSPL_HOME/jar/dcpssaj.jar:\$CLASSPATH" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$OSPL_HOME/jar/dcpscj.jar:\$CLASSPATH" >> $RELF
+        fi
+        echo "export CLASSPATH OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
 
         if [ "$VALGRIND" = "yes" ]
         then
@@ -1620,9 +1675,22 @@ install_hde_target ()
         echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
-        echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%OSPL_HOME%\host\lib;%PATH%" >> $RELF
+        if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
+        then
+            echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\host\lib;%PATH%" >> $RELF
+        else
+            echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
+        fi
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
         echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
+        fi
         echo "Ready"
     fi
 }
@@ -1724,15 +1792,18 @@ install_rts_target ()
     if [ -d "${release}" ]
     then
         mkdir -p ${RTS_dir}/bin
-		install_ascii_file "${release}/osplconf${suffix_script}" "${RTS_dir}/bin"
+        install_ascii_file "${release}/osplconf${suffix_script}" "${RTS_dir}/bin"
         if [ "${host}" = "x86.win32" ]
         then
-            install_ascii_file "${release}/osplctrl${suffix_script}" "${RTS_dir}/bin"
-            install_ascii_file "${release}/run.vbs" "${RTS_dir}/bin"
-            if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+            if [ "${target}" = "x86.win32" ]
             then
-		          install_ascii_file "${release}/osplmmstat${suffix_script}" "${RTS_dir}/bin"
+                install_ascii_file "${release}/osplctrl${suffix_script}" "${RTS_dir}/bin"
+                if [ "${INCLUDE_TOOLS_MMSTAT}" = "yes" ]
+                then
+                    install_ascii_file "${release}/osplmmstat${suffix_script}" "${RTS_dir}/bin"
+                fi
             fi
+            install_ascii_file "${release}/run.vbs" "${RTS_dir}/bin"
         fi
     else
         echo "* ##    No script files detected"
@@ -1804,7 +1875,7 @@ install_rts_target ()
     then
         printf "*     Copy redistributable system packages ... "
         mkdir ${RTS_dir}/redist
-        cp -rp "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${RTS_dir}/redist"
+        cp -r "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "${RTS_dir}/redist"
         cp "${OSPL_HOME}/install/bin/install_vcredist.bat" "${RTS_dir}/redist/vcredist_x86"
         echo "Ready"
     fi
@@ -1831,12 +1902,25 @@ install_rts_target ()
         printf "*     Prepare default release.com ... "
         RELF=${RTS_dir}/release.com
         echo "echo \"<<< OpenSplice RTS Release ${target_version} For ${target}${target_env} Date ${target_date} >>>\"" >> $RELF
+        echo 'if [ "$SPLICE_ORB" = "" ]' >> $RELF
+        echo "then" >> $RELF
+        echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+        echo "    export SPLICE_ORB" >> $RELF
+        echo "fi"  >> $RELF
         echo "OSPL_HOME=\"@@INSTALLDIR@@/RTS/${target}${target_env}\"" >> $RELF
         echo "OSPL_TARGET=${target}${target_env}" >> $RELF
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
         echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\$LD_LIBRARY_PATH" >> $RELF
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
-        echo "export OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$OSPL_HOME/jar/dcpssaj.jar:\$CLASSPATH" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "CLASSPATH=\$OSPL_HOME/jar/dcpscj.jar:\$CLASSPATH" >> $RELF
+        fi
+        echo "export CLASSPATH OSPL_HOME OSPL_TARGET PATH LD_LIBRARY_PATH OSPL_URI" >> $RELF
         echo "Ready"
     else
         printf "*     Prepare default release.bat ... "
@@ -1848,6 +1932,14 @@ install_rts_target ()
         echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
         echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
+        if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpssaj.jar;%CLASSPATH%" >> $RELF
+        fi
+        if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+        then
+            echo "set CLASSPATH=%OSPL_HOME%\jar\dcpscj.jar;%CLASSPATH%" >> $RELF
+        fi
         echo "Ready"
     fi
 }

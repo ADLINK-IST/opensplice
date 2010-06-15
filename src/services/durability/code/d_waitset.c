@@ -124,14 +124,15 @@ d_waitsetEventHandler(
             ur = u_waitsetWaitEvents(userWaitset,&events);
         }
         if(events  && (ur == U_RESULT_OK)){/* events may be null if waitset was deleted*/
-            if(d_durabilityGetState(durability) != D_STATE_TERMINATING){
-                event = u_waitsetEvent(c_iterTakeFirst(events));
+            event = u_waitsetEvent(c_iterTakeFirst(events));
 
-                while(event){
+            while(event){
+                /* Only dispatch event when durability is not terminating */
+                if (d_durabilityGetState(durability) != D_STATE_TERMINATING){
                     we->action(we->dispatcher, event, we->usrData);
-                    u_waitsetEventFree(event);
-                    event = u_waitsetEvent(c_iterTakeFirst(events));
                 }
+                u_waitsetEventFree(event);
+                event = u_waitsetEvent(c_iterTakeFirst(events));
             }
             c_iterFree(events);
         }

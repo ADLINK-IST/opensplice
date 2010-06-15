@@ -21,6 +21,10 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef struct c_declarator *c_declarator;
@@ -78,6 +82,10 @@ c_unionCaseNew(
     c_iter labels);
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif
 

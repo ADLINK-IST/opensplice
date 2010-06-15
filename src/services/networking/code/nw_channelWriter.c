@@ -77,7 +77,8 @@ void nw_updatePlugSendStatistics(plugSendStatistics pss, nw_channelWriter channe
 	channelWriter->scs->numberOfBytesSent = pss->numberOfBytesSent;
 	channelWriter->scs->numberOfAcksSent = pss->numberOfAcksSent;
 	channelWriter->scs->adminQueueAcks = pss->adminQueueAcks;
-	channelWriter->scs->adminQueueData = pss->adminQueueData;
+	channelWriter->scs->nofBytesBeforeCompression = pss->nofBytesBeforeCompression;
+	channelWriter->scs->nofBytesAfterCompression = pss->nofBytesAfterCompression;
 }
 
 
@@ -179,6 +180,18 @@ nw_channelWriterMain(
              * This will also update the credits, for the amount of bandwidth
              * available in the coming period.
              */
+            /*stat update routine */
+            n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+            /* update statistics */
+            if (v_entity(n)->statistics) {
+                if (!pss.enabled) {
+                    pss.enabled =1;
+                }
+                /* sync plug stats */
+                nw_updatePlugSendStatistics(&pss,channelWriter);
+                nw_SendChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelWriter->stat_channel_id],channelWriter->scs);
+            }
+
             nw_sendChannelPeriodicAction(channelWriter->sendChannel,&credits,&pss); /*struc call*/
             /* A flush is needed if we are slowing down. */
             if (slowingDown) {
@@ -189,14 +202,6 @@ nw_channelWriterMain(
                  * buffers only */
                 slowingDown = !nw_sendChannelFlush(channelWriter->sendChannel,
                                                    FALSE, &credits, &pss);
-            }
-            /*stat update routine */
-            n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
-            /* sync plug stats */
-            nw_updatePlugSendStatistics(&pss,channelWriter);
-            /* update statistics */
-            if (v_entity(n)->statistics) {
-            	nw_SendChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelWriter->stat_channel_id],channelWriter->scs);
             }
         }
         if ((waitResult & V_WAITRESULT_MSGWAITING) && !slowingDown) {
@@ -233,7 +238,9 @@ nw_channelWriterMain(
                          message);
                 }
                 /*numberOfMessagesSent stats*/
-                channelWriter->scs->numberOfMessagesSent++;
+                if (pss.enabled) {
+                    channelWriter->scs->numberOfMessagesSent++;
+                }
                 assert( bytesWritten > 0); /* if permission grantedm the value must be greater 0 */
 
                 }

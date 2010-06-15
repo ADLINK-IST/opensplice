@@ -12,6 +12,7 @@
 #ifndef _SACPP_MAPPING_BVL_H_
 #define _SACPP_MAPPING_BVL_H_
 
+#include "sacpp_if.h"
 // Bounded variable-length sequence
 
 template <class T, DDS::ULong max> class DDS_DCPSBVLSeq
@@ -220,5 +221,6 @@ DDS_DCPSBVLSeq<T, max>::replace (DDS::ULong length, T * data, DDS::Boolean rel)
    m_release = rel;
 }
 
+#undef SACPP_API
 #endif
 

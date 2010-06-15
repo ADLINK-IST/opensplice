@@ -304,6 +304,25 @@ d_adminStatisticsInfoFree(
     }
 }
 
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
+
 void
 d_statisticsUpdateConfiguration(
     v_durabilityStatistics ds,
@@ -315,15 +334,23 @@ d_statisticsUpdateConfiguration(
     d_durability durability;
     d_configuration config;
     d_admin admin;
+    c_iter nameSpaces;
+    c_long nameSpaceCount;
     
     admin      = d_admin(args);
     durability = d_adminGetDurability(admin);
     config     = d_durabilityGetConfiguration(durability);
     master     = 0;
     slave      = 0;
+    nameSpaces = c_iterNew(NULL);
+
     
-    for(i=0; i<c_iterLength(config->nameSpaces); i++){
-        ns = d_nameSpace(c_iterObject(config->nameSpaces, i));
+    /* Collect namespaces from administration */
+    d_adminNameSpaceWalk(admin, collectNsWalk, nameSpaces);
+    nameSpaceCount = c_iterLength(nameSpaces);
+
+    for(i=0; i<nameSpaceCount; i++){
+        ns = d_nameSpace(c_iterObject(nameSpaces, i));
         
         if(d_nameSpaceMasterIsMe(ns, admin)){
             master++;
@@ -331,10 +358,14 @@ d_statisticsUpdateConfiguration(
             slave++;
         }
     }
-    ds->nameSpacesKnown = c_iterLength(config->nameSpaces);
+    ds->nameSpacesKnown = nameSpaceCount;
     ds->nameSpacesMaster = master;
     ds->nameSpacesSlave  = slave;
     
+    /* Free collected namespaces */
+    c_iterWalk(nameSpaces, deleteNsWalk, NULL);
+    c_iterFree (nameSpaces);
+
     return;
 }
 

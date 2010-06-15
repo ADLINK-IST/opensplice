@@ -12,6 +12,7 @@
 #ifndef SACPP_MAPPING_UFL_H
 #define SACPP_MAPPING_UFL_H
 
+#include "sacpp_if.h"
 // Unbounded fixed-length sequence
 
 template <class T, typename X> class DDS_DCPSUFLSeq
@@ -308,4 +309,5 @@ inline DDS_DCPSUFLSeq<T, X>::DDS_DCPSUFLSeq(const char *str)
    }
 }
 
+#undef SACPP_API
 #endif /* SACPP_MAPPING_UFL_H */

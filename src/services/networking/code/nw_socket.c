@@ -967,6 +967,7 @@ sk_length
 nw_socketSendDataToPartition(
     nw_socket sock,
     sk_partitionId partitionId,
+    plugSendStatistics pss,
     void *buffer,
     sk_length length)
 {
@@ -990,7 +991,7 @@ nw_socketSendDataToPartition(
 
     found = nw_socketPartitionsLookup(sock->partitions, partitionId,
         &addressList, &compression);
-    //NW_CONFIDENCE(found);
+    /* NW_CONFIDENCE(found); */
 
 #ifndef OSPL_NO_ZLIB
     /* Compress the payload if so enabled, unless it's just little */
@@ -1002,6 +1003,11 @@ nw_socketSendDataToPartition(
         zresult = compress (zbuff, &zlen, buffer, length);
         if (zresult == Z_OK)
         {
+            if (pss != NULL)
+            {
+               pss->nofBytesBeforeCompression += length;
+               pss->nofBytesAfterCompression += zlen;
+            }
             buffer = zbuff;
             length = zlen;
         }
@@ -1143,7 +1149,8 @@ nw_socketReceive(
     sk_address *senderAddress,
     void *vbuffer,
     sk_length length,
-    os_time *timeOut)
+    os_time *timeOut,
+    plugReceiveStatistics prs)
 {
     unsigned char *buffer = vbuffer;
     sk_length result = 0;
@@ -1202,13 +1209,16 @@ nw_socketReceive(
                 zlen = length;
                 zresult = uncompress (zbuff, &zlen, buffer, recvRes);
                 if (zresult == Z_OK) {
+                    if (prs != NULL) {
+                       prs->nofBytesBeforeDecompression += recvRes;
+                       prs->nofBytesAfterDecompression += zlen;
+                    }
                     memcpy (buffer, zbuff, zlen);
                     recvRes = zlen;
                 } else {
-                    if (zresult == Z_DATA_ERROR) {
-                       NW_REPORT_ERROR_1 ("Read from socket", "Unrecognized data beginning 0x%x - continuing anyway.", buffer[0]);
-                    }
-                    else {
+                    /* It could be a secure packet or corrupt. Handle this in
+                       the upper layer, but report on zlib errors */
+                    if (zresult != Z_DATA_ERROR) {
                        /* Decompressor failed. Drop the packet. */
                        NW_REPORT_ERROR_1 ("Read from socket", "Decompression failed with code %d - dropping packet.", zresult);
                        recvRes = 0;

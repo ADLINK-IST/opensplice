@@ -14,9 +14,15 @@
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 #include "saj_domainParticipantListener.h"
+#include "saj_extDomainParticipantListener.h"
 #include "saj_topicListener.h"
+#include "saj_extTopicListener.h"
 #include "saj_publisherListener.h"
 #include "saj_subscriberListener.h"
+
+#include "gapi.h"
+
+#include "os_report.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_DomainParticipantImpl_##name
 
@@ -36,7 +42,7 @@ static saj_returnCode saj_domainParticipantInitBuiltinDataReader(
 
 /*
  * Method:      jniCreatePublisher
- * Param :  PublisherQos
+ * Param :      PublisherQos
  * Param :      PublisherListener
  * Return:      Publisher
  */
@@ -105,7 +111,7 @@ SAJ_FUNCTION(jniCreatePublisher)(
 
 /*
  * Method:      jniDeletePublisher
- * Param :  Publisher
+ * Param :      Publisher
  * Return:      Return code
  */
 JNIEXPORT jint JNICALL
@@ -200,7 +206,7 @@ SAJ_FUNCTION(jniCreateSubscriber) (
 }
 
 /*
- * Method:    jniDeleteSubscriber
+ * Method:        jniDeleteSubscriber
  * Param :        Subscriber
  * Return:        return code
  */
@@ -228,7 +234,7 @@ SAJ_FUNCTION(jniDeleteSubscriber) (
 }
 
 /*
- * Method:  jniGetBuiltinSubscriber
+ * Method:      jniGetBuiltinSubscriber
  * Return:      subscriber
  */
 JNIEXPORT jobject JNICALL
@@ -266,7 +272,7 @@ SAJ_FUNCTION(jniGetBuiltinSubscriber) (
 }
 
 /*
- * Method:  jniCreateTopic
+ * Method:      jniCreateTopic
  * Param :      topic name
  * Param :      topic type
  * Param :      qos list
@@ -291,6 +297,8 @@ SAJ_FUNCTION(jniCreateTopic) (
     gapi_topicQos* tqos;
     struct gapi_topicListener* listener;
     saj_returnCode rc;
+    jclass tempClass;
+    jboolean result;
 
     gapiTopic = GAPI_OBJECT_NIL;
     javaTopic = NULL;
@@ -314,8 +322,25 @@ SAJ_FUNCTION(jniCreateTopic) (
 	rc = SAJ_RETCODE_OK;
     }
 
+    /* We can check Java instances in the jni layer, so here we check
+     * that if the mask is set to GAPI_ALL_DATA_DISPOSED_STATUS we have
+     * been given an ExtDomainParticipantListener to call. If not then
+     * an error is reported. */
+    if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+        tempClass = (*env)->FindClass(env, "DDS/ExtTopicListener");
+        result = (*env)->IsInstanceOf(env, jlistener, tempClass);
+        if(result == JNI_FALSE) {
+            OS_REPORT(OS_ERROR, "dcpssaj", GAPI_ERRORCODE_INCONSISTENT_VALUE, "ExtTopicListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
+  	    rc = SAJ_RETCODE_ERROR;
+        }  
+    }
+
     if(rc == SAJ_RETCODE_OK){
-        listener = saj_topicListenerNew(env, jlistener);
+        if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+            listener = saj_extTopicListenerNew(env, jlistener);
+        } else {
+            listener = saj_topicListenerNew(env, jlistener);
+        }
 
         if(listener != NULL){
             saj_write_java_listener_address(env, gapiTopic, listener->listener_data);
@@ -350,7 +375,7 @@ SAJ_FUNCTION(jniCreateTopic) (
 /*
  * Method:    jniDeleteTopic
  * Param :    Topic
- * Return:        return code
+ * Return:    return code
  */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniDeleteTopic) (
@@ -803,19 +828,43 @@ SAJ_FUNCTION(jniSetListener) (
 {
     struct gapi_domainParticipantListener *listener;
     gapi_domainParticipant participant;
-    gapi_returnCode_t grc;
+    gapi_returnCode_t grc = GAPI_RETCODE_OK;
+    
+    jclass tempClass;
+    jboolean result;
 
-    participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
-    listener = saj_domainParticipantListenerNew(env, jlistener);
-
-    if(listener != NULL){
-        saj_write_java_listener_address(env, participant, listener->listener_data);
+    /* We can check Java instances in the jni layer, so here we check
+     * that if the mask is set to GAPI_ALL_DATA_DISPOSED_STATUS we have
+     * been given an ExtDomainParticipantListener to call. If not then
+     * an error is reported and a GAPI_RETCODE_BAD_PARAMETER status is
+     * returned. */
+    if(mask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+        tempClass = (*env)->FindClass(env, "DDS/ExtDomainParticipantListener");
+        result = (*env)->IsInstanceOf(env, jlistener, tempClass);
+        if(result == JNI_FALSE) {
+            OS_REPORT(OS_ERROR, "dcpssaj", 0, "ExtDomainParticipantListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
+            grc = GAPI_RETCODE_BAD_PARAMETER;
+        }  
     }
-    grc = gapi_domainParticipant_set_listener(participant, listener,
+
+    if(grc == GAPI_RETCODE_OK){
+        participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
+
+        if(mask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+	    listener = saj_extDomainParticipantListenerNew(env, jlistener);
+        } else {
+            listener = saj_domainParticipantListenerNew(env, jlistener);
+	}
+
+        if(listener != NULL){
+            saj_write_java_listener_address(env, participant, listener->listener_data);
+        }
+        grc = gapi_domainParticipant_set_listener(participant, listener,
                                                     (unsigned long int)mask);
 
-    if((grc != GAPI_RETCODE_OK) && (listener != NULL)){
-        saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
+        if((grc != GAPI_RETCODE_OK) && (listener != NULL)){
+            saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
+        }
     }
     return (jint)grc;
 }

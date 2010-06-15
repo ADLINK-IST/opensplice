@@ -30,6 +30,10 @@ Ping\ping.exe %BLOKCOUNT% %BLOKSIZE% f PongRead PongWrite
 
 %SLEEP2% >NUL
 
+Ping\ping.exe %BLOKCOUNT% %BLOKSIZE% b PongRead PongWrite
+
+%SLEEP2% >NUL
+
 Ping\ping.exe 1  10 t PongRead PongWrite 
 
 %SLEEP4% >NUL

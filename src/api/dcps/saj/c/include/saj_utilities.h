@@ -256,6 +256,8 @@ typedef struct jni_cache_t {
     jmethodID qosPolicyCount_constructor_mid;
     jclass    inconsistentTopicStatus_class;
     jmethodID inconsistentTopicStatus_constructor_mid;
+    jclass    allDataDisposedTopicStatus_class;
+    jmethodID allDataDisposedTopicStatus_constructor_mid;
     jclass    livelinessLostStatus_class;
     jmethodID livelinessLostStatus_constructor_mid;
     jclass    offeredDeadlineMissedStatus_class;
@@ -281,6 +283,7 @@ typedef struct jni_cache_t {
     
     /* caching the field id of the attribute 'value' for the Status Holder classes */
     jfieldID inconsistentTopicStatusHolder_value_fid;
+    jfieldID allDataDisposedTopicStatusHolder_value_fid;
     jfieldID livelinessLostStatusHolder_value_fid;
     jfieldID offeredDeadlineMissedStatusHolder_value_fid;
     jfieldID offeredIncompatibleQosStatusHolder_value_fid;
@@ -304,6 +307,9 @@ typedef struct jni_cache_t {
     /*topic listener*/
     jclass    listener_topic_class;
     jmethodID listener_onInconsistentTopic_mid;
+    /*ext topic listener*/
+    jclass    listener_extTopic_class;
+    jmethodID listener_onAllDataDisposed_mid;
     /*datareader listener*/
     jclass    listener_datareader_class;
     jmethodID listener_onRequestedDeadlineMissed_mid;

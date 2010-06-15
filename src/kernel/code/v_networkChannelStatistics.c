@@ -16,10 +16,12 @@
 #include "v_maxValue.h"
 #include "os_report.h"
 
-
+/* Legitimate use of static variable to hold type information in this case.
+ * This type information may be accessed multiple times depending on how many
+ * channels are set up, but this is only ever in the same single instance of
+ * the networking service, so will not affect multi domain support.
+ */
 static c_type networkChannelStatisticsType = NULL;
-
-
 
 v_networkChannelStatistics v_networkChannelStatisticsNew(v_kernel k, const c_char *name)
 {
@@ -73,6 +75,11 @@ void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string nam
     ncs->nofUsedPacketBuffers=0;
     v_fullCounterInit(&(ncs->adminQueueAcks));
     v_fullCounterInit(&(ncs->adminQueueData));
+
+    ncs->nofBytesBeforeCompression=0;
+    ncs->nofBytesAfterCompression=0;
+    ncs->nofBytesBeforeDecompression=0;
+    ncs->nofBytesAfterDecompression=0;
 }
 
 c_bool v_networkChannelStatisticsReset(v_networkChannelStatistics ncs)
@@ -110,8 +117,13 @@ c_bool v_networkChannelStatisticsReset(v_networkChannelStatistics ncs)
 	ncs->nofUsedPacketBuffers=0;
 	v_fullCounterInit(&(ncs->adminQueueAcks));
 	v_fullCounterInit(&(ncs->adminQueueData));
-    result = TRUE;
 
+    ncs->nofBytesBeforeCompression=0;
+    ncs->nofBytesAfterCompression=0;
+    ncs->nofBytesBeforeDecompression=0;
+    ncs->nofBytesAfterDecompression=0;
+
+    result = TRUE;
     return result;
 }
 

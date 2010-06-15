@@ -20,6 +20,10 @@
 #else
 #define OS_API OS_API_IMPORT
 #endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef os_result c_timeResult;
@@ -60,5 +64,9 @@ OS_API c_time      c_timeFromReal(c_double d);
          (t.nanoseconds == 0x7fffffffU) ? TRUE : FALSE)
 
 #undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif

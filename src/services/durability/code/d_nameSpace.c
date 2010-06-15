@@ -16,6 +16,8 @@
 #include "d_admin.h"
 #include "d__nameSpace.h"
 #include "d_nameSpace.h"
+#include "d_policy.h"
+#include "d__policy.h"
 #include "d_nameSpaces.h"
 #include "d_networkAddress.h"
 #include "d_configuration.h"
@@ -226,6 +228,10 @@ d_nameSpaceCompare(
     int r;
     c_char* partitions1;
     c_char* partitions2;
+    d_policy p1;
+    d_policy p2;
+
+
 
     if((!ns1) && (!ns2)){
         r = 0;
@@ -233,31 +239,42 @@ d_nameSpaceCompare(
         r = -1;
     } else if(!ns2){
         r = 1;
-    } else if(ns1->alignmentKind != ns2->alignmentKind){
-        if(((c_ulong)ns1->alignmentKind) > ((c_ulong)ns2->alignmentKind)){
+    }else
+    {
+        p1 = ns1->policy;
+        p2 = ns2->policy;
+
+        if (p1->aligner && !(p2->aligner)){
+            r = 1;
+        }else if (!(p1->aligner) && p2->aligner){
+            r = -1;
+        }else if(p1->alignmentKind != p2->alignmentKind){
+            if(((c_ulong)p1->alignmentKind) > ((c_ulong)p2->alignmentKind)){
+                r = 1;
+            } else {
+                r = -1;
+            }
+        } else if(p1->durabilityKind != p2->durabilityKind) {
+            if(((c_ulong)p1->durabilityKind) > ((c_ulong)p2->durabilityKind)){
+                r = 1;
+            } else {
+                r = -1;
+            }
+        } else if((!ns1->elements) && (!ns2->elements)){
+            r = 0;
+        } else if(!ns1->elements){
+            r = -1;
+        } else if(!ns2->elements){
             r = 1;
         } else {
-            r = -1;
+            partitions1 = d_nameSpaceGetPartitions(ns1);
+            partitions2 = d_nameSpaceGetPartitions(ns2);
+            r = strcmp(partitions1, partitions2);
+            os_free(partitions1);
+            os_free(partitions2);
         }
-    } else if(ns1->durabilityKind != ns2->durabilityKind) {
-        if(((c_ulong)ns1->durabilityKind) > ((c_ulong)ns2->durabilityKind)){
-            r = 1;
-        } else {
-            r = -1;
-        }
-    } else if((!ns1->elements) && (!ns2->elements)){
-        r = 0;
-    } else if(!ns1->elements){
-        r = -1;
-    } else if(!ns2->elements){
-        r = 1;
-    } else {
-        partitions1 = d_nameSpaceGetPartitions(ns1);
-        partitions2 = d_nameSpaceGetPartitions(ns2);
-        r = strcmp(partitions1, partitions2);
-        os_free(partitions1);
-        os_free(partitions2);
     }
+
     return r;
 }
 
@@ -312,6 +329,20 @@ d_nameSpaceGetName(
     return name;
 }
 
+d_policy
+d_nameSpaceGetPolicy(
+    d_nameSpace  nameSpace )
+{
+    d_policy policy;
+
+    policy = NULL;
+
+    if (isANameSpace(nameSpace)) {
+        policy = nameSpace->policy;
+    }
+    return policy;
+}
+
 c_bool
 d_nameSpaceIsAligner(
     d_nameSpace nameSpace)
@@ -319,11 +350,7 @@ d_nameSpaceIsAligner(
     c_bool result = FALSE;
 
     if (isANameSpace(nameSpace)) {
-        if(nameSpace->alignmentKind == D_ALIGNEE_INITIAL_AND_ALIGNER){
-            result = TRUE;
-        } else {
-            result = FALSE;
-        }
+        result = d_policyGetAligner(nameSpace->policy);
     }
     return result;
 }
@@ -332,10 +359,10 @@ d_alignmentKind
 d_nameSpaceGetAlignmentKind(
     d_nameSpace nameSpace)
 {
-    d_alignmentKind kind = D_ALIGNEE_INITIAL_AND_ALIGNER;
+    d_alignmentKind kind = D_ALIGNEE_INITIAL;
 
     if (isANameSpace(nameSpace)) {
-        kind = nameSpace->alignmentKind;
+        kind = d_policyGetAlignmentKind (nameSpace->policy);
     }
     return kind;
 }
@@ -346,11 +373,12 @@ d_nameSpaceIsAlignmentNotInitial(
     d_nameSpace nameSpace)
 {
     c_bool notInitial;
+    d_alignmentKind alignmentKind;
+
+    alignmentKind = d_policyGetAlignmentKind (nameSpace->policy);
 
     if (isANameSpace(nameSpace)) {
-        switch(nameSpace->alignmentKind){
-        case D_ALIGNEE_INITIAL_AND_ALIGNER:
-            /*fallthrough intentional*/
+        switch(alignmentKind){
         case D_ALIGNEE_INITIAL:
             notInitial = FALSE;
             break;
@@ -362,7 +390,7 @@ d_nameSpaceIsAlignmentNotInitial(
         default:
             OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
                         "Unknown alignment kind '%d' found",
-                        nameSpace->alignmentKind);
+                        alignmentKind);
             notInitial = FALSE;
             assert(FALSE);
             break;
@@ -380,7 +408,7 @@ d_nameSpaceGetDurabilityKind(
     d_durabilityKind kind = D_DURABILITY_ALL;
 
     if (isANameSpace(nameSpace)) {
-        kind = nameSpace->durabilityKind;
+        kind = d_policyGetDurabilityKind (nameSpace->policy);
     }
     return kind;
 }
@@ -484,6 +512,43 @@ d_nameSpaceIsIn(
 }
 
 /**************************************************************/
+typedef struct policyWalkData
+{
+    const char* nameSpace;
+    d_policy policy_out;
+}policyWalkData;
+
+void
+policyWalk (
+    void* o,
+    c_iterActionArg userData)
+{
+    d_policy policy = d_policy(o);
+    policyWalkData* walkData = (policyWalkData*)userData;
+
+    if (!(walkData->policy_out)) {
+        if (d_nameSpaceStringMatches((c_string)walkData->nameSpace, (c_string)policy->nameSpace)) {
+            walkData->policy_out = policy;
+        }
+    }
+}
+
+d_policy
+d_nameSpaceFindPolicy (
+    d_configuration config,
+    const char* nameSpace)
+{
+    policyWalkData walkData;
+
+    walkData.nameSpace = nameSpace;
+    walkData.policy_out = NULL;
+
+    c_iterWalk (config->policies, policyWalk, &walkData);
+
+    return walkData.policy_out;
+}
+
+/**************************************************************/
 
 void
 d_nameSpaceDeinit(
@@ -498,6 +563,8 @@ d_nameSpaceDeinit(
         d_tableFree(nameSpace->elements); /* frees all */
         nameSpace->elements = NULL;
         d_free(nameSpace->name);
+
+        d_policyFree(nameSpace->policy);
     }
 }
 
@@ -515,7 +582,46 @@ d_nameSpaceFree(
 /* Failure will result in the service quitting */
 d_nameSpace
 d_nameSpaceNew(
+    d_configuration config,
+    const char * name)
+{
+    d_nameSpace     nameSpace;
+    d_policy        policy;
+
+    assert (name);
+
+    policy = d_nameSpaceFindPolicy (config, name);
+    if (policy)
+    {
+        d_objectKeep (d_object(policy)); /* Explicit keep of policy */
+
+        /* Create namespace object */
+        nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
+
+        if(nameSpace != NULL){
+            d_lockInit(d_lock(nameSpace), D_NAMESPACE, d_nameSpaceDeinit);
+            /* QAC EXPECT 3892; */
+
+            nameSpace->name = os_strdup(name);
+            nameSpace->policy               = policy;
+            nameSpace->elements             = d_tableNew(elementCompare, elementFree);
+            nameSpace->quality.seconds      = 0;
+            nameSpace->quality.nanoseconds  = 0;
+            nameSpace->master               = d_networkAddressUnaddressed();
+            nameSpace->masterState			= D_STATE_COMPLETE;
+            nameSpace->masterConfirmed		= FALSE;
+         }
+    }
+
+    return nameSpace;
+}
+
+/* Failure will result in the service quitting */
+/* Create namespace with private policy */
+d_nameSpace
+d_nameSpaceNew_w_policy(
     const char * name,
+    c_bool aligner,
     d_alignmentKind alignmentKind,
     d_durabilityKind durabilityKind)
 {
@@ -532,14 +638,41 @@ d_nameSpaceNew(
         } else {
             nameSpace->name = os_strdup("NoName");
         }
-        nameSpace->alignmentKind        = alignmentKind;
-        nameSpace->durabilityKind       = durabilityKind;
+        nameSpace->policy               = d_policyNew (name, aligner, alignmentKind, durabilityKind);
         nameSpace->elements             = d_tableNew(elementCompare, elementFree);
         nameSpace->quality.seconds      = 0;
         nameSpace->quality.nanoseconds  = 0;
         nameSpace->master               = d_networkAddressUnaddressed();
-        nameSpace->masterState			= D_STATE_COMPLETE;
-        nameSpace->masterConfirmed		= FALSE;
+        nameSpace->masterState          = D_STATE_COMPLETE;
+        nameSpace->masterConfirmed      = FALSE;
+    }
+
+    return nameSpace;
+}
+
+d_nameSpace
+d_nameSpaceCopy(
+    d_nameSpace ns)
+{
+    d_nameSpace    nameSpace;
+
+    nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
+
+    if(nameSpace != NULL){
+        d_lockInit(d_lock(nameSpace), D_NAMESPACE, d_nameSpaceDeinit);
+        /* QAC EXPECT 3892; */
+
+        c_keep (ns->policy);
+        c_keep (ns->elements);
+        c_keep (ns->master);
+        nameSpace->name                 = os_strdup(ns->name);
+        nameSpace->policy               = ns->policy;
+        nameSpace->elements             = ns->elements;
+        nameSpace->quality.seconds      = ns->quality.seconds;
+        nameSpace->quality.nanoseconds  = ns->quality.nanoseconds;
+        nameSpace->master               = ns->master;
+        nameSpace->masterState          = ns->masterState;
+        nameSpace->masterConfirmed      = ns->masterConfirmed;
     }
 
     return nameSpace;
@@ -547,21 +680,35 @@ d_nameSpaceNew(
 
 d_nameSpace
 d_nameSpaceFromNameSpaces(
+    d_configuration config,
     d_nameSpaces ns)
 {
     d_nameSpace nameSpace = NULL;
     c_char *partitions, *temp;
     d_quality quality;
+    c_bool aligner;
+    d_alignmentKind alignmentKind;
+    d_durabilityKind durabilityKind;
 
     if(ns){
         nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
-
         if(nameSpace != NULL){
             d_lockInit(d_lock(nameSpace), D_NAMESPACE, d_nameSpaceDeinit);
 
-            nameSpace->name                = NULL;
-            nameSpace->alignmentKind       = d_nameSpacesGetAlignmentKind(ns);
-            nameSpace->durabilityKind      = d_nameSpacesGetDurabilityKind(ns);
+            aligner = d_nameSpacesIsAligner(ns);
+            alignmentKind = d_nameSpacesGetAlignmentKind(ns);
+            durabilityKind = d_nameSpacesGetDurabilityKind(ns);
+
+            if (d_nameSpacesGetName(ns)) {
+                nameSpace->name            = os_strdup(d_nameSpacesGetName(ns));
+            }else {
+                nameSpace->name            = NULL;
+            }
+            nameSpace->policy              = d_policyNew (
+                                                NULL,
+                                                aligner,
+                                                alignmentKind,
+                                                durabilityKind);
             quality                        = d_nameSpacesGetInitialQuality(ns);
             nameSpace->quality.seconds     = quality.seconds;
             nameSpace->quality.nanoseconds = quality.nanoseconds;
@@ -763,6 +910,24 @@ d_nameSpaceGetPartitionsAction(
             break;
     }
     return TRUE;
+}
+
+void
+d_nameSpaceCopyPartitions(
+    d_nameSpace to,
+    d_nameSpace from)
+{
+    /* Keep partitionlist */
+    d_objectKeep (d_object(from->elements));
+
+    /* Free old table */
+    if (to->elements)
+    {
+        d_tableFree (to->elements);
+    }
+
+    /* Copy table to 'to' nameSpace */
+    to->elements = from->elements;
 }
 
 void

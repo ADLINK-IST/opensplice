@@ -89,7 +89,8 @@ v_dataReaderInstanceWrite (
 v_dataReaderResult
 v_dataReaderInstanceInsert(
     v_dataReaderInstance _this,
-    v_message message);
+    v_message message,
+    c_time lastDisposeAll);
 
 c_bool
 v_dataReaderInstanceReadSamples(
@@ -132,7 +133,25 @@ v_dataReaderInstanceSetEpoch (
     v_dataReaderInstance _this,
     c_time time);
 
-#undef OS_API
+void
+v_dataReaderInstanceFlushTransaction(
+    v_dataReaderInstance _this,
+    c_ulong transactionId);
+
+void
+v_dataReaderInstanceAbortTransaction(
+    v_dataReaderInstance _this,
+    c_ulong transactionId);
+
+void
+v_dataReaderInstanceDispose (
+    v_dataReaderInstance _this,
+    c_time timestamp);
+
+void
+v_dataReaderInstanceResetOwner(
+    v_dataReaderInstance _this,
+    v_gid wgid);
 
 #endif
 

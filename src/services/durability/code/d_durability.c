@@ -203,6 +203,38 @@ d_durabilityNotifyStatus(
     return NULL;
 }
 
+static void
+durabilityRegisterNsWalk(
+        void* o,
+        c_iterActionArg arg)
+{
+    d_durability durability;
+    d_admin admin;
+    d_nameSpace ns;
+
+    durability = d_durability(arg);
+    admin = durability->admin;
+    ns = d_nameSpace(o);
+
+    /* Add namespace to runtime administration */
+    d_adminAddNameSpace (admin, ns);
+}
+
+static void
+d_durabilityRegisterNameSpaces(
+        d_durability durability)
+{
+    d_admin admin;
+    d_configuration config;
+    c_iter nameSpaces;
+
+    admin = durability->admin;
+    config = durability->configuration;
+    nameSpaces = config->nameSpaces;
+
+    c_iterWalk (nameSpaces, durabilityRegisterNsWalk, durability);
+}
+
 d_durability
 d_durabilityNew(
     const c_char* uri,
@@ -212,7 +244,7 @@ d_durabilityNew(
     u_result result;
     d_durability durability;
 
-    durability = NULL;
+    durability = d_durability(NULL);
     result = u_userInitialise();
 
     if(result == U_RESULT_OK){
@@ -250,6 +282,13 @@ d_durabilityNew(
                 durability->admin = d_adminNew(durability);
 
                 if(durability->admin){
+                    /* Register configured namespaces with admin */
+                    d_durabilityRegisterNameSpaces(durability);
+
+                    /* Now ready to initialize protocol subscriber */
+                    d_adminInitSubscriber (durability->admin);
+
+                    /* Initialize listeners */
                     d_durabilityInit(durability);
 
                     if(durability->splicedRunning == FALSE){
@@ -480,77 +519,90 @@ d_durabilityDetermineConnectivity(
     return connectivity;
 }
 
+typedef struct nsCompleteWalkData
+{
+    d_durability durability;
+    d_store store;
+} nsCompleteWalkData;
+
+/* Check if namespace is complete */
+static void
+nameSpaceCompleteWalk(
+    d_nameSpace nameSpace,
+    c_voidp userData)
+{
+    d_durability durability;
+    d_store store;
+    os_time sleepTime;
+    d_durabilityKind durabilityKind;
+
+    sleepTime.tv_sec        = 0;
+    sleepTime.tv_nsec       = 100000000; /* 100 ms */
+
+    durability = ((struct nsCompleteWalkData*)userData)->durability;
+    store = ((struct nsCompleteWalkData*)userData)->store;
+    durabilityKind = d_nameSpaceGetDurabilityKind(nameSpace);
+
+    /* If namespace is not persistent, continue */
+    if( (durabilityKind == D_DURABILITY_PERSISTENT) ||
+                        (durabilityKind == D_DURABILITY_ALL)) {
+
+        /* Wait until master is confirmed for namespace */
+        while (!d_nameSpaceIsMasterConfirmed(nameSpace) && durability->splicedRunning == TRUE) {
+             os_nanoSleep (sleepTime);
+        }
+
+        /* Check master state of namespace, was it complete during alignment? */
+        if (d_nameSpaceGetMasterState(nameSpace) == D_STATE_COMPLETE)
+        {
+            /* Mark namespace complete */
+            if (d_storeNsMarkComplete (store, nameSpace, TRUE) == D_STORE_RESULT_OK)
+            {
+                d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+                     "Local copy of namespace '%s' is complete\n", d_nameSpaceGetName (nameSpace));
+            }else
+            {
+                d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+                     "Failed to mark local copy of namespace '%s' as complete\n", d_nameSpaceGetName (nameSpace));
+                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                     "Failed to mark local copy of namespace '%s' as complete\n",
+                     d_nameSpaceGetName (nameSpace));
+            }
+        }else
+        {
+            /* Mark namespace incomplete */
+            if (d_storeNsMarkComplete (store, nameSpace, FALSE) == D_STORE_RESULT_OK)
+            {
+                d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+                        "Local copy of namespace '%s' is not complete\n", d_nameSpaceGetName (nameSpace));
+            }else
+            {
+                d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
+                        "Failed to mark local copy of namespace '%s' as incomplete\n", d_nameSpaceGetName (nameSpace));
+                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                        "Failed to mark local copy of namespace '%s' as incomplete\n",
+                        d_nameSpaceGetName (nameSpace));
+            }
+        }
+    }
+}
+
 static void
 determineNameSpaceCompleteness(
 		d_durability durability,
 		d_subscriber subscriber)
 {
-	d_configuration configuration;
-    c_long i, nameSpaceCount;
-    d_nameSpace nameSpace;
+    d_admin admin;
     d_store store;
-    os_time sleepTime;
-    d_durabilityKind durabilityKind;
+    nsCompleteWalkData walkData;
 
-	configuration = d_durabilityGetConfiguration(durability);
-	nameSpaceCount = c_iterLength (configuration->nameSpaces);
+    admin = durability->admin;
 	store = d_subscriberGetPersistentStore(subscriber);
 
-	if (!store) {
-		return;
-	}
-
-    sleepTime.tv_sec        = 0;
-    sleepTime.tv_nsec       = 100000000; /* 100 ms */
-
-	/* Walk namespaces, determine if they are potentially incomplete */
-	for (i=0; i<nameSpaceCount; i++)
-	{
-		nameSpace = c_iterObject(configuration->nameSpaces, i);
-
-		durabilityKind = d_nameSpaceGetDurabilityKind(nameSpace);
-
-		/* If namespace is not persistent, continue */
-		if( (durabilityKind != D_DURABILITY_PERSISTENT) &&
-		                    (durabilityKind != D_DURABILITY_ALL)) {
-			continue;
-		}
-
-		while (!d_nameSpaceIsMasterConfirmed(nameSpace) && durability->splicedRunning == TRUE) {
-			os_nanoSleep (sleepTime);
-		}
-
-		if (d_nameSpaceGetMasterState(nameSpace) ==	D_STATE_COMPLETE)
-		{
-			/* Mark namespace complete */
-			if (d_storeNsMarkComplete (store, nameSpace, TRUE) == D_STORE_RESULT_OK)
-			{
-				d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
-						"Local copy of namespace '%s' is complete\n", d_nameSpaceGetName (nameSpace));
-			}else
-			{
-				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
-						"Failed to mark local copy of namespace '%s' as complete\n", d_nameSpaceGetName (nameSpace));
-                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
-                		"Failed to mark local copy of namespace '%s' as complete\n",
-                		d_nameSpaceGetName (nameSpace));
-			}
-		}else
-		{
-			/* Mark namespace incomplete */
-			if (d_storeNsMarkComplete (store, nameSpace, FALSE) == D_STORE_RESULT_OK)
-			{
-				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
-						"Local copy of namespace '%s' is not complete\n", d_nameSpaceGetName (nameSpace));
-			}else
-			{
-				d_printTimedEvent(durability, D_LEVEL_WARNING, D_THREAD_MAIN,
-						"Failed to mark local copy of namespace '%s' as incomplete\n", d_nameSpaceGetName (nameSpace));
-                OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
-                		"Failed to mark local copy of namespace '%s' as incomplete\n",
-                		d_nameSpaceGetName (nameSpace));
-			}
-		}
+	if (store) {
+	    walkData.durability = durability;
+	    walkData.store = store;
+        d_adminNameSpaceWalk (admin, nameSpaceCompleteWalk, &walkData);
 	}
 }
 
@@ -564,12 +616,12 @@ d_durabilityHandleInitialAlignment(
     d_sampleChainListener sampleChainListener;
     d_configuration configuration;
 
-
     sleepTime.tv_sec        = 0;
     sleepTime.tv_nsec       = 100000000; /* 100 ms */
     subscriber              = d_adminGetSubscriber(durability->admin);
     fellowNameSpacesKnown   = FALSE;
     sampleChainListener     = d_subscriberGetSampleChainListener(subscriber);
+    configuration           = d_durabilityGetConfiguration(durability);
 
     d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN,
             "Waiting for nameSpaces of fellows to get complete...\n");
@@ -601,7 +653,7 @@ d_durabilityHandleInitialAlignment(
         if((complete == FALSE) && (durability->splicedRunning == TRUE)){
             os_nanoSleep(sleepTime);
 
-            if(durability->configuration->tracingVerbosityLevel == D_LEVEL_FINEST){
+            if(configuration->tracingVerbosityLevel == D_LEVEL_FINEST){
                 newTime = os_timeGet();
 
                 if(os_timeCompare(newTime, reportTime) != OS_LESS){
@@ -741,6 +793,7 @@ main(
     c_ulong maxTries, tryCount;
     int result;
     c_long domainId = 1;
+
     /**
      * Expecting: durability <serviceName> <uri>
      */

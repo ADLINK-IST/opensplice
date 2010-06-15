@@ -29,6 +29,8 @@ NW_STRUCT(plugReceiveStatistics){
 	c_ulong numberOfPacketsResent;
 	c_ulong numberOfBytesInResendBuffer;
 	c_ulong numberOfPacketsInResendBuffer;
+    c_ulong nofBytesBeforeCompression;
+    c_ulong nofBytesAfterCompression;
  receive*/
 	c_ulong numberOfMessagesReceived;
 	c_ulong numberOfBytesReceived;
@@ -41,7 +43,9 @@ NW_STRUCT(plugReceiveStatistics){
 	c_ulong numberOfBytesNotInterested;
 	c_ulong nofUsedPacketBuffers;
 	c_ulong nofFreePacketBuffers;
-
+	int enabled;
+    c_ulong nofBytesBeforeDecompression;
+    c_ulong nofBytesAfterDecompression;
 };
 
 NW_CLASS(nw_plugReceiveChannel);

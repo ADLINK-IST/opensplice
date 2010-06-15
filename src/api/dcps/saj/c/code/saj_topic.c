@@ -14,6 +14,11 @@
 #include "saj_qosUtils.h"
 #include "saj_status.h"
 #include "saj_topicListener.h"
+#include "saj_extTopicListener.h"
+
+#include "gapi.h"
+
+#include "os_report.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_TopicImpl_##name
 
@@ -44,6 +49,44 @@ SAJ_FUNCTION(jniGetInconsistentTopicStatus)(
             if(rc == SAJ_RETCODE_OK){
                 (*env)->SetObjectField(env, jstatusHolder, 
                             GET_CACHED(inconsistentTopicStatusHolder_value_fid), jstatus);
+                (*env)->DeleteLocalRef(env, jstatus);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+            }
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+    return (jint)result;
+}
+
+/**
+ * Class:     org_opensplice_dds_dcps_TopicImpl
+ * Method:    jniGetAllDataDisposedTopicStatus
+ * Signature: ()LDDS/AllDataDisposedTopicStatus;
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniGetAllDataDisposedTopicStatus)(
+    JNIEnv *env, 
+    jobject jtopic,
+    jobject jstatusHolder)
+{
+    gapi_topic topic;
+    jobject jstatus;
+    gapi_allDataDisposedTopicStatus status;
+    saj_returnCode rc;
+    gapi_returnCode_t result;
+    
+    if(jstatusHolder){
+        topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
+        result = gapi_topic_get_all_data_disposed_topic_status(topic, &status);
+        
+        if(result == GAPI_RETCODE_OK){
+            rc = saj_statusCopyOutAllDataDisposedTopicStatus(env, &status, &jstatus);
+            
+            if(rc == SAJ_RETCODE_OK){
+                (*env)->SetObjectField(env, jstatusHolder, 
+                            GET_CACHED(allDataDisposedTopicStatusHolder_value_fid), jstatus);
                 (*env)->DeleteLocalRef(env, jstatus);
             } else {
                 result = GAPI_RETCODE_ERROR;
@@ -163,15 +206,40 @@ SAJ_FUNCTION(jniSetListener)(
 {
     struct gapi_topicListener* listener;
     gapi_topic topic;
-    gapi_returnCode_t grc;
-    
-    topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-    listener = saj_topicListenerNew(env, jlistener);
-    grc = gapi_topic_set_listener(topic, listener, (unsigned long int)jmask);
-    
+    gapi_returnCode_t grc = GAPI_RETCODE_OK;
+
+    jclass tempClass;
+    jboolean result;
+
+    /* We can check Java instances in the jni layer, so here we check
+     * that if the mask is set to GAPI_ALL_DATA_DISPOSED_STATUS we have
+     * been given an ExtDomainParticipantListener to call. If not then
+     * an error is reported and a GAPI_RETCODE_BAD_PARAMETER status is
+     * returned. */
+    if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+        tempClass = (*env)->FindClass(env, "DDS/ExtTopicListener");
+        result = (*env)->IsInstanceOf(env, jlistener, tempClass);
+        if(result == JNI_FALSE) {
+            OS_REPORT(OS_ERROR, "dcpssaj", 0, "ExtTopicListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
+            grc = GAPI_RETCODE_BAD_PARAMETER;
+        }  
+    }
+
     if(grc == GAPI_RETCODE_OK){
-        if(listener != NULL){
-            saj_write_java_listener_address(env, topic, listener->listener_data);
+        topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
+
+        if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
+            listener = saj_extTopicListenerNew(env, jlistener);
+        } else {
+            listener = saj_topicListenerNew(env, jlistener);
+        }
+
+        grc = gapi_topic_set_listener(topic, listener, (unsigned long int)jmask);
+    
+        if(grc == GAPI_RETCODE_OK){
+            if(listener != NULL){
+                saj_write_java_listener_address(env, topic, listener->listener_data);
+            }
         }
     } 
     return (jint)grc; 

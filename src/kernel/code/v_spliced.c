@@ -55,6 +55,7 @@
 #include "v_subscriber.h"
 #include "v__dataReader.h"
 #include "v_dataReaderInstance.h"
+#include "v_dataReaderEntry.h"
 #include "v_query.h"
 #include "v_publisher.h"
 #include "v__writer.h"
@@ -81,6 +82,8 @@
 #define HB_DEFAULT_NSEC (0)
 #define HB_DEFAULT_RENEWAL_SEC  (1)
 #define HB_DEFAULT_RENEWAL_NSEC (0)
+
+#define C_AND_M_READER_NAME V_C_AND_M_COMMAND_NAME "Reader"
 
 static void
 doCleanupPublication(
@@ -687,6 +690,84 @@ checkHeartbeat(
     return TRUE; /* all heartbeats must be checked */
 }
 
+static c_bool
+dataReaderEntryAction (
+    v_entry _this,
+    c_voidp arg)
+{
+    v_publicationInfoTemplate msg = (v_publicationInfoTemplate)arg;
+    c_bool result = TRUE;
+
+    if (v_objectKind(_this) == K_DATAREADERENTRY)
+    {
+        v_dataReaderEntryAbortTransaction(v_dataReaderEntry(_this),
+                                          msg->userData.key);
+    }
+    return result;
+}
+
+static void
+notifyCoherentReaders (
+    v_kernel _this,
+    v_dataReaderSample rSample)
+{
+    v_group group;
+    v_topic topic;
+    c_long nrOfPartitions, i;
+    c_iter groupList;
+    c_value params[1];
+    v_publicationInfoTemplate rInfo;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_kernel));
+
+    if (_this == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_spliced::notifyCoherentReaders", 0,
+                  "Received illegal '_this' reference to kernel.");
+        return;
+    }
+    if (rSample == NULL) {
+        OS_REPORT(OS_WARNING,
+                  "v_spliced::notifyCoherentReaders", 0,
+                  "Received illegal sample: <NULL>.");
+        return;
+    }
+    rInfo = (v_publicationInfoTemplate)v_dataReaderSampleMessage(rSample);
+    if (v_messageStateTest(rInfo,L_DISPOSED)) {
+        if (rInfo->userData.presentation.coherent_access) {
+            /* At this point the message received anounces the
+             * disapearance of a coherent DataWriter.
+             * For each coherent DataWriter that disapeares we need to look
+             * for messages originating from this DataWriter that are still
+             * being part of an open tranactions.
+             * If a message is found the whole transaction must be discard.
+             */
+            /* lookup all DataReader-Topic related groups. */
+            topic = v_lookupTopic(_this,rInfo->userData.topic_name);
+            params[0] = c_objectValue(topic);
+            groupList = v_groupSetSelect(_this->groupSet, "topic = %0", params);
+
+            /* filter out DataReader Partition incompliant groups. */
+            nrOfPartitions = c_arraySize(rInfo->userData.partition.name);
+            group = c_iterTakeFirst(groupList);
+            while (group) {
+                for (i=0; i<nrOfPartitions; i++) {
+                    c_string name = v_entityName(group->partition);
+                    if (strcmp(name,rInfo->userData.partition.name[i]) == 0) {
+                        v_groupWalkEntries(group,dataReaderEntryAction,rInfo);
+                        i = nrOfPartitions; /* exit for loop */
+                    }
+                }
+                c_free(group);
+                group = c_iterTakeFirst(groupList);
+            }
+            c_iterFree(groupList);
+            c_free(topic);
+        }
+    }
+}
+
 /* returns 0, when no DCPSSubscriptionInfo sample was available.
  * Otherwise 1 is returned */
 static int
@@ -729,6 +810,7 @@ v_splicedProcessSubscriptionInfo(
     if (rSample != NULL) {
         result = 1;
 
+        notifyCoherentReaders(kernel, rSample);
         msg = v_dataReaderSampleMessage(rSample);
         rInfo = v_builtinSubscriptionInfoData(kernel->builtin,msg);
         state = v_readerSample(rSample)->sampleState;
@@ -1249,11 +1331,23 @@ v_splicedManageKernel(
                                 HB_READER_NAME,
                                 expr, params,
                                 NULL, TRUE);
+
+
     q_dispose(expr);
     topic = v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID);
     str = messageKeyExpr(topic);
     spliced->missedHB = c_tableNew(v_topicMessageType(topic), str);
     os_free(str);
+
+
+    expr = q_parse("select * from " V_C_AND_M_COMMAND_NAME);
+    spliced->readers[V_C_AND_M_COMMAND_ID] =
+                v_dataReaderNew(spliced->builtinSubscriber,
+                                C_AND_M_READER_NAME,
+                                expr, params,
+                                NULL, TRUE);
+    q_dispose(expr);
+
 }
 #undef _INIT_BUILTIN_DATA_
 
@@ -1297,19 +1391,25 @@ v_splicedInit(
     v_participant(spliced)->leaseManager = c_keep(kernel->livelinessLM);
 
     c_mutexInit(&spliced->mtx, SHARED_MUTEX);
+    c_mutexInit(&spliced->cAndMCommandMutex, SHARED_MUTEX);
 
     spliced->readers[V_PARTICIPANTINFO_ID] = NULL;
     spliced->readers[V_TOPICINFO_ID] = NULL;
     spliced->readers[V_PUBLICATIONINFO_ID] = NULL;
     spliced->readers[V_SUBSCRIPTIONINFO_ID] = NULL;
+    spliced->readers[V_C_AND_M_COMMAND_ID] = NULL;
 
     spliced->builtinData[V_PARTICIPANTINFO_ID] = NULL;
     spliced->builtinData[V_TOPICINFO_ID] = NULL;
     spliced->builtinData[V_PUBLICATIONINFO_ID] = NULL;
     spliced->builtinData[V_SUBSCRIPTIONINFO_ID] = NULL;
+    spliced->builtinData[V_C_AND_M_COMMAND_ID] = NULL;
 
     spliced->ws = NULL;
     spliced->quit = FALSE;
+    spliced->cAndMCommandWaitSet = v_waitsetNew(kernel->builtin->participant);
+    spliced->cAndMCommandDispatcherQuit = FALSE;
+   
     v_splicedManageKernel(spliced);
 }
 
@@ -1321,6 +1421,8 @@ v_splicedFree(
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
+
+    v_waitsetFree(spliced->cAndMCommandWaitSet);
 
     kernel = v_objectKernel(spliced);
     /* set builtin writer to NULL, to prevent
@@ -1338,6 +1440,8 @@ v_splicedDeinit(
 {
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
+
+    v_waitsetDeinit(spliced->cAndMCommandWaitSet);
 
     /* prevent that the kernel lease manager is destroyed */
     c_free(v_participant(spliced)->leaseManager);
@@ -1478,6 +1582,61 @@ v_splicedBuiltinResendManager(
 
     k = v_objectKernel(spliced);
     v_participantResendManagerMain(k->builtin->participant);
+}
+
+void
+v_splicedCAndMCommandDispatcherQuit(
+    v_spliced spliced)
+{
+   assert(C_TYPECHECK(spliced,v_spliced));
+
+   c_mutexLock(&spliced->cAndMCommandMutex);
+   spliced->cAndMCommandDispatcherQuit = TRUE;
+   v_waitsetNotify(spliced->cAndMCommandWaitSet, V_EVENT_UNDEFINED, NULL);
+   c_mutexUnlock(&spliced->cAndMCommandMutex);
+}
+
+static void v_splicedTakeCandMCommand(v_spliced spliced);
+
+static void dispatchCandMCommandAction(v_waitsetEvent e, c_voidp arg)
+{
+   v_spliced spliced = (v_spliced)arg;
+   v_splicedTakeCandMCommand(spliced);
+}
+
+void
+v_splicedBuiltinCAndMCommandDispatcher(
+    v_spliced spliced)
+{
+   v_kernel k;
+   v_result res ;
+   c_bool boolRes;
+   v_dataReader reader;
+
+   k = v_objectKernel(spliced);
+
+   c_mutexLock(&spliced->cAndMCommandMutex);
+   reader = spliced->readers[V_C_AND_M_COMMAND_ID];
+   boolRes = v_waitsetAttach( spliced->cAndMCommandWaitSet, 
+                              (v_observable)reader, 
+                              NULL);
+   v_observerSetEventMask( (v_observer)spliced->cAndMCommandWaitSet,
+                            V_EVENT_DATA_AVAILABLE );
+   assert( boolRes );
+   while (!spliced->cAndMCommandDispatcherQuit)
+   {
+      c_mutexUnlock(&spliced->cAndMCommandMutex);
+      res = v_waitsetWait( spliced->cAndMCommandWaitSet,
+                           dispatchCandMCommandAction,
+                           spliced );
+      assert( res == V_RESULT_OK || res == V_RESULT_DETACHING);
+      c_mutexLock(&spliced->cAndMCommandMutex);
+   }
+   c_mutexUnlock(&spliced->cAndMCommandMutex);
+
+   boolRes = v_waitsetDetach (spliced->cAndMCommandWaitSet,
+                              v_observable(reader));
+   /* FIXME Do we need this? Fails on exit if I assert( boolRes ); */
 }
 
 void
@@ -1733,4 +1892,106 @@ v_splicedStopHeartbeat(
     spliced->hbUpdate = NULL;
 
     return TRUE;
+}
+
+
+static void disposeAllDataCandMCommand(v_spliced spliced,
+                                       v_controlAndMonitoringCommand *command,
+                                       c_time timestamp)
+{
+   v_kernel kernel;
+   v_group group;
+   v_topic topic;
+   v_result res;
+   struct v_commandDisposeAllData *disposeCmd;
+   
+
+   assert(spliced != NULL);
+   assert(C_TYPECHECK(spliced,v_spliced));
+
+   disposeCmd = &command->u._u.dispose_all_data_info;
+
+   kernel = v_objectKernel(spliced);
+   group = v_groupSetGet(kernel->groupSet,
+                         disposeCmd->partitionExpr,
+                         disposeCmd->topicExpr);
+
+   res = v_groupDisposeAll( group, timestamp );
+   if ( res != V_RESULT_OK )
+   {
+      OS_REPORT(OS_WARNING, "spliced", 0, 
+                "Dispose All Data failed due to internal error."); 
+   }
+   v_participantDeleteHistoricalData( v_participant(spliced), 
+                                      disposeCmd->partitionExpr,
+                                      disposeCmd->topicExpr );
+
+   topic = v_groupTopic( group );
+
+   v_observerLock( v_observer(topic) );
+   v_topicNotifyAllDataDisposed( topic );
+   v_observerUnlock( v_observer(topic) );
+}
+
+
+typedef void (*cAndMCommandFn_t)(v_spliced spliced,
+                                 v_controlAndMonitoringCommand *command,
+                                 c_time timestamp);
+
+/* This array is indexed by values of the 
+   enum v_controlAndMonitoringCommandKind */
+static cAndMCommandFn_t cAndMCommandFns[] = 
+{
+   disposeAllDataCandMCommand
+};
+
+static void dispatchCandMCommand(v_spliced spliced, 
+                                 v_dataReaderSample s,
+                                 c_time timestamp)
+{
+   v_kernel kernel;
+   v_message msg;
+   v_controlAndMonitoringCommand *command;
+
+   assert(spliced != NULL);
+   assert(C_TYPECHECK(spliced,v_spliced));
+   assert(s != NULL);
+   assert(C_TYPECHECK(s,v_dataReaderSample));
+
+   kernel = v_objectKernel(spliced);
+   msg = v_dataReaderSampleMessage(s);
+   command = v_builtinControlAndMonitoringCommandData(kernel->builtin, msg);
+   if ( command->u._d < sizeof(cAndMCommandFns)/sizeof(cAndMCommandFn_t) )
+   {
+      cAndMCommandFns[command->u._d]( spliced, command, timestamp );
+   }
+   else
+   {
+      OS_REPORT(OS_WARNING, "spliced", 0, 
+                "unknown Control and Monitoring Command received."); 
+   }
+}
+
+static void v_splicedTakeCandMCommand(v_spliced spliced)
+{
+    v_dataReaderSample s;
+    v_dataReader reader;
+    c_iter samples;
+    c_time timestamp;
+
+    assert(spliced != NULL);
+    assert(C_TYPECHECK(spliced,v_spliced));
+
+    samples = NULL;
+    if ( (reader = spliced->readers[V_C_AND_M_COMMAND_ID]) != NULL )
+    {
+        v_dataReaderTake(reader, readerAction, &samples);
+        while ( (s = v_dataReaderSample(c_iterTakeFirst(samples))) != NULL ) 
+        {
+           timestamp = v_dataReaderSample(s)->insertTime;
+           dispatchCandMCommand(spliced, s, timestamp);
+           c_free(s);
+        }
+        c_iterFree(samples);
+    }
 }

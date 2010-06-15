@@ -565,6 +565,7 @@ v_groupInstanceRegister (
     }
     if (instance->registrations != NULL) {
         v_stateClear(instance->state, L_NOWRITERS);
+        instance->epoch = C_TIME_ZERO;
     }
 
     CHECK_COUNT(instance);
@@ -1195,4 +1196,35 @@ v_groupInstancePurgeTimed(
     }
     CHECK_REGISTRATIONS(instance);
     return;
+}
+
+
+
+v_result
+v_groupInstanceDispose (
+    v_groupInstance instance,
+    c_time timestamp)
+{
+    v_groupSample ptr;
+
+    assert(instance != NULL);
+    assert(C_TYPECHECK(instance,v_groupInstance));
+    assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
+    assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
+    CHECK_COUNT(instance);
+
+/* The following code doesn't insert a dispose sample as what happens when a
+ * normal dispose message is received.
+ */
+    ptr = v_groupInstanceHead(instance);
+    if ( ptr == NULL
+         || v_timeCompare(timestamp,
+                          v_groupSampleMessage(ptr)->writeTime) == C_GE) {
+       v_stateSet(instance->state, L_DISPOSED);
+    }
+
+    CHECK_COUNT(instance);
+    assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
+    assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
+    return V_RESULT_OK;
 }

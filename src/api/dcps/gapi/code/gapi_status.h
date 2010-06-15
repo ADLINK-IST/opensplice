@@ -21,7 +21,8 @@
 #define GAPI_STATUS_KIND_FULL 0x1fffU
 #define GAPI_STATUS_KIND_NULL 0x0U
 
-#define TOPIC_STATUS_MASK           (GAPI_INCONSISTENT_TOPIC_STATUS)
+#define TOPIC_STATUS_MASK           (GAPI_INCONSISTENT_TOPIC_STATUS|\
+                                     GAPI_ALL_DATA_DISPOSED_STATUS)
 #define READER_STATUS_MASK          (GAPI_SAMPLE_REJECTED_STATUS            |\
                                      GAPI_LIVELINESS_CHANGED_STATUS         |\
                                      GAPI_REQUESTED_DEADLINE_MISSED_STATUS  |\
@@ -60,6 +61,7 @@ typedef struct _ListenerInfo_s {
 typedef struct _ListenerCallbackInfo_s {
     void *listenerData;
     gapi_listener_InconsistentTopicListener on_inconsistent_topic;
+    gapi_listener_AllDataDisposedListener on_all_data_disposed;
     gapi_listener_OfferedDeadlineMissedListener on_offered_deadline_missed;
     gapi_listener_OfferedIncompatibleQosListener on_offered_incompatible_qos;
     gapi_listener_LivelinessLostListener on_liveliness_lost;

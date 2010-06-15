@@ -602,6 +602,14 @@ v_groupEntryFree(
 
 typedef c_bool (*v_groupEntrySetWalkAction)(v_groupEntry entry, c_voidp arg);
 
+static c_bool entrySetDisposeAction(v_groupEntry entry, c_voidp arg)
+{
+   v_dataReaderEntry reader;
+   c_time *ts = (c_time *)arg;
+   reader = v_dataReaderEntry(entry->entry);
+   return( v_dataReaderEntryDisposeAll( reader, *ts ) == V_RESULT_OK );
+}
+
 static c_bool
 v_groupEntrySetWalk(
     struct v_groupEntrySet *s,
@@ -617,6 +625,11 @@ v_groupEntrySetWalk(
         proxy = proxy->next;
     }
     return proceed;
+}
+
+c_bool v_groupEntrySetDisposeAll( struct v_groupEntrySet *set, c_time now )
+{
+   return( v_groupEntrySetWalk( set, entrySetDisposeAction, &now ) ); 
 }
 
 static v_groupEntry
@@ -720,6 +733,8 @@ v_groupInit(
     assert(type);
     group->attachedServices      = c_setNew(type);
     group->notInterestedServices = c_setNew(type);
+
+    group->lastDisposeAll = C_TIME_MIN_INFINITE;
 
     qos = v_topicQosRef(topic);
     if (qos->durabilityService.history_kind == V_HISTORY_KEEPLAST) {
@@ -1201,6 +1216,7 @@ C_STRUCT(v_entryRegisterArg) {
     v_message message;
     v_groupInstance instance;
     v_writeResult writeResult;
+    c_time lastDisposeAll;
 };
 
 C_CLASS(v_entryRegisterArg);
@@ -1219,6 +1235,7 @@ C_STRUCT(v_entryWriteArg) {
     v_networkId networkId;
     v_writeResult writeResult;
     v_entry entry;
+    c_time lastDisposeAll;
 };
 
 C_CLASS(v_entryWriteArg);
@@ -1247,7 +1264,9 @@ entryRegister(
 
     result = v_dataReaderEntryWrite(v_dataReaderEntry(proxy->entry),
                                     writeArg->message,
-                                    &instance);
+                                    &instance,
+                                    writeArg->lastDisposeAll);
+
     if (result != V_WRITE_SUCCESS) {
         writeArg->writeResult = result;
     } else {
@@ -1476,11 +1495,13 @@ forwardRegisterMessage (
      */
     if (v_messageStateTest(message,L_REGISTER)) {
 
+        group = v_groupInstanceOwner(instance);
+
         registerArg.message     = message;
         registerArg.writeResult = V_WRITE_SUCCESS;
         registerArg.instance    = instance;
+        registerArg.lastDisposeAll = group->lastDisposeAll;
 
-        group = v_groupInstanceOwner(instance);
 
         /* A connection update occured, so all readers must be addressed
          * to guarantee cache consistency
@@ -1518,11 +1539,13 @@ forwardMessage (
     if (v_messageStateTest(message,L_REGISTER)) {
         forwardRegisterMessage(instance, message);
     } else {
+
+        group = v_groupInstanceOwner(instance);
+
         writeArg.message   = message;
         writeArg.networkId = writingNetworkId;
         writeArg.entry     = entry;
-
-        group = v_groupInstanceOwner(instance);
+        writeArg.lastDisposeAll = group->lastDisposeAll;
 
         if(!entry){
             instanceArg.message        = message;
@@ -1676,7 +1699,7 @@ groupWrite (
             assert(FALSE);
             return V_WRITE_PRE_NOT_MET;
         }
-        if (!(v_nodeState(msg) & (L_WRITE|L_DISPOSED|L_UNREGISTER))) {
+        if (!(v_nodeState(msg) & (L_WRITE|L_DISPOSED|L_UNREGISTER|L_TRANSACTION))) {
             return V_WRITE_SUCCESS;
         }
         result = V_WRITE_SUCCESS;
@@ -1686,8 +1709,6 @@ groupWrite (
 
     /* At this point the group instance is either created, resolved
      * or verified if it was provided by the callee.
-     * And in case of a new Instance the register flag of the message
-     * is set.
      */
 
     assert(instance != NULL);
@@ -1742,7 +1763,8 @@ groupWrite (
             	/* if the instance state is NOWRITERS and DISPOSED then and only
 				 * then add the instance to the purge admin.
 				 */
-                if (v_groupInstanceStateTest(instance,(L_NOWRITERS | L_DISPOSED))) {
+                if (v_groupInstanceStateTest(instance,L_DISPOSED) &&
+                    v_groupInstanceStateTest(instance,L_NOWRITERS)) {
                     delay = qos->durabilityService.service_cleanup_delay;
                     if (v_groupInstanceStateTest(instance,L_EMPTY)) {
                         if (v_timeIsZero(delay)) {
@@ -2071,6 +2093,7 @@ v_groupResend (
         arg.networkId   = writingNetworkId;
         arg.writeResult = V_WRITE_SUCCESS;
         arg.entry       = NULL;
+        arg.lastDisposeAll = C_TIME_MIN_INFINITE;
 
         v_groupEntrySetWalk(&group->variantEntrySet,
                             variantEntryResend,
@@ -2825,3 +2848,78 @@ v_groupUpdatePurgeList(
         c_mutexUnlock(&group->mutex);
     }
 }
+
+C_CLASS(disposeAllArg);
+C_STRUCT(disposeAllArg) {
+    v_result result;
+    c_time timestamp;
+};
+
+static c_bool
+disposeAll (
+    c_object o,
+    c_voidp arg)
+{
+    v_groupInstance instance = v_groupInstance(o);
+    disposeAllArg a = (disposeAllArg)arg;
+
+    v_groupInstanceDispose(instance,a->timestamp);
+
+    return TRUE;
+}
+
+
+v_result
+v_groupDisposeAll (
+    v_group group,
+    c_time timestamp)
+{
+    C_STRUCT(disposeAllArg) disposeArg;
+
+    assert(C_TYPECHECK(group,v_group));
+
+    c_mutexLock(&group->mutex);
+#if 0
+    {/* Not sure if this is needed? */
+        c_time now;
+#ifdef _NAT_
+        now = v_timeGet();
+#else
+        now = msg->allocTime;
+#endif
+        updatePurgeList(group, now);
+    }
+#endif
+    
+    if ( c_timeCompare( group->lastDisposeAll, timestamp ) == C_LT )
+    {
+       group->lastDisposeAll = timestamp;
+    }
+
+    disposeArg.result = V_RESULT_OK;
+    disposeArg.timestamp = timestamp;
+
+    c_tableWalk(group->instances, disposeAll, &disposeArg);
+
+    if ( disposeArg.result == V_RESULT_OK )
+    {
+       disposeArg.result = 
+          v_groupEntrySetDisposeAll( &group->topicEntrySet,
+                                     timestamp ) ? V_RESULT_OK 
+                                                 : V_RESULT_INTERNAL_ERROR;
+    }
+    if ( disposeArg.result == V_RESULT_OK )
+    {
+       disposeArg.result = 
+          v_groupEntrySetDisposeAll( &group->variantEntrySet,
+                                     timestamp ) ? V_RESULT_OK 
+                                                 : V_RESULT_INTERNAL_ERROR;
+    }
+
+    forwardMessageToStreams(group, NULL, timestamp, V_GROUP_ACTION_DISPOSE_ALL);
+
+    c_mutexUnlock(&group->mutex);
+
+    return disposeArg.result;
+}
+

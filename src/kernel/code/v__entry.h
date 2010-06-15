@@ -15,7 +15,11 @@
 
 #include "v_entry.h"
 
-#define v_entryReader(_this) v_reader(v_entry(_this)->reader)
+#define v_entryReader(_this) \
+        v_reader(v_entry(_this)->reader)
+
+#define v_entryReaderQos(_this) \
+        (v_entryReader(_this)->qos)
 
 void
 v_entryInit (

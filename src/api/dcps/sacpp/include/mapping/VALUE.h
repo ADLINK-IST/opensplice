@@ -13,7 +13,7 @@
 #ifndef _SACPP_MAPPING_VALUE_H_
 #define _SACPP_MAPPING_VALUE_H_
 
-
+#include "sacpp_if.h"
 // Template classes used to implement valuetype _var and _out types.
 
 template <class Type> class DDSValueBase_var;
@@ -307,4 +307,5 @@ template <class Type> inline DDSValueBase_out<Type>::operator Type * () const
    return m_ptr;
 }
 
+#undef SACPP_API
 #endif

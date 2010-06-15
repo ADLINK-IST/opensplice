@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "ccpp_QosUtils.h"
@@ -15,27 +15,27 @@
 namespace DDS
 {
     static const DDS::UserDataQosPolicy DEFAULT_USERDATA_QOSPOLICY = {
-        DDS::UserDataQosPolicy::_value_seq()
+        DDS::octSeq()
     };
 
     static const DDS::TopicDataQosPolicy DEFAULT_TOPICDATA_QOSPOLICY = {
-        DDS::TopicDataQosPolicy::_value_seq()
+        DDS::octSeq()
     };
- 
+
     static const DDS::GroupDataQosPolicy DEFAULT_GROUPDATA_QOSPOLICY = {
-        DDS::GroupDataQosPolicy::_value_seq()
+        DDS::octSeq()
     };
 
     static const DDS::TransportPriorityQosPolicy DEFAULT_TRANSPORTPRIORITY_QOSPOLICY = { 0L };
-    
+
     static const DDS::LifespanQosPolicy DEFAULT_LIFESPAN_QOSPOLICY = {
         {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC}
     };
-    
+
     static const DDS::DurabilityQosPolicy DEFAULT_DURABILITY_QOSPOLICY = {
-        VOLATILE_DURABILITY_QOS 
+        VOLATILE_DURABILITY_QOS
     };
-    
+
     static const DDS::DurabilityServiceQosPolicy DEFAULT_DURABILITYSERVICE_QOSPOLICY = {
         {DURATION_ZERO_SEC, DURATION_ZERO_NSEC},
         KEEP_LAST_HISTORY_QOS,
@@ -82,7 +82,7 @@ namespace DDS
         BEST_EFFORT_RELIABILITY_QOS,
         {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC}
     };
-                                                                        
+
     static const DDS::DestinationOrderQosPolicy DEFAULT_DESTINATIONORDER_QOSPOLICY = {
         BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS
     };
@@ -97,7 +97,7 @@ namespace DDS
         LENGTH_UNLIMITED,
         LENGTH_UNLIMITED
     };
-                                                                        
+
     static const DDS::EntityFactoryQosPolicy DEFAULT_ENTITYFACTORY_QOSPOLICY = {
         true
     };
@@ -141,7 +141,7 @@ namespace DDS
 	};
 
 
-    static const DDS::DomainParticipantFactoryQos * const 
+    static const DDS::DomainParticipantFactoryQos * const
     initializeParticipantFactoryQos()
     {
         DDS::DomainParticipantFactoryQos *qos = new DDS::DomainParticipantFactoryQos();
@@ -149,7 +149,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DomainParticipantQos * const 
+    static const DDS::DomainParticipantQos * const
     initializeParticipantQos()
     {
         DDS::DomainParticipantQos *qos = new DDS::DomainParticipantQos();
@@ -159,8 +159,8 @@ namespace DDS
 	qos->listener_scheduling    = DEFAULT_SCHEDULING_QOSPOLICY;
         return qos;
     }
-  
-    static const DDS::TopicQos * const 
+
+    static const DDS::TopicQos * const
     initializeTopicQos()
     {
         DDS::TopicQos *qos          = new DDS::TopicQos();
@@ -179,8 +179,8 @@ namespace DDS
         qos->ownership              = DEFAULT_OWNERSHIP_QOSPOLICY;
         return qos;
     }
-  
-    static const DDS::PublisherQos * const 
+
+    static const DDS::PublisherQos * const
     initializePublisherQos()
     {
         DDS::PublisherQos *qos      = new DDS::PublisherQos();
@@ -190,8 +190,8 @@ namespace DDS
         qos->entity_factory         = DEFAULT_ENTITYFACTORY_QOSPOLICY;
         return qos;
     }
-  
-    static const DDS::SubscriberQos * const 
+
+    static const DDS::SubscriberQos * const
     initializeSubscriberQos()
     {
         DDS::SubscriberQos *qos     = new DDS::SubscriberQos();
@@ -203,7 +203,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DataReaderQos * const 
+    static const DDS::DataReaderQos * const
     initializeDataReaderQos()
     {
         DDS::DataReaderQos *qos     = new DDS::DataReaderQos();
@@ -233,7 +233,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DataWriterQos * const 
+    static const DDS::DataWriterQos * const
     initializeDataWriterQos()
     {
         DDS::DataWriterQos *qos     = new DDS::DataWriterQos();
@@ -253,9 +253,9 @@ namespace DDS
         qos->writer_data_lifecycle  = DEFAULT_WRITERDATALIFECYCLE_QOSPOLICY;
         return qos;
     }
-    
+
             //static const DDS::DefaultQos UniqueInstance;
-    
+
     const DDS::DomainParticipantFactoryQos * const DDS::DefaultQos::ParticipantFactoryQosDefault      = DDS::initializeParticipantFactoryQos();
     const DDS::DomainParticipantQos * const DDS::DefaultQos::ParticipantQosDefault      = DDS::initializeParticipantQos();
     const DDS::TopicQos             * const DDS::DefaultQos::TopicQosDefault            = DDS::initializeTopicQos();
@@ -276,14 +276,14 @@ namespace DDS
 void DDS::ccpp_UserDataQosPolicy_copyIn( const DDS::UserDataQosPolicy &from,
         gapi_userDataQosPolicy &to )
 {
-    DDS::ccpp_sequenceCopyIn<DDS::UserDataQosPolicy::_value_seq, CORBA::Octet, gapi_octetSeq, gapi_octet>(from.value,
+    DDS::ccpp_sequenceCopyIn<DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet>(from.value,
             to.value);
 }
 
 void DDS::ccpp_UserDataQosPolicy_copyOut( const gapi_userDataQosPolicy &from,
         DDS::UserDataQosPolicy &to )
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::UserDataQosPolicy::_value_seq, CORBA::Octet >(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet >(
             from.value, to.value );
 }
 
@@ -302,7 +302,7 @@ void DDS::ccpp_EntityFactoryQosPolicy_copyOut( const gapi_entityFactoryQosPolicy
 void DDS::ccpp_TopicDataQosPolicy_copyIn( const DDS::TopicDataQosPolicy &from,
         gapi_topicDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyIn< DDS::TopicDataQosPolicy::_value_seq, CORBA::Octet, gapi_octetSeq, gapi_octet >(
+    DDS::ccpp_sequenceCopyIn< DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet >(
             from.value, to.value );
 }
 
@@ -445,7 +445,7 @@ void DDS::ccpp_ResourceLimitsQosPolicy_copyIn( const DDS::ResourceLimitsQosPolic
    to.max_instances = from.max_instances;
    to.max_samples_per_instance = from.max_samples_per_instance;
 }
- 
+
 void DDS::ccpp_TransportPriorityQosPolicy_copyIn( const DDS::TransportPriorityQosPolicy &from,
         gapi_transportPriorityQosPolicy &to)
 {
@@ -489,7 +489,7 @@ void DDS::ccpp_WriterDataLifecycleQosPolicy_copyIn( const DDS::WriterDataLifecyc
   DDS::ccpp_Duration_copyIn( from.autounregister_instance_delay, to.autounregister_instance_delay);
 }
 
-void DDS::ccpp_PresentationQosPolicy_copyIn( const DDS::PresentationQosPolicy & from, 
+void DDS::ccpp_PresentationQosPolicy_copyIn( const DDS::PresentationQosPolicy & from,
         gapi_presentationQosPolicy & to)
 {
   to.access_scope = (gapi_presentationQosPolicyAccessScopeKind)from.access_scope;
@@ -497,7 +497,7 @@ void DDS::ccpp_PresentationQosPolicy_copyIn( const DDS::PresentationQosPolicy & 
   to.ordered_access = from.ordered_access;
 }
 
-void DDS::ccpp_PartitionQosPolicy_copyIn( const DDS::PartitionQosPolicy &from, 
+void DDS::ccpp_PartitionQosPolicy_copyIn( const DDS::PartitionQosPolicy &from,
         gapi_partitionQosPolicy &to)
 {
   DDS::ccpp_sequenceCopyIn(from.name, to.name);
@@ -506,7 +506,7 @@ void DDS::ccpp_PartitionQosPolicy_copyIn( const DDS::PartitionQosPolicy &from,
 void DDS::ccpp_GroupDataQosPolicy_copyIn(const DDS::GroupDataQosPolicy &from,
         gapi_groupDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyIn< DDS::GroupDataQosPolicy::_value_seq, CORBA::Octet, gapi_octetSeq, gapi_octet >
+    DDS::ccpp_sequenceCopyIn< DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet >
             ( from.value, to.value );
 }
 
@@ -514,7 +514,7 @@ void DDS::ccpp_GroupDataQosPolicy_copyIn(const DDS::GroupDataQosPolicy &from,
 void DDS::ccpp_TopicDataQosPolicy_copyOut( const gapi_topicDataQosPolicy &from,
         DDS::TopicDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::TopicDataQosPolicy::_value_seq, CORBA::Octet>(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet>(
             from.value, to.value );
 }
 
@@ -582,7 +582,7 @@ void DDS::ccpp_SampleRejectedStatusKind_copyOut( const gapi_sampleRejectedStatus
         break;
     default:
       // impossible to reach
-      break;    
+      break;
     }
 }
 
@@ -681,7 +681,7 @@ void DDS::ccpp_ResourceLimitsQosPolicy_copyOut( const gapi_resourceLimitsQosPoli
    to.max_instances = from.max_instances;
    to.max_samples_per_instance = from.max_samples_per_instance;
 }
- 
+
 void DDS::ccpp_TransportPriorityQosPolicy_copyOut( const gapi_transportPriorityQosPolicy &from,
         DDS::TransportPriorityQosPolicy &to)
 {
@@ -741,7 +741,7 @@ void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyIn( const DDS::ReaderDataLifecyc
   to.enable_invalid_samples = from.enable_invalid_samples;
 }
 
-void DDS::ccpp_PresentationQosPolicy_copyOut( const gapi_presentationQosPolicy & from, 
+void DDS::ccpp_PresentationQosPolicy_copyOut( const gapi_presentationQosPolicy & from,
         DDS::PresentationQosPolicy & to)
 {
   to.access_scope = (DDS::PresentationQosPolicyAccessScopeKind)from.access_scope;
@@ -749,7 +749,7 @@ void DDS::ccpp_PresentationQosPolicy_copyOut( const gapi_presentationQosPolicy &
   to.ordered_access = from.ordered_access;
 }
 
-void DDS::ccpp_PartitionQosPolicy_copyOut( const gapi_partitionQosPolicy &from, 
+void DDS::ccpp_PartitionQosPolicy_copyOut( const gapi_partitionQosPolicy &from,
         DDS::PartitionQosPolicy &to)
 {
   DDS::ccpp_sequenceCopyOut(from.name, to.name);
@@ -759,7 +759,7 @@ void DDS::ccpp_GroupDataQosPolicy_copyOut(
         const gapi_groupDataQosPolicy &from,
         DDS::GroupDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::GroupDataQosPolicy::_value_seq, CORBA::Octet >(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet >(
             from.value, to.value );
 }
 
@@ -1055,7 +1055,7 @@ void DDS::ccpp_PublisherQos_copyOut( const gapi_publisherQos &from,
   DDS::ccpp_PresentationQosPolicy_copyOut( from.presentation, to.presentation);
   DDS::ccpp_PartitionQosPolicy_copyOut( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyOut( from.group_data, to.group_data);
-  DDS::ccpp_EntityFactoryQosPolicy_copyOut( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_EntityFactoryQosPolicy_copyOut( from.entity_factory, to.entity_factory);
 }
 
 void DDS::ccpp_PublisherQos_copyIn( const DDS::PublisherQos &from,
@@ -1064,7 +1064,7 @@ void DDS::ccpp_PublisherQos_copyIn( const DDS::PublisherQos &from,
   DDS::ccpp_PresentationQosPolicy_copyIn( from.presentation, to.presentation);
   DDS::ccpp_PartitionQosPolicy_copyIn( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyIn( from.group_data, to.group_data);
-  DDS::ccpp_EntityFactoryQosPolicy_copyIn( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_EntityFactoryQosPolicy_copyIn( from.entity_factory, to.entity_factory);
 }
 
 void DDS::ccpp_SubscriberQos_copyIn( const DDS::SubscriberQos &from,
@@ -1073,21 +1073,21 @@ void DDS::ccpp_SubscriberQos_copyIn( const DDS::SubscriberQos &from,
   DDS::ccpp_PresentationQosPolicy_copyIn( from.presentation, to.presentation);
   DDS::ccpp_PartitionQosPolicy_copyIn( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyIn( from.group_data, to.group_data);
-  DDS::ccpp_EntityFactoryQosPolicy_copyIn( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_EntityFactoryQosPolicy_copyIn( from.entity_factory, to.entity_factory);
   DDS::ccpp_ShareQosPolicy_copyIn(from.share, to.share);
 }
 
-void DDS::ccpp_SubscriberQos_copyOut( const gapi_subscriberQos &from, 
+void DDS::ccpp_SubscriberQos_copyOut( const gapi_subscriberQos &from,
     DDS::SubscriberQos &to)
 {
   DDS::ccpp_PresentationQosPolicy_copyOut( from.presentation, to.presentation);
   DDS::ccpp_PartitionQosPolicy_copyOut( from.partition, to.partition);
   DDS::ccpp_GroupDataQosPolicy_copyOut( from.group_data, to.group_data);
-  DDS::ccpp_EntityFactoryQosPolicy_copyOut( from.entity_factory, to.entity_factory);  
+  DDS::ccpp_EntityFactoryQosPolicy_copyOut( from.entity_factory, to.entity_factory);
   DDS::ccpp_ShareQosPolicy_copyOut(from.share, to.share);
 }
 
-void DDS::ccpp_OfferedIncompatibleQosStatus_copyOut( 
+void DDS::ccpp_OfferedIncompatibleQosStatus_copyOut(
         const gapi_offeredIncompatibleQosStatus & from,
         DDS::OfferedIncompatibleQosStatus &to)
 {
@@ -1097,7 +1097,7 @@ void DDS::ccpp_OfferedIncompatibleQosStatus_copyOut(
   DDS::ccpp_sequenceCopyOut<gapi_qosPolicyCountSeq, gapi_qosPolicyCount, DDS::QosPolicyCountSeq, DDS::QosPolicyCount>(from.policies, to.policies);
 }
 
-void DDS::ccpp_RequestedIncompatibleQosStatus_copyOut( 
+void DDS::ccpp_RequestedIncompatibleQosStatus_copyOut(
         const gapi_requestedIncompatibleQosStatus & from,
         DDS::RequestedIncompatibleQosStatus &to)
 {
@@ -1119,7 +1119,7 @@ void DDS::ccpp_TimeBasedFilterQosPolicy_copyIn( const DDS::TimeBasedFilterQosPol
   DDS::ccpp_Duration_copyIn(from.minimum_separation, to.minimum_separation);
 }
 
-void DDS::ccpp_RequestedDeadlineMissedStatus_copyOut( 
+void DDS::ccpp_RequestedDeadlineMissedStatus_copyOut(
         const gapi_requestedDeadlineMissedStatus & from,
         DDS::RequestedDeadlineMissedStatus &to)
 {
@@ -1128,7 +1128,7 @@ void DDS::ccpp_RequestedDeadlineMissedStatus_copyOut(
   to.last_instance_handle = from.last_instance_handle;
 }
 
-void DDS::ccpp_SampleRejectedStatus_copyOut( 
+void DDS::ccpp_SampleRejectedStatus_copyOut(
         const gapi_sampleRejectedStatus & from,
         DDS::SampleRejectedStatus &to)
 {
@@ -1138,7 +1138,7 @@ void DDS::ccpp_SampleRejectedStatus_copyOut(
   to.last_instance_handle = from.last_instance_handle;
 }
 
-void DDS::ccpp_LivelinessChangedStatus_copyOut( 
+void DDS::ccpp_LivelinessChangedStatus_copyOut(
         const gapi_livelinessChangedStatus & from,
         DDS::LivelinessChangedStatus &to)
 {
@@ -1149,7 +1149,7 @@ void DDS::ccpp_LivelinessChangedStatus_copyOut(
   to.last_publication_handle = from.last_publication_handle;
 }
 
-void DDS::ccpp_SubscriptionMatchedStatus_copyOut( 
+void DDS::ccpp_SubscriptionMatchedStatus_copyOut(
         const gapi_subscriptionMatchedStatus & from,
         DDS::SubscriptionMatchedStatus &to)
 {
@@ -1159,7 +1159,7 @@ void DDS::ccpp_SubscriptionMatchedStatus_copyOut(
   to.current_count_change = from.current_count_change;
   to.last_publication_handle = (DDS::InstanceHandle_t)from.last_publication_handle;
 }
-void DDS::ccpp_SampleLostStatus_copyOut( 
+void DDS::ccpp_SampleLostStatus_copyOut(
         const gapi_sampleLostStatus & from,
         DDS::SampleLostStatus &to)
 {
@@ -1167,7 +1167,7 @@ void DDS::ccpp_SampleLostStatus_copyOut(
   to.total_count_change = from.total_count_change;
 }
 
-void DDS::ccpp_InconsistentTopicStatus_copyOut( 
+void DDS::ccpp_InconsistentTopicStatus_copyOut(
         const gapi_inconsistentTopicStatus & from,
         DDS::InconsistentTopicStatus &to)
 {
@@ -1175,7 +1175,15 @@ void DDS::ccpp_InconsistentTopicStatus_copyOut(
   to.total_count_change = from.total_count_change;
 }
 
-void DDS::ccpp_OfferedDeadlineMissedStatus_copyOut( 
+void DDS::ccpp_AllDataDisposedTopicStatus_copyOut(
+        const gapi_allDataDisposedTopicStatus & from,
+        DDS::AllDataDisposedTopicStatus &to)
+{
+  to.total_count = from.total_count;
+  to.total_count_change = from.total_count_change;
+}
+
+void DDS::ccpp_OfferedDeadlineMissedStatus_copyOut(
         const gapi_offeredDeadlineMissedStatus & from,
         DDS::OfferedDeadlineMissedStatus &to)
 {
@@ -1184,7 +1192,7 @@ void DDS::ccpp_OfferedDeadlineMissedStatus_copyOut(
   to.last_instance_handle = from.last_instance_handle;
 }
 
-void DDS::ccpp_LivelinessLostStatus_copyOut( 
+void DDS::ccpp_LivelinessLostStatus_copyOut(
         const gapi_livelinessLostStatus & from,
         DDS::LivelinessLostStatus &to)
 {
@@ -1192,7 +1200,7 @@ void DDS::ccpp_LivelinessLostStatus_copyOut(
   to.total_count_change = from.total_count_change;
 }
 
-void DDS::ccpp_PublicationMatchedStatus_copyOut( 
+void DDS::ccpp_PublicationMatchedStatus_copyOut(
         const gapi_publicationMatchedStatus & from,
         DDS::PublicationMatchedStatus &to)
 {

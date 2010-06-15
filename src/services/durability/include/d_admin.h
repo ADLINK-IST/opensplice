@@ -16,6 +16,7 @@
 #include "d__types.h"
 #include "u_user.h"
 #include "d__statistics.h"
+#include "d_lock.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -69,13 +70,14 @@ extern "C" {
 #define D_DELETE_DATA_TOP_NAME    "v_message<" D_DELETE_DATA_TYPE_NAME ">"
 #define D_DELETE_DATA_KEY_LIST    "parentMsg.senderAddress.systemId"
 
-
 void                    d_adminUpdateStatistics                 (d_admin admin,
                                                                  d_adminStatisticsInfo statistics);
 
 d_admin                 d_adminNew                              (d_durability durability);
 
 void                    d_adminFree                             (d_admin admin);
+
+void                    d_adminInitSubscriber                   (d_admin admin);
 
 d_durability            d_adminGetDurability                    (d_admin admin);
 
@@ -121,6 +123,76 @@ c_ulong                 d_adminGetFellowCount                   (d_admin admin);
 void                    d_adminCleanupFellows                   (d_admin admin,
                                                                  d_timestamp timestamp);
 
+c_bool                  d_adminAddNameSpace                     (d_admin admin,
+                                                                 d_nameSpace nameSpace);
+
+void                    d_adminNameSpaceWalk                    (d_admin admin,
+                                                                 void (*action)(
+                                                                     d_nameSpace nameSpace,
+                                                                     c_voidp userData),
+                                                                 c_voidp userData);
+
+c_ulong                 d_adminGetNameSpacesCount               (d_admin admin);
+
+d_nameSpace             d_adminGetNameSpaceForGroup             (d_admin admin,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind);
+
+c_bool                  d_adminInNameSpace                      (d_nameSpace ns,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind,
+                                                                 c_bool aligner);
+
+c_bool                  d_adminGroupInInitialAligneeNS          (d_admin admin,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind);
+
+/**
+ * Determines whether the supplied partition-topic combination is in the
+ * aligner namespace for persistent data.
+ *
+ * @param admin The admin that contains the namespaces.
+ * @param partition The partition to check.
+ * @param topic The topic to check.
+ * @return TRUE if it is in the namespace, FALSE otherwise.
+ */
+c_bool                  d_adminGroupInAlignerNS                 (d_admin admin,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind);
+/**
+ * Determines whether the supplied partition-topic combination is in the
+ * alignee namespace for non-volatile data and the
+ * alignmentKind != D_ALIGNMENT_ON_REQUEST.
+ *
+ * @param admin The admin that contains the namespaces.
+ * @param partition The partition to check.
+ * @param topic The topic to check.
+ * @param kind The durability kind.
+ * @return TRUE if it is in the namespace, FALSE otherwise.
+ */
+c_bool                  d_adminGroupInActiveAligneeNS           (d_admin admin,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind);
+/**
+ * Determines whether the supplied partition-topic combination is in the
+ * alignee namespace for non-volatile data.
+ *
+ * @param admin The admin that contains the namespaces.
+ * @param partition The partition to check.
+ * @param topic The topic to check.
+ * @param kind The durability kind.
+ * @return TRUE if it is in the namespace, FALSE otherwise.
+ */
+c_bool                  d_adminGroupInAligneeNS                 (d_admin admin,
+                                                                 d_partition partition,
+                                                                 d_topic topic,
+                                                                 d_durabilityKind kind);
+
 u_topic                 d_adminGetStatusTopic                   (d_admin admin);
 
 u_topic                 d_adminGetNewGroupTopic                 (d_admin admin);
@@ -151,6 +223,7 @@ void                    d_adminRemoveListener                   (d_admin admin,
 void                    d_adminNotifyListeners                  (d_admin admin,
                                                                  c_ulong mask,
                                                                  d_fellow fellow,
+                                                                 d_nameSpace nameSpace,
                                                                  d_group group);
 
 d_actionQueue           d_adminGetActionQueue                   (d_admin admin);

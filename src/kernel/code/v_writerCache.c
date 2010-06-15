@@ -14,18 +14,6 @@
 #include "v_writerCache.h"
 #include "os_report.h"
 
-static c_type _v_writerCacheItem = NULL;
-
-c_type
-v_writerCacheItem_t (
-    c_base base)
-{
-    if (_v_writerCacheItem == NULL) {
-        _v_writerCacheItem = c_resolve(base,"kernelModule::v_writerCacheItem");
-    }
-    return c_keep(_v_writerCacheItem);
-}
-
 v_cache
 v_writerCacheNew (
     v_kernel kernel,
@@ -38,8 +26,8 @@ v_writerCacheNew (
     assert(C_TYPECHECK(kernel,v_kernel));
 
     base = c_getBase(kernel);
-    type = v_writerCacheItem_t(base);
-    cache = v_cacheNew(type,kind);
+    type = c_keep(v_kernelType(kernel,K_WRITERCACHEITEM));
+    cache = v_cacheNew(kernel, type,kind);
     c_free(type);
 
     if (!cache) {

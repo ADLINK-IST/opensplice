@@ -16,10 +16,25 @@
 #include "v__deliveryGuard.h"
 #include "v__deliveryWaitList.h"
 
+#include "v_writer.h"
+#include "v_entity.h"
+#include "v_topic.h"
+
 #include "c_sync.h"
 
 #include "os_report.h"
 
+/*
+ * This method updates the v_deliveryGuard->publications list with all synchronous
+ * writers the v_deliveryService is aware of, preconditions for to be added to the list are:
+ *  a) guard->writer->topic matches the sInfo->topic
+ *  b) guard->writer->partitions match the sInfo->partitions
+ *
+ * parameters:
+ *  o - a v_subscriptionInfoTemplate instance from the v_deliveryService->subscriptions list
+ *  arg - the v_deliveryGuard who's publications list is to be updated
+ *
+ */
 static c_bool
 getMatchingPublications (
     c_object o,
@@ -29,20 +44,59 @@ getMatchingPublications (
     v_deliveryPublisher p, found;
     C_STRUCT(v_deliveryPublisher) template;
     c_type type;
+    c_long nrOfPartitions, i;
+    v_deliveryGuard guard;
+    v_writer writer;
+    v_writerGroup wGroup;
+    struct v_writerGroupSet groupSet;
+    c_bool result = TRUE;
 
-    template.readerGID = sInfo->userData.key;
-    found = v_deliveryPublisher(c_find(arg,&template));
-    if (found) {
-        found->count++;
-    } else {
-        type = c_subType(arg);
-        p = c_new(type);
-        p->count = 1;
-        p->readerGID = sInfo->userData.key;
-        found = c_insert(arg,p);
+    guard = (v_deliveryGuard)arg;
+
+    writer = v_writer(v_gidClaim (guard->writerGID, v_objectKernel(guard->owner)));
+
+    if(writer){
+        groupSet = writer->groupSet;
+
+        wGroup = groupSet.firstGroup;
+
+        while(wGroup){
+            nrOfPartitions = c_arraySize(sInfo->userData.partition.name);
+            if(strcmp(v_topicName(wGroup->group->topic), sInfo->userData.topic_name) == 0) {
+                for(i=0; i<nrOfPartitions; i++){
+                    if(v_partitionStringMatchesExpression(v_entity(wGroup->group->partition)->name, sInfo->userData.partition.name[i])){
+                        template.readerGID = sInfo->userData.key;
+                        found = v_deliveryPublisher(c_find(guard->publications,&template));
+                        if (found) {
+                            found->count++;
+                        } else {
+                            type = c_subType(guard->publications);
+                            p = c_new(type);
+                            p->count = 1;
+                            p->readerGID = sInfo->userData.key;
+                            found = c_insert(guard->publications,p);
+                        }
+                    }
+                }
+            }
+            wGroup = wGroup->next;
+        }
+        v_gidRelease(guard->writerGID, v_objectKernel(guard->owner));
     }
-    return TRUE;
+    else
+    {
+        OS_REPORT(OS_ERROR,
+                  "getMatchingPublications",0,
+                  "Could not claim writer; writer = NULL.");
+        assert(writer);
+        result = FALSE;
+
+    }
+
+    return result;
 }
+
+
 
 v_deliveryGuard
 v_deliveryGuardNew(
@@ -68,6 +122,8 @@ v_deliveryGuardNew(
             if (guard) {
                 guard->writerGID = template.writerGID;
                 guard->owner = (c_voidp)_this; /* backref used by the free */
+                guard->gidType = c_resolve(c_getBase(_this),
+                                 "kernelModule::v_gid");
                 type = c_resolve(c_getBase(_this),
                                  "kernelModule::v_deliveryWaitList");
                 /*
@@ -103,7 +159,7 @@ v_deliveryGuardNew(
 
                 /* Now update publication list from delivery service subscriptions.
                  */
-                c_walk(_this->subscriptions, getMatchingPublications, guard->publications);
+                c_walk(_this->subscriptions, getMatchingPublications, guard);
             }
         }
     } else {

@@ -14,6 +14,9 @@
 
 #include "os_time.h"
 
+#include "nw_plugSendChannel.h"
+#include "nw_plugReceiveChannel.h"
+
 typedef struct nw_socket_s *nw_socket;
 typedef os_uchar   sk_bool;
 typedef os_ushort  sk_portNr;     /* Internally converted into n_port_t */
@@ -97,6 +100,7 @@ sk_length   nw_socketSendDataTo(
 sk_length   nw_socketSendDataToPartition(
                 nw_socket sock,
                 sk_partitionId partitionId,
+                plugSendStatistics pss,
                 void *buffer,
                 sk_length length);
 
@@ -112,7 +116,8 @@ sk_length   nw_socketReceive(
                 sk_address *senderAddress,
                 void *buffer,
                 sk_length length,
-                os_time *timeOut);
+                os_time *timeOut,
+                plugReceiveStatistics prs);
 
 os_int      nw_socketBind(
                 nw_socket sock);

@@ -45,6 +45,22 @@ DDS::ReturnCode_t DDS::Topic_impl::get_inconsistent_topic_status (
   return result;
 }
 
+DDS::ReturnCode_t DDS::Topic_impl::get_all_data_disposed_topic_status (
+    DDS::AllDataDisposedTopicStatus & a_status
+) THROW_ORB_EXCEPTIONS
+{
+  gapi_allDataDisposedTopicStatus gapi_status;
+  DDS::ReturnCode_t result;
+  
+  result = gapi_topic_get_all_data_disposed_topic_status( DDS::Entity_impl::_gapi_self,&gapi_status);
+  if (result == DDS::RETCODE_OK)
+  {
+    ccpp_AllDataDisposedTopicStatus_copyOut(gapi_status, a_status);
+  }
+  
+  return result;
+}
+
 DDS::ReturnCode_t DDS::Topic_impl::get_qos (
   DDS::TopicQos & qos
 ) THROW_ORB_EXCEPTIONS
@@ -123,40 +139,51 @@ DDS::StatusMask mask
 {
     DDS::ReturnCode_t result;
     gapi_topicListener * gapi_listener = NULL;
-    gapi_listener = gapi_topicListener__alloc();
-    if (gapi_listener)
+    if (mask & ALL_DATA_DISPOSED_TOPIC_STATUS
+        && dynamic_cast<DDS::ExtTopicListener *>(a_listener) == NULL)
     {
-      ccpp_TopicListener_copyIn(a_listener, *gapi_listener);
-      if (os_mutexLock(&t_mutex) == os_resultSuccess)
-      {
-        result = gapi_topic_set_listener(_gapi_self, gapi_listener, mask);
-        if (result == DDS::RETCODE_OK)
-        {
-          DDS::ccpp_UserData_ptr myUD;
-          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
-          if (myUD)
-          {
-            myUD->setListener(a_listener);
-          }
-          else
-          {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-          }
-        }
-        if (os_mutexUnlock(&t_mutex) != os_resultSuccess)
-        {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
-        }
-      }
-      else
-      {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
-      }
-      gapi_free(gapi_listener);
+       result = DDS::RETCODE_BAD_PARAMETER;
+       OS_REPORT( OS_ERROR, "CCPP", 0,
+                  "ExtTopicListener subclass must be used when the "
+                     "ALL_DATA_DISPOSED_STATUS is set" );
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+       gapi_listener = gapi_topicListener__alloc();
+       if (gapi_listener)
+       {
+          ccpp_TopicListener_copyIn(a_listener, *gapi_listener);
+          if (os_mutexLock(&t_mutex) == os_resultSuccess)
+          {
+             result = gapi_topic_set_listener(_gapi_self, gapi_listener, mask);
+             if (result == DDS::RETCODE_OK)
+             {
+                DDS::ccpp_UserData_ptr myUD;
+                myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+                if (myUD)
+                {
+                   myUD->setListener(a_listener);
+                }
+                else
+                {
+                   OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+                }
+             }
+             if (os_mutexUnlock(&t_mutex) != os_resultSuccess)
+             {
+                OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+             }
+          }
+          else
+          {
+             OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
+          }
+          gapi_free(gapi_listener);
+       }
+       else
+       {
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+       }
     }
     return result;
 }
