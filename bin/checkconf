@@ -43,6 +43,27 @@ convert_windows_path ()
     return 0
 }
 
+cross_compiler_check()
+{
+    echo -n "Cross Compile Tool: "
+    if [ -z $1 ]
+    then
+        echo "Error - no valid compiler tool passed to check"
+        return 1
+    fi
+    CROSS_COMPILER=$1
+    
+    pathcheck $CROSS_COMPILER
+    if [ $? != 0 ]
+    then
+        echo "ERROR - $CROSS_COMPILER Not found on path"
+        return 1
+    fi
+
+    echo "OK - using" $PATHCHECK_FOUND
+    return 0
+}
+
 csharp_check ()
 {
     REQUIRED_VERSION="v2.0.50727"
@@ -898,7 +919,8 @@ cleanup_checks ()
     unset openssl_check
     unset valgrind_check
     unset zlib_check
-    unset PATHCHECK_FOUND
+    unset cross_compiler_check
+    unset PATHCHECK_FOUND CROSS_COMPILER
     unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION
     unset GMCS_VERSION GMCS_REAL_VERSION GMCS_VERSION_OUTPUT GMCS_REQUIRED_VERSION GMCS_REQUIRED_VER
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
