@@ -50,9 +50,9 @@ struct c_mmCache_s {
     c_voidp last;        /* The last block in the cache allocated block list. */
     c_voidp cache;       /* The first block in the cache allocated block list. */
     c_voidp incomplete;  /* The first block having free space in the cache allocated block list. */
-    c_long  allocated;   /* The total size in bytes of all currently allocated blocks. */
+    c_size  allocated;   /* The total size in bytes of all currently allocated blocks. */
     c_long  used;        /* NOT USED, SO MAY BE REMOVED. */
-    c_long  free;        /* The number of free bytes available in the allocated blocks. */
+    c_size  free;        /* The number of free bytes available in the allocated blocks. */
 #ifndef NDEBUG
     c_long  access;      /* The number of simultaneous accesses, MUST ALWAYS BE < 2. */
 #endif
@@ -113,11 +113,11 @@ c_mmCacheDestroy (
     c_block remove;
 
     assert(_this != NULL);
-//    assert(_this->cache == NULL);
-//    assert(_this->incomplete == NULL);
-//    assert(_this->last == NULL);
-//    assert(_this->allocated == 0);
-//    assert(_this->free == 0);
+    /* assert(_this->cache == NULL); */
+    /* assert(_this->incomplete == NULL); */
+    /* assert(_this->last == NULL); */
+    /* assert(_this->allocated == 0); */
+    /* assert(_this->free == 0); */
 
     b = _this->cache;
     while (b != NULL) {
@@ -480,7 +480,7 @@ c_mmCacheFree (
 #endif
 }
 
-c_long
+c_size
 c_mmCacheGetAllocated(
     c_mmCache _this)
 {
@@ -490,7 +490,7 @@ c_mmCacheGetAllocated(
 }
 
 
-c_long
+c_size
 c_mmCacheGetFree(
     c_mmCache _this)
 {

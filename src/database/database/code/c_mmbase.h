@@ -30,15 +30,15 @@ typedef struct c_mm_s       *c_mm;
 typedef struct c_mmStatus_s c_mmStatus;
 
 struct c_mmStatus_s {
-    c_long size;
-    c_long used;
-    c_long maxUsed;
-    c_long garbage;
+    c_size size;
+    c_size used;
+    c_size maxUsed;
+    c_size garbage;
     c_long count;
-    c_long fails;
+    c_ulong fails;
     /* The cached field will be filled with the amount of memory allocated for
      * caches (including all headers). */
-    c_long cached;
+    c_size cached;
     /* The preallocated field will be filled with the amount of memory that is
      * preallocated in caches, but is not in use. So in order to retain the
      * total amount of memory in use:
@@ -46,10 +46,10 @@ struct c_mmStatus_s {
      * And in order to get all free memory (including allocated, but available
      * in caches):
      *      totalFree = size - totalInUse */
-    c_long preallocated;
+    c_size preallocated;
 };
 
-OS_API c_mm c_mmCreate (void *address, c_long size);
+OS_API c_mm c_mmCreate (void *address, c_size size);
 OS_API c_mmStatus c_mmState (c_mm mm, c_bool fillPreAlloc);
 OS_API c_mmStatus c_mmMapState (c_mm mm);
 OS_API c_mmStatus c_mmListState (c_mm mm);

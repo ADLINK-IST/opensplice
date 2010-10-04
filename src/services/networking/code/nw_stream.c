@@ -1735,7 +1735,7 @@ nw_stream_readArray (
             if (*(c_voidp *)data) {
                 array = *(c_voidp *)data;
             } else {
-                array = c_newArray(ctype,length);
+                array = c_newBaseArrayObject(ctype,length);
                 *(c_voidp *)data = array;
             }
 #else
@@ -1779,7 +1779,7 @@ nw_stream_readSequence (
     c_collectionType ctype = c_collectionType(type);
     c_bool isValidRef;
     c_ulong size, length, i;
-    c_voidp array = NULL;
+    c_voidp sequence = NULL;
     c_object o;
     c_type actualType;
 
@@ -1793,31 +1793,31 @@ nw_stream_readSequence (
         nw_stream_readPrim(stream, sizeof(c_ulong), &length);
 #if 0
         if (*(c_voidp *)data) {
-            array = *(c_voidp *)data;
+            sequence = *(c_voidp *)data;
         } else {
-            array = c_newArray(ctype,length);
-            *(c_voidp *)data = array;
+            sequence = c_newBaseArrayObject(ctype,length);
+            *(c_voidp *)data = sequence;
         }
 #else
-            array = c_newArray(ctype,length);
-            *(c_voidp *)data = array;
+            sequence = c_newSequence(ctype,length);
+            *(c_voidp *)data = sequence;
 #endif
     }
 
-    if (array) {
+    if (sequence) {
         actualType = c_typeActualType(ctype->subType);
 
         if ((c_baseObject(actualType)->kind == M_PRIMITIVE) ||
             (c_baseObject(actualType)->kind == M_ENUMERATION))
         {
-            nw_stream_readPrimArray(stream,actualType->size,length,array);
+            nw_stream_readPrimArray(stream,actualType->size,length,sequence);
         } else {
             if (c_typeIsRef(actualType)) {
                 size = sizeof(c_voidp);
             } else {
                 size = actualType->size;
             }
-            o = array;
+            o = sequence;
             for (i=0; i<length; i++) {
                 nw_stream_readType(stream, actualType, o);
                 o = C_DISPLACE(o, size);
@@ -1825,7 +1825,7 @@ nw_stream_readSequence (
         }
     }
 
-    return array;
+    return sequence;
 }
 
 static c_voidp

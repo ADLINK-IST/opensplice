@@ -217,6 +217,11 @@ v_kernelCreatePersistentSnapshot(
     const c_char * topic_expression,
     const c_char * uri);
 
+OS_API v_accessMode
+v_kernelPartitionAccessMode(
+    v_kernel _this,
+    v_partitionPolicy partition);
+
 #undef OS_API
 
 #if defined (__cplusplus)

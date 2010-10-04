@@ -51,7 +51,7 @@ d_readerListenerInit(
         d_listenerInit(d_listener(listener), subscriber, action, d_readerListenerDeinit);
         admin = d_listenerGetAdmin(d_listener(listener));
         readerName = (c_char*)(os_malloc(strlen(topicName) + 7));
-        sprintf(readerName, "%sReader", topicName);
+        os_sprintf(readerName, "%sReader", topicName);
 
         addr = d_adminGetMyAddress(admin);
         listener->myAddr = addr->systemId;
@@ -353,7 +353,7 @@ d_readerListenerInitDataReader(
 
         query = (c_char*)(os_malloc(strlen(listener->name) +
                                     strlen(FILTER_EXPRESSION) + 32));
-        sprintf(query, FILTER_EXPRESSION, listener->name,
+        os_sprintf(query, FILTER_EXPRESSION, listener->name,
                 myAddr->systemId, unaddressed->systemId, myAddr->systemId);
 
         expr = q_parse(query);

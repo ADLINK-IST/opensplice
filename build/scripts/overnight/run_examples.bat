@@ -22,7 +22,7 @@ SET RUN_SUMMARY_LOG="%LOGDIR%/examples/run/run_results_summary.txt"
 REM SUMMARY_LOG Gives the number of examples run, the number that passed and
 REM the number that failed together with the result of each individual examples
 
-SET SUMMARY_LOG="%LOGDIR%/examples/run/overview.log"
+SET SUMMARY_LOG="%LOGDIR%/examples/run/examples.log"
 
 ECHO Running examples and LOGDIR is %LOGDIR%
 
@@ -210,15 +210,15 @@ echo .. >> %SUMMARY_LOG%
 echo RESULTS >> %SUMMARY_LOG%
 %SLEEP10% >NUL
 REM We need to go the the directory where the logs are in order to append
-REM the individual example results to the overview.log that is uploaded to 
+REM the individual example results to the examples.log that is uploaded to 
 REM the scoreboard.
 cd %LOGDIR%\examples\run
-type run_results_summary.txt >> overview.log
+type run_results_summary.txt >> examples.log
 REM try the above as this following line doesn't appear to work
 REM type %RUN_SUMMARY_LOG% >> %SUMMARY_LOG%
 %SLEEP10% >NUL
 REM Delete the run_results_summary.txt file as we have appended the
-REM contents to the overview.log which is backed up to the scoreboard
+REM contents to the examples.log which is backed up to the scoreboard
 del run_results_summary.txt
 %SLEEP10% > NUL
 REM For some reason an ospl_info.log gets written to the log directory as

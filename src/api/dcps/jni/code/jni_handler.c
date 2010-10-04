@@ -37,7 +37,7 @@ jni_getFullName(
     c_char* result;
     
     result = (c_char*)(os_malloc(strlen(class) + strlen(DCPSPACKAGE) + 1));
-    sprintf(result, "%s%s", DCPSPACKAGE, class);
+    os_sprintf(result, "%s%s", DCPSPACKAGE, class);
     return result;
 }
 
@@ -48,7 +48,7 @@ jni_getFullRepresentation(
     c_char* result;
     
     result = (c_char*)(os_malloc(strlen(class) + strlen(DCPSPACKAGE) + 3));
-    sprintf(result, "L%s%s;", DCPSPACKAGE, class);
+    os_sprintf(result, "L%s%s;", DCPSPACKAGE, class);
     return result;
 }
 

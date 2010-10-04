@@ -24,7 +24,6 @@ namespace test.sacs
                 Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
 
-            result = bce.InitBoundsCheckEntities(result);
             if (result.Result != string.Empty)
             {
                 return result;

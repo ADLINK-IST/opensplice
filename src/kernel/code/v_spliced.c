@@ -38,7 +38,7 @@
 
 #include "os.h"
 #include "os_report.h"
-
+#include "os_stdlib.h"
 #include "c_stringSupport.h"
 
 #include "sd_serializerXMLTypeinfo.h"
@@ -1218,12 +1218,12 @@ messageKeyExpr(
         keyExpr[0] = 0;
         fieldName = c_iterTakeFirst(keyNames);
         while (fieldName != NULL) {
-            strcat(keyExpr,"userData.");
-            strcat(keyExpr,fieldName);
+            os_strcat(keyExpr,"userData.");
+            os_strcat(keyExpr,fieldName);
             os_free(fieldName);
             fieldName = c_iterTakeFirst(keyNames);
             if (fieldName) {
-                strcat(keyExpr,",");
+                os_strcat(keyExpr,",");
             }
         }
         c_iterFree(keyNames);
@@ -1376,12 +1376,33 @@ v_splicedInit(
 {
     v_kernel kernel;
     v_participantQos q;
+    char* hostName;
+    c_type type;
+    os_result osr;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
     kernel = v_objectKernel(spliced);
     q = v_participantQosNew(kernel, NULL);
+
+#define MAX_HOST_NAME_LENGTH (64)
+    hostName = (char*)(os_malloc(MAX_HOST_NAME_LENGTH+1));
+    memset(hostName, 0, MAX_HOST_NAME_LENGTH+1);
+    osr = os_gethostname(hostName, MAX_HOST_NAME_LENGTH);
+
+    if(osr == os_resultSuccess){
+        q->userData.size = strlen(hostName);
+        type = c_octet_t(c_getBase(kernel));
+        q->userData.value = c_arrayNew(type, q->userData.size);
+        memcpy(q->userData.value, hostName, q->userData.size);
+        c_free(type);
+    } else {
+        q->userData.size = 0;
+    }
+    os_free(hostName);
+#undef MAX_HOST_NAME_LENGTH
+
     v_serviceInit(v_service(spliced), kernel->serviceManager,
                   V_SPLICED_NAME, NULL, q, NULL);
     c_free(q);
@@ -1409,7 +1430,7 @@ v_splicedInit(
     spliced->quit = FALSE;
     spliced->cAndMCommandWaitSet = v_waitsetNew(kernel->builtin->participant);
     spliced->cAndMCommandDispatcherQuit = FALSE;
-   
+
     v_splicedManageKernel(spliced);
 }
 
@@ -1592,7 +1613,12 @@ v_splicedCAndMCommandDispatcherQuit(
 
    c_mutexLock(&spliced->cAndMCommandMutex);
    spliced->cAndMCommandDispatcherQuit = TRUE;
-   v_waitsetNotify(spliced->cAndMCommandWaitSet, V_EVENT_UNDEFINED, NULL);
+   /* Wakeup the C&M command dispatcher thread to take notice and terminate.
+    * Waitset mask must be set sensitive to V_EVENT_TRIGGER. */
+   v_waitsetTrigger(spliced->cAndMCommandWaitSet, NULL);
+   OS_REPORT(OS_INFO,
+             "v_splicedCAndMCommandDispatcherQuit", 0,
+             "The C&M Service thread is notified to terminate.");
    c_mutexUnlock(&spliced->cAndMCommandMutex);
 }
 
@@ -1617,12 +1643,17 @@ v_splicedBuiltinCAndMCommandDispatcher(
 
    c_mutexLock(&spliced->cAndMCommandMutex);
    reader = spliced->readers[V_C_AND_M_COMMAND_ID];
-   boolRes = v_waitsetAttach( spliced->cAndMCommandWaitSet, 
-                              (v_observable)reader, 
+   boolRes = v_waitsetAttach( spliced->cAndMCommandWaitSet,
+                              (v_observable)reader,
                               NULL);
+
+   /* The V_EVENT_TRIGGER interest is used stop the C&M command dispatcher thread. */
    v_observerSetEventMask( (v_observer)spliced->cAndMCommandWaitSet,
-                            V_EVENT_DATA_AVAILABLE );
+                            V_EVENT_DATA_AVAILABLE | V_EVENT_TRIGGER);
    assert( boolRes );
+   OS_REPORT(OS_INFO,
+             "v_splicedBuiltinCAndMCommandDispatcher", 0,
+             "The C&M Service thread is started.");
    while (!spliced->cAndMCommandDispatcherQuit)
    {
       c_mutexUnlock(&spliced->cAndMCommandMutex);
@@ -1637,6 +1668,9 @@ v_splicedBuiltinCAndMCommandDispatcher(
    boolRes = v_waitsetDetach (spliced->cAndMCommandWaitSet,
                               v_observable(reader));
    /* FIXME Do we need this? Fails on exit if I assert( boolRes ); */
+   OS_REPORT(OS_INFO,
+             "v_splicedBuiltinCAndMCommandDispatcher", 0,
+             "The C&M Service thread is stopped.");
 }
 
 void
@@ -1812,7 +1846,7 @@ v_spliced spliced)
                  * updating purgeLists.
                  */
                 c_mutexLock(&spliced->mtx);
-                length = c_setCount(spliced->missedHB);
+                length = c_tableCount(spliced->missedHB);
                 c_mutexUnlock(&spliced->mtx);
 
                 /* A heartbeat has been missed, stop updating purgeLists now
@@ -1904,7 +1938,6 @@ static void disposeAllDataCandMCommand(v_spliced spliced,
    v_topic topic;
    v_result res;
    struct v_commandDisposeAllData *disposeCmd;
-   
 
    assert(spliced != NULL);
    assert(C_TYPECHECK(spliced,v_spliced));
@@ -1915,14 +1948,58 @@ static void disposeAllDataCandMCommand(v_spliced spliced,
    group = v_groupSetGet(kernel->groupSet,
                          disposeCmd->partitionExpr,
                          disposeCmd->topicExpr);
-
-   res = v_groupDisposeAll( group, timestamp );
-   if ( res != V_RESULT_OK )
+   if ( group != NULL )
    {
-      OS_REPORT(OS_WARNING, "spliced", 0, 
-                "Dispose All Data failed due to internal error."); 
+      res = v_groupDisposeAll( group, timestamp );
+      if ( res != V_RESULT_OK )
+      {
+         OS_REPORT(OS_WARNING, "spliced", 0,
+                "Dispose All Data failed due to internal error.");
+      }
    }
-   v_participantDeleteHistoricalData( v_participant(spliced), 
+   else
+   {
+      /* Group does not exist yet, store the timestamp etc for when the group is
+         created */
+      v_pendingDisposeElement element = NULL;
+      c_base base = c_getBase(c_object(spliced));
+      int found = 0;
+      c_long i;
+
+      c_mutexLock(&kernel->pendingDisposeListMutex);
+      for(i=0; (i<c_listCount(kernel->pendingDisposeList)); i++)
+      {
+         element =
+            (v_pendingDisposeElement)c_readAt(kernel->pendingDisposeList, i);
+         if ( !strcmp( element->disposeCmd.topicExpr, disposeCmd->topicExpr)
+              && !strcmp( element->disposeCmd.partitionExpr, 
+                          disposeCmd->partitionExpr ))
+         {
+            found = 1;
+            if ( c_timeCompare( element->disposeTimestamp, timestamp ) == C_LT )
+            {
+               /* Already an older existing record for this partition 
+                  and topic combination - update timestamp */
+               element->disposeTimestamp = timestamp;
+            }
+            break;
+         }
+      }
+      if ( !found )
+      {
+         v_pendingDisposeElement new;
+
+         new = c_new( v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ) );
+         new->disposeCmd.topicExpr = c_stringNew(base, disposeCmd->topicExpr);
+         new->disposeCmd.partitionExpr = c_stringNew(base, 
+                                                      disposeCmd->partitionExpr);
+         new->disposeTimestamp = timestamp;
+
+         c_append( kernel->pendingDisposeList, new );
+      }
+      c_mutexUnlock(&kernel->pendingDisposeListMutex);
+   }
+   v_participantDeleteHistoricalData( v_participant(spliced),
                                       disposeCmd->partitionExpr,
                                       disposeCmd->topicExpr );
 
@@ -1938,14 +2015,14 @@ typedef void (*cAndMCommandFn_t)(v_spliced spliced,
                                  v_controlAndMonitoringCommand *command,
                                  c_time timestamp);
 
-/* This array is indexed by values of the 
+/* This array is indexed by values of the
    enum v_controlAndMonitoringCommandKind */
-static cAndMCommandFn_t cAndMCommandFns[] = 
+static cAndMCommandFn_t cAndMCommandFns[] =
 {
    disposeAllDataCandMCommand
 };
 
-static void dispatchCandMCommand(v_spliced spliced, 
+static void dispatchCandMCommand(v_spliced spliced,
                                  v_dataReaderSample s,
                                  c_time timestamp)
 {
@@ -1967,8 +2044,8 @@ static void dispatchCandMCommand(v_spliced spliced,
    }
    else
    {
-      OS_REPORT(OS_WARNING, "spliced", 0, 
-                "unknown Control and Monitoring Command received."); 
+      OS_REPORT(OS_WARNING, "spliced", 0,
+                "unknown Control and Monitoring Command received.");
    }
 }
 
@@ -1986,7 +2063,7 @@ static void v_splicedTakeCandMCommand(v_spliced spliced)
     if ( (reader = spliced->readers[V_C_AND_M_COMMAND_ID]) != NULL )
     {
         v_dataReaderTake(reader, readerAction, &samples);
-        while ( (s = v_dataReaderSample(c_iterTakeFirst(samples))) != NULL ) 
+        while ( (s = v_dataReaderSample(c_iterTakeFirst(samples))) != NULL )
         {
            timestamp = v_dataReaderSample(s)->insertTime;
            dispatchCandMCommand(spliced, s, timestamp);

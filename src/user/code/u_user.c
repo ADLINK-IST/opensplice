@@ -99,8 +99,9 @@ u__userLock(void)
             /* The mutex is not valid so apparently the user-layer is either
              * destroyed or in process of destruction. */
             u = NULL;
-        } else if ((u->detachThreadId != 0) &&
-                   (u->detachThreadId != os_threadIdSelf()))
+        } else if ((os_threadIdToInteger(u->detachThreadId) != 0) &&
+                   (os_threadIdToInteger(u->detachThreadId) !=
+                    os_threadIdToInteger(os_threadIdSelf())))
         {
             /* Another thread is busy destroying the user-layer or the user-
              * layer is already destroyed. No access is allowed (anymore).
@@ -125,8 +126,9 @@ u__userUnlock(void)
 
     u = u_user(user);
     if (u) {
-        if ((u->detachThreadId == 0) ||
-            (u->detachThreadId == os_threadIdSelf())) {
+        if ((os_threadIdToInteger(u->detachThreadId) == 0) ||
+            (os_threadIdToInteger(u->detachThreadId) ==
+             os_threadIdToInteger(os_threadIdSelf()))) {
             os_mutexUnlock(&u->mutex);
         }
     }
@@ -342,7 +344,7 @@ u_userInitialise()
             os_mutexInit(&u->mutex,&mutexAttr);
             u->kernelCount = 0;
             u->protectCount = 0;
-            u->detachThreadId = 0;
+            u->detachThreadId = OS_THREAD_ID_NONE;
             os_procAtExit(u_userExit);
 
             /* This will mark the user-layer initialized */
@@ -398,7 +400,7 @@ u_userKernelNew(
                  */
                 ka->keepList = NULL;
                 ka->lowerBound = (c_address)os_sharedAddress(shm);
-                osr = os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                osr = os_sharedSize(shm, (os_address*)&ka->upperBound);
                 if (osr != os_resultSuccess) {
                     OS_REPORT(OS_ERROR,
                             "u_userKernelNew",0,
@@ -476,9 +478,10 @@ u_userKernelOpen(
                      * u_userFree() or when the kernel is detached from the process
                      * e.g. when a process terminates.
                      */
+
                     ka->keepList = NULL;
                     ka->lowerBound = (c_address)os_sharedAddress(shm);
-                    osr = os_sharedSize(shm, (os_uint32*)&ka->upperBound);
+                    osr = os_sharedSize(shm, (os_address*)&ka->upperBound);
                     if (osr != os_resultSuccess) {
                         OS_REPORT(OS_ERROR,
                                 "u_userKernelNew",0,

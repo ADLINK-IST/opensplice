@@ -24,7 +24,7 @@
 
 typedef struct {
     void *src;
-    c_long offset;
+    os_uint32 offset;
     JNIEnv *javaEnv;
 } saj_context;
 
@@ -404,9 +404,15 @@ saj_cfuoBoolean (
 {
     saj_copyResult result;
     c_bool *src;
+    jboolean tmp;
 
     src = (c_bool *)ctx->src;
-    saj_setUnionBranch(javaObject, cuh, unionCase, jboolean, ctx->src, discrValue, ctx);
+    /* Since the footprint of jboolean and c_bool might not be the same, perform the cast
+     * before invoking the saj_setUnionBranch, which assumes it receives a jboolean*, which
+     * might have an incorrect size.
+     */
+    tmp = (jboolean) *src;
+    saj_setUnionBranch(javaObject, cuh, unionCase, jboolean, &tmp, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
     TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
@@ -487,12 +493,18 @@ saj_cfuoChar (
 {
     saj_copyResult result;
     c_char *src;
+    jchar tmp;
 
     src = (c_char *)ctx->src;
-    saj_setUnionBranch(javaObject, cuh, unionCase, jchar, src, discrValue, ctx);
+    /* Since the footprint of jchar and c_char are not the same, perform the cast before
+     * invoking the saj_setUnionBranch, which assumes it receives a jchar*, which has
+     * an incorrect size.
+     */
+    tmp = (jchar) *src;
+    saj_setUnionBranch(javaObject, cuh, unionCase, jchar, &tmp, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
 
-    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, *src));
+    TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, %d)\n", javaObject, unionCase->setterID, (jchar) *src));
     TRACE(printf ("Copied out Char = %d setterID = %x\n", *src, unionCase->setterID));
 
     return result;
@@ -1231,7 +1243,7 @@ saj_cfuoArrCharToBString(
         if (result == SAJ_COPYRESULT_OK) {
             saj_setUnionBranch(javaObject, cuh, unionCase, jcharArray, &array, discrValue, ctx);
             result = saj_copyGetStatus(ctx);
-            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, setterID, array));
+            TRACE(printf ("JNI: CallVoidMethod (0x%x, %d, 0x%x)\n", javaObject, unionCase->setterID, array));
         }
     }
     return result;
@@ -1801,7 +1813,7 @@ saj_cfooSeqBoolean (
 
     src = (c_bool **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jbooleanArray)(*objectArray);
 
     if (array == NULL){
@@ -1916,7 +1928,7 @@ saj_cfooSeqByte (
 
     src = (c_octet **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jbyteArray)(*objectArray);
 
     if (array == NULL) {
@@ -2028,7 +2040,7 @@ saj_cfooSeqChar (
 
     src = (c_char **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jcharArray)(*objectArray);
 
     if (array == NULL) {
@@ -2140,7 +2152,7 @@ saj_cfooSeqShort (
 
     src = (c_short **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jshortArray)(*objectArray);
 
     if (array == NULL) {
@@ -2252,7 +2264,7 @@ saj_cfooSeqInt (
 
     src = (c_long **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jintArray)(*objectArray);
 
     if (array == NULL) {
@@ -2361,7 +2373,7 @@ saj_cfooSeqLong (
 
     src = (c_longlong **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jlongArray)(*objectArray);
 
     if (array == NULL) {
@@ -2474,7 +2486,7 @@ saj_cfooSeqFloat (
 
     src = (c_float **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
 
     array = (jfloatArray)(*objectArray);
 
@@ -2588,7 +2600,7 @@ saj_cfooSeqDouble (
 
     src = (c_double **)srcSeq;
     sh = (sajCopySequence *)ch;
-    seqLen = c_arraySize ((c_array)*src);
+    seqLen = c_arraySize ((c_sequence)*src);
     array = (jdoubleArray)(*objectArray);
 
     if (array == NULL) {
@@ -3274,15 +3286,15 @@ saj_cfooSequence (
     sajCopyHeader *sech;
     jobjectArray array;
     jobject element;
-    c_array *srcArray;
+    c_sequence *srcSequence;
     void *src;
     int i;
     c_long seqLen;
     saj_copyResult result;
 
-    srcArray = (c_array *)srcSeq;
-    seqLen = c_arraySize (*srcArray);
-    src = *srcArray;
+    srcSequence = (c_sequence *)srcSeq;
+    seqLen = c_arraySize (*srcSequence);
+    src = *srcSequence;
     sh = (sajCopyObjectSequence *)ch;
     sech = sajCopyObjectSequenceDescription (sh);
     array = *seqObject;

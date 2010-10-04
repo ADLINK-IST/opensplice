@@ -42,7 +42,7 @@ os_sharedMemoryExit(void)
 os_result
 os_sharedMemoryCreate(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     os_result result = os_resultFail;
 
@@ -137,7 +137,7 @@ os_sharedMemoryDetach(
 os_result
 os_sharedSize(
     os_sharedHandle sharedHandle,
-    os_uint32 *size)
+    os_address *size)
 {
     os_result result = os_resultFail;
 

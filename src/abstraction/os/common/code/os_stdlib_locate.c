@@ -161,9 +161,9 @@ os_locate(
                 fullName = (char *)os_malloc(
                    strlen(curDir) + strlen(fsep) + strlen(name) + 1);
                 if (fullName) {
-                    strcpy(fullName, curDir);
-                    strcat(fullName, fsep);
-                    strcat(fullName, name);
+                    os_strcpy(fullName, curDir);
+                    os_strcat(fullName, fsep);
+                    os_strcat(fullName, name);
                     /* Check file permissions. Do not have to check if file
                      * exists, since permission check fails when the file
                      * does not exist. */

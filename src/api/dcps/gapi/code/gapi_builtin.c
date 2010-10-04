@@ -504,7 +504,7 @@ builtinUserDataQosPolicyCopyin (
             if (type) {
                 gapi_builtinUserData_type =
                     c_metaArrayTypeNew(c_metaObject(base),
-                                       "C_SEQUENCE<c_octet>",
+                                       "C_ARRAY<c_octet>",
                                        type,0);
             }
         }
@@ -571,7 +571,7 @@ builtinTopicDataQosPolicyCopyin (
             if (type) {
                 gapi_topicData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_char>",
+                                           "C_ARRAY<c_char>",
                                            type,0);
                 c_free(type);
             }
@@ -641,7 +641,7 @@ builtinPartitionQosPolicyCopyin (
             c_type type = c_string_t(base);
             if (type) {
                 gapi_partitionQos_type =
-                        c_metaArrayTypeNew(c_metaObject(base),
+                        c_metaSequenceTypeNew(c_metaObject(base),
                                            "C_SEQUENCE<c_string>",
                                            type,0);
                 c_free(type);
@@ -649,7 +649,7 @@ builtinPartitionQosPolicyCopyin (
         }
 
         if ( gapi_partitionQos_type ) {
-            dst->name = c_newArray(c_collectionType(gapi_partitionQos_type),
+            dst->name = c_newSequence(c_collectionType(gapi_partitionQos_type),
                                    src->name._length);
             if ( dst->name ) {
                 gapi_unsigned_long i;
@@ -717,7 +717,7 @@ builtinGroupDataQosPolicyCopyin (
             if (type) {
                 gapi_groupData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_octet>",
+                                           "C_ARRAY<c_octet>",
                                            type,0);
                 c_free(type);
             }
@@ -785,7 +785,7 @@ userDataQosPolicyCopyin (
             if (type) {
                 gapi_userData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_octet>",
+                                           "C_ARRAY<c_octet>",
                                            type,0);
                 c_free(type);
             }
@@ -1134,6 +1134,7 @@ gapi_publicationBuiltinTopicData__copyOut (
     livelinessQosPolicyCopyout(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyout(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyout(&from->lifespan, &to->lifespan);
+    destinationOrderQosPolicyCopyout(&from->destination_order, &to->destination_order);
     builtinUserDataQosPolicyCopyout(&from->user_data, &to->user_data);
     ownershipQosPolicyCopyout(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyout(&from->ownership_strength, &to->ownership_strength);
@@ -1175,6 +1176,7 @@ gapi_publicationBuiltinTopicData__copyIn (
     livelinessQosPolicyCopyin(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyin(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyin(&from->lifespan, &to->lifespan);
+    destinationOrderQosPolicyCopyin(&from->destination_order, &to->destination_order);
     builtinUserDataQosPolicyCopyin(base, &from->user_data, &to->user_data);
     ownershipQosPolicyCopyin(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyin(&from->ownership_strength, &to->ownership_strength);

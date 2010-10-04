@@ -23,12 +23,16 @@ extern "C" {
 #define d_fellow(f) ((d_fellow)(f))
 
 typedef enum d_communicationState_s {
-    D_COMMUNICATION_STATE_UNKNOWN, 
-    D_COMMUNICATION_STATE_APPROVED,
-    D_COMMUNICATION_STATE_INCOMPATIBLE_STATE,
-    D_COMMUNICATION_STATE_INCOMPATIBLE_DATA_MODEL,
-    D_COMMUNICATION_STATE_TERMINATED
+    D_COMMUNICATION_STATE_UNKNOWN = 0,
+    D_COMMUNICATION_STATE_APPROVED = 1,
+    D_COMMUNICATION_STATE_INCOMPATIBLE_STATE = 2,
+    D_COMMUNICATION_STATE_INCOMPATIBLE_DATA_MODEL = 3,
+    D_COMMUNICATION_STATE_TERMINATED = 4
 } d_communicationState;
+
+/* Translate fellow state to text */
+extern char* d_fellowState_text[];
+#define d_fellowStateText(state) d_fellowState_text[state]
 
 
 typedef enum d_fellowAlignStatus_s {
@@ -141,6 +145,11 @@ c_bool                  d_fellowIsGroupInNameSpaces     (d_fellow fellow,
 
 void                    d_fellowClearMaster             (d_fellow fellow,
                                                          d_networkAddress master);
+
+void                    d_fellowSetRole                 (d_fellow fellow,
+                                                         d_name role);
+
+d_name                d_fellowGetRole                 (d_fellow fellow);
 
 #if defined (__cplusplus)
 }

@@ -328,7 +328,12 @@ v_dataReaderStatisticsInit(
     STAT_INIT_ULONG(numberOfSamplesTaken);
 
     STAT_INIT_ULONG(numberOfReads);
+    STAT_INIT_ULONG(numberOfInstanceReads);
+    STAT_INIT_ULONG(numberOfNextInstanceReads);
+    STAT_INIT_ULONG(numberOfInstanceLookups);
     STAT_INIT_ULONG(numberOfTakes);
+    STAT_INIT_ULONG(numberOfInstanceTakes);
+    STAT_INIT_ULONG(numberOfNextInstanceTakes);
 }
 #undef STAT_INIT_ULONG
 #undef STAT_INIT_MAXVALUE
@@ -1085,7 +1090,7 @@ v_dataReaderReadInstance(
     }
     /* Now trigger the action routine that the last sample is read. */
     action(NULL,arg);
-    v_statisticsULongValueInc(v_reader, numberOfReads, _this);
+    v_statisticsULongValueInc(v_reader, numberOfInstanceReads, _this);
     v_dataReaderUnLock(_this);
     datareaderEntriesFree(entries);
 
@@ -1129,7 +1134,7 @@ v_dataReaderReadNextInstance(
 
     /* Now trigger the action routine that the last sample is read. */
     action(NULL,arg);
-    v_statisticsULongValueInc(v_reader, numberOfReads, _this);
+    v_statisticsULongValueInc(v_reader, numberOfNextInstanceReads, _this);
     v_dataReaderUnLock(_this);
     datareaderEntriesFree(entries);
 
@@ -1383,7 +1388,7 @@ v_dataReaderTakeInstance(
     }
     /* Now trigger the action routine that the last sample is read. */
     action(NULL,arg);
-    v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
+    v_statisticsULongValueInc(v_reader, numberOfInstanceTakes, _this);
     v_dataReaderUnLock(_this);
     datareaderEntriesFree(entries);
 
@@ -1441,7 +1446,7 @@ v_dataReaderTakeNextInstance(
 
     /* Now trigger the action routine that the last sample is read. */
     action(NULL,arg);
-    v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
+    v_statisticsULongValueInc(v_reader, numberOfNextInstanceTakes, _this);
     v_dataReaderUnLock(_this);
     datareaderEntriesFree(entries);
 
@@ -1789,15 +1794,15 @@ v_dataReaderIndexField(
     if (field == NULL) {
         fieldName = os_alloca(strlen(name) + strlen("sample.message.userData.."));
         /* Try to lookup the specified name as a sample field. */
-        sprintf(fieldName,"sample.%s",name);
+        os_sprintf(fieldName,"sample.%s",name);
         field = c_fieldNew(instanceType,fieldName);
         if (field == NULL) {
             /* Try to lookup the specified name as a message field. */
-            sprintf(fieldName,"sample.message.%s",name);
+            os_sprintf(fieldName,"sample.message.%s",name);
             field = c_fieldNew(instanceType,fieldName);
             if (field == NULL) {
                 /* Try to lookup the specified name as a userData field. */
-                sprintf(fieldName,"sample.message.userData.%s",name);
+                os_sprintf(fieldName,"sample.message.userData.%s",name);
                 field = c_fieldNew(instanceType,fieldName);
             }
         }
@@ -1952,6 +1957,7 @@ v_dataReaderLookupInstance(
 
     v_dataReaderLock(_this);
     found = dataReaderLookupInstanceUnlocked(_this, keyTemplate);
+    v_statisticsULongValueInc(v_reader, numberOfInstanceLookups, _this);
     v_dataReaderUnLock(_this);
 
     return found;

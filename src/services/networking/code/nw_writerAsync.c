@@ -240,14 +240,14 @@ nw_writerAsyncNew(
             tmpPathSize = strlen(pathName) +  strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
             tmpPath = os_malloc(tmpPathSize);
-            sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Scheduling));
+            os_sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Scheduling));
         } else
         {
             tmpPathSize = strlen(parentPathName) + strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Rx)) + strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
             tmpPath = os_malloc(tmpPathSize);
-            sprintf(tmpPath, "%s%s%s%s%s", parentPathName, NWCF_SEP, NWCF_ROOT(Rx),
+            os_sprintf(tmpPath, "%s%s%s%s%s", parentPathName, NWCF_SEP, NWCF_ROOT(Rx),
                 NWCF_SEP, NWCF_ROOT(Scheduling));
         }
 

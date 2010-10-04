@@ -43,8 +43,8 @@
  *  double			c_double	c_primitive->kind P_DOUBLE
  *  string			c_string	c_collectionType->kind C_STRING, ->maxSize 0, ->subType "c_char"
  *  string<len>			c_string	c_collectionType->kind C_STRING, ->maxSize len, ->subType "c_char"
- *  sequence<type>		c_array		c_collectionType->kind C_SEQUENCE, ->maxSize 0, ->subType <type>
- *  sequence<type,len>		c_array		c_collectionType->kind C_SEQUENCE, ->maxSize len, ->subType <type>
+ *  sequence<type>		c_sequence	c_collectionType->kind C_SEQUENCE, ->maxSize 0, ->subType <type>
+ *  sequence<type,len>		c_sequence		c_collectionType->kind C_SEQUENCE, ->maxSize len, ->subType <type>
  *  typedef <type-name> <name>	-		c_typeDef->alias <type-name>
  *  enum <name> {				c_enumeration->elements
  *	<element-name>				    elements[0..n] c_constant

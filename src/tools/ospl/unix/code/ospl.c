@@ -475,7 +475,17 @@ findServiceTerminatePeriod(
             data = cf_data(cf_elementChild(elem, "#text"));
             if (data) {
                 value = cf_dataValue(data);
-                *serviceTerminatePeriod = os_realToTime(offset + atof(value.is.String));
+                /* dds2164: if '0' is defined, override any wait times, including
+                 * the 4 second offset defined above.
+                 */
+                if(0 == atof(value.is.String))
+                {
+                    (*serviceTerminatePeriod).tv_sec = 0;
+                    (*serviceTerminatePeriod).tv_nsec = 0;
+                } else
+                {
+                    *serviceTerminatePeriod = os_realToTime(offset + atof(value.is.String));
+                }
             }
         }
     }

@@ -972,7 +972,7 @@ nw_socketSendDataToPartition(
     sk_length length)
 {
     sk_length result = 0;
-    os_int32 sendRes, sendResAll;
+    os_int32 sendRes = 0, sendResAll = 0;
     os_int sendToSucceeded;
     nw_addressList addressList = NULL;
     sk_address partitionAddress;
@@ -1117,7 +1117,7 @@ nw_socketSendControlTo(
 
     /* Control message */
     NW_CONFIDENCE(sock->supportsControl);
-    NW_HEXDUMP("nw_socketSendControlTo", 0, buffer, length);
+    NW_HEXDUMPTO("nw_socketSendControlTo", receiverAddress, buffer, length);
     sockAddrP2P = sock->sockAddrControl;
     sockAddrP2P.sin_addr.s_addr = (in_addr_t)receiverAddress;
     sendRes = os_sockSendto(sock->socketControl, buffer, length,
@@ -1227,6 +1227,13 @@ nw_socketReceive(
             }
         }
 #endif   /* OSPL_NO_ZLIB */
+
+#ifdef NW_DEBUGGING
+            if ((os_int)nw_configurationLoseReceivedMessage()) {
+               recvRes = 0; 
+            }
+#endif
+
 
         if (recvRes > 0) {
             if (sock->loopsback) {

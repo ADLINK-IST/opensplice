@@ -55,7 +55,7 @@ cmx_readerSnapshotNew(
             os_mutexUnlock(&m);
             
             result = (c_char*)(os_malloc(60));
-            sprintf(result, "<readerSnapshot><id>"PA_ADDRFMT"</id></readerSnapshot>", (c_address)(arg.snapshot));
+            os_sprintf(result, "<readerSnapshot><id>"PA_ADDRFMT"</id></readerSnapshot>", (c_address)(arg.snapshot));
         }
     }
     return result;
@@ -266,7 +266,7 @@ cmx_readerSnapshotLookup(
     
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
-        strcpy(copy, snapshot);
+        os_strcpy(copy, snapshot);
         temp = strtok((c_char*)copy, "</>");    /*<readerSnapshot>*/
         temp = strtok(NULL, "</>");             /*<id>*/
         temp = strtok(NULL, "</>");             /*... the pointer*/

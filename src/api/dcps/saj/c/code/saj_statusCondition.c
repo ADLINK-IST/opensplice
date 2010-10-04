@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_statusCondition.h"
+#include "saj_StatusCondition.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_StatusConditionImpl_##name

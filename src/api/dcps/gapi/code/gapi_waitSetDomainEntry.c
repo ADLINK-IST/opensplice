@@ -98,7 +98,7 @@ _WaitSetDomainEntryDelete(
             uresult = u_waitsetNotify(_this->uWaitset, NULL);
             assert (uresult == U_RESULT_OK);
             os_threadWaitExit(_this->thread, NULL);
-            _this->thread = 0;
+            _this->thread = OS_THREAD_ID_NONE;
         } else {
             uresult = u_waitsetNotify(_this->uWaitset, NULL);
             assert(uresult == U_RESULT_OK);
@@ -153,7 +153,7 @@ _WaitSetDomainEntryMultiMode(
             _this->running = FALSE;
             u_waitsetNotify(_this->uWaitset, NULL);
             os_threadWaitExit(_this->thread, NULL);
-            _this->thread = (os_threadId)0;
+            _this->thread = OS_THREAD_ID_NONE;
         }
     }
     return result;

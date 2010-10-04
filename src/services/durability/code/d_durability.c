@@ -257,8 +257,8 @@ d_durabilityNew(
         durability->configuration  = NULL;
         durability->admin          = NULL;
         durability->serviceManager = NULL;
-        durability->leaseThread    = 0;
-        durability->statusThread   = 0;
+        durability->leaseThread    = OS_THREAD_ID_NONE;
+        durability->statusThread   = OS_THREAD_ID_NONE;
 
         d_durabilitySetState(durability, D_STATE_INIT);
 
@@ -523,7 +523,31 @@ typedef struct nsCompleteWalkData
 {
     d_durability durability;
     d_store store;
+    c_bool confirmed;
 } nsCompleteWalkData;
+
+/* Check if namespaces are confirmed */
+static void
+nameSpaceConfirmedWalk (
+    d_nameSpace nameSpace,
+    c_voidp userData)
+{
+    d_durability durability;
+    d_durabilityKind durabilityKind;
+
+    durabilityKind = d_nameSpaceGetDurabilityKind(nameSpace);
+    durability = ((struct nsCompleteWalkData*)userData)->durability;
+
+    /* If namespace is not persistent, continue */
+    if( (durabilityKind == D_DURABILITY_PERSISTENT) ||
+                        (durabilityKind == D_DURABILITY_ALL)) {
+
+        /* Check if master is confirmed for namespace */
+        if (!d_nameSpaceIsMasterConfirmed(nameSpace)) {
+            ((struct nsCompleteWalkData*)userData)->confirmed = FALSE;
+        }
+    }
+}
 
 /* Check if namespace is complete */
 static void
@@ -532,12 +556,8 @@ nameSpaceCompleteWalk(
     c_voidp userData)
 {
     d_durability durability;
-    d_store store;
-    os_time sleepTime;
     d_durabilityKind durabilityKind;
-
-    sleepTime.tv_sec        = 0;
-    sleepTime.tv_nsec       = 100000000; /* 100 ms */
+    d_store store;
 
     durability = ((struct nsCompleteWalkData*)userData)->durability;
     store = ((struct nsCompleteWalkData*)userData)->store;
@@ -546,11 +566,6 @@ nameSpaceCompleteWalk(
     /* If namespace is not persistent, continue */
     if( (durabilityKind == D_DURABILITY_PERSISTENT) ||
                         (durabilityKind == D_DURABILITY_ALL)) {
-
-        /* Wait until master is confirmed for namespace */
-        while (!d_nameSpaceIsMasterConfirmed(nameSpace) && durability->splicedRunning == TRUE) {
-             os_nanoSleep (sleepTime);
-        }
 
         /* Check master state of namespace, was it complete during alignment? */
         if (d_nameSpaceGetMasterState(nameSpace) == D_STATE_COMPLETE)
@@ -595,13 +610,24 @@ determineNameSpaceCompleteness(
     d_admin admin;
     d_store store;
     nsCompleteWalkData walkData;
+    os_time sleepTime;
 
     admin = durability->admin;
 	store = d_subscriberGetPersistentStore(subscriber);
+	sleepTime.tv_sec = 0;
+	sleepTime.tv_nsec = 100000000;
 
 	if (store) {
 	    walkData.durability = durability;
 	    walkData.store = store;
+	    do {
+	        os_nanoSleep(sleepTime);
+
+            /* Reset confirmed status to true */
+            walkData.confirmed = TRUE;
+	        d_adminNameSpaceWalk (admin, nameSpaceConfirmedWalk, &walkData);
+	    }while (!walkData.confirmed && durability->splicedRunning);
+
         d_adminNameSpaceWalk (admin, nameSpaceCompleteWalk, &walkData);
 	}
 }
@@ -697,7 +723,7 @@ d_durabilityDeinit(
             u_serviceChangeState(durability->service, STATE_TERMINATING);
             u_serviceWatchSpliceDaemon(durability->service, NULL, durability);
         }
-        if(durability->statusThread){
+        if(os_threadIdToInteger(durability->statusThread)){
             os_threadWaitExit(durability->statusThread, NULL);
         }
         if(durability->admin){
@@ -720,7 +746,7 @@ d_durabilityDeinit(
             u_serviceManagerFree(durability->serviceManager);
             durability->serviceManager = NULL;
         }
-        if(durability->leaseThread){
+        if(os_threadIdToInteger(durability->leaseThread)){
             os_threadWaitExit(durability->leaseThread, NULL);
         }
         if(durability->service){

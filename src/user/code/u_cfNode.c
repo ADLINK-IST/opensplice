@@ -26,6 +26,7 @@
 #include "v_cfNode.h"
 #include "v_configuration.h"
 
+#include "os_stdlib.h"
 #include "os_report.h"
 
 void
@@ -169,7 +170,7 @@ u_cfNodeName(
             vname = v_cfNodeGetName(kNode);
             length = (c_ulong)strlen(vname);
             name = os_malloc(length + 1U);
-            strncpy(name, vname, length);
+            os_strncpy(name, vname, length);
             name[length] = 0;
             u_cfNodeRelease(node);
         }

@@ -106,7 +106,7 @@ static void DRV_prep_cpp_arg(char *s)
    newarg[0] = '\0';
 
    for (farg = strtok(s, ","); farg != NULL; farg = strtok(NULL, ","))
-      strcat(newarg, farg);
+      os_strcat(newarg, farg);
 
    DRV_cpp_putarg(newarg);
 }
@@ -187,9 +187,9 @@ void DRV_parse_args(int ac, char **av)
                else
                   s = av[i] + 2;
 
-               strcat(idl_global->local_escapes(), s);
+               os_strcat(idl_global->local_escapes(), s);
 
-               strcat(idl_global->local_escapes(), " ");
+               os_strcat(idl_global->local_escapes(), " ");
 
                break;
 
@@ -201,7 +201,7 @@ void DRV_parse_args(int ac, char **av)
                   if (i < ac - 1)
                   {
                      buffer = new char[strlen(av[i]) + strlen(av[i + 1]) + 2];
-                     sprintf(buffer, "%s%s", av[i], av[i + 1]);
+                     os_sprintf(buffer, "%s%s", av[i], av[i + 1]);
 #if defined(_WIN32)
                      buffer = replace (buffer); // swap \ for /
 #endif

@@ -15,6 +15,7 @@
 /* implementation */
 #include "string.h"
 #include "os.h"
+#include "os_stdlib.h"
 #include "c_base.h"         /* C_CAST   etc */
 #include "c_iterator.h"
 #include "u_user.h"
@@ -238,24 +239,29 @@ onNodeStarted(
     nw_controller controller = (nw_controller)arg;
     (void)detectedTime;
 
-    NW_CONFIDENCE(controller->discoveryReader != NULL);
-    NW_CONFIDENCE(controller->discoveryWriter != NULL);
 
-    NW_TRACE_2(Discovery, 1, "Discovered active remote node with id 0x%x, currently %u active nodes known",
-        networkId, aliveCount);
-    NW_REPORT_INFO_2(1,"Topology Discovery: Discovered active remote node 0x%x, currently %u active nodes known",
-                        networkId,  aliveCount);
-
-    /* Advertise my existence */
-    /* Note: this will be p2p in the future */
-    nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter,networkId);
-    /* Tell the bridge about this new node */
-    nw_bridgeNotifyNodeStarted(controller->bridge, networkId, address);
-    if (aliveCount == 1) {
-        /* Now it is useful to send messages to the network, so notify
-         * the network reader to switch off its filter */
+    if (controller->discoveryReader == NULL) {
         u_networkReaderRemoteActivityDetected(controller->reader);
         NW_TRACE(Discovery, 1, "Switched on forwarding to the network");
+    } else {
+        NW_CONFIDENCE(controller->discoveryWriter != NULL);
+
+        NW_TRACE_2(Discovery, 1, "Discovered active remote node with id 0x%x, currently %u active nodes known",
+            networkId, aliveCount);
+        NW_REPORT_INFO_2(1,"Topology Discovery: Discovered active remote node 0x%x, currently %u active nodes known",
+                            networkId,  aliveCount);
+
+        /* Advertise my existence */
+        /* Note: this will be p2p in the future */
+        nw_discoveryWriterRespondToStartingNode(controller->discoveryWriter,networkId);
+        /* Tell the bridge about this new node */
+        nw_bridgeNotifyNodeStarted(controller->bridge, networkId, address);
+        if (aliveCount == 1) {
+            /* Now it is useful to send messages to the network, so notify
+             * the network reader to switch off its filter */
+            u_networkReaderRemoteActivityDetected(controller->reader);
+            NW_TRACE(Discovery, 1, "Switched on forwarding to the network");
+        }
     }
 }
 
@@ -425,7 +431,7 @@ nw_controllerInitializeChannels(
                     channelPath = os_malloc(
                         strlen(NWCF_ROOT(Channel)"[@" NWCF_ATTRIB_ChannelName "='']") +
                         strlen(channelName)+1);
-                    sprintf(channelPath, NWCF_ROOT(Channel) "[@" NWCF_ATTRIB_ChannelName "='%s']", channelName);
+                    os_sprintf(channelPath, NWCF_ROOT(Channel) "[@" NWCF_ATTRIB_ChannelName "='%s']", channelName);
 
                     sendChannel = nw_bridgeNewSendChannel(controller->bridge, channelPath, onFatal, onFatalUsrData);
                     if (sendChannel) {
@@ -529,12 +535,12 @@ nw_controllerSplitPartitionTopic(
             /* Copy partitionpart */
             partitionLen = (os_address)dotPos - (os_address)partitionPos;
             *partitionPart = os_malloc(partitionLen + 1);
-            strncpy(*partitionPart, partitionPos, partitionLen);
+           os_strncpy(*partitionPart, partitionPos, partitionLen);
             (*partitionPart)[partitionLen] = '\0';
 			topicPos = &(dotPos[1]);
 			topicLen = strlen(topicPos);
 			*topicPart = os_malloc(topicLen + 1);
-			strncpy(*topicPart, topicPos, topicLen);
+			os_strncpy(*topicPart, topicPos, topicLen);
 			(*topicPart)[topicLen] = '\0';
 			result = TRUE;
         }

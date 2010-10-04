@@ -157,7 +157,7 @@ static void read_include_file (char * name, int dohere, int sharp)
       if ((strcmp(curdir(), ".") != 0) && 
          ((name[0] != CPP_FILESEPCHAR_1) && (name[0] != CPP_FILESEPCHAR_2)))
       {
-         sprintf(temp, "%s%c%s", curdir(), CPP_FILESEPCHAR_DEF, name);
+         os_sprintf(temp, "%s%c%s", curdir(), CPP_FILESEPCHAR_DEF, name);
          n = temp;
       }
       else
@@ -180,7 +180,7 @@ static void read_include_file (char * name, int dohere, int sharp)
          n = temp;
          for (i = 0;i < nIfiles;i++)
          {
-            sprintf(temp, "%s%c%s", Ifiles[i], CPP_FILESEPCHAR_DEF, name);
+            os_sprintf(temp, "%s%c%s", Ifiles[i], CPP_FILESEPCHAR_DEF, name);
             f = fopen(temp, "r");
             if (f != NULL)
             {

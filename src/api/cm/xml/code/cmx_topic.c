@@ -103,13 +103,13 @@ cmx_topicInit(
     keyExpr = v_topicMessageKeyExpr(entity);
     
     if(keyExpr){
-        sprintf(buf, 
+        os_sprintf(buf, 
             "<keyList>%s</keyList><typename>%s</typename><kind>TOPIC</kind>",
             keyExpr,
             metaName);
         os_free(keyExpr);
     } else {
-        sprintf(buf, 
+        os_sprintf(buf, 
             "<keyList></keyList><typename>%s</typename><kind>TOPIC</kind>", 
             metaName);
     }

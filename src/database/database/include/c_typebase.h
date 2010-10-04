@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_TYPEBASE_H
@@ -72,6 +72,7 @@ C_CLASS(c_base);
 #define NULL (0)
 
 typedef os_address          c_address;
+typedef c_address           c_size;
 typedef void               *c_object;
 typedef void               *c_voidp;
 typedef os_uchar            c_octet;
@@ -84,14 +85,12 @@ typedef os_short            c_wchar;
 typedef os_float            c_float;
 typedef os_double           c_double;
 typedef os_uchar            c_bool;
-#ifndef C_NO_LONGLONG_SUPPORT
 typedef os_int64            c_longlong;
 typedef os_uint64           c_ulonglong;
-#endif
-
 typedef c_char             *c_string;
 typedef c_wchar            *c_wstring;
 typedef c_object           *c_array;
+typedef c_object           *c_sequence;
 
 /* min and max definitions */
 #define C_MIN_CHAR             '\0'

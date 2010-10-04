@@ -593,7 +593,7 @@ nw_discoveryWriterMain(
 
     /* several parameters */
     path = os_malloc(strlen(runnable->name) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Tx)) + 1);
-    sprintf(path, "%s%s%s", runnable->name, NWCF_SEP, NWCF_ROOT(Tx));
+    os_sprintf(path, "%s%s%s", runnable->name, NWCF_SEP, NWCF_ROOT(Tx));
     heartbeatInterval = NWCF_SIMPLE_PARAM(ULong, path, Interval);
     if (heartbeatInterval < NWCF_MIN(Interval)) {
         NW_REPORT_WARNING_2("retrieving discovery sending parameters",
@@ -1012,7 +1012,7 @@ nw_discoveryReaderReceivedHeartbeat(
     nw_name  role = "";
     nw_name  reqscope = NULL;
     nw_data  Nodelist = NULL;
-    nw_seqNr NodelistLen;
+    nw_seqNr NodelistLen = 0;
     os_uchar tag;
     os_uint32 len;
 
@@ -1399,6 +1399,10 @@ nw_discoveryReaderNew(
     char *pathName;
     char *schedPathName;
     size_t schedPathNameSize;
+    nw_aliveNodesHashItem itemFound;
+    nw_bool wasCreated;
+    c_time heartbeatInterval;
+    c_time receivedTime = v_timeGet();
 
     result = (nw_discoveryReader)os_malloc((os_uint32)sizeof(*result));
     if (result != NULL) {
@@ -1408,7 +1412,7 @@ nw_discoveryReaderNew(
             strlen(NWCF_ROOT(Rx)) + strlen(NWCF_SEP) +
             strlen(NWCF_ROOT(Scheduling))+ 1;
         schedPathName = os_malloc(schedPathNameSize);
-        sprintf(schedPathName, "%s%s%s%s%s", name, NWCF_SEP, NWCF_ROOT(Rx),
+        os_sprintf(schedPathName, "%s%s%s%s%s", name, NWCF_SEP, NWCF_ROOT(Rx),
             NWCF_SEP, NWCF_ROOT(Scheduling));
         nw_discoveryInitialize((nw_discovery)result, networkId,
             name, schedPathName,
@@ -1440,7 +1444,7 @@ nw_discoveryReaderNew(
 
 
         pathName = os_malloc(strlen(name) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Rx)) + 1) ;
-        sprintf(pathName, "%s%s%s", name, NWCF_SEP, NWCF_ROOT(Rx));
+        os_sprintf(pathName, "%s%s%s", name, NWCF_SEP, NWCF_ROOT(Rx));
 
         /* death detection of other nodes */
         result->deathDetectionCount = NWCF_SIMPLE_PARAM(ULong, pathName, DeathDetectionCount);
@@ -1465,6 +1469,47 @@ nw_discoveryReaderNew(
 
         result->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed);
         /* Do not start in the constructor, but let somebody else start me */
+
+        /*
+         *  the networking service will only send data to the network if there's at least one other running node
+         *  (referred to as 'remote activity'). During start-up, the service temporarily sends no data even though
+         *  there is remote activity, because it simply hasn't detected it yet. For built-in topics this leads to a
+         *  bootstrap issue, causing some of them not to be transmitted to remote nodes.
+         *  This causes your application to fail.
+         *  0x0100007F = 127.0.0.1
+         *  12345 = networkId
+         *
+         *  solved by creating a fake node at startup.
+         */
+        heartbeatInterval.seconds = 1;
+        heartbeatInterval.nanoseconds = 0;
+        nw_discoveryReaderLookupOrCreateNode(result,
+                           12345,0x0100007F, &itemFound, &wasCreated);
+        if (wasCreated) {
+            /* New item, initialize it */
+            itemFound->maxHeartbeatIntervalAllowed = heartbeatInterval;
+            for (i=1; i<result->deathDetectionCount; i++) {
+                itemFound->maxHeartbeatIntervalAllowed =
+                    c_timeAdd(itemFound->maxHeartbeatIntervalAllowed,
+                              heartbeatInterval);
+            }
+            itemFound->lastHeartbeatReceivedTime = receivedTime;
+            itemFound->hasDied = FALSE;
+            itemFound->networkId = 12345;
+            itemFound->state = NW_DISCSTATE_ALIVE;
+
+            result->aliveNodesCount++;
+
+            if (result->startedAction != NULL) {
+                result->startedAction(12345, 0x0100007F,
+                    receivedTime, result->aliveNodesCount,
+                    result->arg);
+            }
+        } else {
+            NW_REPORT_WARNING("nw_discoveryReaderNew",
+                        "failed to create fake node"
+                       );
+        }
     }
 
     return result;

@@ -27,7 +27,7 @@ getFieldName(
         str = q_getId(fieldExpr);
         len = strlen(str)+1;
         name = (c_char *)os_malloc(len);
-        strncpy(name,str,len);
+        os_strncpy(name,str,len);
         return name;
     } else {
         return q_propertyName(fieldExpr);

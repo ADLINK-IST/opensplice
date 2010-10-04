@@ -380,7 +380,7 @@ BE_Globals::int_to_string(int i)
    DDS_StdString result;
    char buf[20];
 
-   sprintf(buf, "%d", i);
+   os_sprintf(buf, "%d", i);
    result = buf;
 
    return result;
@@ -392,7 +392,7 @@ BE_Globals::ulong_to_string(unsigned long ul)
    DDS_StdString result;
    char buf[256];
 
-   sprintf(buf, "%lu", ul);
+   os_sprintf(buf, "%lu", ul);
    result = buf;
 
    return result;

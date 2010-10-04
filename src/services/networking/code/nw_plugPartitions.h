@@ -31,7 +31,7 @@ nw_plugPartitionsGetPartition(
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
     nw_bool *compression,
-    os_uint32* hash);
+    os_int32* hash);
 
 nw_partitionId
 nw_plugPartitionsGetPartitionIdByHash(

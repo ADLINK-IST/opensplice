@@ -1519,7 +1519,22 @@ gapi_fooDataReader_get_key_value (
     const gapi_instanceHandle_t handle
     )
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _DataReader datareader;
+
+    datareader = gapi_dataReaderClaim(_this, &result);
+
+    if ( datareader ) {
+        if ( (key_holder == NULL) || (handle == GAPI_HANDLE_NIL) ) {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        } else {
+            result = _DataReaderGetKeyValue(datareader, key_holder, handle);
+        }
+    }
+
+    _EntityRelease(datareader);
+
+    return result;
 }
 
 typedef struct readerCopyInInfo_s {

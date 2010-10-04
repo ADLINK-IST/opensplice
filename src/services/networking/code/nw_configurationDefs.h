@@ -143,6 +143,18 @@
 #define NWCF_ATTRIB_PriorityKind      "priority_kind"                 /* string */
 #define NWCF_DEF_PriorityKind         "default"
 
+/* ---------------- Channels/Channel/Receiving/PacketRetentionPeriod ------------------- */
+#define NWCF_NAME_PacketRetentionPeriod   "PacketRetentionPeriod"              /* ulong */
+#ifndef NWCF_DEF_PacketRetentionPeriod
+#define NWCF_DEF_PacketRetentionPeriod    (0U)
+#endif
+/* ---------------- Channels/Channel/Receiving/ReliabilityRecoveryPeriod ------------------- */
+#define NWCF_NAME_ReliabilityRecoveryPeriod   "ReliabilityRecoveryPeriod"              /* ulong */
+#ifndef NWCF_DEF_ReliabilityRecoveryPeriod
+#define NWCF_DEF_ReliabilityRecoveryPeriod    (1000U)
+#endif
+
+
 /* ---------------- Channels/Channel/Receiving/ReceiveBufferSize ------------------- */
 #define NWCF_NAME_ReceiveBufferSize   "ReceiveBufferSize"              /* ulong */
 #ifndef NWCF_DEF_ReceiveBufferSize

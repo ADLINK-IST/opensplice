@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_fooDataReader.h"
+#include "saj_FooDataReader.h"
 #include "saj__fooDataReader.h"
 #include "saj_copyIn.h"
 #include "saj_copyOut.h"

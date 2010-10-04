@@ -23,9 +23,9 @@ sd_printTaggedString (
 {
     c_ulong len;
 
-    len = sprintf(buffer, "<%s>", tag);
+    len = os_sprintf(buffer, "<%s>", tag);
     len += sd_printCharData(&buffer[len], str);
-    len += sprintf(&buffer[len], "</%s>", tag);
+    len += os_sprintf(&buffer[len], "</%s>", tag);
     return len;
 }
 
@@ -39,15 +39,15 @@ sd_printTagAndName (
     c_ulong len;
 
     if ( escapeQuote ) {
-        len = sprintf(buffer, "<%s name=\\\"", tag);
+        len = os_sprintf(buffer, "<%s name=\\\"", tag);
     } else {
-        len = sprintf(buffer, "<%s name=\"", tag);
+        len = os_sprintf(buffer, "<%s name=\"", tag);
     }
     len += sd_printCharData(&buffer[len], str);
     if ( escapeQuote ) {
-        len += sprintf(&buffer[len], "\\\">");
+        len += os_sprintf(&buffer[len], "\\\">");
     } else {
-        len += sprintf(&buffer[len], "\">");
+        len += os_sprintf(&buffer[len], "\">");
     }
     return len;
 }
@@ -76,7 +76,7 @@ sd_printModule (
         len = sd_printTagAndName(buffer, "Module", item->name, info->escapeQuote);
         info->printAction(buffer, len, info->actionArg);
         sd_contextItemWalkChildren(item, info->walkAction, info);
-        len = sprintf(buffer, "</Module>");
+        len = os_sprintf(buffer, "</Module>");
         info->printAction(buffer, len, info->actionArg);
     } else {
         sd_contextItemWalkChildren(item, info->walkAction, info);
@@ -98,7 +98,7 @@ sd_printStructure (
     len = sd_printTagAndName(buffer, "Struct", item->name, info->escapeQuote);
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Struct>");
+    len = os_sprintf(buffer, "</Struct>");
     info->printAction(buffer, len, info->actionArg);
 
 }
@@ -116,7 +116,7 @@ sd_printScope (
         pscope = c_metaObject(scope->definedIn);
         sd_printScope(pscope, info);
         if ( scope->name ) {
-            len = sprintf(buffer, "%s::", scope->name);
+            len = os_sprintf(buffer, "%s::", scope->name);
             info->printAction(buffer, len, info->actionArg);
         }
     }
@@ -163,36 +163,36 @@ sd_printLiteralBoolean (
     if ( info->escapeQuote ) {
         if(item->value.kind == V_LONG){
             if(item->value.is.Long){
-                len = sprintf(buffer, "<Label value=\\\"True\\\"/>");
+                len = os_sprintf(buffer, "<Label value=\\\"True\\\"/>");
             } else {
-                len = sprintf(buffer, "<Label value=\\\"False\\\"/>");
+                len = os_sprintf(buffer, "<Label value=\\\"False\\\"/>");
             }
         } else if(item->value.kind == V_BOOLEAN){
             if ( item->value.is.Boolean ) {
-                len = sprintf(buffer, "<Label value=\\\"True\\\"/>");
+                len = os_sprintf(buffer, "<Label value=\\\"True\\\"/>");
             } else {
-                len = sprintf(buffer, "<Label value=\\\"False\\\"/>");
+                len = os_sprintf(buffer, "<Label value=\\\"False\\\"/>");
             }
         } else {
             assert(FALSE);
-            len = sprintf(buffer, "<Label value=\\\"False\\\"/>");
+            len = os_sprintf(buffer, "<Label value=\\\"False\\\"/>");
         }
     } else {
         if(item->value.kind == V_LONG){
             if(item->value.is.Long){
-                len = sprintf(buffer, "<Label value=\"True\"/>");
+                len = os_sprintf(buffer, "<Label value=\"True\"/>");
             } else {
-                len = sprintf(buffer, "<Label value=\"False\"/>");
+                len = os_sprintf(buffer, "<Label value=\"False\"/>");
             }
         } else if(item->value.kind == V_BOOLEAN){
             if ( item->value.is.Boolean ) {
-                len = sprintf(buffer, "<Label value=\"True\"/>");
+                len = os_sprintf(buffer, "<Label value=\"True\"/>");
             } else {
-                len = sprintf(buffer, "<Label value=\"False\"/>");
+                len = os_sprintf(buffer, "<Label value=\"False\"/>");
             }
         } else {
             assert(FALSE);
-            len = sprintf(buffer, "<Label value=\"False\"/>");
+            len = os_sprintf(buffer, "<Label value=\"False\"/>");
         }
     }
     info->printAction(buffer, len, info->actionArg);
@@ -220,9 +220,9 @@ sd_printLiteralEnumeration (
     constant = enumeration->elements[n];
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Label value=\\\"%s\\\"/>", c_metaObject(constant)->name);
+        len = os_sprintf(buffer, "<Label value=\\\"%s\\\"/>", c_metaObject(constant)->name);
     } else {
-        len = sprintf(buffer, "<Label value=\"%s\"/>", c_metaObject(constant)->name);
+        len = os_sprintf(buffer, "<Label value=\"%s\"/>", c_metaObject(constant)->name);
     }
     info->printAction(buffer, len, info->actionArg);
 }
@@ -248,15 +248,15 @@ sd_printLiteral (
         } else {
             image = c_valueImage(litem->value);
             if ( info->escapeQuote ) {
-                len = sprintf(buffer, "<Label value=\\\"%s\\\"/>", image);
+                len = os_sprintf(buffer, "<Label value=\\\"%s\\\"/>", image);
             } else {
-                len = sprintf(buffer, "<Label value=\"%s\"/>", image);
+                len = os_sprintf(buffer, "<Label value=\"%s\"/>", image);
             }
             info->printAction(buffer, len, info->actionArg);
             os_free(image);
         }
     } else {
-        len = sprintf(buffer, "<Default/>");
+        len = os_sprintf(buffer, "<Default/>");
         info->printAction(buffer, len, info->actionArg);
     }
 }
@@ -272,9 +272,9 @@ sd_printLabel (
     assert(item);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Element name=\\\"%s\\\"/>", item->name);
+        len = os_sprintf(buffer, "<Element name=\\\"%s\\\"/>", item->name);
     } else {
-        len = sprintf(buffer, "<Element name=\"%s\"/>", item->name);
+        len = os_sprintf(buffer, "<Element name=\"%s\"/>", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
 }
@@ -290,9 +290,9 @@ sd_printTyperef (
     assert(item);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Type name=\\\"");
+        len = os_sprintf(buffer, "<Type name=\\\"");
     } else {
-        len = sprintf(buffer, "<Type name=\"");
+        len = os_sprintf(buffer, "<Type name=\"");
     }
     info->printAction(buffer, len, info->actionArg);
 
@@ -300,9 +300,9 @@ sd_printTyperef (
 
     len  = sd_printCharData(buffer, item->name);
     if ( info->escapeQuote ) {
-        len += sprintf(&buffer[len], "\\\"/>");
+        len += os_sprintf(&buffer[len], "\\\"/>");
     } else {
-        len += sprintf(&buffer[len], "\"/>");
+        len += os_sprintf(&buffer[len], "\"/>");
     }
     info->printAction(buffer, len, info->actionArg);
 }
@@ -319,13 +319,13 @@ sd_printTypedef (
     assert(sitem);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<TypeDef name=\\\"%s\\\">", item->name);
+        len = os_sprintf(buffer, "<TypeDef name=\\\"%s\\\">", item->name);
     } else {
-        len = sprintf(buffer, "<TypeDef name=\"%s\">", item->name);
+        len = os_sprintf(buffer, "<TypeDef name=\"%s\">", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</TypeDef>");
+    len = os_sprintf(buffer, "</TypeDef>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -341,13 +341,13 @@ sd_printMember (
     assert(sitem);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Member name=\\\"%s\\\">", item->name);
+        len = os_sprintf(buffer, "<Member name=\\\"%s\\\">", item->name);
     } else {
-        len = sprintf(buffer, "<Member name=\"%s\">", item->name);
+        len = os_sprintf(buffer, "<Member name=\"%s\">", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Member>");
+    len = os_sprintf(buffer, "</Member>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -384,7 +384,7 @@ sd_printPrimitive (
     }
 #undef __CASE
 
-    len = sprintf(buffer, "<%s/>", name);
+    len = os_sprintf(buffer, "<%s/>", name);
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -399,7 +399,7 @@ sd_printTime (
 
     assert(sitem);
 
-    len = sprintf(buffer, "<Time/>");
+    len = os_sprintf(buffer, "<Time/>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -419,13 +419,13 @@ sd_printString (
 
     if ( size > 0 ) {
         if ( info->escapeQuote ) {
-            len = sprintf(buffer, "<String length=\\\"%d\\\"/>", size);
+            len = os_sprintf(buffer, "<String length=\\\"%d\\\"/>", size);
         } else {
-            len = sprintf(buffer, "<String length=\"%d\"/>", size);
+            len = os_sprintf(buffer, "<String length=\"%d\"/>", size);
         }
         info->printAction(buffer, len, info->actionArg);
     } else {
-        len = sprintf(buffer, "<String/>");
+        len = os_sprintf(buffer, "<String/>");
         info->printAction(buffer, len, info->actionArg);
     }
 
@@ -446,13 +446,13 @@ sd_printArray (
     size = sd_contextItemCollection(sitem)->maxSize;
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Array size=\\\"%d\\\">", size);
+        len = os_sprintf(buffer, "<Array size=\\\"%d\\\">", size);
     } else {
-        len = sprintf(buffer, "<Array size=\"%d\">", size);
+        len = os_sprintf(buffer, "<Array size=\"%d\">", size);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Array>");
+    len = os_sprintf(buffer, "</Array>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -472,19 +472,19 @@ sd_printSequence (
 
     if ( size > 0 ) {
         if ( info->escapeQuote ) {
-            len = sprintf(buffer, "<Sequence size=\\\"%d\\\">", size);
+            len = os_sprintf(buffer, "<Sequence size=\\\"%d\\\">", size);
         } else {
-            len = sprintf(buffer, "<Sequence size=\"%d\">", size);
+            len = os_sprintf(buffer, "<Sequence size=\"%d\">", size);
         }
         info->printAction(buffer, len, info->actionArg);
     } else {
-        len = sprintf(buffer, "<Sequence>");
+        len = os_sprintf(buffer, "<Sequence>");
         info->printAction(buffer, len, info->actionArg);
     }
 
     sd_contextItemWalkChildren(item, info->walkAction, info);
 
-    len = sprintf(buffer, "</Sequence>");
+    len = os_sprintf(buffer, "</Sequence>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -500,13 +500,13 @@ sd_printEnumeration (
     assert(sitem);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Enum name=\\\"%s\\\">", item->name);
+        len = os_sprintf(buffer, "<Enum name=\\\"%s\\\">", item->name);
     } else {
-        len = sprintf(buffer, "<Enum name=\"%s\">", item->name);
+        len = os_sprintf(buffer, "<Enum name=\"%s\">", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Enum>");
+    len = os_sprintf(buffer, "</Enum>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -521,10 +521,10 @@ sd_printUnionSwitch (
 
     assert(sitem);
 
-    len = sprintf(buffer, "<SwitchType>");
+    len = os_sprintf(buffer, "<SwitchType>");
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</SwitchType>");
+    len = os_sprintf(buffer, "</SwitchType>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -540,13 +540,13 @@ sd_printUnionCase (
     assert(sitem);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Case name=\\\"%s\\\">", item->name);
+        len = os_sprintf(buffer, "<Case name=\\\"%s\\\">", item->name);
     } else {
-        len = sprintf(buffer, "<Case name=\"%s\">", item->name);
+        len = os_sprintf(buffer, "<Case name=\"%s\">", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Case>");
+    len = os_sprintf(buffer, "</Case>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -562,13 +562,13 @@ sd_printUnion (
     assert(sitem);
 
     if ( info->escapeQuote ) {
-        len = sprintf(buffer, "<Union name=\\\"%s\\\">", item->name);
+        len = os_sprintf(buffer, "<Union name=\\\"%s\\\">", item->name);
     } else {
-        len = sprintf(buffer, "<Union name=\"%s\">", item->name);
+        len = os_sprintf(buffer, "<Union name=\"%s\">", item->name);
     }
     info->printAction(buffer, len, info->actionArg);
     sd_contextItemWalkChildren(item, info->walkAction, info);
-    len = sprintf(buffer, "</Union>");
+    len = os_sprintf(buffer, "</Union>");
     info->printAction(buffer, len, info->actionArg);
 }
 
@@ -665,7 +665,7 @@ sd_printType (
 {
     sd_printInfo *info = (sd_printInfo *) arg;
 
-    sprintf(&info->buffer[info->offset], "%s", data);
+    os_sprintf(&info->buffer[info->offset], "%s", data);
     info->offset += len;
 }
 
@@ -680,9 +680,9 @@ sd_printXmlTypeinfoLength (
     c_long len;
 
     if ( escapeQuote ) {
-        len = sprintf(buffer, "<%s version=\\\"1.0.0\\\"></%s>", SPLICE_METADATA_TAG, SPLICE_METADATA_TAG);
+        len = os_sprintf(buffer, "<%s version=\\\"1.0.0\\\"></%s>", SPLICE_METADATA_TAG, SPLICE_METADATA_TAG);
     } else {
-        len = sprintf(buffer, "<%s version=\"1.0.0\"></%s>", SPLICE_METADATA_TAG, SPLICE_METADATA_TAG);
+        len = os_sprintf(buffer, "<%s version=\"1.0.0\"></%s>", SPLICE_METADATA_TAG, SPLICE_METADATA_TAG);
     }
 
     lengthInfo.len = len + 1;
@@ -709,9 +709,9 @@ sd_printXmlTypeinfo (
     c_long len;
 
     if ( escapeQuote ) {
-        len = sprintf(buffer, "<%s version=\\\"1.0.0\\\">", SPLICE_METADATA_TAG);
+        len = os_sprintf(buffer, "<%s version=\\\"1.0.0\\\">", SPLICE_METADATA_TAG);
     } else {
-        len = sprintf(buffer, "<%s version=\"1.0.0\">", SPLICE_METADATA_TAG);
+        len = os_sprintf(buffer, "<%s version=\"1.0.0\">", SPLICE_METADATA_TAG);
     }
 
     printInfo.offset = len;
@@ -724,6 +724,6 @@ sd_printXmlTypeinfo (
 
     sd_walkItemTree(item, &walkInfo);
 
-    len = sprintf(&buffer[printInfo.offset], "</%s>", SPLICE_METADATA_TAG);
+    len = os_sprintf(&buffer[printInfo.offset], "</%s>", SPLICE_METADATA_TAG);
 }
 

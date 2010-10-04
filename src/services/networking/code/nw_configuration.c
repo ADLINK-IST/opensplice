@@ -731,9 +731,9 @@ nw_configurationGetElementInternal(
         elementFullName = os_malloc(fullNameSize);
         if (elementFullName != NULL) {
             if (elementPath != NULL) {
-                sprintf(elementFullName, "%s%s%s", elementPath, NWCF_SEP, elementName);
+                os_sprintf(elementFullName, "%s%s%s", elementPath, NWCF_SEP, elementName);
             } else {
-                sprintf(elementFullName, "%s", elementName);
+                os_sprintf(elementFullName, "%s", elementName);
             }
             /* Get complete list of interesting elements */
             elementList = u_cfElementXPath(element, elementFullName);
@@ -874,7 +874,7 @@ nw_configurationInitialize(
 
         /* Get element with tagname NetworkingService and corresponding name attribute*/
         path = os_malloc(strlen(NWCF_ROOT_NetworkingService)+strlen(NW_SERV_NAME_ATTR)+strlen(serviceName));
-        sprintf(path, NW_SERV_NAME_ATTR, NWCF_ROOT_NetworkingService, serviceName);
+        os_sprintf(path, NW_SERV_NAME_ATTR, NWCF_ROOT_NetworkingService, serviceName);
         nw_configurationGetElementInternal(topLevelElement, NULL, path, &configuration->networkingElement);
         nw_configurationGetElementInternal(topLevelElement, NULL, NWCF_ROOT_Domain, &configuration->domainElement);
 

@@ -19,6 +19,7 @@
 #include <signal.h>
 /* #include <winioctl.h> */
 
+#include <os_time.h>
 #include "c__base.h"
 #include <u_user.h>
 #include <u__user.h>
@@ -28,8 +29,11 @@
 #include "mm_trc.h"
 #include "mm_ms.h"
 
-#define DATABASE_NAME "c_base_a02"
-#define SHM_NAME "The default Domain"
+#define SLEEP_INTERVAL_SEC 0
+#define SLEEP_INTERVAL_NANO_SEC 100 * 1000 * 1000
+
+static const struct os_time SLEEP_INTERVAL = { SLEEP_INTERVAL_SEC,  SLEEP_INTERVAL_NANO_SEC};
+static const char *optflags="i:l:f:s:hetTmMa";
 
 typedef enum {
    memoryStats,
@@ -38,47 +42,35 @@ typedef enum {
 } monitorMode;
 
 static void
-print_usage (char *name)
+print_usage ()
 {
-   printf ("\nUsage:\n"
-           "      mmstat -h\n"
-           "      mmstat [-e] [-a] [-i interval] [-s sample_count] [URI]\n"
-           "      mmstat -t [-i interval] [-s sample_count] [-l limit] [-f filter_expression] [URI]\n\n");
-   printf ("      -h       Show this help\n\n");
-   printf ("               Show the memory statistics of the system identified by\n"
-           "               the specified URI. If no URI is specified, the environment\n"
-           "               variable OSPL_URI will be searched for. When even the\n"
-           "               the environment variable is unspecified, the default system\n"
-           "               will be selected. The default display interval is 3 seconds\n\n");
-   printf ("      -e       Extended mode, shows bar for allocated memory\n\n"
-           "      -i interval\n"
-           "               Show memory statistics every interval milli seconds\n\n"
-           "      -s sample_count\n"
-           "               Stop after sample_count samples\n\n");
-   printf ("      -a       Show pre-allocated memory as well.\n\n");
-   printf ("      -t       Show meta object reference count of the system identified by\n"
-           "               the specified URI. If no URI is specified, the environment\n"
-           "               variable OSPL_URI will be searched for. When even the\n"
-           "               the environment variable is unspecified, the default system\n"
-           "               will be selected. The default display interval is 3 seconds\n\n"
-           "      -l limit\n"
-           "               Show only extent count >= limit\n\n"
-           "      -f filter_expression\n"
-           "               Show only meta objects which name passes the filter expression\n\n");
-   printf ("      Use 'q' to terminate the monitor\n\n"
-           "      Use 't' to immediately show statistics\n\n");
-}
-
-static int usleep(long usec)
-{
-   struct timeval tv;
-   fd_set dummy;
-   SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-   FD_ZERO(&dummy);
-   FD_SET(s, &dummy);
-   tv.tv_sec = usec/1000000L;
-   tv.tv_usec = usec%1000000L;
-   return select(0, 0, 0, &dummy, &tv);
+    printf ("Usage:\n"
+            "      mmstat -h\n"
+            "      mmstat [-M|m] [-e] [-a] [-i interval] [-s sample_count] [URI]\n"
+            "      mmstat [-t|T] [-i interval] [-s sample_count] [-l limit] [-f filter_expression] [URI]\n");
+    printf ("\n");
+    printf ("Show the memory statistics of the OpenSplice system identified by the specified URI. "
+            "If no URI is specified, the environment variable OSPL_URI will be used. "
+            "If the environment variable is not set either, the default domain will be selected. "
+            "The default display interval is 3 seconds.\n");
+    printf ("\n");
+    printf ("Mode:\n");
+    printf ("      -m               Show memory statistics (default mode)\n");
+    printf ("      -M               Show memory statistics difference\n");
+    printf ("      -t               Show meta object references\n");
+    printf ("      -T               Show meta object references difference\n");
+    printf ("\n");
+    printf ("Options:\n");
+    printf ("      -h               Show this help\n");
+    printf ("      -e               Extended mode, shows bar for allocated memory\n");
+    printf ("      -a               Show pre-allocated memory as well.\n");
+    printf ("      -i interval      Display interval (in milliseconds)\n");
+    printf ("      -s sample_count  Stop after sample_count samples\n");
+    printf ("      -l limit         Show only object count >= limit\n");
+    printf ("      -f filter_expr   Show only meta objects which name passes the filter expression\n");
+    printf ("\n");
+    printf ("Use 'q' to terminate the monitor\n"
+            "Use 't' to immediately show statistics\n");
 }
 
 int
@@ -98,7 +90,7 @@ main (int argc, char *argv[])
    int no_break = TRUE;
    char c;
    int lost;
-   char* sddsURI;
+   const char* sddsURI = NULL;
    monitorMode selectedAction = memoryStats;
    monitor_ms msData = NULL;
    monitor_trc trcData = NULL;
@@ -109,99 +101,125 @@ main (int argc, char *argv[])
    c_long objectCountLimit = 0;
    char *filterExpression = NULL;
 
+
    HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
-   INPUT_RECORD buffer[1]; 
+   INPUT_RECORD buffer[1];
    DWORD events;
 
-   while ((opt = getopt (argc, argv, "i:l:f:s:hertToOmMa")) != -1)
-   {
-      switch (opt)
-      {
-      case 'i':
-         sscanf (optarg, "%d", &interval);
-         break;
-      case 's':
-         sscanf (optarg, "%d", &sampleCount);
-         break;
-      case 'l':
-         sscanf (optarg, "%d", &objectCountLimit);
-         break;
-      case 'f':
-         filterExpression = optarg;
-         break;
-      case 'e':
-         extended = TRUE;
-         break;
-      case 'r':
-         raw = TRUE;
-         break;
-      case 'a':
-         preallocated = TRUE;
-         break;
-      case 'h':
-         print_usage (argv[0]);
-         exit (0);
-         break;
-      case 'm':
-         selectedAction = memoryStats;
-         break;
-      case 'M':
-         selectedAction = memoryStats;
-         delta = TRUE;
-         break;
-      case 't':
-         selectedAction = typeRefCount;
-         break;
-      case 'T':
-         selectedAction = typeRefCount;
-         delta = TRUE;
-         break;
-      case 'o':
-         selectedAction = objectRefCount;
-         break;
-      case 'O':
-         selectedAction = objectRefCount;
-         delta = TRUE;
-         break;
-      case '?':
-         print_usage (argv[0]);
-         exit (-1);
-         break;
-      }
+   while (((opt = getopt (argc, argv, optflags)) != -1) && !errno) {
+       switch (opt) {
+           case 'i':
+               if (!(sscanf (optarg, "%d", &interval)) > 0) {
+                   fprintf(stderr, "mmstat: Not a valid interval.\n");
+                   print_usage();
+                   exit(-1);
+               }
+               break;
+           case 's':
+               if (!(sscanf (optarg, "%d", &sampleCount)) > 0) {
+                   fprintf(stderr, "mmstat: Not a valid sample count.\n");
+                   print_usage();
+                   exit(-1);
+               }
+               break;
+           case 'l':
+               if (!(sscanf (optarg, "%d", &objectCountLimit)) > 0) {
+                   fprintf(stderr, "mmstat: Not a valid limit.\n");
+                   print_usage();
+                   exit(-1);
+               }
+               break;
+           case 'f':
+               filterExpression = optarg;
+               break;
+           case 'e':
+               extended = TRUE;
+               break;
+           case 'r':
+               raw = TRUE;
+               break;
+           case 'a':
+               preallocated = TRUE;
+               break;
+           case 'm':
+               selectedAction = memoryStats;
+               break;
+           case 'M':
+               selectedAction = memoryStats;
+               delta = TRUE;
+               break;
+           case 't':
+               selectedAction = typeRefCount;
+               break;
+           case 'T':
+               selectedAction = typeRefCount;
+               delta = TRUE;
+               break;
+           case 'o':
+               selectedAction = objectRefCount;
+               break;
+           case 'O':
+               selectedAction = objectRefCount;
+               delta = TRUE;
+               break;
+           case 'h':
+           case '?':
+           default:
+               print_usage ();
+               exit(0);
+               break;
+       }
    }
-   if ((argc - optind) > 1)
-   {
-      print_usage (argv[0]);
-      exit (-1);
+   if (errno) {
+       fprintf(stderr, strerror(errno));
+       fprintf(stderr, "\n");
+       print_usage();
+       exit (-1);
+   }
+   if ((argc - optind) > 1) {
+       fprintf(stderr, "Too many arguments");
+       print_usage ();
+       exit (-1);
+   }
+   if (selectedAction == memoryStats) {
+       if (objectCountLimit > 0) {
+           fprintf(stderr, "Can't use object limit in memory stats mode.\n");
+           print_usage();
+           exit(-1);
+       }
+       if (filterExpression != NULL) {
+           fprintf(stderr, "Can't use filter expression in memory stats mode.\n");
+           print_usage();
+           exit(-1);
+       }
+   } else {
+       if (extended) {
+           fprintf(stderr, "Extended mode can only be used in memory stats mode.\n");
+           print_usage();
+           exit(-1);
+       }
+       if (preallocated) {
+           fprintf(stderr, "Preallocated memory can only be shown in memory stats mode.\n");
+           print_usage();
+           exit(-1);
+       }
    }
    if ((argc - optind) == 1)
    {
       uri = argv[optind];
    }
 
-   if( !raw)
-   {
-      if(strlen(uri) > 0)
-      {
-         sddsURI = os_strdup(uri);
-      }
-      else
-      {
+   if( !raw) {
+      if(strlen(uri) > 0) {
+         sddsURI = uri;
+      } else {
          sddsURI = os_getenv ("OSPL_URI");
-
-         if(!sddsURI)
-         {
-            sddsURI = (c_char*)os_malloc(19);
-            sprintf(sddsURI, "%s", "The default Domain");
-         }
-         else
-         {
-            sddsURI = os_strdup(sddsURI);
+         if(!sddsURI) {
+            sddsURI = DOMAIN_NAME;
          }
       }
       printf("Trying to open connection with the OpenSplice system using URI:\n" \
              "'%s'...\n", sddsURI);
-      os_free(sddsURI);
    }
 
    ur = u_userInitialise();
@@ -263,8 +281,9 @@ main (int argc, char *argv[])
 
             if(ur == U_RESULT_OK)
             {
-               if (_isatty (_fileno(stdin)) && !raw)
+               if (_isatty(_fileno(stdin)) && !raw)
                {
+                  c = '\0';
                   PeekConsoleInput( handle, buffer, 1, &events );
 
                   if(events > 0)
@@ -274,10 +293,11 @@ main (int argc, char *argv[])
                      if(buffer[0].EventType == KEY_EVENT
                         && buffer[0].Event.KeyEvent.bKeyDown)
                      {
-                        c = buffer[0].Event.KeyEvent.uChar.AsciiChar; 
+                        c = buffer[0].Event.KeyEvent.uChar.AsciiChar;
                      }
+
                   }
-                  
+
                   if (c == 'q' || c == '\03' /* ^C */)
                   {
                      no_break = FALSE;
@@ -296,14 +316,14 @@ main (int argc, char *argv[])
                      if(buffer[0].EventType == KEY_EVENT
                         && buffer[0].Event.KeyEvent.bKeyDown)
                      {
-                        c = buffer[0].Event.KeyEvent.uChar.AsciiChar; 
+                        c = buffer[0].Event.KeyEvent.uChar.AsciiChar;
                      }
                   }
                }
                if (no_break && interval)
                {
                   delay -= 100;
-                  usleep (100 * 1000);
+                  os_nanoSleep (SLEEP_INTERVAL);
                }
             }
             else
@@ -327,7 +347,7 @@ main (int argc, char *argv[])
             if(buffer[0].EventType == KEY_EVENT
                && buffer[0].Event.KeyEvent.bKeyDown)
             {
-               c = buffer[0].Event.KeyEvent.uChar.AsciiChar; 
+               c = buffer[0].Event.KeyEvent.uChar.AsciiChar;
             }
          }
 

@@ -12,6 +12,7 @@
 
 #include "saj_utilities.h"
 #include "saj__exception.h"
+#include "os_stdlib.h"
 
 void
 saj_exceptionThrow (
@@ -26,7 +27,7 @@ saj_exceptionThrow (
     jthrowable jexception;
 
     va_start (valist, format);
-    vsnprintf (memo, sizeof(memo), format, valist);
+    os_vsnprintf (memo, sizeof(memo), format, valist);
     va_end (valist);
     jmemo = (*env)->NewStringUTF (env, memo);
     if (jmemo) {

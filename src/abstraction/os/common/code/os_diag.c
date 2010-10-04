@@ -61,7 +61,7 @@ os_defaultDiag (
 
     ostime = os_timeGet();
 
-    vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
+    os_vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
     extended_description [sizeof(extended_description)-1] = '\0';
 
     os_gethostname (node, sizeof(node));

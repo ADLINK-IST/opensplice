@@ -183,7 +183,7 @@ idl_CsharpId(
         while (identifier[i] != '.' && identifier[i] != '\0') i++;
         scopeList[scopeNr] = os_malloc(i - j + 1);  /* Account for '\0'. */
         scopeList[scopeNr][0] = '\0';
-        strncat(scopeList[scopeNr], &identifier[j], i - j);
+        os_strncat(scopeList[scopeNr], &identifier[j], i - j);
 
         /* In case of the custom PSM mode, first go to PascalCase. */
         if (customPSM) {
@@ -227,8 +227,8 @@ idl_CsharpId(
     snprintf(cSharpId, strlen(scopeList[0]) + 1, "%s", scopeList[0]);
     os_free(scopeList[0]);
     for (i = 1; i < nrScopes; i++) {
-        strncat(cSharpId, ".", 1);
-        strncat(cSharpId, scopeList[i], strlen(scopeList[i]));
+        os_strncat(cSharpId, ".", 1);
+        os_strncat(cSharpId, scopeList[i], strlen(scopeList[i]));
         os_free(scopeList[i]);
     }
     os_free(scopeList);
@@ -302,10 +302,10 @@ idl_scopeStackCsharp (
                              (int)strlen(Id)+1));
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, scopeSepp);
+           os_strcat(scopeStack, scopeSepp);
            /* Concatenate the scope name */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat (scopeStack, Id);
+           os_strcat (scopeStack, Id);
            si++;
         }
         if (name) {
@@ -322,10 +322,10 @@ idl_scopeStackCsharp (
                              (int)strlen(Id)+1));
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, scopeSepp);
+           os_strcat(scopeStack, scopeSepp);
            /* Concatenate the user identifier */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat (scopeStack, Id);
+           os_strcat (scopeStack, Id);
         }
      } else {
     /* The stack is empty */

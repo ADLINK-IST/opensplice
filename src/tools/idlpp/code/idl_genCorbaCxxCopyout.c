@@ -477,9 +477,10 @@ idl_structureMemberOpenClose(
 
             snprintf(destin, (size_t)sizeof(destin), "to->%s", name);
             idl_fileOutPrintf(idl_fileCur(), "    {\n");
-            idl_fileOutPrintf(idl_fileCur(), "        %s (*src)",idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
-            idl_arrayDimensions(idl_typeArray(typeSpec)),
-            idl_fileOutPrintf(idl_fileCur(), " = &from->%s;\n\n", idl_cxxId(name));
+            idl_fileOutPrintf (idl_fileCur(), "        typedef %s _DestType",idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
+            idl_arrayDimensions(idl_typeArray(typeSpec));
+            idl_fileOutPrintf(idl_fileCur(), ";\n");
+            idl_fileOutPrintf(idl_fileCur(), "        _DestType *src = &from->%s;\n\n", idl_cxxId(name));
             idl_arrayElements(scope, name, idl_typeArray(typeSpec), "src", destin, 1);
             idl_fileOutPrintf(idl_fileCur(), "    }\n");
         }
@@ -501,7 +502,7 @@ idl_structureMemberOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "        %s *dst = &to->%s;\n\n",
             idl_scopeStackCxx (scope, "::", type_name),
             idl_cxxId(name));
-        idl_fileOutPrintf(idl_fileCur(), "        size0 = c_arraySize(c_array(from->%s));\n",
+        idl_fileOutPrintf(idl_fileCur(), "        size0 = c_arraySize(c_sequence(from->%s));\n",
             idl_cxxId(name));
         idl_fileOutPrintf(idl_fileCur(), "        to->%s.length(size0);\n",
             idl_cxxId(name),
@@ -654,7 +655,7 @@ idl_arrayLoopCopyIndexString(
 
     varIndex++;
     snprintf(arrIndex, (size_t)sizeof(arrIndex), "[i%d]", varIndex);
-    strncat(indexString, arrIndex, (size_t)sizeof(arrIndex));
+    os_strncat(indexString, arrIndex, (size_t)sizeof(arrIndex));
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -810,7 +811,7 @@ idl_arrayLoopCopyBody(
             source);
         idl_printIndent(total_indent);
         idl_fileOutPrintf(idl_fileCur(),
-            "    size0 = c_arraySize(c_array(%s));\n",
+            "    size0 = c_arraySize(c_sequence(%s));\n",
             "src0");
         idl_printIndent(total_indent);
         idl_fileOutPrintf(idl_fileCur(), "    %s.length(size0);\n", destin);
@@ -973,7 +974,7 @@ idl_arrayElements(
         } else if(basic == idl_char && catsRequested)
         {
             idl_printIndent(indent);
-            idl_fileOutPrintf(idl_fileCur(),"    strncpy(%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
+            idl_fileOutPrintf(idl_fileCur(),"   os_strncpy(%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
         } else
         {
             idl_printIndent(indent);
@@ -996,7 +997,7 @@ idl_arrayElements(
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(subType)))) == idl_string) {
                 loopIndent = 0;
                 buf = os_malloc(strlen(from)+4);
-                sprintf(buf, "(*%s)", from);
+                os_sprintf(buf, "(*%s)", from);
                 idl_arrayLoopCopy(typeArray, buf, to, indent);
                 os_free(buf);
             } else {
@@ -1042,10 +1043,10 @@ idl_seqIndex(
     c_char is[64];
     c_long i;
 
-    strncpy(index, "", (size_t)sizeof(index));
+   os_strncpy(index, "", (size_t)sizeof(index));
     for (i = 0; i < indent; i++) {
         snprintf(is, (size_t)sizeof(is), "[i%d]", i);
-        strncat(index, is, (size_t)sizeof(is));
+        os_strncat(index, is, (size_t)sizeof(is));
     }
     return os_strdup(index);
 }
@@ -1262,7 +1263,7 @@ idl_seqLoopCopy(
                 idl_seqIndex(loop_index));
             idl_fileOutPrintf(idl_fileCur(), "\n");
             idl_printIndent(indent);
-            idl_fileOutPrintf(idl_fileCur(), "        size%d = c_arraySize(c_array(src%d));\n",
+            idl_fileOutPrintf(idl_fileCur(), "        size%d = c_arraySize(c_sequence(src%d));\n",
                 loop_index,
                 loop_index);
             idl_printIndent(indent);
@@ -1292,7 +1293,7 @@ idl_seqLoopCopy(
             idl_seqIndex(loop_index));
         idl_fileOutPrintf(idl_fileCur(), "\n");
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "        size%d = c_arraySize(c_array(src%d));\n",
+        idl_fileOutPrintf(idl_fileCur(), "        size%d = c_arraySize(c_sequence(src%d));\n",
             loop_index,
             loop_index);
         idl_printIndent(indent);
@@ -1348,7 +1349,7 @@ idl_seqElements(
         indent,
         idl_scopedSplTypeName(typeSpec));
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    idl_fileOutPrintf(idl_fileCur(), "    size%d = c_arraySize(c_array(src%d));\n", indent, indent);
+    idl_fileOutPrintf(idl_fileCur(), "    size%d = c_arraySize(c_sequence(src%d));\n", indent, indent);
     idl_fileOutPrintf(idl_fileCur(), "    (*to).length(size%d);\n", indent);
     snprintf(source, (size_t)sizeof(source), "src%d", indent);
     idl_seqLoopCopy(nextType, source, "*to", 1, indent+1);
@@ -1749,7 +1750,7 @@ idl_unionCaseOpenClose(
         /* we can allocate the sequence on stack as it has a fixed size (12 bytes) */
         idl_fileOutPrintf(idl_fileCur(), "        %s x;\n\n",
             idl_scopeStackCxx(scope, "::", type_name));
-        idl_fileOutPrintf(idl_fileCur(), "        size0 = c_arraySize(c_array(from->_u.%s));\n",
+        idl_fileOutPrintf(idl_fileCur(), "        size0 = c_arraySize(c_sequence(from->_u.%s));\n",
             idl_cxxId(name));
         idl_fileOutPrintf(idl_fileCur(), "        x.length(size0);\n",
             idl_cxxId(name));

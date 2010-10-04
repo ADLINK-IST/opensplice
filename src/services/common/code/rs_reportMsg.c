@@ -46,7 +46,7 @@ c_stringDupHeap (
     assert (str);
 
     new_str = os_malloc (strlen(str)+1);
-    strcpy (new_str, str);
+    os_strcpy (new_str, str);
     return new_str;
 }
 

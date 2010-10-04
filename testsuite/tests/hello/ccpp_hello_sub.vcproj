@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_hello_sub"
-	ProjectGUID="{EACB9B80-FECA-1BAD-3AAD-8A0DE59D8CE1}"
+	ProjectGUID="{0A6E3CC9-FECA-1BAD-3AAD-8A6DDEFA88D5}"
 	RootNamespace="ccpp_hello_sub"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -376,18 +376,6 @@
 			<File
 				RelativePath="CPPSubscriberProcess.h">
 			</File>
-			<File
-				RelativePath="TestTopicsC.h">
-			</File>
-			<File
-				RelativePath="TestTopicsDcps_impl.h">
-			</File>
-			<File
-				RelativePath="TestTopicsDcpsC.h">
-			</File>
-			<File
-				RelativePath="TestTopicsSplDcps.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Build Files"
@@ -414,16 +402,6 @@
 					ExcludedFromBuild="true"
 				>
 				</FileConfiguration>
-			</File>
-		</Filter>
-		<Filter
-			Name="Inline Files"
-			Filter="i;inl">
-			<File
-				RelativePath="TestTopicsC.inl">
-			</File>
-			<File
-				RelativePath="TestTopicsDcpsC.inl">
 			</File>
 		</Filter>
 	</Files>

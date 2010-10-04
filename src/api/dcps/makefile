@@ -8,10 +8,10 @@ endif # INCLUDE_API_DCPS_SAC
 ifeq ($(INCLUDE_JAVA),yes)
 ifeq ($(INCLUDE_API_DCPS_SAJ),yes)
 SUBSYSTEMS	+= saj
-endif # INCLUDE_API_DCPS_SAJ
 ifeq ($(INCLUDE_API_DCPS_CJ),yes)
 SUBSYSTEMS	+= cj
 endif # INCLUDE_API_DCPS_CJ
+endif # INCLUDE_API_DCPS_SAJ
 endif # INCLUDE_JAVA
 ifeq ($(INCLUDE_CXX),yes)
 ifeq ($(INCLUDE_API_DCPS_CCPP),yes)

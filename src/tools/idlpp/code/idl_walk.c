@@ -1061,7 +1061,7 @@ idl_makeConstLiteral(
             while (val2[i] == ' ') {
             	i++;
             }
-            strncpy(val, &val2[i], 40);
+           os_strncpy(val, &val2[i], 40);
             os_free(val2);
             if ((strchr(val, '.') == NULL) && (strchr(val, 'E') == NULL)) {
             	strcat(val, ".0");

@@ -35,7 +35,7 @@ os_libraryOpen(
     
     if(name && (strlen(name) > 0)){
         if(attr->autoTranslate == OS_TRUE){
-            _snprintf(dllName, 64, "%s.dll", name);
+            snprintf(dllName, 64, "%s.dll", name);
             handle = LoadLibrary(dllName);
         } else {
             handle = LoadLibrary(name);

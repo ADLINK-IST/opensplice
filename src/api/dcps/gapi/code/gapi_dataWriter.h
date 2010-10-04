@@ -30,7 +30,7 @@ extern "C" {
 #define gapi_dataWriterClaim(h,r) \
         (_DataWriter(gapi_objectClaim(h,OBJECT_KIND_DATAWRITER,r)))
 
-    #define gapi_dataWriterReadClaim(h,r) \
+#define gapi_dataWriterReadClaim(h,r) \
         (_DataWriter(gapi_objectReadClaim(h,OBJECT_KIND_DATAWRITER,r)))
 
 #define gapi_dataWriterClaimNB(h,r) \

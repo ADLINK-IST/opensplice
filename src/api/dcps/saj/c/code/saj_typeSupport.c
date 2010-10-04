@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_fooTypeSupport.h"
+#include "saj_FooTypeSupport.h"
 #include "saj_utilities.h"
 #include "gapi.h"
 

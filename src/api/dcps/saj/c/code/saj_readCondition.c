@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_readCondition.h"
+#include "saj_ReadCondition.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_ReadConditionImpl_##name

@@ -25,6 +25,7 @@
 #include "gapi_vector.h"
 #include "gapi_dataReaderView.h"
 
+#include "os_stdlib.h"
 #include "os_abstract.h"
 #include "os_report.h"
 
@@ -333,7 +334,7 @@ struct conditionArg {
     gapi_expression  expr;
 };
 
-static void
+static c_bool
 readerCallback (
     c_object o,
     c_value arg,
@@ -347,6 +348,7 @@ readerCallback (
     v_state instanceState;
     v_state sampleState;
     gapi_readerMask *mask;
+    c_bool returnValue = FALSE;
 
     result->kind = V_BOOLEAN;
     result->is.Boolean = FALSE;
@@ -427,9 +429,11 @@ readerCallback (
 
             if (instanceStateFlag) {
                 result->is.Boolean = TRUE;
-            }
+		returnValue = TRUE;
+            }    
         }
     }
+    return returnValue;
 }
 
 static void
@@ -492,7 +496,7 @@ actionReadCondition(
         type = c_resolve(c_getBase(c_object(e)), "c_bool");
         ca->expr->expr = F1(Q_EXPR_PROGRAM,
                             F3(Q_EXPR_CALLBACK,
-                               (q_expr)type,
+                               (q_expr)q_newTyp(type),
                                (q_expr)readerCallback,q_newInt(mask)));
         
         fillReaderMaskState(ca->mask, ca->expr->expr);
@@ -515,7 +519,6 @@ gapi_createReadExpression (
     return ca.expr;
 }
 
-
 static void
 actionQueryCondition(
     v_entity e,
@@ -537,7 +540,7 @@ actionQueryCondition(
             expr2 = q_getPar(expr,0);
             expr2 = F2(Q_EXPR_AND,expr2,
                        F3(Q_EXPR_CALLBACK,
-                          (q_expr)type,
+                          (q_expr)q_newTyp(type),
                           (q_expr)readerCallback,q_newInt(mask)));
             expr2 = q_swapPar(expr,0,expr2);
             ca->expr->expr = expr;
@@ -609,7 +612,7 @@ getMaxParameterNumber (
     default:
     break;
     }
-
+    
     return max;
 }
 
@@ -884,7 +887,7 @@ splitEnumFullname (
     if ( ptr ) {
         size = (c_long) (ptr - fullname);
         *enumName = (c_char *) os_malloc(size + 1);
-        strncpy(*enumName, fullname, size);
+        os_strncpy(*enumName, fullname, size);
         (*enumName)[size] = '\0';
         *enumValue = ptr + 2;
         result = TRUE;

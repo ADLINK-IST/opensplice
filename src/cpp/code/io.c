@@ -514,7 +514,7 @@ extern void outputc (char c)
             char temp[1024];
             char *s;
 
-            sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
+            os_sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
             for (s = temp; *s; s++)
             {
                accum_char(output_accum, *s);
@@ -558,7 +558,7 @@ extern void outputd (int n)
 {
    char temp[64];
 
-   sprintf(temp, "%d", n);
+   os_sprintf(temp, "%d", n);
    outputs(temp);
 }
 

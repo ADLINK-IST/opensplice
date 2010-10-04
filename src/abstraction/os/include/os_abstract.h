@@ -48,9 +48,11 @@ OS_API os_uint32        pa_decrement(os_uint32 *count);
 #define PA_ADDRCAST	os_address
 
 #ifdef PA__64BIT
-#define PA_ADDRFMT	"%lx"
+#define PA_ADDRFMT	"%llx"
+#define PA_SIZEFMT	"%llu"
 #else
 #define PA_ADDRFMT	"%lx"
+#define PA_SIZEFMT	"%lu"
 #endif
 
 #undef OS_API

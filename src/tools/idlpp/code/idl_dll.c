@@ -36,7 +36,7 @@ idl_dllSetOption(
             if (incname) {
                 /* NULL terminator is covered by %s */
                 idl_dllHeader = (os_char *)os_malloc(strlen(IDL_DLL_INCL_STR)+strlen(incname));
-                sprintf(idl_dllHeader, IDL_DLL_INCL_STR, incname);
+                os_sprintf(idl_dllHeader, IDL_DLL_INCL_STR, incname);
                 os_free(incname);
             } else {
                 /* else incname is optional */

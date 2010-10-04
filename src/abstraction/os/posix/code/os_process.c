@@ -540,9 +540,9 @@ os_procCreate(
     } else {
 	/* first translate the input string into an argv structured list */
         argin = os_malloc(strlen(arguments) + 1);
-        strcpy(argin, arguments);
+        os_strcpy(argin, arguments);
         argv[0] = os_malloc(strlen(name) + 1);
-        argv[0] = strcpy(argv[0], name);
+        argv[0] = os_strcpy(argv[0], name);
         while (go_on && (unsigned int)argc <= (sizeof(argv)/(sizeof(char *)))) {
             while (argin[i] == ' ' || argin[i] == '\t' ) {
                 i++;
@@ -746,7 +746,7 @@ os_procFigureIdentity(
     os_int32 size = 0;
     char *process_name;
 
-    process_name = getenv("SPLICE_PROCNAME");
+    process_name = os_getenv("SPLICE_PROCNAME");
     if (process_name != NULL) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
                 process_name, os_procIdToInteger(os_procIdSelf()));
@@ -982,7 +982,7 @@ os_procMLockAll(
 os_result
 os_procMLock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     int r;
     os_result result;
@@ -1008,7 +1008,7 @@ os_procMLock(
 os_result
 os_procMUnlock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     int r;
     os_result result;

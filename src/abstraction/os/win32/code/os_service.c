@@ -17,11 +17,14 @@
 #include <sys/timeb.h>
 #include <time.h>
 #include <os_heap.h>
+#include <os_mutex.h>
+#include <os_stdlib.h>
 
 #include <stdio.h>
 #include <assert.h>
 
-#include "os__debug.h"
+#include <code/os__debug.h>
+#include <code/os__sharedmem.h>
 
 #define _PIPE_STATE_CONNECTING 0
 #define _PIPE_STATE_READING    1
@@ -75,6 +78,9 @@ static char *_ospl_serviceName = OS_SERVICE_DEFAULT_NAME;
 static os_time _ospl_clock_starttime = {0, 0};
 static LONGLONG _ospl_clock_freq = 0; /* frequency of high performance counter */
 static LONGLONG _ospl_clock_offset = 0;
+static os_char *
+os_constructPipeName(
+    os_char * name);
 
 
 /* Generic pool functions */
@@ -115,7 +121,8 @@ createSem(
     char *name)
 {
     _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d", OS_SERVICE_SEM_NAME_PREFIX, id);
+              "%s%d%d", OS_SERVICE_SEM_NAME_PREFIX, id,os_getShmBaseAddressFromPointer(NULL));
+
     return CreateSemaphore(NULL, 0, 0x7fffffff, name);
 }
 
@@ -125,7 +132,8 @@ createEv(
     char *name)
 {
     _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d", OS_SERVICE_EVENT_NAME_PREFIX, id);
+              "%s%d%d", OS_SERVICE_EVENT_NAME_PREFIX, id,os_getShmBaseAddressFromPointer(NULL));
+
     return CreateEvent(NULL, FALSE, FALSE, name);
 }
 
@@ -145,7 +153,7 @@ poolClaim(
     max = pool->blockCount*_POOL_BLOCKSIZE;
     if (max == pool->inuse) {
         /* first allocated new block */
-        newBlock = malloc(sizeof(struct pool_block));
+        newBlock = os_malloc(sizeof(struct pool_block));
         if (!newBlock) {
             return 1; /* failed to allocate new block */
         }
@@ -168,7 +176,7 @@ poolClaim(
             if (block->entity[i].id > 0) {
                 *id = block->entity[i].id;
                 block->entity[i].id = -block->entity[i].id;
-                i = _POOL_BLOCKSIZE;
+               i = _POOL_BLOCKSIZE;
                 block = NULL;
                 pool->inuse++;
                 result = 0; /* success */
@@ -193,20 +201,24 @@ poolRelease(
     long i;
     int result;
 
+    if (id == 0) { /* 0 is uninitialized mutex */
+       return 0;
+    }
+    
     block = pool->tail;
     blockNr = (pool->blockCount - 1) - ((id - 1) / _POOL_BLOCKSIZE); /* reverse order */
     idxInBlock = (id - 1) % _POOL_BLOCKSIZE;
     for (i = 0; i < blockNr; i++) {
-        block = block->prev;
+       block = block->prev;
     }
     if (block->entity[idxInBlock].id < 0) {
-        OS_DEBUG_1("poolRelease", "Releasing event %d", id);
-        block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
-        pool->inuse--;
-        result = 0; /* success */
+       OS_DEBUG_1("poolRelease", "Releasing event %d", id);
+       block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
+       pool->inuse--;
+       result = 0; /* success */
     } else {
-        OS_DEBUG_1("poolRelease", "Trying to destroy incorrect mutex %d", id);
-        result = 1;
+       OS_DEBUG_1("poolRelease", "Trying to destroy incorrect mutex %d", id);
+       result = 1;
     }
 
     return result;
@@ -301,9 +313,9 @@ handleRequest(
     case OS_SRVMSG_DESTROY_EVENT:
         pool = &es->eventPool;
         if (poolRelease(pool, pipe->request._u.id) == 0) {
-            pipe->reply.result = os_resultSuccess;
+           pipe->reply.result = os_resultSuccess;
         } else {
-            pipe->reply.result = os_resultFail;
+           pipe->reply.result = os_resultFail;
         }
     break;
     case OS_SRVMSG_CREATE_SEMAPHORE:
@@ -360,7 +372,6 @@ osServiceThread(
     terminate = 0;
     poolInit(&es.eventPool);
     poolInit(&es.semPool);
-
     for (i = 0; i < _PIPE_MAX_INSTANCES; i++) {
         hEvents[i] = CreateEvent(
                          NULL,    // default security attribute
@@ -539,29 +550,69 @@ osServiceThread(
     free(_ospl_servicePipeName); /* allocated by os_serviceStart! */
     _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 
+
     return NULL;
 }
 
 
-static char *
+os_char *
 createPipeName(void)
 {
-    char *n;
-    int i, len;
+    return os_constructPipeName(_ospl_serviceName);
+}
 
-    n = malloc(strlen(_ospl_serviceName) + strlen(OS_SERVICE_PIPE_PREFIX) + 1);
-    strcpy(n, OS_SERVICE_PIPE_PREFIX);
-    strcat(n, _ospl_serviceName);
-    /* replace all '\' occurrences with '#', since backslash is not
-     * allowed in the pipename
-     */
-    len = strlen(n);
-    for (i = strlen(OS_SERVICE_PIPE_PREFIX); i < len; i++) {
-        if (n[i] == '\\') {
-            n[i] = '#';
+os_char *
+os_createPipeNameFromMutex(
+    os_mutex *mutex)
+{
+    os_char *name;
+
+    assert(mutex);
+
+    name = os_getDomainNameforMutex(mutex);
+    if (name == NULL) {
+        name = _ospl_serviceName;
+    }
+    return os_constructPipeName(name);
+}
+
+os_char *
+os_constructPipeName(
+    os_char * name)
+{
+    os_char *n;
+    os_uint32 i, len;
+
+    assert(name);
+
+    n = os_malloc(strlen(name) + strlen(OS_SERVICE_PIPE_PREFIX) + 1);
+    if (n) {
+        strcpy(n, OS_SERVICE_PIPE_PREFIX);
+        strcat(n, name);
+        /* replace all '\' occurrences with '#', since backslash is not
+         * allowed in the pipename
+         */
+        len = strlen(n);
+        for (i = strlen(OS_SERVICE_PIPE_PREFIX); i < len; i++) {
+            if (n[i] == '\\') {
+                n[i] = '#';
+            }
         }
     }
     return n;
+}
+
+void
+os_createPipeNameFromDomainName(
+    os_char *name)
+{
+    assert(name);
+    if (name == NULL) {
+       name = _ospl_serviceName;
+    }
+
+    _ospl_servicePipeName = os_constructPipeName(name);
+
 }
 
 #define UNIQUE_PREFIX "ospl"
@@ -580,6 +631,7 @@ os_serviceStart(
 
     r = os_resultSuccess;
     initializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+
     if (QueryPerformanceFrequency(&frequency) != 0) {
         _ospl_clock_freq = frequency.QuadPart;
         _ftime64(&timebuffer);
@@ -593,17 +645,19 @@ os_serviceStart(
     }*/
 
     if (name == NULL) {
-        _snprintf(uniqueName, sizeof(uniqueName), "%s%d", UNIQUE_PREFIX, GetCurrentProcessId());
+        snprintf(uniqueName, sizeof(uniqueName), "%s%d",
+                 UNIQUE_PREFIX, GetCurrentProcessId());
         _ospl_serviceName = (char *)os_malloc(strlen(uniqueName) + 1);
-        strcpy(_ospl_serviceName, uniqueName);
+        os_strcpy(_ospl_serviceName, uniqueName);
     } else {
         _ospl_serviceName = os_malloc(strlen(name) + 1);
         if (_ospl_serviceName) {
-            strcpy(_ospl_serviceName, name);
+            os_strcpy(_ospl_serviceName, name);
         }
     }
     if (_ospl_serviceName) {
         _ospl_servicePipeName = createPipeName();
+
         _ospl_serviceThreadId = CreateThread(NULL,
             (SIZE_T)128*1024,
             (LPTHREAD_START_ROUTINE)osServiceThread,
@@ -612,6 +666,7 @@ os_serviceStart(
         if (_ospl_serviceThreadId == 0) {
             r = os_resultFail;
             free(_ospl_servicePipeName);
+
             _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
         } else {
             /* Wait for thread to be done with intialisation */
@@ -672,7 +727,7 @@ os_serviceName(void)
     return _ospl_serviceName;
 }
 
-const char *
+os_char *
 os_servicePipeName(void)
 {
     return _ospl_servicePipeName;

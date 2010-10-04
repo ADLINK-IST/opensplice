@@ -55,7 +55,7 @@ C_STRUCT(u_kernel) {
 
 C_STRUCT(domain) {
     c_char       *name;
-    c_ulong       dbSize;
+    c_size        dbSize;
     c_address     address;
     os_lockPolicy lockPolicy;
     c_bool        heap;
@@ -100,7 +100,7 @@ u_kernelGetDomainConfig(
                 value = cf_dataValue(elementData);
                 os_free(domainConfig->name);
                 domainConfig->name = os_malloc(strlen(value.is.String) + 1);
-                strcpy(domainConfig->name, value.is.String);
+                os_strcpy(domainConfig->name, value.is.String);
                 child = cf_element(cf_elementChild(dc, CFG_DATABASE));
                 if (child != NULL) {
                     size = cf_element(cf_elementChild(child, CFG_SIZE));
@@ -108,7 +108,7 @@ u_kernelGetDomainConfig(
                         elementData = cf_data(cf_elementChild(size, "#text"));
                         if (elementData != NULL) {
                             value = cf_dataValue(elementData);
-                            sscanf(value.is.String, "%uld", &domainConfig->dbSize);
+                            sscanf(value.is.String, PA_SIZEFMT, &domainConfig->dbSize);
                         }
                     }
                     address = cf_element(cf_elementChild(child, CFG_ADDRESS));
@@ -302,7 +302,7 @@ lockSharedMemory(
     int result;
     void *address;
     os_result r;
-    os_uint size;
+    os_address size;
 
     if (lockPolicy == OS_LOCKED) {
         address = os_sharedAddress(shm);
@@ -334,7 +334,7 @@ unlockSharedMemory(
 {
     int result;
     os_result r;
-    os_uint size;
+    os_address size;
     void *address;
 
     if (k->lockPolicy == OS_LOCKED) {
@@ -440,7 +440,7 @@ u_kernelNew(
     }
 
     domainCfg.name = os_malloc(strlen(DOMAIN_NAME) + 1);
-    strcpy(domainCfg.name, DOMAIN_NAME);
+    os_strcpy(domainCfg.name, DOMAIN_NAME);
     domainCfg.dbSize = DATABASE_SIZE;
     domainCfg.lockPolicy = OS_LOCK_DEFAULT;
     domainCfg.heap = FALSE;
@@ -459,15 +459,16 @@ u_kernelNew(
         if (strlen(uri) > 0) {
             s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
-                u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
-#ifdef INCLUDE_PLUGGABLE_REPORTING
-                u_usrReportPluginReadAndRegister (processConfig);
-#endif
+	      u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
             } else {
                 OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_USER, 0,
                             "Cannot read configuration from URI: \"%s\".",uri);
             }
         } /*  else Get default values */
+
+        /* start for windows the named pipe */
+        os_serviceStart(domainCfg.name);
+
         if (!domainCfg.heap) {
             shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
             if (shm == NULL) {
@@ -483,7 +484,7 @@ u_kernelNew(
                     OS_REPORT_1(OS_ERROR,OSRPT_CNTXT_USER,0,
                                 "u_kernelNew:os_sharedMemoryCreate failed.\n"
                                 "              The service cannot be started.\n"
-                                "              The required SHM size was %d bytes",
+                                "              The required SHM size was "PA_SIZEFMT" bytes",
                                 domainCfg.dbSize);
                 } else {
                     /* Ignore any message that was generated */
@@ -603,10 +604,10 @@ u_kernelNew(
                     uKernel->uri = NULL;
                 } else {
                     uKernel->uri = os_malloc(strlen(uri) + 1);
-                    strcpy(uKernel->uri, uri);
+                    os_strcpy(uKernel->uri, uri);
                 }
                 uKernel->name = os_malloc(strlen(domainCfg.name) + 1);
-                strcpy(uKernel->name, domainCfg.name);
+                os_strcpy(uKernel->name, domainCfg.name);
                 OS_REPORT_3(OS_INFO,"The OpenSplice domain service", 0,
                             "+++++++++++++++++++++++++++++++++++++++++++\n"
                             "              ++ The service has successfully started. ++\n"
@@ -660,7 +661,7 @@ u_kernelOpen(
     processConfig = NULL;
 
     domainCfg.name = os_malloc(strlen(DOMAIN_NAME) + 1);
-    strcpy(domainCfg.name, DOMAIN_NAME);
+    os_strcpy(domainCfg.name, DOMAIN_NAME);
     domainCfg.dbSize = DATABASE_SIZE;
     domainCfg.lockPolicy = OS_LOCK_DEFAULT;
     domainCfg.heap = FALSE;
@@ -671,7 +672,11 @@ u_kernelOpen(
     if ((uri != NULL) && (strlen(uri) > 0)) {
         s = cfg_parse_ospl(uri, &processConfig);
         if (s == CFGPRS_OK) {
+
+
             u_kernelGetDomainConfig(processConfig, &domainCfg, &shm_attr);
+            /* set pipename for windows */
+            os_createPipeNameFromDomainName(domainCfg.name);
 #ifdef INCLUDE_PLUGGABLE_REPORTING
             u_usrReportPluginReadAndRegister (processConfig);
 #endif
@@ -691,6 +696,9 @@ u_kernelOpen(
     } else {
         shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
         name = domainCfg.name;
+        /* set pipename for windows */
+        os_createPipeNameFromDomainName(domainCfg.name);
+
     }
     if (shm == NULL) {
         if (timeout >= 0) {
@@ -768,13 +776,13 @@ u_kernelOpen(
             /* Recheck 'uri', maybe it is retrieved from v_configuration */
             if (uri != NULL) {
                 o->uri = os_malloc(strlen(uri) + 1);
-                strcpy(o->uri, uri);
+                os_strcpy(o->uri, uri);
             } else {
                 o->uri = NULL;
             }
             assert(name);
             o->name = os_malloc(strlen(name) + 1);
-            strcpy(o->name, name);
+            os_strcpy(o->name, name);
         }
     }
     os_free(domainCfg.name);
@@ -819,10 +827,6 @@ u_kernelClose (
                   "Illegal parameter.");
         r = U_RESULT_ILL_PARAM;
     }
-
-#ifdef INCLUDE_PLUGGABLE_REPORTING
-    u_usrReportPluginUnregister ();
-#endif
 
     return r;
 }

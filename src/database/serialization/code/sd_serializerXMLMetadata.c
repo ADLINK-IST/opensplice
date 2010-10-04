@@ -314,13 +314,13 @@ sd_printTaggedString(
     c_char *current;
     
     current = dst;
-    len = sprintf(current, "<%s>", tagName);
+    len = os_sprintf(current, "<%s>", tagName);
     result += (c_ulong)len;
     current = SD_DISPLACE(current, C_ADDRESS(len));
     len = sd_printCharData(current, src);
     result += (c_ulong)len;
     current = SD_DISPLACE(current, C_ADDRESS(len));
-    len = sprintf(current, "</%s>", tagName);
+    len = os_sprintf(current, "</%s>", tagName);
     result += (c_ulong)len;
     
     return result;
@@ -392,7 +392,7 @@ sd_concatScoped(
     } else {
         len = strlen(name) + 1;
         result = os_malloc(len);
-        strcpy(result, name);
+        os_strcpy(result, name);
     }
     
     return result;
@@ -477,7 +477,7 @@ sd_XMLMetadataSerCallbackPre(
 
     /* Opening tag */
     tagName = sd_getTagName(name, type);
-    spRes = sprintf(*dataPtrPtr, "<%s>", tagName);
+    spRes = os_sprintf(*dataPtrPtr, "<%s>", tagName);
     if (spRes > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(spRes));
     }
@@ -519,7 +519,7 @@ sd_XMLMetadataSerCallbackPost(
 
     /* Closing tag */
     tagName = sd_getTagName(name, type);
-    len = sprintf(*dataPtrPtr, "</%s>", tagName);
+    len = os_sprintf(*dataPtrPtr, "</%s>", tagName);
     if (len > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(len));
     }

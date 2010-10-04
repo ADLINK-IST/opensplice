@@ -629,7 +629,7 @@ v_groupEntrySetWalk(
 
 c_bool v_groupEntrySetDisposeAll( struct v_groupEntrySet *set, c_time now )
 {
-   return( v_groupEntrySetWalk( set, entrySetDisposeAction, &now ) ); 
+   return( v_groupEntrySetWalk( set, entrySetDisposeAction, &now ) );
 }
 
 static v_groupEntry
@@ -675,14 +675,45 @@ createInstanceKeyExpr (
         keyExpr = (char *)os_malloc(totalSize);
         keyExpr[0] = 0;
         for (i=0;i<nrOfKeys;i++) {
-            sprintf(fieldName,"key.field%d",i);
-            strcat(keyExpr,fieldName);
-            if (i<(nrOfKeys-1)) { strcat(keyExpr,","); }
+            os_sprintf(fieldName,"key.field%d",i);
+            os_strcat(keyExpr,fieldName);
+            if (i<(nrOfKeys-1)) { os_strcat(keyExpr,","); }
         }
     } else {
         keyExpr = NULL;
     }
     return keyExpr;
+}
+
+static c_time 
+v_groupGetPendingLastDisposeTime( v_kernel kernel,
+                                  v_partition partition,
+                                  v_topic topic )
+{
+   int i;
+   v_pendingDisposeElement element;
+
+   c_time result = C_TIME_MIN_INFINITE;
+
+   c_mutexLock(&kernel->pendingDisposeListMutex);
+   for(i=0; i<c_listCount(kernel->pendingDisposeList); i++)
+   {
+      element =
+         (v_pendingDisposeElement)c_readAt(kernel->pendingDisposeList, i);
+      if ( !strcmp( element->disposeCmd.topicExpr,
+                    v_topicName(topic) )
+           && !strcmp( element->disposeCmd.partitionExpr, 
+                       "*" ) )
+      {
+         result = element->disposeTimestamp;
+         c_free( element->disposeCmd.topicExpr );
+         c_free( element->disposeCmd.partitionExpr );
+         c_removeAt( kernel->pendingDisposeList, i );
+         break;
+      }
+   }
+   c_mutexUnlock(&kernel->pendingDisposeListMutex);
+   return( result );
 }
 
 static void
@@ -734,7 +765,9 @@ v_groupInit(
     group->attachedServices      = c_setNew(type);
     group->notInterestedServices = c_setNew(type);
 
-    group->lastDisposeAll = C_TIME_MIN_INFINITE;
+    group->lastDisposeAll = v_groupGetPendingLastDisposeTime(kernel,
+                                                             partition,
+                                                             topic);
 
     qos = v_topicQosRef(topic);
     if (qos->durabilityService.history_kind == V_HISTORY_KEEPLAST) {
@@ -1607,7 +1640,7 @@ groupWrite (
     c_bool stream,
     v_entry entry)
 {
-    v_groupInstance instance, found, removed;
+    v_groupInstance instance, found;
     v_groupPurgeItem purgeItem;
     v_writeResult result;
     v_topicQos qos;
@@ -1742,7 +1775,6 @@ groupWrite (
      * (and persistent) store.
      */
     if ((v_messageQos_durabilityKind(msg->qos) != V_DURABILITY_VOLATILE) && (!entry)) {
-        actionKind = V_GROUP_ACTION_WRITE;
         if (v_messageStateTest(msg,L_WRITE)) {
             actionKind = V_GROUP_ACTION_WRITE;
             if ((qos->durabilityService.max_samples != V_LENGTH_UNLIMITED) &&
@@ -1754,9 +1786,19 @@ groupWrite (
                 (!full)) {
                 full = (v_groupInstanceMessageCount(instance) >= group->depth);
             }
+        } else if (v_messageStateTest(msg,L_DISPOSED)) {
+            actionKind = V_GROUP_ACTION_DISPOSE;
+        } else if (v_messageStateTest(msg,L_UNREGISTER)) {
+            actionKind = V_GROUP_ACTION_UNREGISTER;
+        } else if (v_messageStateTest(msg,L_REGISTER)) {
+            actionKind = V_GROUP_ACTION_REGISTER;
+        } else {
+            actionKind = V_GROUP_ACTION_WRITE;
         }
         if (!full) {
-            result = v_groupInstanceInsert(instance,msg);
+            if(!v_messageStateTest(msg, L_TRANSACTION)){
+                result = v_groupInstanceInsert(instance,msg);
+            }
 
             if (result != V_WRITE_SUCCESS_NOT_STORED)
             {
@@ -2307,12 +2349,73 @@ v_groupGetRegisterMessagesOfWriter(
     return messages;
 }
 
-struct writeHistoricalDataHelper {
+struct streamHelper{
     v_group group;
-    v_entry entry;
-    c_bool found;
-    c_bool subsKeysEnabled;
+    v_groupStream stream;
 };
+
+static c_bool
+streamHistoricalSample(
+    v_groupSample sample,
+    c_voidp arg)
+{
+    struct streamHelper* h;
+    v_message msg;
+    v_groupAction action;
+
+    h = (struct streamHelper*)arg;
+    msg = v_groupSampleTemplate(sample)->message;
+
+    if(v_messageStateTest(msg, L_WRITE)){
+        action = v_groupActionNew(
+                V_GROUP_ACTION_WRITE, msg->writeTime, msg, h->group);
+    } else if(v_messageStateTest(msg, L_DISPOSED)){
+        action = v_groupActionNew(
+                V_GROUP_ACTION_DISPOSE, msg->writeTime, msg, h->group);
+    } else if(v_messageStateTest(msg, L_REGISTER)){
+        action = v_groupActionNew(
+                V_GROUP_ACTION_REGISTER, msg->writeTime, msg, h->group);
+    } else if(v_messageStateTest(msg, L_UNREGISTER)){
+        action = v_groupActionNew(
+                V_GROUP_ACTION_UNREGISTER, msg->writeTime, msg, h->group);
+    } else {
+        action = NULL;
+    }
+
+    if(action){
+        v_groupStreamWrite(h->stream, action);
+        c_free(action);
+    }
+    return TRUE;
+}
+
+static c_bool
+streamHistoricalData(
+    c_object o,
+    c_voidp arg)
+{
+    return v_groupInstanceWalkSamples(v_groupInstance(o),
+                                      streamHistoricalSample,
+                                      arg);
+}
+
+void
+v_groupStreamHistoricalData(
+    v_group g,
+    v_groupStream stream)
+{
+    struct streamHelper h;
+
+    assert(C_TYPECHECK(g,v_group));
+    assert(C_TYPECHECK(stream,v_groupStream));
+
+    c_mutexLock(&g->mutex);
+    updatePurgeList(g, v_timeGet());
+    h.group = g;
+    h.stream = stream;
+    c_tableWalk(g->instances, streamHistoricalData, &h);
+    c_mutexUnlock(&g->mutex);
+}
 
 static c_bool
 writeHistoricalSample(
@@ -2378,13 +2481,13 @@ resolveField(
 
     if (!field) {
         fieldName = os_alloca(strlen(name) + strlen("newest.message.userData.."));
-        sprintf(fieldName,"newest.%s",name);
+        os_sprintf(fieldName,"newest.%s",name);
         field = c_fieldNew(instanceType,fieldName);
         if (!field) {
-            sprintf(fieldName,"newest.message.%s",name);
+            os_sprintf(fieldName,"newest.message.%s",name);
             field = c_fieldNew(instanceType,fieldName);
             if (!field) {
-                sprintf(fieldName,"newest.message.userData.%s",name);
+                os_sprintf(fieldName,"newest.message.userData.%s",name);
                 field = c_fieldNew(instanceType,fieldName);
             }
         }
@@ -2890,7 +2993,7 @@ v_groupDisposeAll (
         updatePurgeList(group, now);
     }
 #endif
-    
+
     if ( c_timeCompare( group->lastDisposeAll, timestamp ) == C_LT )
     {
        group->lastDisposeAll = timestamp;
@@ -2903,16 +3006,16 @@ v_groupDisposeAll (
 
     if ( disposeArg.result == V_RESULT_OK )
     {
-       disposeArg.result = 
+       disposeArg.result =
           v_groupEntrySetDisposeAll( &group->topicEntrySet,
-                                     timestamp ) ? V_RESULT_OK 
+                                     timestamp ) ? V_RESULT_OK
                                                  : V_RESULT_INTERNAL_ERROR;
     }
     if ( disposeArg.result == V_RESULT_OK )
     {
-       disposeArg.result = 
+       disposeArg.result =
           v_groupEntrySetDisposeAll( &group->variantEntrySet,
-                                     timestamp ) ? V_RESULT_OK 
+                                     timestamp ) ? V_RESULT_OK
                                                  : V_RESULT_INTERNAL_ERROR;
     }
 

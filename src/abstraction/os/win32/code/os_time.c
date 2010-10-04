@@ -28,6 +28,7 @@
 #include "os__time.h"
 #include "os__service.h"
 #include "os_thread.h"
+#include "os_stdlib.h"
 #include "../common/code/os_time.c"
 
 static os_time (*_ospl_clockGet)(void) = NULL;
@@ -256,7 +257,7 @@ os_ctime_r(
     /* Using win32 ctime here */
     if (buf) {
         EnterCriticalSection(&_ospl_ctimeLock);
-        strcpy(buf, ctime(&t->tv_sec));
+        os_strcpy(buf, ctime(&t->tv_sec));
         LeaveCriticalSection(&_ospl_ctimeLock);
     }
     return buf;

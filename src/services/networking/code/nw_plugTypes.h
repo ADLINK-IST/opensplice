@@ -16,7 +16,7 @@
 
 typedef os_uchar  *nw_userData;
 typedef os_uint32  nw_networkId;
-typedef os_uint32  nw_partitionId;
+typedef os_uint32   nw_partitionId;
 typedef os_char   *nw_partitionAddress;
 typedef os_uint32  nw_latencyBudget;
 typedef os_uint32  nw_flags;

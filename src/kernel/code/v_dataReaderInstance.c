@@ -30,9 +30,6 @@
 #include "c_extent.h"
 #include "os_report.h"
 
-#define v_dataReaderInstanceReader(_this) \
-        v_dataReader(v_index(v_dataReaderInstance(_this)->index)->reader)
-
 /* For debugging purposes... */
 #ifndef NDEBUG
 #define CHECK_EMPTINESS(i) \
@@ -272,6 +269,38 @@ v_dataReaderInstanceResetOwner(
     }
 }
 
+v_message
+v_dataReaderInstanceCreateMessage(
+    v_dataReaderInstance _this)
+{
+    v_index index;
+    v_message message = NULL;
+    c_array messageKeyList;
+    c_array instanceKeyList;
+    c_long i, nrOfKeys;
+    c_value value;
+
+    if (_this != NULL) {
+        index = _this->index;
+        message = v_topicMessageNew(v_dataReaderGetTopic(index->reader));
+        if (message != NULL) {
+            messageKeyList = v_indexSourceKeyList(index);
+            instanceKeyList = v_indexKeyList(index);
+            assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
+            nrOfKeys = c_arraySize(messageKeyList);
+            /* copy key value(s) from instance into message */
+            for (i=0;i<nrOfKeys;i++) {
+                value = c_fieldValue(instanceKeyList[i], _this);
+                c_fieldAssign(messageKeyList[i], message, value);
+                c_valueFreeRef(value);
+            }
+            c_free(instanceKeyList);
+            c_free(messageKeyList);
+        }
+    }
+    return message;
+}
+
 v_dataReaderResult
 v_dataReaderInstanceInsert(
     v_dataReaderInstance _this,
@@ -282,6 +311,7 @@ v_dataReaderInstanceInsert(
     v_message m;
     v_index index;
     v_state messageState;
+    v_state instanceState;
     c_equality equality;
     c_long depth;
     c_bool proceed = TRUE;
@@ -476,6 +506,14 @@ v_dataReaderInstanceInsert(
     CHECK_EMPTINESS(_this);
     CHECK_INVALIDITY(_this);
 
+    /* scdds2146: ES: Get the state of the datareader instance now as it will
+     * be possibly modified in the next piece of code to set the dispose bit
+     * in the instance state. And to determine correct dispose counters
+     * later on we need to know what the instance state was before any dispose
+     * information is changed within the instance so we can determine if the
+     * instance went from an ALIVE state to a NOT_ALIVE_DISPOSED state.
+     */
+    instanceState = v_dataReaderInstanceState(_this);
     /* Only write and dispose messages do insert a message */
     if (v_stateTest(messageState,L_DISPOSED) &&
         (!v_dataReaderInstanceStateTest(_this, L_DISPOSED)) )
@@ -734,7 +772,7 @@ v_dataReaderInstanceInsert(
          */
 
         if (sample != NULL) {
-            if (v_dataReaderInstanceStateTest(_this, L_DISPOSED) &&
+            if (v_stateTest(instanceState, L_DISPOSED)&&
                 v_stateTestOr(messageState, L_WRITE | L_REGISTER))
             {
                 /*  In case this is a WRITE_DISPOSE message, the instance state

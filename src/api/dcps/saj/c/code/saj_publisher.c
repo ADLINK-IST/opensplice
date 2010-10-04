@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_publisher.h"
+#include "saj_Publisher.h"
 #include "saj_publisherListener.h"
 #include "saj_dataWriterListener.h"
 #include "saj_utilities.h"

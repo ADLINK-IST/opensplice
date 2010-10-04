@@ -2782,8 +2782,8 @@ case 155:
            len += strlen(yypvt[-0].sval->get_string());
            char *combined = new char[len+1];
            combined[0] = '\0';
-           strcat(combined, yypvt[-1].exval->ev()->u.strval->get_string());
-           strcat(combined, yypvt[-0].sval->get_string());
+           os_strcat(combined, yypvt[-1].exval->ev()->u.strval->get_string());
+           os_strcat(combined, yypvt[-0].sval->get_string());
            UTL_String *str = new UTL_String(combined);
            delete yypvt[-1].exval->ev()->u.strval;
            yypvt[-1].exval->ev()->u.strval = str;

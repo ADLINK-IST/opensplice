@@ -106,7 +106,7 @@ idl_arrayDimensions(
         snprintf(arg->buffer, MAX_BUFFER, "[%d]", idl_typeArraySize(idl_typeArray(ts)));
         len += strlen(arg->buffer);
         dims = os_realloc(dims, len);
-        dims = strcat(dims, arg->buffer);
+        dims = os_strcat(dims, arg->buffer);
         ts = idl_typeArrayType(typeArray);
     }
     return dims;
@@ -249,7 +249,7 @@ idl_macroFromBasename(
         macro[i] = toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
 
     return macro;
 }

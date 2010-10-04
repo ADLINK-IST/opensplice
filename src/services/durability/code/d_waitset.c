@@ -200,7 +200,7 @@ d_waitsetNew(
             } else {
                 waitset->threads = c_iterNew(NULL);
                 waitset->uwaitset = NULL;
-                waitset->thread = 0;
+                waitset->thread = OS_THREAD_ID_NONE;
             }
         }
     }
@@ -222,7 +222,7 @@ d_waitsetDeinit(
         waitset->terminate = TRUE;
 
         if(waitset->runToCompletion == TRUE){
-            if(waitset->thread) {
+            if(os_threadIdToInteger(waitset->thread)) {
                 u_waitsetNotify(waitset->uwaitset, NULL);
                 os_threadWaitExit(waitset->thread, NULL);
             }
@@ -315,7 +315,7 @@ d_waitsetAttach(
                     helper->waitset     = waitset;
                     helper->entity      = we;
                     helper->terminate   = FALSE;
-                    helper->tid         = 0;
+                    helper->tid         = OS_THREAD_ID_NONE;
                     helper->userWaitset = u_waitsetNew(u_participant(d_durabilityGetService(durability)));
 
                     mask = V_EVENT_DATA_AVAILABLE;

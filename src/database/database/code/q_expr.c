@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -16,6 +16,7 @@
 #include "c_field.h"
 #include "c_iterator.h"
 #include "c__field.h"
+#include "c_collection.h"
 
 C_CLASS(q_func);
 
@@ -29,7 +30,7 @@ C_STRUCT(q_expr) {
     c_ulong instanceState;
     c_ulong sampleState;
     c_ulong viewState;
-    
+
     enum q_kind kind;
     union {
         c_char *string;
@@ -73,7 +74,7 @@ q_tagImage(
     _CASE_(STRUCT); _CASE_(ARRAY); _CASE_(SET); _CASE_(BAG);
     _CASE_(DATE); _CASE_(TIME); _CASE_(TIMESTAMP); _CASE_(VARIABLE);
     _CASE_(SCOPEDNAME); _CASE_(JOIN); _CASE_(KEY);
-    _CASE_(CALLBACK); 
+    _CASE_(CALLBACK);
     }
 #undef _CASE_
 #undef _IMAGE_
@@ -113,7 +114,7 @@ q_print(
     case T_FNC:
         if (e->info.function->tag == Q_EXPR_CALLBACK) {
             name = (c_char *)q_tagImage(e->info.function->tag);
-            metaName = c_metaName(c_metaObject(q_getPar(e,0)));
+            metaName = c_metaName(c_metaObject(q_getTyp(q_getPar(e,0))));
             if (metaName != NULL) {
                 printf("%s(<%s>,0x" PA_ADDRFMT,name,metaName,(c_address)q_getPar(e,1));
                 c_free(metaName);
@@ -166,13 +167,13 @@ listMalloc()
 static q_expr q_exprMalloc()
 {
     q_expr expr;
-    
+
     expr = (q_expr)os_malloc(C_SIZEOF(q_expr));
     expr->text = NULL;
     expr->instanceState = 0;
     expr->sampleState = 0;
     expr->viewState = 0;
-    
+
     return expr;
 }
 
@@ -183,7 +184,7 @@ q_stringMalloc(
     c_char *str;
     if (string == NULL) return NULL;
     str = (c_char *)os_malloc(strlen(string)+1);
-    strcpy(str, string);
+    os_strcpy(str, string);
     return str;
 }
 
@@ -505,19 +506,21 @@ q_exprCopy(
 {
     q_list n = NULL;
     q_expr copy;
-    
+
     if (e == NULL) {
         return NULL;
     }
     switch (q_getKind(e)) {
-    case T_FNC: 
+    case T_FNC:
         if (e->info.function->tag == Q_EXPR_CALLBACK) {
 
-            /* The first parameter is not of type q_expr but is of type c_type.      */
-            /* It specifies the result type of the callback function.                */
+            /* The first parameter specifies the result type of the callback function. */
             /* The second parameter is not of type q_expr but is a function pointer. */
             /* The function pointer is the address of the callback function.         */
-            n = q_append(n,c_keep(q_getPar(e,0)));
+
+            /* increment ref count of internal c_type because it is being copied */
+            c_keep (q_getTyp(q_getPar(e,0)));
+            n = q_append(n,q_getPar(e,0));
             n = q_append(n,q_getPar(e,1));
             n = q_append(n,q_exprCopy(q_getPar(e,2)));
             copy = q_newFnc(q_getTag(e),n);
@@ -534,54 +537,54 @@ q_exprCopy(
             q_exprSetViewState(copy, e->viewState);
             return copy;
         }
-    case T_TYP: 
-        copy = q_newTyp(q_getTyp(e)); 
+    case T_TYP:
+        copy = q_newTyp(q_getTyp(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_VAR: 
-        copy = q_newVar(q_getVar(e)); 
+    case T_VAR:
+        copy = q_newVar(q_getVar(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState);  
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_INT: 
-        copy = q_newInt(q_getInt(e)); 
+    case T_INT:
+        copy = q_newInt(q_getInt(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_DBL: 
-        copy = q_newDbl(q_getDbl(e)); 
+    case T_DBL:
+        copy = q_newDbl(q_getDbl(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_CHR: 
-        copy = q_newChr(q_getChr(e)); 
+    case T_CHR:
+        copy = q_newChr(q_getChr(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_STR: 
-        copy = q_newStr(q_getStr(e)); 
+    case T_STR:
+        copy = q_newStr(q_getStr(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
-    case T_ID:  
-        copy = q_newId(q_getId(e)); 
+    case T_ID:
+        copy = q_newId(q_getId(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
-        q_exprSetViewState(copy, e->viewState); 
+        q_exprSetViewState(copy, e->viewState);
         return copy;
     default:
         assert(FALSE);
@@ -658,8 +661,8 @@ q_takeField(
         case Q_EXPR_PROPERTY:
             i=0; qn[0]=0;
             while ((p = q_getPar(*e,i)) != NULL) {
-                if (i!=0) strcat(qn,".");
-                strcat(qn,q_getId(p));
+                if (i!=0) os_strcat(qn,".");
+                os_strcat(qn,q_getId(p));
                 i++;
             }
             if (strcmp(qn,name) == 0) return *e;
@@ -750,8 +753,8 @@ q_takeKey(
         case Q_EXPR_PROPERTY:
             i=0; qn[0]=0;
             while ((p = q_getPar(*e,i)) != NULL) {
-                if (i!=0) strcat(qn,".");
-                strcat(qn,q_getId(p));
+                if (i!=0) os_strcat(qn,".");
+                os_strcat(qn,q_getId(p));
                 i++;
             }
             for (i=0; i<len; i++) {
@@ -997,11 +1000,11 @@ q_dispose(
 
             /* The first parameter is not of type q_expr but is of type c_type.      */
             /* It specifies the result type of the callback function.                */
-            t = c_type(q_swapPar(expr,0,NULL));
+            t = c_type(q_getTyp(q_swapPar(expr,0,NULL)));
             c_free(t);
             q_swapPar(expr,1,NULL);
             q_dispose((q_expr)q_swapPar(expr,2,NULL));
-        } 
+        }
         q_listDispose(expr->info.function->params);
         os_free(expr->info.function);
     break;
@@ -1110,7 +1113,7 @@ q_promote(
     assert(e != NULL);
     assert(e->kind == T_FNC);
     assert(e->info.function->tag == Q_EXPR_AND);
-            	
+
     leftTerm = q_leftPar(e);
     rightTerm = q_rightPar(e);
     q_disjunctify(leftTerm);
@@ -1199,7 +1202,7 @@ q_disjunctify(
                     q_dispose(notTerm);
                     q_disjunctify(e);
                 break;
-                case Q_EXPR_OR: 
+                case Q_EXPR_OR:
                 case Q_EXPR_AND:
                     /* e = not (A and/or B) */
                     notTerm = q_takePar(e,0);
@@ -1317,7 +1320,7 @@ q_removeNots(
     }
     if (e->kind == T_FNC) {
         switch (e->info.function->tag) {
-        case Q_EXPR_NOT: 
+        case Q_EXPR_NOT:
             r = q_removeNots(q_deNot(q_takePar(e,0)));
         break;
         default:
@@ -1351,8 +1354,8 @@ q_propertyName(
         name = (c_char *)os_malloc(len);
         i=0; name[0]=0;
         while ((p = q_getPar(e,i)) != NULL) {
-            if (i!=0) strcat(name,".");
-            strcat(name,q_getId(p));
+            if (i!=0) os_strcat(name,".");
+            os_strcat(name,q_getId(p));
             i++;
         }
     } else {
@@ -1425,7 +1428,7 @@ q_countVar(
 
 void
 q_exprSetText(
-    q_expr expr, 
+    q_expr expr,
     const c_char* text)
 {
     if(expr && text){

@@ -24,6 +24,7 @@
 #include "os_if.h"
 #ifndef WIN32
 #include "os_stdlib.h"
+#include "ctype.h"
 #endif
 
 /**********************************************************************
@@ -287,9 +288,11 @@ extractToken(const char *_String)
 */
    if (_String[0] == '_') {
        /* adapt yylval.String */
+       char *tmp = os_strdup(yylval.String);
        assert(compareStrings(_String, yylval.String) == 0);
-       strncpy(yylval.String, &yylval.String[1], strlen(yylval.String) - 1);
-       yylval.String[strlen(yylval.String) - 1] = '\0';
+       os_strncpy(yylval.String, &tmp[1], strlen(tmp) - 1);
+       yylval.String[strlen(tmp) - 1] = '\0';
+		 free(tmp);
    }
 
    return Identifier;
@@ -300,7 +303,7 @@ extractIdent(char *str)
 {
    int length = strlen(str);
    yylval.String = (char*)malloc(length+1);
-   strncpy(yylval.String, str, length);
+   os_strncpy(yylval.String, str, length);
    yylval.String[length]=0;
    return length;
 }
@@ -310,7 +313,7 @@ extractString(char *str)
 {
    int length = strlen(str) - 1;
    yylval.String = (char*)malloc(length);
-   strncpy(yylval.String, ++str, length-1);
+   os_strncpy(yylval.String, ++str, length-1);
    yylval.String[length-1]=0;
    return length;
 }
@@ -339,7 +342,7 @@ preprocessor_directive(char *str)
    }
    while ((*ptr != 0) && ((*ptr == ' ') || (*ptr == '\t'))) ptr++;
    if (*ptr != '"') return;
-   strncpy(file_name,fileName,length);
+   os_strncpy(file_name,fileName,length);
    file_name[length] = 0;
    parser_line = lineNumber;
    parser_column = 0;

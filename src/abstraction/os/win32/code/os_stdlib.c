@@ -68,7 +68,7 @@ os_gethostname(
         if ((strlen(hostnamebuf)+1) > (size_t)buffersize) {
             result = os_resultFail;
         } else {
-            strncpy(hostname, hostnamebuf, (size_t)buffersize);
+            os_strcpy(hostname, hostnamebuf);
             result = os_resultSuccess;
         }
     } else {
@@ -77,12 +77,17 @@ os_gethostname(
     return result;
 }
 
+#pragma warning( disable : 4996 )
 char *
 os_getenv(
     const char *variable)
 {
-	return getenv(variable);
+   char * result;
+	result = getenv(variable);
+
+   return result;
 }
+#pragma warning( default : 4996 )
 
 os_result
 os_putenv(
@@ -156,11 +161,76 @@ os_strdup(
     len = strlen(s1) + 1;
     dup = os_malloc(len);
     if (dup) {
-        strcpy(dup, s1);
+        os_strcpy(dup, s1);
     }
 
     return dup;
 }
+
+#pragma warning( disable : 4996 )
+char *
+os_strcat(
+    char *s1,
+    const char *s2)
+{
+   return strcat(s1, s2);
+}
+#pragma warning( default : 4996 )
+
+#pragma warning( disable : 4996 )
+char *
+os_strncat(
+    char *s1,
+    const char *s2,
+    size_t n)
+{
+   return strncat(s1, s2, n);
+}
+#pragma warning( default : 4996 )
+
+char *
+os_strcpy(
+    char *s1,
+    const char *s2)
+{
+   size_t size = strlen (s2) + 1;
+
+   strcpy_s(s1, size, s2);
+   return s1;
+}
+
+#pragma warning( disable : 4996 )
+char *
+os_strncpy(
+    char *s1,
+    const char *s2,
+    size_t num)
+{
+   strncpy (s1, s2, num);
+
+   return s1;
+}
+#pragma warning( default : 4996 )
+
+#pragma warning( disable : 4996 )
+int
+os_sprintf(
+    char *s,
+    const char *format,
+    ...)
+{
+   int result;
+   va_list args;
+
+   va_start(args, format);
+
+   result = vsprintf(s, format, args);
+
+   va_end(args);
+
+   return result;
+}
+#pragma warning( default : 4996 )
 
 static long long
 digit_value(
@@ -404,7 +474,7 @@ os_opendir(
 
     result = os_resultFail;
     if (dir) {
-        _snprintf(szDir, MAX_PATH + 1, "%s\\*", name);
+        snprintf(szDir, MAX_PATH, "%s\\*", name);
         hList = FindFirstFile(szDir, &FileData);
 
         if (hList != INVALID_HANDLE_VALUE) {
@@ -437,7 +507,7 @@ os_readdir(
     if (direntp) {
         r = FindNextFile((HANDLE)d, &FileData);
         if (r) {
-            strcpy(direntp->d_name, FileData.cFileName);
+            os_strcpy(direntp->d_name, FileData.cFileName);
             result = os_resultSuccess;
         } else {
             result = os_resultFail;
@@ -513,15 +583,24 @@ os_getTempDir()
         dir_name = os_getenv("TMP");
     }
 
+    if (dir_name == NULL || (strcmp (dir_name, "") == 0)) {
+        OS_REPORT(OS_ERROR, "os_getTempDir", 0,
+            "Could not retrieve temporary directory path - "
+            "neither of environment variables TEMP, TMP, OSPL_TEMP were set");
+    }
+
     return dir_name;
 }
 
-int snprintf(char *s, size_t size, const char *format, ...)
+#pragma warning( disable : 4996 )
+int
+os_vsnprintf(
+   char *str,
+   size_t size,
+   const char *format,
+   va_list args)
 {
     int result;
-    va_list args;
-
-    va_start(args, format);
 
     /* Return-values of _vsnprintf don't match the output on posix platforms,
      * so this extra code is needed to bring it in accordance. It is made to
@@ -535,7 +614,7 @@ int snprintf(char *s, size_t size, const char *format, ...)
      * available. Thus, a return value of size or more means that the output was
      * truncated. If an output error is encountered, a negative value is
      * returned. */
-    result = _vsnprintf(s, size, format, args);
+    result = _vsnprintf(str, size, format, args);
 
     if(result == -1){
         /* Output was truncated, so calculate length of resulting string. The
@@ -556,7 +635,6 @@ int snprintf(char *s, size_t size, const char *format, ...)
             tmp = (char*) os_malloc(newSize);
 
             if(tmp){
-                va_start(args, format);
                 result = _vsnprintf(tmp, newSize, format, args);
                 os_free(tmp); /* Do not set tmp to NULL, since it is used in
                                  loop-condition to see whether the memory-claim
@@ -570,5 +648,31 @@ int snprintf(char *s, size_t size, const char *format, ...)
         } while(result == -1 && tmp); /* NOTE: *tmp may NOT be read at this point */
     }
 
+    /* Truncation occurred, so we need to guarantee that the string is NULL-
+     * terminated. */
+    if(result >= size){
+        str[size - 1] = '\0';
+    }
+
     return result;
+}
+#pragma warning( default : 4996 )
+
+int
+snprintf(
+         char *s,
+         size_t size,
+         const char *format,
+         ...)
+{
+   int result;
+   va_list args;
+
+   va_start(args, format);
+
+   result = os_vsnprintf(s, size, format, args);
+
+   va_end(args);
+
+   return result;
 }

@@ -6,27 +6,27 @@ $VG_START_SLEEP
 BLOKSIZE=100
 BLOKCOUNT=100
 
-$VG_PONG java -classpath .:$OSPL_HOME/jar/dcpscj.jar pong PongRead PongWrite&
+$VG_PONG $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP pong PongRead PongWrite&
 
 sleep 2
 
-$VG_PING_M  java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+$VG_PING_M  $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
 
 sleep 2
 
-$VG_PING_Q java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+$VG_PING_Q $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
 
 sleep 2
 
-$VG_PING_S java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+$VG_PING_S $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
 
 sleep 2
 
-$VG_PING_F java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+$VG_PING_F $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
 
 sleep 2
 
-$VG_PING_T java -classpath .:$OSPL_HOME/jar/dcpscj.jar ping 1 10 t PongRead PongWrite
+$VG_PING_T $SPLICE_JAVA -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP ping 1 10 t PongRead PongWrite
 
 sleep 4
 

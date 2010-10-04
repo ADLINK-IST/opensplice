@@ -295,7 +295,7 @@ v_cfElementXPath(
             }
             arg.children = c_iterNew(NULL);
             arg.tagName = (c_char *)os_malloc(length + 1U);
-            strncpy(arg.tagName, posInExpr, length);
+            os_strncpy(arg.tagName, posInExpr, length);
             arg.tagName[length] = 0;
             
             /* Look for selection criteria based on attribute value

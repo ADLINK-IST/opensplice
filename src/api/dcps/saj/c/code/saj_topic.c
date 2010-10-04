@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_topic.h"
+#include "saj_Topic.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 #include "saj_status.h"

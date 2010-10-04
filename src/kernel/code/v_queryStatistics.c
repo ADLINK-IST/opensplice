@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -36,8 +36,12 @@ void v_queryStatisticsInit(v_queryStatistics qs)
 
     v_statisticsInit(v_statistics(qs));
 
-    qs->numberOfReads = 0;
-    qs->numberOfTakes = 0;
+    qs->numberOfReads               = 0;
+    qs->numberOfInstanceReads       = 0;
+    qs->numberOfNextInstanceReads   = 0;
+    qs->numberOfTakes               = 0;
+    qs->numberOfInstanceTakes       = 0;
+    qs->numberOfNextInstanceTakes   = 0;
 }
 
 void v_queryStatisticsDeinit(v_queryStatistics qs)
@@ -59,7 +63,11 @@ c_bool v_queryStatisticsReset(v_queryStatistics qs, const c_char* fieldName)
         result = v_statisticsResetField(v_statistics(qs), fieldName);
     } else {
         v_statisticsULongResetInternal(v_query, numberOfReads, qs);
+        v_statisticsULongResetInternal(v_query, numberOfInstanceReads, qs);
+        v_statisticsULongResetInternal(v_query, numberOfNextInstanceReads, qs);
         v_statisticsULongResetInternal(v_query, numberOfTakes, qs);
+        v_statisticsULongResetInternal(v_query, numberOfInstanceTakes, qs);
+        v_statisticsULongResetInternal(v_query, numberOfNextInstanceTakes, qs);
 
         result = TRUE;
     }

@@ -113,7 +113,7 @@ dispatch(
                                &arg);
                 }
             }
-            _this->threadId = 0;
+            _this->threadId = OS_THREAD_ID_NONE;
             result = u_dispatcherRelease(_this);
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcher::dispatch", 0,
@@ -149,7 +149,7 @@ u_dispatcherInit(
             mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
             os_mutexInit(&_this->mutex,&mutexAttr);
             _this->listeners = NULL;
-            _this->threadId = 0;
+            _this->threadId = OS_THREAD_ID_NONE;
             _this->startAction = NULL;
             _this->stopAction = NULL;
             _this->actionData = NULL;
@@ -190,7 +190,7 @@ u_dispatcherDeinit(
         }
         c_iterFree(_this->listeners);
         _this->listeners = NULL; /* Flags the dispatch thread to stop */
-        if (_this->threadId != 0U) {
+        if (os_threadIdToInteger(_this->threadId) != 0U) {
             tid = _this->threadId;
             result = u_dispatcherClaim(_this,&ko);
             if ((result != U_RESULT_OK) && (ko == NULL)) {
@@ -242,7 +242,7 @@ u_dispatcherInsertListener(
         ul = u_listenerNew(listener,userData);
         _this->listeners = c_iterInsert(_this->listeners,ul);
         
-        if (_this->threadId == 0U) {
+        if (os_threadIdToInteger(_this->threadId) == 0U) {
             result = u_dispatcherClaim(_this,&ke);
             if ((result == U_RESULT_OK) && (ke != NULL)) {
                 name = v_entityName(ke);
@@ -290,7 +290,7 @@ u_dispatcherAppendListener(
         os_mutexLock(&_this->mutex);
         ul = u_listenerNew(listener,userData);
         _this->listeners = c_iterAppend(_this->listeners,ul);
-        if (_this->threadId == 0U) {
+        if (os_threadIdToInteger(_this->threadId) == 0U) {
             result = u_dispatcherClaim(_this,&ko);
             if((result == U_RESULT_OK) && (ko != NULL)) {
                 os_threadAttrInit(&attr);
@@ -367,7 +367,8 @@ u_dispatcherRemoveListener(
             u_listenerFree(ul);
         }
         os_mutexUnlock(&_this->mutex);
-        if ((c_iterLength(_this->listeners) == 0) && (tid != 0U)) {
+        if ((c_iterLength(_this->listeners) == 0)
+            && (os_threadIdToInteger(tid) != 0U)) {
             os_threadWaitExit(tid, NULL);
         }
     } else {

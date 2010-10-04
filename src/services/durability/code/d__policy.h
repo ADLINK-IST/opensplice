@@ -19,12 +19,19 @@
 extern "C" {
 #endif
 
+typedef struct
+d_policyMergeRule {
+    d_mergePolicy mergeType;
+    c_char* scope;
+} d_policyMergeRule;
+
 C_STRUCT(d_policy) {
     C_EXTENDS(d_object);
     d_name           nameSpace;
     c_bool           aligner;
     d_alignmentKind  alignmentKind;
     d_durabilityKind durabilityKind;
+    c_iter           mergePolicyRules;
 };
 
 #if defined (__cplusplus)

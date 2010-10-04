@@ -47,7 +47,7 @@
 
 static v_accessMode
 v_partitionDetermineTopicAccessMode(
-    const c_char* typeName,
+    const c_char* topicName,
     v_kernel kernel);
 
 static c_type
@@ -197,7 +197,7 @@ createKeyType(
         field = keyList[i];
         assert(field != NULL);
         members[i] = (c_voidp)c_metaDefine(c_metaObject(base),M_MEMBER);
-            sprintf(keyName,"field%d",i);
+            os_sprintf(keyName,"field%d",i);
             c_specifier(members[i])->name = c_stringNew(base,keyName);
             c_specifier(members[i])->type = c_keep(c_fieldType(field));
     }
@@ -218,7 +218,7 @@ createKeyType(
         assert(FALSE); /* Not supposed to happen anymore */
         length = 100;
         typeName = os_malloc(length);
-        sprintf(typeName,PA_ADDRFMT"<Key>",(c_address)o);
+        os_sprintf(typeName,PA_ADDRFMT"<Key>",(c_address)o);
     }
     foundType = c_type(c_metaBind(c_metaObject(base),typeName,o));
 
@@ -499,7 +499,7 @@ v__topicNew(
                 topic->dataField = field;
                 topic->qos = newQos;
                 topic->keyExpr = c_stringNew(c_getBase(kernel), keyExpr);
-                topic->accessMode = v_partitionDetermineTopicAccessMode(typeName, kernel);
+                topic->accessMode = v_partitionDetermineTopicAccessMode(name, kernel);
 
                 /* determine CRC codes */
                 str = c_metaScopedName(c_metaObject(field->type));
@@ -667,8 +667,8 @@ v_topicMessageKeyExpr(
         keyExpr[0] = 0;
         for (i=0;i<nrOfKeys;i++) {
             fieldName = c_fieldName(keyList[i]);
-            strcat(keyExpr,fieldName);
-            if (i<(nrOfKeys-1)) { strcat(keyExpr,","); }
+            os_strcat(keyExpr,fieldName);
+            if (i<(nrOfKeys-1)) { os_strcat(keyExpr,","); }
         }
     } else {
         keyExpr = NULL;
@@ -930,7 +930,7 @@ v_topicMessageCopyKeyValues(
 /* ES, dds1576 added */
 v_accessMode
 v_partitionDetermineTopicAccessMode(
-    const c_char* typeName,
+    const c_char* topicName,
     v_kernel kernel)
 {
     v_configuration config;
@@ -945,18 +945,18 @@ v_partitionDetermineTopicAccessMode(
     if(config)
     {
         root = v_configurationGetRoot(config);
-        /* Iterate over all partitionAccess elements */
+        /* Iterate over all TopicAccess elements */
         iter = v_cfElementXPath(root, "Domain/TopicAccess");
         while(c_iterLength(iter) > 0)
         {
             element = v_cfElement(c_iterTakeFirst(iter));
-            /* Get the partition expression value, it should be a string */
+            /* Get the topic expression value, it should be a string */
             expression = v_cfElementAttributeValue(element, "topic_expression");
             if(expression.kind == V_STRING)
             {
-                if(v_partitionStringMatchesExpression(typeName, expression.is.String))
+                if(v_partitionStringMatchesExpression(topicName, expression.is.String))
                 {
-                    /* The partition matches the expression.*/
+                    /* The topic matches the expression.*/
                     accessMode = v_cfElementAttributeValue(element, "access_mode");
                     if(accessMode.kind == V_STRING)
                     {
@@ -1046,8 +1046,8 @@ v_result v_topicDisposeAllData(v_topic topic)
    msg = v_participantCreateCandMCommand( participant );
    if ( msg != NULL )
    {
-      res = v_participantCandMCommandSetDisposeAllData( participant, 
-                                                        msg, 
+      res = v_participantCandMCommandSetDisposeAllData( participant,
+                                                        msg,
                                                         v_entity(topic)->name,
                                                         "*" );
       if ( res == V_RESULT_OK )

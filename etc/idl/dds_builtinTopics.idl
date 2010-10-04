@@ -191,6 +191,7 @@ module DDS {
         LivelinessQosPolicy liveliness;
         ReliabilityQosPolicy reliability;
         LifespanQosPolicy lifespan;
+        DestinationOrderQosPolicy destination_order;
         UserDataQosPolicy user_data;
         // @discrepancy The below 'ownership' member was not present in ./etc/idlpp/dds_dcps.idl
         OwnershipQosPolicy ownership;

@@ -53,6 +53,10 @@ extern "C" {
 #define v_writerParticipant(_this) \
         v_publisherParticipant(v_writerPublisher(_this))
 
+OS_API const char*
+v_writeResultString(
+    v_writeResult result);
+
 OS_API v_writer
 v_writerNew(
     v_publisher p,

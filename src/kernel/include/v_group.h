@@ -212,6 +212,12 @@ v_groupGetHistoricalData (
     v_group _this,
     v_entry e);
 
+OS_API
+void
+v_groupStreamHistoricalData(
+    v_group g,
+    v_groupStream stream);
+
 OS_API c_bool
 v_groupGetHistoricalDataWithCondition(
     v_group g,

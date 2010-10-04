@@ -38,7 +38,7 @@ os_libraryOpen(
     if(name && (strlen(name) > 0)){
         if(attr->autoTranslate == OS_TRUE){
             libName = (char*)(os_malloc(strlen(name)+7));
-            sprintf(libName, "lib%s.so", name);
+            os_sprintf(libName, "lib%s.so", name);
             handle = dlopen (libName, attr->flags);
             os_free(libName);
         } else {

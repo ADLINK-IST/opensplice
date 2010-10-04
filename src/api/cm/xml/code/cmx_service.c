@@ -27,7 +27,7 @@ cmx_serviceInit(
     v_service service;
     
     service = v_service(entity);
-    sprintf(buf, "<kind>SERVICE</kind>");
+    os_sprintf(buf, "<kind>SERVICE</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

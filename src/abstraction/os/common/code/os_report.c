@@ -53,16 +53,16 @@ typedef void *os_reportPlugin_context;
 typedef int
 (*os_reportPlugin_initialize)(
     const char *argument,
-    os_reportPlugin_context context);
+    os_reportPlugin_context *context);
 
 typedef int
 (*os_reportPlugin_report)(
-    os_reportPlugin_context,
+    os_reportPlugin_context context,
     const char *report);
 
 typedef int
 (*os_reportPlugin_finalize)(
-    os_reportPlugin_context);
+    os_reportPlugin_context context);
 
 typedef struct os_reportPlugin_s {
     os_reportPlugin_initialize initialize_symbol;
@@ -337,7 +337,7 @@ os_defaultReport(
 
     ostime = os_timeGet();
 
-    vsnprintf(extended_description, sizeof(extended_description)-1, description, args);
+    os_vsnprintf(extended_description, sizeof(extended_description)-1, description, args);
     extended_description[sizeof(extended_description)-1] = '\0';
 
     os_ctime_r(&ostime, date_time);
@@ -408,22 +408,23 @@ os_report(
        }
     }
 
-    va_start(args, description);
     if (os_reportServicesCount != 0) {
        for (i = 0; i < OS_REPORTSERVICES_MAX; i++) {
           if (os_reportServices[i].os_reportContext != 0) {
+             /* Must call va_start and va_end before and after each call to the plugged in services */
+             va_start(args, description);
              os_reportServices[i].os_reportService(os_reportServices[i].os_reportContext,
                                                    reportType, reportContext, file_name, lineNo, reportCode,
                                                    description, args);
+             va_end(args);
           }
        }
     }
-    va_end(args);
 
     va_start(args, description);
     if (reportPluginAdmin != NULL){
-       vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
-       sprintf (xml_description,
+       os_vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
+       os_sprintf (xml_description,
                 "<%s>\n"
                 "<DESCRIPTION>%s</DESCRIPTION>\n"
                 "<CONTEXT>%s</CONTEXT>\n"
@@ -556,7 +557,7 @@ os_reportSetApiInfoDescription(
             report->description = os_malloc(OS_MAX_DESCRIPTIONSIZE);
             if (report->description) {
                 va_start(args, description);
-                vsnprintf(report->description, OS_MAX_DESCRIPTIONSIZE-1, descriptionCopy, args);
+                os_vsnprintf(report->description, OS_MAX_DESCRIPTIONSIZE-1, descriptionCopy, args);
                 va_end(args);
             }
         }
@@ -614,7 +615,7 @@ os_reportSetApiInfoRec(
         if (descriptionCopy) {
             report->description = os_malloc(OS_MAX_DESCRIPTIONSIZE);
             if (report->description) {
-                vsnprintf(report->description, OS_MAX_DESCRIPTIONSIZE-1, descriptionCopy, args);
+                os_vsnprintf(report->description, OS_MAX_DESCRIPTIONSIZE-1, descriptionCopy, args);
             }
             os_free(descriptionCopy);
         }

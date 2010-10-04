@@ -21,10 +21,10 @@ cmx_serviceStateInit(
     char buf[512];
     
     if(v_entityName(entity) == NULL){
-        sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>", 
+        os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>", 
         cmx_serviceStateKindToString(entity->stateKind));
     } else {
-       sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>", 
+       os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>", 
         v_entityName(entity),
         cmx_serviceStateKindToString(entity->stateKind));
     }    

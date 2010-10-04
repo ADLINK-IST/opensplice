@@ -238,7 +238,7 @@ os_sockQueryInterfaces(
                             adapter_addr = ((struct sockaddr_in*)pUnicast->Address.lpSockaddr)->sin_addr;
                             /* check if interface ip matches adapter ip */
                             if (intf->iiAddress.AddressIn.sin_addr.S_un.S_addr == adapter_addr.S_un.S_addr) {
-                                _snprintf(ifList[listIndex].name,
+                                snprintf(ifList[listIndex].name,
                                           OS_IFNAMESIZE, "%wS",
                                           pCurrAddresses->FriendlyName);
                                 done = 1;
@@ -253,7 +253,7 @@ os_sockQueryInterfaces(
             }
             /* if no name is found set this */
             if (!done) {
-                _snprintf(ifList[listIndex].name,
+                snprintf(ifList[listIndex].name,
                           OS_IFNAMESIZE, "0x%x",
                           ntohl(intf->iiAddress.AddressIn.sin_addr.S_un.S_addr));
             }

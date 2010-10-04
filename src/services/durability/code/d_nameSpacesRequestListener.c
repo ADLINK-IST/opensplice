@@ -293,6 +293,7 @@ d_nameSpacesRequestListenerReportNameSpaces(
             ns = d_nameSpaces(c_iterObject(nameSpaces, i));
             d_messageInit(d_message(ns), admin);
             d_messageSetAddressee(d_message(ns), addr);
+
             d_publisherNameSpacesWrite(publisher, ns, addr);
         }
         d_networkAddressFree(addr);

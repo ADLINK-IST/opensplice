@@ -63,10 +63,10 @@
         </leafString>
         <leafString name="Role" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
-                This (optional) element specifies the role of the instantiated domain. For dynamic discovery, this role will 
-                be used to define the communication scope of instantiated domains on other nodes in the system. The purpose 
-                of specifying roles within the system is to 'overlay' the underlying physical network with a node's scope-of-interest 
-                that allows to bound topology discovery effort and related overhead in large scale (WAN) systems. 
+                This (optional) element specifies the role of the instantiated domain. For dynamic discovery, this role will
+                be used to define the communication scope of instantiated domains on other nodes in the system. The purpose
+                of specifying roles within the system is to 'overlay' the underlying physical network with a node's scope-of-interest
+                that allows to bound topology discovery effort and related overhead in large scale (WAN) systems.
             ]]></comment>
             <maxLength>0</maxLength>
             <default>DefaultRole</default>
@@ -103,11 +103,18 @@
         </element>
         <leafFloat name="ServiceTerminatePeriod" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
-                This element specifies the amount of time the Domain Service, when
-                instructed to terminate, should wait for the other configured Services
-                to terminate.
+                This element specifies the amount of time the Domain Service,
+                when instructed to terminate, should wait for the other configured
+                Services to terminate. When this element is configured to '0' the
+                Domain service will terminate without any wait time at all. Be
+                aware that without any wait time the deamon will use a hard kill
+                on any lingering service that can not terminate fast enough.
+                This may prevent graceful termination and thus leave applications
+                that are still attached to the DDS domain in an undefined state.
+                Consequently the '0' value should only be used when there is
+                some form of process management on top of OpenSplice DDS.
             ]]></comment>
-            <minimum>1.0</minimum>
+            <minimum>0.0</minimum>
             <maximum>60.0</maximum>
             <default>10.0</default>
         </leafFloat>
@@ -365,7 +372,7 @@
             <attributeBoolean name="enabled" required="true">
                 <comment><![CDATA[
                 This attribute enables or disables priority inheritance for mutexes,
-                if that is supported by the underlying Operating System. 
+                if that is supported by the underlying Operating System.
                 ]]></comment>
                 <default>true</default>
             </attributeBoolean>
@@ -403,9 +410,9 @@
         <element name="ReportPlugin" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
             This Tag specifies user defined report functionality to be used by
-            the domain. All services and applications will load a user provides 
-            report library that will implement the report plugin interface. 
-            The report interface consists of three operations; 
+            the domain. All services and applications will load a user provides
+            report library that will implement the report plugin interface.
+            The report interface consists of three operations;
             initialize, report and finalize.
         ]]></comment>
         <element name="Library" minOccurrences="1" maxOccurrences="1">
@@ -422,16 +429,16 @@
         </element>
         <element name="Initialize" minOccurrences="1" maxOccurrences="1">
             <comment><![CDATA[
-                This tag specifies the library symbol that will be assigned to the 
-                report Initialize operation. This operation will be invoked 
-                initially after loading the library to perform initialization of 
+                This tag specifies the library symbol that will be assigned to the
+                report Initialize operation. This operation will be invoked
+                initially after loading the library to perform initialization of
                 the report facility if needed.
             ]]></comment>
             <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
-                    This attribute specifies the library symbol that will be 
-                    assigned to the report Initialize operation. This operation 
-                    will be invoked initially after loading the library to 
+                    This attribute specifies the library symbol that will be
+                    assigned to the report Initialize operation. This operation
+                    will be invoked initially after loading the library to
                     perform initialization of the report facility if needed.
                 ]]></comment>
                 <default></default>
@@ -441,7 +448,7 @@
                 <comment><![CDATA[
                     This attribute is a string value that is passed to the function
                     specified by the symbol_name.  The string value has no meaning
-                    to the service and is used to pass any context-specific 
+                    to the service and is used to pass any context-specific
                     information that may be required.
                 ]]></comment>
                 <default></default>
@@ -450,14 +457,14 @@
         </element>
         <element name="Report" minOccurrences="1" maxOccurrences="1">
             <comment><![CDATA[
-                This tag specifies the library symbol that will be assigned to 
-                the report Report operation. This operation will be invoked 
+                This tag specifies the library symbol that will be assigned to
+                the report Report operation. This operation will be invoked
                 on all reports performed by the DDS service.
             ]]></comment>
             <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
-                    This attribute specifies the library symbol that will be 
-                    assigned to the report Report operation. This operation will 
+                    This attribute specifies the library symbol that will be
+                    assigned to the report Report operation. This operation will
                     be invoked on all reports performed by the DDS service.
                 ]]></comment>
                 <default></default>
@@ -466,16 +473,16 @@
         </element>
         <element name="Finalize" minOccurrences="1" maxOccurrences="1">
             <comment><![CDATA[
-                This tag specifies the library symbol that will be assigned 
-                to the report Finalize operation. This operation will be 
-                invoked upon process termination to perform de-initialization 
+                This tag specifies the library symbol that will be assigned
+                to the report Finalize operation. This operation will be
+                invoked upon process termination to perform de-initialization
                 of the report facility if needed.
             ]]></comment>
             <attributeString name="symbol_name" required="false">
                 <comment><![CDATA[
-                    This attribute specifies the library symbol that will be assigned 
-                    to the report Finalize operation. This operation will be 
-                    invoked upon process termination to perform de-initialization 
+                    This attribute specifies the library symbol that will be assigned
+                    to the report Finalize operation. This operation will be
+                    invoked upon process termination to perform de-initialization
                     of the report facility if needed.
                 ]]></comment>
                 <default></default>
@@ -485,15 +492,15 @@
     </element>
     <element name="PartitionAccess" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
-            This configuration tag specifies the access rights for a 
+            This configuration tag specifies the access rights for a
             selection of partitions.
         ]]></comment>
         <attributeString name="partition_expression" required="true">
             <comment><![CDATA[
-                This attribute specifies the partitions by name. 
-                The wildcards ‘*’ and ‘?’ are allowed and the specified 
-                access rights will be applied to all matching partitions. 
-                In case partitions match multiple rules the rules will be 
+                This attribute specifies the partitions by name.
+                The wildcards ‘*’ and ‘?’ are allowed and the specified
+                access rights will be applied to all matching partitions.
+                In case partitions match multiple rules the rules will be
                 applied in sequence of declaration.
             ]]></comment>
             <default>*</default>
@@ -501,8 +508,8 @@
         </attributeString>
         <attributeEnum name="access_mode" required="true">
             <comment><![CDATA[
-                This attribute specifies the access rights that will be 
-                applied to the specified partitions. The following values 
+                This attribute specifies the access rights that will be
+                applied to the specified partitions. The following values
                 are applicable:
                 <ul>
                     <li>none</li>
@@ -518,18 +525,18 @@
             <default>readwrite</default>
         </attributeEnum>
         </element>
-        
+
         <element name="TopicAccess" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
-            This configuration tag specifies the access rights for a 
+            This configuration tag specifies the access rights for a
             selection of topics.
         ]]></comment>
         <attributeString name="topic_expression" required="true">
             <comment><![CDATA[
-                This attribute specifies the topics by name. 
-                The wildcards ‘*’ and ‘?’ are allowed and the specified 
-                access rights will be applied to all matching topics. 
-                In case topics match multiple rules the rules will be 
+                This attribute specifies the topics by name.
+                The wildcards ‘*’ and ‘?’ are allowed and the specified
+                access rights will be applied to all matching topics.
+                In case topics match multiple rules the rules will be
                 applied in sequence of declaration.
             ]]></comment>
             <default>*</default>
@@ -537,8 +544,8 @@
         </attributeString>
         <attributeEnum name="access_mode" required="true">
             <comment><![CDATA[
-                This attribute specifies the access rights that will be 
-                applied to the specified topics. The following values 
+                This attribute specifies the access rights that will be
+                applied to the specified topics. The following values
                 are applicable:
                 <ul>
                     <li>none</li>
@@ -555,8 +562,8 @@
         </attributeEnum>
         </element>
     </element>
-    
-     
+
+
     <element name="Daemon" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
             Every domain is controlled by exactly one daemon: the Splice Daemon.
@@ -1109,17 +1116,17 @@
                         <maximum>5.0</maximum>
                     </leafFloat>
                 </element>
-                 
+
                 <element name="Partition" minOccurrences="0" maxOccurrences="0">
                     <comment><![CDATA[
-                        This tag specified an inter durability communication 
-                        partition with specific qos settings. Alignment between 
-                        durability services managed through this partition. 
-                        In case multiple partitions are defined the partition 
-                        with the highest alignment_priority that can provide 
-                        the requested data will be used as data source. 
-                        By default (no Partition specified) the 
-                        durability services will use an internal partition 
+                        This tag specified an inter durability communication
+                        partition with specific qos settings. Alignment between
+                        durability services managed through this partition.
+                        In case multiple partitions are defined the partition
+                        with the highest alignment_priority that can provide
+                        the requested data will be used as data source.
+                        By default (no Partition specified) the
+                        durability services will use an internal partition
                         that inherits the default qos policies and has the
                         default alignment_priority.
                     ]]></comment>
@@ -1132,8 +1139,8 @@
                     </attributeString>
                     <attributeInt name="alignment_priority" required="false">
                         <comment><![CDATA[
-                            This attribute specifies the alignment priority of 
-                            the partition used by the durability service to 
+                            This attribute specifies the alignment priority of
+                            the partition used by the durability service to
                             select the preferred partition to align from. If
                             no alignment_priority is configured, the service
                             uses 0 as default.
@@ -1143,7 +1150,7 @@
                     </attributeInt>
                     <attributeFloat name="latency_budget" required="false">
                         <comment><![CDATA[
-                            This attribute overrules the latency budget for 
+                            This attribute overrules the latency budget for
                             this partition specified at this point.
                         ]]></comment>
                         <default>0.0</default>
@@ -1158,7 +1165,7 @@
                         <minimum>0</minimum>
                     </attributeInt>
                 </element>
-                 
+
             </element>
             <element name="WaitForAttachment" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
@@ -1252,13 +1259,56 @@
             </leafFloat>
             <leafEnum name="StoreMode" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                    This element specifies the plug-in that  is used to store the
-                    persistent data on disk. Currently only the XML plug-in is
-                    supported, that will store persistent data in XML files.
+                    This element specifies the plug-in that is used to store the
+                    persistent data on disk. With "XML" mode, the service will store 
+                    persistent data in XML files. With "MMF", the service will store 
+                    persistent data in a Memory Mapped File that exactly represents 
+                    the memory that is being used by the persistent store.
+                    !!! The "MMF" store is currently only implemented on linux !!!
                 ]]></comment>
                 <value>XML</value>
+                <value>MMF</value>
                 <default>XML</default>
             </leafEnum>
+            
+            <element name="MemoryMappedFileStore" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the memory mapped file store mode parameters. This 
+                    element is only valid when the Persistent/StoreMode element is set to "MMF". 
+                    The size and the starting address of the memory file must be supplied.
+                ]]></comment>
+                <leafLong name="Size" minOccurrences="1" maxOccurrences="1">
+	                <comment><![CDATA[
+	                        This element specifies the size of the memory mapped file used to 
+	                        store persistent data. Change this value according to the size of 
+	                        your persistent data. The file should be big enough to store:
+	                        <ul>
+	                        <li>all persistent data in your specified namespaces</li>
+	                        <li>PLUS a potential backup for all persistent data in
+	                        namespaces whose content may be replaced by persistent 
+	                        data from another master.</li> 
+	                        </ul>
+	                        As a rule of thumb, you could state that the persistent store should
+	                        be twice the size of your combined persistent data in your specified 
+	                        namespaces. Please note that the operating system should be configured 
+	                        to support the requested size.
+	                ]]></comment>
+	                <minimum>1048576</minimum>
+	                <default>10485760</default>
+            	</leafLong>
+                <leafString name="Address" minOccurrences="1" maxOccurrences="1">
+	                <comment><![CDATA[
+	                    <p>This element specifies the start address where the
+	                    file is mapped into the virtual memory.
+	                    The possible values are platform dependent.</p>
+	                    <p>Change this value if the default address is already in
+	                    use, for example by another Domain Service or another
+	                    product.</p>
+	                ]]></comment>
+	                <maxLength>0</maxLength>
+	                <default>0x80000000</default>
+            	</leafString>
+            </element>
             <leafInt name="StoreOptimizeInterval" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element determines after how many write actions the
@@ -1330,7 +1380,7 @@
                 which historical data is managed by this Durability service
                 (both transient and persistent).
             ]]></comment>
-            
+
             <element name="NameSpace" minOccurrences="1" maxOccurrences="0">
                 <comment><![CDATA[
                     A namespace describes a dependency between data in two or
@@ -1348,7 +1398,7 @@
                 	]]></comment>
                 	<maxLength>0</maxLength>
                 	<default>defaultNameSpace</default>
-                </attributeString>          
+                </attributeString>
                 <leafString name="Partition" minOccurrences="1" maxOccurrences="0">
                     <comment><![CDATA[
                         This element specifies a partition expression that
@@ -1365,7 +1415,7 @@
                     <default>*</default>
                 </leafString>
             </element>
-          
+
             <element name="Policy" minOccurrences="1" maxOccurrences="0">
                 <comment><![CDATA[
                     A namespace describes a dependency between data in two or
@@ -1375,20 +1425,33 @@
                     the other partition(s). Namespaces determine which data must
                     be managed by the Durability service. Data that does not
                     match any of the namespaces, is ignored by the Durability service.
-                    
+
                     A template specifies behaviour for a namespace. It
-                    matches a namespace name with an expression that may contain 
+                    matches a namespace name with an expression that may contain
                     wildcards, thereby allowing dynamic configuration for
-                    namespaces. The order in which templates are specified is 
+                    namespaces. The order in which templates are specified is
                     important, as the first matching template
                     will be the one that is selected for a namespace.
                 ]]></comment>
+                <element name="Merge" minOccurrences="0" maxOccurrences="0">
+                	<attributeEnum name="type" required="true">
+                		<default>Ignore</default>
+                		<value>Ignore</value>
+                		<value>Merge</value>
+                		<value>Delete</value>
+                		<value>Replace</value>
+                	</attributeEnum>
+                	<attributeString name="scope" required="true">
+                		<maxLength>0</maxLength>
+                		<default>*</default>
+                	</attributeString>
+                </element>
                 <attributeString name="nameSpace" required="true">
                   <comment>
                     <![CDATA[
-                          The element specifies an expression that matches a namespace name.  
-                          A namespace may contain the wildcards '*' to match any number of 
-                          characters and '?' to match one single character. 
+                          The element specifies an expression that matches a namespace name.
+                          A namespace may contain the wildcards '*' to match any number of
+                          characters and '?' to match one single character.
                       ]]>
                   </comment>
                   <maxLength>0</maxLength>
@@ -1486,16 +1549,16 @@
                 </attributeEnum>
                 <attributeEnum name="mergePolicy" required="false">
                     <comment><![CDATA[
-                    This tag specifies the merge policy applicable for a 
-                    specific namespace. The following merge policy values are 
+                    This tag specifies the merge policy applicable for a
+                    specific namespace. The following merge policy values are
                     applicable:
                     <ul>
-                    <li>Ignore - No alignment will take place. This is also 
+                    <li>Ignore - No alignment will take place. This is also
                     the default value if not specified.</li>
-                    <li>Merge - Existing data will remain and data from others 
+                    <li>Merge - Existing data will remain and data from others
                     will be aligned.</li>
                     <li>Reset - Existing data is removed.</li>
-                    <li>Replace - Existing data is removed and data from 
+                    <li>Replace - Existing data is removed and data from
                     others will be aligned.</li>
                     ]]></comment>
                     <default>Merge</default>
@@ -1666,7 +1729,7 @@
                     (NIC). The card can be uniquely identified by its corresponding
                     IP address or by its symbolic name (e.g. eth0). If the
                     value "first available" is entered here, the OpenSplice
-                    middleware will try to look up an interface that has 
+                    middleware will try to look up an interface that has
                     the required capabilities.
                  ]]></comment>
                 <maxLength>15</maxLength>
@@ -1674,25 +1737,25 @@
             </leafString>
             <element name="Reconnection" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                     This element specifies the desired networking-behavior with respect to the 
-                     validity of restoring lost connectivity with remote nodes.  
-                     Here ‘lost connectivity’ means a prolonged inability to communicate with a known 
-                     and still active remote node (typically because of network-issues) 
-                     that has resulted in such a node being declared ‘dead’ either by the topology-discovery or 
-                     lost-reliability being detected by a reliable channel’s reactivity-checking mechanism. 
+                     This element specifies the desired networking-behavior with respect to the
+                     validity of restoring lost connectivity with remote nodes.
+                     Here ‘lost connectivity’ means a prolonged inability to communicate with a known
+                     and still active remote node (typically because of network-issues)
+                     that has resulted in such a node being declared ‘dead’ either by the topology-discovery or
+                     lost-reliability being detected by a reliable channel’s reactivity-checking mechanism.
                      If automatic reconnection is allowed, communication channels with the now-reachable-again node will be restored,
-                     even though reliable data might have been lost during the disconnection period. 
+                     even though reliable data might have been lost during the disconnection period.
                 ]]></comment>
                 <attributeBoolean name="allowed" required="true">
                     <comment><![CDATA[
                     This attribute specifies whether the network service must
                     resume communication with an other network service when it
-                    has already been seen before but has been disconnected 
+                    has already been seen before but has been disconnected
                     for a while.
                     <ul>
-                        <li>false - Specifies that the network service must NOT 
-                        resume communication. 
-                        (default).  
+                        <li>false - Specifies that the network service must NOT
+                        resume communication.
+                        (default).
                         <li>true -  Specifies that the network service must
                         resume communication.
                     </ul>
@@ -1718,7 +1781,7 @@
                 inspected. In combination with a set of network partition mapping rules,
                 the service will determine to which network partition the sample is
                 written. The mapping rules are configurable as well.</p>
-                <p>Using 
+                <p>Using
                 networking configuration, nodes can be disconnected from any
                 networking partition. If a node is connected via a low speed
                 interface, it is not capable of receiving high volume data. If
@@ -1733,7 +1796,7 @@
                 ]]></comment>
                 <attributeString name="Address" required="true">
                     <comment><![CDATA[
-                        The global 
+                        The global
                         networking partition transports data that is either meant
                         to be global, like discovery heartbeats, or that is not
                         mapped onto any other networking partition. The address is a list
@@ -1813,14 +1876,14 @@
                     </attributeBoolean>
                     <attributeBoolean name="Compression" required="false">
                         <comment><![CDATA[
-                            This attribute specifies if networking will apply 
-                            compression to limit bandwidth for a specific 
-                            network partition. This provides great flexibility 
-                            as network partition are dynamically bind to 
-                            logical partitions. The following compression 
+                            This attribute specifies if networking will apply
+                            compression to limit bandwidth for a specific
+                            network partition. This provides great flexibility
+                            as network partition are dynamically bind to
+                            logical partitions. The following compression
                             values are allowed:
                             <ul>
-                                <li>false - No compression is applied. This is 
+                                <li>false - No compression is applied. This is
                                 also the default value if not specified.</li>
                                 <li>true - Compression is applicable</li>
                             </ul>
@@ -1989,7 +2052,7 @@
                     <value>rsa-aes192</value>
                     <value>rsa-aes256</value>
                     <value>rsa-blowfish</value>
-                    <value>rsa-null</value>                          
+                    <value>rsa-null</value>
                     <default>null</default>
                 </attributeString>
                 <attributeString name="CipherKey" required="true">
@@ -2009,7 +2072,7 @@
 						the file system, referenced by the URI in the configuration file. The file must be
 						protected against read and write access from other users on the host. Verify that
 						access rights are not given to any other user or group on the host.
-						
+
 						Alternatively, storing the secret key in-place in the XML configuration file will give
 						read/write access to all DDS applications joining the same OpenSplice node.
 						Because of this, the ‘in-place’ method is strongly discouraged.
@@ -2092,7 +2155,7 @@
 	                   <leafString name="Key" minOccurrences="1" maxOccurrences="1">
 	                   <comment><![CDATA[
 	                       The Key element references the file containing the key.
-	                       
+
 	                       It is recommended that the absolute path is used. A relative path
 						   will be interpreted relative to the directory from which the
 						   OpenSplice daemon is started.
@@ -2103,7 +2166,7 @@
 	                   <leafString name="Cert" minOccurrences="1" maxOccurrences="1">
 	                   <comment><![CDATA[
 	                       The Cert element references the file containing the certificate.
-	                       
+
 	                       It is recommended that the absolute path is used. A relative path
 	                       will be interpreted relative to the directory from which the
 	                       OpenSplice daemon is started.
@@ -2115,7 +2178,7 @@
                     <leafString name="TrustedCertificates" minOccurrences="1" maxOccurrences="1">
                     <comment><![CDATA[
                         The TrustedCertificates element references a file containing the trusted certificates.
-                        
+
                         It is recommended that the absolute path is used. A relative path
                         will be interpreted relative to the directory from which the
                         OpenSplice daemon is started.
@@ -2256,12 +2319,12 @@
                     ]]></comment>
                     <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
-                    
-                       When the sending side is enabled the network packet will contain a valid crc field. 
+
+                       When the sending side is enabled the network packet will contain a valid crc field.
                     ]]></comment>
                     <default>false</default>
                     </leafBoolean>
@@ -2388,12 +2451,12 @@
                     ]]></comment>
                     <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
-                    
-                       When the receiving side is enabled only network packets that contain a valid crc field are accepted.  
+
+                       When the receiving side is enabled only network packets that contain a valid crc field are accepted.
                     ]]></comment>
                     <default>false</default>
                     </leafBoolean>
@@ -2479,11 +2542,11 @@
         <element name="Discovery" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
                 This element is used to configure the various parameters of the Discovery Channel,
-                which is used to discover all relevant participating entities in the current Domain. 
-                The purpose of the discovery process is to build-up and maintain a notion of all 
-                relevant active nodes within the domain.  The relevance of discovered remote nodes 
+                which is used to discover all relevant participating entities in the current Domain.
+                The purpose of the discovery process is to build-up and maintain a notion of all
+                relevant active nodes within the domain.  The relevance of discovered remote nodes
                 can be defined statically (by definition of the so-called Global Partition) and/or
-                can be dynamically expanded and maintained by the dynamic-discovery process driven 
+                can be dynamically expanded and maintained by the dynamic-discovery process driven
                 by the node's Role and Scope.
             ]]></comment>
             <attributeBoolean name="enabled" minOccurrences="0" maxOccurrences="1">
@@ -2496,14 +2559,14 @@
             </attributeBoolean>
             <attributeString name="Scope" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                    This attribute controls the dynamic discovery behaviour of this node within the current Domain. 
-                    If it is not set, dynamic discovery will be disabled and the networking service will only 
-                    communicate with nodes that can be reached through the predefined Global Partition. If the Scope 
-                    attribute is specified, dynamic discovery is enabled and the networking service will be able to 
-                    communicate with all nodes in the system that have a Role that matches the Scope expression. 
-                    The Scope expression can contain a comma separated list of wild-card role-expressions. If the 
-                    role of any  discovered node matches any of the wild-card expressions, the remote node is 
-                    considered a match and will become part of the communication reach (i.e. the Global Partition) 
+                    This attribute controls the dynamic discovery behaviour of this node within the current Domain.
+                    If it is not set, dynamic discovery will be disabled and the networking service will only
+                    communicate with nodes that can be reached through the predefined Global Partition. If the Scope
+                    attribute is specified, dynamic discovery is enabled and the networking service will be able to
+                    communicate with all nodes in the system that have a Role that matches the Scope expression.
+                    The Scope expression can contain a comma separated list of wild-card role-expressions. If the
+                    role of any  discovered node matches any of the wild-card expressions, the remote node is
+                    considered a match and will become part of the communication reach (i.e. the Global Partition)
                     of the current domain.
                 ]]></comment>
                 <maxLength>512</maxLength>
@@ -2519,11 +2582,11 @@
             </leafInt>
             <leafString name="ProbeList" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                    This element contains the addresses of the nodes that will be contacted to retrieve an initial 
-                    list of participating nodes in the current domain that match the specified Scope. Multiple 
+                    This element contains the addresses of the nodes that will be contacted to retrieve an initial
+                    list of participating nodes in the current domain that match the specified Scope. Multiple
                     ProbeList addresses can be entered by separating them by a colon (,), semicolon (;) or space( ) .
-                    The addresses can be entered as dotted decimal notation or as the symbolic hostname, in which 
-                    case the middleware will try to resolve the corresponding IP address. 
+                    The addresses can be entered as dotted decimal notation or as the symbolic hostname, in which
+                    case the middleware will try to resolve the corresponding IP address.
                 ]]></comment>
                 <maxLength>512</maxLength>
                 <default></default>
@@ -2535,12 +2598,12 @@
                 ]]></comment>
                 <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
-                    
-                       When the sending side is enabled the network packet will contain a valid crc field. 
+
+                       When the sending side is enabled the network packet will contain a valid crc field.
                     ]]></comment>
                     <default>false</default>
                     </leafBoolean>
@@ -2629,12 +2692,12 @@
             <element name="Receiving" minOccurrences="0" maxOccurrences="1">
             <leafBoolean name="CrcCheck" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
-                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added. 
+                       In order to protect OpenSplice network packets from malicious attack the CrcCheck(cyclic redundancy check) configuration item has been added.
                        CRCs are specifically designed to protect against common types of errors on communication channels.
                        When enabled the integrity of delivered network packets from one DDS process to another is assured.
                        There is a small performance cost using this feature due to the addtional overhead of carrying out the crc calculation.
-                    
-                       When the sending side is enabled the network packet will contain a valid crc field. 
+
+                       When the sending side is enabled the network packet will contain a valid crc field.
                     ]]></comment>
                     <default>false</default>
                     </leafBoolean>

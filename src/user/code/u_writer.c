@@ -249,7 +249,7 @@ u_writerDefaultCopy(
     void *data,
     void *to)
 {
-    c_copyIn(type,data,to);
+    c_copyIn(type,data,&to);
 
     return TRUE;
 }
@@ -645,10 +645,10 @@ u_writerLookupInstance(
     return result;
 }
 
-/* ---------------------- u_writerInstanceCopyKeys -------------------------- */
+/* ---------------------- u_writerCopyKeysFromInstanceHandle -------------------------- */
 
 u_result
-u_writerInstanceCopyKeys (
+u_writerCopyKeysFromInstanceHandle (
     u_writer _this,
     u_instanceHandle handle,
     u_writerAction action,

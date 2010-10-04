@@ -248,10 +248,10 @@ jni_getTopicKeyExpression(
                     fieldName = c_fieldName(keyList[i]);
                     actualFieldName = c_skipUntil(fieldName, ".");
                     actualFieldName++; /*skip '.' */
-                    strcat(keyExpr,actualFieldName);
+                    os_strcat(keyExpr,actualFieldName);
                     
                     if (i<(nrOfKeys-1)) { 
-                        strcat(keyExpr,","); 
+                        os_strcat(keyExpr,","); 
                     }
                 }
                 arg->keyExpr = keyExpr;

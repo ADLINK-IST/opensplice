@@ -195,7 +195,7 @@ void DDS::ccpp_SubscriptionBuiltinTopicData_copyOut(
     DDS::ccpp_UserDataQosPolicy_copyOut(from.user_data, to.user_data);
     DDS::ccpp_TimeBasedFilterQosPolicy_copyOut(from.time_based_filter, to.time_based_filter);
     DDS::ccpp_PresentationQosPolicy_copyOut(from.presentation, to.presentation);
-    DDS::ccpp_PartitionQosPolicy_copyOut(from.partition, to.partition);;
+    DDS::ccpp_PartitionQosPolicy_copyOut(from.partition, to.partition);
     DDS::ccpp_TopicDataQosPolicy_copyOut(from.topic_data, to.topic_data);
     DDS::ccpp_GroupDataQosPolicy_copyOut(from.group_data, to.group_data);
 }
@@ -214,11 +214,12 @@ void DDS::ccpp_PublicationBuiltinTopicData_copyOut(
     DDS::ccpp_LivelinessQosPolicy_copyOut(from.liveliness, to.liveliness);
     DDS::ccpp_ReliabilityQosPolicy_copyOut(from.reliability, to.reliability);
     DDS::ccpp_LifespanQosPolicy_copyOut(from.lifespan, to.lifespan);
+    DDS::ccpp_DestinationOrderQosPolicy_copyOut(from.destination_order, to.destination_order);
     DDS::ccpp_UserDataQosPolicy_copyOut(from.user_data, to.user_data);
     DDS::ccpp_OwnershipQosPolicy_copyOut(from.ownership, to.ownership);
     DDS::ccpp_OwnershipStrengthQosPolicy_copyOut(from.ownership_strength, to.ownership_strength);
     DDS::ccpp_PresentationQosPolicy_copyOut(from.presentation, to.presentation);
-    DDS::ccpp_PartitionQosPolicy_copyOut(from.partition, to.partition);;
+    DDS::ccpp_PartitionQosPolicy_copyOut(from.partition, to.partition);
     DDS::ccpp_TopicDataQosPolicy_copyOut(from.topic_data, to.topic_data);
     DDS::ccpp_GroupDataQosPolicy_copyOut(from.group_data, to.group_data);
 }

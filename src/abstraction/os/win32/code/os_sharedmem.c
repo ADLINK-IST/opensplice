@@ -22,6 +22,7 @@
 #include <os_heap.h>
 #include <os_report.h>
 #include <os_thread.h>
+#include <os_mutex.h>
 #include <code/os__debug.h>
 
 #include <assert.h>
@@ -38,9 +39,16 @@ struct os_sharedHandle_s {
     char *name;
     HANDLE dataFile;
     HANDLE mapObject;
-    os_uint32 size;
+    os_address size;
     os_int32 shm_created;
 };
+
+struct os_shmInfo {
+    os_sharedHandle sharedHandle;
+    struct os_shmInfo *next;
+};
+
+struct os_shmInfo *shmInfo = NULL;
 
 void os_sharedMemoryInit(void)
 {
@@ -48,6 +56,64 @@ void os_sharedMemoryInit(void)
 
 void os_sharedMemoryExit(void)
 {
+}
+
+char *
+os_getDomainNameforMutex(
+    os_mutex *mutex)
+{
+    /* get shm and look if pointer is in memory range */
+    os_address base,size,mtx;
+	struct os_shmInfo *shmInf;
+    char *result = NULL;
+    os_int32 foundName = 0;
+
+    assert(mutex);
+
+    for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next) {
+        base = (os_address)shmInf->sharedHandle->mapped_address;
+        size = (os_address)shmInf->sharedHandle->size;
+        mtx = (os_address)mutex;
+        /* check if the mutex is in the shm range */
+        if((base < mtx) && (mtx < (base+size) )) {
+            result = (char *)shmInf->sharedHandle->name;
+            foundName =1;
+        }
+    }
+    /* is no shm present name = null */
+    return result;
+}
+
+os_address
+os_getShmBaseAddressFromPointer(
+    void *vpointer)
+{
+     /* get shm and look if pointer is in memory range */
+     struct os_shmInfo *shmInf;
+     os_address base,size,pointer;
+     os_address result;
+     os_int32 foundName = 0;
+
+     if (shmInfo != NULL) {
+         result = (os_address)shmInfo->sharedHandle->mapped_address;
+     } else {
+         result = 0;
+     }
+
+     if (vpointer != NULL && shmInfo != NULL) {
+
+         for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next) {
+            base = (os_address)shmInf->sharedHandle->mapped_address;
+            size = (os_address)shmInf->sharedHandle->size;
+            pointer = (os_address)vpointer;
+            /* check if the pointer is in the shm range */
+            if((base < pointer) && (pointer < (base+size) )) {
+                result = (os_address)shmInf->sharedHandle->mapped_address;
+                foundName = 1;
+            }
+         }
+     }
+     return result;
 }
 
 /** \brief Create a handle for shared memory operations
@@ -71,7 +137,7 @@ os_sharedCreateHandle(
     if (sh != NULL) {
         sh->name = (char*)os_malloc(strlen(name) + 1);
         if (sh->name != NULL) {
-            strcpy(sh->name, name);
+            os_strcpy(sh->name, name);
             sh->attr = *sharedAttr;
             sh->mapped_address = (void *)0;
             sh->dataFile = 0;
@@ -157,10 +223,10 @@ os_findKeyFile(
         OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
     }
     
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, key_file_prefix);
-    strcat(key_file_name, "*.tmp");
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
 
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
@@ -183,9 +249,9 @@ os_findKeyFile(
         return NULL;
     }
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, fileData.cFileName);
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, fileData.cFileName);
     key_file = fopen(key_file_name, "r");
 
     while (!last) {
@@ -199,7 +265,7 @@ os_findKeyFile(
                     fclose(key_file);
                     kfn = (char*)os_malloc(strlen (key_file_name) + 1);
                     if (kfn != NULL) {
-                        strcpy(kfn, key_file_name);
+                        os_strcpy(kfn, key_file_name);
                     }
                     FindClose(fileHandle);
                     return kfn;
@@ -210,9 +276,9 @@ os_findKeyFile(
         if (FindNextFile(fileHandle, &fileData) == 0) {
             last = 1;
         } else {
-            strcpy(key_file_name, key_file_path);
-            strcat(key_file_name, "\\");
-            strcat(key_file_name, fileData.cFileName);
+            os_strcpy(key_file_name, key_file_path);
+            os_strcat(key_file_name, "\\");
+            os_strcat(key_file_name, fileData.cFileName);
             key_file = fopen(key_file_name, "r");
         }
     }
@@ -292,10 +358,10 @@ os_getShmFile(
 
     }
     shm_file_name = (char*)os_malloc(MAX_PATH);
-    strcpy(shm_file_name, key_file_name);
-    // strcat(shm_file_name, "_DBF");
+    os_strcpy(shm_file_name, key_file_name);
+    // os_strcat(shm_file_name, "_DBF");
     key_file_name_len = strlen(shm_file_name);
-    strcpy (&shm_file_name [key_file_name_len - 3], "DBF");
+    os_strcpy (&shm_file_name [key_file_name_len - 3], "DBF");
     os_free(key_file_name);
     return shm_file_name;
 }
@@ -334,8 +400,8 @@ os_getMapName(
     }
     key++;
     map_name = (char*)os_malloc(MAX_PATH);
-    strcpy(map_name, key);
-    strcat(map_name, "_MAP");
+    os_strcpy(map_name, key);
+    os_strcat(map_name, "_MAP");
     os_free(key_file_name);
     return map_name;
 }
@@ -372,7 +438,7 @@ os_destroyKey(
 static os_result
 os_sharedMemoryCreateFile(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     char *shm_file_name;
     char *map_object_name;
@@ -551,7 +617,7 @@ os_sharedMemoryDestroyFile(
 os_result
 os_sharedMemoryCreate(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     os_result result = os_resultFail;
 
@@ -599,6 +665,7 @@ os_sharedMemoryAttach(
     os_sharedHandle sharedHandle)
 {
     os_result result = os_resultFail;
+    struct os_shmInfo *shmInf;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
@@ -606,6 +673,13 @@ os_sharedMemoryAttach(
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
         result = os_sharedMemoryAttachFile (sharedHandle);
+        if (result == os_resultSuccess) {
+            /* add shm to shmInfo object */
+            shmInf = os_malloc(sizeof(struct os_shmInfo));
+            shmInf->sharedHandle = sharedHandle;
+            shmInf->next = shmInfo;
+            shmInfo = shmInf;
+        }
     break;
     case OS_MAP_ON_SEG:
         result = os_resultUnavailable;
@@ -655,7 +729,7 @@ os_sharedAttrInit(
 os_result
 os_sharedSize(
     os_sharedHandle sharedHandle,
-    os_uint32 *size)
+    os_address *size)
 {
     os_result result = os_resultFail;
 

@@ -163,10 +163,10 @@ idl_scopeStackJava (
                              (int)strlen(Id)+1));
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, scopeSepp);
+           os_strcat(scopeStack, scopeSepp);
            /* Concatenate the scope name */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat (scopeStack, Id);
+           os_strcat (scopeStack, Id);
            si++;
         }
         if(strlen(scopeStack) > 0)
@@ -196,8 +196,8 @@ idl_scopeStackJava (
              * (which would be to support regular expression type things).
              */
             ptr = os_malloc(strlen(scopeStack)+ strlen(scopeSepp) + 1);
-            strcpy(ptr, scopeStack);
-            strncat(ptr, scopeSepp, strlen(scopeSepp));
+            os_strcpy(ptr, scopeStack);
+            os_strncat(ptr, scopeSepp, strlen(scopeSepp));
             ptr2 = idl_genJavaHelperApplyPackageSubstitute(ptr, scopeSepp);
             memset(ptr, 0, strlen(ptr));
             os_free(ptr);
@@ -228,10 +228,10 @@ idl_scopeStackJava (
                              (int)strlen(Id)+1));
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, scopeSepp);
+           os_strcat(scopeStack, scopeSepp);
            /* Concatenate the user identifier */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat (scopeStack, Id);
+           os_strcat (scopeStack, Id);
         }
      } else {
         /* The stack is empty */
@@ -338,7 +338,7 @@ idl_createDir (
     outdir = idl_dirOutCur();
 
     if(outdir){
-        sprintf(pathName, "%s%s", outdir, os_fileSep());
+        os_sprintf(pathName, "%s%s", outdir, os_fileSep());
     }
     /* make sure that we replace the os file seperator with a simple character
      * like '/', this will allow us to parse easier later.
@@ -360,7 +360,7 @@ idl_createDir (
             {
                 *token = '\0';
                 token++;
-                strcat (pathName, stackScope);
+                os_strcat (pathName, stackScope);
                 stackScope = token;
                 statRes = os_stat (pathName, &statbuf);
                 if (statRes == os_resultFail) {
@@ -382,7 +382,7 @@ idl_createDir (
                     printf ("Error when creating directory %s\n", pathName);
                     return 0;
                 }
-                strcat (pathName, os_fileSep());
+                os_strcat (pathName, os_fileSep());
             }
         } while(token);
     }
@@ -400,8 +400,8 @@ idl_openJavaPackage (
 
     package_file = idl_scopeStackJava(scope, os_fileSep(), name);
     fname = os_malloc(strlen (package_file) + strlen (".java") + 1);
-    strcpy(fname, package_file);
-    strcat(fname, ".java");
+    os_strcpy(fname, package_file);
+    os_strcat(fname, ".java");
     if (idl_createDir(fname)) {
 	    idl_fileSetCur(idl_fileOutNew (fname, "w"));
         if (idl_fileCur() == NULL) {
@@ -431,9 +431,9 @@ idl_labelJavaEnumVal (
     c_char *scopedName;
 
     scopedName = os_malloc(strlen(typeEnum) + strlen(idl_labelEnumImage(labelVal)) + 2);
-    strcpy(scopedName, typeEnum);
-    strcat(scopedName, ".");
-    strcat(scopedName,idl_labelEnumImage(labelVal));
+    os_strcpy(scopedName, typeEnum);
+    os_strcat(scopedName, ".");
+    os_strcat(scopedName,idl_labelEnumImage(labelVal));
 
     return scopedName;
 }
@@ -452,7 +452,7 @@ idl_sequenceIndexString (
         sequenceString = os_malloc(sequenceStringLen);
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
     } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tarray) {
-	sequenceStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeSeqType (typeSeq)));
+        sequenceStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeSeqType (typeSeq)));
         sequenceStringLen = strlen(sequenceStringPrev) + 3;
         sequenceString = os_malloc(sequenceStringLen);
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
@@ -464,7 +464,7 @@ idl_sequenceIndexString (
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
     } else if (idl_typeSpecType(idl_typeSeqType (typeSeq)) == idl_ttypedef &&
 	idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tarray) {
-        sequenceStringPrev = idl_sequenceIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))));
+        sequenceStringPrev = idl_arrayJavaIndexString(idl_typeArray(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))));
         sequenceStringLen = strlen(sequenceStringPrev) + 3;
         sequenceString = os_malloc(sequenceStringLen);
         snprintf(sequenceString, sequenceStringLen, "[]%s", sequenceStringPrev);
@@ -568,14 +568,14 @@ idl_genJavaHelperApplyPackageSubstitute(
             if(0 != strcmp(tarPackageNameTMP+(strlen(tarPackageNameTMP)-strlen(scopeSepp)), scopeSepp))
             {
                 result = os_malloc(strlen(tarPackageNameTMP) + strlen(scopeSepp) + strlen(source) + 1);
-                strcpy(result, tarPackageNameTMP);
-                result = strncat(result, scopeSepp, strlen(scopeSepp));
+                os_strcpy(result, tarPackageNameTMP);
+                result = os_strncat(result, scopeSepp, strlen(scopeSepp));
             } else
             {
                 result = os_malloc(strlen(tarPackageNameTMP) + strlen(source) + 1);
-                strcpy(result, tarPackageNameTMP);
+                os_strcpy(result, tarPackageNameTMP);
             }
-            result = strncat(result, source, strlen(source));
+            result = os_strncat(result, source, strlen(source));
             os_free(tarPackageNameTMP);
         } else
         {
@@ -619,13 +619,13 @@ idl_genJavaHelperSubstitute(
 
         before = os_malloc(ptr - tmp+1);
         *ptr = '\0';
-        strcpy(before, tmp);
+        os_strcpy(before, tmp);
         ptr = ptr+strlen(searchFor);
         after = idl_genJavaHelperSubstitute(ptr, searchFor, replaceWith);
         result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
-        strcpy(result, before);
-        strncat(result, replaceWith, strlen(replaceWith));
-        strncat(result, after, strlen(after));
+        os_strcpy(result, before);
+        os_strncat(result, replaceWith, strlen(replaceWith));
+        os_strncat(result, after, strlen(after));
         os_free(before);
         os_free(after);
     } else

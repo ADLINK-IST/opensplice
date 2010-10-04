@@ -520,9 +520,10 @@ idl_structureMemberOpenClose(
             {
                 DEBUG_INFO
                 fileOut(file,"    {\n");
-                fileOut(file,"        %s (*dst)", idl_scopedSplTypeIdent(subType));
+                fileOut(file,"        typedef %s _DestType", idl_scopedSplTypeIdent(subType));
                 idl_arrayDimensions(idl_typeArray(typeSpec));
-                fileOut(file," = &to->%s;\n", cid);
+                fileOut(file,";\n");
+                fileOut(file,"        _DestType *dst = &to->%s;\n", cid);
                 idl_arrayElements (scope, name, idl_typeArray(typeSpec), source, "dst", 1);
                 fileOut(file,"    }\n");
             }
@@ -553,7 +554,11 @@ idl_structureMemberOpenClose(
         fileOut(file,"        %s *src0 = &from->%s;\n\n", idl_sequenceIdent(idl_typeSeq(typeSpec)), cid);
         fileOut(file,"        if (type0 == NULL) {\n");
         fileOut(file,"            subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
-        fileOut(file,"            type0 = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n",typeName);
+        if(maxlen>0){
+            fileOut(file,"            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n",typeName,maxlen, maxlen);
+        } else {
+            fileOut(file,"            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n",typeName);
+        }
         fileOut(file,"            c_free(subtype0);\n");
         fileOut(file,"        }\n");
         fileOut(file,"        if(src0 != NULL){\n");
@@ -570,25 +575,25 @@ idl_structureMemberOpenClose(
             idl_printIndent(3);
             fileOut(file,"} else {\n");
             idl_printIndent(3);
-            fileOut(file,"    dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+            fileOut(file,"    dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4);
             idl_printIndent(3);
-            fileOut(file,"    to->%s = (c_array)dst0;\n", cid);
+            fileOut(file,"    to->%s = (c_sequence)dst0;\n", cid);
             idl_printIndent(3);
             fileOut(file,"}\n");
         } else {
             DEBUG_INFO
             idl_printIndent(3);
-            fileOut(file,"dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+            fileOut(file,"dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
             idl_printIndent(3);
-            fileOut(file,"to->%s = (c_array)dst0;\n", cid);
+            fileOut(file,"to->%s = (c_sequence)dst0;\n", cid);
         }
         fileOut(file,"#else\n");
         idl_printIndent(1);
-        fileOut(file,"        dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+        fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
         idl_seqLoopCopy(nextType, "*src", "dst0", 1, 2);
-        fileOut(file,"        to->%s = (c_array)dst0;\n", cid);
+        fileOut(file,"        to->%s = (c_sequence)dst0;\n", cid);
         fileOut(file,"#endif\n");
         idl_printIndent(1);
         fileOut(file,"    } else {\n");
@@ -744,7 +749,7 @@ idl_arrayLoopCopyIndexString(
 
     varIndex++;
     snprintf(arrIndex, (size_t)sizeof(arrIndex), "[i%d]", varIndex);
-    strcat(indexString, arrIndex);
+    os_strcat(indexString, arrIndex);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -1027,7 +1032,11 @@ idl_arrayLoopCopyBody(
         idl_printIndent(total_indent);
         fileOut(file,"        subtype0 = c_type(c_metaResolve(c_metaObject(base), \"%s\"));\n",typeName);
         idl_printIndent(total_indent);
-        fileOut(file,"        type0 = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n",typeName);
+        if(maxlen > 0){
+            fileOut(file,"        type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n",typeName,maxlen, maxlen);
+        } else {
+            fileOut(file,"        type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n",typeName);
+        }
         idl_printIndent(total_indent);
         fileOut(file,"        c_free(subtype0);\n");
         idl_printIndent(total_indent);
@@ -1047,18 +1056,18 @@ idl_arrayLoopCopyBody(
             idl_printIndent(total_indent);
             fileOut(file,"        } else {\n");
             idl_printIndent(total_indent);
-            fileOut(file,"            dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+            fileOut(file,"            dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+3);
             idl_printIndent(total_indent);
-            fileOut(file,"            %s = (c_array)dst0;\n", destin);
+            fileOut(file,"            %s = (c_sequence)dst0;\n", destin);
             fileOut(file,"        }\n");
         } else {
             DEBUG_INFO
             idl_printIndent(total_indent);
-            fileOut(file,"        dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+            fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2);
             idl_printIndent(total_indent);
-            fileOut(file,"        %s = (c_array)dst0;\n", destin);
+            fileOut(file,"        %s = (c_sequence)dst0;\n", destin);
         }
         idl_printIndent(total_indent);
         fileOut(file,"    } else {\n");
@@ -1070,10 +1079,10 @@ idl_arrayLoopCopyBody(
         idl_printIndent(total_indent);
         fileOut(file,"        length0 = (c_long)(*src0)._length;\n");
         idl_printIndent(total_indent);
-        fileOut(file,"        dst0 = (%s *)c_newArray(c_collectionType(type0), length0);\n", scopedName);
+        fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
             idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2);
         idl_printIndent(total_indent);
-        fileOut(file,"        %s = (c_array)dst0;\n", destin);
+        fileOut(file,"        %s = (c_sequence)dst0;\n", destin);
         fileOut(file,"#endif\n");
     break;
     default:
@@ -1260,7 +1269,7 @@ idl_arrayElements(
                 fileOut(file,"        if(to->%s)\n", to);
                 fileOut(file,"        {\n");
                 fileOut(file,"            /* Copy the value of the array into the database string */\n");
-                fileOut(file,"            strncpy(to->%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
+                fileOut(file,"           os_strncpy(to->%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
                 fileOut(file,"            to->%s[%d] = '\\0';\n", to, idl_typeArraySize(typeArray));
                 fileOut(file,"        }\n");
             } else
@@ -1344,10 +1353,10 @@ idl_seqIndex(
     c_char is[64];
     c_long i;
 
-    strncpy(index, "", sizeof(index));
+   os_strncpy(index, "", sizeof(index));
     for (i = 0; i < indent; i++) {
         snprintf(is, (size_t)sizeof(is), "[i%d]", i);
-        strncat(index, is, (size_t)sizeof(is));
+        os_strncat(index, is, (size_t)sizeof(is));
     }
     return os_strdup(index);
 }
@@ -1686,7 +1695,11 @@ idl_seqLoopCopy(
         idl_printIndent(indent);
         fileOut(file,"            subtype%d = c_type(c_metaResolve(c_metaObject(base), \"%s\"));\n",loop_index, typeName);
         idl_printIndent(indent);
-        fileOut(file,"            type%d = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", loop_index, typeName, loop_index);
+        if(maxlen > 0){
+            fileOut(file,"            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype%d,%d);\n", loop_index, typeName, maxlen, loop_index, maxlen);
+        } else {
+            fileOut(file,"            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", loop_index, typeName, loop_index);
+        }
         idl_printIndent(indent);
         fileOut(file,"            c_free(subtype%d);\n", loop_index);
         idl_printIndent(indent);
@@ -1705,34 +1718,34 @@ idl_seqLoopCopy(
             idl_printIndent(indent);
             fileOut(file,"        } else {\n");
             idl_printIndent(indent);
-            fileOut(file,"            dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n",
+            fileOut(file,"            dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                 loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
             snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
             idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+3);
             idl_printIndent(indent);
-            fileOut(file,"            dst%d[i%d] = (c_array)dst%d;\n",
+            fileOut(file,"            dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
             idl_printIndent(indent);
             fileOut(file,"        }\n");
             fileOut(file,"#else\n");
             idl_printIndent(indent);
-            fileOut(file,"        dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n",
+            fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                 loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
                 snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
                 idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2);
             idl_printIndent(indent);
-            fileOut(file,"        dst%d[i%d] = (c_array)dst%d;\n",
+            fileOut(file,"        dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
             fileOut(file,"#endif\n");
         } else {
             DEBUG_INFO
             idl_printIndent(indent);
-            fileOut(file,"        dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n",
+            fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                     loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
                 snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
                 idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2);
             idl_printIndent(indent);
-            fileOut(file,"        dst%d[i%d] = (c_array)dst%d;\n",
+            fileOut(file,"        dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
         }
     break;
@@ -1797,7 +1810,11 @@ idl_seqElements(
     fileOut(file,"\n");
     fileOut(file,"    if (type%d == NULL) {\n", indent);
     fileOut(file,"        subtype%d = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", indent, typeName);
-    fileOut(file,"        type%d = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", indent, typeName, indent);
+    if(maxlen>0){
+        fileOut(file,"        type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype%d,%d);\n", indent, typeName, maxlen, indent, maxlen);
+    } else {
+        fileOut(file,"        type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", indent, typeName, indent);
+    }
     fileOut(file,"        c_free(subtype%d);\n", indent);
     fileOut(file,"    }\n");
 
@@ -1811,19 +1828,19 @@ idl_seqElements(
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    } else {\n");
 
-        fileOut(file,"        dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
+        fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
         idl_seqLoopCopy(nextType, "*from", destin, 1, indent+2);
         fileOut(file,"        *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
 
         fileOut(file,"    }\n");
     } else {
         DEBUG_INFO
-        fileOut(file,"    dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
+        fileOut(file,"    dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
         idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1);
         fileOut(file,"    *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
     }
     fileOut(file,"#else\n");
-    fileOut(file,"    dst%d = (%s *)c_newArray(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
+    fileOut(file,"    dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
         idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1);
     fileOut(file,"    *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
     fileOut(file,"#endif\n");
@@ -2230,9 +2247,10 @@ idl_unionCaseOpenClose(
 
         DEBUG_INFO
         fileOut(file,"        {\n");
-        fileOut(file,"            %s (*dst)", idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
+        fileOut(file,"            typedef %s _DestType", idl_scopedSplTypeIdent(idl_typeArrayActual(idl_typeArray(typeSpec))));
             idl_arrayDimensions(idl_typeArray(typeSpec));
-        fileOut(file," = &to->_u.%s;\n", cid);
+            fileOut(file,";\n");
+        fileOut(file,"            _DestType *dst = &to->_u.%s;\n", cid);
             idl_arrayElements(scope, name, idl_typeArray(typeSpec), source, "dst", 2);
         fileOut(file,"        }\n");
         fileOut(file,"        break;\n");
@@ -2268,7 +2286,11 @@ idl_unionCaseOpenClose(
         /* QAC EXPECT 5001; Bypass qactools bug */
         fileOut(file,"        if (type0 == NULL) {\n");
         fileOut(file,"            subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
-        fileOut(file,"            type0 = c_metaArrayTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
+        if(maxlen > 0){
+            fileOut(file,"            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n", typeName, maxlen, maxlen);
+        } else {
+            fileOut(file,"            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
+        }
         fileOut(file,"            c_free(subtype0);\n");
         fileOut(file,"        }\n");
 
@@ -2281,20 +2303,20 @@ idl_unionCaseOpenClose(
             fileOut(file,"            if(length0 > %d){\n", maxlen);
             fileOut(file,"                result = FALSE;\n");
             fileOut(file,"            } else {\n");
-            fileOut(file,"                dst0 = (%s *)c_newArray(c_collectionType(type0),length0);\n", scopedName);
+            fileOut(file,"                dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4);
-            fileOut(file,"                to->_u.%s = (c_array)dst0;\n", cid);
+            fileOut(file,"                to->_u.%s = (c_sequence)dst0;\n", cid);
             fileOut(file,"            }\n");
             fileOut(file,"#else\n");
-            fileOut(file,"                dst0 = (%s *)c_newArray(c_collectionType(type0),length0);\n", scopedName);
+            fileOut(file,"                dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
-            fileOut(file,"            to->_u.%s = (c_array)dst0;\n", cid);
+            fileOut(file,"            to->_u.%s = (c_sequence)dst0;\n", cid);
             fileOut(file,"#endif\n");
         } else {
             DEBUG_INFO
-            fileOut(file,"            dst0 = (%s *)c_newArray(c_collectionType(type0),length0);\n", scopedName);
+            fileOut(file,"            dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
                 idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
-            fileOut(file,"            to->_u.%s = (c_array)dst0;\n", cid);
+            fileOut(file,"            to->_u.%s = (c_sequence)dst0;\n", cid);
         }
         fileOut(file,"        } else {\n");
         fileOut(file,"            result = FALSE;\n");

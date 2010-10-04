@@ -15,6 +15,7 @@
 #include "d_store.h"
 
 #include "d_storeXML.h"
+#include "d_storeMMF.h"
 
 #include "d_misc.h"
 #include "d_actionQueue.h"
@@ -25,6 +26,7 @@
 #include "os_heap.h"
 #include "os_report.h"
 
+
 static void
 d_storePrint(
     d_store store,
@@ -34,7 +36,7 @@ d_storePrint(
     char description[512];
 
     if(store->config->tracingOutputFile){
-        vsnprintf(description, sizeof(description)-1, format, args);
+        os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
         fprintf(store->config->tracingOutputFile, "%s", description);
     }
@@ -54,6 +56,9 @@ d_storePrintState(
                 break;
             case D_STORE_TYPE_BIG_ENDIAN:
                 state = "BIG ENDIAN";
+                break;
+            case D_STORE_TYPE_MEM_MAPPED_FILE:
+                state = "MEMORY MAPPED FILE";
                 break;
             default:
                 state = "<<UNKNOWN>>";
@@ -85,6 +90,13 @@ d_storeInit(
 }
 
 void
+d_storeDeinit(
+    d_object object)
+{
+    return;
+}
+
+void
 d_storeFree(
     d_store store)
 {
@@ -113,6 +125,9 @@ d_storeOpen(
         case D_STORE_TYPE_BIG_ENDIAN:
             store = NULL;
             break;
+        case D_STORE_TYPE_MEM_MAPPED_FILE:
+            store = d_store(d_storeNewMMF());
+            break;
         default:
             OS_REPORT(OS_ERROR, "durability", 0,
                 "Supplied persistent store type unknown.");
@@ -134,6 +149,10 @@ d_storeOpen(
                         store = NULL;
                         break;
                     case D_STORE_TYPE_BIG_ENDIAN:
+                        store = NULL;
+                        break;
+                    case D_STORE_TYPE_MEM_MAPPED_FILE:
+                        d_storeFreeMMF(d_storeMMF(store));
                         store = NULL;
                         break;
                     default:
@@ -164,6 +183,10 @@ d_storeClose(
                         store = NULL;
                         break;
                     case D_STORE_TYPE_BIG_ENDIAN:
+                        break;
+                    case D_STORE_TYPE_MEM_MAPPED_FILE:
+                        d_storeFreeMMF(d_storeMMF(store));
+                        store = NULL;
                         break;
                     default:
                         break;
@@ -675,4 +698,178 @@ d_storeCopyFile(
         }
     }
     return result;
+}
+
+
+c_char*
+d_storeDirNew(
+    d_store store,
+    const c_char *name)
+{
+    c_bool result;
+    os_result status;
+    c_char dirName[OS_PATH_MAX];
+    struct os_stat statBuf;
+    c_ulong i;
+    c_char* pdir = NULL;
+
+    memset(dirName, 0, OS_PATH_MAX);
+
+    if(name){
+        result = TRUE;
+
+        for(i=0; i<strlen(name) && result; i++){
+            if((name[i] == OS_FILESEPCHAR) && (i != 0)){
+                status = os_stat(dirName, &statBuf);
+
+                if (status != os_resultSuccess) {
+                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
+                    status = os_stat(dirName, &statBuf);
+                }
+                if (!OS_ISDIR (statBuf.stat_mode)) {
+#ifdef WIN32
+                    if((strlen(dirName) == 2) && (dirName[1] == ':')){
+                        /*This is a device like for instance: 'C:'*/
+                    } else {
+                        d_storeReport(store, D_LEVEL_SEVERE,
+                            "Directory '%s' is not a directory.\n",
+                            dirName);
+                        OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                                "Directory '%s' is not a directory.",
+                                dirName);
+                        result = FALSE;
+                        pdir = NULL;
+                    }
+#else
+                    d_storeReport(store, D_LEVEL_SEVERE,
+                        "Directory '%s' is not a directory.\n",
+                        dirName);
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                        "Directory '%s' is not a directory.",
+                        dirName);
+
+                    result = FALSE;
+                    pdir = NULL;
+#endif
+                }
+            }
+            dirName[i] = name[i];
+        }
+        if(result){
+            if(dirName[i-1] != OS_FILESEPCHAR){
+                status = os_stat(dirName, &statBuf);
+
+                if (status != os_resultSuccess) {
+                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
+                    status = os_stat(dirName, &statBuf);
+                }
+                pdir = os_strdup(name);
+
+                if (!OS_ISDIR (statBuf.stat_mode)) {
+#ifdef WIN32
+                    if((strlen(dirName) == 2) && (dirName[1] == ':')){
+                        /*This is a device like for instance: 'C:'. Check if it exists...*/
+                        dirName[2] = OS_FILESEPCHAR;
+                        status = os_stat(dirName, &statBuf);
+
+                        if(status == os_resultFail){
+                            d_storeReport(store, D_LEVEL_SEVERE,
+                                "Directory '%s' is not available.\n",
+                                dirName);
+                            OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                                    "Directory '%s' is not available.",
+                                    dirName);
+                            result = FALSE;
+                            pdir = NULL;
+                        }
+                    } else {
+                        d_storeReport(store, D_LEVEL_SEVERE,
+                                    "'%s' is not a directory.\n",
+                                    pdir);
+                        OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                                    "Directory '%s' is not a directory.",
+                                    pdir);
+                        result = FALSE;
+                        pdir = NULL;
+                    }
+#else
+                    d_storeReport(store, D_LEVEL_SEVERE,
+                                            "'%s' is not a directory.\n",
+                                            dirName);
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                                    "'%s' is not a directory.",
+                                    dirName);
+                    result = FALSE;
+                    pdir = NULL;
+#endif
+                }
+            } else {
+                pdir = (char*)os_malloc(strlen(name)+1);
+                snprintf(pdir, strlen(name), "%s", name);
+            }
+        }
+    } else {
+        result = FALSE;
+        pdir = NULL;
+    }
+
+    if(result){
+        status = os_access(pdir, 2); /*Check whether dir is writable*/
+
+        if(status != os_resultSuccess){
+#ifdef WIN32
+            if((strlen(dirName) == 2) && (dirName[1] == ':')){
+                /*This is a device like for instance: 'C:'. Check if it exists...*/
+                dirName[2] = OS_FILESEPCHAR;
+                status = os_stat(dirName, &statBuf);
+
+                if(status == os_resultFail){
+                    d_storeReport(store, D_LEVEL_SEVERE,
+                                    "'%s' cannot be found.\n",
+                                    dirName);
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                                "'%s' cannot be found.",
+                                dirName);
+                    result = FALSE;
+                    pdir = NULL;
+                }
+            } else {
+                d_storeReport(store, D_LEVEL_SEVERE,
+                        "Specified directory '%s' is not writable.\n",
+                        pdir);
+                OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                        "Specified directory '%s' is not writable.",
+                        pdir);
+                result = FALSE;
+                pdir = NULL;
+            }
+#else
+            d_storeReport(store, D_LEVEL_SEVERE,
+                            "Specified directory '%s' is not writable.\n",
+                            pdir);
+            OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                            "Specified directory '%s' is not writable.",
+                            pdir);
+            result = FALSE;
+            pdir = NULL;
+#endif
+        }
+    }
+    return pdir;
+}
+
+
+
+void
+d_storeGetBase(
+    v_entity entity,
+    c_voidp args)
+{
+    struct baseFind* f;
+
+    assert(entity);
+
+    f = (struct baseFind*)args;
+
+    f->base = c_getBase(entity);
 }

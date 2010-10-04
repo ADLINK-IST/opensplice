@@ -36,3 +36,8 @@ os_serviceName(void)
     return (const char *)0;
 }
 
+void
+os_createPipeNameFromDomainName(os_char *name)
+{
+}
+

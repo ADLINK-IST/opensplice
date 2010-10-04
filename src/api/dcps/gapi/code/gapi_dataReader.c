@@ -1532,6 +1532,30 @@ notifyDataOnReaders (
     }
 }
 
+gapi_returnCode_t
+_DataReaderGetKeyValue (
+    _DataReader _this,
+    void        *instance,
+    const gapi_instanceHandle_t handle)
+{
+    gapi_returnCode_t result;
+    u_dataReader reader;
+    u_result uResult;
+
+    PREPEND_COPYOUTCACHE(_this->copy_cache, instance, NULL);
+
+    reader = U_DATAREADER_GET(_this);
+    uResult = u_dataReaderCopyKeysFromInstanceHandle(reader,
+                    (u_instanceHandle)handle,
+                    (u_readerAction)_this->copy_out,
+                    instance);
+    result = kernelResultToApiResult(uResult);
+
+    REMOVE_COPYOUTCACHE(_this->copy_cache, instance);
+
+    return result;
+}
+
 static void
 onRequestedDeadlineMissed (
     _DataReader _this)

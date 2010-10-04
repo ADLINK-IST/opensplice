@@ -18,6 +18,7 @@
 #include "cmx__writerSnapshot.h"
 #include "cmx__entity.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 void
 cmx_snapshotFree(
@@ -92,7 +93,7 @@ cmx_snapshotKind(
     
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
-        strcpy(copy, snapshot);
+        os_strcpy(copy, snapshot);
         temp = strtok((c_char*)copy, "</>");    /*<xxxxxxSnapshot>*/
         
         if(temp != NULL){

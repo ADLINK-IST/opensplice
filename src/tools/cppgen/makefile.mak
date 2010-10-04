@@ -12,6 +12,7 @@ CFLAGS_OPT = -DNDEBUG -MD
 endif
 endif
 
+LD_EXE = $(LD_CXX)  # c++ binary
 LDLIBS += -l$(DDS_CPP) -l$(DDS_OS) 
 CXXFLAGS += -DYY_NEVER_INTERACTIVE
 

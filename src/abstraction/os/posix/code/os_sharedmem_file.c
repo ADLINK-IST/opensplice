@@ -133,7 +133,7 @@ os_posix_findKeyFile(
                 if (os_posix_matchKeyFile(key_file_name, name)) {
                     kfn = os_malloc(strlen(key_file_name) + 1);
                     if (kfn != NULL) {
-                        strcpy(kfn, key_file_name);
+                        os_strcpy(kfn, key_file_name);
                     }
                     entry = NULL;
                 } else {
@@ -180,6 +180,7 @@ os_posix_getShmObjName(
     char *db_file_name;
     char buffer[50];
     int invalid_access;
+    int index;
 
     key_file_name = os_posix_findKeyFile(name);
     if ((map_address != NULL) && (key_file_name == NULL)) {
@@ -243,10 +244,17 @@ os_posix_getShmObjName(
         }
     }
     if (key_file_name != NULL) {
-	db_file_name = os_malloc(strlen(key_file_name));
-	if (db_file_name != NULL) {
-	    strcpy(db_file_name, &key_file_name[4]);
-	}
+        db_file_name = os_malloc(strlen(key_file_name));
+        if (db_file_name != NULL) {
+           /* This function must return the populated string of the form
+            * "/spddskey_XXXXXX" (for the sake of the shm_open system call).
+            * So calculate the index of where this string begins in the
+            * key_file_name so only that part of it can be returned.
+            * The - 1 is for the intermediate '/' added above
+            */
+            index = strlen(key_file_name) - 1 - strlen(os_posix_key_file_format);
+            os_strcpy(db_file_name, &key_file_name[index]);
+        }
         os_free(key_file_name);
     } else {
         db_file_name = NULL;
@@ -360,7 +368,7 @@ os_result
 os_posix_sharedMemoryCreate(
     const char *name,
     os_sharedAttr *sharedAttr,
-    os_uint32 size)
+    os_address size)
 {
     char *shmname;
     int shmfd;
@@ -523,7 +531,7 @@ os_posix_sharedMemoryAttach(
     char *shmname;
     void *request_address;
     int shmfd;
-    os_uint32 size;
+    os_address size;
     os_result rv = os_resultSuccess;
 
     assert(name != NULL);
@@ -580,7 +588,7 @@ os_posix_sharedMemoryDetach (
     void *address)
 {
     os_result rv = os_resultSuccess;
-    os_uint32 size;
+    os_address size;
 
     assert (address != NULL);
     size = os_posix_getSize(name);
@@ -597,7 +605,7 @@ os_posix_sharedMemoryDetach (
 os_result
 os_posix_sharedSize(
     const char *name,
-    os_uint *size)
+    os_address *size)
 {
     os_uint s;
     os_result rv;

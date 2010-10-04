@@ -46,6 +46,14 @@ d_durabilityKind    d_policyGetDurabilityKind   (d_policy policy);
 /* Get namespace pattern from policy */
 c_string            d_policyGetNameSpace        (d_policy policy);
 
+/* Add merge policy rule to policy */
+void                d_policyAddMergeRule        (d_policy policy,
+                                                 d_mergePolicy mergeType,
+                                                 const char* scope);
+
+/* Get merge policy for role */
+d_mergePolicy       d_policyGetMergePolicy      (d_policy policy,
+                                                 const char* role);
 
 #if defined (__cplusplus)
 }

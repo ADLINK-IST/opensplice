@@ -48,6 +48,7 @@ cmx_initialise()
     if(ur == U_RESULT_OK){
         if(osr == os_resultSuccess){
             osr = os_mutexAttrInit(&attr);
+            attr.scopeAttr = OS_SCOPE_PRIVATE;
             
             if(osr == os_resultSuccess){
                 osr = os_mutexInit(&cmx_allocationMutex, &attr);
@@ -223,17 +224,17 @@ cmx_convertToXMLList(
     
     result = (c_char*)(os_malloc(length + 14));
     memset(result, 0, length + 14);
-    sprintf(result, "<list>");
+    os_sprintf(result, "<list>");
     temp = (c_char*)(c_iterTakeFirst(xmlEntities));
     
     while(temp != NULL){
-       result = strcat(result, temp);
+       result = os_strcat(result, temp);
        os_free(temp);
        temp = (c_char*)(c_iterTakeFirst(xmlEntities));
     }
     c_iterFree(xmlEntities);
     
-    result = strcat(result, "</list>");
+    result = os_strcat(result, "</list>");
     return result;
 }
 

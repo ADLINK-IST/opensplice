@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -224,7 +224,8 @@ void                    d_adminNotifyListeners                  (d_admin admin,
                                                                  c_ulong mask,
                                                                  d_fellow fellow,
                                                                  d_nameSpace nameSpace,
-                                                                 d_group group);
+                                                                 d_group group,
+                                                                 c_voidp userData);
 
 d_actionQueue           d_adminGetActionQueue                   (d_admin admin);
 
@@ -243,6 +244,13 @@ d_readerRequest         d_adminGetReaderRequest                 (d_admin admin,
 
 c_bool                  d_adminCheckReaderRequestFulfilled      (d_admin admin,
                                                                  d_readerRequest request);
+
+d_nameSpace             d_adminGetNameSpace                     (d_admin admin,
+                                                                 os_char* name);
+
+void                    d_adminReportMaster                     (d_admin admin,
+                                                                 d_nameSpace fellowNameSpace,
+                                                                 d_nameSpace oldFellowNameSpace);
 
 #if defined (__cplusplus)
 }

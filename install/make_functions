@@ -471,6 +471,9 @@ set_hde_envs ()
         x86_64.linux2.6*)
             PLATFORM_EXT=unix64
             ;;
+        x86.elinos*)
+            PLATFORM_EXT=elinos
+            ;;
         PPC5plus.AIX5.3*)
             PLATFORM_EXT=xlc
             ;;
@@ -563,6 +566,11 @@ install_hde_target ()
         cp ${OSPL_HOME}/release_info/RELEASE ${HDE_dir}/etc/RELEASEINFO
     fi
     echo "Ready"
+
+    # java definitions
+
+    mkdir -p ${HDE_dir}/etc/java
+    cp ${OSPL_HOME}/etc/java/defs.jdk ${HDE_dir}/etc/java
 
     #
     # Copy IDL preprocessor configuration files
@@ -702,20 +710,6 @@ install_hde_target ()
     then
         printf "*     Copy JAVA target archive files... "
         release=${OSPL_HOME}/jar/${target}${source_env}
-        if [ -d "${release}" ]
-        then
-            mkdir -p ${HDE_dir}/jar
-            install_dir ${release} ${HDE_dir} jar
-        else
-            echo "* ##    No JAVA archive files detected"
-        fi
-        echo "Ready"
-    fi
-
-    if [ "${target_os}" != "${host_os}" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "vxworks" ]
-    then
-        printf "*     Copy JAVA host archive files... "
-        release=${OSPL_HOME}/jar/${host}${source_env}
         if [ -d "${release}" ]
         then
             mkdir -p ${HDE_dir}/jar
@@ -887,10 +881,10 @@ install_hde_target ()
             echo "*     Create and sign a Global Assembly for the SACS DLL"
             cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
             csoutdir=`cygpath -d "${HDE_dir}/lib/"`
-            csdllfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.dll"`
+            csmodfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.netmodule"`
             csoutfile="${csoutdir}${CS_ASSEMBLY_NAME}.dll"
               
-            al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutfile}" "${csdllfile}"
+            al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutfile}" "${csmodfile}"
         fi
         # This needs to be changed when we support C# for linux and add an else part 
         # that will set all these variables correctly and call the appropriate mono 
@@ -1013,6 +1007,29 @@ install_hde_target ()
     echo "*       DCPS Ready"
     echo "*     Language specific interface files Ready"
 
+
+    #
+    # Copy custom CJ
+    #
+    if [ "${INCLUDE_API_DCPS_CJ}" = "yes" ]
+    then
+        if [ "${target}" != "x86.win32" ]
+        then
+            echo "*     Copy custom CJ support ..."
+
+            mkdir -p ${HDE_dir}/custom_lib/cj/java
+            release=`ls -d ${OSPL_HOME}/src/api/dcps/saj 2>/dev/null`
+            cp -r ${release}/java/code ${HDE_dir}/custom_lib/cj/java
+
+            release=`ls -d ${OSPL_HOME}/src/api/dcps/cj 2>/dev/null`
+            echo "*       Copying script files for custom library generation ..."
+            install_ascii_file "${release}/custom/README"   "${HDE_dir}/custom_lib/cj"
+            install_ascii_file "${release}/custom/BUILD"    "${HDE_dir}/custom_lib/cj/java"
+            install_ascii_file "${release}/custom/orbdeps"  "${HDE_dir}/custom_lib/cj/java"
+        fi     
+        echo "*     custom CJ support Ready"
+    fi
+
     #
     # Copy custom CCPP
     #
@@ -1036,7 +1053,7 @@ install_hde_target ()
         install_ascii_file "${release}/custom/setup" "${HDE_dir}/custom_lib/ccpp"
         install_ascii_file "${OSPL_HOME}/setup/makefiles/orbdeps.mak" "${HDE_dir}/custom_lib/ccpp"
 
-        echo "*     custom CCPP supportReady"
+        echo "*     custom CCPP support Ready"
     fi
 
     #
@@ -1640,6 +1657,16 @@ install_hde_target ()
         echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> ${RELF}
         echo "    export SPLICE_ORB" >> ${RELF}
         echo "fi"  >> ${RELF}
+        echo 'if [ "$SPLICE_JDK" = "" ]' >> ${RELF}
+        echo "then" >> ${RELF}
+        if [ "${JAVA_IS_PERC}" = "yes" ]
+        then
+            echo "    SPLICE_JDK=perc" >> ${RELF}
+        else
+            echo "    SPLICE_JDK=jdk" >> ${RELF}
+        fi
+        echo "    export SPLICE_JDK" >> ${RELF}
+        echo "fi"  >> ${RELF}
         echo "OSPL_HOME=\"@@INSTALLDIR@@/HDE/${target}${target_env}\"" >> ${RELF}
         echo "OSPL_TARGET=${target}${target_env}" >> ${RELF}
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> ${RELF}
@@ -1652,6 +1679,7 @@ install_hde_target ()
         echo "CPATH=\$OSPL_HOME/include:\$OSPL_HOME/include/sys:\$CPATH" >> ${RELF}
         echo "OSPL_TMPL_PATH=\$OSPL_HOME/etc/idlpp" >> ${RELF}
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> ${RELF}
+        echo ". \$OSPL_HOME/etc/java/defs.\$SPLICE_JDK" >> ${RELF}
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "CLASSPATH=\$OSPL_HOME/jar/dcpssaj.jar:\$CLASSPATH" >> $RELF
@@ -1733,6 +1761,11 @@ install_rts_target ()
         cp ${OSPL_HOME}/etc/BUILDINFO ${RTS_dir}/etc/.
     fi
     echo "Ready"
+
+    # java definitions
+
+    mkdir -p ${RTS_dir}/etc/java
+    cp ${OSPL_HOME}/etc/java/defs.jdk ${RTS_dir}/etc/java
 
     # done with etc dir
 
@@ -1888,9 +1921,9 @@ install_rts_target ()
         printf "*     Create and sign a Global Assembly for the SACS DLL ..."
         cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
         csoutdir=`cygpath -d "${RTS_dir}/lib"`
-        csdllfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.dll"`
+        csmodfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.netmodule"`
                     
-        al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutdir}\${CS_ASSEMBLY_NAME}.dll" "${csdllfile}"
+        al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutdir}\${CS_ASSEMBLY_NAME}.dll" "${csmodfile}"
     fi
     # This needs to be changed when we support C# for linux and add an else part 
     # that will set all these variables correctly and call the appropriate mono 
@@ -1907,11 +1940,22 @@ install_rts_target ()
         echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "    export SPLICE_ORB" >> $RELF
         echo "fi"  >> $RELF
+        echo 'if [ "$SPLICE_JDK" = "" ]' >> ${RELF}
+        echo "then" >> ${RELF}
+        if [ "${JAVA_IS_PERC}" = "yes" ]
+        then
+            echo "    SPLICE_JDK=perc" >> ${RELF}
+        else
+            echo "    SPLICE_JDK=jdk" >> ${RELF}
+        fi
+        echo "    export SPLICE_JDK" >> ${RELF}
+        echo "fi"  >> ${RELF}
         echo "OSPL_HOME=\"@@INSTALLDIR@@/RTS/${target}${target_env}\"" >> $RELF
         echo "OSPL_TARGET=${target}${target_env}" >> $RELF
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
         echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\$LD_LIBRARY_PATH" >> $RELF
         echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
+        echo ". \$OSPL_HOME/etc/java/defs.\$SPLICE_JDK" >> ${RELF}
         if [ "${INCLUDE_API_DCPS_SAJ}" = "yes" ]
         then
             echo "CLASSPATH=\$OSPL_HOME/jar/dcpssaj.jar:\$CLASSPATH" >> $RELF

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DURABILITY_H
@@ -52,6 +52,28 @@ v_durabilityNew(
 OS_API void
 v_durabilityFree(
     v_durability _this);
+
+OS_API c_bool
+v_durabilityLoadKernelModule(
+    c_base base);
+
+OS_API v_groupSample
+v_durabilityGroupInstanceHead(
+    v_groupInstance instance);
+
+OS_API void
+v_durabilityGroupInstanceSetHead(
+    v_groupInstance instance,
+    v_groupSample sample);
+
+OS_API v_groupSample
+v_durabilityGroupInstanceTail(
+    v_groupInstance instance);
+
+OS_API void
+v_durabilityGroupInstanceSetTail(
+    v_groupInstance instance,
+    v_groupSample sample);
 
 #undef OS_API
 

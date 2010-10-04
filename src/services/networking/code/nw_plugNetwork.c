@@ -103,7 +103,9 @@ nw_plugNetworkInitializePartitions(
     u_cfAttribute attrCompression;
     c_bool compression;
     u_cfAttribute attrAddress;
+    u_cfAttribute attrName;
     char *partitionAddress;
+    char *partitionName;
     sk_addressType addressType;
     
     u_cfAttribute attrSecurityPolicy;
@@ -171,6 +173,12 @@ nw_plugNetworkInitializePartitions(
 		u_cfAttributeFree(attrSecurityPolicy);
 	    }
 
+	    attrName = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName);
+        if (attrName != NULL) {
+            u_cfAttributeStringValue(attrName, &partitionName);
+        }
+        u_cfAttributeFree(attrName);
+
             nw_plugPartitionsSetPartition(
                 partitions,
                 partitionId,
@@ -178,20 +186,15 @@ nw_plugNetworkInitializePartitions(
                 securityPolicy,
                 ut_crcCalculate (
                     plugNetwork->partitionCrc,
-                    (void *)u_cfElementAttribute(
-                       partitionElement,
-                       NWCF_ATTRIB_NWPartitionName
-                    ),
+                    (void *)partitionName,
                     strlen(
-                       (char *)u_cfElementAttribute(
-                          partitionElement,
-                          NWCF_ATTRIB_NWPartitionName
-                       )
+                       (char *)partitionName
                     )
                 ),
                 connected,
                 compression
             );
+
 
         os_free(partitionAddress);
 	    os_free(securityPolicy);

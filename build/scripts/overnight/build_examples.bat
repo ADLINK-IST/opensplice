@@ -1,13 +1,13 @@
 @ECHO OFF
-ECHO Set TAO environment 
-ECHO "TAO_ROOT must be setup early" 
-ECHO "Setting environment ...." 
+ECHO Set TAO environment
+ECHO "TAO_ROOT must be setup early"
+ECHO "Setting environment ...."
 
-cd examples 
+cd examples
 
 call setenv.bat
 
-ECHO Set Microsoft Visual Studio Environment using VS supplied batch file 
+ECHO Set Microsoft Visual Studio Environment using VS supplied batch file
 
 IF "%VS_ENV_SCRIPT%"=="" EXIT 1
 
@@ -15,20 +15,20 @@ IF NOT "%VS_ENV_SCRIPT%"=="" call "%VS_ENV_SCRIPT%"
 
 cd "%OSPL_HOME%"
 
-ECHO Set OSPL runtime environment 
+ECHO Set OSPL runtime environment
 call release.bat
 
-ECHO Change to the examples directory 
+ECHO Change to the examples directory
 
 cd "%OSPL_HOME%"/examples
 
-ECHO Build examples 
+ECHO Build examples
 
 IF "%VS80COMNTOOLS%"=="" devenv examples.sln /upgrade
 
-devenv /useenv examples.sln /Build Release
+devenv /useenv examples.sln /Build %BUILD_CONFIG%
 
-ECHO Build Java examples 
+ECHO Build Java examples
 ECHO Building dcps/standalone/Java/PingPong
 cd "%OSPL_HOME%/examples/dcps/standalone/Java/PingPong"
 call BUILD.bat
@@ -51,7 +51,7 @@ ECHO Check for DLRL directory
 
 IF NOT EXIST "%OSPL_HOME%/examples/dlrl/" GOTO NODLRL
 
-ECHO Build dlrl examples 
+ECHO Build dlrl examples
 ECHO Not building dlrl/standalone/C++/Tutorial because there is no BUILD.bat
 REM cd "%OSPL_HOME%/examples/dlrl/standalone/C++/Tutorial"
 REM call BUILD.bat
@@ -66,6 +66,18 @@ GOTO END
 ECHO No DLRL examples to build
 
 :END
+
+ECHO ON
+
+cd "%~dp0\..\..\..\testsuite\tests"
+
+ECHO Building system testcases
+
+IF "%VS80COMNTOOLS%"=="" devenv tests.sln /upgrade
+
+devenv /useenv tests.sln /Build %BUILD_CONFIG%
+
+ECHO OFF
 
 cd "%OSPL_HOME%/examples"
 

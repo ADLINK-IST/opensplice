@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_subscriber.h"
+#include "saj_Subscriber.h"
 #include "saj_subscriberListener.h"
 #include "saj_dataReaderListener.h"
 #include "saj_utilities.h"

@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+#include <os_mutex.h>
+
 /** \brief Initialize shared memory module
  */
 void
@@ -29,8 +31,18 @@ void
 os_sharedMemoryExit (
     void);
 
+char *
+os_getDomainNameforMutex(
+        os_mutex *mutex);
+
+os_address
+os_getShmBaseAddressFromPointer(
+    void *vpointer);
+
 #if defined (__cplusplus)
 }
 #endif
+
+
 
 #endif /* OS_WIN32__SHAREDMEM_H */

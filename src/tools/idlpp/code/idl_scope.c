@@ -317,9 +317,9 @@ idl_scopeStack (
 	        (int)strlen(scopeSepp)+
 		(int)strlen(elName)+1));
 	    /* concatinate the separator */
-	    strcat (scopeStack, scopeSepp);
+	    os_strcat (scopeStack, scopeSepp);
 	    /* concatinate scope name */
-	    strcat (scopeStack, elName);
+	    os_strcat (scopeStack, elName);
 	    si++;
         }
 	if (name) {
@@ -332,9 +332,9 @@ idl_scopeStack (
 	        (int)strlen(scopeSepp)+
 		(int)strlen(name)+1));
 	    /* concatinate the separator */
-	    strcat (scopeStack, scopeSepp);
+	    os_strcat (scopeStack, scopeSepp);
 	    /* concatinate user identifier */
-	    strcat (scopeStack, name);
+	    os_strcat (scopeStack, name);
 	}
     } else {
 	/* Empty scope stack */

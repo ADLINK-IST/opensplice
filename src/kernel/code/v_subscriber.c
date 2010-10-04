@@ -197,7 +197,7 @@ v_subscriberFree(
     if (sc > 0) return;
 
     if(sc == 0){
-        v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(s));
+        v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(s), NULL);
         if (s->qos->share.enable) {
             found = v_removeShare(kernel,v_entity(s));
             assert(found == v_entity(s));

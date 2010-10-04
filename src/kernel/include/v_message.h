@@ -47,10 +47,10 @@ extern "C" {
             v_message(_this)->hops = 0
 
 #define V_MESSAGE_STAMP(_this,_id) { \
-            os_time ctime = os_hrtimeGet(); \
+            os_time c_time = os_hrtimeGet(); \
             v_message(_this)->_id[v_message(_this)->hops] = \
-                (v_hrtime)ctime.tv_sec * (v_hrtime)1000000000 + \
-                (v_hrtime)ctime.tv_nsec; \
+                (v_hrtime)c_time.tv_sec * (v_hrtime)1000000000 + \
+                (v_hrtime)c_time.tv_nsec; \
         }
 
 #define V_MESSAGE_SETSTAMP(_this,_id,_time) { \

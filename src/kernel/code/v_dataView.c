@@ -255,7 +255,7 @@ v_dataViewInit(
         if (qos->userKey.expression) {
             totalSize = strlen(qos->userKey.expression) + 1;
             keyExpr = os_malloc(totalSize);
-            strncpy(keyExpr, qos->userKey.expression,totalSize);
+            os_strncpy(keyExpr, qos->userKey.expression,totalSize);
         } else {
             keyExpr = NULL;
         }
@@ -275,11 +275,11 @@ v_dataViewInit(
         keyExpr[0] = 0;
         fieldName = c_iterTakeFirst(keyExprNames);
         while (fieldName != NULL) {
-            strcat(keyExpr,prefix);
-            strcat(keyExpr,fieldName);
+            os_strcat(keyExpr,prefix);
+            os_strcat(keyExpr,fieldName);
             os_free(fieldName);
             fieldName = c_iterTakeFirst(keyExprNames);
-            if (fieldName != NULL) { strcat(keyExpr,","); }
+            if (fieldName != NULL) { os_strcat(keyExpr,","); }
         }
         c_iterFree(keyExprNames);
     }

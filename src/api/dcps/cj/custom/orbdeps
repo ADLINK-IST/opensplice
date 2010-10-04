@@ -1,0 +1,4 @@
+# ORB Setup variables - The following are the defaults for JacORB/RTORB. Ammend these to suit your ORB
+JAVA_ORB_IDL_COMPILER=idl
+GEN_OUT_DIR_FLAG=-d
+EXTRA_FLAGS=-forceOverwrite

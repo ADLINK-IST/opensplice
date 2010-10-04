@@ -1510,17 +1510,17 @@ c_metaScopedName(
                 case M_MEMBER:
                 case M_RELATION:
                 case M_UNIONCASE:
-                    sprintf(ptr,".");
+                    os_sprintf(ptr,".");
                     ptr = C_DISPLACE(ptr,1);
                 break;
                 default:
-                    sprintf(ptr,"::");
+                    os_sprintf(ptr,"::");
                     ptr = C_DISPLACE(ptr,2);
                 break;
                 }
             }
             name = c_metaName(scope);
-            strncpy(ptr,name,length);
+            os_strncpy(ptr,name,length);
             c_free(name);
             ptr = C_DISPLACE(ptr,length);
             previous = scope;
@@ -1696,7 +1696,7 @@ c_alignment(
 }
 
 int
-c_size(
+c_getSize(
     c_baseObject o)
 {
     if (o == NULL) {
@@ -1705,17 +1705,17 @@ c_size(
     switch(o->kind) {
     case M_ATTRIBUTE:
     case M_RELATION:
-        return c_size(c_baseObject(c_property(o)->type));
+        return c_getSize(c_baseObject(c_property(o)->type));
     case M_CONSTANT:
-        return c_size(c_baseObject(c_constant(o)->type));
+        return c_getSize(c_baseObject(c_constant(o)->type));
     case M_CONSTOPERAND:
-        return c_size(c_baseObject(c_constOperand(o)->constant));
+        return c_getSize(c_baseObject(c_constOperand(o)->constant));
     case M_TYPEDEF:
-        return c_size(c_baseObject(c_typeDef(o)->alias));
+        return c_getSize(c_baseObject(c_typeDef(o)->alias));
     case M_MEMBER:
     case M_PARAMETER:
     case M_UNIONCASE:
-        return c_size(c_baseObject(c_specifier(o)->type));
+        return c_getSize(c_baseObject(c_specifier(o)->type));
     case M_CLASS:
     case M_COLLECTION:
     case M_ENUMERATION:
@@ -1835,6 +1835,37 @@ c_metaArrayTypeNew(
     if (_this == NULL) {
         _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
         c_collectionType(_this)->kind = C_ARRAY;
+        c_collectionType(_this)->subType = c_keep(subType);
+        c_collectionType(_this)->maxSize = maxSize;
+        c_metaFinalize(_this);
+        if (name) {
+            found = c_metaBind(scope, name, _this);
+            assert(found != NULL);
+            c_free(_this);
+            if (found != _this) {
+                _this = found;
+            }
+        }
+    }
+    return c_type(_this);
+}
+
+c_type
+c_metaSequenceTypeNew(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_long maxSize)
+{
+    c_metaObject _this = NULL;
+    c_metaObject found;
+
+    if (name) {
+        _this = c_metaResolve(scope, name);
+    }
+    if (_this == NULL) {
+        _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
+        c_collectionType(_this)->kind = C_SEQUENCE;
         c_collectionType(_this)->subType = c_keep(subType);
         c_collectionType(_this)->maxSize = maxSize;
         c_metaFinalize(_this);
@@ -2188,7 +2219,7 @@ c_metaFindByComp (
         case TK_IDENT:
             length = abs((c_address)tail - (c_address)head)+1;
             str = (char *)os_malloc(length);
-            strncpy(str,head,length);
+            os_strncpy(str,head,length);
             str[length-1]=0;
 
             switch (state) {

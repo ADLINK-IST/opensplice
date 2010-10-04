@@ -8,3 +8,4 @@ analyse:
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET)
+	@rm -rf exec/$(SPLICE_TARGET)

@@ -163,7 +163,7 @@ read_proc_tree (
     if ((dir = opendir (PROCFS)) != NULL) {
         while ((de = readdir (dir)) != NULL) {
             if ((pid = atoi (de->d_name)) != 0) {
-                sprintf (path, "%s/%d/psinfo", PROCFS, (int)pid);
+                os_sprintf (path, "%s/%d/psinfo", PROCFS, (int)pid);
                 
                 if ((fdd = open (path, O_RDONLY)) != -1) {
                     status = read (fdd, &proc_status, sizeof(proc_status));
@@ -210,7 +210,7 @@ read_proc_tree (
     if ((dir = opendir (PROCFS)) != NULL) {
         while ((de = readdir (dir)) != NULL) {
             if ((pid = atoi (de->d_name)) != 0) {
-                sprintf (path, "%s/%d/status", PROCFS, pid);
+                os_sprintf (path, "%s/%d/status", PROCFS, pid);
                 if ((fdd = fopen (path, "r")) != NULL) {
 		    while (fgets (stat_line, sizeof(stat_line)-1, fdd) != NULL) {
 			if (strncmp (stat_line, "PPid:", 5) == 0) {
@@ -222,7 +222,7 @@ read_proc_tree (
 			}
 		    }
                     (void) fclose (fdd);
-                    sprintf (path, "%s/%d/cmdline", PROCFS, pid);
+                    os_sprintf (path, "%s/%d/cmdline", PROCFS, pid);
                     if ((fdd = fopen (path, "r")) != NULL) {
 		        fgets (cmd_line, sizeof(cmd_line), fdd);
 		    }

@@ -99,6 +99,11 @@ v_groupStreamConnectNewGroups(
         v_groupStreamSubscribeGroup(stream, group);
     }
     v_observerUnlock(v_observer(stream));
+
+    if(data.connected == FALSE){
+        v_groupStreamHistoricalData(group, stream);
+    }
+
     return;
 }
 

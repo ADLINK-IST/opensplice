@@ -141,6 +141,7 @@ isFellowStateCompatible(
             switch(fellowState){
                 case D_STATE_INIT:
                 case D_STATE_DISCOVER_FELLOWS_GROUPS:
+                case D_STATE_COMPLETE: /* TODO: need to allow other states too? */
                     allowed = TRUE;
                     break;
                 default:
@@ -252,6 +253,45 @@ deleteNsWalk(
     d_objectFree(d_object(o), D_NAMESPACE);
 }
 
+struct checkFellowMasterHelper
+{
+    d_admin admin;
+    d_networkAddress fellow;
+    d_nameSpace oldNameSpace;
+};
+
+static void
+checkFellowMasterWalk(
+    void* o,
+    c_voidp userData)
+{
+    struct checkFellowMasterHelper* helper;
+    d_networkAddress master;
+    d_nameSpace nameSpace;
+
+    helper = (struct checkFellowMasterHelper*)userData;
+    nameSpace = d_nameSpace(o);
+    master = d_nameSpaceGetMaster (nameSpace);
+
+    if (d_nameSpaceIsMasterConfirmed (nameSpace)) {
+        if (!d_networkAddressCompare (helper->fellow, master)) {
+            d_adminReportMaster (helper->admin, nameSpace, helper->oldNameSpace);
+        }
+    }
+
+    d_networkAddressFree (master);
+}
+
+static c_bool
+collectFellowNsWalk(
+    d_nameSpace nameSpace,
+    c_voidp userData)
+{
+    c_iter nsList = (c_iter)userData;
+    c_iterAppend (nsList, d_nameSpaceCopy(nameSpace));
+    return TRUE;
+}
+
 void
 d_nameSpacesListenerAction(
     d_listener listener,
@@ -262,7 +302,7 @@ d_nameSpacesListenerAction(
     d_publisher publisher;
     d_fellow fellow;
     c_bool allowed;
-    d_nameSpace nameSpace, localNameSpace;
+    d_nameSpace nameSpace, localNameSpace, oldFellowNameSpace;
     c_ulong count;
     d_configuration config;
     d_nameSpacesRequest nsRequest;
@@ -273,19 +313,27 @@ d_nameSpacesListenerAction(
     d_adminStatisticsInfo info;
     c_bool added;
     os_time srcTime , curTime, difTime, maxDifTime;
+    struct checkFellowMasterHelper fellowMasterHelper;
+    d_name role;
+    c_iter fellowNameSpaces;
+    d_nameSpace ns;
 
     assert(d_listenerIsValid(d_listener(listener), D_NAMESPACES_LISTENER));
 
-    admin      = d_listenerGetAdmin(listener);
-    publisher  = d_adminGetPublisher(admin);
-    durability = d_adminGetDurability(admin);
-    config     = d_durabilityGetConfiguration(durability);
+    admin               = d_listenerGetAdmin(listener);
+    publisher           = d_adminGetPublisher(admin);
+    durability          = d_adminGetDurability(admin);
+    config              = d_durabilityGetConfiguration(durability);
+    fellowNameSpaces    = NULL;
 
     d_printTimedEvent         (durability, D_LEVEL_FINE,
                                D_THREAD_NAMESPACES_LISTENER,
-                               "Received nameSpace from fellow %d (his master: %d).\n",
+                               "Received nameSpace from fellow %d (his master: %d, confirmed: %d, mergeState: %s, %d).\n",
                                message->senderAddress.systemId,
-                               d_nameSpaces(message)->master.systemId);
+                               d_nameSpaces(message)->master.systemId,
+                               d_nameSpaces(message)->masterConfirmed,
+                               d_nameSpaces(message)->state.role,
+                               d_nameSpaces(message)->state.value);
 
     sender = d_networkAddressNew(message->senderAddress.systemId,
                                message->senderAddress.localId,
@@ -320,28 +368,37 @@ d_nameSpacesListenerAction(
 
     if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED){
 
+        /* Get old namespace of fellow */
+        oldFellowNameSpace = d_nameSpaceCopy (d_fellowGetNameSpace (fellow, nameSpace));
+
+        /* Update master of fellow nameSpace */
+        added = d_fellowAddNameSpace(fellow, nameSpace);
+
         /* Create namespace with local policy (if a match exists) */
         localNameSpace = d_nameSpaceNew (config, d_nameSpaceGetName(nameSpace));
 
-        /* Copy partitions to local nameSpace */
-        d_nameSpaceCopyPartitions (localNameSpace, nameSpace);
-
         /* If namespace is created, add to administration */
-        if (localNameSpace)
-        {
+        if (localNameSpace) {
+            /* Copy partitions to local nameSpace */
+            d_nameSpaceCopyPartitions (localNameSpace, nameSpace);
             d_adminAddNameSpace (admin, localNameSpace);
             d_nameSpaceFree (localNameSpace);
         }
 
-        /*Update master of fellow nameSpace...*/
-        added = d_fellowAddNameSpace(fellow, nameSpace);
+        /* If fellow is master for a namespace, report it to admin */
+        fellowMasterHelper.admin = admin;
+        fellowMasterHelper.fellow = d_fellowGetAddress(fellow);
+        fellowMasterHelper.oldNameSpace = oldFellowNameSpace;
+        checkFellowMasterWalk (nameSpace, &fellowMasterHelper);
+        d_free (fellowMasterHelper.fellow);
+
+        /* If the namespace was not added to the fellow (because it already existed there), free it */
         if(!added){
             d_nameSpaceFree(nameSpace);
         }
-        d_printTimedEvent (durability, D_LEVEL_FINE,
-                           D_THREAD_NAMESPACES_LISTENER,
-                           "Fellow %d already approved.\n",
-                           message->senderAddress.systemId);
+
+        d_nameSpaceFree (oldFellowNameSpace);
+
     } else {
         info = d_adminStatisticsInfoNew();
         d_fellowSetExpectedNameSpaces(fellow, d_nameSpaces(message)->total);
@@ -359,6 +416,7 @@ d_nameSpacesListenerAction(
                 d_adminNameSpaceWalk (admin, areFellowNameSpacesCompatible, &helper);
 
                 if(helper.compatible == TRUE){
+
                     if(config->timeAlignment == TRUE){
                         curTime.tv_sec     = d_readerListener(listener)->lastInsertTime.seconds;
                         curTime.tv_nsec    = d_readerListener(listener)->lastInsertTime.nanoseconds;
@@ -393,6 +451,12 @@ d_nameSpacesListenerAction(
                                os_timeToReal(difTime));
                         }
                     }
+
+                    /* Set role of fellow (take native role from namespace) */
+                    role = d_nameSpaceGetRole(nameSpace);
+                    d_fellowSetRole (fellow, role);
+                    os_free (role);
+
                     d_fellowSetCommunicationState(fellow, D_COMMUNICATION_STATE_APPROVED);
                     info->fellowsApprovedDif += 1;
                     subscriber = d_adminGetSubscriber(admin);
@@ -401,6 +465,25 @@ d_nameSpacesListenerAction(
                     if(sampleChainListener){
                         d_sampleChainListenerTryFulfillChains(sampleChainListener, NULL);
                     }
+
+                    /* Check if the fellow is master for one or more namespaces and report this to admin */
+                    fellowNameSpaces = c_iterNew(NULL);
+
+                    /* Collect fellow namespaces */
+                    d_fellowNameSpaceWalk (fellow, collectFellowNsWalk, fellowNameSpaces);
+
+                    fellowMasterHelper.admin = admin;
+                    fellowMasterHelper.fellow = d_fellowGetAddress(fellow);
+                    fellowMasterHelper.oldNameSpace = NULL;
+                    c_iterWalk (fellowNameSpaces, checkFellowMasterWalk, &fellowMasterHelper);
+
+                    while ((ns = c_iterTakeFirst(fellowNameSpaces))) {
+                        d_nameSpaceFree(ns);
+                    }
+                    c_iterFree(fellowNameSpaces);
+
+                    d_free (fellowMasterHelper.fellow);
+
                 } else {
                     info->fellowsIncompatibleDataModelDif += 1;
 

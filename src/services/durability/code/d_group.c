@@ -32,8 +32,8 @@ d_groupNew(
         d_objectInit(d_object(group), D_GROUP, d_groupDeinit);
         group->topic = (c_char*)(os_malloc(strlen(topic) + 1));
         group->partition = (c_char*)(os_malloc(strlen(partition) + 1));
-        strcpy(group->topic, topic);
-        strcpy(group->partition, partition);
+        os_strcpy(group->topic, topic);
+        os_strcpy(group->partition, partition);
         group->kind                = kind;
         group->completeness        = completeness;
         group->quality.seconds     = quality.seconds;

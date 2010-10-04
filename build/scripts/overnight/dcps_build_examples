@@ -11,7 +11,7 @@ BASE=`/bin/pwd`
 CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
-CURRENT_PL_SUNOS=`uname | grep SunOS` 
+CURRENT_PL_SUNOS=`uname | grep SunOS`
 IS_WINDOWS_EXE="false"
 DO_DBMSCONNECT="false"
 AWK=""
@@ -26,6 +26,8 @@ IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
 
 IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
 
+IS_DEBUG="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "-dev") }'`"
+
 cd ../../..
 
 SetState BuildingExamples
@@ -39,7 +41,7 @@ check_platform()
     return 0
   elif [ "$CURRENT_PL_CYGWIN" != "" ];then
     return 1
-  else 
+  else
    echo UNKNOWN Platform:
    echo Current platform: `uname`
    exit
@@ -79,6 +81,7 @@ else
     if [ "$DEP" = "none" ]
     then
         INSTALLERDIR=$WORKDIR/build/install
+        TEST_SRC_DIR=$WORKDIR/build/testsuite/tests
         . $WORKDIR/build/release_info/RELEASE
         LICENSE_FILE=""
     else
@@ -87,6 +90,7 @@ else
         LICENSE_FILE=$OUTER_BASE/../../../etc/license.lic
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
+        TEST_SRC_DIR=$DEPWORKDIR/testsuite/tests
         . $DEPWORKDIR/release_info/RELEASE
     fi
 
@@ -139,14 +143,14 @@ else
 
                   echo "exe file exists installing to $WORKDIR/installed ...."
                   cmd.exe /C $XPATH_INSTALLDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe --mode unattended --prefix $XPATH_WORKDIR/installed/
-                fi                  
+                fi
             fi
         fi
     fi
-        
+
     echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
     cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-    
+
     if [ -n "$LICENSE_FILE" ]
     then
         echo "Copying License into $WORKDIR/installed/HDE/$SHORTSETUP/etc ...."
@@ -157,9 +161,9 @@ else
 
     if [ "$DEP" != "none" ]
     then
-        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."  
+        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
         cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-    fi                   
+    fi
 
     if [ $? = 0 ]
     then
@@ -169,11 +173,11 @@ else
         exit 1
     fi
 
-    cd $WORKDIR/installed/HDE/$SHORTSETUP/    
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/
 
     if check_platform
     then
-        . ./release.com    
+        . ./release.com
     fi
 
     cd examples
@@ -189,14 +193,14 @@ else
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
     else
         EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
-  
+
         # DLRL and dbmsconnect examples are not included in an inner only build so only add them if doing an outer build
         if [ "$DEP" != "none" ]
         then
             EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
 
             # If it's windows don't build the dbmsconnect example and do not add for 64 bit linux either - see dds1869
-            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the 
+            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the
             # odbc.ini and odbc.inst files are not populated.
             if [ "$IS_WINDOWS_EXE" = "false" -a "$IS_64_BIT" = "0" -a "$IS_STUDIO12" = "0" ]
             then
@@ -204,8 +208,10 @@ else
             fi
         fi
     fi
- 
+
     export EXAMPLES
+
+    export TEST_SRC_DIR
 
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
     SPECIAL_BUILD_FILES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
@@ -227,30 +233,56 @@ else
         LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
 
         SPLICE_ORB=DDS_OpenFusion_1_6_1
-         
-        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
 
-        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH
+        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
+        ACE_ROOT=$TAO_ROOT
+
+        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH ACE_ROOT
 
         ODBCINI="$ODBCHOME/etc/odbc.ini"
         ODBCINST="$ODBCHOME/etc/odbcinst.ini"
         ODBC_MSSQL_SERVER="10.1.0.189"
         ODBC_MYSQL_SERVER="10.1.0.191"
         ODBCSYSINI="$ODBCHOME/etc"
-          
+
         export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI
 
         sh $BASE/build_examples.sh
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
         export PATH
-        
+
+        # Hey look it's a comment !
+        # If the version of VStudio is not VCpp 8 regenerate the test build files for VCpp 9
+        if [ "$VS_VER" != "14" ]
+        then
+            pushd $TEST_SRC_DIR
+            ACE_ROOT=$TAO_ROOT
+            export ACE_ROOT
+            MPC_ROOT=$TAO_ROOT/MPC
+            echo "Regenerating Visual Studio test buildfiles."
+            PATH="$PATH:$TAO_ROOT/bin"
+            mwc.pl -type vc9 -include ../../MPC/config -noreldefs
+            popd
+        fi
+
         XPATH=`cygpath -w "$WORKDIR/installed/HDE/$SHORTSETUP"`
 
         echo "set OSPL_HOME=$XPATH" > setenv.bat
-        
-        XPATH=`cygpath -w "$TAO_ROOT"`
+
+        XPATH=`cygpath -d "$TAO_ROOT"`
         echo "set TAO_ROOT=$XPATH" >> setenv.bat
+        echo "set ACE_ROOT=$XPATH" >> setenv.bat
+        echo "set VS_VER=$VS_VER" >> setenv.bat
+
+        BUILD_CONFIG="DEBUG"
+
+        if [ "$IS_DEBUG" = "0" ]
+        then
+            BUILD_CONFIG="RELEASE"
+        fi
+
+        echo "set BUILD_CONFIG=$BUILD_CONFIG" >> setenv.bat
 
         XPATH=`cygpath -w "$JACORB_HOME"`
         echo "set JACORB_HOME=$XPATH" >> setenv.bat
@@ -259,7 +291,7 @@ else
         echo "set LOGDIR=$XPATH" >> setenv.bat
 
         echo "set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> setenv.bat
-        
+
         echo "set JAVA_HOME=$JAVA_HOME" >> setenv.bat
 
         echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin" >> setenv.bat

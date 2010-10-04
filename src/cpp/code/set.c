@@ -39,7 +39,7 @@ extern void do_set (void)
          Push(c);
          return ;
       }
-      sprintf(temp, "%d", eval_expr(0, 1));
+      os_sprintf(temp, "%d", eval_expr(0, 1));
       undef(mac);
       cp = copyofstr(temp);
       check_os_malloc(cp);

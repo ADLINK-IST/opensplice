@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "os_stdlib.h"
 #include "os_report.h"
 #include "os_abstract.h"
 #include "c_avltree.h"
@@ -60,7 +61,7 @@ static char* CHECK_REF_FILE = NULL;
     \
     if(!CHECK_REF_FILE){ \
         CHECK_REF_FILE = os_malloc(24); \
-        sprintf(CHECK_REF_FILE, "mem.log"); \
+        os_sprintf(CHECK_REF_FILE, "mem.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\
@@ -95,7 +96,6 @@ C_STRUCT(c_header) {
 };
 
 C_CLASS(c_arrayHeader);
-
 /* The inheritance macro C_EXTEND is put at the end of the struct.
  * This is required since we must extend on the lower part of the memory.
  * Note that this requires a different approach for cast operations.
@@ -161,7 +161,7 @@ c_stringNew(
 
     s = c_stringMalloc(base, strlen(str) + 1);
 
-    strcpy(s,str);
+    os_strcpy(s,str);
     return s;
 }
 
@@ -1165,7 +1165,7 @@ c_base
 c_create (
     const c_char *name,
     void *address,
-    c_long  size)
+    c_size size)
 {
     c_mm  mm;
     c_base base;
@@ -1377,28 +1377,25 @@ c_new (
     c_object o;
     c_long size;
 
+    assert(type);
+
     size = c_typeSize(type);
 
-    if (size <= 0) {
+    if ((c_baseObjectKind(type) == M_COLLECTION) &&
+            ((c_collectionTypeKind(type) == C_ARRAY)
+                || (c_collectionTypeKind(type) == C_SEQUENCE))) {
+        OS_REPORT(OS_ERROR,
+                    "Database c_new",0,
+                    "c_new cannot create C_ARRAY nor C_SEQUENCE, use c_newArray or c_newSequence respectively");
+        assert(0); /* crash in dev, so that the error is easily found */
+        o = NULL;
+    } else if (size <= 0) {
         OS_REPORT_1(OS_ERROR,
                     "Database c_new",0,
                     "Illegal size %d specified",size);
         o = NULL;
     } else {
-        if ((c_baseObjectKind(type) == M_COLLECTION) &&
-            ((c_collectionTypeKind(type) == C_ARRAY) ||
-             (c_collectionTypeKind(type) == C_SEQUENCE))) {
-            c_arrayHeader hdr;
-
-            hdr = (c_arrayHeader)c_mmMalloc(type->base->mm,
-                                            ARRAYMEMSIZE(size));
-            if (hdr) {
-                hdr->size = c_collectionTypeMaxSize(type);
-                header = (c_header)&hdr->_parent;
-            }
-        } else {
-            header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
-        }
+        header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
         if (header) {
             header->refCount = 1;
             header->type = c_keep(type);
@@ -1438,29 +1435,30 @@ c_new (
     return o;
 }
 
-c_long
-c_arraySize(
-    c_array _this)
-{
-    if (_this) {
-        return (c_long)(c_arrayHeader(_this)->size);
-    } else {
-        return 0;
-    }
-}
-
-c_array
-c_newArray (
+/*
+ * Use the macro definitions c_newArray and c_newSequence instead, respectively
+ * for creating an array or a sequence for legibility.
+ */
+c_object
+c_newBaseArrayObject (
     c_collectionType arrayType,
     c_long size)
 {
     c_long allocSize;
-    c_array o = NULL;
+    c_object o = NULL;
 
-    if ((c_collectionTypeKind(arrayType) == C_ARRAY) ||
-        (c_collectionTypeKind(arrayType) == C_SEQUENCE)) {
-        if ((c_collectionTypeMaxSize(arrayType) == 0) ||
-            (c_collectionTypeMaxSize(arrayType) >= size)) {
+    assert(arrayType);
+    assert(
+        (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+        ||
+        (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0)
+        );
+
+    if ((c_collectionTypeKind(arrayType) == C_ARRAY)
+         || (c_collectionTypeKind(arrayType) == C_SEQUENCE)) {
+        if (    (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+                ||
+                (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0) ) {
             c_arrayHeader hdr;
             c_header header;
             c_type subType;
@@ -1481,6 +1479,7 @@ c_newArray (
             }
             hdr = (c_arrayHeader)c_mmMalloc(c_type(arrayType)->base->mm,
                                             ARRAYMEMSIZE(allocSize));
+
             if (hdr) {
                 hdr->size = size;
                 header = (c_header)&hdr->_parent;
@@ -1491,6 +1490,14 @@ c_newArray (
                 pa_increment(&header->type->objectCount);
 
                 o = c_oid(header);
+
+                /*
+                 * When an array is freed via c_free, it also checks whether it contains
+                 * references and if they need to be freed. If the user did not fill the whole array
+                 * a c_free on garbage data could be performed, which causes undefined behaviour.
+                 * Therefore the whole array is set on 0.
+                 */
+                memset(o, 0, allocSize);
 
 #ifndef NDEBUG
                 header->confidence = CONFIDENCE;
@@ -1504,16 +1511,14 @@ c_newArray (
 #endif
             }
         } else {
-            OS_REPORT_2(OS_ERROR,
-                        "Database c_newArray",0,
-                        "Specified size %d does not comply to type "
-                        "specific max size %d",
-                        size, c_collectionTypeMaxSize(arrayType));
+            OS_REPORT_1(OS_ERROR,
+                        "Database c_newBaseArrayObject",0,
+                        "Illegal size %d specified", size);
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "Database c_newArray",0,
-                  "Specified collection type is not an array nor a sequence");
+                  "Database c_newBaseArrayObject",0,
+                  "Specified type is not an array nor a sequence");
     }
     return o;
 }
@@ -1565,6 +1570,17 @@ c_object2mem (
 
     return header;
 }
+
+#ifndef NDEBUG
+void
+c__assertValidDatabaseObject(
+    c_voidp o)
+{
+    assert(o);
+    assert(c_header(o)->confidence == CONFIDENCE);
+    assert(c_header(o)->refCount > 0);
+}
+#endif
 
 static c_bool _c_freeReferences(c_metaObject metaObject, c_object o);
 #define c_freeReferences(m,o) ((m && o)? _c_freeReferences(m,o):TRUE)
@@ -1745,7 +1761,14 @@ _c_freeReferences (
         case C_SEQUENCE:
             ACTUALTYPE(type,c_collectionType(metaObject)->subType);
             ar = (c_array)o;
-            length = c_collectionType(metaObject)->maxSize;
+
+            if(c_collectionType(metaObject)->kind == C_ARRAY
+                && c_collectionType(metaObject)->maxSize > 0){
+                length = c_collectionType(metaObject)->maxSize;
+            } else {
+                length = c_arraySize(ar);
+            }
+
             if (c_typeIsRef(type)) {
                 for (i=0;i<length;i++) {
                     c_free(ar[i]);
@@ -1942,7 +1965,7 @@ c_free (
 #ifndef NDEBUG
                 {
                     c_long size;
-                    size = c_typeSize(type);
+                    size = c_arraySize(object);
                     memset(hdr,0,ARRAYMEMSIZE(size));
     }
 #endif
@@ -2161,6 +2184,43 @@ c_baseOnLowOnMemory(
         if (mm) {
             c_mmOnLowOnMemory(mm,action,arg);
         }
+    }
+}
+
+c_long
+c_arraySize(
+    c_array _this)
+{
+    if (_this) {
+        assert(c_header(_this)->confidence == CONFIDENCE);
+        assert(
+            /* For backward compatibility purposes this function can still be used
+             * to obtain the length of sequences as well, but new code should use
+             * the c_sequenceSize operation instead.
+             */
+            (c_baseObjectKind(c_header(_this)->type) == M_COLLECTION)
+            && (
+                    (c_collectionTypeKind(c_header(_this)->type) == C_ARRAY)
+                    || (c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE)
+               )
+            );
+        return (c_long)(c_arrayHeader(_this)->size);
+    } else {
+        return 0;
+    }
+}
+
+c_long
+c_sequenceSize(
+    c_sequence _this)
+{
+    if (_this) {
+        assert(c_header(_this)->confidence == CONFIDENCE);
+        assert(c_baseObjectKind(c_header(_this)->type) == M_COLLECTION &&
+                c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE);
+        return (c_long)(c_arrayHeader(_this)->size);
+    } else {
+        return 0;
     }
 }
 

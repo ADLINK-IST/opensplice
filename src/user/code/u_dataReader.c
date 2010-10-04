@@ -725,3 +725,35 @@ u_dataReaderLookupInstance(
     }
     return result;
 }
+
+u_result
+u_dataReaderCopyKeysFromInstanceHandle(
+    u_dataReader _this,
+    u_instanceHandle handle,
+    u_readerAction action,
+    void *copyArg)
+{
+    v_dataReaderInstance instance;
+    u_result result;
+    v_dataReader reader;
+    v_message message;
+    void *from;
+
+    result = u_instanceHandleClaim(handle, &instance);
+    if ((result == U_RESULT_OK) && (instance != NULL)) {
+        result = u_dataReaderClaim(_this, &reader);
+        if (result == U_RESULT_OK) {
+            message = v_dataReaderInstanceCreateMessage(instance);
+            if (message) {
+                from = C_DISPLACE(message, v_topicDataOffset(v_dataReaderGetTopic(reader)));
+                action(from, copyArg);
+                c_free(message);
+            } else {
+                result = U_RESULT_PRECONDITION_NOT_MET;
+            }
+            u_dataReaderRelease(_this);
+        }
+        u_instanceHandleRelease(handle);
+    }
+    return result;
+}

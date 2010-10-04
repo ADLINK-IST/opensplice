@@ -141,7 +141,7 @@ os_queryInterfaceAttributes(
     struct ifreq ifAttr;
     os_result result = os_resultSuccess;
 
-    strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
+    os_strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
     ifElement->address = ifr->ifr_addr;
     ifAttr = *ifr;
 #ifdef INTEGRITY

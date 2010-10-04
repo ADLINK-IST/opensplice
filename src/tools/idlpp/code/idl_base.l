@@ -6,6 +6,7 @@
  *
  **********************************************************************/
 #include <os_heap.h>
+#include <os_stdlib.h>
 #include <ctype.h>
 #include <c_stringSupport.h>
 
@@ -310,7 +311,7 @@ extractIdent(char *str)
       str++;
    }
    yylval.String = (char*)os_malloc(length+1);
-   strncpy(yylval.String, str, length);
+   os_strncpy(yylval.String, str, length);
    yylval.String[length]=0;
    return length;
 }
@@ -320,7 +321,7 @@ extractString(char *str)
 {
    int length = strlen(str) - 1;
    yylval.String = (char*)os_malloc(length);
-   strncpy(yylval.String, ++str, length-1);
+   os_strncpy(yylval.String, ++str, length-1);
    yylval.String[length-1]=0;
    return length;
 }
@@ -354,7 +355,7 @@ preprocessor_directive(char *str)
                         fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
                             newFieldName = (char *)os_malloc(strlen(fieldName));
-                            strcpy(newFieldName, &(fieldName[1]));
+                            os_strcpy(newFieldName, &(fieldName[1]));
                             os_free(fieldName);
                             fieldName = newFieldName;
                         }
@@ -381,7 +382,7 @@ preprocessor_directive(char *str)
                         fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
                             newFieldName = (char *)os_malloc(strlen(fieldName));
-                            strcpy(newFieldName, &(fieldName[1]));
+                            os_strcpy(newFieldName, &(fieldName[1]));
                             os_free(fieldName);
                             fieldName = newFieldName;
                         }
@@ -420,7 +421,7 @@ preprocessor_directive(char *str)
     }
     while ((*ptr != 0) && ((*ptr == ' ') || (*ptr == '\t'))) ptr++;
     if (*ptr != '"') return;
-    strncpy(file_name,fileName,length);
+    os_strncpy(file_name,fileName,length);
     file_name[length] = 0;
     idl_fileMapAdd(idl_fileMapDefGet(), file_name);
     parser_line = lineNumber;

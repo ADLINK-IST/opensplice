@@ -17,11 +17,13 @@
 extern "C" {
 #endif
 
-#define D_GROUP_LOCAL_NEW      (0x0001U << 0)
-#define D_FELLOW_NEW           (0x0001U << 1)
-#define D_FELLOW_REMOVED       (0x0001U << 2)
-#define D_FELLOW_LOST          (0x0001U << 3)
-#define D_NAMESPACE_NEW        (0x0001U << 4)
+#define D_GROUP_LOCAL_NEW               (0x0001U << 0)
+#define D_FELLOW_NEW                    (0x0001U << 1)
+#define D_FELLOW_REMOVED                (0x0001U << 2)
+#define D_FELLOW_LOST                   (0x0001U << 3)
+#define D_NAMESPACE_NEW                 (0x0001U << 4)
+#define D_NAMESPACE_STATE_CONFLICT      (0x0001U << 5)
+#define D_NAMESPACE_MASTER_CONFLICT     (0x0001U << 6)
 
 #define d_eventListener(l) ((d_eventListener)(l))
 
@@ -29,6 +31,7 @@ typedef c_bool      (*d_eventListenerFunc)      (c_ulong event,
                                                  d_fellow fellow, 
                                                  d_nameSpace nameSpace,
                                                  d_group group, 
+                                                 c_voidp userData,
                                                  c_voidp args);
 
 d_eventListener     d_eventListenerNew          (c_ulong interest,

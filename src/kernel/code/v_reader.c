@@ -211,7 +211,6 @@ v_readerSubscribeGroup(
     break;
     case K_GROUPQUEUE:
         result = v_groupStreamSubscribeGroup(v_groupStream(_this), group);
-        readerGetHistoricalData(_this);
     break;
     case K_NETWORKREADER:
         result = v_networkReaderSubscribeGroup(v_networkReader(_this), group);

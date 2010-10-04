@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -24,10 +24,12 @@ extern "C" {
 C_STRUCT(d_sampleChainListener){
     C_EXTENDS(d_readerListener);
     d_table         chains;
+    c_iter          chainsWaiting;
     c_ulong         id;
     d_eventListener fellowListener;
     d_actionQueue	resendQueue;
     c_iter          unfulfilledChains;
+    d_table         mergeActions;
 };
 
 void                d_sampleChainListenerInit               (d_sampleChainListener listener,
@@ -57,6 +59,7 @@ c_bool              d_sampleChainListenerNotifyFellowRemoved(c_ulong event,
                                                              d_fellow fellow,
                                                              d_nameSpace ns,
                                                              d_group group,
+                                                             c_voidp eventUserData,
                                                              c_voidp userData);
 
 c_bool              d_sampleChainListenerRemoveGroupWithFellows (d_fellow fellow,

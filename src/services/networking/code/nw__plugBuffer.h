@@ -36,7 +36,7 @@ NW_STRUCT(nw_plugBuffer) {
     /* crc over the remainder of the message */
     nw_seqNr crc;
 };
-#define NW_CURRENT_PROTOCOL_VERSION '2'
+#define NW_CURRENT_PROTOCOL_VERSION '3'
 
 
 #define nw_plugBufferGetSendingNodeId(buffer) \

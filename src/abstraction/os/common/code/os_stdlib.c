@@ -95,10 +95,72 @@ os_strdup(
     len = strlen (s1) + 1;
     dup = os_malloc (len);
     if (dup) {
-        strcpy (dup, s1);
+        os_strcpy (dup, s1);
     }
 
     return dup;
+}
+
+char *
+os_strcat(
+    char *s1,
+    const char *s2)
+{
+   return strcat(s1, s2);
+}
+
+char *
+os_strncat(
+    char *s1,
+    const char *s2,
+    size_t n)
+{
+   return strncat(s1, s2, n);
+}
+
+char *
+os_strcpy(
+    char *s1,
+    const char *s2)
+{
+   return strcpy(s1, s2);
+}
+
+char *
+os_strncpy(
+    char *s1,
+    const char *s2,
+    size_t num)
+{
+   return strncpy(s1, s2, num);
+}
+
+int
+os_sprintf(
+    char *s,
+    const char *format,
+    ...)
+{
+   int result;
+   va_list args;
+   
+   va_start(args, format);
+   
+   result = vsprintf(s, format, args);
+
+   va_end(args);
+   
+   return result;
+}
+
+int
+os_vsnprintf(
+   char *str,
+   size_t size,
+   const char *format,
+   va_list args)
+{
+   return vsnprintf(str, size, format, args);
 }
 
 static long long
@@ -402,7 +464,7 @@ os_readdir(
     if (dp && direntp) {
         d_entry = readdir(dp);
         if (d_entry) {
-            strcpy(direntp->d_name, d_entry->d_name);
+            os_strcpy(direntp->d_name, d_entry->d_name);
             result = os_resultSuccess;
         }
     }

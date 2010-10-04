@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_dataWriter.h"
+#include "saj_DataWriter.h"
 #include "saj_dataWriterListener.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"

@@ -9,8 +9,8 @@ CXX		 = CC
 #LD_SO            = $(CC) -G
 LD_SO            = $(CXX) -G
 # Binary used for linking executables
-#LD_EXE           = $(CC)
-LD_EXE           = $(CXX)
+LD_EXE           = $(CC)
+LD_CXX           = $(CXX)
 
 # GNU yacc
 YACC		 = bison
@@ -23,6 +23,9 @@ MAKE		 = make
 
 # Solaris native touch
 TOUCH		 = touch
+
+# Tool used for creating soft/hard links.
+LN               = ln
 
 # Archiving
 AR               = $(CXX)

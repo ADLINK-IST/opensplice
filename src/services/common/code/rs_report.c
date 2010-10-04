@@ -37,7 +37,7 @@ c_stringDupHeap (
     assert (str);
 
     new_str = os_malloc (strlen(str)+1);
-    strcpy (new_str, str);
+    os_strcpy (new_str, str);
     return new_str;
 }
 
@@ -99,7 +99,7 @@ void rs_reportReport (
 	snprintf (node, sizeof(node), "<Unidentified>");
     }
 
-    vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
+    os_vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
     extended_description [sizeof(extended_description)-1] = '\0';
 
     reportMsg = rs_reportMsgNew (

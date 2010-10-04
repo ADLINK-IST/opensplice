@@ -144,7 +144,7 @@ lockPages(
         if (root != NULL) {
             path = (c_char *)os_malloc(strlen(SERVICE_PATH) + strlen(name));
             /* NULL terminator is covered by '%s' in SERVICE_PATH constant */
-            sprintf(path, SERVICE_PATH, name);
+            os_sprintf(path, SERVICE_PATH, name);
             iter = v_cfElementXPath(root, path);
             iterLength = c_iterLength(iter);
             os_free(path);

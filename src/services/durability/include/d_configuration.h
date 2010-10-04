@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -53,6 +53,8 @@ C_STRUCT(d_configuration){
     os_time       persistentStoreSessionTime;
     c_ulong       persistentQueueSize;
     os_threadAttr persistentScheduling;
+    c_address	  persistentMMFStoreAddress;
+    os_size_t	  persistentMMFStoreSize;
     c_iter        nameSpaces;
     c_iter        policies;
     os_time       startTime;
@@ -69,6 +71,7 @@ C_STRUCT(d_configuration){
     os_time       initialRequestCombinePeriod;
     os_time       operationalRequestCombinePeriod;
     c_bool        timeAlignment;
+    d_name        role;
 };
 
 #define d_configuration(d) ((d_configuration)(d))

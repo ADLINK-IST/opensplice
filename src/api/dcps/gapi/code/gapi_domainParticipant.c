@@ -304,7 +304,7 @@ initListenerThreadInfo (
     }
 
     if ( osResult == os_resultSuccess ) {
-        info->threadId     = 0;
+        info->threadId     = OS_THREAD_ID_NONE;
         info->threadState  = STOPPED;
         info->waitset      = NULL;
         info->startAction = threadStartAction;
@@ -478,14 +478,16 @@ _DomainParticipantNew (
             } else {
                 /* Only PID was returned, decorate with some extra info */
                 snprintf(participantId, sizeof(participantId),
-                        "DCPS Appl %s %d_"PA_ADDRFMT, procIdentity,
-                        (int) os_threadIdSelf(), (PA_ADDRCAST) newParticipant);
+                         "DCPS Appl %s "PA_ADDRFMT"_"PA_ADDRFMT, procIdentity,
+                         os_threadIdToInteger(os_threadIdSelf()),
+                         (PA_ADDRCAST) newParticipant);
             }
         } else {
             /* Memory claim failed or empty string, fill in something useful */
             snprintf(participantId, sizeof(participantId),
-                    "DCPS Appl <%d> %d_"PA_ADDRFMT, os_procIdToInteger(os_procIdSelf()),
-                    (int) os_threadIdSelf(), (PA_ADDRCAST) newParticipant);
+                     "DCPS Appl <%d> "PA_ADDRFMT"_"PA_ADDRFMT, os_procIdToInteger(os_procIdSelf()),
+                     os_threadIdToInteger(os_threadIdSelf()),
+                     (PA_ADDRCAST) newParticipant);
         }
         if(procIdentity){
             os_free(procIdentity);

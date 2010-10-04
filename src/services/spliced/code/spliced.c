@@ -139,7 +139,8 @@ waitForServices(
     c_iter names;
     c_char *name;
 
-    os_time pollDelay = {1, 0};
+    /* dds2164: decrease the poll delay to 100ms to allow for faster detection */
+    os_time pollDelay = {0, 100000000};
     os_time curTime;
     os_time stopTime;
 
@@ -236,8 +237,8 @@ serviceCommandIsValid(
         /* Try the same thing with the exe suffix attached */
         if (strstr(*command, OS_EXESUFFIX) == NULL) {
             suffixedCommand = os_malloc(strlen(*command) + sizeof(OS_EXESUFFIX));
-            strcpy(suffixedCommand, *command);
-            strcat(suffixedCommand, OS_EXESUFFIX);
+            os_strcpy(suffixedCommand, *command);
+            os_strcat(suffixedCommand, OS_EXESUFFIX);
             fullCommand = os_locate(suffixedCommand, OS_ROK|OS_XOK);
             if (fullCommand) {
                 os_free(*command);
@@ -673,7 +674,9 @@ static void
 splicedFree(void)
 {
     spliced this = spl_daemon;
+    os_time sleep = {1,0}; /* 1s */
     v_duration lease = {300, 0}; /* 5 minutes */
+
     if (this != NULL) {
         if (this->service != NULL) {
             u_participantRenewLease(u_participant(this->service), lease);
@@ -692,10 +695,13 @@ splicedFree(void)
         /* signal internal threads to stop.
          */
         u_splicedPrepareTermination(this->service);
+        /* Only perform the delay if the service terminate period has not been
+         * configured as '0'.
+         */
+        if(this->config->serviceTerminatePeriod.tv_sec != 0)
         {
             /* Give internal threads some time to stop.
              */
-            os_time sleep = {1,0}; /* 1s */
             os_nanoSleep(sleep);
         }
         /* At this point no rock solid guarantee all threads are stopped.
@@ -817,11 +823,6 @@ main(
     os_result osr;
     int retCode = SPLICED_EXIT_CODE_OK;
 
-    osr = os_serviceStart(os_serviceName()); /* should become this->uri in the future */
-    if (osr != os_resultSuccess) {
-        printf("Failed to initialize.\n");
-        return SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR;
-    }
     u_userInitialise();
 
     this = splicedNew();
@@ -893,7 +894,6 @@ main(
 
         delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
         delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
-
         while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
             u_participantRenewLease(u_participant(this->service), this->config->leasePeriod);
             os_nanoSleep(delay);

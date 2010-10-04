@@ -64,6 +64,26 @@
 /**************************************************************
  * Private functions
  **************************************************************/
+static const char* v_writeResultStr[] = {
+    "UNDEFINED",
+    "SUCCESS",
+    "SUCCESS_NOT_STORED",
+    "REGISTERED",
+    "UNREGISTERED",
+    "PRE_NOT_MET",
+    "ERROR",
+    "TIMEOUT",
+    "REJECTED",
+    "COUNT"};
+
+const char*
+v_writeResultString(
+    v_writeResult result)
+{
+    assert (result <= V_WRITE_COUNT);
+
+    return v_writeResultStr[result];
+}
 
 static void
 deadlineUpdate(
@@ -274,7 +294,6 @@ groupWrite(
         item = v_writerCacheItemNew(proxy->targetCache,instance);
         v_writerCacheInsert(proxy->targetCache,item);
         v_writerCacheInsert(a->instance->targetCache,item);
-        v_groupInstanceRegisterSource(instance,item);
         c_free(instance);
         c_free(item);
     }
@@ -1241,9 +1260,9 @@ createInstanceKeyExpr (
         keyExpr = (char *)os_malloc(totalSize);
         keyExpr[0] = 0;
         for (i=0;i<nrOfKeys;i++) {
-            sprintf(fieldName,"key.field%d",i);
-            strcat(keyExpr,fieldName);
-            if (i<(nrOfKeys-1)) { strcat(keyExpr,","); }
+            os_sprintf(fieldName,"key.field%d",i);
+            os_strcat(keyExpr,fieldName);
+            if (i<(nrOfKeys-1)) { os_strcat(keyExpr,","); }
         }
     } else {
         keyExpr = NULL;

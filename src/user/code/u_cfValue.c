@@ -11,6 +11,7 @@
  */
 #include "os.h"
 #include "u__cfValue.h"
+#include "os_stdlib.h"
 
 #define CF_SPACES  " \t\n"
 
@@ -127,7 +128,7 @@ u_cfValueScan(
 
              length = (c_ulong)strlen(value.is.String);
              str = os_malloc(length + 1U);
-             strncpy(str, value.is.String, length);
+             os_strncpy(str, value.is.String, length);
              str[length] = 0;
              *valuePtr = c_stringValue(str);
              result = TRUE;

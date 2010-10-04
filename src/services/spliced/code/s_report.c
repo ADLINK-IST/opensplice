@@ -24,7 +24,7 @@ s_doPrint(
     char description[512];
 
     if (config->tracingOutputFile) {
-        vsnprintf(description, sizeof(description)-1, format, args);
+        os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
         fprintf(config->tracingOutputFile, description);
         fflush(config->tracingOutputFile);

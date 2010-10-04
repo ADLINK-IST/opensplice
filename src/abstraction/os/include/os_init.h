@@ -70,6 +70,9 @@ os_serviceStop(void);
 OS_API const char *
 os_serviceName(void);
 
+OS_API void
+os_createPipeNameFromDomainName(char *name);
+
 #undef OS_API
 
 #if defined (__cplusplus)

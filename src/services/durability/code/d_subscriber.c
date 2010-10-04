@@ -113,9 +113,9 @@ getPersistentPartitionExpression(
                     expr = d_nameSpaceGetPartitions(ns);
 
                     if(j != 0){
-                        strcat(result, ",");
+                        os_strcat(result, ",");
                     }
-                    strcat(result, expr);
+                    os_strcat(result, expr);
                     os_free(expr);
                     j++;
                 }
@@ -216,7 +216,7 @@ d_subscriberNew(
                                                   TRUE);
 
         subscriber->waitset         = d_waitsetNew(subscriber, FALSE, FALSE);
-        subscriber->persistentStore = d_storeOpen(durability,D_STORE_TYPE_XML);
+        subscriber->persistentStore = d_storeOpen(durability, config->persistentStoreMode);
 
         if(subscriber->persistentStore) {
             if(psubscriberQos->partition){

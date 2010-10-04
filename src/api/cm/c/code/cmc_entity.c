@@ -28,7 +28,7 @@ cmc_entityNew(
     
     if(entity->name != NULL){
         ce->name = (c_char*)(os_malloc(strlen(entity->name) + 1));
-        strncpy(ce->name, entity->name, strlen(entity->name) + 1);
+       os_strncpy(ce->name, entity->name, strlen(entity->name) + 1);
     }
     else {
         ce->name = NULL;

@@ -21,6 +21,7 @@
 #include "sd_errorReport.h"
 
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 /* for tracing, change to #define TRACE(p) p */
 #define TRACE(p)
@@ -633,7 +634,7 @@ getCharsUntil (
     if ( p ) {
         l = (c_ulong)(p - str) + 1;
         res = (c_char *) os_malloc(l+1);
-        strncpy(res, str, l);
+        os_strncpy(res, str, l);
         res[l] = '\0';
         *len = l;
     }

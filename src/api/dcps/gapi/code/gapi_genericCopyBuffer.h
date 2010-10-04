@@ -15,6 +15,15 @@
 #include "gapi.h"
 #include "gapi_genericCopyCache.h"
 
+typedef struct {
+    gapi_unsigned_long  _maximum;
+    gapi_unsigned_long  _length;
+    void               *_buffer;
+    gapi_boolean        _release;
+} gapiSequenceType;
+
+#define GAPI_SEQUENCE_CORRECTION (2 * sizeof(gapi_unsigned_long) + sizeof(void*))
+
 void
 gapi_genericCopyBufferFreeType (
     gapiCopyHeader *ch,
@@ -26,14 +35,14 @@ gapi_genericCopyBufferFree (
 
 void *
 gapi_genericCopyBufferAlloc (
-    gapiCopyHeader     *copyProgram,
+    gapi_copyCache      copyCache,
     gapiCopyHeader     *copyRoutine,
     gapi_unsigned_long  size,
     gapi_unsigned_long  count);
 
 void *
 gapi_genericCopyBufferAllocSeqBuffer (
-    gapiCopyHeader     *copyProgram,
+    gapi_copyCache      copyCache,
     gapiCopyHeader     *copyRoutine,
     gapi_unsigned_long  size,
     gapi_unsigned_long  count);

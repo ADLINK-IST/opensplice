@@ -11,6 +11,7 @@
  */
 #define MM_CLUSTER
 
+#include "os_stdlib.h"
 #include "os_signature.h"
 #include "os_time.h"
 #include "os_heap.h"
@@ -67,9 +68,9 @@ typedef struct c_mmBinding *c_mmBinding;
 typedef struct c_mmCacheHeader *c_mmCacheHeader;
 
 struct mmStatus_s {
-    c_long used;
-    c_long maxUsed;
-    c_long garbage;
+    c_size used;
+    c_size maxUsed;
+    c_size garbage;
     c_long count;
 };
 
@@ -84,8 +85,8 @@ struct c_mm_s {
     c_address    mapEnd;
     c_address    listEnd;
     c_address    end;
-    c_ulong      size;
-    c_ulong      lowMemoryWaterMark;
+    c_size       size;
+    c_address    lowMemoryWaterMark;
     c_ulong      fails;
     c_mmCacheHeader cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
@@ -144,7 +145,7 @@ static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
 static void
 c_mmAdminInit (
     c_mm mm,
-    c_long size);
+    c_size size);
 
 static c_mmBinding
 c_mmAdminLookup (
@@ -173,7 +174,7 @@ c_mmAdminLookup (
 c_mm
 c_mmCreate (
     void *address,
-    c_long size)
+    c_size size)
 {
     c_mm mm;
     os_time delay = {0, 100000000 /* 0.1 sec */};
@@ -663,7 +664,6 @@ c_mmFree(
         mm->chunkMapStatus.garbage += chunkSize;
         mm->chunkMapStatus.used -= chunkSize;
         mm->chunkMapStatus.count--;
-        assert(mm->chunkMapStatus.used >= 0);
         c_mutexUnlock(&mm->mapLock);
     } else {
         prvChunk = NULL;
@@ -748,7 +748,7 @@ c_mmDestroy (
 void
 c_mmAdminInit (
     c_mm mm,
-    c_long size )
+    c_size size )
 {
     c_long mapIndex, listIndex;
 
@@ -826,7 +826,7 @@ c_mmBind (
         if ( curBind == NULL ) {
             curBind = (c_mmBinding)c_mmMalloc(mm, ALIGN_SIZE(BindingSize ));
             curBind->name = (char *)c_mmMalloc(mm, ALIGN_SIZE(strlen(name)+1));
-            strcpy( curBind->name, name );
+            os_strcpy( curBind->name, name );
             curBind->start = memory;
             curBind->refCount = 0;
 
@@ -836,7 +836,7 @@ c_mmBind (
     } else {
         curBind = (c_mmBinding)c_mmMalloc(mm, ALIGN_SIZE(BindingSize));
         curBind->name = (char *)c_mmMalloc(mm, ALIGN_SIZE(strlen(name)+1));
-        strcpy( curBind->name, name );
+        os_strcpy( curBind->name, name );
         curBind->start = memory;
         curBind->refCount = 0;
 
@@ -879,10 +879,13 @@ c_mmUnbind (
                 c_mmFree(mm, curBind->name );
                 c_mmFree(mm, (void *)curBind );
             }
-            c_mutexUnlock( &mm->bindLock );
+            /* Break out of loop */
+            curBind = NULL;
         }
-        prevBind = curBind;
-        curBind  = curBind->next;
+        if(curBind){ /* Needs to be checked, because it can be freed already .*/
+            prevBind = curBind;
+            curBind  = curBind->next;
+        }
     }
     c_mutexUnlock( &mm->bindLock );
 }

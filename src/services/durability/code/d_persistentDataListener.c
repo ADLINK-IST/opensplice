@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d_persistentDataListener.h"
@@ -166,7 +166,7 @@ d_persistentDataListenerTake(
     c_bool allDone = FALSE;
     c_bool terminate;
     int i, max;
-    os_time sleepTime, sessionEndTime;
+    os_time sleepTime, sessionEndTime, waitTime;
     d_configuration config;
 
     assert(C_TYPECHECK(entity, v_groupQueue));
@@ -190,6 +190,8 @@ d_persistentDataListenerTake(
         max = 20;
         sleepTime = os_timeMulReal(config->persistentStoreSleepTime, 0.05e0);
     }
+    waitTime.tv_sec = 0;
+    waitTime.tv_nsec = 100000000; /*100ms*/
 
     while(allDone == FALSE){
         msg   = v_groupQueueTake(queue);
@@ -202,53 +204,82 @@ d_persistentDataListenerTake(
 
             switch(msg->kind){
                 case V_GROUP_ACTION_WRITE:
-                    result = d_storeMessageStore(data->persistentStore, msg);
+                    do {
+                        result = d_storeMessageStore(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        storeCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            storeCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_DISPOSE:
-                    result = d_storeInstanceDispose(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceDispose(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        disposeCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            disposeCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+
                     break;
                 case V_GROUP_ACTION_LIFESPAN_EXPIRE:
-                    result = d_storeMessageExpunge(data->persistentStore, msg);
+                    do {
+                        result = d_storeMessageExpunge(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        lifespanCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            lifespanCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE:
-                    result = d_storeInstanceExpunge(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceExpunge(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        cleanupCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            cleanupCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_DELETE_DATA:
-                    result = d_storeDeleteHistoricalData(data->persistentStore, msg);
+                    do {
+                        result = d_storeDeleteHistoricalData(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        deleteCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            deleteCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_REGISTER:
-                	result = d_storeInstanceRegister(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceRegister(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        registerCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            registerCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_UNREGISTER:
-                	result = d_storeInstanceUnregister(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceUnregister(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        unregisterCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            unregisterCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 default:
                     OS_REPORT_1(OS_ERROR, "d_persistentDataListenerTake", 0,

@@ -161,7 +161,7 @@ d_actionQueueDeinit(
     if(object){
         queue = d_actionQueue(object);
         
-        if(queue->actionThread) {
+        if(os_threadIdToInteger(queue->actionThread)) {
             queue->terminate = TRUE;
             os_threadWaitExit(queue->actionThread, NULL);
         }

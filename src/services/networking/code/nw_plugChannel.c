@@ -408,7 +408,7 @@ nw_plugChannelGetPartition(
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
     nw_bool *compression,
-    os_uint32 *hash)
+    os_int32 *hash)
 {
     nw_plugPartitionsGetPartition(channel->partitions, partitionId, found,
         partitionAddress, securityPolicy, connected, compression, hash);

@@ -90,8 +90,23 @@ namespace DDS.OpenSplice.Database
 		//c_newArray (
 		//    c_collectionType arrayType,
 		//    c_long size);
-        [DllImport("ddsdatabase", EntryPoint = "c_newArray")]
+        [DllImport("ddsdatabase", EntryPoint = "c_newBaseArrayObject")]
         public static extern IntPtr newArray(IntPtr collectionType, int size);
+
+        //OS_API c_sequence
+        //c_sequenceNew (
+        //    c_type subType,
+        //    c_long maxsize,
+        //    c_long size);
+        [DllImport("ddsdatabase", EntryPoint = "c_sequenceNew")]
+        public static extern IntPtr sequenceNew(IntPtr subType, int maxsize, int size);
+
+        //OS_API c_sequence
+        //c_newSequence (
+        //    c_collectionType seqType,
+        //    c_long size);
+        [DllImport("ddsdatabase", EntryPoint = "c_newBaseArrayObject")]
+        public static extern IntPtr newSequence(IntPtr collectionType, int size);
 
         // from c_metabase.h
 
@@ -116,6 +131,15 @@ namespace DDS.OpenSplice.Database
 		//    c_long maxSize);
 		[DllImport("ddsdatabase", EntryPoint = "c_metaArrayTypeNew")]
 		public static extern IntPtr metaArrayTypeNew(IntPtr scope, string name, IntPtr subType, int maxSize);
+
+        //OS_API c_type
+        //c_metaSequenceTypeNew(
+        //    c_metaObject scope,
+        //    const c_char *name,
+        //    c_type subType,
+        //    c_long maxSize);
+        [DllImport("ddsdatabase", EntryPoint = "c_metaSequenceTypeNew")]
+        public static extern IntPtr metaSequenceTypeNew(IntPtr scope, string name, IntPtr subType, int maxSize);
 
         //OS_API c_type
         //c_getType (

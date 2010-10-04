@@ -15,7 +15,7 @@
 #include <os_heap.h>
 #include <c_metabase.h>
 #include <os_stdlib.h>
-#include "saj_fooTypeSupport.h"
+#include "saj_FooTypeSupport.h"
 #include "saj__fooDataReader.h"
 #include "saj_copyCache.h"
 #include "saj_utilities.h"
@@ -74,7 +74,7 @@ SAJ_FUNCTION(jniAlloc) (
             if (type_descriptor_frame) {
                 const char *typeDescriptorFrame = (*env)->GetStringUTFChars (env, type_descriptor_frame, 0);
                 if (typeDescriptorFrame) {
-                    strcat(typeDescriptor, typeDescriptorFrame);
+                    os_strcat(typeDescriptor, typeDescriptorFrame);
                     (*env)->ReleaseStringUTFChars (env, type_descriptor_frame, typeDescriptorFrame);
                 } else {
                     statusOK = FALSE;

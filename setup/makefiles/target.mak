@@ -50,33 +50,64 @@ ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
 endif 
 endif
 
+# Define the libpath CS_LIBS variable that that creates private links to the referenced libs. 
+CS_MAKE_SEPARATOR = ,
+CS_LIB_SRCS = $(subst $(CS_MAKE_SEPARATOR), ,$(subst -r:,,$(CSLIBS)))
+CS_LIB_FILES = $(notdir $(CS_LIB_SRCS))
+CS_LIB_DIRS = $(dir $(CS_LIB_SRCS))
+CS_LIBS = $(addprefix -r:,$(notdir $(CS_LIB_FILES)))
+
+vpath $(CSLIB_PREFIX)%$(CSLIB_POSTFIX) $(CS_LIB_DIRS)
+
 ifdef TARGET_CSLIB
 TARGET := $(CSLIB_PREFIX)$(TARGET_CSLIB)$(CSLIB_POSTFIX)
-
-csc: $(TARGET)
-
-ifneq "$(CS_FILES)" ""
 TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 
+ifneq "$(CS_FILES)" ""
+
+# Create local links to referenced libraries.
+# Remove old links first to make sure you always point to the most recent libraries.
 $(TARGET): $(CS_FILES)
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_LIB) $(CSLIBS) $(CS_FILES)
+	@for FILE in $(CS_LIB_SRCS); do LFILE=`basename $${FILE}`; rm -f $${LFILE}; $(LN) $${FILE} $${LFILE}; done
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_LIB) $(CS_LIBS) $(CS_FILES)
+endif
+endif
+
+ifdef TARGET_CSMOD
+TARGET := $(CSMOD_PREFIX)$(TARGET_CSMOD)$(CSMOD_POSTFIX)
+TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
+
+ifneq "$(CS_FILES)" ""
+
+$(TARGET): $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_MOD) $(CS_LIBS) $(CS_FILES)
 endif
 endif
 
 ifdef TARGET_CSEXEC
 TARGET := $(CSEXEC_PREFIX)$(TARGET_CSEXEC)$(CSEXEC_POSTFIX)
-
-csc: $(TARGET)
-
-ifneq "$(CS_FILES)" ""
 TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
 
+ifneq "$(CS_FILES)" ""
+
+# Create local links to referenced libraries. 
+# Remove old links first to make sure you always point to the most recent libraries.
 $(TARGET): $(CS_FILES)
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) $(CSLIBS) $(CS_FILES)
+	@for FILE in $(CS_LIB_SRCS); do LFILE=`basename $${FILE}`; rm -f $${LFILE}; $(LN) $${FILE} $${LFILE}; done
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) $(CS_LIBS) $(CS_FILES)
+
+# Create additional local links to the referenced libraries in the directory of the executables. 
+CS_LIB_LINKS = $(addprefix $(TARGET_LINK_DIR)/, $(notdir $(CS_LIB_SRCS)))
+
+$(TARGET_LINK_DIR)/$(CSLIB_PREFIX)%$(CSLIB_POSTFIX): $(CSLIB_PREFIX)%$(CSLIB_POSTFIX)
+	rm -f $@
+	$(LN) $< $@
 endif
 endif
 
+ifneq (,$(TARGET_LINK_DIR))
 TARGET_LINK_FILE ?= $(TARGET_LINK_DIR)/$(TARGET)
+endif
 
 ifneq ($(EXEC_POSTFIX),'.a')
 ifdef STATIC_LIB_ONLY
@@ -105,55 +136,75 @@ endif
 endif
 endif
 
+ifneq (,$(TARGET_LINK_DIR))
 $(TARGET_LINK_DIR):
 	mkdir -p $(TARGET_LINK_DIR)
 
 ifdef TARGET_DLIB
-
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+# .pdf and .lib files are copied conditionally, since they are not available for every configuration.
+WIN_LIB = $(TARGET_DLIB).lib
+WIN_PDB = $(TARGET_DLIB).pdb
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
-	rm -f $(TARGET_LINK_DIR)/$(addsuffix .lib, $(TARGET_DLIB))
-	rm -f $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_DLIB))
-	cp `pwd`/$(TARGET) $@
-	if [ -f `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) ]; then cp `pwd`/$(addsuffix .lib, $(TARGET_DLIB)) $(TARGET_LINK_DIR)/$(addsuffix .lib, $(TARGET_DLIB)); fi
-	if [ -f `pwd`/$(addsuffix .pdb, $(TARGET_DLIB)) ]; then cp `pwd`/$(addsuffix .pdb, $(TARGET_DLIB)) $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_DLIB)); fi
-else # NOT windows
-$(TARGET_LINK_FILE): $(TARGET)
-ifneq (,$(TARGET_LINK_DIR))
-	rm -f $@
-	ln -s `pwd`/$(TARGET) $@
-endif
-endif #windows or not
-
-else # TARGET_DLIB
-
-ifneq (, $(findstring win32, $(SPLICE_TARGET)))
-$(TARGET_LINK_FILE): $(TARGET)
-ifdef TARGET_EXEC
-	rm -f $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET))
-	if [ -f `pwd`/$(addsuffix .pdb, $(TARGET_EXEC)) ]; then cp `pwd`/$(addsuffix .pdb, $(TARGET_EXEC)) $(TARGET_LINK_DIR)/$(addsuffix .pdb, $(TARGET_EXEC)); fi
-endif
-	rm -f $@
-	cp `pwd`/$(TARGET) $@
-else # NOT windows
-
-$(TARGET_LINK_FILE): $(TARGET)
-ifneq (,$(TARGET_LINK_DIR))
-	rm -f $@
-	ln `pwd`/$(TARGET) $@
-endif
-endif # windows or not
-
+	$(LN) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_LIB)
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_LIB) ]; then $(LN) `pwd`/$(WIN_LIB) $(TARGET_LINK_DIR)/$(WIN_LIB); fi
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
 endif # TARGET_DLIB
 
+ifdef TARGET_SLIB
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(LN) `pwd`/$(TARGET) $@
+endif # TARGET_SLIB
+
+ifdef TARGET_EXEC
+# .pdf files are copied conditionally, since they are not available for every configuration.
+WIN_PDB = $(TARGET_EXEC).pdb
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(LN) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif # TARGET_EXEC
+
+ifdef TARGET_CSLIB
+# .pdf and .lib files are copied conditionally, since they are not available for every configuration.
+WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSLIB)$(CSLIB_DBG_POSTFIX)
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(LN) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif # TARGET_DLIB
+
+ifdef TARGET_CSEXEC
+WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSEXEC)$(CSEXEC_DBG_POSTFIX)
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(LN) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif # TARGET_CSEXEC
+
+ifdef TARGET_CSMOD
+WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSMOD)$(CSMOD_DBG_POSTFIX)
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(LN) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif # TARGET_CSMOD
+
+endif # TARGET_LINK_DIR
 PROC_CORE?=$(PROC)
 
 .PHONY: all compile link clean metre splint qac gcov analyse complexity correctness
 
 all:		link
 compile:	$(DEPENDENCIES) $(OBJECTS)
-link:		compile $(TARGET) $(TARGET_LINK_DIR) $(TARGET_LINK_FILE)
+link:		compile $(TARGET) $(TARGET_LINK_DIR) $(TARGET_LINK_FILE) $(CS_LIB_LINKS)
 metre:		$(METRE_FILES)
 splint:		$(SPLINT_FILES)
 qac:		$(QAC_FILES)

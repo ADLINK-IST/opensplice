@@ -50,7 +50,7 @@ cmx_writerSnapshotNew(
             os_mutexUnlock(&m);
             
             result = (c_char*)(os_malloc(60));
-            sprintf(result, "<writerSnapshot><id>"PA_ADDRFMT"</id></writerSnapshot>", (c_address)(arg.snapshot));
+            os_sprintf(result, "<writerSnapshot><id>"PA_ADDRFMT"</id></writerSnapshot>", (c_address)(arg.snapshot));
         }
     }
     return result;
@@ -210,7 +210,7 @@ cmx_writerSnapshotLookup(
     
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
-        strcpy(copy, snapshot);
+        os_strcpy(copy, snapshot);
         temp = strtok((c_char*)copy, "</>");    /*<writerSnapshot>*/
         temp = strtok(NULL, "</>");             /*<id>*/
         temp = strtok(NULL, "</>");             /*... the pointer*/

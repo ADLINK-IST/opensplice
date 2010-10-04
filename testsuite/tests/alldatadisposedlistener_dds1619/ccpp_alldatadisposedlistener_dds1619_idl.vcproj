@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_alldatadisposedlistener_dds1619_idl"
-	ProjectGUID="{67A2C531-FECA-1BAD-BE19-FFFD8628F0FE}"
+	ProjectGUID="{C1977528-FECA-1BAD-8B3B-016F4F6AF1A2}"
 	RootNamespace="ccpp_alldatadisposedlistener_dds1619_idl"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -101,9 +101,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on Space.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on Space.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceC.cpp;SpaceC.h;SpaceC.inl;SpaceS.cpp;SpaceS.h;SpaceS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -111,9 +111,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on Space.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on Space.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceC.cpp;SpaceC.h;SpaceC.inl;SpaceS.cpp;SpaceS.h;SpaceS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -121,9 +121,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on Space.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on Space.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceC.cpp;SpaceC.h;SpaceC.inl;SpaceS.cpp;SpaceS.h;SpaceS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -131,9 +131,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on Space.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on Space.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;Space.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceC.cpp;SpaceC.h;SpaceC.inl;SpaceS.cpp;SpaceS.h;SpaceS.inl"/>
 				</FileConfiguration>
 			</File>
@@ -144,9 +144,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on SpaceDcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on SpaceDcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceDcpsC.cpp;SpaceDcpsC.h;SpaceDcpsC.inl;SpaceDcpsS.cpp;SpaceDcpsS.h;SpaceDcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -154,9 +154,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on SpaceDcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on SpaceDcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceDcpsC.cpp;SpaceDcpsC.h;SpaceDcpsC.inl;SpaceDcpsS.cpp;SpaceDcpsS.h;SpaceDcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -164,9 +164,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on SpaceDcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on SpaceDcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceDcpsC.cpp;SpaceDcpsC.h;SpaceDcpsC.inl;SpaceDcpsS.cpp;SpaceDcpsS.h;SpaceDcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -174,9 +174,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on SpaceDcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on SpaceDcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;SpaceDcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="SpaceDcpsC.cpp;SpaceDcpsC.h;SpaceDcpsC.inl;SpaceDcpsS.cpp;SpaceDcpsS.h;SpaceDcpsS.inl"/>
 				</FileConfiguration>
 			</File>

@@ -2138,9 +2138,9 @@ gapi_stringSeq_to_String (
             for ( i = 0; i < sequence->_length; i++ ) {
                 if ( sequence->_buffer[i] ) {
                     if ( i != 0 ) {
-                        strcat(rstring, delimiter);
+                        os_strcat(rstring, delimiter);
                     }
-                    strcat(rstring, sequence->_buffer[i]);
+                    os_strcat(rstring, sequence->_buffer[i]);
                 }
             }
         }

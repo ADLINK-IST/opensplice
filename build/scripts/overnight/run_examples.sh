@@ -4,7 +4,7 @@ SUCC=0
 FAIL=0
 RUN_SUMMARY_LOG=$LOGDIR/examples/run/run_results_summary.txt
 RUN_LOG=$LOGDIR/examples/run/run_results.txt
-SUMMARY_LOG=$LOGDIR/examples/run/overview.log
+SUMMARY_LOG=$LOGDIR/examples/run/examples.log
 
 CUR_PATH=`pwd`
 echo " Begin running examples - `date`"

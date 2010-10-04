@@ -163,7 +163,7 @@ u_writerAssertLiveliness (
     u_writer _this);
 
 OS_API u_result
-u_writerInstanceCopyKeys (
+u_writerCopyKeysFromInstanceHandle (
     u_writer _this,
     u_instanceHandle handle,
     u_writerAction action,

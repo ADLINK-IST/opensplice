@@ -229,19 +229,11 @@ v_groupAllocInstance(
 	        v_object(instance)->kernel = kernel;
 	        v_objectKind(instance) = K_GROUPINSTANCE;
 	        instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
-	        instance->sourceCache = v_writerCacheNew(kernel, V_CACHE_SOURCES);
     	    instance->group = (c_voidp)_this;
             if (instance->targetCache == NULL) {
                 OS_REPORT(OS_ERROR,
                           "v_groupAllocInstance",0,
                           "Failed to allocate targetCache.");
-                c_free(instance);
-                instance = NULL;
-            }
-            if (instance->sourceCache == NULL) {
-                OS_REPORT(OS_ERROR,
-                          "v_groupAllocInstance",0,
-                          "Failed to allocate sourceCache.");
                 c_free(instance);
                 instance = NULL;
             }
@@ -354,7 +346,6 @@ v_groupInstanceFree(
         instance->epoch = C_TIME_ZERO;
 
         v_groupCacheDeinit(instance->targetCache);
-        v_writerCacheDeinit(instance->sourceCache);
         group = v_group(instance->group);
         if (group->cachedInstance == NULL) {
             /*
@@ -393,8 +384,9 @@ v_groupInstanceDisconnect(
     CHECK_COUNT(instance);
     CHECK_REGISTRATIONS(instance);
 
-    /* just tear-down the instance pipeline */
-    v_writerCacheDeinit(instance->sourceCache);
+    /* This function used to call v_writerCacheDeinit.  See dds230
+     * for discussion why sourceCache was removed from v_groupInstance
+     */
 }
 
 static v_message
@@ -678,8 +670,11 @@ v_groupInstanceUnregister (
         }
     } else {
         /* registration not found, should not happen */
-        /* assert(FALSE);*/
-        result = V_WRITE_ERROR;
+        OS_REPORT(OS_WARNING,
+          "v_groupInstanceUnregister",0,
+          "No registration for unregister message found!");
+
+        result = V_WRITE_SUCCESS;
     }
     if (instance->registrations == NULL) {
         /* no more writers, so set state to NOWRITERS */

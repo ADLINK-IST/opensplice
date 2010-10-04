@@ -19,6 +19,8 @@ extern "C" {
 
 #include <pthread.h>
 
+#define OS_THREAD_ID_NONE (0U)
+
 typedef pthread_t os_os_threadId;
 
 #if defined (__cplusplus)

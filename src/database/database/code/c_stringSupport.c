@@ -105,7 +105,7 @@ c_splitString(
         if (length != 0) {
             length++;
             nibble = (c_string)os_malloc(length);
-            strncpy(nibble,tail,length);
+            os_strncpy(nibble,tail,length);
             nibble[length-1]=0;
             iter = c_iterAppend(iter,nibble);
         }

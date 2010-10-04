@@ -71,6 +71,9 @@
 #define v_dataReaderInstanceNoWriters(_this) \
         (v_dataReaderInstanceStateTest(_this, L_NOWRITERS))
 
+#define v_dataReaderInstanceReader(_this) \
+        (v_dataReader(v_index(v_dataReaderInstance(_this)->index)->reader))
+
 /*
  * Functions to set and get the datareaderInstance userdata field
  */
@@ -79,6 +82,12 @@ OS_API c_voidp v_dataReaderInstanceGetUserData
 
 OS_API void v_dataReaderInstanceSetUserData
 						(v_dataReaderInstance _this, c_voidp userDataDataReaderInstance);
+
+/*
+ * Function to create a new message (with instance key(s) filled-in)
+ */
+OS_API v_message v_dataReaderInstanceCreateMessage
+                        (v_dataReaderInstance _this);
 
 #undef OS_API
 

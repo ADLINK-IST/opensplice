@@ -113,12 +113,21 @@ class v_readerStatistics extends v_statistics {
     attribute c_ulong            numberOfSamplesRejectedByInstancesLimit;
 
     attribute c_ulong            numberOfReads;
+    attribute c_ulong            numberOfInstanceReads;
+    attribute c_ulong            numberOfNextInstanceReads;
+    attribute c_ulong            numberOfInstanceLookups;
     attribute c_ulong            numberOfTakes;
+    attribute c_ulong            numberOfInstanceTakes;
+    attribute c_ulong            numberOfNextInstanceTakes;
 };
 
 class v_queryStatistics extends v_statistics {
     attribute c_ulong            numberOfReads;
+    attribute c_ulong            numberOfInstanceReads;
+    attribute c_ulong            numberOfNextInstanceReads;
     attribute c_ulong            numberOfTakes;
+    attribute c_ulong            numberOfInstanceTakes;
+    attribute c_ulong            numberOfNextInstanceTakes;
 };
 
 class v_networkQueueStatistics { /* Reachable via v_networkReaderStatistics only */
@@ -341,6 +350,7 @@ enum v_kind {
     K_NETWORKMAPENTRY,
     K_HISTORICALDATAREQUEST,
     K_PERSISTENTSNAPSHOTREQUEST,
+    K_PENDINGDISPOSEELEMENT,
     /* This constant must always be the last */
     K_TYPECOUNT
 };
@@ -1315,7 +1325,6 @@ class v_groupInstance extends v_object {
     attribute c_voidp                        group;
     attribute c_voidp                        oldest;
     attribute v_cache                        targetCache;
-    attribute v_cache                        sourceCache;
     attribute v_registration                 registrations;
     attribute v_registration                 unregisterMessages;
     attribute c_time                         epoch;
@@ -1713,6 +1722,7 @@ struct v_publicationInfo {
     v_livelinessPolicy                       liveliness;
     v_reliabilityPolicy                      reliability;
     v_lifespanPolicy                         lifespan;
+    v_orderbyPolicy                          destination_order;
     v_builtinUserDataPolicy                  user_data;
     v_ownershipPolicy                        ownership;
     v_strengthPolicy                         ownership_strength;
@@ -1721,7 +1731,6 @@ struct v_publicationInfo {
     v_builtinTopicDataPolicy                 topic_data;
     v_builtinGroupDataPolicy                 group_data;
 /* all fields above must be memory layout compatible with the dds spec. */
-    v_orderbyPolicy                          destination_order;
     v_writerLifecyclePolicy                  lifecycle;
     c_bool                                   alive; /* Indicates whether the writer is alive or not,
                                                      * with respect to liveliness policy.
@@ -2088,6 +2097,11 @@ class v_crc {
     attribute c_ulong table[V_CRC_TABLE_SIZE];
 };
 
+class v_pendingDisposeElement {
+    attribute v_commandDisposeAllData disposeCmd;
+    attribute c_time disposeTimestamp;
+};
+
 class v_kernel extends v_observable {
     attribute v_gid                          GID;
     attribute SET<v_participant>             participants;
@@ -2109,6 +2123,10 @@ class v_kernel extends v_observable {
 
     /* Set of enabled statistics categories */
     attribute SET<v_statisticsCategory>      enabledStatisticsCategories;
+
+    /* List of dispose alls pending for groups not yet seen */
+    attribute LIST<v_pendingDisposeElement>  pendingDisposeList;
+    attribute c_mutex                        pendingDisposeListMutex;
 
     /* Set of shared entities */
     attribute c_mutex                        sharesMutex;
@@ -2137,7 +2155,7 @@ class v_spliced extends v_service {
 
     attribute c_mutex         mtx;
     attribute c_mutex         cAndMCommandMutex;
-    attribute SET<v_message>  missedHB;
+    attribute SET<v_message>  missedHB; /* c_table missedHB<v_message> */
 };
 
 };

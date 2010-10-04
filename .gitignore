@@ -152,6 +152,8 @@ etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaIdlInterfaceHeader
 etc/idlpp/CCPP/DDS_OpenFusion_1_6_1/corbaCxxClassBody
 docs/html/dds
 ospl_wincmd.exe
+ospl_winln.exe
+ospl_winln.obj
 release_info/RELEASE
 install/*.HDE.opensplice.xml
 install/*.RTS.opensplice.xml

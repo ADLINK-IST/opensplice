@@ -481,9 +481,9 @@ topicGetKeys(
     ptr = *keys;
     for ( i = 0; i < size; i++ ) {
         if ( i == 0 ) {
-            len = sprintf(ptr, "%s", keyNameFromField(keyList[i]));
+            len = os_sprintf(ptr, "%s", keyNameFromField(keyList[i]));
         } else {
-            len = sprintf(ptr, ",%s", keyNameFromField(keyList[i]));
+            len = os_sprintf(ptr, ",%s", keyNameFromField(keyList[i]));
         }
         ptr = &(ptr[len]);
     }

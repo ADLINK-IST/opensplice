@@ -277,9 +277,9 @@ v_indexInit(
         keyExpr = (char *)os_alloca(totalSize);
         keyExpr[0] = 0;
         for (i=0;i<nrOfKeys;i++) {
-            sprintf(fieldName,"key.field%d",i);
-            strcat(keyExpr,fieldName);
-            if (i<(nrOfKeys-1)) { strcat(keyExpr,","); }
+            os_sprintf(fieldName,"key.field%d",i);
+            os_strcat(keyExpr,fieldName);
+            if (i<(nrOfKeys-1)) { os_strcat(keyExpr,","); }
         }
     } else {
         keyExpr = NULL;

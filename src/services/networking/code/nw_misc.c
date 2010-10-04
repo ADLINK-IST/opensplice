@@ -16,6 +16,7 @@
 /* implementation */
 #include "u_user.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 #include "c_metabase.h"
 
 
@@ -32,7 +33,7 @@ nw_stringDup(
         size++; /* '\0'*/
         result = os_malloc(size);
         if (result != NULL) {
-             strncpy(result, string, size);
+            os_strncpy(result, string, size);
         }
     }
     

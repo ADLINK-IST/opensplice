@@ -56,10 +56,8 @@ os_osInit(void)
         os_processModuleInit();
         os_sharedMemoryInit();
         os_threadModuleInit();
-    } else {
-        OS_REPORT_1(OS_INFO, "os_osInit", 1,
-                "OS-layer initialization called %d times", initCount);
-    }
+
+    } /* Else initialization is already done. */
     return;
 }
 

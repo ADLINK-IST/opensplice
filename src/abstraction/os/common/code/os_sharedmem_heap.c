@@ -200,7 +200,7 @@ os_result
 os_heap_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
-    os_uint32 size)
+    os_address size)
 {
     os_sm *sm;
     os_result rv = os_resultFail;
@@ -214,7 +214,7 @@ os_heap_sharedMemoryCreate(
             sm->size = size;
             sm->name = os_malloc((unsigned int)(strlen (name) + 1));
             if (sm->name) {
-                strcpy(sm->name, name);
+                os_strcpy(sm->name, name);
                 sm->address = os_malloc(size);
                 if (sm->address) {
                     os_heap_add_entry(sm);
@@ -357,7 +357,7 @@ os_heap_sharedMemoryDetach(
 os_result
 os_heap_sharedSize(
     const char *name,
-    os_uint32 *size)
+    os_address *size)
 {
     os_sm *sm;
     os_result rv;

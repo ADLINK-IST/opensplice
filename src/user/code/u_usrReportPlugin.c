@@ -110,9 +110,6 @@ u_usrReportPluginReadAndRegister (
 
     assert(config != NULL);
 
-    OS_REPORT(OS_INFO,OSRPT_CNTXT_USER,0,
-              "u_usrReportPluginReadAndRegister\n");
-
     dc = cf_element(cf_elementChild(config, CFG_DOMAIN));
 
     if (dc != NULL) {
@@ -180,10 +177,9 @@ u_usrReportPluginUnregister ()
     os_result osr;
 
     if (reportPluginAdmin != NULL){  
-        for (i = 0; i < reportPluginAdmin->size; i--){ 
+        for (i = 0; i < reportPluginAdmin->size; i++){ 
 	    if (reportPluginAdmin->reportArray[i] != NULL) {
 	        osr = os_reportUnregisterPlugin (reportPluginAdmin->reportArray[i]);
-                reportPluginAdmin->length--;
             }
         }
     }

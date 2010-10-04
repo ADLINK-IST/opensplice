@@ -1134,8 +1134,8 @@ makeExprQuery(
         case Q_EXPR_PROPERTY:
             i=0; qn[0]=0;
             while ((p = q_getPar(e,i)) != NULL) {
-                if (i!=0) strcat(qn,".");
-                strcat(qn,q_getId(p));
+                if (i!=0) os_strcat(qn,".");
+                os_strcat(qn,q_getId(p));
                 i++;
             }
             f = c_fieldNew(t,qn);
@@ -1155,7 +1155,7 @@ makeExprQuery(
             c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
                 c = c_qExpr(c_new(c_qTypeType(base)));
                 c->kind = CQ_TYPE;
-                c_qType(c)->type = c_keep(c_type(q_getPar(e,0)));
+                c_qType(c)->type = c_keep(q_getTyp(q_getPar(e,0)));
             c_qFunc(r)->params[0] = c;
                 c = c_qExpr(c_new(c_qConstType(base)));
                 c->kind = CQ_CONST;

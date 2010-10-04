@@ -11,9 +11,11 @@
  */
 #include "gapi.h"
 
+#include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_abstract.h"
 #include "gapi_common.h"
+#include "gapi_genericCopyBuffer.h"
 
 #define MEM_ALIGNMENT	8
 #define HMM_MAGIC       (0xabcdefed)
@@ -34,7 +36,7 @@ static char* CHECK_REF_FILE = NULL;
     \
     if(!CHECK_REF_FILE){ \
         CHECK_REF_FILE = os_malloc(16); \
-        sprintf(CHECK_REF_FILE, "heap.log"); \
+        os_sprintf(CHECK_REF_FILE, "heap.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\
@@ -57,13 +59,6 @@ typedef struct {
     gapi_unsigned_long magic;
     void *alloc_addr;
 } contextHeader;
-
-typedef struct {
-    gapi_unsigned_long _maximum;
-    gapi_unsigned_long _length;
-    void *_buffer;
-    gapi_boolean _release;
-} sequenceType;
 
 const gapi_unsigned_long CONTEXTHEADER_SIZE = 
       ALIGN_SIZE(sizeof(contextHeader));
@@ -165,7 +160,7 @@ gapi_string_dup (
 
     if (src != NULL) {
         dst = gapi_string_alloc (strlen(src));
-        strcpy (dst, src);
+        os_strcpy (dst, src);
     } else {
         dst = NULL;
     }
@@ -199,10 +194,10 @@ void
 gapi_sequence_free (
     void *sequence)
 {
-    sequenceType *seq;
+    gapiSequenceType *seq;
 
     if (sequence != NULL) {
-        seq = (sequenceType *)sequence;
+        seq = (gapiSequenceType *)sequence;
         if (seq->_release) {
             gapi_free (seq->_buffer);
         }
@@ -213,10 +208,10 @@ void
 gapi_sequence_clean (
     void *sequence)
 {
-    sequenceType *seq;
+    gapiSequenceType *seq;
 
     if (sequence != NULL) {
-        seq = (sequenceType *)sequence;
+        seq = (gapiSequenceType *)sequence;
         if (seq->_release) {
             gapi_free (seq->_buffer);
         }
@@ -231,7 +226,7 @@ void *
 gapi_sequence_malloc (
     void)
 {
-    return gapi__malloc (gapi_sequence_free, 0, sizeof(sequenceType));
+    return gapi__malloc (gapi_sequence_free, 0, sizeof(gapiSequenceType));
 }
 
 void *
@@ -259,9 +254,9 @@ gapi_sequence_replacebuf (
     _bufferAllocatorType allocbuf,
     gapi_unsigned_long count)
 {
-    sequenceType *seq;
+    gapiSequenceType *seq;
 
-    seq = (sequenceType *)sequence;
+    seq = (gapiSequenceType *)sequence;
     if (count > seq->_maximum) {
         gapi_sequence_clean(seq);
     }
@@ -279,7 +274,7 @@ gapi_sequence_create (
     gapi_unsigned_long len,
     gapi_unsigned_long count)
 {
-    sequenceType *seq;
+    gapiSequenceType *seq;
 
     seq = gapi_sequence_malloc ();
     if (seq) {

@@ -99,7 +99,6 @@ nw_retrieveLeaseSettings(
 #undef NW_DEFAULT_SLEEPSEC
 #undef NW_MIN_SLEEPSEC
 
-
 static void
 nw_serviceMain(
     const char *serviceName,

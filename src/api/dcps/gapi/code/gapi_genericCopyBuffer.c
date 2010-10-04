@@ -10,6 +10,7 @@
  *
  */
 #include "gapi_objManag.h"
+#include "gapi_genericCopyBuffer.h"
 #include "gapi_genericCopyOut.h"
 #include "gapi_common.h"
 
@@ -24,15 +25,6 @@
 #define TRACE(function) /* function */
 #define STATIC static
 
-#define SEQUENCE_CORRECTION (3 * sizeof(unsigned long))
-
-typedef struct {
-    gapi_unsigned_long  _maximum;
-    gapi_unsigned_long  _length;
-    void               *_buffer;
-    gapi_boolean        _release;
-} sequenceType;
-
 typedef struct gapi_genericBufferHeader_s {
     gapi_copyCache  copyCache;
     gapiCopyHeader *copyRoutine;
@@ -44,9 +36,6 @@ typedef struct gapi_genericSeqBufferHeader_s {
     unsigned int    seqLength;
     unsigned int    elementSize;
 } gapi_genericSeqBufferHeader;
-
-
-
 
 typedef void (*gapi_deallocatorFunc)(gapiCopyHeader *ch, void *ptr);
 
@@ -112,21 +101,21 @@ static unsigned int gapi_correctionTable[] = {
     /* Long[]       */ 0,
     /* Float[]      */ 0,
     /* Double[]     */ 0,
-    /* seq<Boolean> */ SEQUENCE_CORRECTION,
-    /* seq<Byte>    */ SEQUENCE_CORRECTION,
-    /* seq<Char>    */ SEQUENCE_CORRECTION,
-    /* seq<Short>   */ SEQUENCE_CORRECTION,
-    /* seq<Int>     */ SEQUENCE_CORRECTION,
-    /* seq<long>    */ SEQUENCE_CORRECTION,
-    /* seq<Float>   */ SEQUENCE_CORRECTION,
-    /* seq<Double>  */ SEQUENCE_CORRECTION,
-    /* seq<Enum>    */ SEQUENCE_CORRECTION,
+    /* seq<Boolean> */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Byte>    */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Char>    */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Short>   */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Int>     */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<long>    */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Float>   */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Double>  */ GAPI_SEQUENCE_CORRECTION,
+    /* seq<Enum>    */ GAPI_SEQUENCE_CORRECTION,
     /* struct       */ 0,
     /* union        */ 0,
     /* string       */ 0,
     /* string<>     */ 0,
     /* array        */ 0,
-    /* sequence     */ SEQUENCE_CORRECTION,
+    /* sequence     */ GAPI_SEQUENCE_CORRECTION,
     /* reference    */ 0
     };
 
@@ -227,28 +216,28 @@ gapi_genericGetUserSize (
             size = sizeof(gapi_double) * ((gapiCopyArray *)ch)->size;
             break;
         case gapiSeqBoolean:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqByte:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqChar:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqShort:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqInt:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqLong:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqFloat:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiSeqDouble:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiEnum:
             size = sizeof(gapi_long);
@@ -270,7 +259,7 @@ gapi_genericGetUserSize (
                    ((gapiCopyObjectArray *)ch)->arraySize;
             break;
         case gapiSequence:
-            size = sizeof(sequenceType);
+            size = sizeof(gapiSequenceType);
             break;
         case gapiRecursive:
             size = sizeof(char *);
@@ -438,7 +427,7 @@ gapi_genericFreePrimSequence (
     gapiCopyHeader *ch,
     void           *ptr)
 {
-    sequenceType *seq = (sequenceType *)ptr;
+    gapiSequenceType *seq = (gapiSequenceType *)ptr;
 
     if (seq->_buffer) {
         gapi_free(seq->_buffer);
@@ -455,10 +444,10 @@ gapi_genericFreeSequence (
 {
     gapiCopyObjectSequence *sh;
     gapiCopyHeader         *sech;
-    sequenceType           *seq;
+    gapiSequenceType           *seq;
     gapi_deallocatorFunc    deallocator;
 
-    seq         = (sequenceType *)ptr;
+    seq         = (gapiSequenceType *)ptr;
     sh          = (gapiCopyObjectSequence *)ch;
     sech        = gapiCopyObjectSequenceDescription (sh);
     deallocator = deallocatorTable[sech->copyType];

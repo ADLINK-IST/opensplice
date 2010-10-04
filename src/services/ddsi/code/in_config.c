@@ -839,7 +839,7 @@ in_configTraverseGlobalPartitionElement(
              IN_REPORT_ERROR("in_configTraverseGlobalPartitionElement", "Out of memory.");
         } else
         {
-            strcpy(addy, INCF_ATTRIB_GlobalPartition_address_DEF);
+            os_strcpy(addy, INCF_ATTRIB_GlobalPartition_address_DEF);
         }
     }
     in_configPartitioningSetGlobalPartitionAddress(partitioning, addy);
@@ -1392,7 +1392,7 @@ in_configTraverseOutputFileElement(
              IN_REPORT_ERROR(IN_SPOT, "Out of memory.");
         } else
         {
-            strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
+            os_strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
         }
     }
     if(outputFileName && in_configTracingIsEnabled(tracing))
@@ -3196,7 +3196,7 @@ in_configTraverseInterfaceElement(
              IN_REPORT_ERROR("in_configTraverseChannelElement", "Out of memory.");
         } else
         {
-            strcpy(networkId, INCF_ATTRIB_Interface_value_DEF);
+            os_strcpy(networkId, INCF_ATTRIB_Interface_value_DEF);
         }
     }
     c_iterFree(children);
@@ -3272,7 +3272,7 @@ in_configFinalizePartitioning(
              IN_REPORT_ERROR("in_configFinalizePartitioning", "Out of memory.");
         } else
         {
-            strcpy(globalPartitionAddress, INCF_ATTRIB_GlobalPartition_address_DEF);
+            os_strcpy(globalPartitionAddress, INCF_ATTRIB_GlobalPartition_address_DEF);
         }
         in_configPartitioningSetGlobalPartitionAddress(partitioning, globalPartitionAddress);
         /* TODO print message saying default was chosen */
@@ -3302,7 +3302,7 @@ in_configFinalizeTracing(
                 IN_REPORT_ERROR("in_configFinalizeTracing", "Out of memory.");
             } else
             {
-                strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
+                os_strcpy(outputFileName, INCF_ATTRIB_OutputFile_value_DEF);
             }
             in_configTracingSetOutputFile(tracing, outputFileName);
 

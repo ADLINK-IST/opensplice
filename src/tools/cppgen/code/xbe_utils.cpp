@@ -32,7 +32,7 @@ StripIDL(const DDS_StdString& idlname)
    DDS_StdString ret;
    char * p;
 
-   strcpy(buf, (const char *)idlname);
+   os_strcpy(buf, (const char *)idlname);
 
    p = strstr(buf, BE_Globals::IDLExtension);
    if (p)
@@ -52,7 +52,7 @@ StripExtension(const DDS_StdString& fname)
    DDS_StdString ret;
    char * p;
 
-   strcpy(buf, (const char *)fname);
+   os_strcpy(buf, (const char *)fname);
 
    p = strrchr (buf, '.');
    if (p)

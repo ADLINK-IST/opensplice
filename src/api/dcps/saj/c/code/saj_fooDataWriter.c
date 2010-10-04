@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_fooDataWriter.h"
+#include "saj_FooDataWriter.h"
 #include "saj_copyIn.h"
 #include "saj_copyOut.h"
 #include "saj_copyCache.h"

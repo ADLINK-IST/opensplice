@@ -53,7 +53,7 @@ idl_macroFromBasename(
         macro[i] = toupper (basename[i]);
         macro[i+1] = '\0';
     }
-    strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
 
     return macro;
 }

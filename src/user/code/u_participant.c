@@ -252,7 +252,7 @@ participantGetWatchDogAttr(
         path = os_malloc(strlen(U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
                          strlen(element) + strlen(name) + 1);
         if (path != NULL) {
-            sprintf(path, U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element, name);
+            os_sprintf(path, U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element, name);
             data = u_configurationResolveParameter(root, path);
             if (data != NULL) {
                 success = u_cfDataStringValue(data, &schedClass);
@@ -287,7 +287,7 @@ participantGetWatchDogAttr(
             path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
                              strlen(element) + strlen(name) + 1);
             if (path != NULL) {
-                sprintf(path, U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT,
+                os_sprintf(path, U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT,
                         element, name);
                 data = u_configurationResolveParameter(root, path);
                 if (data != NULL) {
@@ -313,7 +313,7 @@ participantGetWatchDogAttr(
             path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT) +
                              strlen(element) + strlen(name) + 1);
             if (path != NULL) {
-                sprintf(path, U_WATCHDOG_PRIO_FMT, element, name);
+                os_sprintf(path, U_WATCHDOG_PRIO_FMT, element, name);
                 attribute = u_configurationResolveAttribute(root, path,
                                                             U_WATCHDOG_ATTRKIND);
                 if (attribute != NULL) {

@@ -42,7 +42,7 @@ OS_API void      c_mmCacheFree (c_mmCache _this, void *memory);
  * @param _this a valid cache
  * @return the number of bytes allocated for _this
  */
-c_long          c_mmCacheGetAllocated(c_mmCache _this);
+c_size          c_mmCacheGetAllocated(c_mmCache _this);
 
 /**
  * Gives the amount of memory that is free (but preallocated) in the specified
@@ -51,7 +51,7 @@ c_long          c_mmCacheGetAllocated(c_mmCache _this);
  * @param _this a valid cache
  * @return the number of free (but preallocated) bytes in _this
  */
-c_long          c_mmCacheGetFree(c_mmCache _this);
+c_size          c_mmCacheGetFree(c_mmCache _this);
 
 #if defined (__cplusplus)
 }

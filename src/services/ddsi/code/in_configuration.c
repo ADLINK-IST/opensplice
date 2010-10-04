@@ -630,9 +630,9 @@ in_configurationGetElementInternal(
         elementFullName = os_malloc(fullNameSize);
         if (elementFullName != NULL) {
             if (elementPath != NULL) {
-                sprintf(elementFullName, "%s%s%s", elementPath, INCF_SEP, elementName);
+                os_sprintf(elementFullName, "%s%s%s", elementPath, INCF_SEP, elementName);
             } else {
-                sprintf(elementFullName, "%s", elementName);
+                os_sprintf(elementFullName, "%s", elementName);
             }
             /* Get complete list of interesting elements */
             elementList = u_cfElementXPath(element, elementFullName);
@@ -772,7 +772,7 @@ in_configurationInitialize(
         topLevelElement = u_participantGetConfiguration(u_participant(service));
         /* Get element with tagname NetworkingService and corresponding name attribute*/
         path = os_malloc(strlen(INCF_ROOT_NetworkingService)+strlen(IN_SERV_NAME_ATTR)+strlen(serviceName));
-        sprintf(path, IN_SERV_NAME_ATTR, INCF_ROOT_NetworkingService, serviceName);
+        os_sprintf(path, IN_SERV_NAME_ATTR, INCF_ROOT_NetworkingService, serviceName);
         in_configurationGetElementInternal(topLevelElement, NULL, path, &configuration->networkingElement);
         in_configurationGetElementInternal(topLevelElement, NULL, INCF_ROOT_Domain, &configuration->domainElement);
         os_free(path);

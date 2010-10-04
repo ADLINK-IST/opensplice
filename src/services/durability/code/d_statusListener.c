@@ -291,8 +291,8 @@ d_statusListenerAction(
                 if(oldState != message->senderState){
                     d_printTimedEvent (durability, D_LEVEL_FINE,
                                D_THREAD_STATUS_LISTENER,
-                               "Updating state of fellow '%d' to '%d'.\n",
-                               message->senderAddress.systemId, message->senderState);
+                               "Updating state of fellow '%d' to '%s'.\n",
+                               message->senderAddress.systemId, d_fellowStateText(message->senderState));
                 }
                 d_fellowUpdateStatus(fellow, message->senderState, receptionTime);
                 d_fellowFree(fellow);

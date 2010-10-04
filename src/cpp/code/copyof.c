@@ -24,7 +24,7 @@ char *copyofstr (const char * str)
    {
       return (0);
    }
-   strcpy(cp, str);
+   os_strcpy(cp, str);
    return (cp);
 }
 

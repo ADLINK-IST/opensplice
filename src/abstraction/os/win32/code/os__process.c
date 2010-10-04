@@ -221,7 +221,7 @@ installSignalEmulator(void)
 
 /* First create the pipe */
 if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
-    _snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
+    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
     _ospl_signalEmulatorHandle = CreateNamedPipe(pname,
            PIPE_ACCESS_INBOUND,
            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
@@ -405,6 +405,8 @@ readFromPipe(
     return NULL;
 }
 
+#define OS_STRLEN_SPLICE_PROCNAME (16) /* strlen("SPLICE_PROCNAME="); */
+
 /** \brief Create a process that is an instantiation of a program
  *
  * First an argument list is build from \b arguments.
@@ -435,7 +437,8 @@ os_procCreate(
     PROCESS_INFORMATION process_info;
     STARTUPINFO si;
     char *inargs;
-    char environment[512];
+    LPTCH environment;
+    LPTCH environmentCopy;
 
     SECURITY_ATTRIBUTES saAttr;
     struct readPipeHelper* helper;
@@ -452,10 +455,10 @@ os_procCreate(
 
     inargs = (char*)os_malloc(strlen (name) + strlen (arguments) + 4);
 
-    strcpy(inargs, "\"");
-    strcat(inargs, name);
-    strcat(inargs, "\" ");
-    strcat(inargs, arguments);
+    os_strcpy(inargs, "\"");
+    os_strcat(inargs, name);
+    os_strcat(inargs, "\" ");
+    os_strcat(inargs, arguments);
 
     memset(&si, 0, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
@@ -477,9 +480,61 @@ os_procCreate(
         si.dwFlags |= STARTF_USESTDHANDLES;
     }
 
-    /* Set the process name via environment variable SPLICE_PROCNAME */
-    snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
-    putenv(environment);
+    /* Duplicate the environment of the current process for the child-process
+     * and set the SPLICE_PROCNAME environment variable to name.
+     * CreateEnvironmentBlock cannot be used conveniently here, since the
+     * environment has to be modified and SPLICE_PROCNAME can be set in the
+     * current process too. */
+    environment = GetEnvironmentStrings();
+    if(environment){
+        size_t len = 0;
+        size_t newLen = 0;
+        size_t spliceVarLen = 0;
+        LPTSTR currentVar = (LPTSTR)environment;
+        LPTSTR spliceVar = currentVar; /* If all vars are larger, then insert has to happen at beginning */
+        int equals;
+
+        /* The environment block needs to be ordered */
+        while(*currentVar){
+            if(spliceVarLen == 0){ /* Only do strncmp if EXACT location not found */
+                equals = strncmp("SPLICE_PROCNAME=", currentVar, OS_STRLEN_SPLICE_PROCNAME);
+                if(equals == 0){
+                    spliceVar = currentVar; /* Mark address where replacement has to happen */
+                    spliceVarLen = lstrlen(spliceVar) + 1;
+                } else if (equals > 0){
+                    /* Mark address where insertion has to happen */
+                    spliceVar = currentVar + lstrlen(currentVar) + 1;
+                }
+            }
+            len += lstrlen(currentVar) + 1;
+            currentVar = environment + len;
+        }
+
+        newLen = len - spliceVarLen
+            + OS_STRLEN_SPLICE_PROCNAME + strlen(name) + 1;
+
+        environmentCopy = (LPTCH)os_malloc(newLen + 1 /* End of array */);
+        if(environmentCopy){
+            int until = spliceVar - environment;
+            int newSpliceVarLen;
+            /* First copy up until location of spliceVar */
+            memcpy(environmentCopy, environment, until);
+            /* Now write the new SPLICE_PROCNAME */
+            newSpliceVarLen = sprintf(environmentCopy + until, "SPLICE_PROCNAME=%s", name) + 1;
+            /* Now copy tail */
+            memcpy(environmentCopy + until + newSpliceVarLen, spliceVar + spliceVarLen, len - (until + spliceVarLen));
+            environmentCopy[newLen] = (TCHAR)0;
+        } else {
+            OS_REPORT(OS_ERROR,
+                        "os_procCreate", 1,
+                        "Out of (heap) memory.");
+        }
+        FreeEnvironmentStrings(environment);
+    } else {
+        OS_REPORT_1(OS_ERROR,
+                "os_procCreate", 1,
+                "GetEnvironmentStrings failed, environment will be inherited from parent-process without modifications.", (int)GetLastError());
+    }
 
     if (CreateProcess(executable_file,
                       inargs,
@@ -487,7 +542,7 @@ os_procCreate(
                       NULL,                     // ThreadAttributes
                       procAttr->activeRedirect, // InheritHandles
                       CREATE_NO_WINDOW,         // dwCreationFlags
-                      NULL,                     // Environment
+                      (LPVOID)environmentCopy,  // Environment
                       NULL,                     // CurrentDirectory
                       &si,
                       &process_info) == 0) {
@@ -498,6 +553,10 @@ os_procCreate(
                 ERROR_PATH_NOT_FOUND == errorCode ||
                 ERROR_ACCESS_DENIED  == errorCode)
                ? os_resultInvalid : os_resultFail;
+    }
+
+    if(environmentCopy){
+        os_free(environmentCopy);
     }
 
     *procId = (os_procId)process_info.hProcess;
@@ -549,6 +608,8 @@ os_procCreate(
 
     return os_resultSuccess;
 }
+
+#undef OS_STRLEN_SPLICE_PROCNAME
 
 /** \brief Check the child exit status of the identified process
  *
@@ -729,7 +790,7 @@ os_procFigureIdentity(
     os_int32 size = 0;
     char *process_name;
 
-    process_name = getenv("SPLICE_PROCNAME");
+    process_name = os_getenv("SPLICE_PROCNAME");
 
     if (process_name != NULL) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
@@ -827,7 +888,7 @@ os_procMLockAll(
 os_result
 os_procMLock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     OS_REPORT(OS_ERROR, "os_procMLock", 0, "Page locking not support on WIN32");
     return os_resultFail;
@@ -836,7 +897,7 @@ os_procMLock(
 os_result
 os_procMUnlock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     OS_REPORT(OS_ERROR, "os_procMUnlock", 0, "Page locking not support on WIN32");
     return os_resultFail;
@@ -855,4 +916,3 @@ os_procSetSignalHandlingEnabled(
 {
     return;
 }
-

@@ -88,7 +88,7 @@ cmx_participantInit(
     v_participant participant;
 
     participant = v_participant(entity);
-    sprintf(buf, "<kind>PARTICIPANT</kind>");
+    os_sprintf(buf, "<kind>PARTICIPANT</kind>");
 
     return (c_char*)(os_strdup(buf));
 }

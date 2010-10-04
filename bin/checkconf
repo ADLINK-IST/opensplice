@@ -756,11 +756,11 @@ convert_native_classpath_to_unix_classpath ()
             fi
         }
 
-        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
+        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
                                | sed 's@\(.\):@/cygdrive/\1@g'`
         CLASSPATH=`echo $CLASSPATH | sed 's@\([^;]\):@/cygdrive/\1@g' | tr ';' ':' | tr '\\\' '/'`
     else
-        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
+        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
     fi
 }
 
@@ -792,14 +792,13 @@ jacorb_check_fn ()
 
     convert_native_classpath_to_unix_classpath
     FOUND_IN_CLASSPATH=false
-    for i in PATHS
+    for i in $LIST_CLASSPATHS
     do
         i=`echo $i | tr '%' ' '`
-        if [ `basename $i` = "jacorb.jar" -o `basename $i` = "avalon-framework.jar" -o `basename $i` = "logkit.jar" ]
+        if [ `basename '$i'` = "jacorb.jar" -o `basename '$i'` = "avalon-framework.jar" -o `basename '$i'` = "logkit.jar" ]
         then
             FOUND_IN_CLASSPATH=true
-            JACORB_HOME=`dirname $i`
-            JACORB_HOME=`dirname $JACORB_HOME`
+            JACORB_HOME=`dirname '$i'`
             JACORB_HOME=`dirname $JACORB_HOME`
             set_var JACORB_HOME "$JACORB_HOME"
             break

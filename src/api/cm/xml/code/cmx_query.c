@@ -76,7 +76,7 @@ cmx_queryInit(
 
     if(query->expression){
         if(query->params){
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params><![CDATA[%s]]></params>"
@@ -88,7 +88,7 @@ cmx_queryInit(
                 query->sampleMask,
                 query->viewMask);
         } else {
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params></params>"
@@ -102,7 +102,7 @@ cmx_queryInit(
         }
     } else {
         if(query->params){
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params><![CDATA[%s]]></params>"
@@ -114,7 +114,7 @@ cmx_queryInit(
                 query->sampleMask,
                 query->viewMask);
         } else {
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params></params>"

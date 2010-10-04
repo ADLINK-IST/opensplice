@@ -15,14 +15,17 @@ FILTER =
 LD_SO            = $(WINCMD) link
 	# Binary used for linking executables
 LD_EXE           = $(WINCMD) link
+LD_CXX           = $(WINCMD) link
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
 LEX		 = flex
 	# GNU make
 MAKE		 = make
-	# Solaris native touch
+	# Cygwin's touch
 TOUCH		 = touch
+	# Tool used for creating soft/hard links.
+LN               = ospl_wincmd ospl_winln
 	# Archiving
 AR               = sh $(OSPL_HOME)/bin/ospl_winlib
 AR_CMDS          = 
@@ -83,7 +86,7 @@ CXXFLAGS	= -EHsc -nologo -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
+CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -97,7 +100,8 @@ SHLDFLAGS = -dll -machine:IX86 -incremental:no
 
 # Identify linker options for building shared C# libraries and or executables.
 CSTARGET_LIB = -t:library
-CSTARGET_EXEC = -target:exe
+CSTARGET_MOD = -t:module
+CSTARGET_EXEC = -t:exe
 
 # Set library context
 LDLIBS		 =
@@ -129,5 +133,12 @@ EXEC_POSTFIX = .exe
 INLINESRC_POSTFIX = .i
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
+CSMOD_PREFIX =
+CSMOD_POSTFIX = .netmodule
 CSEXEC_PREFIX =
 CSEXEC_POSTFIX = .exe
+CSDBG_PREFIX =
+CSEXEC_DBG_POSTFIX = .pdb
+CSMOD_DBG_POSTFIX = .pdb
+CSLIB_DBG_POSTFIX = .pdb
+CS_LIBPATH_SEP = ;

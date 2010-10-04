@@ -22,7 +22,7 @@
  *
  * The following methods are provided:
  *
- *     c_base     c_create    (const c_char *name, void *addr, c_long  size);
+ *     c_base     c_create    (const c_char *name, void *addr, c_size size);
  *     c_base     c_open      (const c_char *name, void *addr);
  *
  *     c_type     c_resolve   (c_base base, const c_char *typeName);
@@ -84,7 +84,7 @@ OS_API c_base
 c_create (
     const c_char *name,
     void *addr,
-    c_long  size);
+    c_size size);
 
 /**
  * \brief This operation opens an existing database.
@@ -149,6 +149,31 @@ c_resolve (
 OS_API c_object
 c_new (
     c_type type);
+
+/* c_new() method specificly for arrays and sequences (only).
+ *
+ * Use the macro definitions c_newArray and c_newSequence instead, respectively
+ * for creating an array or a sequence for legibility.
+ *
+ * This operation either creates an array or a sequence object of the specified
+ * type. The type itself, as all objects, has a reference to the database that
+ * is used by the operation to determine the database in which the object
+ * shall be created.
+ * The memory of the created object is initialized with zeroes.
+ * \param type is a reference to a database specific meta type description.
+ * \size the size of the array or sequence
+ *
+ * \return A successful operation returns the created object.
+ *         otherwise if an illegal type is specified or there are not enough
+ *         resources this operation will fail and return NULL.
+ */
+OS_API c_object
+c_newBaseArrayObject (
+    c_collectionType arrayType,
+    c_long size);
+
+#define c_newArray(t,s)         c_newBaseArrayObject(t,s); assert(c_collectionTypeKind(t) == C_ARRAY)
+#define c_newSequence(t,s)      c_newBaseArrayObject(t,s); assert(c_collectionTypeKind(t) == C_SEQUENCE)
 
 /**
  * \brief This operation notifies the database that the application will no
@@ -349,26 +374,6 @@ c_stringMalloc(
     c_long length);
 
 /**
- * \brief This operation will create a new database array for the specified
- *        type and length.
- *
- * This operation is provided by the database as convenience. Without this
- * operation an application first has to create a collection type that
- * specifies the array type and size, which is then passed to the c_new
- * operation to create an array.
- *
- * \param subType The element type of the array that must be created.
- * \param size The number of elements of the array that must be created.
- *
- * \return On a successful operation a reference to the created array is
- *         returned. Otherwise NULL is returned.
- */
-OS_API c_array
-c_arrayNew (
-    c_type subType,
-    c_long size);
-
-/**
  * \brief 	This operation behaves the same as c_arrayNew, with the exeption that
  * 			it will always return an object with valid header.
  *
@@ -385,11 +390,6 @@ OS_API c_array
 c_arrayNew_w_header(
     c_collectionType arrayType,
     c_long length);
-
-OS_API c_array
-c_newArray (
-    c_collectionType arrayType,
-    c_long size);
 
 OS_API typedef void (*c_baseOutOfMemoryAction)(c_voidp arg);
 
@@ -410,22 +410,6 @@ c_baseOnLowOnMemory(
 OS_API void
 c_destroy (
     c_base _this);
-
-#if 0
-/**
- * \brief This operation returns the number of element the specified array
- *        can hold.
- *
- * This operation returns the number of element the specified array can hold.
- *
- * \param a The array on which this operation operates.
- *
- * \return The size in elements of the given array.
- */
-OS_API c_long
-c_arraySize (
-    c_array a);
-#endif
 
 OS_API c_type c_voidp_t     (c_base _this);
 OS_API c_type c_address_t   (c_base _this);

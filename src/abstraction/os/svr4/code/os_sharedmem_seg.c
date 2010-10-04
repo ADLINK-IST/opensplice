@@ -139,7 +139,7 @@ os_svr4_findKeyFile(
                 if (os_svr4_matchKey(key_file_name, name)) {
                     kfn = os_malloc(strlen(key_file_name) + 1);
                     if (kfn != NULL) {
-                        strcpy(kfn, key_file_name);
+                        os_strcpy(kfn, key_file_name);
                     }
                     entry = NULL;
                 } else {
@@ -171,7 +171,7 @@ static int
 os_svr4_removeFromPreviousSession(
     const char *name,
     void *map_address,
-    os_uint32 size)
+    os_address size)
 {
     char *kfn = NULL;
     int shmid;
@@ -275,7 +275,7 @@ static key_t
 os_svr4_getKey(
     const char *name,
     void *map_address,
-    os_uint32 size)
+    os_address size)
 {
     int key_file_fd;
     char *key_file_name;
@@ -340,7 +340,7 @@ os_svr4_getKey(
             snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n",
                      (PA_ADDRCAST)map_address);
             write(key_file_fd, buffer, strlen(buffer));
-            snprintf(buffer, sizeof (buffer), "%x\n", (unsigned int)size);
+            snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n", (PA_ADDRCAST)size);
             write(key_file_fd, buffer, strlen(buffer));
             snprintf(buffer, sizeof (buffer), "SVR4-IPCSHM\n");
             write(key_file_fd, buffer, strlen(buffer));
@@ -395,12 +395,12 @@ os_svr4_getMapAddress(
  * Find the key file related to the named shared memory area.
  * When found, read the size from the 3rd line.
  */
-static os_uint32
+static os_address
 os_svr4_getSize(
     const char *name)
 {
     char *key_file_name;
-    os_uint size = 0;
+    os_address size = 0;
     FILE *key_file;
     char line[512];
 
@@ -411,7 +411,7 @@ os_svr4_getSize(
             fgets(line, sizeof(line), key_file);
             fgets(line, sizeof(line), key_file);
             fgets(line, sizeof(line), key_file);
-            sscanf(line, "%x", (os_uint32 *)&size);
+            sscanf(line,  PA_ADDRFMT, (PA_ADDRCAST *)&size);
             fclose(key_file);
         }
         os_free(key_file_name);
@@ -468,7 +468,7 @@ os_result
 os_svr4_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
-    os_uint32 size)
+    os_address size)
 {
     int shmid;
     int cmask;
@@ -531,13 +531,14 @@ os_svr4_sharedMemoryCreate(
         shmid = shmget (key, size,
                         IPC_CREAT | IPC_EXCL | (OS_PERMISSION & (~cmask)));
         if (shmid == -1) {
-            OS_REPORT_2 (OS_WARNING,
+            OS_REPORT_3 (OS_ERROR,
                          "os_svr4_sharedMemoryCreate", 1,
-                         "shmget failed with error %d (%s)",
-                         errno, name);
+                         "shmget failed with error %d (%s)\n"
+                         "              The required SHM size was "PA_SIZEFMT" bytes",
+                         errno, name, size);
             rv = os_resultFail;
         } else {
-	    rv = os_resultSuccess;
+            rv = os_resultSuccess;
         }
     }
     return rv;
@@ -634,42 +635,45 @@ os_svr4_sharedMemoryAttach(
         request_address = os_svr4_getMapAddress(name);
         shmid = shmget(key, 0, 0);
         if (shmid == -1) {
-            OS_REPORT_2(OS_WARNING,
+            OS_REPORT_2(OS_ERROR,
                         "os_svr4_sharedMemoryAttach", 1,
                         "shmget failed with error %d (%s)",
                         errno, name);
             rv = os_resultFail;
         }
-        else if ((map_address = shmat(shmid, request_address, SHM_RND)) != request_address) {
-            rv = os_resultFail;
-            if (map_address == (void *)-1) {
-                memset(errorBuf, 0, 128);
+        else {
+            map_address = shmat(shmid, request_address, SHM_RND);
+            if (map_address != request_address) {
+                rv = os_resultFail;
+                if (map_address == (void *)-1) {
+                    memset(errorBuf, 0, 128);
 #ifndef NO_STRERROR_R
-                success = strerror_r(errno, errorBuf, 128);
+                    success = strerror_r(errno, errorBuf, 128);
 #else
-                success = 1;
+                    success = -1;
 #endif
-                if(success == 1){
-                    sprintf(errorBuf, "Unkown error");
+                    if(success != 0){
+                        os_sprintf(errorBuf, "Unknown error");
+                    }
+                    OS_REPORT_4 (OS_ERROR,
+                                 "os_svr4_sharedMemoryAttach", 1,
+                                 "shmat failed for %s with errno %d (%s). request_address was %p",
+                                 name, errno, errorBuf, request_address);
+                    shmdt(map_address);
+                } else {
+                    OS_REPORT_3 (OS_WARNING,
+                                 "os_svr4_sharedMemoryAttach", 1,
+                                 "mapped address does not match requested address "
+                                 "(%s). requested address "PA_ADDRFMT" is not aligned using "PA_ADDRFMT" instead",
+                                 name,request_address,map_address);
+                    *mapped_address = map_address;
+                    rv = os_resultSuccess;
                 }
-                OS_REPORT_3 (OS_ERROR,
-                             "os_svr4_sharedMemoryAttach", 1,
-                             "shmat failed for %s with errno %d (%s)",
-                             name, errno, errorBuf);
-                shmdt(map_address);
-	    } else {
-                OS_REPORT_3 (OS_WARNING,
-                             "os_svr4_sharedMemoryAttach", 1,
-                             "mapped address does not match requested address "
-                             "(%s). requested address "PA_ADDRFMT" is not aligned using "PA_ADDRFMT" instead",
-                             name,request_address,map_address);
+            } else {
                 *mapped_address = map_address;
                 rv = os_resultSuccess;
-	    }
-	} else {
-            *mapped_address = map_address;
-            rv = os_resultSuccess;
-	}
+            }
+        }
     }
     return rv;
 }
@@ -702,9 +706,9 @@ os_svr4_sharedMemoryDetach(
 os_result
 os_svr4_sharedSize(
     const char *name,
-    os_uint32 *size)
+    os_address *size)
 {
-    os_uint32 s;
+    os_address s;
     os_result rv;
 
     s = os_svr4_getSize(name);

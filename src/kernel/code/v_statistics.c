@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -63,7 +63,7 @@ v_statisticsResetField(
     if (strcmp(subFieldName, "avg") == 0) {
         buf = os_malloc(strlen(fieldNameCopy)+1+5+1);
         if (buf) {
-            sprintf(buf, "%s.count", fieldNameCopy);
+            os_sprintf(buf, "%s.count", fieldNameCopy);
             result = v_statisticsResetField(s, buf);
             os_free(buf);
         } else {
@@ -171,7 +171,7 @@ v_statisticsReset(
         } else if (strcmp(typename, "v_cmsoapStatistics")==0 ) {
             result = v_cmsoapStatisticsReset(v_cmsoapStatistics(s), NULL);
         } else if (strcmp(typename, "v_networkingStatistics")==0 ) {
-            result = v_kernelStatisticsReset(v_kernelStatistics(s), NULL);
+            result = v_networkingStatisticsReset(v_networkingStatistics(s), NULL);
         } else {
             result = v_statisticsResetAllFields(s);
         }

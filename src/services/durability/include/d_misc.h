@@ -65,6 +65,9 @@ void                d_reportLocalGroup          (d_durability durability,
 
 c_base              d_findBase                  (d_durability durability);
 
+c_bool              d_patternMatch              (const char* str,
+                                                 const char* pattern);
+
 #if defined (__cplusplus)
 }
 #endif

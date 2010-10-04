@@ -14,7 +14,8 @@ endif
 
 CPPFLAGS	+= -DOSPL_BUILD_OS
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
-# CINCS    += -I$(OSPL_HOME)/src/database/database/include
+CINCS    += -I$(OSPL_HOME)/src/abstraction/os/code
+#CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)

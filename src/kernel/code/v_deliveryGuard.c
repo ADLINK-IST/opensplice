@@ -15,6 +15,7 @@
 #include "v__kernel.h"
 #include "v__deliveryGuard.h"
 #include "v__deliveryWaitList.h"
+#include "v__partition.h"
 
 #include "v_writer.h"
 #include "v_entity.h"

@@ -9,9 +9,12 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "ospl_proc.h"
+
 #include <os.h>
 #include <os_iterator.h>
 #include <os_report.h>
+#include <os_signal.h>
 
 #include <cfg_parser.h>
 #include <cf_config.h>
@@ -106,6 +109,7 @@ removeProcesses(
         Sleep(1000);
         r = os_procCheckStatus(pid, &procResult);
     }
+    kill_descendents (pid, OS_SIGKILL);
 }
 
 #undef MAX_STATUSCHECKS
@@ -115,13 +119,136 @@ static void
 removeKeyfile(
     const char *key_file_name)
 {
-    /* try to unlink the key file. This is a fallback option. In normal circumstances
-     * the spliced process will have deleted the key file, but something it failed
-     * and we have to unlink it here. But in general the unlink call below will
-     * fail because the file is already gone. This failure can be ignored.
-     */
-    unlink(key_file_name);
+   char dbf_file_name[MAX_PATH];
+   char * ptr;
+                    
+   /* try to unlink the key file. This is a fallback option. In normal circumstances
+    * the spliced process will have deleted the key file, but something it failed
+    * and we have to unlink it here. But in general the unlink call below will
+    * fail because the file is already gone. This failure can be ignored.
+    */
+   unlink(key_file_name);
+   
+   /* as this is a fallback option we should also try to remove the corresponding
+    * DBF file as the process may have been killed leaving both files behind.
+    */
+   os_strcpy(dbf_file_name, key_file_name);
+   ptr = strchr(dbf_file_name, '.');
+   dbf_file_name[ptr - dbf_file_name + 1] = 'D';
+   dbf_file_name[ptr - dbf_file_name + 2] = 'B';
+   dbf_file_name[ptr - dbf_file_name + 3] = 'F';
+   unlink(dbf_file_name);
+    
 }
+
+static void
+clean(void)
+{
+    HANDLE hFile;
+    HANDLE hProcess;
+    WIN32_FIND_DATA fileData;
+    os_char key_file_name [MAX_PATH];
+    os_char dbf_file_name [MAX_PATH];
+    os_char buf[512];
+    os_uint32 last = 0;
+    os_uint32 pid;
+    FILE *key_file;
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
+
+    hFile = FindFirstFile(key_file_name, &fileData);
+
+    if (hFile != INVALID_HANDLE_VALUE) {
+       os_strcpy(key_file_name, key_file_path);
+       os_strcat(key_file_name, "\\");
+       os_strcat(key_file_name, fileData.cFileName);
+       key_file = fopen(key_file_name, "r");
+
+       while (!last) {
+          if (key_file != NULL) {
+             if (fgets(buf, sizeof(buf), key_file) != NULL) {
+                fgets(buf, sizeof(buf), key_file);
+                fgets(buf, sizeof(buf), key_file);
+                fgets(buf, sizeof(buf), key_file);
+                fgets(buf, sizeof(buf), key_file);
+                sscanf(buf, "%d", &pid);
+                fclose(key_file);
+                
+                hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+                if (hProcess == NULL) {
+                   /* no associated process - remove tmp and DBF file */
+                   removeKeyfile(key_file_name);
+
+                   /* kill of orphaned processes e.g. durability/networking */
+                   kill_descendents (pid, OS_SIGKILL);
+                }
+             }
+          }
+
+          if (FindNextFile(hFile, &fileData) == 0) {
+             last = 1;
+          } else {
+             os_strcpy(key_file_name, key_file_path);
+             os_strcat(key_file_name, "\\");
+             os_strcat(key_file_name, fileData.cFileName);
+             key_file = fopen(key_file_name, "r");
+          }
+       }
+    }
+    FindClose(hFile);
+
+    /* We now have to check for abandoned DBF files where there is no corresponding
+    *  tmp file.If there is a corresponding tmp file then it will be a valid pair
+    *  as we have already removed the invalid tmp files.
+    */
+    last = 0;
+    os_strcpy(dbf_file_name, key_file_path);
+    os_strcat(dbf_file_name, "\\");
+    os_strcat(dbf_file_name, key_file_prefix);
+    os_strcat(dbf_file_name, "*.DBF");
+
+    hFile = FindFirstFile(dbf_file_name, &fileData);
+
+    if (hFile != INVALID_HANDLE_VALUE) {
+       os_strcpy(dbf_file_name, key_file_path);
+       os_strcat(dbf_file_name, "\\");
+       os_strcat(dbf_file_name, fileData.cFileName);
+
+       while (!last) {
+          char * ptr;
+          
+          /* check that it does not have a matching tmp file, any matching tmp file will be valid */
+          os_strcpy(key_file_name, dbf_file_name);
+          ptr = strchr(key_file_name, '.');
+          key_file_name[ptr - key_file_name + 1] = 't';
+          key_file_name[ptr - key_file_name + 2] = 'm';
+          key_file_name[ptr - key_file_name + 3] = 'p';
+
+          key_file = fopen(key_file_name, "r");
+          if (key_file == NULL) {
+             /* there is no matching tmp file, delete the DBF file */
+             unlink(dbf_file_name);
+          }
+          else
+          {
+             fclose(key_file);
+          }
+       
+          if (FindNextFile(hFile, &fileData) == 0) {
+             last = 1;
+          } else {
+             os_strcpy(dbf_file_name, key_file_path);
+             os_strcat(dbf_file_name, "\\");
+             os_strcat(dbf_file_name, fileData.cFileName);
+          }
+       }
+    }
+    FindClose(hFile);
+}
+
 
 static int
 shutdownDDS(
@@ -216,18 +343,18 @@ findSpliceSystemAndRemove(
     char *shmName;
     int retCode = OSPL_EXIT_CODE_OK;
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, key_file_prefix);
-    strcat(key_file_name, "*.tmp");
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
 
     hFile = FindFirstFile(key_file_name, &fileData);
 
     if (hFile != INVALID_HANDLE_VALUE)
     {
-        strcpy(key_file_name, key_file_path);
-        strcat(key_file_name, "\\");
-        strcat(key_file_name, fileData.cFileName);
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
 
         while (!last) {
             shmName = matchKey(key_file_name, domain_name);
@@ -239,9 +366,9 @@ findSpliceSystemAndRemove(
             if (FindNextFile(hFile, &fileData) == 0) {
                 last = 1;
             } else {
-                strcpy(key_file_name, key_file_path);
-                strcat(key_file_name, "\\");
-                strcat(key_file_name, fileData.cFileName);
+                os_strcpy(key_file_name, key_file_path);
+                os_strcat(key_file_name, "\\");
+                os_strcat(key_file_name, fileData.cFileName);
             }
         }
         FindClose(hFile);
@@ -265,10 +392,10 @@ findSpliceSystemAndShow(void)
     int len;
     int found_count;
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, key_file_prefix);
-    strcat(key_file_name, "*.tmp");
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
 
     hFile = FindFirstFile(key_file_name, &fileData);
 
@@ -277,9 +404,9 @@ findSpliceSystemAndShow(void)
     }
 
     found_count = 0;
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, fileData.cFileName);
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, fileData.cFileName);
     key_file = fopen(key_file_name, "r");
 
     while (!last) {
@@ -298,9 +425,9 @@ findSpliceSystemAndShow(void)
             last = 1;
         } else {
             fclose(key_file);
-            strcpy(key_file_name, key_file_path);
-            strcat(key_file_name, "\\");
-            strcat(key_file_name, fileData.cFileName);
+            os_strcpy(key_file_name, key_file_path);
+            os_strcat(key_file_name, "\\");
+            os_strcat(key_file_name, fileData.cFileName);
             key_file = fopen(key_file_name, "r");
         }
     }
@@ -327,10 +454,10 @@ spliceSystemRunning(
     int pid;
     os_int32 procResult;
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, key_file_prefix);
-    strcat(key_file_name, "*.tmp");
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
 
     hFile = FindFirstFile(key_file_name, &fileData);
 
@@ -338,9 +465,9 @@ spliceSystemRunning(
         return 0;
     }
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, fileData.cFileName);
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, fileData.cFileName);
     key_file = fopen(key_file_name, "r");
 
     while ((!last) && (search < 2)) { /* search can be restarted 1 time! */
@@ -370,20 +497,21 @@ spliceSystemRunning(
                     fclose(key_file);
                     /* try to delete the file in case applications/services were not terminated correctly! */
                     removeKeyfile(key_file_name);
+ 
                     search++;
                     /* restart search! */
-                    strcpy(key_file_name, key_file_path);
-                    strcat(key_file_name, "\\");
-                    strcat(key_file_name, key_file_prefix);
-                    strcat(key_file_name, "*.tmp");
+                    os_strcpy(key_file_name, key_file_path);
+                    os_strcat(key_file_name, "\\");
+                    os_strcat(key_file_name, key_file_prefix);
+                    os_strcat(key_file_name, "*.tmp");
                     hFile = FindFirstFile(key_file_name, &fileData);
                     if (hFile == INVALID_HANDLE_VALUE) {
                         return 0;
                     }
 
-                    strcpy(key_file_name, key_file_path);
-                    strcat(key_file_name, "\\");
-                    strcat(key_file_name, fileData.cFileName);
+                    os_strcpy(key_file_name, key_file_path);
+                    os_strcat(key_file_name, "\\");
+                    os_strcat(key_file_name, fileData.cFileName);
                     key_file = fopen(key_file_name, "r");
                     continue;
                 }
@@ -394,9 +522,9 @@ spliceSystemRunning(
             last = 1;
         } else {
             fclose(key_file);
-            strcpy(key_file_name, key_file_path);
-            strcat(key_file_name, "\\");
-            strcat(key_file_name, fileData.cFileName);
+            os_strcpy(key_file_name, key_file_path);
+            os_strcat(key_file_name, "\\");
+            os_strcat(key_file_name, fileData.cFileName);
             key_file = fopen(key_file_name, "r");
         }
     }
@@ -424,7 +552,7 @@ findDomain(
             if (dataName) {
                 value = cf_dataValue(dataName);
                 domain_name = os_malloc(strlen(value.is.String) + 2);
-                strcpy(domain_name, value.is.String);
+                os_strcpy(domain_name, value.is.String);
                 os_free(value.is.String);
             }
         }
@@ -489,7 +617,7 @@ splitString(
         if (length != 0) {
             length++;
             nibble = os_malloc(length);
-            strncpy(nibble,tail,length);
+            os_strncpy(nibble,tail,length);
             nibble[length-1]=0;
             iter = os_iterAppend(iter,nibble);
         }
@@ -590,7 +718,7 @@ main(
         exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
     if (key_file_path == NULL) {
-        fprintf(stderr, "No basic path found\n");
+        fprintf(stderr, "No temporary directory path found\n");
         exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
 
@@ -635,6 +763,7 @@ main(
     } else {
         if (strcmp (command, "start") == 0)
         {
+            clean();
             if (domain_name == NULL)
             {
                 domain_name = "The default Domain";

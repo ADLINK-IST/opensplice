@@ -91,10 +91,10 @@ idl_scopeStackC(
                              (int)strlen(Id)+1));
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, scopeSepp);
+            os_strcat(scopeStack, scopeSepp);
             /* Concatenate the scope name */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, Id);
+            os_strcat(scopeStack, Id);
             si++;
         }
         if (name) {
@@ -111,10 +111,10 @@ idl_scopeStackC(
                              (int)strlen(Id)+1));
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, scopeSepp);
+            os_strcat(scopeStack, scopeSepp);
             /* Concatenate the user identifier */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, Id);
+            os_strcat(scopeStack, Id);
         }
     } else {
 	/* The stack is empty */
@@ -274,8 +274,8 @@ idl_definitionAdd (
     char *def;
 
     def = os_malloc(strlen(class) + strlen (name) + 1);
-    strcpy(def, class);
-    strcat(def, name);
+    os_strcpy(def, class);
+    os_strcat(def, name);
     if (definitions == NULL) {
 	definitions = os_iterNew(NULL);
     }
@@ -301,8 +301,8 @@ idl_definitionExists(
     char *def;
 
     def = os_malloc(strlen(class) + strlen (name) + 1);
-    strcpy(def, class);
-    strcat(def, name);
+    os_strcpy(def, class);
+    os_strcat(def, name);
     if (definitions != NULL) {
         if (os_iterResolve(definitions, defName, def) != NULL) {
 	    os_free(def);

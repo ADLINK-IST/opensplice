@@ -12,10 +12,11 @@
 #ifndef OS_WIN32__SERVICE_H__
 #define OS_WIN32__SERVICE_H__
 
-#include <os_defs.h>
-#include <os_time.h>
+#include "os_defs.h"
+#include "os_time.h"
+#include "os_mutex.h"
 
-#define OS_SERVICE_ENTITY_NAME_MAX       16
+#define OS_SERVICE_ENTITY_NAME_MAX       32
 #define OS_SERVICE_SEM_NAME_PREFIX       "osplSem"
 #define OS_SERVICE_EVENT_NAME_PREFIX     "osplEv" 
 #define OS_SERVICE_MUTEX_NAME_PREFIX     "osplMTX"
@@ -43,7 +44,10 @@ struct os_servicemsg {
     } _u;
 };
 
-const char *
+os_char *
 os_servicePipeName(void);
+
+os_char *
+os_createPipeNameFromMutex(os_mutex *mutex);
 
 #endif /* OS_WIN32__SERVICE_H__ */

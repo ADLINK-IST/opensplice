@@ -40,6 +40,11 @@ typedef struct findProxyArgument {
     v_proxy proxy;
 } findProxyArgument;
 
+static void
+v_waitsetClearRemovedObserverPendingEvents(
+    v_waitset _this,
+    void* userDataRemoved);
+
 static c_bool
 findProxy(
     c_object o,
@@ -108,6 +113,7 @@ v_waitsetDeinit(
     v_observable o;
     v_proxy found;
     v_handleResult result;
+    void* userDataRemoved = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
@@ -120,7 +126,8 @@ v_waitsetDeinit(
     while (found) {
         result = v_handleClaim(found->source,(v_object *)&o);
         if (result == V_HANDLE_OK) {
-            v_observableRemoveObserver(o,v_observer(_this));
+            v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+            v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
             result = v_handleRelease(found->source);
         }
         c_free(found);
@@ -413,6 +420,7 @@ v_waitsetDetach (
     c_bool result;
     v_proxy found;
     findProxyArgument arg;
+    void* userDataRemoved = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
@@ -434,10 +442,73 @@ v_waitsetDetach (
         assert(found == arg.proxy);
         c_free(found);
     }
-    result = v_observableRemoveObserver(o,v_observer(_this));
+    result = v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+    v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
         v_waitsetTrigger(_this, NULL);
     }
     return result;
+}
+
+void
+v_waitsetClearRemovedObserverPendingEvents(
+    v_waitset _this,
+    void* userDataRemoved)
+{
+    /* check if any events for this removed observer are pending, if so they
+     * must be trashed to avoid crashes, the memory might not be accessible after
+     * this call has ended!
+     */
+    if(userDataRemoved)
+    {
+        v_waitsetEvent eventList;
+        v_waitsetEvent event;
+        v_waitsetEvent prevEvent = NULL;
+
+        eventList = v_waitsetEvent(v_waitsetEventList(_this));
+        event = eventList;
+        while (event)
+        {
+            /* if the userdata of the removed observer matched the userdata of
+             * the found event, then this event pertains to the observer we
+             * just removed and we must undertake action!
+             */
+            if(userDataRemoved == event->userData)
+            {
+                /* We need to remove the event from the linked list, to accomplish
+                 * this we need to link the previous event (if any) to the next
+                 * event, which basically cuts out the now invalid event from
+                 * the event list. If the now invalid list was the head of the
+                 * event list, then make the head of the event list equal to the
+                 * next event
+                 */
+                if(prevEvent)
+                {
+                    prevEvent->next = event->next;
+                } else
+                {
+                    v_waitsetEventList(_this) = event->next;
+                }
+                /* Free the memory of the event */
+                event->next = NULL; /* otherwise entire list is freed! */
+                v_waitsetEventFree(_this,event); /* free whole list. */
+                /* set the event pointer to the correct next event pointer */
+                if(prevEvent)
+                {
+                    event = prevEvent->next;
+                } else
+                {
+                    event = v_waitsetEventList(_this);
+                }
+            } else
+            {
+                /* store this event as the 'prevEvent' and move to the next
+                 * event
+                 */
+                prevEvent = event;
+                event = event->next;
+            }
+        }
+    }
 }

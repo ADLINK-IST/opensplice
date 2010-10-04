@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_errorInfo.h"
+#include "saj_ErrorInfo.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_ErrorInfo_##name

@@ -22,7 +22,7 @@ cmx_groupQueueInit(
     v_groupQueue groupqueue;
     
     groupqueue = v_groupQueue(entity);
-    sprintf(buf, "<kind>GROUPQUEUE</kind>");
+    os_sprintf(buf, "<kind>GROUPQUEUE</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

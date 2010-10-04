@@ -2046,6 +2046,7 @@ OS_API DDS_TopicBuiltinTopicData *DDS_sequence_DDS_TopicBuiltinTopicData_allocbu
  *     LivelinessQosPolicy liveliness;
  *     ReliabilityQosPolicy reliability;
  *     LifespanQosPolicy lifespan;
+ *     DestinationOrderQosPolicy destination_order;
  *     UserDataQosPolicy user_data;
  *     OwnershipQosPolicy ownership;
  *     OwnershipStrengthQosPolicy ownership_strength;
@@ -2067,6 +2068,7 @@ struct DDS_PublicationBuiltinTopicData_s {
     DDS_LivelinessQosPolicy liveliness;
     DDS_ReliabilityQosPolicy reliability;
     DDS_LifespanQosPolicy lifespan;
+    DDS_DestinationOrderQosPolicy destination_order;
     DDS_UserDataQosPolicy user_data;
     DDS_OwnershipQosPolicy ownership;
     DDS_OwnershipStrengthQosPolicy ownership_strength;

@@ -11,8 +11,9 @@ endif
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
 JCODE_DIR ?=code
+JCODE_PATH ?= $(JCODE_DIR)
 JFLAGS    ?= -source 1.5 -target 1.5
-JFLAGS    +=-sourcepath '$(JCODE_DIR)'
+JFLAGS    +=-sourcepath '$(JCODE_PATH)'
 MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
 
 # If JAR_MODULE is not defined, assign something to prevent warnings in make
@@ -95,9 +96,9 @@ endif
 
 $(CLASS_DIR)/%.class: $(JCODE_DIR)/%.java 
 ifeq (,$(findstring win32,$(SPLICE_HOST))) 
-	$(JCC) -classpath "$(CLASS_DIR):$(JAVA_INC)" $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
+	$(JCC) -classpath "$(CLASS_DIR):$(JAVA_INC):$(JAVA_SYSTEM_CP)" $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
 else
-	$(JCC) -classpath '$(CLASS_DIR);$(JAVA_INC)' $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
+	$(JCC) -classpath '$(CLASS_DIR);$(JAVA_INC);$(JAVA_SYSTEM_CP)' $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
 endif
 
 CODE_DIR	?= ../../code
@@ -156,7 +157,7 @@ Y_FILES		:= $(notdir $(wildcard $(CODE_DIR)/*.y))
 L_FILES		:= $(notdir $(wildcard $(CODE_DIR)/*.l))
 ODL_FILES	= $(notdir $(wildcard $(CODE_DIR)/*.odl))
 GCOV_FILES	:= $(notdir $(wildcard *.bb))
-JAVA_FILES	?= $(wildcard $(addsuffix /*.java,$(addprefix code/,$(JPACKAGES))))
+JAVA_FILES	?= $(wildcard $(addsuffix /*.java,$(addprefix $(JCODE_DIR)/,$(JPACKAGES))))
 CLASS_FILES = $(subst .java,.class,$(subst $(JCODE_DIR),$(CLASS_DIR),$(JAVA_FILES)))
 CS_FILES	= $(wildcard $(addsuffix /*.cs,$(addprefix $(CODE_DIR)/,$(CS_NAMESPCS)))) $(IDL_CS)
 
@@ -174,7 +175,7 @@ GCOV_RESULT	:= $(GCOV_FILES:%.bb=%.c.gcov)
 $(H_FILES): $(L_FILES) #$(ODL_FILES) $(IDL_FILES)
 #$(OBJECTS): $(C_FILES) $(CPP_FILES) $(Y_FILES:%.y=%.c) $(ODL_C)
 #$(DEPENDENCIES): $(C_FILES) $(CPP_FILES) $(Y_FILES:%.y=%.c) $(H_FILES) $(ODL_H)
-$(DEPENDENCIES): $(H_FILES) $(ODL_H) $(IDL_H)
+$(DEPENDENCIES): $(H_FILES) $(ODL_H) $(IDL_H) $(JNI_H)
 
 $(ODL_H): $(ODL_FILES)
 	sh $(OSPL_HOME)/bin/sppodl $(SPPODL_FLAGS) $<

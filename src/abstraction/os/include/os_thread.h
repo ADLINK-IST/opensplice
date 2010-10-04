@@ -142,6 +142,15 @@ os_threadCreate(
     os_threadRoutine start_routine,
     void *arg);
 
+/** \brief Return the integer representation of the given thread ID
+ *
+ * Possible Results:
+ * - returns the integer representation of the given thread ID
+ */
+OS_API os_ulong_int
+os_threadIdToInteger(
+    os_threadId id);
+
 /** \brief Return the thread ID of the calling thread
  *
  * Possible Results:

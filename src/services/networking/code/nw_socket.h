@@ -104,6 +104,10 @@ sk_length   nw_socketSendDataToPartition(
                 void *buffer,
                 sk_length length);
 
+sk_length  nw_socketSendControl(
+                nw_socket sock,
+                void *buffer,
+                sk_length length);
 
 sk_length   nw_socketSendControlTo(
                 nw_socket sock,

@@ -10,5 +10,6 @@ LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_OS)
 LDLIBS  :=$(filter-out -lefence, $(LDLIBS))
 
 CINCS += -I../../../database/include
+CINCS += -I../../../abstraction/os/include
 
 -include $(DEPENDENCIES)

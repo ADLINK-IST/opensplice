@@ -232,6 +232,9 @@ public class DataNodePopup implements MouseListener, ActionListener {
             
         }
         if(addMenu != null){
+        	if (addMenu.getItemCount() == 0){
+        		addMenu.setEnabled(false);
+        	}
             result.add(addMenu);
             
         }

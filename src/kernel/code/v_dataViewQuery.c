@@ -546,7 +546,7 @@ v_dataViewQueryReadInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfReads, _this);
+    v_statisticsULongValueInc(v_query, numberOfInstanceReads, _this);
     return proceed;
 }
 
@@ -640,7 +640,7 @@ v_dataViewQueryReadNextInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfReads, _this);
+    v_statisticsULongValueInc(v_query, numberOfNextInstanceReads, _this);
     return proceed;
 }
 
@@ -763,7 +763,7 @@ v_dataViewQueryTakeInstance(
 
     if (instance == NULL) {
         /* Should fall within a lock on _this */
-        v_statisticsULongValueInc(v_query, numberOfTakes, _this);
+        v_statisticsULongValueInc(v_query, numberOfInstanceTakes, _this);
         return FALSE;
     }
     src = v_querySource(v_query(_this));
@@ -825,7 +825,7 @@ v_dataViewQueryTakeInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfTakes, _this);
+    v_statisticsULongValueInc(v_query, numberOfInstanceTakes, _this);
     return proceed;
 }
 
@@ -911,7 +911,7 @@ v_dataViewQueryTakeNextInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfTakes, _this);
+    v_statisticsULongValueInc(v_query, numberOfNextInstanceTakes, _this);
     return proceed;
 }
 
@@ -1168,11 +1168,11 @@ v_dataViewQuerySetParams(
 
                     for(i=0; i<size; i++){
                         tmp = c_valueImage(params[i]);
-                        strcat(paramString, tmp);
+                        os_strcat(paramString, tmp);
                         os_free(tmp);
 
                         if(i+1 != size){
-                            strcat(paramString, ",");
+                            os_strcat(paramString, ",");
                         }
                     }
                     _this->params = c_stringNew(base, paramString);

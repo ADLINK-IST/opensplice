@@ -30,7 +30,7 @@ extern void do_eval (void)
          Push(c);
          return ;
       }
-      sprintf(temp, "%d", eval_expr(0, 1));
+      os_sprintf(temp, "%d", eval_expr(0, 1));
       for (i = strlen(temp) - 1;i >= 0;i--)
       {
          Push(temp[i]);

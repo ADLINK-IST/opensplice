@@ -193,7 +193,7 @@ sd_concatScoped(
     } else {
         len = strlen(name) + 1;
         result = os_malloc(len);
-        strcpy(result, name);
+        os_strcpy(result, name);
     }
 
     return result;
@@ -1633,7 +1633,7 @@ sd_deserXmlString (
             c_metaObject(o)->definedIn   = scope;
             c_metaFinalize(o);
 
-            sprintf(name, "C_STRING<%d>", length);
+            os_sprintf(name, "C_STRING<%d>", length);
             type = c_type(c_metaBind(scope, name, o));
             if ( !type ) {
                 c_char *scopeName = c_metaScopedName(scope);
@@ -1706,11 +1706,11 @@ sd_deserXmlArray (
                     c_metaObject(o)->definedIn   = scope;
                     c_metaFinalize(o);
                     if ( child->name ) {
-                        sprintf(name, "C_ARRAY<%s,%d>", child->name, size);
+                        os_sprintf(name, "C_ARRAY<%s,%d>", child->name, size);
                     } else if ( c_metaObject(subType)->name ) {
-                        sprintf(name, "C_ARRAY<%s,%d>", c_metaObject(subType)->name, size);
+                        os_sprintf(name, "C_ARRAY<%s,%d>", c_metaObject(subType)->name, size);
                     } else {
-                        sprintf(name, "C_ARRAY<NULL,%d>", size);
+                        os_sprintf(name, "C_ARRAY<NULL,%d>", size);
                     }
 
                     element->object = c_metaBind(scope, name, o);
@@ -1782,19 +1782,19 @@ sd_deserXmlSequence (
 
                     if ( size > 0 ) {
                         if ( child->name ) {
-                            sprintf(name, "C_SEQUENCE<%s,%d>", child->name, size);
+                            os_sprintf(name, "C_SEQUENCE<%s,%d>", child->name, size);
                         } else if ( c_metaObject(subType)->name ) {
-                            sprintf(name, "C_SEQUENCE<%s,%d>", c_metaObject(subType)->name, size);
+                            os_sprintf(name, "C_SEQUENCE<%s,%d>", c_metaObject(subType)->name, size);
                         } else {
-                            sprintf(name, "C_SEQUENCE<NULL,%d>", size);
+                            os_sprintf(name, "C_SEQUENCE<NULL,%d>", size);
                         }
                     } else {
                         if ( child->name ) {
-                            sprintf(name, "C_SEQUENCE<%s>", child->name);
+                            os_sprintf(name, "C_SEQUENCE<%s>", child->name);
                         } else if ( c_metaObject(subType)->name ) {
-                            sprintf(name, "C_SEQUENCE<%s>", c_metaObject(subType)->name);
+                            os_sprintf(name, "C_SEQUENCE<%s>", c_metaObject(subType)->name);
                         } else {
-                            sprintf(name, "C_SEQUENCE<NULL>");
+                            os_sprintf(name, "C_SEQUENCE<NULL>");
                         }
                     }
 

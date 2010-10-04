@@ -1284,7 +1284,7 @@ YY_RULE_SETUP
 #line 183 "idl.ll"
 {
     char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
-    strcpy(z, DDS_YYTEXT);
+    os_strcpy(z, DDS_YYTEXT);
     yylval.strval = z;
     return IDENTIFIER;
 }
@@ -1294,7 +1294,7 @@ YY_RULE_SETUP
 #line 190 "idl.ll"
 {
                                                         char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
-                                                        strcpy(z, DDS_YYTEXT);
+                                                        os_strcpy(z, DDS_YYTEXT);
                                                         yylval.strval = z;
                                                         BEGIN NORMAL_STATE;
                                                         return VERSION;

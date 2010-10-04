@@ -91,7 +91,7 @@ idl_macroFromBasename(
         macro[i] = toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    strncat(macro, append, (size_t)sizeof(macro));
+    os_strncat(macro, append, (size_t)sizeof(macro));
 
     return macro;
 }
@@ -372,10 +372,10 @@ idl_structureClose (
         sequence<spec> <name>[n1]..[nn];        => c_array <name>[n1]..[nn];
         sequence<spec,length> <name>[n1]..[nn]; => c_array <name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => c_array <name>;
-        sequence<spec,length> <name>; => c_array <name>;
+        sequence<spec> <name>;        => c_sequence <name>;
+        sequence<spec,length> <name>; => c_sequence <name,length>;
    @endverbatim
  *
  * @param scope Current scope
@@ -470,10 +470,10 @@ idl_structureMemberOpenClose(
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(typeSpec)) == 0) {
 	    /* unbounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId(name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId(name));
         } else {
 	    /* bounded sequence */
-            idl_fileOutPrintf (idl_fileCur(), "c_array %s", idl_languageId(name));
+            idl_fileOutPrintf (idl_fileCur(), "c_sequence %s", idl_languageId(name));
         }
         idl_fileOutPrintf (idl_fileCur(), ";\n");
     } else {
@@ -684,10 +684,10 @@ idl_unionClose (
         sequence<spec> <name>[n1]..[nn];        => c_array <name>[n1]..[nn];
         sequence<spec,length> <name>[n1]..[nn]; => c_array <name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => c_array <name>;
-        sequence<spec,length> <name>; => c_array <name>;
+        sequence<spec> <name>;        => c_sequence <name>;
+        sequence<spec,length> <name>; => c_sequence <name>;
    @endverbatim
  *
  * @param scope Current scope (the union the union case is defined in)
@@ -735,10 +735,10 @@ idl_unionCaseOpenClose(
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(typeSpec)) == 0) {
             /* unbounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId (name));
         } else {
             /* bounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId (name));
         }
         idl_fileOutPrintf(idl_fileCur(), ";\n");
     } else {
@@ -920,10 +920,10 @@ idl_arrayDimensions (
         sequence<spec,length> <name>[n1]..[nn]; =>
             typedef c_array <scope-elements>_<name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => typedef c_array <scope-elements>_<name>;
-        sequence<spec,length> <name>; => typedef c_array <scope-elements>_<name>;
+        sequence<spec> <name>;        => typedef c_sequence <scope-elements>_<name>;
+        sequence<spec,length> <name>; => typedef c_sequence <scope-elements>_<name>;
    @endverbatim
  *
  * @param scope Current scope
@@ -986,13 +986,13 @@ idl_typedefOpenClose(
 	    /* unbounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef c_array _%s",
+                "typedef c_sequence _%s",
                 idl_scopeStack (scope, "_", name));
         } else {
 	    /* bounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef c_array _%s",
+                "typedef c_sequence _%s",
                 idl_scopeStack(scope, "_", name));
         }
         idl_fileOutPrintf (idl_fileCur(), ";\n\n");

@@ -53,8 +53,9 @@ typedef os_os_address   os_address;   /* integer with size of pointer on the pla
  * archs (LP64), but it could be also 64-bit wide (ILP64 &
  * SILP64). This type is required for systems calls relying on 'int'
  * parameters, such as setsockopt */
-typedef os_os_int      os_int;
-typedef os_os_uint     os_uint;
+typedef os_os_int       os_int;
+typedef os_os_uint      os_uint;
+typedef os_os_ulong_int os_ulong_int;
 
 /** \brief OS layer real definition to represent time
  */

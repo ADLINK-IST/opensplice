@@ -24,7 +24,8 @@ extern "C" {
 d_nameSpace         d_nameSpaceNew                      (d_configuration config,
                                                          const char * name);
 
-d_nameSpace         d_nameSpaceNew_w_policy             (const char * name,
+d_nameSpace         d_nameSpaceNew_w_policy             (d_configuration config,
+                                                         const char * name,
                                                          c_bool aligner,
                                                          d_alignmentKind alignmentKind,
                                                          d_durabilityKind durabilityKind);
@@ -47,6 +48,7 @@ void                d_nameSpaceAddElement               (d_nameSpace nameSpace,
 char *              d_nameSpaceGetName                  (d_nameSpace nameSpace);
 
 d_policy            d_nameSpaceGetPolicy                (d_nameSpace nameSpace);
+
 
 c_bool              d_nameSpaceIsEmpty                  (d_nameSpace nameSpace);
 
@@ -105,6 +107,46 @@ c_bool
 d_nameSpaceStringMatches(
     c_string str,
     c_string pattern);
+
+d_name
+d_nameSpaceGetRole(
+    d_nameSpace nameSpace);
+
+d_mergePolicy
+d_nameSpaceGetMergePolicy(
+    d_nameSpace nameSpace,
+    d_name role);
+
+d_mergeState
+d_nameSpaceGetMergeState(
+    d_nameSpace nameSpace,
+    d_name role);
+
+void
+d_nameSpaceSetMergeState(
+    d_nameSpace nameSpace,
+    d_mergeState state);
+
+int
+d_nameSpaceGetMergePolicyFromStates (
+    d_nameSpace ns1,
+    d_nameSpace ns2);
+
+void
+d_nameSpaceClearMergeState(
+    d_nameSpace nameSpace,
+    d_name role);
+
+void
+d_nameSpaceReplaceMergeStates(
+    d_nameSpace ns1,
+    d_nameSpace ns2);
+
+c_iter
+d_nameSpaceGetMergedStatesDiff(
+    d_nameSpace ns1,
+    d_nameSpace ns2);
+
 
 #if defined (__cplusplus)
 }

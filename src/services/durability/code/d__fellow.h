@@ -26,6 +26,7 @@ C_STRUCT(d_fellow){
     d_networkAddress address;
     d_serviceState state;
     d_communicationState communicationState;
+    d_name role;
     d_timestamp lastStatusReport;
     d_table groups;
     d_table nameSpaces;

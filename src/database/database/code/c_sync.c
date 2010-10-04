@@ -48,7 +48,7 @@ c_mutexInit (
 #ifdef NDEBUG
     result = os_mutexInit(mtx, &mutexAttr);
 #else
-    mtx->owner = 0;
+    mtx->owner = OS_THREAD_ID_NONE;
     result = os_mutexInit(&mtx->mtx, &mutexAttr);
 #endif
     if(result != os_resultSuccess) {
@@ -118,8 +118,9 @@ c_mutexUnlock (
 #ifdef NDEBUG
     result = os_mutexUnlock(mtx);
 #else
-    assert( mtx->owner == os_threadIdSelf() );
-    mtx->owner = 0;
+    assert( os_threadIdToInteger(mtx->owner) ==
+            os_threadIdToInteger(os_threadIdSelf()) );
+    mtx->owner = OS_THREAD_ID_NONE;
     result = os_mutexUnlock(&mtx->mtx);
 #endif
     if(result != os_resultSuccess){
@@ -164,7 +165,7 @@ c_lockInit (
 #ifdef NDEBUG
     result = os_rwlockInit(lck, &rwlockAttr);
 #else
-    lck->owner = 0;
+    lck->owner = OS_THREAD_ID_NONE;
     result = os_rwlockInit(&lck->lck, &rwlockAttr);
 #endif
     if(result != os_resultSuccess){
@@ -264,7 +265,7 @@ c_lockUnlock (
 #ifdef NDEBUG
     result = os_rwlockUnlock(lck);
 #else
-    lck->owner = 0;
+    lck->owner = OS_THREAD_ID_NONE;
     result = os_rwlockUnlock(&lck->lck);
 #endif
     if(result != os_resultSuccess){
@@ -282,7 +283,7 @@ c_lockDestroy (
 #ifdef NDEBUG
     result = os_rwlockDestroy(lck);
 #else
-    lck->owner = 0;
+    lck->owner = OS_THREAD_ID_NONE;
     result = os_rwlockDestroy(&lck->lck);
 #endif
     if(result != os_resultSuccess){
@@ -309,7 +310,7 @@ c_condInit (
 #ifdef NDEBUG
     result = os_condInit(cnd, mtx, &condAttr);
 #else
-    mtx->owner = 0;
+    mtx->owner = OS_THREAD_ID_NONE;
      result = os_condInit(cnd, &mtx->mtx, &condAttr);
 #endif
     if(result != os_resultSuccess){
@@ -329,7 +330,7 @@ c_condWait (
 #ifdef NDEBUG
     result = os_condWait(cnd,mtx);
 #else
-    mtx->owner = 0;
+    mtx->owner = OS_THREAD_ID_NONE;
     result = os_condWait(cnd,&mtx->mtx);
     mtx->owner = os_threadIdSelf();
 #endif
@@ -360,7 +361,7 @@ c_condTimedWait (
 #ifdef NDEBUG
     result = os_condTimedWait(cnd,mtx,&t);
 #else
-    mtx->owner = 0;
+    mtx->owner = OS_THREAD_ID_NONE;
     result = os_condTimedWait(cnd,&mtx->mtx,&t);
     mtx->owner = os_threadIdSelf();
 #endif

@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+os_threadInfo id_none = {0, };
+
 typedef struct {
     char *threadName;
     void *arguments;
@@ -219,7 +221,8 @@ os_startRoutineWrapper(
     /* allocate an array to store thread private memory references */
     os_threadMemInit();
 
-    id = (os_threadId)GetCurrentThreadId();
+    id.threadId = GetCurrentThreadId();
+    id.handle = GetCurrentThread();
     /* Call the start callback */
     if (os_threadCBs.startCb(id, os_threadCBs.startArg) == 0) {
         /* Call the user routine */
@@ -266,7 +269,7 @@ os_threadCreate(
     /* Take over the thread context: name, start routine and argument */
     threadContext = os_malloc(sizeof (os_threadContext));
     threadContext->threadName = os_malloc(strlen (name)+1);
-    strncpy(threadContext->threadName, name, strlen (name)+1);
+    os_strncpy(threadContext->threadName, name, strlen (name)+1);
     threadContext->startRoutine = start_routine;
     threadContext->arguments = arg;
     threadHandle = CreateThread(NULL,
@@ -281,7 +284,8 @@ os_threadCreate(
 
     fflush(stdout);
 
-    *threadId = (os_threadId)threadIdent;
+    threadId->handle   = threadHandle;
+    threadId->threadId = threadIdent;
 
     /*  #642 fix (JCM)
      *  Windows thread priorities are in the range below :
@@ -325,6 +329,17 @@ os_threadCreate(
    return os_resultSuccess;
 }
 
+/** \brief Return the integer representation of the given thread ID
+ *
+ * Possible Results:
+ * - returns the integer representation of the given thread ID
+ */
+os_ulong_int
+os_threadIdToInteger(os_threadId id)
+{
+   return id.threadId;
+}
+
 /** \brief Return the thread ID of the calling thread
  *
  * \b os_threadIdSelf determines the own thread ID by
@@ -334,7 +349,11 @@ os_threadId
 os_threadIdSelf(
     void)
 {
-    return (os_threadId)GetCurrentThreadId();
+   os_threadId id;
+   id.threadId = GetCurrentThreadId();
+   id.handle = GetCurrentThread();   /* pseudo HANDLE, no need to close it */
+
+   return id;
 }
 
 /** \brief Wait for the termination of the identified thread
@@ -348,37 +367,42 @@ os_threadWaitExit(
     os_threadId threadId,
     void **thread_result)
 {
-    HANDLE threadHandle;
+/*     HANDLE threadHandle; */
     DWORD tr;
+    DWORD err;
+    register int callstatus;
 
-    threadHandle = OpenThread(THREAD_QUERY_INFORMATION, FALSE, (DWORD)threadId);
+/*     threadHandle = OpenThread(THREAD_QUERY_INFORMATION, FALSE, (DWORD)threadId); */
 
-    if(threadHandle == NULL){
-        OS_DEBUG_1("os_threadWaitExit", "OpenThread Failed %d", (int)GetLastError());
+    if(threadId.handle == NULL){
+        OS_DEBUG("os_threadWaitExit", "Parameter threadId is null");
         return os_resultFail;
     }
-    if (GetExitCodeThread(threadHandle, &tr) == 0) {
-        OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", (int)GetLastError());
-        CloseHandle(threadHandle);
+
+    callstatus = GetExitCodeThread(threadId.handle, &tr);
+    
+    if (callstatus == 0) {
+       err = GetLastError();
+       OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", err);
         return os_resultFail;
     } else {
         while (tr == STILL_ACTIVE) {
-            Sleep(100);
-            if (GetExitCodeThread(threadHandle, &tr) == 0) {
-                OS_DEBUG_1("os_threadWaitExit",  "GetExitCodeThread Failed %d", (int)GetLastError());
-                CloseHandle(threadHandle);
-                return os_resultFail;
+           Sleep(100);
+           if (GetExitCodeThread(threadId.handle, &tr) == 0) {
+              err = GetLastError();
+              OS_DEBUG_1("os_threadWaitExit",  "GetExitCodeThread Failed %d", err);
+              return os_resultFail;
             }
         }
     }
     if (thread_result != NULL) {
         *thread_result = (VOID *)tr;
     }
-    CloseHandle(threadHandle);
+    CloseHandle(threadId.handle);
     /* ES: dds2086: Perform a second close of the handle, this in effect closes
      * the handle opened by the thread creation in the os_threadCreate(...) call.
      */
-    CloseHandle(threadHandle);
+/*     CloseHandle(threadHandle); */
 
     return os_resultSuccess;
 }

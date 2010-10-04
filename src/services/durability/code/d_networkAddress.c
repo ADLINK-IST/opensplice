@@ -48,7 +48,6 @@ d_networkAddressEquals(
 {
     c_bool result = FALSE;
 
-
     if( (addr1->systemId    == addr2->systemId) &&
         (addr1->localId     == addr2->localId) &&
         (addr1->lifecycleId == addr2->lifecycleId))

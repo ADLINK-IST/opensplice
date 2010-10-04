@@ -18,10 +18,18 @@ module mod {
     struct boundsType{
         long long_1;
         string name;
-        //callSign name5;
-        string<5> name5;
+        callSign name5;
+        //string<5> name5;
         sequence<callSign, 2> strSeq2;
         sequence<octet> octSeq;
     };
 #pragma keylist boundsType long_1
+
+    struct embeddedStructType {
+        long long_1;
+        tst tstStr;
+        tst tstArr[3];
+        sequence<tst, 3> tstSeq;
+    };
+#pragma keylist embeddedStructType long_1
 };

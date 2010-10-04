@@ -175,7 +175,7 @@ nw_plugPartitionsGetPartition(
     nw_networkSecurityPolicy *securityPolicy, /* may be NULL */
     nw_bool *connected,
     nw_bool *compression,
-    os_uint32 *hash)
+    os_int32 *hash)
 {
     *found = FALSE;
     
@@ -191,7 +191,7 @@ nw_plugPartitionsGetPartition(
             *compression = plugPartitions->partitions[partitionId]->compression;
             *hash = plugPartitions->partitions[partitionId]->hash;
             NW_CONFIDENCE(plugPartitions->partitions[partitionId]->id == partitionId);
-            if (securityPolicy) { /* may be NULL */ 
+            if (securityPolicy) { /* may be NULL */
                *securityPolicy = plugPartitions->partitions[partitionId]->securityPolicy;
             }
             *found = TRUE;

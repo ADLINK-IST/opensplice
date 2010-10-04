@@ -294,7 +294,7 @@ c_fieldConcat (
     len2 = strlen(tail->name);
 
     field->name = c_stringMalloc(base,len1+len2+2);
-    sprintf(field->name,"%s.%s",head->name,tail->name);
+    os_sprintf(field->name,"%s.%s",head->name,tail->name);
 
     return field;
 }
@@ -568,6 +568,48 @@ c_fieldCopy(
     }
 }
 
+void
+c_fieldClone(
+    c_field srcfield,
+    c_object src,
+    c_field dstfield,
+    c_object dst)
+{
+    c_long i,n;
+    c_array refs;
+    c_voidp srcp = src;
+    c_voidp dstp = dst;
+
+    if (srcfield->refs) {
+        refs = srcfield->refs;
+        n = c_arraySize(refs)-1;
+        for(i=0;i<n;i++) {
+            srcp = *(c_voidp *)C_DISPLACE(srcp,refs[i]);
+        }
+        srcp = C_DISPLACE(srcp,refs[n]);
+    } else {
+        srcp = C_DISPLACE(srcp,srcfield->offset);
+    }
+
+    if (dstfield->refs) {
+        refs = dstfield->refs;
+        n = c_arraySize(refs)-1;
+        for(i=0;i<n;i++) {
+            dstp = *(c_voidp *)C_DISPLACE(dstp,refs[i]);
+        }
+        dstp = C_DISPLACE(dstp,refs[n]);
+    } else {
+        dstp = C_DISPLACE(dstp,dstfield->offset);
+    }
+    if ((dstfield->kind == V_STRING) ||
+        (dstfield->kind == V_WSTRING) ||
+        (dstfield->kind == V_FIXED)) {
+    	dstp = c_stringNew(c_getBase(dstfield), srcp);
+    } else {
+        memcpy(dstp,srcp,dstfield->type->size);
+    }
+}
+
 c_equality
 c_fieldCompare (
     c_field field1,
@@ -654,4 +696,3 @@ c_fieldCompare (
     return result;
 #undef _CMP_
 }
-

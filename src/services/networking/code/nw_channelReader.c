@@ -178,8 +178,6 @@ nw_channelReaderMain(
     c_ulong messagesReceived;
     c_ulong messagesReceivedReport;
     v_networking n;
-    v_subscriber sub;
-    v_reader r;
     os_time nextupdate = {0,0};
     os_time now;
     os_time period = {0,20e6}; /* todo resolution time */
@@ -337,7 +335,7 @@ nw_channelReaderNew(
             strlen(NWCF_ROOT(Rx)) + strlen(NWCF_SEP) +
             strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Rx),
+        os_sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Rx),
             NWCF_SEP, NWCF_ROOT(Scheduling));
 
         nw_channelUserInitialize((nw_channelUser)result,
@@ -349,7 +347,7 @@ nw_channelReaderNew(
         /* Initialize myself */
         tmpPathSize =  strlen(pathName) + strlen(NWCF_SEP) + strlen(NWCF_ROOT(Tx)) + 1;
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
+        os_sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
         result->reportInterval = NWCF_SIMPLE_PARAM(ULong, tmpPath, ReportInterval);
         if (result->reportInterval < NWCF_MIN(ReportInterval)) {
             NW_REPORT_WARNING_3("initializing network",
@@ -366,7 +364,7 @@ nw_channelReaderNew(
             strlen(NWCF_ROOT(Rx)) + strlen(NWCF_SEP) +
             strlen(NWCF_ROOT(SMPOptimization)) + 1;
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Rx), NWCF_SEP, NWCF_ROOT(SMPOptimization));
+        os_sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Rx), NWCF_SEP, NWCF_ROOT(SMPOptimization));
         /* Check for the node on SMPOptimization, default to enabled = FALSE if there is no
          * such node, enable = TRUE if the  node is available but does not have the
          * enabled attribute */

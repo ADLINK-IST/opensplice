@@ -51,6 +51,21 @@ d_messageSetAddressee(
     }
 }
 
+d_networkAddress
+d_messageGetAddressee(
+    d_message message)
+{
+    d_networkAddress result;
+
+    result = NULL;
+
+    if (message) {
+        result = &(message->addressee);
+    }
+
+    return result;
+}
+
 void
 d_messageSetSenderAddress(
     d_message message,

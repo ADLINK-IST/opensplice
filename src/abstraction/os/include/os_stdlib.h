@@ -207,6 +207,134 @@ OS_API char *
 os_strdup(
     const char *s1);
 
+/** \brief strcat wrapper
+ *
+ * Microsoft generates deprected warnings for strcat,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - append a copy of s2 onto end of s1
+ *   overwriting the null byte at end of s1.
+ */
+OS_API char *
+os_strcat(
+    char *s1,
+    const char *s2);
+
+/** \brief stnrcat wrapper
+ *
+ * Microsoft generates deprected warnings for strncat,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - append n bytes of s2 onto end of s1,
+ *   overwriting the null byte at end of s1.
+ */
+OS_API char *
+os_strncat(
+    char *s1,
+    const char *s2,
+    size_t n);
+
+/** \brief strcpy wrapper
+ *
+ * Microsoft generates deprected warnings for strcpy,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - copy string s2 to s1
+ */
+OS_API char *
+os_strcpy(
+    char *s1,
+    const char *s2);
+
+/** \brief strncpy wrapper
+ *
+ * Microsoft generates deprected warnings for strncpy,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - copy num chars from string s2 to s1
+ */
+OS_API char *
+os_strncpy(
+    char *s1,
+    const char *s2,
+    size_t num);
+
+/** \brief sprintf wrapper
+ *
+ * Microsoft generates deprected warnings for sprintf,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return
+ *   Upon successful completion will return the number of
+ *   bytes written to s, excluding the terminating null byte,
+ *   or a negative value if an error occured.
+ * - Writes formatted output to s.
+ */
+OS_API int
+os_sprintf(
+    char *s,
+    const char *format,
+    ...);
+
+/** \brief os_vsnprintf wrapper
+ *
+ * Microsoft generates deprected warnings for vsnprintf,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - os_vsnprintf() does not write  more than size bytes (including the trailing '\0').
+ *   If the output was truncated due to this limit then the return value is the
+ *   number of  characters (not including the trailing '\0') which would have been
+ *   written to the final string if enough space had been  available.
+ *   Thus, a return value of size or more means that the output was truncated.
+ */
+
+OS_API int
+os_vsnprintf(
+   char *str,
+   size_t size,
+   const char *format,
+   va_list args);
+
 /** \brief strtoll wrapper
  *
  * Translate string str to long long value considering base,

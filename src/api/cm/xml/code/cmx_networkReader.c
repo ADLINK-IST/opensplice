@@ -22,7 +22,7 @@ cmx_networkReaderInit(
     v_networkReader reader;
     
     reader = v_networkReader(entity);
-    sprintf(buf, "<kind>NETWORKREADER</kind>");
+    os_sprintf(buf, "<kind>NETWORKREADER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

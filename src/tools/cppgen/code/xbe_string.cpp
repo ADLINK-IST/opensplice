@@ -105,7 +105,7 @@ void be_string::InitializeTypeMap (be_Type* t)
    }
 
    char size[10];
-   sprintf (size, "%d", (int) ExprToULong(maxsize));
+   os_sprintf (size, "%d", (int) ExprToULong(maxsize));
 
    t_typedef = (be_typedef*)t->narrow((long) & be_typedef::type_id);
    if (t_typedef) 

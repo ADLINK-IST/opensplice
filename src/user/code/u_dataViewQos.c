@@ -10,6 +10,7 @@
  *
  */
 #include "u_dataViewQos.h"
+#include "os_stdlib.h"
 
 /**************************************************************
  * Private functions
@@ -37,7 +38,7 @@ u_dataViewQosNew(
                 if (tmpl->userKey.expression != NULL) {
                     len = strlen(tmpl->userKey.expression);
                     q->userKey.expression = os_malloc(len+1);
-                    strncpy(q->userKey.expression, tmpl->userKey.expression, len);
+                    os_strncpy(q->userKey.expression, tmpl->userKey.expression, len);
                     q->userKey.expression[len] = 0;
                 } else {
                     q->userKey.expression = NULL;

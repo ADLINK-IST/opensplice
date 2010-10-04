@@ -105,13 +105,13 @@ monitor_msFree (
 
 static void
 to_string(
-    c_long val,
+    c_size val,
     char *str)
 {
     c_ulong unit = 1000000000;
     c_bool first = TRUE;
     c_bool proceed = TRUE;
-    c_long x;
+    c_size x;
     c_char _x[32];
 
     str[0] = 0;
@@ -120,27 +120,27 @@ to_string(
         if (x) {
             if (!first) {
                 if (x>99) {
-                    sprintf(_x,".%d",x);
+                    os_sprintf(_x,".%d",x);
                 } else if (x>9) {
-                    sprintf(_x,".0%d",x);
+                    os_sprintf(_x,".0%d",x);
                 } else {
-                    sprintf(_x,".00%d",x);
+                    os_sprintf(_x,".00%d",x);
                 }
             } else {
-                sprintf(_x,"%d",x);
+                os_sprintf(_x,"%d",x);
             }
-            strcat(str,_x);
+            os_strcat(str,_x);
             first = FALSE;
         } else if (!first) {
-            sprintf(_x,".000");
-            strcat(str,_x);
+            os_sprintf(_x,".000");
+            os_strcat(str,_x);
         }
         val = (val - x * unit);
         if (unit > 1) {
             unit = unit / 1000;
         } else {
             if (first) {
-                strcat(str,"0");
+                os_strcat(str,"0");
             }
             proceed = FALSE;
         }
@@ -259,16 +259,16 @@ monitor_msAction (
     } else {
         /* no headers and print time as seconds since start of mmstat */
         os_time now = os_timeGet();
-        sprintf(timbuf,"%d.%9.9d ",now.tv_sec,now.tv_nsec);
+        os_sprintf(timbuf,"%d.%9.9d ",now.tv_sec,now.tv_nsec);
     }
 
     if (msData->extendedMode) {
         cv = ((s.used * 40)/s.size);
-        strncpy (extra, "  |                                        |\r\n",
+       os_strncpy (extra, "  |                                        |\r\n",
                  sizeof(extra));
         extra [cv+3] = '*';
     } else {
-        strncpy (extra, "\r\n", sizeof(extra));
+       os_strncpy (extra, "\r\n", sizeof(extra));
     }
     if(msData->delta && msData->preallocated){
         printf (MM_MS_TIME_BUF_FMT

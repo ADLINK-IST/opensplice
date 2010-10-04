@@ -187,7 +187,7 @@ extern void defd (char * name, int value)
    char temp[64];
    char *cp;
 
-   sprintf(temp, "%d", value);
+   os_sprintf(temp, "%d", value);
    undef(name);
    cp = copyofstr(temp);
    check_os_malloc(cp);

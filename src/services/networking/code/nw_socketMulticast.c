@@ -299,6 +299,7 @@ nw_socketMulticastAddPartition(
     struct sockaddr_in sockAddrMulticast;
     sk_address address;
     c_ulong timeToLive;
+    sk_bool initialized = FALSE;
     timeToLive = NWCF_DEF(TimeToLive);
     if (!nw_socketGetMulticastSupported(sock)) {
     	NW_REPORT_ERROR("nw_socketMulticastAddPartition", "Partition uses multicast but multicast is not enabled");
@@ -310,18 +311,20 @@ nw_socketMulticastAddPartition(
 
         if (!nw_socketGetMulticastInitialized(sock)) {
             nw_socketMulticastInitialize(sock, receiving,address);
+            initialized = TRUE;
         }
         if (address) {
             sockAddrMulticast.sin_addr.s_addr = address;
 
+
         /* Join multicast group, for receiving socket only */
 #ifdef OS_SOCKET_BIND_FOR_MULTICAST
         /* socket already joined a multicast group if nw_socketGetMulticastInitialized is true*/
-        if (receiving && !nw_socketGetMulticastInitialized(sock)) {
+        if (receiving && !initialized) {
                 nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
         }
 #else
-        if (receiving && !nw_socketGetMulticastInitialized(sock)) {
+        if (receiving && !initialized) {
             nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
         }
 #endif

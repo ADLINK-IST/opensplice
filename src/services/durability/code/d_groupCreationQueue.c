@@ -366,7 +366,7 @@ d_groupCreationQueueDeinit(
     if(object) {
         queue = d_groupCreationQueue(object);
 
-        if(queue->actionThread) {
+        if(os_threadIdToInteger(queue->actionThread)) {
             queue->terminate = TRUE;
             os_threadWaitExit(queue->actionThread, NULL);
         }

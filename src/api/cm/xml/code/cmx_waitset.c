@@ -62,7 +62,7 @@ cmx_waitsetInit(
     v_waitset waitset;
     
     waitset = v_waitset(entity);
-    sprintf(buf, "<kind>WAITSET</kind>");
+    os_sprintf(buf, "<kind>WAITSET</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

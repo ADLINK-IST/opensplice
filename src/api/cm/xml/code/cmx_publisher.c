@@ -83,7 +83,7 @@ cmx_publisherInit(
     v_publisher publisher;
     
     publisher = v_publisher(entity);
-    sprintf(buf, "<kind>PUBLISHER</kind>");
+    os_sprintf(buf, "<kind>PUBLISHER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

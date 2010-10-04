@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "c__extent.h"
@@ -86,7 +86,7 @@ c_extentCreate(
         object = c_new(c_type(_this));
     } else {
         memory = c_mmCacheMalloc(_this->cache);
-        object = c_mem2object(memory,_this);
+        object = c_mem2object(memory, c_type(_this));
     }
     pa_increment(&c_typeDef(_this)->alias->objectCount);
 

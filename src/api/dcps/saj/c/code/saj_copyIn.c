@@ -26,7 +26,7 @@
 typedef struct {
     void *dst;
     c_base base;
-    c_long offset;
+    os_uint32 offset;
     JNIEnv *javaEnv;
 } saj_context;
 
@@ -1458,7 +1458,7 @@ saj_cfoiSeqBoolean (
     array = (jbooleanArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_bool *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_bool *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1469,7 +1469,7 @@ saj_cfoiSeqBoolean (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Boolean sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_bool *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_bool *)c_sequenceNew (sh->type, sh->size, arrLen);
                 booleanArray = os_alloca (sizeof (jboolean) * arrLen);
                 (*(ctx->javaEnv))->GetBooleanArrayRegion (ctx->javaEnv, array, 0, arrLen, booleanArray);
                 result = saj_copyGetStatus(ctx);
@@ -1554,7 +1554,7 @@ saj_cfoiSeqByte (
     array = (jbyteArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_octet *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_octet *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1565,7 +1565,7 @@ saj_cfoiSeqByte (
                 OS_REPORT(OS_ERROR, "dcpssaj", 0, "Byte sequence bounds violation.");
                 result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_octet *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_octet *)c_sequenceNew (sh->type, sh->size, arrLen);
                 byteArray = os_alloca (sizeof (jbyte) * arrLen);
                 (*(ctx->javaEnv))->GetByteArrayRegion (ctx->javaEnv, array, 0, arrLen, byteArray);
                 result = saj_copyGetStatus(ctx);
@@ -1650,7 +1650,7 @@ saj_cfoiSeqChar (
     array = (jcharArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_char *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_char *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1661,7 +1661,7 @@ saj_cfoiSeqChar (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Char sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_char *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_char *)c_sequenceNew (sh->type, sh->size, arrLen);
                 charArray = os_alloca (sizeof (jchar) * arrLen);
                 (*(ctx->javaEnv))->GetCharArrayRegion (ctx->javaEnv, array, 0, arrLen, charArray);
                 result = saj_copyGetStatus(ctx);
@@ -1746,7 +1746,7 @@ saj_cfoiSeqShort (
     array = (jshortArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_short *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_short *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1757,7 +1757,7 @@ saj_cfoiSeqShort (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Short sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_short *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_short *)c_sequenceNew (sh->type, sh->size, arrLen);
                 shortArray = os_alloca (sizeof (jshort) * arrLen);
                 (*(ctx->javaEnv))->GetShortArrayRegion (ctx->javaEnv, array, 0, arrLen, shortArray);
                 result = saj_copyGetStatus(ctx);
@@ -1842,7 +1842,7 @@ saj_cfoiSeqInt (
     array = (jintArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_long *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_long *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1853,7 +1853,7 @@ saj_cfoiSeqInt (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Int sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_long *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_long *)c_sequenceNew (sh->type, sh->size, arrLen);
                 intArray = os_alloca (sizeof (jint) * arrLen);
                 (*(ctx->javaEnv))->GetIntArrayRegion (ctx->javaEnv, array, 0, arrLen, intArray);
                 result = saj_copyGetStatus(ctx);
@@ -1938,7 +1938,7 @@ saj_cfoiSeqLong (
     array = (jlongArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_longlong *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_longlong *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -1949,7 +1949,7 @@ saj_cfoiSeqLong (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Long sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_longlong *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_longlong *)c_sequenceNew (sh->type, sh->size, arrLen);
                 longArray = os_alloca (sizeof (jlong) * arrLen);
                 (*(ctx->javaEnv))->GetLongArrayRegion (ctx->javaEnv, array, 0, arrLen, longArray);
                 result = saj_copyGetStatus(ctx);
@@ -2034,7 +2034,7 @@ saj_cfoiSeqFloat (
     array = (jfloatArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_float *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_float *)c_sequenceNew (sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -2045,7 +2045,7 @@ saj_cfoiSeqFloat (
         	    OS_REPORT(OS_ERROR, "dcpssaj", 0, "Float sequence bounds violation.");
         	    result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_float *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_float *)c_sequenceNew (sh->type, sh->size, arrLen);
                 floatArray = os_alloca (sizeof (jfloat) * arrLen);
                 (*(ctx->javaEnv))->GetFloatArrayRegion (ctx->javaEnv, array, 0, arrLen, floatArray);
                 result = saj_copyGetStatus(ctx);
@@ -2130,7 +2130,7 @@ saj_cfoiSeqDouble (
     array = (jdoubleArray)objectArray;
 
     if (array == NULL) {
-        (*dst) = (c_double *)c_arrayNew (sh->type, 0);
+        (*dst) = (c_double *)c_sequenceNew(sh->type, sh->size, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         arrLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
@@ -2141,7 +2141,7 @@ saj_cfoiSeqDouble (
                 OS_REPORT(OS_ERROR, "dcpssaj", 0, "Double sequence bounds violation.");
                 result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
-                *dst = (c_double *)c_arrayNew (sh->type, arrLen);
+                *dst = (c_double *)c_sequenceNew(sh->type, sh->size, arrLen);
                 doubleArray = os_alloca (sizeof (jdouble) * arrLen);
                 (*(ctx->javaEnv))->GetDoubleArrayRegion (ctx->javaEnv, array, 0, arrLen, doubleArray);
                 result = saj_copyGetStatus(ctx);
@@ -2759,6 +2759,7 @@ saj_cfoiArrCharToBString (
                     {
                          (*dst)[i] = (c_char)charArray[i];
                     }
+                    (*dst)[ah->size] = '\0';
                 }
             }
             os_freea (charArray);
@@ -2902,21 +2903,21 @@ saj_cfoiSequence (
     array = (jobjectArray)objectSequence;
 
     if (array == NULL) {
-        *(c_array *)dstSeq = c_arrayNew (sh->type, 0);
+        *(c_sequence *)dstSeq = c_sequenceNew (sh->type, sh->seqSize, 0);
         result = SAJ_COPYRESULT_OK;
     } else {
         seqLen = (*(ctx->javaEnv))->GetArrayLength(ctx->javaEnv, array);
         result = saj_copyGetStatus(ctx);
 
         if(result == SAJ_COPYRESULT_OK){
-            TRACE(printf ("JNI: GetArrayLength (0x%x) = %d\n", array, seqLen));
-            *(c_array *)dstSeq = c_arrayNew (sh->type, seqLen);
-            dst = (void *)*(c_array *)dstSeq;
-
             if (sh->seqSize && (seqLen > (int)sh->seqSize)) {
                 OS_REPORT(OS_ERROR, "dcpssaj", 0, "Object sequence bounds violation.");
                 result = SAJ_COPYRESULT_BAD_PARAMETER;
             } else {
+                TRACE(printf ("JNI: GetArrayLength (0x%x) = %d\n", array, seqLen));
+                *(c_sequence *)dstSeq = c_sequenceNew (sh->type, sh->seqSize, seqLen);
+                dst = (void *)*(c_sequence *)dstSeq;
+
                 for (i = 0; (i < seqLen) && (result ==SAJ_COPYRESULT_OK); i++) {
                     element = (*(ctx->javaEnv))->GetObjectArrayElement (ctx->javaEnv, array, i);
                     result = saj_copyGetStatus(ctx);

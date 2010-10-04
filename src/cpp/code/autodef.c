@@ -22,7 +22,7 @@ extern void autodef_file (char * f)
    i = strlen (f);
    temp = os_malloc (i + 2 + 1);
    check_os_malloc (temp);
-   sprintf ((char*) temp, "\"%s\"", f);
+   os_sprintf ((char*) temp, "\"%s\"", f);
    undef ("__FILE__");
    define ("__FILE__", -1, temp, DEF_DEFINE);
 }

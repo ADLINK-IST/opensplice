@@ -12,19 +12,19 @@ idlpp -C -l java ../../pingpong.idl
 #
 # Generate jacorb java classed from IDL
 #
-java -classpath "$JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH" org.jacorb.idl.parser ../../pingpong.idl
+$SPLICE_JAVA -classpath "$JACORB_HOME/lib/idl.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH" org.jacorb.idl.parser ../../pingpong.idl
 
 #
 # Compile generated java code
 #
 echo "Compile generated Java classes"
-javac -classpath .:$OSPL_HOME/jar/dcpscj.jar -d .. pingpong/*.java
+$SPLICE_JAVAC -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP -d .. pingpong/*.java
 
 #
 # Compile application java code
 #
 echo "Compile application Java classes"
 cd ..
-javac -classpath .:$OSPL_HOME/jar/dcpscj.jar -d . ../*.java
+$SPLICE_JAVAC -classpath .:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP -d . ../*.java
 
 cd ..

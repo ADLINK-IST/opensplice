@@ -33,6 +33,10 @@ os_sharedAttrInit (
     sharedAttr->sharedImpl = OS_MAP_ON_SEG;
     sharedAttr->userCred.uid = 0;
     sharedAttr->userCred.gid = 0;
+#ifdef __x86_64__
+    sharedAttr->map_address = (void *)0x140000000;
+#else
     sharedAttr->map_address = (void *)0x20000000;
+#endif
     return os_resultSuccess;
 }

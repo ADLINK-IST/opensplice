@@ -15,6 +15,7 @@
 
 #include "nw_plugTypes.h"
 #include "nw_misc.h"
+#include "nw__plugDataBuffer.h"
 
 NW_CLASS(nw_plugInterChannel);
 
@@ -40,6 +41,22 @@ nw_bool nw_plugInterChannelProcessDataReceivedMessage(
             nw_address *sendingNodeAddress,
             nw_seqNr *packetNr,
             nw_length *currentRecvBuffer);
+
+void    nw_plugInterChannelPostBackupReceivedMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr sendingNodeId,
+            nw_partitionId sendingPartitionId,
+            nw_address sendingNodeAddress,
+            nw_plugDataBuffer backupBuffer,
+            nw_length currentRecvBuffer);
+
+nw_bool nw_plugInterChannelProcessBackupReceivedMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr *sendingNodeId,
+            nw_partitionId *sendingPartitionId,
+            nw_address *sendingNodeAddress,
+            nw_plugDataBuffer *backupBuffer,
+            nw_length *currentRecvBuffer);
             
 void    nw_plugInterChannelPostAckReceivedMessage(
             nw_plugInterChannel plugInterChannel,
@@ -58,5 +75,45 @@ nw_bool nw_plugInterChannelProcessAckReceivedMessage(
             nw_seqNr *startingNr,
             nw_seqNr *closingNr,
             nw_length *remoteRecvBuffer);
+
+void nw_plugInterChannelPostDataAnnounceMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr diedNodeId,
+            nw_partitionId partitionId,
+            nw_seqNr firstNr,
+            nw_seqNr lastNr);
+
+nw_bool nw_plugInterChannelProcessDataAnnounceMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr *diedNodeId,
+            nw_partitionId *partitionId,
+            nw_seqNr *firstNr,
+            nw_seqNr *lastNr);
+
+void nw_plugInterChannelPostDataRequestMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr servingNodeId,
+            nw_address servingNodeAddress,
+            nw_seqNr diedNodeId,
+            nw_partitionId partitionId,
+            nw_seqNr firstNr,
+            nw_seqNr lastNr);
+
+nw_bool nw_plugInterChannelProcessDataRequestMessage(
+            nw_plugInterChannel plugInterChannel,
+            nw_seqNr *servingNodeId,
+            nw_address *servingNodeAddress,
+            nw_seqNr *diedNodeId,
+            nw_partitionId *partitionId,
+            nw_seqNr *firstNr,
+            nw_seqNr *lastNr);
+
+void nw_plugInterChannelSetTrigger(
+            nw_plugInterChannel plugInterChannel);
+
+nw_bool nw_plugInterChannelGetTrigger(
+            nw_plugInterChannel plugInterChannel);
+
+
 
 #endif /*NW_PLUGINTERCHANNEL_H*/

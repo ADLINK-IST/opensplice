@@ -21,7 +21,9 @@
 #include "d_nameSpaces.h"
 #include "d_networkAddress.h"
 #include "d_configuration.h"
+#include "d__mergeState.h"
 #include "os_report.h"
+#include "os_stdlib.h"
 
 /**************************************************************
  * Private functions
@@ -85,11 +87,11 @@ elementNew(
             element = NULL;
         } else {
             /* QAC EXPECT 5007; use of strcpy */
-            strcpy(element->name, name);
+            os_strcpy(element->name, name);
             /* QAC EXPECT 5007; use of strcpy */
-            strcpy(element->partition, partition);
+            os_strcpy(element->partition, partition);
             /* QAC EXPECT 5007; use of strcpy */
-            strcpy(element->topic, topic);
+            os_strcpy(element->topic, topic);
         }
     }
     return element;
@@ -119,70 +121,7 @@ d_nameSpaceAddPartitionTopic(
 
 /**************************************************************/
 
-c_bool
-d_nameSpaceStringMatches(
-    c_string str,
-    c_string pattern )
-{
-    c_bool   stop = FALSE;
-    c_bool   matches = FALSE;
-    c_string strRef = NULL;
-    c_string patternRef = NULL;
 
-    /* QAC EXPECT 2106,2100; */
-    while ((*str != 0) && (*pattern != 0) && (stop == FALSE)) {
-        /* QAC EXPECT 2106,3123; */
-        if (*pattern == '*') {
-            /* QAC EXPECT 0489; */
-            pattern++;
-            /* QAC EXPECT 2106; */
-            while ((*str != 0) && (*str != *pattern)) {
-                /* QAC EXPECT 0489; */
-                str++;
-            }
-            /* QAC EXPECT 2106; */
-            if (*str != 0) {
-                /* QAC EXPECT 0489; */
-                strRef = str+1; /* just behind the matching char */
-                patternRef = pattern-1; /* on the '*' */
-            }
-        /* QAC EXPECT 2106,3123; */
-        } else if (*pattern == '?') {
-            /* QAC EXPECT 0489; */
-            pattern++;
-            /* QAC EXPECT 0489; */
-            str++;
-        /* QAC EXPECT 2004,3401,0489,2106; */
-        } else if (*pattern++ != *str++) {
-            if (strRef == NULL) {
-                matches = FALSE;
-                stop = TRUE;
-            } else {
-                str = strRef;
-                pattern = patternRef;
-                strRef = NULL;
-            }
-        }
-    }
-    /* QAC EXPECT 3892,2106,2100; */
-    if ((*str == (char)0) && (stop == FALSE)) {
-        /* QAC EXPECT 2106,3123; */
-        while (*pattern == '*') {
-            /* QAC EXPECT 0489; */
-            pattern++;
-        }
-        /* QAC EXPECT 3892,2106; */
-        if (*pattern == (char)0) {
-            matches = TRUE;
-        } else {
-            matches = FALSE;
-        }
-    } else {
-        matches = FALSE;
-    }
-    return matches;
-    /* QAC EXPECT 5101; */
-}
 
 /**************************************************************/
 
@@ -199,8 +138,8 @@ nameSpaceIsIn(
     nameSpaceSearch = (d_nameSpaceSearch)actionArg;
     element = d_element(object);
 
-    if (d_nameSpaceStringMatches(nameSpaceSearch->partition, element->partition) &&
-        d_nameSpaceStringMatches(nameSpaceSearch->topic, element->topic)){
+    if (d_patternMatch(nameSpaceSearch->partition, element->partition) &&
+        d_patternMatch(nameSpaceSearch->topic, element->topic)){
         nameSpaceSearch->match = TRUE;
         continueTheSearch = FALSE;
     }
@@ -449,7 +388,7 @@ d_nameSpaceAddElement(
         } else {
             partition = (char *)d_malloc(strlenPartitionTopic, "Partition");
             if (partition) {
-                strncpy(partition, partitionTopic, strlenPartitionTopic);
+               os_strncpy(partition, partitionTopic, strlenPartitionTopic);
                 topic = partition;
 
                 /* QAC EXPECT 2106,3123; */
@@ -527,7 +466,7 @@ policyWalk (
     policyWalkData* walkData = (policyWalkData*)userData;
 
     if (!(walkData->policy_out)) {
-        if (d_nameSpaceStringMatches((c_string)walkData->nameSpace, (c_string)policy->nameSpace)) {
+        if (d_patternMatch((c_string)walkData->nameSpace, (c_string)policy->nameSpace)) {
             walkData->policy_out = policy;
         }
     }
@@ -562,6 +501,9 @@ d_nameSpaceDeinit(
         d_networkAddressFree(nameSpace->master);
         d_tableFree(nameSpace->elements); /* frees all */
         nameSpace->elements = NULL;
+        d_tableFree(nameSpace->mergedRoleStates);
+        nameSpace->mergedRoleStates = NULL;
+        d_mergeStateFree (nameSpace->mergeState);
         d_free(nameSpace->name);
 
         d_policyFree(nameSpace->policy);
@@ -588,6 +530,7 @@ d_nameSpaceNew(
     d_nameSpace     nameSpace;
     d_policy        policy;
 
+    nameSpace = NULL;
     assert (name);
 
     policy = d_nameSpaceFindPolicy (config, name);
@@ -610,6 +553,8 @@ d_nameSpaceNew(
             nameSpace->master               = d_networkAddressUnaddressed();
             nameSpace->masterState			= D_STATE_COMPLETE;
             nameSpace->masterConfirmed		= FALSE;
+            nameSpace->mergeState           = d_mergeStateNew(config->role, 0);
+            nameSpace->mergedRoleStates     = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
          }
     }
 
@@ -620,6 +565,7 @@ d_nameSpaceNew(
 /* Create namespace with private policy */
 d_nameSpace
 d_nameSpaceNew_w_policy(
+    d_configuration config,
     const char * name,
     c_bool aligner,
     d_alignmentKind alignmentKind,
@@ -645,16 +591,27 @@ d_nameSpaceNew_w_policy(
         nameSpace->master               = d_networkAddressUnaddressed();
         nameSpace->masterState          = D_STATE_COMPLETE;
         nameSpace->masterConfirmed      = FALSE;
+        nameSpace->mergeState           = d_mergeStateNew(config->role, 0);
+        nameSpace->mergedRoleStates     = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
     }
 
     return nameSpace;
+}
+
+static c_bool
+insertMergeState(
+    d_mergeState state,
+    d_table table)
+{
+    d_tableInsert(table, d_mergeStateNew(state->role, state->value));
+    return TRUE;
 }
 
 d_nameSpace
 d_nameSpaceCopy(
     d_nameSpace ns)
 {
-    d_nameSpace    nameSpace;
+    d_nameSpace nameSpace;
 
     nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
 
@@ -662,20 +619,35 @@ d_nameSpaceCopy(
         d_lockInit(d_lock(nameSpace), D_NAMESPACE, d_nameSpaceDeinit);
         /* QAC EXPECT 3892; */
 
-        c_keep (ns->policy);
-        c_keep (ns->elements);
-        c_keep (ns->master);
+        d_objectKeep (d_object(ns->policy));
+        d_objectKeep (d_object(ns->elements));
+
         nameSpace->name                 = os_strdup(ns->name);
         nameSpace->policy               = ns->policy;
         nameSpace->elements             = ns->elements;
         nameSpace->quality.seconds      = ns->quality.seconds;
         nameSpace->quality.nanoseconds  = ns->quality.nanoseconds;
-        nameSpace->master               = ns->master;
+        nameSpace->master               = d_networkAddressNew(ns->master->systemId, ns->master->localId,
+                                                              ns->master->lifecycleId);
         nameSpace->masterState          = ns->masterState;
         nameSpace->masterConfirmed      = ns->masterConfirmed;
+        nameSpace->mergeState           = d_mergeStateNew(ns->mergeState->role, ns->mergeState->value);
+        nameSpace->mergedRoleStates     = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
+        d_tableWalk(ns->mergedRoleStates, insertMergeState, nameSpace->mergedRoleStates);
     }
 
     return nameSpace;
+}
+
+void
+d_nameSpaceReplaceMergeStates(
+    d_nameSpace ns1,
+    d_nameSpace ns2)
+{
+    d_tableFree (ns1->mergedRoleStates);
+
+    ns1->mergedRoleStates = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
+    d_tableWalk(ns2->mergedRoleStates, insertMergeState, ns1->mergedRoleStates);
 }
 
 d_nameSpace
@@ -689,6 +661,7 @@ d_nameSpaceFromNameSpaces(
     c_bool aligner;
     d_alignmentKind alignmentKind;
     d_durabilityKind durabilityKind;
+    os_uint32 i;
 
     if(ns){
         nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
@@ -727,6 +700,18 @@ d_nameSpaceFromNameSpaces(
                 temp = strtok(NULL, ",");
             }
             os_free(partitions);
+
+            nameSpace->masterConfirmed = ns->masterConfirmed;
+
+            /* Add merge state for own role */
+            nameSpace->mergeState = d_mergeStateNew (ns->state.role, 0);
+
+            /* Add merge states for other roles */
+            nameSpace->mergedRoleStates = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
+            d_nameSpaceSetMergeState(nameSpace, &(ns->state));
+            for(i=0; i<ns->mergedStatesCount; i++){
+                d_nameSpaceSetMergeState(nameSpace, &((d_mergeState)(ns->mergedStates))[i]);
+            }
         }
     }
     return nameSpace;
@@ -903,9 +888,9 @@ d_nameSpaceGetPartitionsAction(
             break;
         case D_NS_COPY:
             if(strlen(data->value) == 0){
-                sprintf(data->value, "%s", element->partition);
+                os_sprintf(data->value, "%s", element->partition);
             } else {
-                sprintf(data->value, "%s,%s", data->value, element->partition);
+                os_sprintf(data->value, "%s,%s", data->value, element->partition);
             }
             break;
     }
@@ -956,3 +941,170 @@ d_nameSpaceGetInitialQuality(
     }
     return q;
 }
+
+d_mergePolicy
+d_nameSpaceGetMergePolicy(
+    d_nameSpace nameSpace,
+    d_name role)
+{
+    return d_policyGetMergePolicy (nameSpace->policy, role);
+}
+
+d_name
+d_nameSpaceGetRole(
+    d_nameSpace nameSpace)
+{
+    assert (isANameSpace(nameSpace));
+    return strdup(nameSpace->mergeState->role);
+}
+
+d_mergeState
+d_nameSpaceGetMergeState(
+    d_nameSpace nameSpace,
+    d_name role)
+{
+    d_mergeState dummy;
+    d_mergeState state = NULL;
+
+    if (isANameSpace(nameSpace)) {
+        if((!role) || (strcmp(role, nameSpace->mergeState->role) == 0)){
+            state = nameSpace->mergeState;
+        } else {
+            dummy = d_mergeStateNew(role, 0);
+            state = d_tableFind(nameSpace->mergedRoleStates, dummy);
+            d_mergeStateFree(dummy);
+        }
+        if(state){
+            state = d_mergeStateNew(state->role, state->value);
+        }
+    }
+    return state;
+}
+
+void
+d_nameSpaceSetMergeState(
+    d_nameSpace nameSpace,
+    d_mergeState state)
+{
+    d_mergeState toAdd, found;
+
+    if (isANameSpace(nameSpace)) {
+        if((!state->role) || (strcmp(state->role, nameSpace->mergeState->role) == 0)){
+            nameSpace->mergeState->value = state->value;
+        } else {
+            toAdd = d_mergeStateNew(state->role, state->value);
+            found = d_tableInsert(nameSpace->mergedRoleStates, toAdd);
+
+            if(found){
+                d_mergeStateFree(toAdd);
+                d_mergeStateSetValue(found, state->value);
+            }
+        }
+    }
+    return;
+}
+
+void
+d_nameSpaceClearMergeState(
+    d_nameSpace nameSpace,
+    d_name role)
+{
+    d_mergeState dummy;
+
+    if (isANameSpace(nameSpace)) {
+        dummy = d_mergeStateNew (role, 0);
+        d_tableRemove (nameSpace->mergedRoleStates, dummy);
+        d_mergeStateFree (dummy);
+    }
+}
+
+struct nsMergeStateDiffHelper
+{
+    d_table mergedStates;
+    c_iter diff;
+};
+
+struct nsFindDiffHelper
+{
+    c_bool found;
+    const char* role;
+};
+
+void
+d_nameSpaceFindDiffWalk (
+    c_voidp o,
+    c_voidp userData)
+{
+    struct nsFindDiffHelper* helper;
+    d_mergeState state;
+
+    helper = (struct nsFindDiffHelper*)userData;
+    state = d_mergeState(o);
+
+    /* If role is found in diff, return true */
+    if (!strcmp (state->role, helper->role)) {
+        helper->found = TRUE;
+    }
+}
+
+static c_bool
+d_nameSpaceMergeStateDiffWalk (
+    c_voidp o,
+    c_voidp userData)
+{
+    d_mergeState state1;
+    d_mergeState state2;
+    struct nsMergeStateDiffHelper* helper;
+    struct nsFindDiffHelper walkData;
+
+    state1 = (d_mergeState)o;
+    helper = (struct nsMergeStateDiffHelper*)userData;
+
+    /* Check if role is not already in diff list */
+    walkData.role = state1->role;
+    walkData.found = FALSE;
+    c_iterWalk(helper->diff, d_nameSpaceFindDiffWalk, &walkData);
+
+    /* Look it up, when a conflict is found, at it to diff list */
+    if (!walkData.found) {
+        state2 = d_tableFind (helper->mergedStates, state1);
+        if (state2) {
+            if (state1->value != state2->value) {
+                c_iterInsert (helper->diff, d_mergeStateNew(state1->role, state1->value));
+            }
+        }else {
+            c_iterInsert (helper->diff, d_mergeStateNew(state1->role, state1->value));
+        }
+    }
+    return TRUE;
+}
+
+/* Returns a list of conflicting merge states */
+c_iter
+d_nameSpaceGetMergedStatesDiff(
+    d_nameSpace ns1,
+    d_nameSpace ns2)
+{
+    c_iter result;
+    struct nsMergeStateDiffHelper walkData;
+
+    result = c_iterNew(NULL);
+
+    /* 1st walk: check ns 1 */
+    walkData.mergedStates = ns2->mergedRoleStates;
+    walkData.diff = result;
+    d_tableWalk (ns1->mergedRoleStates, d_nameSpaceMergeStateDiffWalk, &walkData);
+
+    /* 2nd walk: check ns 2 */
+    walkData.mergedStates = ns1->mergedRoleStates;
+    d_tableWalk (ns2->mergedRoleStates, d_nameSpaceMergeStateDiffWalk, &walkData);
+
+    /* If diff list is empty, free iterator */
+    if (!c_iterLength(result)) {
+        c_iterFree (result);
+        result = NULL;
+    }
+
+    return result;
+}
+

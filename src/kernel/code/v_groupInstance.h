@@ -15,7 +15,6 @@
 
 #include "v_kernel.h"
 #include "v_writerInstance.h"
-#include "v_writerCache.h"
 #include "v_state.h"
 
 #define v_groupInstance(_this) (C_CAST(_this,v_groupInstance))
@@ -64,9 +63,6 @@
                      (v_groupInstance *)(&_this), \
                      resendScope, \
                      V_NETWORKID_LOCAL)
-
-#define v_groupInstanceRegisterSource(_this,item) \
-        v_writerCacheInsert(v_groupInstance(_this)->sourceCache,item);
 
 #define v_groupInstanceSetEpoch(_this,_epoch) \
         v_groupInstance(_this)->epoch = _epoch

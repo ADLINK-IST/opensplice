@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -25,7 +25,7 @@ C_STRUCT(d_chainBead){
     d_networkAddress sender;
     v_message message;
     c_ulong refCount;
-};    
+};
 
 C_STRUCT(d_chainLink){
     d_networkAddress sender;
@@ -60,6 +60,9 @@ c_bool                  d_sampleChainListenerStop               (d_sampleChainLi
 void                    d_sampleChainListenerInsertRequest      (d_sampleChainListener listener,
                                                                  d_chain chain,
                                                                  c_bool reportGroupWhenUnfullfilled);
+
+void                    d_sampleChainListenerInsertMergeAction  (d_sampleChainListener listener,
+                                                                 d_mergeAction action);
 
 void                    d_sampleChainListenerTryFulfillChains   (d_sampleChainListener listener,
                                                                  d_group group);

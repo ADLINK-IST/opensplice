@@ -574,7 +574,7 @@ c_specifierSpec(
     }
     if ((name != NULL) && (strlen(name) > 0)) {
         newName = (c_string)os_malloc(strlen(name)+2);
-        sprintf(newName," %s",name);
+        os_sprintf(newName," %s",name);
     } else {
         newName = "";
     }
@@ -599,7 +599,7 @@ c_specifierSpec(
                 }
             break;
             case C_SEQUENCE:
-                c_out(context,"c_array %s /*%s*/",name, commentName);
+                c_out(context,"c_sequence %s /*%s*/",name, commentName);
             break;
             case C_BAG:        c_out(context,"c_bag %s",name);  break;
             case C_SET:        c_out(context,"c_set %s",name);  break;
@@ -649,7 +649,7 @@ c_specifierSpec(
                     c_out(context,"[%d]",c_collectionType(type)->maxSize);
                 }
             break;
-            case C_SEQUENCE:   c_out(context,"c_array %s",name); break;
+            case C_SEQUENCE:   c_out(context,"c_sequence %s",name); break;
             case C_BAG:        c_out(context,"c_bag %s",name);  break;
             case C_SET:        c_out(context,"c_set %s",name);  break;
             case C_MAP:        c_out(context,"c_map %s",name);  break;
@@ -773,7 +773,7 @@ c_moduleSpec(
     }
 
     streamName = os_malloc(strlen(moduleName) + 3);
-    sprintf(streamName, "%s.h", moduleName);
+    os_sprintf(streamName, "%s.h", moduleName);
 
     newContext.scope     = c_metaObject(o);
     newContext.stream    = fopen(streamName,"w");
@@ -832,7 +832,7 @@ c_moduleBody(
     }
 
     streamName = os_malloc(strlen(moduleName) + 3);
-    sprintf(streamName, "%s.c", moduleName);
+    os_sprintf(streamName, "%s.c", moduleName);
     newContext.stream      = fopen(streamName,"w");
     newContext.scope       = c_metaObject(o);
 

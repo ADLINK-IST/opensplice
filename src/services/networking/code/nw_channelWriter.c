@@ -359,7 +359,7 @@ nw_channelWriterNew(
                       strlen(NWCF_ROOT(Tx)) + strlen(NWCF_SEP) +
                       strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx),
+        os_sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx),
                                        NWCF_SEP, NWCF_ROOT(Scheduling));
         nw_channelUserInitialize((nw_channelUser)result,
             pathName /* use pathName as name */, tmpPath, reader,
@@ -408,7 +408,7 @@ nw_channelWriterNew(
                       strlen(NWCF_ROOT(Tx)) + 1;
 
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
+        os_sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
 
         result->reportInterval = NWCF_SIMPLE_PARAM(ULong, tmpPath, ReportInterval);
 

@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_waitSet.h"
+#include "saj_WaitSet.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_WaitSet_##name

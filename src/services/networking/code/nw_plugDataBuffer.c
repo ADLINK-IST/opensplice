@@ -120,7 +120,7 @@ nw_plugDataBufferToString(
 
     str = os_malloc(200);
     NW_CONFIDENCE(buffer != NULL);
-    sprintf(str,"partitionId(%d),nrOfMessages(%d),packetNr(%d),fragmentedMsgNr(%d),fragmentNr(%d),terminatedMsgNr(%d),terminatingFragmentNr(%d)",
+    os_sprintf(str,"partitionId(%d),nrOfMessages(%d),packetNr(%d),fragmentedMsgNr(%d),fragmentNr(%d),terminatedMsgNr(%d),terminatingFragmentNr(%d)",
     buffer->partitionId,
     buffer->nrOfMessages,
     buffer->packetNr,

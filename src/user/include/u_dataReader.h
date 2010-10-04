@@ -134,6 +134,13 @@ u_dataReaderSetInstanceUserData (
 	    u_instanceHandle handle,
 	    c_voidp userData);
 
+OS_API u_result
+u_dataReaderCopyKeysFromInstanceHandle (
+        u_dataReader _this,
+        u_instanceHandle handle,
+        u_readerAction action,
+        void *copyArg);
+
 #if 1
 
 /* Deprecated */

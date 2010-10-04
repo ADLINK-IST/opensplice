@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_topicDescription.h"
+#include "saj_TopicDescription.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_TopicDescriptionImpl_##name

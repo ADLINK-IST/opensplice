@@ -10,7 +10,7 @@
  *
  */
  
-#include "saj_entity.h"
+#include "saj_Entity.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 

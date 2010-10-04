@@ -70,19 +70,19 @@ idl_genSajXMLMeta(
         ptr = meta;
         newMeta[0] = 0;
         while (pcs > 1) {
-            strcat(newMeta, "\"");
+            os_strcat(newMeta, "\"");
 	    i = 1;
 	    while (ptr[IDL_MAX_JSTRING_META_SIZE-i] == '\\') {
 		i++;
 	    }
-            strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
+            os_strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
             ptr += (IDL_MAX_JSTRING_META_SIZE-i+1);
-            strcat(newMeta, "\",\n");
+            os_strcat(newMeta, "\",\n");
             pcs--;   
         }
-        strcat(newMeta, "\"");
-        strcat(newMeta, ptr);
-        strcat(newMeta, "\"");
+        os_strcat(newMeta, "\"");
+        os_strcat(newMeta, ptr);
+        os_strcat(newMeta, "\"");
     }
     os_free(meta);
     return newMeta;

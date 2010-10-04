@@ -150,22 +150,6 @@
             </i>
           </td>
         </tr>      
-        <tr>
-          <td>
-            dds2179
-          </td>
-          <td>
-            <b>OpenSplice DDS fails to start on Windows after unexpected shutdown of OpenSplice daemon</b><br/>
-            <i>
-              OpenSplice DDS fails to start after an unexpected termination of the OpenSplice 
-              daemon (either through the operating system stopping unexpectedly or using Task Manager to kill it).
-              When OpenSplice is stopped using ospl stop, it cleans up termporary files that are used to store information
-              about the database file (shared memory segment). When re-starting OpenSplice these files are identified and used,
-              but they are no longer valid. This issue is marked for resolution soon. <br><br>
-              A manual solution to this problem is to remove the files from the temporary directory as indicated by ospl-error.log and restart the daemon. 
-            </i>
-          </td>
-        </tr>      
       </table>
 
 

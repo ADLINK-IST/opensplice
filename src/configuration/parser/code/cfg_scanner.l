@@ -5,12 +5,12 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "xml_tmplExp.h"
 
 #include <os.h>
 #include <os_report.h>
+#include <os_stdlib.h>
 
 /* cfg_curState is initialized when parser is called:
  * see cfg_parse_ospl() in cfg_parser.y
@@ -87,7 +87,7 @@ extractAttributeValue(
     for (i = 1; value[i] != '"'; i++);
     result = cfg_memoryClaimListAdd(cfg_mcl,
         os_malloc(i), os_free); /* no +1, since already covered by '"' */
-    strncpy(result, value + 1, i - 1);
+    os_strncpy(result, value + 1, i - 1);
     result[i - 1] = 0;
 
     attrValue = expandEnvironment(result);
@@ -109,11 +109,11 @@ extractEndTag(
     if (i < yyleng) {
         result = cfg_memoryClaimListAdd(cfg_mcl,
             os_malloc(i), os_free); /* no +1 already covered by '</' */
-        strncpy(result, endTag + 2, i - 2);
+        os_strncpy(result, endTag + 2, i - 2);
         result[i - 2] = 0;
     } else {
         result = cfg_memoryClaimListAdd(cfg_mcl, os_malloc(1), os_free);
-        strcpy(result, "");
+        os_strcpy(result, "");
     }
     return result;
 }
@@ -179,7 +179,7 @@ pidata          [^?]*
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext) + 1), os_free);
-                                              strcpy(yylval.str, yytext);
+                                              os_strcpy(yylval.str, yytext);
                                               return TOK_NAME;
                                             }
 <ST_ELEMENT,ST_PISPLICE>{attributevalue}    { 
@@ -195,7 +195,7 @@ pidata          [^?]*
                                               BEGIN(ST_ELEMENT);
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext + 1) + 1), os_free);
-                                              strcpy(yylval.str, yytext + 1);
+                                              os_strcpy(yylval.str, yytext + 1);
                                               return TOK_START;
                                             }
 <ST_ELCONTENT>"</"{name}">"{whitespace}?    { 
@@ -211,7 +211,7 @@ pidata          [^?]*
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext) + 1), os_free);
-                                              strcpy(yylval.str, yytext);
+                                              os_strcpy(yylval.str, yytext);
                                               return TOK_COMMENT;
                                             }
 
@@ -225,7 +225,7 @@ pidata          [^?]*
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext + 2) + 1), os_free);
-                                              strcpy(yylval.str, yytext + 2);
+                                              os_strcpy(yylval.str, yytext + 2);
                                               yy_push_state(cfg_curState);
                                               if (strcmp(yylval.str, "OpenSplice-PI") == 0) {
                                                   cfg_curState = ST_PISPLICE;
@@ -240,7 +240,7 @@ pidata          [^?]*
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext) + 1), os_free);
-                                              strcpy(yylval.str, yytext);
+                                              os_strcpy(yylval.str, yytext);
                                               return TOK_PIDATA;
                                             }
 

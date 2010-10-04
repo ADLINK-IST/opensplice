@@ -51,12 +51,6 @@ void idl_catsDefAdd (
     const char *typeName,
     const char *catsList);
 
-c_char*
-idl_catsResolve (
-    idl_catsDef catsDef,
-    idl_scope scope,
-    const char *typeName);
-
 void idl_catsDefDefSet (
     idl_catsDef catsDef);
 

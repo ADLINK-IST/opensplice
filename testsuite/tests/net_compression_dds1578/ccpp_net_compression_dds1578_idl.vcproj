@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_net_compression_dds1578_idl"
-	ProjectGUID="{D287EA8B-FECA-1BAD-EC4B-04567D83A2AC}"
+	ProjectGUID="{B7AE63F8-FECA-1BAD-B9D1-9062868AC10D}"
 	RootNamespace="ccpp_net_compression_dds1578_idl"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -101,9 +101,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578C.cpp;dds1578C.h;dds1578C.inl;dds1578S.cpp;dds1578S.h;dds1578S.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -111,9 +111,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578C.cpp;dds1578C.h;dds1578C.inl;dds1578S.cpp;dds1578S.h;dds1578S.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -121,9 +121,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578C.cpp;dds1578C.h;dds1578C.inl;dds1578S.cpp;dds1578S.h;dds1578S.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -131,9 +131,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578C.cpp;dds1578C.h;dds1578C.inl;dds1578S.cpp;dds1578S.h;dds1578S.inl"/>
 				</FileConfiguration>
 			</File>
@@ -144,9 +144,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578Dcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578Dcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578DcpsC.cpp;dds1578DcpsC.h;dds1578DcpsC.inl;dds1578DcpsS.cpp;dds1578DcpsS.h;dds1578DcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -154,9 +154,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578Dcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578Dcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578DcpsC.cpp;dds1578DcpsC.h;dds1578DcpsC.inl;dds1578DcpsS.cpp;dds1578DcpsS.h;dds1578DcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -164,9 +164,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578Dcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578Dcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578DcpsC.cpp;dds1578DcpsC.h;dds1578DcpsC.inl;dds1578DcpsS.cpp;dds1578DcpsS.h;dds1578DcpsS.inl"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -174,9 +174,9 @@
 				>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Invoking $(ACE_ROOT)\bin\tao_idl on dds1578Dcps.idl"
-						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;$(ACE_ROOT)\bin\tao_idl -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT) -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
-						AdditionalDependencies="$(ACE_ROOT)\bin\tao_idl.exe"
+						Description="Invoking &quot;$(ACE_ROOT)\bin\tao_idl&quot; on dds1578Dcps.idl"
+						CommandLine="PATH=%PATH%;$(ACE_ROOT)\lib&#x0D;&#x0A;&quot;$(ACE_ROOT)\bin\tao_idl&quot; -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I&quot;$(TAO_ROOT)&quot; -Sa -St -I &quot;$(OSPL_HOME)/etc/idl&quot; -Sp &quot;dds1578Dcps.idl&quot;"
+						AdditionalDependencies="&quot;$(ACE_ROOT)\bin\tao_idl&quot;.exe"
 						Outputs="dds1578DcpsC.cpp;dds1578DcpsC.h;dds1578DcpsC.inl;dds1578DcpsS.cpp;dds1578DcpsS.h;dds1578DcpsS.inl"/>
 				</FileConfiguration>
 			</File>

@@ -17,10 +17,11 @@
 
 #define _WIN32_WINNT 0x0400
 
-#include <Windows.h>
 #include "os_cond.h"
+#include "os_stdlib.h"
 #include "code/os__debug.h"
 #include "code/os__service.h"
+#include <code/os__sharedmem.h>
 
 #include <stdio.h>
 #include <assert.h>
@@ -167,16 +168,18 @@ condTimedWait(
 
     result = os_resultSuccess;
     if (cond->scope == OS_SCOPE_SHARED) {
-        _snprintf(name, sizeof(name), "%s%d",
-            OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
+        _snprintf(name, sizeof(name), "%s%d%d",
+            OS_SERVICE_SEM_NAME_PREFIX, cond->qId,os_getShmBaseAddressFromPointer(cond));
+
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
             OS_DEBUG_1("condTimedWait", "OpenSemaphore failed %d", (int)GetLastError());
             assert(0);
             return os_resultFail;
         }
-        _snprintf(name, sizeof(name), "%s%d",
-            OS_SERVICE_EVENT_NAME_PREFIX, mutex->id);
+
+        _snprintf(name, sizeof(name), "%s%d%d",
+            OS_SERVICE_EVENT_NAME_PREFIX, mutex->id,os_getShmBaseAddressFromPointer(cond));
         hMtx = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
         if (hMtx == NULL) {
             OS_DEBUG_1("condTimedWait", "OpenEvent failed %d", (int)GetLastError());
@@ -232,8 +235,10 @@ condSignal(
     osr = os_resultSuccess;
 
     if (cond->scope == OS_SCOPE_SHARED) {
-        _snprintf(name, sizeof(name), "%s%d",
-            OS_SERVICE_SEM_NAME_PREFIX, cond->qId);
+
+        _snprintf(name, sizeof(name), "%s%d%d",
+            OS_SERVICE_SEM_NAME_PREFIX, cond->qId,os_getShmBaseAddressFromPointer(cond));
+
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
             OS_DEBUG_1("condSignal", "OpenSemaphore failed %d", (int)GetLastError());

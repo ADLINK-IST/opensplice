@@ -27,7 +27,7 @@ DDSString::IntToString(int i)
 {
    char buf[20];
 
-   sprintf(buf, "%d", i);
+   os_sprintf(buf, "%d", i);
    return new stringrep(buf);
 }
 
@@ -36,7 +36,7 @@ DDSString::ULongToString (DDS::ULong i)
 {
    char buf[20];
 
-   sprintf (buf, "%du", i);
+   os_sprintf (buf, "%du", i);
    return new stringrep(buf);
 }
 

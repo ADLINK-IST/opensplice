@@ -47,6 +47,7 @@
 #include "v_public.h"
 #include "v_qos.h"
 #include "os.h"
+#include "os_stdlib.h"
 #include "sd_serializer.h"
 #include <os_abstract.h>
 #include <stdio.h>
@@ -131,7 +132,7 @@ getXMLEscapedString(
 
                     for(j = 0; !match && j < CMX_XML_NUM_ESCAPE_CHARS; j++){
                         if(string[i] == CMX_XML_ESCAPE_CHARS[j]){
-                            strncpy(&result[i + inserts], CMX_XML_REPLACE_CHARS[j], CMX_XML_REPLACE_CHARS_LEN[j]);
+                            os_strncpy(&result[i + inserts], CMX_XML_REPLACE_CHARS[j], CMX_XML_REPLACE_CHARS_LEN[j]);
                             /* Count extra length. The original character is counted
                              * by strLen, so count with original character excluded. */
                             inserts += CMX_XML_REPLACE_CHARS_LEN[j] - 1;
@@ -199,7 +200,7 @@ cmx_entityNewFromWalk(
             }
             if(entity->name != NULL){
                 c_char* escapedString = getXMLEscapedString(entity->name);
-                sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
+                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
                             (c_address)proxy,
                             v_public(entity)->handle.index,
                             v_public(entity)->handle.serial,
@@ -209,7 +210,7 @@ cmx_entityNewFromWalk(
                 os_free(escapedString);
             }
             else{
-                sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",
+                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",
                         (c_address)proxy,
                         v_public(entity)->handle.index,
                         v_public(entity)->handle.serial,
@@ -847,7 +848,7 @@ cmx_entityUserEntity(
     if(xmlEntity != NULL){
         if(cmx_isInitialized() == TRUE){
             copy = (c_char*)(os_malloc(strlen(xmlEntity) + 1));
-            strcpy(copy, xmlEntity);
+            os_strcpy(copy, xmlEntity);
             temp = strtok((c_char*)copy, "</>");    /*<entity>*/
             temp = strtok(NULL, "</>");             /*<pointer>*/
             temp = strtok(NULL, "</>");             /*... the pointer*/

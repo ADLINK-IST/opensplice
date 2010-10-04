@@ -183,15 +183,15 @@ idl_constExpressionImage (
 	    if (image == NULL) {
 	        newLen = strlen (operandImage) + 2;
 	        image = os_malloc (newLen);
-	        strncpy (image, "(", newLen);
+	       os_strncpy (image, "(", newLen);
 	    } else {
 	        newLen = strlen (image) + strlen (operatorImage(constExpression->kind)) + strlen (operandImage) + 4;
 	        image = os_realloc (image, newLen);
 		strncat (image, " ", newLen);
-	        strncat (image, operatorImage(constExpression->kind), newLen);
+	        os_strncat (image, operatorImage(constExpression->kind), newLen);
 		strncat (image, " ", newLen);
 	    }
-	    strncat (image, operandImage, newLen);
+	    os_strncat (image, operandImage, newLen);
 	    os_free (operandImage);
         }
 	strncat (image, ")", newLen);
@@ -300,8 +300,8 @@ idl_constOperandImage (
     getter = idl_genLanguageConstGetter();
     if (getter) {
         tmp = os_malloc(strlen(image) + strlen(getter) + 1);
-        strcpy(tmp, image);
-        strcat(tmp, getter);
+        os_strcpy(tmp, image);
+        os_strcat(tmp, getter);
         os_free(getter);
         os_free(image);
         image = tmp;

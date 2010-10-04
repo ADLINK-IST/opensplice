@@ -121,7 +121,7 @@ os_sharedAddress(
 OS_API os_result
 os_sharedSize(
     os_sharedHandle sharedHandle,
-    os_uint32 *size);
+    os_address *size);
 
 /** \brief Create shared memory
  *
@@ -142,7 +142,7 @@ os_sharedSize(
 OS_API os_result
 os_sharedMemoryCreate(
     os_sharedHandle sharedHandle,
-    os_uint32 size);
+    os_address size);
 
 /** \brief Destroy shared memory
  *

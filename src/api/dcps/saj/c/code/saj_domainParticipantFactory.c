@@ -14,12 +14,11 @@
 #include "saj_qosUtils.h"
 #include "saj_domainParticipantListener.h"
 #include "saj_extDomainParticipantListener.h"
-#include "saj_domainParticipantFactory.h"
+#include "saj_DomainParticipantFactory.h"
 #include "os_process.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_report.h"
-#include "saj_extDomainParticipantListener.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_DomainParticipantFactory_##name
 

@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_domainParticipant.h"
+#include "saj_DomainParticipant.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 #include "saj_domainParticipantListener.h"

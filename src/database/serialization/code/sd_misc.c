@@ -196,7 +196,7 @@ sd_stringDup(
         size++; /* '\0'*/
         result = os_malloc(size);
         if (result) {
-             strncpy(result, string, size);
+             os_strncpy(result, string, size);
         }
     }
 

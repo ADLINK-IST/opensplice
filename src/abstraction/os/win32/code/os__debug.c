@@ -61,7 +61,7 @@ setCrtMode(
     _HFILE reportFile;
     os_crtReportInfo result = NULL;
 
-    fileName = getenv(envName);
+    fileName = os_getenv(envName);
     if (!fileName) {
         fileName = defaultName;
     }
@@ -148,7 +148,7 @@ os_debugModeInit()
     /* Only do this if no-one has called function before
      * unless os_debugModeExit has been called */
     if (!infoBlock) {
-        pathName = getenv(REPORTFILE_PATHNAME);
+        pathName = os_getenv(REPORTFILE_PATHNAME);
         if (pathName) {
             infoBlock = (os_crtReportInfoBlock)os_malloc(sizeof(*infoBlock));
             infoBlock->warnInfo = setCrtMode(_CRT_WARN, REPORTFILE_WARNFILENAME,

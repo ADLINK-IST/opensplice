@@ -98,7 +98,7 @@ cmx_writerInit(
     v_writer writer;
     
     writer = v_writer(entity);
-    sprintf(buf, "<kind>WRITER</kind>");
+    os_sprintf(buf, "<kind>WRITER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

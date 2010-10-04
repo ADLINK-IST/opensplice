@@ -155,7 +155,7 @@ v_participantFree(
 
         kernel = v_objectKernel(p);
 
-        if (!v_observableRemoveObserver(v_observable(kernel),v_observer(p))) {
+        if (!v_observableRemoveObserver(v_observable(kernel),v_observer(p), NULL)) {
             if (v_participantName(p) != NULL) {
                 OS_REPORT_1(OS_WARNING,"v_participantFree",0,
                             "Participant '%s' cannot disconnect from Kernel events",
@@ -657,7 +657,7 @@ v_result v_participantCandMCommandSetDisposeAllData(v_participant participant,
     v_topic topic;
     c_base base;
     v_controlAndMonitoringCommand *command;
-    struct v_commandDisposeAllData *disposeCmd; 
+    struct v_commandDisposeAllData *disposeCmd;
 
     assert(participant != NULL);
     assert(C_TYPECHECK(participant,v_participant));
@@ -674,9 +674,9 @@ v_result v_participantCandMCommandSetDisposeAllData(v_participant participant,
     disposeCmd->topicExpr = c_stringNew(base, topicExpr);
     disposeCmd->partitionExpr = c_stringNew(base, partitionExpr);
 
-    return ( ( disposeCmd->topicExpr != NULL 
-               && disposeCmd->partitionExpr != NULL ) 
-             ? V_RESULT_OK 
+    return ( ( disposeCmd->topicExpr != NULL
+               && disposeCmd->partitionExpr != NULL )
+             ? V_RESULT_OK
              : V_RESULT_OUT_OF_MEMORY );
 }
 
@@ -693,7 +693,7 @@ v_result v_participantWriteCandMCommand(v_participant participant, v_message msg
    builtinWriter = v_builtinWriterLookup(v_objectKernel(participant)->builtin,
                                          V_C_AND_M_COMMAND_ID);
    wres = v_writerWrite(builtinWriter, msg, v_timeGet(), NULL);
-   return ( wres == V_WRITE_SUCCESS 
-            ? V_RESULT_OK 
+   return ( wres == V_WRITE_SUCCESS
+            ? V_RESULT_OK
               : V_RESULT_INTERNAL_ERROR );
 }

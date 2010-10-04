@@ -17,6 +17,7 @@
 #include "c_misc.h"
 #include "c_base.h"
 #include "c_metabase.h"
+#include "c_collection.h"
 
 #include "idl_scope.h"
 #include "idl_catsDef.h"
@@ -41,6 +42,11 @@ static c_structure
 idl_catsDefFindMetaStructureResolved(
     c_metaObject scope,
     const char *typeName);
+
+static os_boolean
+idl_catsListItemIsMemberLocated(
+    const c_char* list,
+    const char* itemName);
 
 c_baseObject
 idl_catsDefResolveTypeDef(
@@ -121,25 +127,53 @@ idl_catsDefAdd (
     }
 }
 
+os_boolean
+idl_catsListItemIsMemberLocated(
+    const c_char* list,
+    const char* itemName)
+{
+    os_boolean isDefined = OS_FALSE;
+
+    if(list)
+    {
+        c_iter items;
+        c_char* item;
+
+        items = c_splitString(list, ",");
+        while(c_iterLength(items) > 0 && !isDefined)
+        {
+            item = c_iterTakeFirst(items);
+            if(item && 0 == strcmp(item, itemName))
+            {
+                isDefined = OS_TRUE;
+            }
+        }
+    }
+
+    return isDefined;
+}
+
 /* Find the cats list related to the specified typename in
    the specified scope
 */
-c_char *
-idl_catsResolve (
+os_boolean
+idl_catsListItemIsDefined (
     idl_catsDef catsDef,
     idl_scope scope,
-    const char *typeName)
+    const char *typeName,
+    const char* itemName)
 {
     c_long li;
     c_long si;
     idl_catsMap catsMap;
     c_metaObject typeScope;
+    os_boolean isDefined = OS_FALSE;
 
     if(catsDef)
     {
         li = 0;
         /* check all cats definition list elements */
-        while (li < c_iterLength (catsDef->catsList))
+        while (li < c_iterLength (catsDef->catsList) && !isDefined)
         {
             catsMap = c_iterObject (catsDef->catsList, li);
             if (strcmp(typeName, catsMap->typeName) == 0)
@@ -149,43 +183,46 @@ idl_catsResolve (
                     (catsMap->scope->definedIn == NULL))
                 {
                     /* Global scope */
-                    return catsMap->catsList;
+                    isDefined = idl_catsListItemIsMemberLocated(catsMap->catsList, itemName);
                 }
-                si = idl_scopeStackSize (scope)-1;
-                typeScope = catsMap->scope;
-                while (si >= 0)
+                if(!isDefined)
                 {
-                    /* for each scope element */
-                    if (idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule &&
-                        strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0)
+                    si = idl_scopeStackSize (scope)-1;
+                    typeScope = catsMap->scope;
+                    while (si >= 0)
                     {
-                        /* the scope is a module and the scope name compares */
-                        si--;
-                        if (typeScope)
+                        /* for each scope element */
+                        if (idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule &&
+                            strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0)
                         {
-                            typeScope = typeScope->definedIn;
-                        }
-                        if (si == -1)
-                        {
-                        /* bottom of the stack is reached */
-                            if (typeScope == NULL || typeScope->name == NULL)
+                            /* the scope is a module and the scope name compares */
+                            si--;
+                            if (typeScope)
                             {
-                                /* the typeScope has reached the bottom too,
-                                 * thus the scopes are equal
-                                 */
-                                return catsMap->catsList;
+                                typeScope = typeScope->definedIn;
                             }
+                            if (si == -1)
+                            {
+                            /* bottom of the stack is reached */
+                                if (typeScope == NULL || typeScope->name == NULL)
+                                {
+                                    /* the typeScope has reached the bottom too,
+                                     * thus the scopes are equal
+                                     */
+                                    isDefined = idl_catsListItemIsMemberLocated(catsMap->catsList, itemName);
+                                }
+                            }
+                        } else
+                        {
+                            si = -1;
                         }
-                    } else
-                    {
-                        si = -1;
                     }
                 }
             }
             li++;
         }
     }
-    return NULL;
+    return isDefined;
 }
 
 /* Set the default cats definition list */
@@ -202,38 +239,6 @@ idl_catsDefDefGet (
     void)
 {
     return idl_catsDefinitions;
-}
-
-os_boolean
-idl_catsListItemIsDefined (
-    idl_catsDef catsDef,
-    idl_scope scope,
-    const char* typeName,
-    const char* itemName)
-{
-    c_char* list;
-    os_boolean isDefined = OS_FALSE;
-
-    list = idl_catsResolve (catsDef, scope, typeName);
-    if(catsDef)
-    {
-        if(list)
-        {
-            c_iter items;
-            c_char* item;
-
-            items = c_splitString(list, ",");
-            while(c_iterLength(items) > 0 && !isDefined)
-            {
-                item = c_iterTakeFirst(items);
-                if(item && 0 == strcmp(item, itemName))
-                {
-                    isDefined = OS_TRUE;
-                }
-            }
-        }
-    }
-    return isDefined;
 }
 
 /* This operation scans through the list of items within the 'cats' pragma.
@@ -342,7 +347,7 @@ idl_catsDefConvertAll(
                 c_metaObject(o)->definedIn = c_metaObject(structure);
                 c_metaFinalize(o);
                 memset(buffer, 0, 60);
-                sprintf(buffer, "C_STRING<%d>", c_collectionType(idl_catsDefResolveTypeDef(c_baseObject(c_specifier(member)->type)))->maxSize);
+                os_sprintf(buffer, "C_STRING<%d>", c_collectionType(idl_catsDefResolveTypeDef(c_baseObject(c_specifier(member)->type)))->maxSize);
                 found = c_metaBind(c_metaObject(structure), &buffer[0], o);
                 c_free(o);
                 c_specifier(newMember)->type = c_type(found);

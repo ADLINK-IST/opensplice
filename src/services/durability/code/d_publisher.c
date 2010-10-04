@@ -21,6 +21,7 @@
 #include "d_groupsRequest.h"
 #include "d_nameSpaces.h"
 #include "d_nameSpacesRequest.h"
+#include "d__mergeState.h"
 #include "d_deleteData.h"
 #include "d_configuration.h"
 #include "d_qos.h"
@@ -1039,6 +1040,9 @@ d_publisherNameSpacesWriterCopy(
     void *to)
 {
     c_bool result;
+    c_ulong i;
+    static c_type mergeStateType = NULL;
+
     d_nameSpaces msgFrom = d_nameSpaces(data);
     d_nameSpaces msgTo   = d_nameSpaces(to);
     c_base base          = c_getBase(type);
@@ -1056,12 +1060,43 @@ d_publisherNameSpacesWriterCopy(
     msgTo->master.localId             = msgFrom->master.localId;
     msgTo->master.lifecycleId         = msgFrom->master.lifecycleId;
     msgTo->isComplete                 = msgFrom->isComplete;
+    msgTo->masterConfirmed            = msgFrom->masterConfirmed;
+    msgTo->state.role                 = c_stringNew(base, msgFrom->state.role);
+    msgTo->state.value                = msgFrom->state.value;
 
     if(msgFrom->partitions) {
         msgTo->partitions = c_stringNew(base, msgFrom->partitions);
     } else {
         msgTo->partitions = NULL;
     }
+    if(msgFrom->state.role) {
+        msgTo->state.role    = c_stringNew(base, msgFrom->state.role);
+    } else {
+        msgTo->state.role    = NULL;
+    }
+    msgTo->state.value       = msgFrom->state.value;
+    msgTo->mergedStatesCount = msgFrom->mergedStatesCount;
+
+    if (mergeStateType == NULL) {
+        mergeStateType = c_resolve(base, "durabilityModule2::d_mergeState_s");
+    }
+    assert(mergeStateType);
+
+    if(msgTo->mergedStatesCount > 0){
+        msgTo->mergedStates = c_arrayNew(mergeStateType, msgTo->mergedStatesCount);
+        assert(msgTo->mergedStates);
+    } else {
+        msgTo->mergedStates = NULL;
+    }
+
+    for(i=0; i<msgTo->mergedStatesCount; i++){
+        (((d_mergeState)(msgTo->mergedStates))[i]).value =
+            (((d_mergeState)msgFrom->mergedStates)[i]).value;
+        (((d_mergeState)msgTo->mergedStates)[i]).role  =
+            c_stringNew(base, (((d_mergeState)msgFrom->mergedStates)[i]).role);
+    }
+
+
     return result;
 }
 

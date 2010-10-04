@@ -59,7 +59,7 @@ static char* CHECK_REF_FILE = NULL;
     \
     if(!CHECK_REF_FILE){ \
         CHECK_REF_FILE = os_malloc(16); \
-        sprintf(CHECK_REF_FILE, "handle.log"); \
+        os_sprintf(CHECK_REF_FILE, "handle.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\

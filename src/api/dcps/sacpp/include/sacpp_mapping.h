@@ -36,5 +36,6 @@
 #include "mapping/UVL.h"
 #include "mapping/BVL.h"
 #include "mapping/VALUE.h"
+#include "mapping/BSTR.h"
 
 #endif /* SACPP_MAPPING_H */

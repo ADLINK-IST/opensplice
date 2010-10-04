@@ -2071,6 +2071,7 @@ gapi_topicBuiltinTopicDataSeq_allocbuf (gapi_unsigned_long len);
  *     LivelinessQosPolicy liveliness;
  *     ReliabilityQosPolicy reliability;
  *     LifespanQosPolicy lifespan;
+ *     DestinationOrderQosPolicy destination_order;
  *     UserDataQosPolicy user_data;
  *     OwnershipQosPolicy ownership;
  *     OwnershipStrengthQosPolicy ownership_strength;
@@ -2091,6 +2092,7 @@ typedef C_STRUCT(gapi_publicationBuiltinTopicData) {
     gapi_livelinessQosPolicy liveliness;
     gapi_reliabilityQosPolicy reliability;
     gapi_lifespanQosPolicy lifespan;
+    gapi_destinationOrderQosPolicy destination_order;
     gapi_userDataQosPolicy user_data;
     gapi_ownershipQosPolicy ownership;
     gapi_ownershipStrengthQosPolicy ownership_strength;

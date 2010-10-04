@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_guardCondition.h"
+#include "saj_GuardCondition.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_GuardCondition_##name

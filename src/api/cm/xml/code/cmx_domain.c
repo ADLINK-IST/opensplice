@@ -64,7 +64,7 @@ cmx_domainInit(
     v_partition partition;
     
     partition = v_partition(entity);
-    sprintf(buf, "<kind>DOMAIN</kind>");
+    os_sprintf(buf, "<kind>DOMAIN</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

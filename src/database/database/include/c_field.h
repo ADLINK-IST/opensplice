@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_FIELD_H
@@ -92,6 +92,13 @@ c_fieldValue(
 
 OS_API void
 c_fieldCopy(
+    c_field srcfield,
+    c_object src,
+    c_field dstfield,
+    c_object dst);
+
+OS_API void
+c_fieldClone(
     c_field srcfield,
     c_object src,
     c_field dstfield,

@@ -176,21 +176,21 @@ DDS_StdString be_constant::QuotedConstValue ()
    {
       case AST_Expression::EV_short:
       {
-         sprintf(buf, "%hd", ast_val->u.sval);
+         os_sprintf(buf, "%hd", ast_val->u.sval);
          val += buf;
       }
       break;
 
       case AST_Expression::EV_long:
       {
-         sprintf (buf, "%d", (int) ast_val->u.lval);
+         os_sprintf (buf, "%d", (int) ast_val->u.lval);
          val += buf;
       }
       break;
 
       case AST_Expression::EV_longlong:
       {
-         sprintf(buf, "0x%lx", ast_val->u.lval);
+         os_sprintf(buf, "0x%lx", ast_val->u.lval);
          val += buf;
 
       }
@@ -198,7 +198,7 @@ DDS_StdString be_constant::QuotedConstValue ()
 
       case AST_Expression::EV_ushort:
       {
-         sprintf(buf, "%hu", ast_val->u.usval);
+         os_sprintf(buf, "%hu", ast_val->u.usval);
          val += buf;
       }
       break;
@@ -206,7 +206,7 @@ DDS_StdString be_constant::QuotedConstValue ()
       case AST_Expression::EV_ulong:
       case AST_Expression::EV_ulonglong:
       {
-         sprintf(buf, "%lu", ast_val->u.ulval);
+         os_sprintf(buf, "%lu", ast_val->u.ulval);
          val += buf;
       }
       break;
@@ -219,7 +219,7 @@ DDS_StdString be_constant::QuotedConstValue ()
          }
          else
          {
-            sprintf (buf, "%1.12e", ast_val->u.fval);
+            os_sprintf (buf, "%1.12e", ast_val->u.fval);
             val += buf;
          }
       }
@@ -233,7 +233,7 @@ DDS_StdString be_constant::QuotedConstValue ()
          }
          else
          {
-            sprintf (buf, "%1.22e", ast_val->u.dval);
+            os_sprintf (buf, "%1.22e", ast_val->u.dval);
             val += buf;
          }
       }
@@ -245,12 +245,12 @@ DDS_StdString be_constant::QuotedConstValue ()
 
          if (ast_val->u.cval > 32)
          {
-            sprintf(buf, "%c", ast_val->u.cval);
+            os_sprintf(buf, "%c", ast_val->u.cval);
          }
          else // print an escaped octal
          {
             val += "\\";
-            sprintf(buf, "%o", ast_val->u.cval);
+            os_sprintf(buf, "%o", ast_val->u.cval);
          }
 
          val += buf;
@@ -263,12 +263,12 @@ DDS_StdString be_constant::QuotedConstValue ()
 
          if (ast_val->u.cwval > 32)
          {
-            sprintf(buf, "%c", ast_val->u.cwval);
+            os_sprintf(buf, "%c", ast_val->u.cwval);
          }
          else // print an escaped octal
          {
             val += "\\";
-            sprintf(buf, "%o", ast_val->u.cwval);
+            os_sprintf(buf, "%o", ast_val->u.cwval);
          }
 
          val += buf;
@@ -283,7 +283,7 @@ DDS_StdString be_constant::QuotedConstValue ()
 
       case AST_Expression::EV_octet:
       {
-         sprintf(buf, "%hd", ast_val->u.oval);
+         os_sprintf(buf, "%hd", ast_val->u.oval);
          val += buf;
       }
       break;

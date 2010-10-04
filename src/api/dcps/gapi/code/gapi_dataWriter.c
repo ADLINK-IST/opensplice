@@ -946,7 +946,7 @@ _DataWriterGetKeyValue (
     PREPEND_COPYOUTCACHE(_this->copy_cache,instance, NULL);
 
     w = U_WRITER_GET(_this);
-    uResult = u_writerInstanceCopyKeys(w,
+    uResult = u_writerCopyKeysFromInstanceHandle(w,
                                        (u_instanceHandle)handle,
                                        (u_writerAction)_this->copy_out,
                                        instance);

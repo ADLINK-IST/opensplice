@@ -282,14 +282,14 @@ os_procMLockAll(
 OS_API os_result
 os_procMLock(
     const void *addr,
-    os_uint length);
+    os_address length);
 
 /** \brief enable paging for a range of pages
  */
 OS_API os_result
 os_procMUnlock(
     const void *addr,
-    os_uint length);
+    os_address length);
 
 /** \brief  reenable paging for calling process.
  *

@@ -15,8 +15,8 @@
 
 #include "xml_tmplExp.h"
 
+#include <os_stdlib.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -71,10 +71,10 @@ xml_macroNew (
     xml_macro macro = os_malloc((size_t)C_SIZEOF(xml_macro));
 
     macro->name = os_malloc(strlen(name) + 1);
-    strcpy(macro->name, name);
+    os_strcpy(macro->name, name);
 
     macro->value = os_malloc(strlen(value) + 1);
-    strcpy(macro->value, value);
+    os_strcpy(macro->value, value);
 
     return (macro);
 }
@@ -204,7 +204,7 @@ xml_streamInit (
 
     stream->length = strlen (stream_val);
     stream->stream = os_malloc(stream->length + 1);
-    strcpy(stream->stream, stream_val);
+    os_strcpy(stream->stream, stream_val);
     stream->curpos = 0;
     return stream;
 }
@@ -647,7 +647,7 @@ xml_tmplExpGetMacroSingleArg (
 	}
     }
     xml_streamOutPut (argStream, '\0');
-    strcpy (arg, xml_streamGet(xml_stream(argStream)));
+    os_strcpy (arg, xml_streamGet(xml_stream(argStream)));
     xml_streamOutFree (argStream);
 
     if (xml_streamInCur(si) == si->macroAttrib->closeToken) {
@@ -679,7 +679,7 @@ xml_tmplExpGetMacroDoubleArg (
         }
     }
     xml_streamOutPut (arg1Stream, '\0');
-    strcpy (arg1, xml_streamGet(xml_stream(arg1Stream)));
+    os_strcpy (arg1, xml_streamGet(xml_stream(arg1Stream)));
     xml_streamOutFree (arg1Stream);
 
     if (xml_streamInCur(si) == ',') {
@@ -897,10 +897,10 @@ xml_tmplExpProcessMacro (
 	case 2:
 	    substr = strstr (src, trim);
 	    if (substr == NULL) {
-		strcpy (res, src);
+		os_strcpy (res, src);
 	    } else {
 		substr += strlen(trim);
-		strcpy (res, substr);
+		os_strcpy (res, substr);
 	    }
 	    xml_tmplExpInsertText (so, res);
 	    break;
@@ -942,7 +942,7 @@ xml_tmplExpProcessMacro (
 		    p_substr = substr;
 		}
 	    }
-	    strcpy (res, src);
+	    os_strcpy (res, src);
 	    if (p_substr != NULL) {
 		res[p_substr-src] = '\0';
 	    }

@@ -62,6 +62,11 @@ module durabilityModule2 {
 		D_MERGE_DELETE,
 		D_MERGE_REPLACE
 	};
+	
+	struct d_mergeState_s {
+	    d_name role;
+	    c_ulong value;
+	};
    
     struct d_message_s {
         d_networkAddress_s addressee;           /* the destination         */
@@ -90,16 +95,20 @@ module durabilityModule2 {
     };
     
     struct d_nameSpaces_s{
-        d_message_s        parentMsg;
-		c_string		   name;
-        c_string           partitions;
-        d_durabilityKind   durabilityKind;
-		c_bool			   aligner;
-        d_alignmentKind    alignmentKind;
-        d_quality          initialQuality;
-        c_ulong            total;
-        d_networkAddress_s master;
-        c_bool             isComplete;
+        d_message_s              parentMsg;
+		c_string		         name;
+        c_string                 partitions;
+        d_durabilityKind         durabilityKind;
+		c_bool			         aligner;
+        d_alignmentKind          alignmentKind;
+        d_quality                initialQuality;
+        c_ulong                  total;
+        d_networkAddress_s       master;
+        c_bool                   isComplete;
+        c_bool                   masterConfirmed; 
+        d_mergeState_s           state;
+        sequence<d_mergeState_s> mergedStates;
+        c_ulong                  mergedStatesCount;
     };
    
     struct d_sampleRequest_s {
@@ -164,4 +173,72 @@ module durabilityModule2 {
         c_string           partitionExpr;
         c_string           topicExpr;
     };
+
+
+    /*************************************/
+    /* For storage in Memory Mapped File */
+    /*************************************/
+    
+    /* Because 'newest' is typed in d_instance c_free will free the
+     * newest sample and because 'older' is typed in d_sample, all samples
+     * will be freed as well.
+     */
+    class d_sample {
+        attribute c_voidp instance;
+        attribute d_sample older;
+        attribute c_voidp newer;
+    };
+    
+    class d_sampleTemplate extends d_sample {
+        attribute kernelModule::v_message message;
+    };
+
+    class d_instance {
+        attribute c_ulong state;
+        attribute c_long  messageCount; /* only write messages */
+        attribute c_long  count; /* write AND disposed messages */
+        attribute c_voidp oldest;
+    };
+    
+    class d_instanceTemplate extends d_instance {
+        attribute d_sampleTemplate newest;
+    };
+
+    class d_storeMMFKernel;
+    
+    class d_topicInfo {
+        attribute c_string                 name;
+        attribute c_string                 typeName;
+        attribute c_type                   dataType;
+        attribute c_type                   messageType;
+        attribute c_type                   sampleType;
+        attribute c_type                   instanceType;
+        attribute c_string                 instanceKeyExpr;
+        attribute c_string                 keyExpr;
+        attribute c_type                   keyType;
+        attribute kernelModule::v_topicQos qos;
+    };
+
+    class d_groupInfo {
+        attribute c_voidp kernel;
+        attribute d_topicInfo topic;
+        attribute d_partition partition;
+        attribute d_completeness completeness;
+        attribute d_quality quality;
+        attribute SET<d_instance> instances;      /* table, keys values as keys */
+    };
+    
+    class d_nameSpaceInfo {
+        attribute d_name name;
+        attribute c_bool complete;
+    };
+
+    /* Kernel for d_storeMMF */
+    class d_storeMMFKernel {
+        attribute SET<d_groupInfo>     groups;  /* table, topic+partition as keys */
+        attribute SET<d_topicInfo>     topics;  /* table, topic name as key */
+        attribute SET<d_nameSpaceInfo> nameSpaces; /* table, name as key */
+        attribute SET<d_groupInfo>     backup;  /* table, topic+partition as keys */
+    };
+
 };

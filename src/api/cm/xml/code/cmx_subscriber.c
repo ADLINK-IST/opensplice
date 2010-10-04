@@ -109,7 +109,7 @@ cmx_subscriberInit(
     v_subscriber subscriber;
     
     subscriber = v_subscriber(entity);
-    sprintf(buf, "<kind>SUBSCRIBER</kind>");
+    os_sprintf(buf, "<kind>SUBSCRIBER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

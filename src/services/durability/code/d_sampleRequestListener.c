@@ -555,16 +555,19 @@ d_sampleRequestListenerAction(
             request->partition, request->topic,
             d_message(request)->senderAddress.systemId);
 
-        sampleChain = d_sampleChainNew(admin, request->partition,
-                                    request->topic, request->durabilityKind,
-                                    &request->source);
+        if (fellow)  {
+            sampleChain = d_sampleChainNew(admin, request->partition,
+                                        request->topic, request->durabilityKind,
+                                        &request->source);
 
-        d_messageSetAddressee(d_message(sampleChain), addr);
+            d_messageSetAddressee(d_message(sampleChain), addr);
 
-        sampleChain->msgBody._d = LINK;
-        sampleChain->msgBody._u.link.nrSamples = 0;
-        sampleChain->msgBody._u.link.completeness = D_GROUP_UNKNOWN;
-        d_publisherSampleChainWrite(publisher, sampleChain, addr);
+            sampleChain->msgBody._d = LINK;
+            sampleChain->msgBody._u.link.nrSamples = 0;
+            sampleChain->msgBody._u.link.completeness = D_GROUP_UNKNOWN;
+            d_publisherSampleChainWrite(publisher, sampleChain, addr);
+        }
+
         d_sampleChainFree(sampleChain);
         stats->alignerRequestsIgnoredDif = 1;
     } else {

@@ -15,6 +15,7 @@
 
 #include "d__types.h"
 #include "d_group.h"
+#include "u_participant.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -29,11 +30,17 @@ C_STRUCT(d_groupList){
     c_voidp next;
 };
 
+struct baseFind {
+    c_base base;
+};
+
 #define d_groupList(g) ((d_groupList)(g))
 #define d_store(s) ((d_store)(s))
 
 d_store             d_storeOpen                 (const d_durability durability,
                                                  const d_storeType storeType);
+
+void                d_storeDeinit               (d_object object);
 
 d_storeResult       d_storeClose                (d_store store);
 
@@ -115,6 +122,10 @@ d_storeResult		d_storeNsMarkComplete 		(const d_store store,
 d_storeResult		d_storeRestoreBackup		(const d_store store,
 												 const d_nameSpace nameSpace);
 
+c_char*      d_storeDirNew(d_store store, const c_char *name);
+
+
+void         d_storeGetBase(v_entity entity, c_voidp args);
 
 #if defined (__cplusplus)
 }
