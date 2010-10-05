@@ -653,7 +653,7 @@ u_userServer(
         }
         u__userUnlock();
     } else {
-        OS_REPORT(OS_ERROR,
+        OS_REPORT(OS_INFO,
                 "u_userServer",0,
                 "User layer not initialized");
     }

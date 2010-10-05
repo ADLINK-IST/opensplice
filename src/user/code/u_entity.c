@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2009 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__entity.h"
@@ -131,7 +131,7 @@ u_entityInit(
     e->handle = u_handleNew(v_public(ke));
     e->participant = p;
     e->userData = NULL;
-    
+
     e->enabled = TRUE;
 
     e->flags = 0;
@@ -210,7 +210,7 @@ u_entityDeinit(
                 OS_REPORT(OS_ERROR,"u_entityFree",0,
                           "Internal error: release entity failed.");
             }
-        }/* else 
+        }/* else
           * This happens when an entity is freed and its u_participant
           * already has been freed. It means this case is a valid situation.
           */
@@ -275,7 +275,7 @@ u_entityClaim(
             if (r == U_RESULT_OK) {
                 r = u_handleClaim(e->handle,(v_object *)&ve);
                 if (r != U_RESULT_OK) {
-                    OS_REPORT(OS_ERROR, "u_entityClaim", 0,
+                    OS_REPORT(OS_INFO, "u_entityClaim", 0,
                               "Illegal handle detected");
                     u_kernelUnprotect(k);
                 }
@@ -306,7 +306,7 @@ u_entityRelease(
     if (e != NULL) {
         result = u_handleRelease(e->handle);
         if (result != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, "u_entityRelease", 0,
+            OS_REPORT(OS_INFO, "u_entityRelease", 0,
                       "Illegal handle detected");
         }
         if (e->participant == NULL) {
@@ -318,7 +318,7 @@ u_entityRelease(
         if (k) {
             result = u_kernelUnprotect(k);
             if (result != U_RESULT_OK) {
-                OS_REPORT(OS_ERROR, "u_entityRelease", 0,
+                OS_REPORT(OS_INFO, "u_entityRelease", 0,
                           "u_kernelUnprotect() failed.");
             }
         }

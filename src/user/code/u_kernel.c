@@ -842,7 +842,7 @@ u_kernelFree (
 
     if (k != NULL) {
         r = u_kernelProtect(k);
-	
+
         if (r ==  U_RESULT_OK) {
             laps = 4;
             count = v_kernelUserCount(k->kernel);
@@ -930,7 +930,7 @@ u_kernelProtect(
 {
     u_result r;
     os_result osr;
-    c_ulong count; 
+    c_ulong count;
 
     if( _this ) {
         osr = os_threadProtect();
@@ -971,7 +971,7 @@ u_kernelUnprotect(
             assert(newCount + 1 > newCount);
             r = U_RESULT_OK;
         } else {
-            OS_REPORT(OS_ERROR,
+            OS_REPORT(OS_INFO,
                       "u_kernelUnprotect",0,
                       "os_threadUnprotect() failed.");
             assert(osr == os_resultSuccess);
