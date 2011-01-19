@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U__ENTITY_H
@@ -29,10 +29,12 @@
 #define U_ECREATE_NOTOWNED      (0x01U << 1)
 #define U_ECREATE_INITIALISED   (0x01U << 2)
 
+#define u_entityAlloc(participant,_type,entity,_owner) \
+        _type(u_entityNew(v_entity(entity),participant,_owner))
 
-#define u_entityAlloc(participant,type,entity,owner) \
-        type(u_entityNew(v_entity(entity),participant,owner))
-
+void
+u_entityDealloc (
+    u_entity _this);
 
 u_result
 u_entityInit (
@@ -46,24 +48,62 @@ u_entityDeinit (
     u_entity _this);
 
 /**
- * \brief The User Layer Entity claim method.
+ * \brief The User Layer Entity claim method for writing.
  *
- * This method will ask the kernel to return a reference to the kernel
+ * This method will ask the kernel to get the reference to the kernel
  * entity associated to the User Layer entity that this method operates
  * on.
  * The kernel will register the kernel entity as being accessed and
- * therefore may not be deleted. In case the requested kernel entity
- * didn't exist anymore this method will return NULL indicating the
- * non-existence of the kernel entity.
+ * therefore may not be deleted. If in case the requested kernel entity
+ * doesn't exist anymore this method will return a proper return code
+ * indicating the non-existence of the kernel entity.
+ * In the event that shared memory has been exhausted, this operation will
+ * return an OUT_OF_MEMORY result code.
+ *
+ * NOTE: This operation MUST be used when it is intended to write data into
+ * shared memory, such as performing a write on a datawriter or creating new
+ * entities. When the goal is to simple retrieve or read data then the
+ * 'Read' variant of this operation should be used.
  *
  * \param _this The User layer Entity object where this method operates
  *              on.
- * \return The associated Kernel Entity object or NULL if the Kernel
+ * \param ke The associated Kernel Entity object or NULL if the Kernel
  *         Entity object does not exist anymore.
+ * \return the result value of the claim operation
  */
-OS_API v_entity
-u_entityClaim(
-    u_entity _this);
+u_result
+u_entityWriteClaim(
+    u_entity _this,
+    v_entity* ke);
+
+/**
+ * \brief The User Layer Entity claim method for writing.
+ *
+ * This method will ask the kernel to get the reference to the kernel
+ * entity associated to the User Layer entity that this method operates
+ * on.
+ * The kernel will register the kernel entity as being accessed and
+ * therefore may not be deleted. If in case the requested kernel entity
+ * doesn't exist anymore this method will return a proper return code
+ * indicating the non-existence of the kernel entity.
+ * In the event that shared memory has been exhausted, this operation will
+ * NOT return an OUT_OF_MEMORY result code.
+ *
+ * NOTE: This operation MUST be used when it is intended to read/remove data
+ * from shared memory, such as performing a read on a datareader or deleting
+ * entities. When the goal is to create or write data then the
+ * 'Write' variant of this operation should be used.
+ *
+ * \param _this The User layer Entity object where this method operates
+ *              on.
+ * \param ke The associated Kernel Entity object or NULL if the Kernel
+ *         Entity object does not exist anymore.
+ * \return the result value of the claim operation
+ */
+OS_API u_result
+u_entityReadClaim(
+    u_entity e,
+    v_entity* ke);
 
 /**
  * \brief The User Layer Entity Release method.

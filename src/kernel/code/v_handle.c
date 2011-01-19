@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -417,6 +417,40 @@ v_handleDeregister(
 }
 
 v_handleResult
+v_handleRenew(
+    v_handle *handle)
+{
+    v_handleServer server;
+    v_handleInfo *info;
+    c_long idx;
+    v_handleInfo *block;
+
+    server = v_handleServer((c_object)handle->server);
+    if (server == NULL) {
+        return V_HANDLE_ILLEGAL;
+    }
+    assert(C_TYPECHECK(server,v_handleServer));
+    c_mutexLock(&server->mutex);
+    if(server->suspended == TRUE) {
+        return V_HANDLE_SUSPENDED;
+    }
+    idx = handle->index;
+    if ((idx < 0) || (idx > server->lastIndex)) {
+        return V_HANDLE_ILLEGAL;
+    }
+    block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
+    info = &block[ROW(idx)];
+    c_mutexLock(&info->mutex);
+    c_mutexUnlock(&server->mutex);
+    info->count = 0;
+    info->serial = (info->serial + 1) % MAXSERIAL;
+    handle->serial = info->serial;
+    c_mutexUnlock(&info->mutex);
+
+    return V_HANDLE_OK;
+}
+
+v_handleResult
 v_handleClaim (
     v_handle handle,
     v_object *o)
@@ -456,6 +490,12 @@ v_handleClaim (
         }
 #endif
         *o = (v_object)info->object;
+        if(*o == NULL)
+        {
+            OS_REPORT(OS_WARNING, "v_handleClaim", 0,
+                        "Unable to obtain kernel entity for handle");
+            result = V_HANDLE_ILLEGAL;
+        }
     }
     c_mutexUnlock(&info->mutex);
     return result;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -182,7 +182,7 @@ nw_plugChannelInitialize(
     channel->latencyBudgetOffered = NW_LATENCYBUDGET_UNDEFINED;
     
     /* Network fragment length */
-    fragmentLength = NWCF_SIMPLE_PARAM(ULong, pathName, FragmentSize);
+    fragmentLength = NWCF_SIMPLE_PARAM(Size, pathName, FragmentSize);
 
     /* CHECKME, NWCF_MIN(FragmentSize) must be larger dealing with encryption */
     if (fragmentLength < NWCF_MIN(FragmentSize)) {
@@ -408,10 +408,11 @@ nw_plugChannelGetPartition(
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
     nw_bool *compression,
-    os_int32 *hash)
+    os_uint32 *hash,
+    c_ulong *mTTL)
 {
     nw_plugPartitionsGetPartition(channel->partitions, partitionId, found,
-        partitionAddress, securityPolicy, connected, compression, hash);
+        partitionAddress, securityPolicy, connected, compression, hash, mTTL);
 
 }
 

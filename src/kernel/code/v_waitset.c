@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,12 +25,6 @@
 
 #define v_waitsetEventList(_this) \
         (v_observer(_this)->eventData)
-
-#define v_waitsetLock(_this) \
-        v_observerLock(v_observer(_this))
-
-#define v_waitsetUnlock(_this) \
-        v_observerUnlock(v_observer(_this))
 
 #define v_waitsetWakeup(_this,event,userData) \
         v_observerNotify(v_observer(_this),event,userData)
@@ -397,6 +391,8 @@ v_waitsetAttach (
 
     arg.observable = v_publicHandle(v_public(o));
     arg.proxy = NULL;
+
+    v_waitsetLock(_this);
     c_setWalk(_this->observables, findProxy,&arg);
     if (arg.proxy == NULL) { /* no proxy to the observer exists */
         proxy = v_proxyNew(v_objectKernel(_this),
@@ -404,6 +400,7 @@ v_waitsetAttach (
         c_insert(_this->observables,proxy);
         c_free(proxy);
     }
+    v_waitsetUnlock(_this);
     result = v_observableAddObserver(o,v_observer(_this), userData);
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
@@ -427,23 +424,18 @@ v_waitsetDetach (
 
     arg.observable = v_publicHandle(v_public(o));
     arg.proxy = NULL;
+    v_waitsetLock(_this);
     c_setWalk(_this->observables,findProxy,&arg);
     if (arg.proxy != NULL) { /* proxy to the observer found */
         found = c_remove(_this->observables,arg.proxy,NULL,NULL);
         assert(found == arg.proxy);
         c_free(found);
     }
+    v_waitsetUnlock(_this);
 
-    arg.observable = v_publicHandle(v_public(o));
-    arg.proxy = NULL;
-    c_setWalk(_this->observables,findProxy,&arg);
-    if (arg.proxy != NULL) { /* proxy to the observer found */
-        found = c_remove(_this->observables,arg.proxy,NULL,NULL);
-        assert(found == arg.proxy);
-        c_free(found);
-    }
     result = v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
     v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
+
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
         v_waitsetTrigger(_this, NULL);

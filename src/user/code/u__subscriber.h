@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -17,19 +17,11 @@
 
 u_result
 u_subscriberInit (
-    u_subscriber _this);
+    u_subscriber _this,
+    u_participant participant);
 
 u_result
 u_subscriberDeinit (
-    u_subscriber _this);
-
-u_result
-u_subscriberClaim(
-    u_subscriber _this,
-    v_subscriber *subscriber);
-
-u_result
-u_subscriberRelease(
     u_subscriber _this);
 
 #endif

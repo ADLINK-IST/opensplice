@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -136,7 +136,8 @@ d_readerListenerAction(
         result = u_dataReaderTake(u_dataReader(o), d_readerListenerCopy, usrData);
 
         if(result != U_RESULT_OK){
-            OS_REPORT(OS_ERROR, D_CONTEXT_DURABILITY, 0, "Could not take data from reader.");
+            OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    "Could not take data from reader (result: %d)", result);
         } else if(listener->message != NULL){
             if(listener->processMessage == TRUE) {
                 d_readerListenerProcessAction(listener->message, usrData);

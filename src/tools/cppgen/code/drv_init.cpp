@@ -72,13 +72,13 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 // DRV_init.cc - Initialization for IDL compiler driver program
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <drv_private.h>
-#include  <drv_link.h>
+#include "drv_private.h"
+#include  "drv_link.h"
 
-#include <preprocess.h>
+#include "preprocess.h"
 
 void
 DRV_init()

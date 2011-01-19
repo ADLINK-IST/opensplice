@@ -249,10 +249,7 @@ namespace DDS.OpenSplice
         
         public ReturnCode DeleteContainedEntities()
         {
-            return Gapi.Publisher.delete_contained_entities(
-                    GapiPeer,
-                    null,
-                    IntPtr.Zero);
+            return Gapi.Publisher.delete_contained_entities(GapiPeer);
         }
         
         public ReturnCode SetQos(PublisherQos qos)

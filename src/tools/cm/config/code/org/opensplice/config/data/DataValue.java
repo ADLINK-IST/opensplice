@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -124,6 +124,27 @@ public class DataValue extends DataNode {
                 
                 if(value instanceof String){
                     tempValue = Long.parseLong((String)value);
+                } else if(!(value instanceof Long)){
+                    throw new NumberFormatException();
+                } else {
+                    tempValue = (Long)value; 
+                }
+                Object min = mv.getMinValue();
+                Object max = mv.getMaxValue();
+                
+                if(tempValue.compareTo((Long)min) < 0){
+                    throw new DataException("Value: " + tempValue + "<" + min);
+                } else if(tempValue.compareTo((Long)max) > 0){
+                    throw new DataException("Value: " + tempValue + ">" + max);
+                }
+            } else if(this.metadata instanceof MetaValueSize){
+                Long tempValue;
+                MetaValueNatural mv = (MetaValueNatural)this.metadata;
+                
+                if(value instanceof String){
+                    tempValue = MetaConfiguration.createLongValuefromSizeValue((String)value);
+                } else if(value instanceof Long){
+                	tempValue = Long.parseLong((String)value);
                 } else if(!(value instanceof Long)){
                     throw new NumberFormatException();
                 } else {

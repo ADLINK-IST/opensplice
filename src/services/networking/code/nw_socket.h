@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -84,7 +84,8 @@ void        nw_socketAddPartition(
                 const char *addressString,
                 sk_bool connected,
                 sk_bool compression,
-                sk_bool receiving);
+                sk_bool receiving,
+                c_ulong mTTL);
 
 sk_length   nw_socketSendData(
                 nw_socket sock,
@@ -102,7 +103,7 @@ sk_length   nw_socketSendDataToPartition(
                 sk_partitionId partitionId,
                 plugSendStatistics pss,
                 void *buffer,
-                sk_length length);
+                sk_length *length);
 
 sk_length  nw_socketSendControl(
                 nw_socket sock,

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -116,7 +116,20 @@ nw_channelWriterMain(
     c_ulong timeoutCount;
     nw_signedLength credits;
     v_networking n;
-    NW_STRUCT(plugSendStatistics) pss = {0};
+    NW_STRUCT(plugSendStatistics) pss = {0,0,0,0,0,0,0,0,0,0,
+                                         {0,
+                                          {{0,0},
+                                           0},
+                                          {{0,0},
+                                           0},
+                                          {0.0,0}},
+                                         {0,
+                                          {{0,0},
+                                           0},
+                                          {{0,0},
+                                           0},
+                                          {0.0,0}},
+                                         0,0,0};
     v_fullCounterInit(&(pss.adminQueueAcks));
     v_fullCounterInit(&(pss.adminQueueData));
 

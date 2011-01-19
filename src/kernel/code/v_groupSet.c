@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -204,28 +204,32 @@ v_groupSetSelectAll(
     return result;
 }
 
-v_group
-v_groupSetGet(
+c_iter
+v_groupSetLookup(
     v_groupSet set,
-    const c_char *partitionName,
-    const c_char *topicName)
+    const c_char *partitionExpr,
+    const c_char *topicExpr)
 {
     c_collection q;
     q_expr expr;
     c_iter list;
     c_value params[2];
-    v_group g;
 
     assert(set != NULL);
     assert(C_TYPECHECK(set,v_groupSet));
 
+    /* TODO : the creation of this query should be done once for
+     *        a groupSet, the induced processing overhead doesn't
+     *        meet the requirements for this operation.
+     *        At this point only set query parameters should be used.
+     */
     expr = (q_expr)q_parse("partition.name like %0 and topic.name like %1");
     if (expr == NULL) {
         assert(expr != NULL);
         return NULL;
     }
-    params[0] = c_stringValue((c_string)partitionName);
-    params[1] = c_stringValue((c_string)topicName);
+    params[0] = c_stringValue((c_string)partitionExpr);
+    params[1] = c_stringValue((c_string)topicExpr);
     c_lockRead(&set->lock);
     q = c_queryNew(set->groups, expr, params);
     if (q == NULL) {
@@ -237,9 +241,24 @@ v_groupSetGet(
     assert(q != NULL);
     c_free(q);
     q_dispose(expr);
+
+    return list;
+}
+
+v_group
+v_groupSetGet(
+    v_groupSet set,
+    const c_char *partitionName,
+    const c_char *topicName)
+{
+    c_iter list;
+    v_group g;
+
+    list = v_groupSetLookup(set, partitionName, topicName);
     assert(c_iterLength(list) <= 1);
     g = v_group(c_iterTakeFirst(list));
     c_iterFree(list);
 
     return g;
 }
+

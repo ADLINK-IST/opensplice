@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -24,48 +24,6 @@
 #include "v_entity.h"
 #include "os_report.h"
 
-u_result
-u_groupQueueClaim(
-    u_groupQueue _this,
-    v_groupQueue *groupQueue)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (groupQueue != NULL)) {
-        *groupQueue = v_groupQueue(u_entityClaim(u_entity(_this)));
-        if (*groupQueue == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_groupQueueClaim", 0,
-                        "groupQueue could not be claimed. "
-                        "<_this = 0x%x, groupQueue = 0x%x>.",
-                         _this, groupQueue);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_groupQueueClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, groupQueue = 0x%x>.",
-                    _this, groupQueue);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_groupQueueRelease(
-    u_groupQueue _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_groupQueueRelease",0,
-                   "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
 u_groupQueue
 u_groupQueueNew(
     u_subscriber s,
@@ -81,19 +39,20 @@ u_groupQueueNew(
 
     if (name != NULL) {
         if (s != NULL) {
-            result = u_subscriberClaim(s,&ks);
-            if ((result == U_RESULT_OK) && (ks != NULL)) {
+            result = u_entityWriteClaim(u_entity(s),(v_entity*)(&ks));
+            if (result == U_RESULT_OK) {
+                assert(ks);
                 kn = v_groupQueueNew(ks,name,queueSize,qos);
                 if (kn != NULL) {
                     p = u_entityParticipant(u_entity(s));
                     _this = u_entityAlloc(p,u_groupQueue,kn,TRUE);
                     if (_this != NULL) {
-                        result = u_groupQueueInit(_this);
+                        result = u_groupQueueInit(_this,s);
                         if (result != U_RESULT_OK) {
                             OS_REPORT_1(OS_ERROR, "u_groupQueueNew", 0,
                                         "Initialisation failed. "
                                         "For groupQueue: <%s>.", name);
-                            u_entityFree(u_entity(_this));
+                            u_groupQueueFree(_this);
                         }
                     } else {
                         OS_REPORT_1(OS_ERROR, "u_groupQueueNew", 0,
@@ -106,7 +65,7 @@ u_groupQueueNew(
                                 "Create kernel entity failed. "
                                 "For groupQueue: <%s>.", name);
                 }
-                result = u_subscriberRelease(s);
+                result = u_entityRelease(u_entity(s));
             } else {
                 OS_REPORT_2(OS_WARNING, "u_groupQueueNew", 0,
                             "Claim Subscriber (0x%x) failed. "
@@ -126,7 +85,8 @@ u_groupQueueNew(
 
 u_result
 u_groupQueueInit(
-    u_groupQueue _this)
+    u_groupQueue _this,
+    u_subscriber s)
 {
     u_result result;
 
@@ -145,18 +105,46 @@ u_groupQueueFree(
     u_groupQueue _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
-            result = u_groupQueueDeinit(_this);
-            os_free(_this);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_groupQueueDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_groupQueueFree",0,
+                            "Operation u_groupQueueDeinit failed: "
+                            "GroupQueue = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_ERROR,"u_groupQueueFree",0,
-                  "The specified Group Queue = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_groupQueueFree",0,
+                    "Operation u_entityLock failed: "
+                    "GroupQueue = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
 }

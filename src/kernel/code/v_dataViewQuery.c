@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -38,8 +38,6 @@
 #include "os.h"
 #include "os_report.h"
 
-#define PREFIX "sample.sample.message."
-
 #define V_STATE_INITIAL        (0x00000000U)       /* 0 */
 #define V_STATE_ACTIVE         (0x00000001U)       /* 1 */
 #define V_STATE_DATA_AVAILABLE (0x00000001U << 1)  /* 2 */
@@ -53,16 +51,12 @@ resolveField(
     c_array path;
     c_long i, length;
     q_list list;
-    int size = strlen(name)+strlen(PREFIX)+1;
-    c_char *extended_name = os_alloca(size);
+
     c_char *metaName;
 
-    snprintf(extended_name, size, PREFIX "%s", name);
-
-    field = c_fieldNew(type,extended_name);
+    field = c_fieldNew(type,name);
 
     if (field == NULL) {
-        os_freea(extended_name);
         return NULL;
     }
     path = c_fieldPath(field);
@@ -74,7 +68,6 @@ resolveField(
         c_free(metaName);
     }
     c_free(field);
-    os_freea(extended_name);
 
     return q_newFnc(Q_EXPR_PROPERTY,list);
 }
@@ -173,6 +166,8 @@ v_dataViewQueryNew (
     c_array keyList;
 
     assert(C_TYPECHECK(_this,v_dataView));
+
+    q_prefixFieldNames(&predicate,"sample.sample.message.userData");
 
     kernel = v_objectKernel(_this);
     if (q_getTag(predicate) !=  Q_EXPR_PROGRAM) {
@@ -964,13 +959,16 @@ v_dataViewQuerySetParams(
     c_type type;
     c_bool result = TRUE;
     c_array keyList;
-    c_long size, strSize, curSize, exprSize, count;
-    c_char *tmp, *paramString;
+    c_char *tmp;
     c_base base;
+    c_type subtype;
+#if 0
+    c_long size, strSize, curSize, exprSize, count;
+    c_char *paramString;
     c_char character, prevCharacter;
     c_char number[32];
     c_bool inNumber;
-    c_type subtype;
+#endif
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 

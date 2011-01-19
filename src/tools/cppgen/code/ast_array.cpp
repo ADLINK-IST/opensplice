@@ -74,8 +74,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * arrays of AST_Interfaces???
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

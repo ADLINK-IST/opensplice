@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,7 +21,8 @@ DDS::ErrorInfo::ErrorInfo( void )
     if (_gapi_self) {
         myUD = new DDS::ccpp_UserData(this);
         if (myUD) {
-            gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD);
+            gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
+                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
         } else {
             OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
         }

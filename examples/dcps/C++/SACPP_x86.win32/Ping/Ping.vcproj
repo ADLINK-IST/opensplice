@@ -40,6 +40,8 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\PingPong"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
+				WarningLevel="3"
+				WarnAsError="true"
 				DebugInformationFormat="1"
 			/>
 			<Tool
@@ -108,6 +110,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\PingPong"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
+				WarningLevel="3"
+				WarnAsError="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

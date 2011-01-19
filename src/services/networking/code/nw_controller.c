@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -223,6 +223,7 @@ getNetworkId(
      *       retrieved from the network/os layer. */
 
     time = os_timeGet();
+    
     return time.tv_nsec;
 }
 
@@ -758,6 +759,7 @@ nw_controllerInitialize(
 
     nw_controllerInitializeChannels(controller,onFatal,onFatalUsrData);
 
+     NW_REPORT_WARNING_1("nw_controllerInitialize","my NodeId = 0x%x",controller->networkId);
      NW_TRACE_1(Discovery, 1, "Networking service has handed out nodeId 0x%x",
          controller->networkId);
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -55,18 +55,13 @@ gapi_returnCode_t
 _PublisherFree (
     _Publisher _this);
 
-gapi_boolean
-_PublisherPrepareDelete (
+c_long
+_PublisherWriterCount (
     _Publisher _this);
 
 OS_API u_publisher
 _PublisherUpublisher (
     _Publisher _this);
-
-gapi_boolean
-_PublisherSetListenerInterestOnChildren (
-    _Publisher _this,
-    _ListenerInterestInfo info);
 
 gapi_boolean
 _PublisherContainsEntity (

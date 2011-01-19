@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,11 +15,12 @@
  * Implements thread management for POSIX
  */
 
-#include <os_thread.h>
-#include <os_heap.h>
-#include <os_report.h>
-#include <os_process.h>
-#include <os_abstract.h>
+#include "os_thread.h"
+#include "os_heap.h"
+#include "os_report.h"
+#include "os_process.h"
+#include "os_abstract.h"
+#include "os_stdlib.h"
 
 #include <sys/types.h>
 #include <pthread.h>

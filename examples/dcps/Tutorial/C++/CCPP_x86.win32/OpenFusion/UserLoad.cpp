@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -16,9 +16,9 @@
  * MODULE:          Tutorial for the C++ programming language.
  * DATE             june 2007.
  ************************************************************************
- * 
+ *
  * This file contains the implementation for the 'UserLoad' executable.
- * 
+ *
  ***/
 
 #include <iostream>
@@ -40,10 +40,10 @@ static DDS::GuardCondition_var          escape;
 /* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */
 DWORD WINAPI
 delayedEscape(
-    LPVOID arg)
+    LPVOID)
 {
     DDS::ReturnCode_t status;
-    
+
     Sleep(60000);     /* wait for 60 sec. */
     status = escape->set_trigger_value(TRUE);
     checkStatus(status, "DDS::GuardCondition::set_trigger_value");
@@ -53,8 +53,8 @@ delayedEscape(
 
 int
 main (
-    int argc,
-    char *argv[])
+    int ,
+    char *[])
 {
     /* Generic DDS entities */
     DomainParticipant_var           participant;
@@ -101,11 +101,11 @@ main (
 
     /* Create a DomainParticipant (using the 'TheParticipantFactory' convenience macro). */
     participant = TheParticipantFactory->create_participant (
-        domain, 
-        PARTICIPANT_QOS_DEFAULT, 
+        domain,
+        PARTICIPANT_QOS_DEFAULT,
         NULL,
         STATUS_MASK_NONE);
-    checkHandle(participant.in(), "DDS::DomainParticipantFactory::create_participant");  
+    checkHandle(participant.in(), "DDS::DomainParticipantFactory::create_participant");
 
     /* Register the required datatype for ChatMessage. */
     chatMessageTS = new ChatMessageTypeSupport();
@@ -113,7 +113,7 @@ main (
     chatMessageTypeName = chatMessageTS->get_type_name();
     status = chatMessageTS->register_type(participant.in(), chatMessageTypeName);
     checkStatus(status, "Chat::ChatMessageTypeSupport::register_type");
-    
+
     /* Register the required datatype for NameService. */
     nameServiceTS = new NameServiceTypeSupport();
     checkHandle(nameServiceTS.in(), "new NameServiceTypeSupport");
@@ -125,30 +125,30 @@ main (
     status = participant->get_default_topic_qos(reliable_topic_qos);
     checkStatus(status, "DDS::DomainParticipant::get_default_topic_qos");
     reliable_topic_qos.reliability.kind = RELIABLE_RELIABILITY_QOS;
-    
+
     /* Make the tailored QoS the new default. */
     status = participant->set_default_topic_qos(reliable_topic_qos);
     checkStatus(status, "DDS::DomainParticipant::set_default_topic_qos");
 
     /* Use the changed policy when defining the ChatMessage topic */
-    chatMessageTopic = participant->create_topic( 
-        "Chat_ChatMessage", 
-        chatMessageTypeName, 
-        reliable_topic_qos, 
+    chatMessageTopic = participant->create_topic(
+        "Chat_ChatMessage",
+        chatMessageTypeName,
+        reliable_topic_qos,
         NULL,
         STATUS_MASK_NONE);
     checkHandle(chatMessageTopic.in(), "DDS::DomainParticipant::create_topic (ChatMessage)");
-    
+
     /* Set the DurabilityQosPolicy to TRANSIENT. */
     status = participant->get_default_topic_qos(setting_topic_qos);
     checkStatus(status, "DDS::DomainParticipant::get_default_topic_qos");
     setting_topic_qos.durability.kind = TRANSIENT_DURABILITY_QOS;
 
     /* Create the NameService Topic. */
-    nameServiceTopic = participant->create_topic( 
-        "Chat_NameService", 
-        nameServiceTypeName, 
-        setting_topic_qos, 
+    nameServiceTopic = participant->create_topic(
+        "Chat_NameService",
+        nameServiceTypeName,
+        setting_topic_qos,
         NULL,
         STATUS_MASK_NONE);
     checkHandle(nameServiceTopic.in(), "DDS::DomainParticipant::create_topic");
@@ -162,11 +162,11 @@ main (
     /* Create a Subscriber for the UserLoad application. */
     chatSubscriber = participant->create_subscriber(sub_qos, NULL, STATUS_MASK_NONE);
     checkHandle(chatSubscriber.in(), "DDS::DomainParticipant::create_subscriber");
-    
+
     /* Create a DataReader for the NameService Topic (using the appropriate QoS). */
-    parentReader = chatSubscriber->create_datareader( 
-        nameServiceTopic.in(), 
-        DATAREADER_QOS_USE_TOPIC_QOS, 
+    parentReader = chatSubscriber->create_datareader(
+        nameServiceTopic.in(),
+        DATAREADER_QOS_USE_TOPIC_QOS,
         NULL,
         STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (NameService)");
@@ -174,7 +174,7 @@ main (
     /* Narrow the abstract parent into its typed representative. */
     nameServer = NameServiceDataReader::_narrow(parentReader);
     checkHandle(nameServer.in(), "Chat::NameServiceDataReader::_narrow");
-    
+
     /* Adapt the DataReaderQos for the ChatMessageDataReader to keep track of all messages. */
     status = chatSubscriber->get_default_datareader_qos(message_qos);
     checkStatus(status, "DDS::Subscriber::get_default_datareader_qos");
@@ -183,34 +183,34 @@ main (
     message_qos.history.kind = KEEP_ALL_HISTORY_QOS;
 
     /* Create a DataReader for the ChatMessage Topic (using the appropriate QoS). */
-    parentReader = chatSubscriber->create_datareader( 
-        chatMessageTopic.in(), 
-        message_qos, 
+    parentReader = chatSubscriber->create_datareader(
+        chatMessageTopic.in(),
+        message_qos,
         NULL,
         STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (ChatMessage)");
-    
+
     /* Narrow the abstract parent into its typed representative. */
     loadAdmin = ChatMessageDataReader::_narrow(parentReader);
     checkHandle(loadAdmin.in(), "Chat::ChatMessageDataReader::_narrow");
-    
+
     /* Initialize the Query Arguments. */
     args.length(1);
     args[0UL] = "0";
-    
+
     /* Create a QueryCondition that will contain all messages with userID=ownID */
-    singleUser = loadAdmin->create_querycondition( 
-        ANY_SAMPLE_STATE, 
-        ANY_VIEW_STATE, 
-        ANY_INSTANCE_STATE, 
-        "userID=%0", 
+    singleUser = loadAdmin->create_querycondition(
+        ANY_SAMPLE_STATE,
+        ANY_VIEW_STATE,
+        ANY_INSTANCE_STATE,
+        "userID=%0",
         args);
     checkHandle(singleUser.in(), "DDS::DataReader::create_querycondition");
-    
+
     /* Create a ReadCondition that will contain new users only */
-    newUser = nameServer->create_readcondition( 
-        NOT_READ_SAMPLE_STATE, 
-        NEW_VIEW_STATE, 
+    newUser = nameServer->create_readcondition(
+        NOT_READ_SAMPLE_STATE,
+        NEW_VIEW_STATE,
         ALIVE_INSTANCE_STATE);
     checkHandle(newUser.in(), "DDS::DataReader::create_readcondition");
 
@@ -231,25 +231,25 @@ main (
     checkStatus(status, "DDS::WaitSet::attach_condition (leftUser)");
     status = userLoadWS->attach_condition(escape.in());
     checkStatus(status, "DDS::WaitSet::attach_condition (escape)");
- 
+
     /* Initialize and pre-allocate the GuardList used to obtain the triggered Conditions. */
     guardList.length(3);
-    
+
     /* Remove all known Users that are not currently active. */
-    status = nameServer->take( 
-        nsList, 
-        infoSeq, 
-        LENGTH_UNLIMITED, 
-        ANY_SAMPLE_STATE, 
-        ANY_VIEW_STATE, 
+    status = nameServer->take(
+        nsList,
+        infoSeq,
+        LENGTH_UNLIMITED,
+        ANY_SAMPLE_STATE,
+        ANY_VIEW_STATE,
         NOT_ALIVE_INSTANCE_STATE);
     checkStatus(status, "Chat::NameServiceDataReader::take");
     status = nameServer->return_loan(nsList, infoSeq);
     checkStatus(status, "Chat::NameServiceDataReader::return_loan");
-    
+
     /* Start the sleeper thread. */
     tHandle = CreateThread(NULL, 0, delayedEscape, NULL, 0, &tid);
-  
+
     while (!closed) {
         /* Wait until at least one of the Conditions in the waitset triggers. */
         status = userLoadWS->wait(guardList, DURATION_INFINITE);
@@ -259,13 +259,13 @@ main (
         for (CORBA::ULong i = 0; i < guardList.length(); i++) {
             if ( guardList[i].in() == newUser.in() ) {
                 /* The newUser ReadCondition contains data */
-                status = nameServer->read_w_condition( 
-                    nsList, 
-                    infoSeq, 
-                    LENGTH_UNLIMITED, 
+                status = nameServer->read_w_condition(
+                    nsList,
+                    infoSeq,
+                    LENGTH_UNLIMITED,
                     newUser.in() );
                 checkStatus(status, "Chat::NameServiceDataReader::read_w_condition");
-                
+
                 for (CORBA::ULong j = 0; j < nsList.length(); j++) {
                     cout << "New user: " << nsList[j].name << endl;
                 }
@@ -279,15 +279,15 @@ main (
                 if (livChangStatus.alive_count < prevCount) {
                     /* A user has left the ChatRoom, since a DataWriter lost its liveliness */
                     /* Take the effected users so tey will not appear in the list later on. */
-                    status = nameServer->take( 
-                        nsList, 
-                        infoSeq, 
-                        LENGTH_UNLIMITED, 
-                        ANY_SAMPLE_STATE, 
-                        ANY_VIEW_STATE, 
+                    status = nameServer->take(
+                        nsList,
+                        infoSeq,
+                        LENGTH_UNLIMITED,
+                        ANY_SAMPLE_STATE,
+                        ANY_VIEW_STATE,
                         NOT_ALIVE_NO_WRITERS_INSTANCE_STATE);
                     checkStatus(status, "Chat::NameServiceDataReader::take");
-    
+
                     for (CORBA::ULong j = 0; j < nsList.length(); j++) {
                         /* re-apply query arguments */
                         ostringstream numberString;
@@ -295,17 +295,17 @@ main (
                         args[0UL] = numberString.str().c_str();
                         status = singleUser->set_query_parameters(args);
                         checkStatus(status, "DDS::QueryCondition::set_query_parameters");
-    
+
                         /* Read this users history */
-                        status = loadAdmin->take_w_condition( 
-                            msgList, 
-                            infoSeq2, 
-                            LENGTH_UNLIMITED, 
+                        status = loadAdmin->take_w_condition(
+                            msgList,
+                            infoSeq2,
+                            LENGTH_UNLIMITED,
                             singleUser.in() );
                         checkStatus(status, "Chat::ChatMessageDataReader::take_w_condition");
-                        
+
                         /* Display the user and his history */
-                        cout << "Departed user " << nsList[j].name << " has sent " << 
+                        cout << "Departed user " << nsList[j].name << " has sent " <<
                             msgList.length() << " messages." << endl;
                         status = loadAdmin->return_loan(msgList, infoSeq2);
                         checkStatus(status, "Chat::ChatMessageDataReader::return_loan");
@@ -345,6 +345,6 @@ main (
     checkStatus(status, "DDS::DomainParticipantFactory::delete_participant");
 
     CloseHandle(tHandle);
-    
+
     return 0;
 }

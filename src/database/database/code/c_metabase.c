@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -22,7 +22,7 @@
 #include "c_stringSupport.h"
 #include "c__collection.h"
 #include "c_metafactory.h"
-#include "ctype.h"
+#include <ctype.h>
 #include "c_module.h"
 
 extern c_type c_getMetaType(c_base base, c_metaKind kind);

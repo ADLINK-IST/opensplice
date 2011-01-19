@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,13 +10,13 @@
  *
  */
 
-#include <os.h>
+#include "os.h"
 
-#include <cf_node.h>
+#include "cf_node.h"
 
-#include <cf_element.h>
-#include <cf_attribute.h>
-#include <cf_data.h>
+#include "cf_element.h"
+#include "cf_attribute.h"
+#include "cf_data.h"
 /**************************************************************
  * Private functions
  **************************************************************/

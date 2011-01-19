@@ -24,7 +24,6 @@ $(IDL_CS): $(IDL_DIR)/$(TOPIC_IDL)
 	idlpp -l cs -S $<
 
 pong.exe: ../../PingPong/Pong/pong.cs ../../PingPong/Pong/ErrorHandler.cs ../../PingPong/Pong/ponger.cs ../../PingPong/Pong/stats.cs ../../PingPong/Pong/time.cs $(IDL_CS)
-	@cp $(CS_LIB_FILES) .
 	$(CSC) $(CSFLAGS) -out:pong.exe $(CSTARGET_EXEC) $(CS_LIBS) $^
 	@rm $(notdir $(CS_LIB_FILES))
 	cp pong.exe $(TARGET_LINK_DIR)

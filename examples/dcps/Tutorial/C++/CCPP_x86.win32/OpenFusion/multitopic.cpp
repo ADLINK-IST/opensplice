@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -16,10 +16,10 @@
  * MODULE:          Tutorial for the C++ programming language.
  * DATE             june 2007.
  ************************************************************************
- * 
- * This file contains the headers for all operations required to simulate 
+ *
+ * This file contains the headers for all operations required to simulate
  * the MultiTopic behavior.
- * 
+ *
  ***/
 
 #include "multitopic.h"
@@ -31,37 +31,37 @@ DDS::DataReaderListenerImpl::DataReaderListenerImpl() : previous(0x80000000) {
 }
 
 void DDS::DataReaderListenerImpl::on_requested_deadline_missed (
-    DDS::DataReader_ptr reader,
-    const DDS::RequestedDeadlineMissedStatus & status
+    DDS::DataReader_ptr,
+    const DDS::RequestedDeadlineMissedStatus &
 ) THROW_ORB_EXCEPTIONS { };
 
 void DDS::DataReaderListenerImpl::on_requested_incompatible_qos (
-    DDS::DataReader_ptr reader,
-    const DDS::RequestedIncompatibleQosStatus & status
+    DDS::DataReader_ptr,
+    const DDS::RequestedIncompatibleQosStatus &
 ) THROW_ORB_EXCEPTIONS { };
 
 void DDS::DataReaderListenerImpl::on_sample_rejected (
-    DDS::DataReader_ptr reader,
-    const DDS::SampleRejectedStatus & status
+    DDS::DataReader_ptr,
+    const DDS::SampleRejectedStatus &
 ) THROW_ORB_EXCEPTIONS { };
 
 void DDS::DataReaderListenerImpl::on_liveliness_changed (
-    DDS::DataReader_ptr reader,
-    const DDS::LivelinessChangedStatus & status
+    DDS::DataReader_ptr,
+    const DDS::LivelinessChangedStatus &
 ) THROW_ORB_EXCEPTIONS { };
 
 void DDS::DataReaderListenerImpl::on_subscription_matched (
-    DDS::DataReader_ptr reader,
-    const DDS::SubscriptionMatchedStatus & status
+    DDS::DataReader_ptr,
+    const DDS::SubscriptionMatchedStatus &
 ) THROW_ORB_EXCEPTIONS { };
-                                    
+
 void DDS::DataReaderListenerImpl::on_sample_lost (
-    DDS::DataReader_ptr reader,
-    const DDS::SampleLostStatus & status
+    DDS::DataReader_ptr,
+    const DDS::SampleLostStatus &
 ) THROW_ORB_EXCEPTIONS { };
 
 void DDS::DataReaderListenerImpl::on_data_available (
-    DDS::DataReader_ptr reader
+    DDS::DataReader_ptr
 ) THROW_ORB_EXCEPTIONS {
     Chat::ChatMessageSeq                msgSeq;
     Chat::NameServiceSeq                nameSeq;
@@ -69,24 +69,24 @@ void DDS::DataReaderListenerImpl::on_data_available (
     DDS::SampleInfoSeq                  infoSeq2;
     DDS::ReturnCode_t                   status;
     previous =                          0x80000000;
-    
+
     /* Take all messages. */
-    status = chatMessageDR->take( 
-        msgSeq, 
-        infoSeq1, 
-        DDS::LENGTH_UNLIMITED, 
-        DDS::ANY_SAMPLE_STATE, 
-        DDS::ANY_VIEW_STATE, 
+    status = chatMessageDR->take(
+        msgSeq,
+        infoSeq1,
+        DDS::LENGTH_UNLIMITED,
+        DDS::ANY_SAMPLE_STATE,
+        DDS::ANY_VIEW_STATE,
         DDS::ANY_INSTANCE_STATE);
     checkStatus(status, "Chat::ChatMessageDataReader::take");
-    
+
     /* For each message, extract the key-field and find the corresponding name. */
     for (CORBA::ULong i = 0; i < msgSeq.length(); i++)
     {
         if (infoSeq1[i].valid_data)
         {
             Chat::NamedMessage joinedSample;
-        
+
             /* Find the corresponding named message. */
             if (msgSeq[i].userID != previous)
             {
@@ -96,13 +96,13 @@ void DDS::DataReaderListenerImpl::on_data_available (
                 nameFinderParams[0UL] = numberStr.str().c_str();
                 status = nameFinder->set_query_parameters(nameFinderParams);
                 checkStatus(status, "DDS::QueryCondition::set_query_parameters");
-                status = nameServiceDR->read_w_condition( 
-                    nameSeq, 
-                    infoSeq2, 
-                    DDS::LENGTH_UNLIMITED, 
+                status = nameServiceDR->read_w_condition(
+                    nameSeq,
+                    infoSeq2,
+                    DDS::LENGTH_UNLIMITED,
                     nameFinder.in());
                 checkStatus(status, "Chat::NameServiceDataReader::read_w_condition");
-                
+
                 /* Extract Name (there should only be one result). */
                 if (status == DDS::RETCODE_NO_DATA)
                 {
@@ -114,8 +114,8 @@ void DDS::DataReaderListenerImpl::on_data_available (
                 {
                     userName = nameSeq[0].name;
                 }
-    
-                /* Release the name sample again. */                
+
+                /* Release the name sample again. */
                 status = nameServiceDR->return_loan(nameSeq, infoSeq2);
                 checkStatus(status, "Chat::NameServiceDataReader::return_loan");
             }
@@ -148,11 +148,11 @@ DDS::ExtDomainParticipantImpl::ExtDomainParticipantImpl(DDS::DomainParticipant_p
 
 
 
-DDS::Topic_ptr 
+DDS::Topic_ptr
 DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
-    const char * name,
+    const char *,
     const char * type_name,
-    const char * subscription_expression,
+    const char *,
     const DDS::StringSeq & expression_parameters)
 {
     /* Type-specific DDS entities */
@@ -165,7 +165,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
 
     /* QosPolicy holders */
     DDS::TopicQos                       namedMessageQos;
-    DDS::SubscriberQos                  sub_qos;    
+    DDS::SubscriberQos                  sub_qos;
     DDS::PublisherQos                   pub_qos;
 
     /* Others */
@@ -184,12 +184,12 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
 
     /* Create a ContentFilteredTopic to filter out our own ChatMessages. */
     filteredMessageTopic = realParticipant->create_contentfilteredtopic(
-        "Chat_FilteredMessage", 
+        "Chat_FilteredMessage",
         chatMessageTopic.in(),
         "userID <> %0",
         expression_parameters);
     checkHandle(filteredMessageTopic.in(), "DDS::DomainParticipant::create_contentfilteredtopic");
-        
+
 
     /* Adapt the default SubscriberQos to read from the "ChatRoom" Partition. */
     status = realParticipant->get_default_subscriber_qos (sub_qos);
@@ -200,11 +200,11 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     /* Create a private Subscriber for the multitopic simulator. */
     multiSub = realParticipant->create_subscriber(sub_qos, NULL, DDS::STATUS_MASK_NONE);
     checkHandle(multiSub.in(), "DDS::DomainParticipant::create_subscriber (for multitopic)");
-    
+
     /* Create a DataReader for the FilteredMessage Topic (using the appropriate QoS). */
-    parentReader = multiSub->create_datareader( 
-        filteredMessageTopic.in(), 
-        DATAREADER_QOS_USE_TOPIC_QOS, 
+    parentReader = multiSub->create_datareader(
+        filteredMessageTopic.in(),
+        DATAREADER_QOS_USE_TOPIC_QOS,
         NULL,
         DDS::STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (ChatMessage)");
@@ -212,52 +212,52 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     /* Narrow the abstract parent into its typed representative. */
     chatMessageDR = Chat::ChatMessageDataReader::_narrow(parentReader);
     checkHandle(chatMessageDR, "Chat::ChatMessageDataReader::_narrow");
-    
+
     /* Allocate the DataReaderListener Implementation. */
     msgListener = new DDS::DataReaderListenerImpl();
     checkHandle(msgListener, "new DDS::DataReaderListenerImpl");
-    
+
     /* Attach the DataReaderListener to the DataReader, only enabling the data_available event. */
     status = chatMessageDR->set_listener(msgListener, DDS::DATA_AVAILABLE_STATUS);
     checkStatus(status, "DDS::DataReader_set_listener");
 
     /* Create a DataReader for the nameService Topic (using the appropriate QoS). */
-    parentReader = multiSub->create_datareader( 
-        nameServiceTopic.in(), 
-        DATAREADER_QOS_USE_TOPIC_QOS, 
+    parentReader = multiSub->create_datareader(
+        nameServiceTopic.in(),
+        DATAREADER_QOS_USE_TOPIC_QOS,
         NULL,
         DDS::STATUS_MASK_NONE);
     checkHandle(parentReader, "DDS::Subscriber::create_datareader (NameService)");
-    
+
     /* Narrow the abstract parent into its typed representative. */
     nameServiceDR = Chat::NameServiceDataReader::_narrow(parentReader);
     checkHandle(nameServiceDR, "Chat::NameServiceDataReader::_narrow");
-    
+
     /* Define the SQL expression (using a parameterized value). */
     nameFinderExpr = "userID = %0";
-    
+
     /* Create a QueryCondition to only read corresponding nameService information by key-value. */
-    nameFinder = nameServiceDR->create_querycondition( 
-        DDS::ANY_SAMPLE_STATE, 
-        DDS::ANY_VIEW_STATE, 
+    nameFinder = nameServiceDR->create_querycondition(
+        DDS::ANY_SAMPLE_STATE,
+        DDS::ANY_VIEW_STATE,
         DDS::ANY_INSTANCE_STATE,
-        nameFinderExpr, 
+        nameFinderExpr,
         expression_parameters);
     checkHandle(nameFinder, "DDS::DataReader::create_querycondition (nameFinder)");
-    
+
     /* Create the Topic that simulates the multi-topic (use Qos from chatMessage).*/
     status = chatMessageTopic->get_qos(namedMessageQos);
     checkStatus(status, "DDS::Topic::get_qos");
-    
+
     /* Create the NamedMessage Topic whose samples simulate the MultiTopic */
-    namedMessageTopic = realParticipant->create_topic( 
-        "Chat_NamedMessage", 
-        type_name, 
-        namedMessageQos, 
+    namedMessageTopic = realParticipant->create_topic(
+        "Chat_NamedMessage",
+        type_name,
+        namedMessageQos,
         NULL,
         DDS::STATUS_MASK_NONE);
     checkHandle(namedMessageTopic.in(), "DDS::DomainParticipant::create_topic (NamedMessage)");
-    
+
     /* Adapt the default PublisherQos to write into the "ChatRoom" Partition. */
     status = realParticipant->get_default_publisher_qos(pub_qos);
     checkStatus(status, "DDS::DomainParticipant::get_default_publisher_qos");
@@ -267,19 +267,19 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
     /* Create a private Publisher for the multitopic simulator. */
     multiPub = realParticipant->create_publisher(pub_qos, NULL, DDS::STATUS_MASK_NONE);
     checkHandle(multiPub.in(), "DDS::DomainParticipant::create_publisher (for multitopic)");
-    
+
     /* Create a DataWriter for the multitopic. */
-    parentWriter = multiPub->create_datawriter( 
-        namedMessageTopic.in(), 
-        DATAWRITER_QOS_USE_TOPIC_QOS, 
+    parentWriter = multiPub->create_datawriter(
+        namedMessageTopic.in(),
+        DATAWRITER_QOS_USE_TOPIC_QOS,
         NULL,
         DDS::STATUS_MASK_NONE);
     checkHandle(parentWriter, "DDS::Publisher::create_datawriter (NamedMessage)");
-    
+
     /* Narrow the abstract parent into its typed representative. */
     namedMessageDW = Chat::NamedMessageDataWriter::_narrow(parentWriter);
     checkHandle(namedMessageDW, "Chat::NamedMessageDataWriter::_narrow");
-    
+
     /* Store the relevant Entities in our Listener. */
     msgListener->chatMessageDR = chatMessageDR;
     msgListener->nameServiceDR = nameServiceDR;
@@ -292,7 +292,7 @@ DDS::ExtDomainParticipantImpl::create_simulated_multitopic (
 
 DDS::ReturnCode_t
 DDS::ExtDomainParticipantImpl::delete_simulated_multitopic(
-    DDS::TopicDescription_ptr smt
+    DDS::TopicDescription_ptr
 )
 {
     DDS::ReturnCode_t status;
@@ -429,9 +429,9 @@ DDS::ContentFilteredTopic_ptr DDS::ExtDomainParticipantImpl::create_contentfilte
     const DDS::StringSeq & filter_parameters
 ) THROW_ORB_EXCEPTIONS {
     return realParticipant->create_contentfilteredtopic(
-        name, 
-        related_topic, 
-        filter_expression, 
+        name,
+        related_topic,
+        filter_expression,
         filter_parameters);
 };
 
@@ -448,12 +448,12 @@ DDS::MultiTopic_ptr DDS::ExtDomainParticipantImpl::create_multitopic (
     const DDS::StringSeq & expression_parameters
 ) THROW_ORB_EXCEPTIONS {
     return realParticipant->create_multitopic(
-        name, 
-        type_name, 
-        subscription_expression, 
+        name,
+        type_name,
+        subscription_expression,
         expression_parameters);
 };
-        
+
 DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::delete_multitopic (
     DDS::MultiTopic_ptr a_multitopic
 ) THROW_ORB_EXCEPTIONS {
@@ -606,12 +606,12 @@ DDS::ExtDomainParticipant_var & DDS::ExtDomainParticipant_var::operator=(
 ) {
     ptr_ = ep;
     return *this;
-}; 
+};
 
 DDS::ExtDomainParticipant_ptr DDS::ExtDomainParticipant_var::operator->() const {
     return ptr_;
 };
-    
+
 DDS::ExtDomainParticipant_var::operator const DDS::DomainParticipant_ptr() const {
     return ptr_->in();
 };

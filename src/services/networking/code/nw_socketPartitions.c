@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -124,6 +124,7 @@ NW_STRUCT(nw_partition) {
     sk_bool connected;
     sk_bool compression;
     nw_partition nextInHash;
+    c_ulong mTTL;
 };
 
 
@@ -133,7 +134,8 @@ nw_partitionNew(
     sk_address address,
     sk_bool connected,
     sk_bool compression,
-    nw_partition nextInHash) {
+    nw_partition nextInHash,
+    c_ulong mTTL) {
 
     nw_partition result = NULL;
 
@@ -144,6 +146,7 @@ nw_partitionNew(
         result->connected = connected;
         result->compression = compression;
         result->nextInHash = nextInHash;
+        result->mTTL = mTTL;
     }
 
     return result;
@@ -213,7 +216,8 @@ nw_socketPartitionsAdd(
     sk_partitionId partitionId,
     sk_address address,
     sk_bool connected,
-    sk_bool compression)
+    sk_bool compression,
+    c_ulong mTTL)
 {
     nw_bool result = FALSE;
     nw_bool found = FALSE;
@@ -236,10 +240,10 @@ nw_socketPartitionsAdd(
     }
     if (!found) {
         /* Item has to be appended to the end */
-        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, NULL);
+        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, NULL, mTTL);
         result = TRUE;
     } else if (result) {
-        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, (*partitionPtr)->nextInHash);
+        *partitionPtr = nw_partitionNew(partitionId, address, connected, compression, (*partitionPtr)->nextInHash, mTTL);
     } else {
         result = nw_addressListAppend((*partitionPtr)->addressList, address);
     }
@@ -253,7 +257,8 @@ nw_socketPartitionsLookup(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
     nw_addressList *addressList,
-    sk_bool *compression)
+    sk_bool *compression,
+    c_ulong *mTTL)
 {
     /* Not yet implemented */
 
@@ -274,6 +279,7 @@ nw_socketPartitionsLookup(
             /* Exact match found, set result to TRUE */
             *addressList = partition->addressList;
             *compression = partition->compression;
+            *mTTL = partition->mTTL;
             done = TRUE;
             result = TRUE;
         } else {

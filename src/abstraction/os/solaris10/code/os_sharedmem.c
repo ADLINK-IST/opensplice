@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,10 +20,10 @@
 #include <assert.h>
 #include <sys/stat.h> /* define file permission macro's */
 
-#include <../posix/code/os_sharedmem_file.c>
-#include <../svr4/code/os_sharedmem_seg.c>
-#include <../common/code/os_sharedmem_heap.c>
-#include <../common/code/os_sharedmem.c>
+#include "../posix/code/os_sharedmem_file.c"
+#include "../svr4/code/os_sharedmem_seg.c"
+#include "../common/code/os_sharedmem_heap.c"
+#include "../common/code/os_sharedmem.c"
 
 os_result
 os_sharedAttrInit (

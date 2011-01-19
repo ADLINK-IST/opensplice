@@ -12,6 +12,18 @@
             <xs:attribute name="required" type="xs:boolean" use="required"/>
         </xs:complexType>
     </xs:element>
+     <xs:element name="attributeSize">
+        <xs:complexType>
+            <xs:all>
+                <xs:element minOccurs="0" ref="comment"/>
+                <xs:element minOccurs="0" name="minimum" type="xs:string"/>
+                <xs:element minOccurs="0" name="maximum" type="xs:string"/>
+                <xs:element name="default" type="xs:string"/>
+            </xs:all>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="required" type="xs:boolean" use="required"/>
+        </xs:complexType>
+    </xs:element>
     <xs:element name="attributeString">
         <xs:complexType>
             <xs:all>
@@ -76,6 +88,7 @@
             <xs:choice maxOccurs="unbounded">
                 <xs:element minOccurs="0" ref="comment"/>
                 <xs:element ref="attributeString"/>
+                <xs:element ref="leafSize"/>
                 <xs:element ref="leafEmpty"/>
                 <xs:element ref="leafString"/>
                 <xs:element ref="leafEnum"/>
@@ -111,6 +124,7 @@
                 <xs:element ref="attributeEnum"/>
                 <xs:element ref="attributeFloat"/>
                 <xs:element ref="attributeInt"/>
+                <xs:element ref="attributeSize"/>
             </xs:choice>
             <xs:attribute name="name" type="xs:string" use="required"/>
             <xs:attribute name="minOccurrences" type="xs:unsignedInt" use="optional"/>
@@ -162,6 +176,16 @@
             </xs:all>
         </xs:complexType>
     </xs:element>
+    <xs:element name="leafSize">
+        <xs:complexType>
+            <xs:all>
+                <xs:element minOccurs="0" ref="comment"/>
+                <xs:element minOccurs="0" name="minimum" type="xs:string"/>
+                <xs:element minOccurs="0" name="maximum" type="xs:string"/>
+                <xs:element name="default" type="xs:string"/>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
     <xs:element name="leafInt">
         <xs:complexType>
             <xs:all>
@@ -189,7 +213,7 @@
     </xs:element>
     <xs:element name="rootElement">
         <xs:complexType>
-            <xs:all maxOccurs="unbounded">
+            <xs:all minOccurs="1" maxOccurs="1">
                 <xs:element ref="element"/>
             </xs:all>
             <xs:attribute name="name" type="xs:string" use="required"/>
@@ -206,6 +230,7 @@
                 <xs:element ref="leafString"/>
                 <xs:element ref="leafEnum"/>
                 <xs:element ref="leafEmpty"/>
+                <xs:element ref="leafSize"/>
                 <xs:element ref="element"/>
             </xs:choice>
             <xs:attribute name="type" use="required">
@@ -235,6 +260,7 @@
                 <xs:element ref="leafString"/>
                 <xs:element ref="leafEnum"/>
                 <xs:element ref="leafEmpty"/>
+                <xs:element ref="leafSize"/>
                 <xs:element ref="element"/>
             </xs:choice>
         </xs:complexType>

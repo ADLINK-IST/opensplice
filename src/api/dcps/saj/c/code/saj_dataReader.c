@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "saj_DataReader.h"
@@ -126,17 +126,15 @@ SAJ_FUNCTION(jniDeleteReadcondition)(
     gapi_readCondition condition;
     gapi_dataReader dataReader;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     condition = (gapi_readCondition) saj_read_gapi_address(env, jcondition);
     dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
 
-    ud = saj_userData(gapi_object_get_user_data(condition));
+    must_free = saj_setThreadEnv(env);
     grc = gapi_dataReader_delete_readcondition(dataReader, condition);
+    saj_delThreadEnv(must_free);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 
@@ -151,11 +149,16 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
     jobject jdataReader)
 {
     gapi_dataReader dataReader;
+    jint result;
+    c_bool must_free;
 
     dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
 
-    return (jint)gapi_dataReader_delete_contained_entities(dataReader,
-                                        saj_destroy_user_data_callback, (void *)env);
+    must_free = saj_setThreadEnv(env);
+    result = (jint)gapi_dataReader_delete_contained_entities(dataReader);
+    saj_delThreadEnv(must_free);
+
+    return result;
 }
 
 /**
@@ -717,33 +720,35 @@ SAJ_FUNCTION(jniGetMatchedPublicationData)(
 {
     gapi_dataReader dataReader;
     gapi_publicationBuiltinTopicData *publication_data;
-    gapi_returnCode_t rc;
-    jint jresult;
-    jobjectArray jarray;
+    saj_returnCode rc;
+    gapi_returnCode_t result;
+    jobject jdata;
 
     if(jdataHolder != NULL){
-        jarray = NULL;
+        jdata = NULL;
         dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
         publication_data = gapi_publicationBuiltinTopicData__alloc();
 
-        rc = gapi_dataReader_get_matched_publication_data(
+        result = gapi_dataReader_get_matched_publication_data(
                                         dataReader, publication_data,
                                         (const gapi_instanceHandle_t)jhandle);
-        /**
-         * @todo TODO: Copy publication_data to Java object array.
-         */
-        gapi_free(publication_data);
 
-        if(rc == GAPI_RETCODE_OK){
-            (*env)->SetObjectField(env, jdataHolder,
-                    GET_CACHED(publicationBuiltinTopicDataHolder_value_fid), jarray);
-            (*env)->DeleteLocalRef(env, jarray);
+        if(result == GAPI_RETCODE_OK){
+            rc = saj_publicationBuiltinTopicDataCopyOut(env, publication_data, &jdata);
+            gapi_free(publication_data);
+
+            if(rc == SAJ_RETCODE_OK){
+                (*env)->SetObjectField(env, jdataHolder,
+                        GET_CACHED(publicationBuiltinTopicDataHolder_value_fid), jdata);
+                (*env)->DeleteLocalRef(env, jdata);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+            }
         }
-        jresult = (jint)rc;
     } else {
-        jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
+        result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    return jresult;
+    return (jint)result;
 }
 
 /*
@@ -835,17 +840,12 @@ SAJ_FUNCTION(jniDeleteView)(
     gapi_dataReader dataReader;
     gapi_dataReaderView dataReaderView;
     gapi_returnCode_t grc;
-    saj_userData ud;
 
     dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdatareader);
     dataReaderView = (gapi_dataReaderView) saj_read_gapi_address(env, jdatareaderview);
 
-    ud = saj_userData(gapi_object_get_user_data(dataReaderView));
     grc = gapi_dataReader_delete_view(dataReader, dataReaderView);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 

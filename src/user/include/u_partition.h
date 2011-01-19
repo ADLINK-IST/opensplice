@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,16 +26,30 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define  u_partition(o)  ((u_partition)(o))
+#define u_partition(o) \
+        ((u_partition)u_entityCheckType(u_entity(o), U_PARTITION))
 
 /* A u_partition object is a user proxy to the kernel v_partition object.
  * The constructor will lookup or else create a kernel v_partition object and
  * create a u_partition object as user proxy.
  */
-OS_API u_partition u_partitionNew  (u_participant p, const c_char *name, v_partitionQos qos);
-OS_API u_result u_partitionInit (u_partition d);
-OS_API u_result u_partitionFree (u_partition d);
-OS_API u_result u_partitionDeinit (u_partition d);
+OS_API u_partition
+u_partitionNew (
+    u_participant p,
+    const c_char *name,
+    v_partitionQos qos);
+
+OS_API u_result
+u_partitionInit (
+    u_partition _this);
+
+OS_API u_result
+u_partitionFree (
+    u_partition _this);
+
+OS_API u_result
+u_partitionDeinit (
+    u_partition _this);
 
 #undef OS_API
 

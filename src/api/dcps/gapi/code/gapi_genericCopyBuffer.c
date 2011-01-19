@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_objManag.h"
@@ -495,7 +495,7 @@ gapi_genericCopyBufferFreeType (
 
 
 
-void
+gapi_boolean
 gapi_genericCopyBufferFree (
     void *buffer)
 {
@@ -515,9 +515,10 @@ gapi_genericCopyBufferFree (
         }
         gapi_copyCacheFree(header->copyCache);
     }
+    return TRUE;
 }
 
-void
+gapi_boolean
 gapi_genericCopySeqBufferFree (
     void *buffer)
 {
@@ -541,6 +542,7 @@ gapi_genericCopySeqBufferFree (
         }
         gapi_copyCacheFree(header->copyCache);
     }
+    return TRUE;
 }
 
 void *

@@ -8,7 +8,7 @@
 # this file will be lost the next time it is generated.
 #
 # MPC Command:
-# /cygdrive/e/sm/worcvs/tao161/bin/mwc.pl -type gnuace -include ../../MPC/config -noreldefs -template prism
+# f:\worgit\TAO161_0-Windows-vc8-inline-32bit-091104\bin\mwc.pl -type gnuace -include ..\..\MPC\config -noreldefs -template prism
 #
 #----------------------------------------------------------------------------
 

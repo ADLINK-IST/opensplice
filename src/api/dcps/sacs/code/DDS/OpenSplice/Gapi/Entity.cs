@@ -57,7 +57,7 @@ namespace DDS.OpenSplice.Gapi
         * // ----------------------------------------------------------------------
         */
         [DllImport("dcpsgapi", EntryPoint = "gapi_object_set_user_data")]
-        public static extern void set_user_data(IntPtr _this, IntPtr userData);
+        public static extern void set_user_data(IntPtr _this, IntPtr userData, Delegate deleteAction, IntPtr deleteActionArg);
 
         [DllImport("dcpsgapi", EntryPoint = "gapi_object_get_user_data")]
         public static extern IntPtr get_user_data(IntPtr _this);

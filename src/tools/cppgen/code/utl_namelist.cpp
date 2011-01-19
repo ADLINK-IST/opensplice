@@ -80,8 +80,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 //  include/utl_tmpl and util/utl_tmpl directories instead of the
 //  files by the same names in the include and util directories.
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s)

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp_dds_dcps.h"
 #include "ccpp_Publisher_impl.h"
 #include "ccpp_Topic_impl.h"
@@ -24,7 +24,9 @@ DDS::Publisher_impl::Publisher_impl(gapi_publisher handle) : DDS::Entity_impl(ha
   os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
   if (os_mutexInit(&p_mutex, &mutexAttr) != os_resultSuccess)
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::Publisher_impl", 0,
+              "Unable to create mutex");
   }
 }
 
@@ -32,11 +34,14 @@ DDS::Publisher_impl::~Publisher_impl()
 {
   if (os_mutexDestroy(&p_mutex) != os_resultSuccess)
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to destroy mutex");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::~Publisher_impl", 0,
+              "Unable to destroy mutex");
   }
 }
 
-DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
+DDS::DataWriter_ptr
+DDS::Publisher_impl::create_datawriter (
   DDS::Topic_ptr a_topic,
   const DDS::DataWriterQos & qos,
   DDS::DataWriterListener_ptr a_listener,
@@ -55,7 +60,9 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
   Topic = dynamic_cast<DDS::Topic_impl_ptr>(a_topic);
   if (!Topic)
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Topic");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::create_datawriter", 0,
+              "Invalid Topic");
   }
   else
   {
@@ -71,7 +78,9 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
       else
       {
         proceed = false;
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::create_datawriter", 0,
+                  "Unable to allocate memory");
       }
     }
 
@@ -96,7 +105,9 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
         else
         {
           proceed = false;
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+          OS_REPORT(OS_ERROR,
+                    "DDS::Publisher_impl::create_datawriter", 0,
+                    "Unable to allocate memory");
         }
       }
     }
@@ -139,7 +150,8 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
                   if (myUD)
                   {
                     gapi_publisherQos *pqos = gapi_publisherQos__alloc();
-                    gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD);
+                    gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD,
+                                              DDS::ccpp_CallBack_DeleteUserData,NULL);
                     if(pqos){
                         if(gapi_publisher_get_qos(_gapi_self, pqos) == GAPI_RETCODE_OK){
                             if(pqos->entity_factory.autoenable_created_entities) {
@@ -148,29 +160,39 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
                         }
                         else
                         {
-                            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain publisher_qos");
+                            OS_REPORT(OS_ERROR,
+                                      "DDS::Publisher_impl::create_datawriter", 0,
+                                      "Unable to obtain publisher_qos");
                         }
                         gapi_free(pqos);
                     }
                     else
                     {
-                        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                        OS_REPORT(OS_ERROR,
+                                  "DDS::Publisher_impl::create_datawriter", 0,
+                                  "Unable to allocate memory");
                     }
                   }
                   else
                   {
-                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                    OS_REPORT(OS_ERROR,
+                              "DDS::Publisher_impl::create_datawriter", 0,
+                              "Unable to allocate memory");
                   }
                 }
               }
               else
               {
-                OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Type Support Factory");
+                OS_REPORT(OS_ERROR,
+                          "DDS::Publisher_impl::create_datawriter", 0,
+                          "Invalid Type Support Factory");
               }
             }
             else
             {
-              OS_REPORT(OS_ERROR, "CCPP", 0, "Type Support information not available for create_datawriter");
+              OS_REPORT(OS_ERROR,
+                        "DDS::Publisher_impl::create_datawriter", 0,
+                        "Type Support information not available for create_datawriter");
             }
           }
           gapi_free(typeName);
@@ -190,11 +212,11 @@ DDS::DataWriter_ptr DDS::Publisher_impl::create_datawriter (
 }
 
 
-DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
+DDS::ReturnCode_t
+DDS::Publisher_impl::delete_datawriter (
   DDS::DataWriter_ptr a_datawriter
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::ccpp_UserData_ptr myUD;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
   DDS::DataWriter_impl_ptr dataWriter;
 
@@ -203,34 +225,36 @@ DDS::ReturnCode_t DDS::Publisher_impl::delete_datawriter (
   {
     if (os_mutexLock(&(dataWriter->dw_mutex)) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(dataWriter->_gapi_self));
       result = gapi_publisher_delete_datawriter(_gapi_self, dataWriter->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
         dataWriter->_gapi_self = NULL;
-        if (myUD)
-        {
-          delete myUD;
-        }
-        else
-        {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-        }
+      }
+      else
+      {
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::delete_datawriter", 0,
+                  "Unable to delete datawriter");
       }
       if (os_mutexUnlock(&(dataWriter->dw_mutex)) != os_resultSuccess)
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::delete_datawriter", 0,
+                  "Unable to release mutex");
       }
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::delete_datawriter", 0,
+                "Unable to obtain mutex");
     }
   }
   return result;
 }
 
-DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
+DDS::DataWriter_ptr
+DDS::Publisher_impl::lookup_datawriter (
   const char * topic_name
 ) THROW_ORB_EXCEPTIONS
 {
@@ -253,33 +277,43 @@ DDS::DataWriter_ptr DDS::Publisher_impl::lookup_datawriter (
         }
         else
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Data Writer");
+          OS_REPORT(OS_ERROR,
+                    "DDS::Publisher_impl::lookup_datawriter", 0,
+                    "Invalid Data Writer");
         }
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::lookup_datawriter", 0,
+                  "Unable to obtain userdata");
       }
       if (os_mutexUnlock(&p_mutex) != os_resultSuccess)
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::lookup_datawriter", 0,
+                  "Unable to release mutex");
       }
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::lookup_datawriter", 0,
+                "Unable to obtain mutex");
     }
   }
   return dataWriter;
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::delete_contained_entities (
+DDS::ReturnCode_t
+DDS::Publisher_impl::delete_contained_entities (
 ) THROW_ORB_EXCEPTIONS
 {
-  return gapi_publisher_delete_contained_entities(_gapi_self, DDS::ccpp_CallBack_DeleteUserData, NULL);
+  return gapi_publisher_delete_contained_entities(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::set_qos (
+DDS::ReturnCode_t
+DDS::Publisher_impl::set_qos (
   const DDS::PublisherQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
@@ -301,13 +335,16 @@ DDS::ReturnCode_t DDS::Publisher_impl::set_qos (
     else
     {
       result = DDS::RETCODE_OUT_OF_RESOURCES;
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::set_qos", 0,
+                "Unable to allocate memory");
     }
   }
   return result;
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::get_qos (
+DDS::ReturnCode_t
+DDS::Publisher_impl::get_qos (
   DDS::PublisherQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
@@ -322,12 +359,15 @@ DDS::ReturnCode_t DDS::Publisher_impl::get_qos (
   else
   {
     result = DDS::RETCODE_OUT_OF_RESOURCES;
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::get_qos", 0,
+              "Unable to allocate memory");
   }
   return result;
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::set_listener (
+DDS::ReturnCode_t
+DDS::Publisher_impl::set_listener (
   DDS::PublisherListener_ptr a_listener,
   DDS::StatusMask mask
 ) THROW_ORB_EXCEPTIONS
@@ -351,28 +391,37 @@ DDS::ReturnCode_t DDS::Publisher_impl::set_listener (
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+            OS_REPORT(OS_ERROR,
+                      "DDS::Publisher_impl::set_listener", 0,
+                      "Unable to obtain userdata");
           }
         }
         if (os_mutexUnlock(&p_mutex) != os_resultSuccess)
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+          OS_REPORT(OS_ERROR,
+                    "DDS::Publisher_impl::set_listener", 0,
+                    "Unable to release mutex");
         }
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::set_listener", 0,
+                  "Unable to obtain lock");
       }
       gapi_free(gapi_listener);
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::set_listener", 0,
+                "Unable to allocate memory");
     }
     return result;
 }
 
-DDS::PublisherListener_ptr DDS::Publisher_impl::get_listener (
+DDS::PublisherListener_ptr
+DDS::Publisher_impl::get_listener (
 ) THROW_ORB_EXCEPTIONS
 {
   DDS::PublisherListener_ptr result;
@@ -388,41 +437,50 @@ DDS::PublisherListener_ptr DDS::Publisher_impl::get_listener (
     }
     if (os_mutexUnlock(&p_mutex) != os_resultSuccess)
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::get_listener", 0,
+                "Unable to release mutex");
     }
   }
   else
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::get_listener", 0,
+              "Unable to obtain lock");
   }
   return result;
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::suspend_publications (
+DDS::ReturnCode_t
+DDS::Publisher_impl::suspend_publications (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_suspend_publications(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::resume_publications (
+DDS::ReturnCode_t
+DDS::Publisher_impl::resume_publications (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_resume_publications(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::begin_coherent_changes (
+DDS::ReturnCode_t
+DDS::Publisher_impl::begin_coherent_changes (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_begin_coherent_changes(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::end_coherent_changes (
+DDS::ReturnCode_t
+DDS::Publisher_impl::end_coherent_changes (
 ) THROW_ORB_EXCEPTIONS
 {
   return gapi_publisher_end_coherent_changes(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::wait_for_acknowledgments (
+DDS::ReturnCode_t
+DDS::Publisher_impl::wait_for_acknowledgments (
   const DDS::Duration_t & max_wait
 ) THROW_ORB_EXCEPTIONS
 {
@@ -432,7 +490,8 @@ DDS::ReturnCode_t DDS::Publisher_impl::wait_for_acknowledgments (
     return gapi_publisher_wait_for_acknowledgments(_gapi_self, &gapi_max_wait);
 }
 
-DDS::DomainParticipant_ptr DDS::Publisher_impl::get_participant (
+DDS::DomainParticipant_ptr
+DDS::Publisher_impl::get_participant (
 ) THROW_ORB_EXCEPTIONS
 {
   gapi_domainParticipant handle;
@@ -453,18 +512,23 @@ DDS::DomainParticipant_ptr DDS::Publisher_impl::get_participant (
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Participant");
+        OS_REPORT(OS_ERROR,
+                  "DDS::Publisher_impl::get_participant", 0,
+                  "Invalid Participant");
       }
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::get_participant", 0,
+                "Unable to obtain userdata");
     }
   }
   return domainParticipant;
 }
 
-DDS::ReturnCode_t  DDS::Publisher_impl::set_default_datawriter_qos (
+DDS::ReturnCode_t
+DDS::Publisher_impl::set_default_datawriter_qos (
   const DDS::DataWriterQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
@@ -478,13 +542,16 @@ DDS::ReturnCode_t  DDS::Publisher_impl::set_default_datawriter_qos (
   }
   else
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::set_default_datawriter_qos", 0,
+              "Unable to allocate memory");
     result = DDS::RETCODE_OUT_OF_RESOURCES;
   }
   return result;
 }
 
-DDS::ReturnCode_t  DDS::Publisher_impl::get_default_datawriter_qos (
+DDS::ReturnCode_t
+DDS::Publisher_impl::get_default_datawriter_qos (
   DDS::DataWriterQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
@@ -498,13 +565,16 @@ DDS::ReturnCode_t  DDS::Publisher_impl::get_default_datawriter_qos (
   }
   else
   {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+    OS_REPORT(OS_ERROR,
+              "DDS::Publisher_impl::get_default_datawriter_qos", 0,
+              "Unable to allocate memory");
     result = DDS::RETCODE_OUT_OF_RESOURCES;
   }
   return result;
 }
 
-DDS::ReturnCode_t DDS::Publisher_impl::copy_from_topic_qos (
+DDS::ReturnCode_t
+DDS::Publisher_impl::copy_from_topic_qos (
   DDS::DataWriterQos & a_datawriter_qos,
   const DDS::TopicQos & a_topic_qos
 ) THROW_ORB_EXCEPTIONS
@@ -526,7 +596,9 @@ DDS::ReturnCode_t DDS::Publisher_impl::copy_from_topic_qos (
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::Publisher_impl::copy_from_topic_qos", 0,
+                "Unable to allocate memory");
       result = DDS::RETCODE_OUT_OF_RESOURCES;
     }
     if (gapi_dwqos)

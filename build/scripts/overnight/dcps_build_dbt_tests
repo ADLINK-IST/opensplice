@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . buildsys/functions
 
@@ -31,7 +31,15 @@ fi
 echo "BUILD/DBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
-BUILD_TYPE=`echo $SETUP_TYPE | awk -F'-' '{ print$NF }'`
-
-/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run build $BUILD_TYPE
-exit 0
+cd testsuite/dbt ||
+{ 
+    echo "ERROR: could not cd to testsuite/dbt dir - dcps_build_dbt_tests"; 
+    exit 4; 
+}
+make
+if [ $? = 0 ] 
+then
+    exit 0
+else
+    exit 5
+fi

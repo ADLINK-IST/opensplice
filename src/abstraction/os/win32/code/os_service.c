@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,18 +13,23 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include <code/os__service.h>
+#include "code/os__service.h"
 #include <sys/timeb.h>
 #include <time.h>
-#include <os_heap.h>
-#include <os_mutex.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_mutex.h"
+#include "os_stdlib.h"
 
 #include <stdio.h>
 #include <assert.h>
 
-#include <code/os__debug.h>
-#include <code/os__sharedmem.h>
+#include "code/os__debug.h"
+#include "code/os__sharedmem.h"
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#include <Sddl.h>
 
 #define _PIPE_STATE_CONNECTING 0
 #define _PIPE_STATE_READING    1
@@ -120,10 +125,40 @@ createSem(
     long id,
     char *name)
 {
-    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d%d", OS_SERVICE_SEM_NAME_PREFIX, id,os_getShmBaseAddressFromPointer(NULL));
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
+    HANDLE namedSem;
 
-    return CreateSemaphore(NULL, 0, 0x7fffffff, name);
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list */
+
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GA;;;IU)", /* grant all acess to system, admins, and users */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+
+    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
+              "%s%s%d%d",
+              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+              OS_SERVICE_SEM_NAME_PREFIX,
+              id,
+              os_getShmBaseAddressFromPointer(NULL));
+
+    namedSem = CreateSemaphore((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
+                                0,
+                                0x7fffffff,
+                                name);
+    if (sec_descriptor_ok)
+    {
+        /* Free the heap allocated descriptor */
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    return namedSem;
 }
 
 static HANDLE
@@ -131,10 +166,40 @@ createEv(
     long id,
     char *name)
 {
-    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d%d", OS_SERVICE_EVENT_NAME_PREFIX, id,os_getShmBaseAddressFromPointer(NULL));
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
+    HANDLE namedEv;
 
-    return CreateEvent(NULL, FALSE, FALSE, name);
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list */
+
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GA;;;IU)", /* grant all acess to system, admins, and users */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+
+    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
+              "%s%s%d%d",
+              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+              OS_SERVICE_EVENT_NAME_PREFIX,
+              id,
+              os_getShmBaseAddressFromPointer(NULL));
+
+    namedEv = CreateEvent((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
+                           FALSE,
+                           FALSE,
+                           name);
+    if (sec_descriptor_ok)
+    {
+        /* Free the heap allocated descriptor */
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    return namedEv;
 }
 
 static int
@@ -204,7 +269,7 @@ poolRelease(
     if (id == 0) { /* 0 is uninitialized mutex */
        return 0;
     }
-    
+
     block = pool->tail;
     blockNr = (pool->blockCount - 1) - ((id - 1) / _POOL_BLOCKSIZE); /* reverse order */
     idxInBlock = (id - 1) % _POOL_BLOCKSIZE;
@@ -212,7 +277,6 @@ poolRelease(
        block = block->prev;
     }
     if (block->entity[idxInBlock].id < 0) {
-       OS_DEBUG_1("poolRelease", "Releasing event %d", id);
        block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
        pool->inuse--;
        result = 0; /* success */
@@ -577,6 +641,20 @@ os_createPipeNameFromMutex(
 }
 
 os_char *
+os_createPipeNameFromCond(os_cond *cond)
+{
+    os_char *name;
+
+    assert(cond);
+
+    name = os_getDomainNameforCond(cond);
+    if (name == NULL) {
+        name = _ospl_serviceName;
+    }
+    return os_constructPipeName(name);
+}
+     
+os_char *
 os_constructPipeName(
     os_char * name)
 {
@@ -589,13 +667,13 @@ os_constructPipeName(
     if (n) {
         strcpy(n, OS_SERVICE_PIPE_PREFIX);
         strcat(n, name);
-        /* replace all '\' occurrences with '#', since backslash is not
+        /* replace all ' ' occurrences with '/', since space is not
          * allowed in the pipename
          */
         len = strlen(n);
         for (i = strlen(OS_SERVICE_PIPE_PREFIX); i < len; i++) {
-            if (n[i] == '\\') {
-                n[i] = '#';
+            if (n[i] == ' ') {
+                n[i] = '/';
             }
         }
     }

@@ -255,10 +255,7 @@ namespace DDS.OpenSplice
         
         public ReturnCode DeleteContainedEntities()
         {
-            return Gapi.Subscriber.delete_contained_entities(
-                GapiPeer,
-                null,
-                IntPtr.Zero);
+            return Gapi.Subscriber.delete_contained_entities(GapiPeer);
         }
 
         public ReturnCode GetDataReaders(ref IDataReader[] readers)

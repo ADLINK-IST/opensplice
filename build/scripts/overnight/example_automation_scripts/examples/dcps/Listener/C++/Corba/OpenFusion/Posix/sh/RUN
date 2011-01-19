@@ -1,0 +1,40 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching Listener "
+sh ./startPublisher.sh  > pubResult.txt	&
+sh ./startSubscriber.sh "./subResult.txt"
+
+echo "=== Checking Listener Subscriber results"
+grep "message received" subResult.txt > tmpSubResult.txt
+grep "userID" subResult.txt >> tmpSubResult.txt
+grep "Message :" subResult.txt >> tmpSubResult.txt
+
+# 
+IS_CORBA=`echo $PWD | grep Corba | wc -l`
+if [  "$IS_CORBA" =  1 ];then
+   # Corba
+   diff -B -w tmpSubResult.txt ../../../../../expected_results/subResult.txt > subdiff.txt
+else
+   # Standalone
+   diff -B -w tmpSubResult.txt ../../../../expected_results/subResult.txt > subdiff.txt
+fi
+
+if [ -s subdiff.txt ] || [ ! -r subResult.txt ];then
+   echo NOK
+   echo "*** ERROR : example Listener failed ";
+   cat subdiff.txt;
+else
+   echo OK
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

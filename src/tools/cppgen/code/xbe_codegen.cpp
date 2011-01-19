@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,16 +9,16 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <idl.h>
-#include <idl_extern.h>
-#include <xbe_codegen.h>
-#include <xbe_module.h>
-#include <xbe_interface.h>
-#include <xbe_union.h>
-#include <xbe_sequence.h>
-#include <xbe_array.h>
-#include <xbe_structure.h>
-#include <xbe_typedef.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "xbe_codegen.h"
+#include "xbe_module.h"
+#include "xbe_interface.h"
+#include "xbe_union.h"
+#include "xbe_sequence.h"
+#include "xbe_array.h"
+#include "xbe_structure.h"
+#include "xbe_typedef.h"
 
 // -------------------------------------------------
 //  BE_CODE_GENERATOR IMPLEMENTATION

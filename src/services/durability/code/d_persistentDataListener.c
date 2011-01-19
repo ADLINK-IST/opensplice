@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -281,9 +281,10 @@ d_persistentDataListenerTake(
                         }
                     } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
+                case V_GROUP_ACTION_DISPOSE_ALL:  /*fallthrough on purpose.*/
                 default:
                     OS_REPORT_1(OS_ERROR, "d_persistentDataListenerTake", 0,
-                                "Unknown group action received (%d)", msg->kind);
+                                "Unknown or unsupported group action received (%d)", msg->kind);
                     assert(FALSE);
                     result = D_STORE_RESULT_ERROR;
                     break;

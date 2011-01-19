@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -490,7 +490,7 @@ v_deliveryServiceUnregister(
             for (i=0; i<nrOfPartitions; i++) {
                 c_string name = v_entityName(group->partition);
                 if (v_partitionStringMatchesExpression(name,rInfo->userData.partition.name[i])) {
-                    arg.groupList = c_iterInsert(arg.groupList,group);
+                    arg.groupList = c_iterInsert(arg.groupList,c_keep(group));
                     i = nrOfPartitions; /* exit for loop */
                 }
             }

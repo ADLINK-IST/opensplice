@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,7 +13,6 @@
 
 #include "gapi.h"
 #include "gapi_entity.h"
-#include "gapi_domainEntity.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_status.h"
 #include "gapi_kernel.h"
@@ -24,12 +23,9 @@
 void
 _EntityInit (
     _Entity entity,
-    _DomainEntity domainEntity,
-    _Entity factory,
-    gapi_boolean enabled)
+    _Entity factory)
 {
 
-    entity->enabled  = enabled;
     entity->factory  = factory;
     entity->registry = _ObjectRegistryNew();
     entity->status = NULL;
@@ -41,8 +37,13 @@ void
 _EntityDispose (
     _Entity entity)
 {
-   _ObjectRegistryFree(entity->registry);
-   _EntityDelete(entity);
+    _ObjectRegistryFree(entity->registry);
+    if ( entity->StatusCondition ) {
+        _EntityClaim(entity->StatusCondition);
+        _StatusConditionFree (entity->StatusCondition);
+        entity->StatusCondition = NULL;
+    }
+    _EntityDelete(entity);
 }
 
 
@@ -60,10 +61,7 @@ gapi_entity_enable (
     if (_this) {
         entity = gapi_entityClaim(_this, &result);
         if ( entity != NULL ) {
-            if (!entity->enabled) {
-                entity->enabled = TRUE;
-                u_entityEnable(entity->uEntity);
-            }
+            u_entityEnable(entity->uEntity);
             _EntityRelease(entity);
             result = GAPI_RETCODE_OK;
         } else {
@@ -106,9 +104,8 @@ gapi_entity_get_statuscondition (
         }
 
         condition = entity->StatusCondition;
+        _EntityRelease(entity);
     }
-
-    _EntityRelease(entity);
 
     return (gapi_statusCondition)_EntityHandle(condition);
 }
@@ -127,22 +124,8 @@ gapi_entity_get_status_changes (
     entity = gapi_entityClaim(_this, NULL);
     if ( entity != NULL ) {
         result = _StatusGetCurrentStatus(entity->status);
+        _EntityRelease(entity);
     }
-    _EntityRelease(entity);
-
-    return result;
-}
-
-gapi_boolean
-_EntitySetListenerInterest (
-    _Entity               entity,
-    _ListenerInterestInfo info)
-{
-    gapi_boolean result;
-
-    _EntityClaim(entity);
-    result = _StatusSetListenerInterest(entity->status, info);
-    _EntityRelease(entity);
 
     return result;
 }
@@ -159,16 +142,6 @@ _EntitySetUserEntity (
         entity->handle = u_entityGetInstanceHandle(uEntity);
     } else {
         entity->handle = GAPI_HANDLE_NIL;
-    }
-}
-
-void
-_EntityFreeStatusCondition (
-    _Entity entity)
-{
-    if ( entity->StatusCondition ) {
-        _EntityClaim(entity->StatusCondition);
-        _StatusConditionFree (entity->StatusCondition);
     }
 }
 
@@ -199,8 +172,8 @@ gapi_entity_get_instance_handle (
     entity = gapi_entityClaim(_this, NULL);
     if ( entity ) {
         handle = entity->handle;
+        _EntityRelease(entity);
     }
-    _EntityRelease(entity);
 
     return handle;
 }
@@ -225,20 +198,14 @@ void
 _EntityNotifyInitialEvents (
     _Entity _this)
 {
-    gapi_statusMask triggerMask;
-    _Status status;
     c_ulong events;
 
     assert(_this);
 
     events = (c_ulong)kernelStatusGet(_this->uEntity);
     if ( events ) {
-        status = _this->status;
-        assert(status);
-        if ( status->enabled ) {
-            triggerMask = _StatusGetMaskStatus(status, events);
-            status->notify(_this, triggerMask);
-        }
+        assert(_this->status);
+        _StatusNotifyEvent(_this->status, events);
     }
 }
 
@@ -247,17 +214,26 @@ gapi_entityNotifyEvent (
     gapi_entity _this,
     c_ulong events)
 {
-    gapi_statusMask triggerMask;
     _Entity entity;
-    _Status status;
 
     entity = gapi_entityClaim(_this, NULL);
     if ( entity ) {
-        status = entity->status;
-        if ( status->enabled ) {
-            triggerMask = _StatusGetMaskStatus(status, events);
-            status->notify(entity, triggerMask);
-        }
+        _StatusNotifyEvent(entity->status, events);
+        gapi_entityRelease(_this);
     }
-    gapi_entityRelease(_this);
 }
+
+_DomainParticipant
+_EntityParticipant (
+    _Entity _this)
+{
+    u_participant uParticipant;
+    _DomainParticipant participant;
+    gapi_domainParticipant handle;
+
+    uParticipant = u_entityParticipant(U_ENTITY_GET(_this));
+    handle = u_entityGetUserData(u_entity(uParticipant));
+    participant = _DomainParticipant(gapi_objectPeekUnchecked(handle));
+    return participant;
+}
+

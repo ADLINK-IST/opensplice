@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -65,13 +65,24 @@ messageTypeNew(
 
     base = c_getBase(kernel);
     if (base == NULL) {
+        OS_REPORT_1(OS_WARNING,
+                    "v_topic::messageTypeNew", 21,
+                    "Could not create type 'v_message<%s>', "
+                    "invalid kernel reference.",
+                    typeName);
         return NULL;
     }
     dataType = c_resolve(base,typeName);
     if (dataType == NULL) {
+        OS_REPORT_2(OS_WARNING,
+                    "v_topic::messageTypeNew", 21,
+                    "Could not create type 'v_message<%s>', unknown type '%s'.",
+                    typeName, typeName);
         return NULL;
     }
+    c_lockWrite(&kernel->lock);
     baseType = v_kernelType(kernel,K_MESSAGE);
+    c_lockUnlock(&kernel->lock);
     assert(baseType != NULL);
 
     type = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
@@ -155,7 +166,6 @@ createMessageKeyList(
             os_free(name);
             c_iterFree(newNames);
             c_free(keyList);
-
             return FALSE;
         }
         keyList[i++] = field;
@@ -346,17 +356,19 @@ v__topicNew(
     assert(C_TYPECHECK(kernel,v_kernel));
 
     if (name == NULL) {
+        OS_REPORT(OS_WARNING, "v_topicNew", 0,
+                  "Topic '?' is not created. No name specified (NULL).");
         return NULL;
     }
 
     newQos = v_topicQosNew(kernel,qos);
     if (newQos == NULL) {
-        OS_REPORT(OS_ERROR, "v_topicNew", 0,
-            "Topic not created: inconsistent qos");
+        OS_REPORT_1(OS_WARNING, "v_topicNew", 0,
+                    "Topic '%s' is not created: inconsistent qos",
+                    name);
         return NULL;
     }
 
-    c_lockWrite(&kernel->lock);
     topic = NULL;
     found = v_lookupTopic(kernel, name);
     if (found) {
@@ -473,7 +485,7 @@ v__topicNew(
             }
             os_free(rTypeName);
         } else {
-            OS_REPORT_3(OS_API_INFO, "v_topicNew", 21,
+            OS_REPORT_3(OS_WARNING, "v_topicNew", 21,
                         "Create Topic \"%s\" failed: name <%s> differs existing name <%s>.",
                         name, name, v_topicName(found));
         }
@@ -486,6 +498,9 @@ v__topicNew(
             if (createMessageKeyList(type, keyExpr, &keyList) == FALSE) {
                 topic = NULL; /* illegal key expression */
                 v_topicQosFree(newQos);
+                OS_REPORT_2(OS_WARNING, "v_topicNew", 0,
+                            "Failed to create Topic '%s': invalid key expression '%s'.",
+                            name, keyExpr);
             } else {
                 field = c_property(c_metaResolve(c_metaObject(type),
                                                  USERDATA_FIELD_NAME));
@@ -529,9 +544,11 @@ v__topicNew(
         } else {
             topic = NULL;
             v_topicQosFree(newQos);
+            OS_REPORT_2(OS_WARNING, "v_topicNew", 0,
+                        "Failed to create Topic '%s': could not resolve type '%s'.",
+                        name, typeName);
         }
     }
-    c_lockUnlock(&kernel->lock);
 
     if(builtinMsg){
         v_writeBuiltinTopic(kernel, V_TOPICINFO_ID, builtinMsg);
@@ -788,8 +805,9 @@ v_topicSetQos(
     v_kernel kernel;
 
     assert(C_TYPECHECK(topic,v_topic));
-    /* Do not use C_TYPECHECK on qos parameter, since it might be allocated on heap! */
-
+    /* Do not use C_TYPECHECK on qos parameter,
+     * since it might be allocated on heap!
+     */
     kernel = v_objectKernel(topic);
     c_lockWrite(&kernel->lock);
     result = v_topicQosSet(topic->qos, qos, v_entity(topic)->enabled, &cm);
@@ -1031,31 +1049,33 @@ v_partitionDetermineTopicAccessMode(
     return retVal;
 }
 
-v_result v_topicDisposeAllData(v_topic topic)
+v_result
+v_topicDisposeAllData(
+    v_topic topic)
 {
-   v_message msg;
-   v_participant participant;
-   v_kernel kernel;
-   v_result res = V_RESULT_OUT_OF_MEMORY;
+    v_message msg;
+    v_participant participant;
+    v_kernel kernel;
+    v_result res = V_RESULT_OUT_OF_MEMORY;
 
-   assert(topic != NULL);
-   assert(C_TYPECHECK(topic,v_topic));
+    assert(topic != NULL);
+    assert(C_TYPECHECK(topic,v_topic));
 
-   kernel = v_objectKernel(topic);
-   participant = kernel->builtin->participant;
-   msg = v_participantCreateCandMCommand( participant );
-   if ( msg != NULL )
-   {
-      res = v_participantCandMCommandSetDisposeAllData( participant,
-                                                        msg,
-                                                        v_entity(topic)->name,
-                                                        "*" );
-      if ( res == V_RESULT_OK )
-      {
-         res = v_participantWriteCandMCommand( participant, msg );
-      }
+    kernel = v_objectKernel(topic);
+    participant = kernel->builtin->participant;
+    msg = v_participantCreateCandMCommand( participant );
+    if ( msg != NULL )
+    {
+        res = v_participantCandMCommandSetDisposeAllData( participant,
+                                                          msg,
+                                                          v_entity(topic)->name,
+                                                          "*" );
+        if ( res == V_RESULT_OK )
+        {
+           res = v_participantWriteCandMCommand( participant, msg );
+        }
 
-      c_free(msg);
-   }
-   return (res);
+        c_free(msg);
+    }
+    return (res);
 }

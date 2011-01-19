@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,6 +10,7 @@
  *
  */
 /* interface */
+
 #include "nw__plugSendChannel.h"
 #include "nw_plugSendChannel.h"
 
@@ -160,6 +161,7 @@ typedef enum nw_plugReceivingNodeState_e {
  * will walk over the node list */
 
 NW_STRUCT(nw_plugReceivingNode) {
+    nw_plugSendChannel owner;
     nw_plugReceivingNodeState state;
     nw_seqNr nodeId;
     nw_address address;
@@ -178,6 +180,7 @@ NW_STRUCT(nw_plugReceivingNode) {
 
 static nw_plugReceivingNode
 nw_plugReceivingNodeNew(
+    nw_plugSendChannel owner,
     nw_seqNr receivingNodeId,
     nw_address receivingAddress,
     nw_partitionId nofPartitions,
@@ -287,6 +290,9 @@ NW_STRUCT(nw_plugPartitionNode) {
     nw_ackMessage freeAckList;
     /* Keep administration about first ack received */
     nw_seqNr firstStartingNr;
+    /* Keep administration about first ack sended */
+    nw_seqNr firstSendAck;
+    nw_seqNr repeatFirstAckCntDwn;
 
     /* Status: number of fragment buffers in use at the remote node */
     nw_length remoteRecvBuffer;
@@ -610,14 +616,12 @@ nw_plugSendChannelNew(
         }
         result->totalResendCount = 0;
 
-        if (nw__plugChannelGetReliabilityOffered(nw_plugChannel(result)) == NW_REL_RELIABLE) {
-              result->currentPeriodBudget = NWCF_SIMPLE_PARAM(ULong, tmpPath, MaxBurstSize);
-        } else {
-              result->currentPeriodBudget = NWCF_DEFAULTED_PARAM(ULong, tmpPath, MaxBurstSize, NW_MAXBURSTSIZE_NONE);
-        }
-        if (result->currentPeriodBudget == NW_MAXBURSTSIZE_NONE) {
-            result->currentPeriodBudget = NW_MAXBURSTSIZE_UNLIMITED;
-        }
+        /*
+         * There use to be different default values for MaxBurstSize for reliable and non-reliable channels.
+         * Now both type default to the same value, which is supposed to be an "unlimited" value.
+         */
+        result->currentPeriodBudget = NWCF_SIMPLE_PARAM(Size, tmpPath, MaxBurstSize);
+
 
         result->throttleThreshold = NWCF_SIMPLE_PARAM(ULong, tmpPath, ThrottleThreshold);
         result->lowerThrottleLimit = NWCF_SIMPLE_PARAM(ULong, tmpPath, ThrottleLimit);
@@ -723,7 +727,8 @@ nw_plugSendChannelCreateReceivingPartitions(
     nw_bool found;
     nw_bool connected;
     nw_bool compression;
-    os_int32 hash;
+    os_uint32 hash;
+    c_ulong mTTL;
 
     NW_CONFIDENCE(sendChannel != NULL);
 
@@ -734,7 +739,7 @@ nw_plugSendChannelCreateReceivingPartitions(
          partitionId < NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, NULL, &connected, &compression, &hash);
+            &found, &partitionAddress, NULL, &connected, &compression, &hash, &mTTL);
 
 		NW_CONFIDENCE(found);
         if (found) {
@@ -742,7 +747,7 @@ nw_plugSendChannelCreateReceivingPartitions(
                 nw_plugReceivingPartitionNew(partitionId, hash);
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(sendChannel)), partitionId, partitionAddress,
-                connected, compression, FALSE);
+                connected, compression, FALSE, mTTL);
         } else {
             NW_SENDCHANNEL_PARTITION_BY_ID(sendChannel, partitionId) = NULL;
         }
@@ -806,7 +811,7 @@ nw_plugSendChannelCreateReceivingNode(
     nw_partitionId partitionId;
     nw_plugPartitionNode partitionNode;
 
-    result = nw_plugReceivingNodeNew(sendingNodeId, sendingAddress,
+    result = nw_plugReceivingNodeNew(sendChannel,sendingNodeId, sendingAddress,
         NW_SENDCHANNEL_NOF_PARTITIONS(sendChannel),
         prevNextInHash, prevNextInList);
 
@@ -1094,59 +1099,53 @@ nw_plugSendChannelMessagesFlush(
 			} else {
 				/* never reached, if encoding failed */            
 
+                if (!(os_int)nw_configurationLoseSentMessage()) {
 
-
-#ifdef NW_DEBUGGING
-            if (!(os_int)nw_configurationLoseSentMessage()) {
-#endif
-
-                /*
-            	if (nw_plugDataBufferGetPartitionId(buffer) !=
-                    partition->partitionId)
-                {
-                    NW_REPORT_ERROR_2("nw_plugSendChannelMessagesFlush",
-                            "Partition Id of Channel (%u) differs from buffer (%u)",
-                             partition->partitionId,
-                             nw_plugDataBufferGetPartitionId(buffer));
-                }*/
+                    /*
+                	if (nw_plugDataBufferGetPartitionId(buffer) !=
+                        partition->partitionId)
+                    {
+                        NW_REPORT_ERROR_2("nw_plugSendChannelMessagesFlush",
+                                "Partition Id of Channel (%u) differs from buffer (%u)",
+                                 partition->partitionId,
+                                 nw_plugDataBufferGetPartitionId(buffer));
+                    }*/
 
 
 
-                if ( receivingNodeId == 0 ){
-                    nw_periodicCheckMessageBox(channel); /* make sure to have processed all messages, as they might contain the mapping for this write_to*/
-                    nw_socketSendDataToPartition(
-                        nw__plugChannelGetSocket(channel),
-                        partition->partitionId,
-                        pss,
-                        buffer,
-                        bytesSent);
-                } else {
-                    nw_periodicCheckMessageBox(channel); /* make sure to have processed all messages, as they might contain the mapping for this write_to*/
-                    receivingNode = nw_plugSendChannelLookupReceivingNode(
-                                                         sendChannel,receivingNodeId);
-                    if (receivingNode != NULL ) {
-                        nw_socketSendDataTo(nw__plugChannelGetSocket(channel),
-                            (sk_address)receivingNode->address,
+                    if ( receivingNodeId == 0 ){
+                        nw_periodicCheckMessageBox(channel); /* make sure to have processed all messages, as they might contain the mapping for this write_to*/
+                        nw_socketSendDataToPartition(
+                            nw__plugChannelGetSocket(channel),
+                            partition->partitionId,
+                            pss,
                             buffer,
-                            bytesSent);
+                            (sk_length*)&bytesSent); /* in/out, might decrement due to compression */
                     } else {
-                    
-                        NW_TRACE_1(Send, 3, "nw_plugSendChannelMessagesFlush: Trying to send data to an unknown hostId 0x%x",receivingNodeId);
-                        NW_REPORT_WARNING_1("nw_plugSendChannelMessagesFlush",
-                                            "Trying to send data to an unknown hostId 0x%x",
-                                             receivingNodeId);
+                        nw_periodicCheckMessageBox(channel); /* make sure to have processed all messages, as they might contain the mapping for this write_to*/
+                        receivingNode = nw_plugSendChannelLookupReceivingNode(
+                                                             sendChannel,receivingNodeId);
+                        if (receivingNode != NULL ) {
+                            nw_socketSendDataTo(nw__plugChannelGetSocket(channel),
+                                (sk_address)receivingNode->address,
+                                buffer,
+                                bytesSent);
+                        } else {
+                        
+                            NW_TRACE_1(Send, 3, "nw_plugSendChannelMessagesFlush: Trying to send data to an unknown hostId 0x%x",receivingNodeId);
+                            NW_REPORT_WARNING_1("nw_plugSendChannelMessagesFlush",
+                                                "Trying to send data to an unknown hostId 0x%x",
+                                                 receivingNodeId);
+                        }
                     }
-                }
-                if (pss != NULL) {
-                    if (pss->enabled) {
-                        pss->numberOfPacketsSent++;
-                        pss->numberOfBytesSent += bytesSent;
+                    if (pss != NULL) {
+                        if (pss->enabled) {
+                            pss->numberOfPacketsSent++;
+                            pss->numberOfBytesSent += bytesSent;
+                        }
                     }
-                }
 
-#ifdef NW_DEBUGGING
 				}
-#endif
                 /* only insert data in the reliability admin if it one of our own.
                  * data resend on behalf of another died node, is not inserted 
                  */
@@ -1678,6 +1677,7 @@ nw_plugSendChannelFlushableBufferPop(
 
 static nw_plugReceivingNode
 nw_plugReceivingNodeNew(
+    nw_plugSendChannel owner,
     nw_seqNr receivingNodeId,
     nw_address receivingAddress,
     nw_partitionId nofPartitions,
@@ -1694,6 +1694,7 @@ nw_plugReceivingNodeNew(
 
     result = (nw_plugReceivingNode)os_malloc(sizeof(*result));
     if (result != NULL) {
+        result->owner = owner;
         result->state = NW_NODESTATE_RESPONDING;
         result->nodeId = receivingNodeId;
         result->address = receivingAddress;
@@ -1949,6 +1950,7 @@ nw_plugPartitionNodeAckReceived(
     nw_bool done = FALSE;
     nw_plugReceivingPartition partition;
     nw_seqNr firstKnownPacketNr;
+    char *addressString;
 
     NW_CONFIDENCE(partitionNode != NULL);
     NW_CONFIDENCE(startingNr > 0);
@@ -1997,13 +1999,28 @@ nw_plugPartitionNodeAckReceived(
             } else {
                 nextPrev = &partitionNode->pendingResendListTail;
             }
+            addressString = nw_addressToString(partitionNode->owner->address);
+            NW_TRACE_5(Send, 2,
+                "plugChannel %s: First ACK from node 0x"PA_ADDRFMT" (address %s) : starting: %d ,closing: %d",
+                 nw__plugChannelGetName(nw_plugChannel(partitionNode->owner->owner)),
+                 partitionNode->owner->nodeId, addressString, startingNr,closingNr); 
+            
             while ((currentItem != NULL) &&
                    (currentItem->packetNr >= startingNr)) {
+                   
+                NW_TRACE_4(Send, 3,
+                    "plugChannel %s: Cloning from latejoininglist for node 0x"PA_ADDRFMT" (address %s) : %d",
+                    nw__plugChannelGetName(nw_plugChannel(partitionNode->owner->owner)),
+                    partitionNode->owner->nodeId, addressString, currentItem->packetNr); 
+                
                 nw_plugPartitionNodeResendItemClone(partitionNode, currentItem,
                     &partitionNode->pendingResendListHead, nextPrev);
                 nextPrev = &((*nextPrev)->prev);
                 currentItem = currentItem->prev;
             }
+            os_free(addressString);
+
+            
         }
 
         /* The last received remoteRecvBuffer is always the one to use */
@@ -2065,6 +2082,16 @@ nw_plugPartitionNodeAckReceived(
                 partition = partitionNode->receivingPartition;
                 lastItem->next = partition->freeResendList;
                 partition->freeResendList = firstItem;
+            }
+        } else {
+            if ( partitionNode->firstStartingNr == 0 ||
+                 closingNr < partitionNode->firstStartingNr ){
+                    addressString = nw_addressToString(partitionNode->owner->address);
+                    NW_REPORT_WARNING_4("reliable protocol",
+                        "ACK received from node 0x"PA_ADDRFMT" (address %s) for packet %d, while only packets from %d "
+                        "onwards are available for resend reliable operation of this channel is no longer guaranteed",
+                        partitionNode->owner->nodeId, addressString, closingNr, partitionNode->firstStartingNr); 
+		    os_free (addressString);
             }
         }
     }
@@ -2213,6 +2240,8 @@ nw_plugPartitionNodeNew(
         result->totalAckCount = 0;
         result->freeAckList = NULL;
         result->firstStartingNr = 0;
+        result->firstSendAck = 0;
+        result->repeatFirstAckCntDwn = 0;
         result->remoteRecvBuffer = 0;
         result->remoteRecvBufferRefreshed = FALSE;
 
@@ -2366,14 +2395,48 @@ nw_plugPartitionNodeSerializeAndReleaseAcks(
     nw_bool *more)
 {
     NW_STRUCT(nw_plugControlMessage) *currentControlMessage;
-    nw_length count;
+    nw_length count = 0;
+    char *addressString;
 
-    count = 0;
     NW_CONFIDENCE((partitionNode->pendingAckCount == 0) ==
                   (partitionNode->pendingAckList == NULL));
+        /* During the maximum retry period (recoveryfactor*maxretries), include the
+         * first ever ack for this PartitionNode. This is done, so that the sender
+         * will always know which data should be resend to this node.
+         */
+        currentControlMessage = controlMessages[0];
+        if (partitionNode->firstSendAck > 0 &&
+        partitionNode->repeatFirstAckCntDwn > 0 &&
+        ((partitionNode->repeatFirstAckCntDwn % partitionNode->owner->owner->recoveryFactor) == 0 || partitionNode->pendingAckCount > 0) ){
+            nw_plugControlMessageSetPartitionId(currentControlMessage,
+                partitionNode->receivingPartition->partitionHash);
+            nw_plugControlMessageSetStartingNr(currentControlMessage,
+                partitionNode->firstSendAck);
+            nw_plugControlMessageSetClosingNr(currentControlMessage,
+                partitionNode->firstSendAck);
+            currentControlMessage = &(currentControlMessage[1]);
+        count++;
+    } 
     if (partitionNode->pendingAckCount > 0) {
         NW_CONFIDENCE(partitionNode->owner->state == NW_NODESTATE_RESPONDING);
-        currentControlMessage = controlMessages[0];
+        
+        /* First ack to be send out. Store the sequence number and intialize the countdown, 
+         * that determines how long this first ack number will be included in every ack-message
+         */
+        if (partitionNode->firstSendAck == 0 ){
+            partitionNode->firstSendAck = partitionNode->pendingAckList->startingNr;
+            partitionNode->repeatFirstAckCntDwn = partitionNode->owner->owner->maxRetries *
+                                                  partitionNode->owner->owner->recoveryFactor;
+            
+            addressString = nw_addressToString(partitionNode->owner->address);
+            NW_TRACE_5(Send, 2,
+                "plugChannel %s: First ACK to node 0x"PA_ADDRFMT" (address %s) : %d,%d",
+                 nw__plugChannelGetName(nw_plugChannel(partitionNode->owner->owner)),
+                 partitionNode->owner->nodeId, addressString, 
+                 partitionNode->pendingAckList->startingNr,
+                 partitionNode->pendingAckList->closingNr); 
+            os_free(addressString);
+        }
         while ((partitionNode->pendingAckList != NULL) && (count < maxMsgCount)) {
 
             nw_plugControlMessageSetPartitionId(currentControlMessage,
@@ -2389,12 +2452,9 @@ nw_plugPartitionNodeSerializeAndReleaseAcks(
             count++;
         }
         *controlMessages = currentControlMessage;
-        *actualMsgCount = count;
-        *more = (partitionNode->pendingAckList != NULL);
-    } else {
-        *actualMsgCount = 0;
-        *more = FALSE;
-    }
+    } 
+    *actualMsgCount = count;
+    *more = (partitionNode->pendingAckList != NULL);
 }
 
 /* --------------------------- nw_resendItem -------------------------------- */
@@ -2533,6 +2593,7 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                                sendChannel->pss->numberOfKnownNodes--;
                            }
                         }
+	                    os_free(addressString);
                     }
                     
                 break;
@@ -2555,7 +2616,7 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                 /* extend the global partition with this address */
                 nw_socketAddPartition(nw__plugChannelGetSocket(channel), 0, 
                                       nw_addressToString(sendingAddress),
-                                      TRUE, FALSE, TRUE);
+                                      TRUE, FALSE, TRUE, 0);
                 
             break;
             case NW_MBOX_GP_ADDLIST:
@@ -2563,7 +2624,7 @@ nw_periodicCheckMessageBox( nw_plugChannel channel )
                 NW_TRACE_2(Send, 5, "plugChannel %s: sendthread: Adding list to GP: %s",nw__plugChannelGetName(channel),list);
                 nw_socketAddPartition(nw__plugChannelGetSocket(channel), 0, 
                                       list,
-                                      TRUE, FALSE, TRUE);
+                                      TRUE, FALSE, TRUE, 0);
             break;
             case NW_MBOX_GP_REMOVE:
                 receivingNode = nw_plugSendChannelLookupReceivingNode(
@@ -2992,6 +3053,7 @@ nw_periodicSendAcksBySecureFlows( nw_plugChannel channel,
     nw_plugControlMessage firstMessage;
     nw_length length;
     nw_bool more;
+    nw_bool result;
 
     /* Serialize all acks for this node and send them to the network */
     /* printf("%d ack messages to be sent for receivingNode 0x%x\n",
@@ -3043,22 +3105,19 @@ nw_periodicSendAcksBySecureFlows( nw_plugChannel channel,
                     length = totNofMessages * NW_CONTROL_MESSAGE_SIZE +
                         NW_PLUGCONTROLBUFFER_HEADERSIZE;
                     NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
+                    nw_plugBufferSetLength(nw_plugBuffer(controlBuffer),length);
                     
-					if (!nw_plugSendChannelBufferEncoding(
-					   channel,
-					   partitionId,
-					   controlBuffer,
-					   &length)) { /* in/out */
-						NW_REPORT_WARNING("nw_plugSendChannelControlFlush",
-							  "dropping control message");
-					}
-					else {
-						/* only reached if encoding has been successful,
-						 * the buffer contains the encoded data now and may be
-						 * written to network  */
-						nw_socketSendControlTo(nw__plugChannelGetSocket(channel),
-								   (sk_address)receivingNode->address,
-								   controlBuffer, length);
+					result = nw_plugSendChannelBufferEncoding(channel,partitionId,controlBuffer,&length);
+
+					if (result) {
+					     /* only reached if encoding has been successful,
+                          * the buffer contains the encoded data now and may be
+                          * written to network  */
+                         nw_socketSendControlTo(nw__plugChannelGetSocket(channel),
+                                    (sk_address)receivingNode->address,
+                                    controlBuffer, length);
+					} else {
+					    NW_REPORT_WARNING("nw_plugSendChannelControlFlush","dropping control message");
 					}
 		            /* reset the control-buffer with plain text data */
 					nw_plugSendChannelInitializeControlBuffer(sendChannel,
@@ -3114,20 +3173,19 @@ nw_periodicSendAcksBundled( nw_plugChannel channel,
          partitionId++) {
         partitionNode = NW_RECEIVINGNODE_PARTITIONNODE_BY_ID(receivingNode, partitionId);
 
+        /* Every resolutiontick, lower the counter that controls the retransmission of the
+         * initial ack for this partitionNode.
+         */
+        if ( partitionNode->repeatFirstAckCntDwn > 0 ) {
+            partitionNode->repeatFirstAckCntDwn--;
+        }
+
         NW_CONFIDENCE((partitionNode->pendingAckList == NULL) ==
                       (partitionNode->pendingAckCount == 0));
-        if (partitionNode->pendingAckCount > 0) {
             do {
-#ifdef NW_DEBUGGING
-                os_uint32 pendingAckCount = partitionNode->pendingAckCount;
-#endif
                 nw_plugPartitionNodeSerializeAndReleaseAcks(partitionNode,
                     &firstMessage, maxNofMessages,
                     &nofMessages, &more);
-                NW_CONFIDENCE(nofMessages > 0);
-#ifdef NW_DEBUGGING
-                NW_CONFIDENCE(nofMessages <= pendingAckCount);
-#endif
                 totNofMessages += nofMessages;
                 maxNofMessages -= nofMessages;
                 if (maxNofMessages == 0) {
@@ -3157,11 +3215,6 @@ nw_periodicSendAcksBundled( nw_plugChannel channel,
                     totNofMessages = 0;
                 }
             } while (more);
-#ifdef NW_DEBUGGING
-            NW_CONFIDENCE(partitionNode->pendingAckCount == 0);
-            NW_CONFIDENCE(partitionNode->pendingAckList == NULL);
-#endif
-        }
     }
 
     if (totNofMessages > 0) {
@@ -3191,9 +3244,8 @@ nw_periodicSendAcksBundled( nw_plugChannel channel,
 static void nw_periodicSendAcks(nw_plugChannel channel,
                                 nw_plugReceivingNode receivingNode) {
 
-
 	if (!NW_SECURITY_DISABLED && NW_SECURITY_ENCODER_HOOK(nw_plugSendChannel(channel))) { /* Quick check for security module */
-        nw_periodicSendAcksBySecureFlows(channel, receivingNode);
+	    nw_periodicSendAcksBySecureFlows(channel, receivingNode);
     } else {
         /* else-branch is the fast path */
         nw_periodicSendAcksBundled(channel, receivingNode);
@@ -3230,11 +3282,16 @@ nw_periodicResend( nw_plugChannel channel,
             if (resendItem->controlFlushPass >
                 sendChannel->recoveryFactor * sendChannel->maxRetries) {
 
-                addressString = nw_addressToString(receivingNode->address);
                 if (receivingNode->nodeId != 12345) { /*TODO neat fix for ignore ghost node 12345*/
-                    NW_REPORT_WARNING_3("reliable protocol",
-                        "Node 0x%x (address %s) has not acked message after %d retries",
-                        receivingNode->nodeId, addressString,sendChannel->maxRetries);
+                    addressString = nw_addressToString(receivingNode->address);
+                    NW_REPORT_WARNING_5("reliable protocol",
+                        "plugChannel %s: Node 0x%x (address %s) has not acked message (id=%d) after %d retries",
+                        nw__plugChannelGetName(channel),
+                        receivingNode->nodeId, 
+                        addressString,
+                        resendItem->packetNr,
+                        sendChannel->maxRetries);
+                    os_free(addressString);
                 }
                 nw_plugReceivingNodeNotResponding(receivingNode);
             } else {
@@ -3249,9 +3306,7 @@ nw_periodicResend( nw_plugChannel channel,
 
                         if ( *credits > 0 ){
                              *credits -= length;
-#ifdef NW_DEBUGGING
                             if (!(os_int)nw_configurationLoseSentMessage()) {
-#endif
                                 /* Send data to network */
                                 NW_CONFIDENCE(sizeof(receivingNode->address) == sizeof(sk_address));
 
@@ -3268,20 +3323,24 @@ nw_periodicResend( nw_plugChannel channel,
                                         nw__plugChannelGetName(channel),
                                         sendChannel->totalResendCount);
                                 }
-                                NW_TRACE_3(Send, 4, "plugChannel %s: resending fragment %d to 0x%x",
-                                    nw__plugChannelGetName(channel),
-                                    nw_plugDataBufferGetPacketNr(dataBuffer),
-                                    (sk_address)receivingNode->address);
 
+
+                                addressString = nw_addressToString(receivingNode->address);
+                                NW_TRACE_5(Send, 3, "plugChannel %s: Resending packet (id=%d,count=%d) to Node 0x%x (address %s)",
+                                    nw__plugChannelGetName(channel),
+                                    resendItem->packetNr,
+                                    resendItem->controlFlushPass,
+                                    receivingNode->nodeId, 
+                                    addressString);
+                                os_free(addressString);
+                                
                                 if (sendChannel->pss != NULL) {
                                     if (sendChannel->pss->enabled) {
                                         sendChannel->pss->numberOfBytesResent+= length;
                                         sendChannel->pss->numberOfPacketsResent++;
                                     }
                                 }
-#ifdef NW_DEBUGGING
                             }
-#endif
                         } else {
                             /* Scheduled for retry now, but this is postponed due to resent budget */
                             resendItem->controlFlushPass--;
@@ -3302,7 +3361,6 @@ nw_periodicResend( nw_plugChannel channel,
 }
 
 
-#define NW_GLOBAL_RECOVERY_MULTIPLIER (3)
 static void
 nw_periodicClearLateJoiningLists( nw_plugChannel channel )
 {
@@ -3322,7 +3380,7 @@ nw_periodicClearLateJoiningLists( nw_plugChannel channel )
             resendItem = receivingPartition->lateJoiningResendListHead;
             while ((resendItem != NULL) &&
                    (resendItem->controlFlushPass >
-                       (NW_GLOBAL_RECOVERY_MULTIPLIER * sendChannel->recoveryFactor))) {
+                       (sendChannel->maxRetries * sendChannel->recoveryFactor))) {
                 if (resendItem->next != NULL) {
                     nextPrevPtr = &(resendItem->next->prev);
                 } else {

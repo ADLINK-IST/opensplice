@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi.h"
@@ -52,7 +52,7 @@ static char* CHECK_REF_FILE = NULL;
 #define UT_TRACE(msgFormat, ...)
 #endif
 
-typedef void (*dealloactorType)(void *);
+typedef gapi_boolean (*dealloactorType)(void *);
 
 typedef struct {
     dealloactorType deallocator;
@@ -60,18 +60,18 @@ typedef struct {
     void *alloc_addr;
 } contextHeader;
 
-const gapi_unsigned_long CONTEXTHEADER_SIZE = 
+const gapi_unsigned_long CONTEXTHEADER_SIZE =
       ALIGN_SIZE(sizeof(contextHeader));
-    
+
 void *
 gapi__malloc (
-    void (*ff)(void *),
+    gapi_boolean (*ff)(void *),
     gapi_unsigned_long hl,
     gapi_unsigned_long len)
 {
     unsigned long totlen;
     void *header;
-    void *data;
+    void *data = NULL;
     contextHeader *context;
 
     totlen = ALIGN_SIZE(hl) + CONTEXTHEADER_SIZE + len;
@@ -92,6 +92,7 @@ gapi__free (
     void *object)
 {
     contextHeader *context;
+    gapi_boolean result;
 
     if (object != NULL) {
         context = (contextHeader *)((PA_ADDRCAST)object - CONTEXTHEADER_SIZE);
@@ -102,9 +103,11 @@ gapi__free (
                 context->magic = 0;
                 os_free(context->alloc_addr);
             } else {
-                context->deallocator(object);
-                context->magic = 0;
-                os_free(context->alloc_addr);
+                result = context->deallocator(object);
+                if (result) {
+                    context->magic = 0;
+                    os_free(context->alloc_addr);
+                }
             }
         }
     }
@@ -167,7 +170,7 @@ gapi_string_dup (
     return dst;
 }
 
-void 
+void
 gapi_string_clean (
     gapi_char **string)
 {
@@ -177,7 +180,7 @@ gapi_string_clean (
     }
 }
 
-void 
+void
 gapi_string_replace (
     gapi_char *src,
     gapi_char **dst)
@@ -190,7 +193,7 @@ gapi_string_replace (
     }
 }
 
-void 
+gapi_boolean
 gapi_sequence_free (
     void *sequence)
 {
@@ -202,9 +205,10 @@ gapi_sequence_free (
             gapi_free (seq->_buffer);
         }
     }
+    return TRUE;
 }
 
-void 
+void
 gapi_sequence_clean (
     void *sequence)
 {
@@ -231,7 +235,7 @@ gapi_sequence_malloc (
 
 void *
 gapi_sequence_allocbuf (
-    void (*ff)(void *),
+    gapi_boolean (*ff)(void *),
     gapi_unsigned_long len,
     gapi_unsigned_long count)
 {
@@ -270,7 +274,7 @@ gapi_sequence_replacebuf (
 
 void *
 gapi_sequence_create (
-    void (*ff)(void *),
+    gapi_boolean (*ff)(void *),
     gapi_unsigned_long len,
     gapi_unsigned_long count)
 {
@@ -315,7 +319,7 @@ gapi_instanceHandleSeq_allocbuf (
     return (gapi_instanceHandle_t *)gapi_sequence_allocbuf (NULL, sizeof(gapi_instanceHandle_t), len);
 }
 
-void
+gapi_boolean
 gapi_stringSeq_freebuf (
     void *buffer)
 {
@@ -326,6 +330,7 @@ gapi_stringSeq_freebuf (
     for (i = 0; i < *count; i++) {
         gapi_free (b[i]);
     }
+    return TRUE;
 }
 
 gapi_stringSeq *
@@ -351,12 +356,12 @@ gapi_stringSeq_set_length (
 {
     gapi_boolean result = TRUE;
     gapi_string *buffer = NULL;
-    
+
     if ( seq->_maximum > 0UL ) {
         assert(seq->_buffer);
         if ( len != seq->_maximum ) {
             buffer = gapi_stringSeq_allocbuf(len);
-            
+
             if ( buffer ) {
                 if ( seq->_release ) {
                     gapi_free(seq->_buffer);
@@ -383,7 +388,7 @@ gapi_stringSeq_set_length (
         seq->_length = len;
         seq->_buffer = buffer;
     }
-    
+
     return result;
 }
 
@@ -571,10 +576,11 @@ gapi_octetSeq_allocbuf (
     return (gapi_octet *)gapi_sequence_allocbuf (NULL, sizeof (gapi_octet), len);
 }
 
-void
+gapi_boolean
 gapi_domainParticipantFactoryQos_free (
     void *object)
 {
+    return TRUE;
 }
 
 gapi_domainParticipantFactoryQos *
@@ -584,13 +590,14 @@ gapi_domainParticipantFactoryQos__alloc (
     return (gapi_domainParticipantFactoryQos *)gapi__malloc (gapi_domainParticipantFactoryQos_free, 0, sizeof (gapi_domainParticipantFactoryQos));
 }
 
-void
+gapi_boolean
 gapi_domainParticipantQos_free (
     void *object)
 {
     gapi_domainParticipantQos *o = (gapi_domainParticipantQos *)object;
 
     gapi_free (o->user_data.value._buffer);
+    return TRUE;
 }
 
 gapi_domainParticipantQos *
@@ -600,13 +607,14 @@ gapi_domainParticipantQos__alloc (
     return (gapi_domainParticipantQos *)gapi__malloc (gapi_domainParticipantQos_free, 0, sizeof (gapi_domainParticipantQos));
 }
 
-void
+gapi_boolean
 gapi_topicQos_free (
     void *object)
 {
     gapi_topicQos *o = (gapi_topicQos *)object;
 
     gapi_free (o->topic_data.value._buffer);
+    return TRUE;
 }
 
 gapi_topicQos *
@@ -621,13 +629,14 @@ gapi_topicQos__alloc (
     return _this;
 }
 
-void
+gapi_boolean
 gapi_dataWriterQos_free (
     void *object)
 {
     gapi_dataWriterQos *o = (gapi_dataWriterQos *)object;
 
     gapi_free (o->user_data.value._buffer);
+    return TRUE;
 }
 
 gapi_dataWriterQos *
@@ -637,7 +646,7 @@ gapi_dataWriterQos__alloc (
     return (gapi_dataWriterQos *)gapi__malloc (gapi_dataWriterQos_free, 0, sizeof (gapi_dataWriterQos));
 }
 
-void
+gapi_boolean
 gapi_publisherQos_free (
     void *object)
 {
@@ -645,6 +654,7 @@ gapi_publisherQos_free (
 
     gapi_free (o->partition.name._buffer);
     gapi_free (o->group_data.value._buffer);
+    return TRUE;
 }
 
 gapi_publisherQos *
@@ -654,7 +664,7 @@ gapi_publisherQos__alloc (
     return (gapi_publisherQos *)gapi__malloc (gapi_publisherQos_free, 0, sizeof (gapi_publisherQos));
 }
 
-void
+gapi_boolean
 gapi_dataReaderQos_free (
     void *object)
 {
@@ -663,6 +673,7 @@ gapi_dataReaderQos_free (
     gapi_free (o->user_data.value._buffer);
     gapi_free (o->subscription_keys.key_list._buffer);
     gapi_free (o->share.name);
+    return TRUE;
 }
 
 gapi_dataReaderQos *
@@ -672,13 +683,14 @@ gapi_dataReaderQos__alloc (
     return (gapi_dataReaderQos *)gapi__malloc (gapi_dataReaderQos_free, 0, sizeof (gapi_dataReaderQos));
 }
 
-void
+gapi_boolean
 gapi_dataReaderViewQos_free (
     void *object)
 {
     gapi_dataReaderViewQos *o = (gapi_dataReaderViewQos *)object;
 
     gapi_free (o->view_keys.key_list._buffer);
+    return TRUE;
 }
 
 gapi_dataReaderViewQos *
@@ -688,7 +700,7 @@ gapi_dataReaderViewQos__alloc (
     return (gapi_dataReaderViewQos *)gapi__malloc (gapi_dataReaderViewQos_free, 0, sizeof (gapi_dataReaderViewQos));
 }
 
-void
+gapi_boolean
 gapi_subscriberQos_free (
     void *object)
 {
@@ -697,6 +709,7 @@ gapi_subscriberQos_free (
     gapi_free (o->partition.name._buffer);
     gapi_free (o->group_data.value._buffer);
     gapi_free (o->share.name);
+    return TRUE;
 }
 
 gapi_subscriberQos *
@@ -706,13 +719,14 @@ gapi_subscriberQos__alloc (
     return (gapi_subscriberQos *)gapi__malloc (gapi_subscriberQos_free, 0, sizeof (gapi_subscriberQos));
 }
 
-void
+gapi_boolean
 gapi_participantBuiltinTopicData_free (
     void *object)
 {
     gapi_participantBuiltinTopicData *o = (gapi_participantBuiltinTopicData *)object;
 
     gapi_free (o->user_data.value._buffer);
+    return TRUE;
 }
 
 gapi_participantBuiltinTopicData *
@@ -729,7 +743,7 @@ gapi_participantBuiltinTopicDataSeq__alloc (
     return (gapi_participantBuiltinTopicDataSeq *)gapi_sequence_malloc ();
 }
 
-void
+gapi_boolean
 gapi_participantBuiltinTopicDataSeq_freebuf (
     void *buffer)
 {
@@ -740,6 +754,7 @@ gapi_participantBuiltinTopicDataSeq_freebuf (
     for (i = 0; i < *count; i++) {
         gapi_participantBuiltinTopicData_free (&b[i]);
     }
+    return TRUE;
 }
 
 gapi_participantBuiltinTopicData *
@@ -749,7 +764,7 @@ gapi_participantBuiltinTopicDataSeq_allocbuf (
     return (gapi_participantBuiltinTopicData *)gapi_sequence_allocbuf (gapi_participantBuiltinTopicDataSeq_freebuf, sizeof (gapi_participantBuiltinTopicData), len);
 }
 
-void
+gapi_boolean
 gapi_topicBuiltinTopicData_free (
     void *object)
 {
@@ -758,6 +773,7 @@ gapi_topicBuiltinTopicData_free (
     gapi_free (o->name);
     gapi_free (o->type_name);
     gapi_free (o->topic_data.value._buffer);
+    return TRUE;
 }
 
 gapi_topicBuiltinTopicData *
@@ -774,7 +790,7 @@ gapi_topicBuiltinTopicDataSeq__alloc (
     return (gapi_topicBuiltinTopicDataSeq *)gapi_sequence_malloc ();
 }
 
-void
+gapi_boolean
 gapi_topicBuiltinTopicDataSeq_freebuf (
     void *buffer)
 {
@@ -785,6 +801,7 @@ gapi_topicBuiltinTopicDataSeq_freebuf (
     for (i = 0; i < *count; i++) {
         gapi_topicBuiltinTopicData_free (&b[i]);
     }
+    return TRUE;
 }
 
 gapi_topicBuiltinTopicData *
@@ -794,7 +811,7 @@ gapi_topicBuiltinTopicDataSeq_allocbuf (
     return (gapi_topicBuiltinTopicData *)gapi_sequence_allocbuf (gapi_topicBuiltinTopicDataSeq_freebuf, sizeof (gapi_topicBuiltinTopicData), len);
 }
 
-void
+gapi_boolean
 gapi_publicationBuiltinTopicData_free (
     void *object)
 {
@@ -806,6 +823,7 @@ gapi_publicationBuiltinTopicData_free (
     gapi_free (o->user_data.value._buffer);
     gapi_free (o->topic_data.value._buffer);
     gapi_free (o->group_data.value._buffer);
+    return TRUE;
 }
 
 gapi_publicationBuiltinTopicData *
@@ -822,7 +840,7 @@ gapi_publicationBuiltinTopicDataSeq__alloc (
     return (gapi_publicationBuiltinTopicDataSeq *)gapi_sequence_malloc ();
 }
 
-void
+gapi_boolean
 gapi_publicationBuiltinTopicDataSeq_freebuf (
     void *buffer)
 {
@@ -833,6 +851,7 @@ gapi_publicationBuiltinTopicDataSeq_freebuf (
     for (i = 0; i < *count; i++) {
         gapi_publicationBuiltinTopicData_free (&b[i]);
     }
+    return TRUE;
 }
 
 gapi_publicationBuiltinTopicData *
@@ -842,7 +861,7 @@ gapi_publicationBuiltinTopicDataSeq_allocbuf (
     return (gapi_publicationBuiltinTopicData *)gapi_sequence_allocbuf (gapi_publicationBuiltinTopicDataSeq_freebuf, sizeof (gapi_publicationBuiltinTopicData), len);
 }
 
-void
+gapi_boolean
 gapi_subscriptionBuiltinTopicData_free (
     void *object)
 {
@@ -854,6 +873,7 @@ gapi_subscriptionBuiltinTopicData_free (
     gapi_free (o->user_data.value._buffer);
     gapi_free (o->topic_data.value._buffer);
     gapi_free (o->group_data.value._buffer);
+    return TRUE;
 }
 
 gapi_subscriptionBuiltinTopicData *
@@ -870,7 +890,7 @@ gapi_subscriptionBuiltinTopicDataSeq__alloc (
     return (gapi_subscriptionBuiltinTopicDataSeq *)gapi_sequence_malloc ();
 }
 
-void
+gapi_boolean
 gapi_subscriptionBuiltinTopicDataSeq_freebuf (
     void *buffer)
 {
@@ -881,6 +901,7 @@ gapi_subscriptionBuiltinTopicDataSeq_freebuf (
     for (i = 0; i < *count; i++) {
         gapi_subscriptionBuiltinTopicData_free (&b[i]);
     }
+    return TRUE;
 }
 
 gapi_subscriptionBuiltinTopicData *

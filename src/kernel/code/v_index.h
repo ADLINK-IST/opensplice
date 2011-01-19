@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -23,6 +23,9 @@
 
 #define v_indexSourceKeyList(_this) \
         (c_keep(v_index(_this)->sourceKeyList))
+
+#define v_indexMessageKeyList(_this) \
+        (c_keep(v_index(_this)->messageKeyList))
 
 #define v_indexTopic(o) \
          (v_index(o)->entry ? \

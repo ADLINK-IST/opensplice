@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -688,14 +688,13 @@ determineExistingMaster(
         }
 
         d_networkAddressFree(fellowMaster);
-
+        os_free (fellowRole);
     /* If fellow namespace is from other role, it can't be master for this node */
     }else {
         result = TRUE;
     }
 
     os_free (role);
-    os_free (fellowRole);
 
     return result;
 }
@@ -2724,7 +2723,7 @@ d_groupLocalListenerStart(
                         if(store != NULL){
                             initPersistentData(listener);
                         } else {
-                            OS_REPORT(OS_WARNING, D_CONTEXT, 0, "Persistence not enabled!");
+                            OS_REPORT(OS_INFO, D_CONTEXT, 0, "Persistence not enabled!");
                         }
                         os_mutexUnlock(&listener->masterLock);
                         d_durabilitySetState(durability, D_STATE_DISCOVER_LOCAL_GROUPS);

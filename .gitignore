@@ -155,5 +155,5 @@ ospl_wincmd.exe
 ospl_winln.exe
 ospl_winln.obj
 release_info/RELEASE
-install/*.HDE.opensplice.xml
-install/*.RTS.opensplice.xml
+install/*.HDE*.opensplice.xml
+install/*.RTS*.opensplice.xml

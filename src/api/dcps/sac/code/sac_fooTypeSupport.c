@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,7 @@
 
 #include "dds_dcps.h"
 
+#if 1
 DDS_TypeSupport
 DDS__FooTypeSupport__alloc (
     const DDS_char *type_name,
@@ -35,9 +36,9 @@ DDS__FooTypeSupport__alloc (
             (gapi_unsigned_long)alloc_size,
             (gapi_topicAllocBuffer)alloc_buffer,
             (gapi_writerCopy)NULL,
-            (gapi_readerCopy)NULL,
-            (gapi_createDataWriter)NULL,
-            (gapi_createDataReader)NULL);
+            (gapi_readerCopy)NULL); // ,
+//            (gapi_createDataWriter)NULL,
+//            (gapi_createDataReader)NULL);
 }
 
 DDS_ReturnCode_t
@@ -52,6 +53,7 @@ DDS__FooTypeSupport_register_type (
             (gapi_domainParticipant)participant,
             (gapi_string)name);
 }
+#endif
 
 DDS_string
 DDS__FooTypeSupport_get_type_name(

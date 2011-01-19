@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,9 +12,9 @@
 #ifndef SAC_STRUCTURED_H
 #define SAC_STRUCTURED_H
 
-#include <gapi.h>
-#include <gapi_structured.h>
-#include <dds_dcps.h>
+#include "gapi.h"
+#include "gapi_structured.h"
+#include "dds_dcps.h"
 
 #define DDS_SampleLostStatusCopyin(src,dst) \
 	gapi_sampleLostStatusCopyin(src, (gapi_sampleLostStatus *)dst)

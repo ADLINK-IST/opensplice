@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,8 +12,8 @@
 #ifndef CCPP_DOMAINPARTICIPANTFACTORY_H
 #define CCPP_DOMAINPARTICIPANTFACTORY_H
 
-#include <os_report.h>
-#include <gapi.h>
+#include "os_report.h"
+#include "gapi.h"
 #include "ccpp.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,16 +30,29 @@
 #include "Chat.h"
 #include "multitopic.h"
 
-
-
 #define TERMINATION_MESSAGE -1 
 
-
-
-int
-main (
-    int argc,
-    char *argv[])
+#ifdef _VXWORKS
+int MessageBoard_main (int argc, char ** argv);
+int MessageBoard (char * args)
+{
+   int argc=1;
+   char *argv[256];
+   char *str1;
+   argv[0] = (char*) strdup ("MessageBoard");
+   str1 = (char*) strtok(args, " ");
+   while (str1)
+   {
+      argv[argc] = (char*) strdup (str1);
+      argc++;
+      str1 = strtok(NULL, " ");
+   }
+   return MessageBoard_main (argc, argv);
+}
+int MessageBoard_main (int argc, char ** argv)
+#else
+int main (int argc, char ** argv)
+#endif
 {
     /* Generic DDS entities */
     DDS_DomainParticipantFactory    dpf;

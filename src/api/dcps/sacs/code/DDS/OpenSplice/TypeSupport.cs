@@ -65,12 +65,20 @@ namespace DDS.OpenSplice
                0,                           // alloc_size
                IntPtr.Zero,                 // alloc buffer
                IntPtr.Zero,                 // writer copy
-               dummyOperationDelegate,      // reader copy: delay initialization until marshaler present
-               IntPtr.Zero,                 // create datawriter
-               IntPtr.Zero);                // create datareader
+               dummyOperationDelegate);     // reader copy: delay initialization until marshaler present
 
             // Base class handles everything.
-            base.SetPeer(ptr);
+            if (ptr != IntPtr.Zero)
+            {
+                SetPeer(ptr, true);
+            }
+            else
+            {
+                // Gapi already logged that the TypeSupport has not been created 
+                // successfully. Now create a deliberate null pointer exception
+                // to let the current constructor fail.
+                throw new System.NullReferenceException("gapi_fooTypeSupport__alloc returned a NULL pointer.");
+            }
         }
 
         // The RegisterType operation should be implemented in its type specific specialization.

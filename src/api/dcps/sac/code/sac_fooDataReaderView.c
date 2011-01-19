@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,11 +10,11 @@
  *
  */
 
-#include <gapi.h>
+#include "gapi.h"
 
 #include "dds_dcps.h"
 #include "dds_dcps_private.h"
-#include <sac_common.h>
+#include "sac_common.h"
 
 static DDS_boolean
 sequenceIsValid (

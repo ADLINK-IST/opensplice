@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,8 +27,8 @@
 #include "v_observer.h"
 #include "v_kernel.h"
 #include "v_state.h"
-#include <os_report.h>
-#include <os_stdlib.h>
+#include "os_report.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 c_char*

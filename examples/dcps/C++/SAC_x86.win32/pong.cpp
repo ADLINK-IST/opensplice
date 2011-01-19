@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -293,7 +293,9 @@ main (
                     jmax = PP_min_dataList._length;
                     if (jmax != 0) {
                         for (j = 0; j < jmax; j++) {
-                            result = pingpong_PP_min_msgDataWriter_write (PP_min_writer, &PP_min_dataList._buffer[j], DDS_HANDLE_NIL);
+                            if (infoList._buffer[j].valid_data) {
+                                result = pingpong_PP_min_msgDataWriter_write (PP_min_writer, &PP_min_dataList._buffer[j], DDS_HANDLE_NIL);
+                            }
                         }
                         result = pingpong_PP_min_msgDataReader_return_loan (PP_min_reader, &PP_min_dataList, &infoList);
                     } else {
@@ -306,7 +308,9 @@ main (
                     jmax = PP_seq_dataList._length;
                     if (jmax != 0) {
                         for (j = 0; j < jmax; j++) {
-                            result = pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, &PP_seq_dataList._buffer[j], DDS_HANDLE_NIL);
+                            if (infoList._buffer[j].valid_data) {
+                                result = pingpong_PP_seq_msgDataWriter_write (PP_seq_writer, &PP_seq_dataList._buffer[j], DDS_HANDLE_NIL);
+                            }
                         }
                         result = pingpong_PP_seq_msgDataReader_return_loan (PP_seq_reader, &PP_seq_dataList, &infoList);
                     } else {
@@ -319,7 +323,9 @@ main (
                     jmax = PP_string_dataList._length;
                     if (jmax != 0) {
                         for (j = 0; j < jmax; j++) {
-                            result = pingpong_PP_string_msgDataWriter_write (PP_string_writer, &PP_string_dataList._buffer[j], DDS_HANDLE_NIL);
+                            if (infoList._buffer[j].valid_data) {
+                                result = pingpong_PP_string_msgDataWriter_write (PP_string_writer, &PP_string_dataList._buffer[j], DDS_HANDLE_NIL);
+                            }
                         }
                         result = pingpong_PP_string_msgDataReader_return_loan (PP_string_reader, &PP_string_dataList, &infoList);
                     } else {
@@ -333,7 +339,9 @@ main (
                     jmax = PP_fixed_dataList._length;
                     if (jmax != 0) {
                         for (j = 0; j < jmax; j++) {
-                            result = pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, &PP_fixed_dataList._buffer[j], DDS_HANDLE_NIL);
+                            if (infoList._buffer[j].valid_data) {
+                                result = pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, &PP_fixed_dataList._buffer[j], DDS_HANDLE_NIL);
+                            }
                         }
                         result = pingpong_PP_fixed_msgDataReader_return_loan (PP_fixed_reader, &PP_fixed_dataList, &infoList);
                     } else {
@@ -346,7 +354,9 @@ main (
                     jmax = PP_array_dataList._length;
                     if (jmax != 0) {
                         for (j = 0; j < jmax; j++) {
-                            result = pingpong_PP_array_msgDataWriter_write (PP_array_writer, &PP_array_dataList._buffer[j], DDS_HANDLE_NIL);
+                            if (infoList._buffer[j].valid_data) {
+                                result = pingpong_PP_array_msgDataWriter_write (PP_array_writer, &PP_array_dataList._buffer[j], DDS_HANDLE_NIL);
+                            }
                         }
                         result = pingpong_PP_array_msgDataReader_return_loan (PP_array_reader, &PP_array_dataList, &infoList);
                     } else {

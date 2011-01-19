@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,6 +29,7 @@
 #include "v__messageQos.h"
 #include "c_extent.h"
 #include "os_report.h"
+#include "v__kernel.h"
 
 /* For debugging purposes... */
 #ifndef NDEBUG
@@ -136,6 +137,8 @@ v_dataReaderInstanceInit (
     _this->liveliness =                 0;
     _this->hasBeenAlive =               FALSE;
     _this->epoch =                      C_TIME_ZERO;
+    _this->lastTaken.sourceTimestamp =  C_TIME_ZERO;
+    v_gidSetNil(_this->lastTaken.gid);
     _this->purgeInsertionTime =         C_TIME_ZERO;
     _this->userDataDataReaderInstance = NULL;
     v_dataReaderInstanceSetHead(_this,NULL);
@@ -165,7 +168,7 @@ v_dataReaderInstanceInit (
     /*
      * copy key value from message into instance.
      */
-    messageKeyList = v_indexSourceKeyList(index);
+    messageKeyList = v_indexMessageKeyList(index);
     instanceKeyList = v_indexKeyList(index);
     assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
     nrOfKeys = c_arraySize(messageKeyList);
@@ -216,7 +219,7 @@ v_dataReaderInstanceFree(
     v_dataReaderInstance _this)
 {
     if (c_refCount(_this) == 1) {
-        v_groupCacheDeinit(_this->sourceCache);
+        v_dataReaderInstanceDeinit(_this);
     }
     c_free(_this);
 }
@@ -284,7 +287,7 @@ v_dataReaderInstanceCreateMessage(
         index = _this->index;
         message = v_topicMessageNew(v_dataReaderGetTopic(index->reader));
         if (message != NULL) {
-            messageKeyList = v_indexSourceKeyList(index);
+            messageKeyList = c_keep(v_dataReaderEntry(index->entry)->topic->messageKeyList);
             instanceKeyList = v_indexKeyList(index);
             assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
             nrOfKeys = c_arraySize(messageKeyList);
@@ -342,6 +345,30 @@ v_dataReaderInstanceInsert(
             CHECK_COUNT(_this);
             return V_DATAREADER_OUTDATED;
         }
+
+        /* Only insert the sample in case of KEEP_LAST if it is newer
+         * than any history that has already been consumed so far. This is
+         * to prevent old data from re-appearing when newer data has already
+         * been taken out. (Note that in case of equal timestamps order
+         * is determined by the writerGID.)
+         * TODO: For the KEEP_ALL case we are not allowed to discard
+         * old data when newer data has already been taken, but
+         * we could extend the API to notify the application about
+         * such occasions.
+         */
+        if (qos->history.kind == V_HISTORY_KEEPLAST &&
+           (
+                c_timeCompare(message->writeTime, _this->lastTaken.sourceTimestamp) == C_LT ||
+                (
+                    c_timeCompare(message->writeTime, _this->lastTaken.sourceTimestamp) == C_EQ &&
+                    v_gidCompare(message->writerGID, _this->lastTaken.gid) == C_LT
+                )
+            )
+        )
+        {
+            CHECK_COUNT(_this);
+            return V_DATAREADER_OUTDATED;
+        }
     }
 
     messageState = v_nodeState(message);
@@ -370,18 +397,19 @@ v_dataReaderInstanceInsert(
              */
             _this->purgeInsertionTime = C_TIME_ZERO;
             if (v_dataReaderInstanceEmpty(_this)) {
-                _this->disposeCount       = 0;
-                _this->noWritersCount     = 0;
-                _this->sampleCount        = 0;
-                _this->instanceState      = L_NEW | L_EMPTY;
-                _this->epoch              = C_TIME_ZERO;
-                _this->purgeInsertionTime = C_TIME_ZERO;
-                _this->hasBeenAlive       = FALSE;
-                _this->userDataDataReaderInstance = NULL;
+                _this->disposeCount                 = 0;
+                _this->noWritersCount               = 0;
+                _this->sampleCount                  = 0;
+                _this->instanceState                = L_NEW | L_EMPTY;
+                _this->epoch                        = C_TIME_ZERO;
+                _this->lastTaken.sourceTimestamp    = C_TIME_ZERO;
+                v_gidSetNil(_this->lastTaken.gid);
+                _this->purgeInsertionTime           = C_TIME_ZERO;
+                _this->hasBeenAlive                 = FALSE;
+                _this->userDataDataReaderInstance   = NULL;
                 /* Renew handle so old handles are invalidated. */
                 if (v_reader(reader)->qos->userKey.enable == FALSE) {
-                    v_publicFree(v_public(_this));
-                    v_publicInit(v_public(_this));
+                    v_publicRenew(v_public(_this));
                 }
             } else {
                 v_dataReaderInstanceStateClear(_this, L_NOWRITERS);
@@ -412,7 +440,7 @@ v_dataReaderInstanceInsert(
                                     assert(v_stateTest(_this->instanceState,L_EMPTY));
                                     /* No valid nor invalid samples exist,
                                      * so need to create an invalid sample as
-                                     * sample info carier to pass state change
+                                     * sample info carrier to pass state change
                                      * at nest read or take operation.
                                      */
                                     sample = v_dataReaderSampleNew(_this,message);
@@ -437,7 +465,7 @@ v_dataReaderInstanceInsert(
     CHECK_INVALIDITY(_this);
 
     /*
-     * Test if ownerhsip is exclusive and whether the writer identified
+     * Test if ownership is exclusive and whether the writer identified
      * in the message should become owner.
      */
     if (_this->owner.exclusive) {
@@ -492,7 +520,7 @@ v_dataReaderInstanceInsert(
                  */
                 if(_this->liveliness > 0){
                     /* instance has no owner yet,
-                     * so this writer becomes the owneri.
+                     * so this writer becomes the owner.
                      */
                     _this->owner.gid = msg_gid;
                     _this->owner.strength = msg_strength;
@@ -525,13 +553,13 @@ v_dataReaderInstanceInsert(
          * are reached. The reason for this is that dispose-messages are not
          * allowed to take-over write-messages so the dispose state cannot be
          * accepted while the date (write part) is rejected and needs to be
-         * resend later on.
+         * Resent later on.
          */
         depth = reader->depth;
         assert(_this->sampleCount <= depth);
         if ((_this->sampleCount == depth) &&
-            (qos->history.kind == V_HISTORY_KEEPALL) &&
-            (v_stateTest(messageState, L_WRITE))) {
+        (qos->history.kind == V_HISTORY_KEEPALL) &&
+        (v_stateTest(messageState, L_WRITE))) {
             CHECK_COUNT(_this);
             return V_DATAREADER_INSTANCE_FULL;
         }
@@ -627,13 +655,32 @@ v_dataReaderInstanceInsert(
             s = v_dataReaderInstanceTail(_this);
             while ((s!=NULL)&&(proceed)) {
                 m = v_dataReaderSampleMessage(s);
-                if (m == message) {
-                    /*
-                     * This equality check only works for local produced
-                     * messages.
-                     * The best manner to check is to base equality on writer
-                     * id and writer sequence number.
-                     */
+                /*
+                 * Messages can be ignored when:
+                 * 1) they have the same pointer as the current position.
+                 *    In this case the message is a local duplicate of an
+                 *    already existing message. (Probably delivered over
+                 *    multiple matching logical partitions.)
+                 * 2) they need to be ordered by source timestamp while they
+                 *    have a timestamp equal to the current position AND
+                 *    and a writerGID equal to the current position.
+                 *    In this case the message is a network duplicate of an
+                 *    already existing message. (Probably delivered over
+                 *    multiple matching network partitions).
+                 *
+                 * Messages will be inserted when they have a timestamp equal
+                 * to the current position AND a writerGID unequal to the current
+                 * position. In this case 2 messages from different sources happen
+                 * to be written simultaneously. To guarantee eventual consistency
+                 * throughout the system in such a case, messages with equal
+                 * timestamps will be sorted by their GID values.
+                 */
+                if ( m == message ||
+                       (
+                           c_timeCompare(message->writeTime, m->writeTime) == C_EQ &&
+                           v_gidCompare(message->writerGID, m->writerGID) == C_EQ
+                       )
+                ) {
                     proceed = FALSE;
                 } else {
                     if (qos->orderby.kind == V_ORDERBY_SOURCETIME) {
@@ -645,7 +692,19 @@ v_dataReaderInstanceInsert(
                          * C_LT : message is older than the current position
                          *        in the history and newer than the previous.
                          *        so goto the next iteration.
+                         * C_EQ : message has the same timestamp as the current
+                         *        position. If both messages have different
+                         *        sources, then messages with the same timestamp
+                         *        will be sorted by their writerGID to guarantee
+                         *        eventual consistency throughout all DataReaders
+                         *        in the Domain.
                          */
+                        if (equality == C_EQ) {
+                            /* Duplicate timestamps with equal GID have
+                             * already been filtered out before.
+                             */
+                            equality = v_gidCompare(message->writerGID, m->writerGID);
+                        }
                     } else {
                         equality = C_GT;
                         /* Store at the tail (newest message). */
@@ -671,6 +730,7 @@ v_dataReaderInstanceInsert(
 
                                 /* update internal instance state. */
                                 _this->sampleCount++;
+                                v_checkMaxSamplesPerInstanceWarningLevel(v_objectKernel(_this), _this->sampleCount);
                                 v_dataReaderInstanceStateClear(_this, L_EMPTY);
                             }
                             proceed = FALSE;
@@ -739,7 +799,8 @@ v_dataReaderInstanceInsert(
                             /* more candidate older samples to go... */
                             s = s->next;
                         } else {
-                            if (_this->sampleCount < depth) {
+                            /* Check if there is enough storage space for the sample. */
+                            if ( _this->sampleCount < depth) {
                                 sample = v_dataReaderSampleNew(_this,message);
                                 if (sample) {
                                     /* Insert before s. */
@@ -749,14 +810,19 @@ v_dataReaderInstanceInsert(
                                     v_dataReaderInstanceSetHead(_this,sample);
                                     /* update internal instance state. */
                                     _this->sampleCount++;
+                                    v_checkMaxSamplesPerInstanceWarningLevel(v_objectKernel(_this), _this->sampleCount);
                                 }
-                            }  else { /* incoming message is oldest and no history space left, so discard */
-                                sample = NULL; /* prevent instance state update later on */
-                                v_statisticsULongValueInc(v_reader,
-                                                          numberOfSamplesDiscarded,
-                                                          reader);
+                            } else { /* incoming message is oldest and no history space left, so discard */
+                                if (qos->history.kind == V_HISTORY_KEEPALL) {
+                                    return V_DATAREADER_INSTANCE_FULL;
+                                } else {
+                                    sample = NULL; /* prevent instance state update later on */
+                                    v_statisticsULongValueInc(v_reader,
+                                                              numberOfSamplesDiscarded,
+                                                              reader);
+                                }
                             }
-                            proceed = FALSE;
+                            proceed = FALSE; /* exit while loop. */
                         }
                     }
                 }
@@ -995,13 +1061,14 @@ v_dataReaderSampleRead(
     v_dataReaderInstanceStateClear(instance, L_NEW);
     v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
     if (!v_readerSampleTestState(_this,L_READ)) {
+        v_dataReaderInstanceReader(instance)->notReadCount--;
         v_readerSampleSetState(_this,L_LAZYREAD);
     }
 
     /* reader internal state of the data has been modified.
      * so increase readers update count.
      * This value is used by queries to determine if a query
-     * needs to be reëvaluated.
+     * needs to be re-evaluated.
      */
     v_dataReaderInstanceReader(instance)->updateCnt++;
 
@@ -1252,6 +1319,7 @@ v_dataReaderInstanceTakeSamples(
     c_bool proceed = TRUE;
     c_bool sampleSatisfies;
     c_ulong readId;
+    v_message message;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
@@ -1287,6 +1355,22 @@ v_dataReaderInstanceTakeSamples(
                 }
                 if (sampleSatisfies) {
                     sample->readId = readId;
+                    /* If the sample taken is newer than the previously taken
+                     * sample, then update the history bookmark to indicate that
+                     * all samples prior to the current sample are consumed.
+                     */
+                    message = v_dataReaderSampleMessage(sample);
+                    if (c_timeCompare(message->writeTime, _this->lastTaken.sourceTimestamp) == C_GT ||
+                       (
+                            c_timeCompare(message->writeTime, _this->lastTaken.sourceTimestamp) == C_EQ &&
+                            v_gidCompare(message->writerGID, _this->lastTaken.gid) == C_GT
+                       )
+                    )
+                    {
+                        _this->lastTaken.sourceTimestamp = message->writeTime;
+                        _this->lastTaken.gid = message->writerGID;
+                    }
+
                     proceed = v_dataReaderSampleTake(sample,action,arg);
                     assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
                     CHECK_EMPTINESS(_this);
@@ -1384,7 +1468,7 @@ v_dataReaderInstancePurge(
             /* reader internal state of the data has been modified.
              * so increase readers update count.
              * This value is used by queries to determine if a query
-             * needs to be reëvaluated.
+             * needs to be re-evaluated.
              */
             v_dataReader(r)->updateCnt++;
 
@@ -1463,7 +1547,7 @@ v_dataReaderInstanceUnregister (
     /* reader internal state of the data has been modified.
      * so increase readers update count.
      * This value is used by queries to determine if a query
-     * needs to be reëvaluated.
+     * needs to be re-evaluated.
      */
     v_dataReaderInstanceReader(_this)->updateCnt++;
 
@@ -1494,7 +1578,7 @@ v_dataReaderInstanceDispose (
     v_dataReaderInstance _this,
     c_time timestamp)
 {
-    v_dataReaderSample sample, s;
+    v_dataReaderSample s;
     v_message m;
     v_readerQos qos;
     v_dataReader reader;
@@ -1528,11 +1612,11 @@ v_dataReaderInstanceDispose (
              */
             if (qos->lifecycle.enable_invalid_samples) {
                 if (v_dataReaderInstanceEmpty(_this)) {
-                    sample = v_dataReaderSampleNew(_this,message);
-                    if (sample) {
+                    s = v_dataReaderSampleNew(_this,message);
+                    if (s) {
                         v_dataReaderInstanceStateClear(_this, L_EMPTY);
-                        v_dataReaderInstanceSetHead(_this,sample);
-                        v_dataReaderInstanceSetTail(_this,sample);
+                        v_dataReaderInstanceSetHead(_this,s);
+                        v_dataReaderInstanceSetTail(_this,s);
                         v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
                     }
                 }

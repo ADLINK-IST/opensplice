@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -133,7 +133,9 @@ d_mergeActionRemoveChain(
     assert(d_objectIsValid(d_object(action), D_MERGE_ACTION) == TRUE);
 
     if(action && chain){
+        d_lockLock(d_lock(action));
         found = d_tableRemove(action->chains, chain);
+        d_lockUnlock(d_lock(action));
 
         if(found){
             d_chainFree (found);

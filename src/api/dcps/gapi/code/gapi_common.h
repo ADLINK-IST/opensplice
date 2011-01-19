@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -40,7 +40,6 @@ C_CLASS(_DataReaderView);
 C_CLASS(_DataReaderListener);
 C_CLASS(_DataWriter);
 C_CLASS(_DataWriterListener);
-C_CLASS(_DomainEntity);
 C_CLASS(_DomainParticipantFactory);
 C_CLASS(_DomainParticipant);
 C_CLASS(_DomainParticipantListener);

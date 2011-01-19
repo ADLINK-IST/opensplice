@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -56,6 +56,8 @@
 /* ------------------ General/NetworkInterfaceAddress ---------------------- */
 #define NWCF_NAME_Interface             "NetworkInterfaceAddress"     /* string */
 #define NWCF_DEF_Interface              NWCF_FIRSTAVAILABLE_EXPR
+#define NWCF_ATTRIB_forced              "forced"                     /* boolean */
+#define NWCF_DEF_forced                 (FALSE)
 /* ------------------ General/Reconnection ---------------------- */
 #define NWCF_NAME_Reconnection          "Reconnection"                /* string */
 #define NWCF_ATTRIB_allowed             "allowed"                      /* ulong */
@@ -197,8 +199,8 @@
 #define NWCF_MIN_MaxRetries           (1U)
 
 /* ------------------ Channels/Channel/Sending/MaxBurstSize ---------------------- */
-#define NWCF_NAME_MaxBurstSize        "MaxBurstSize"                   /* ulong */
-#define NWCF_DEF_MaxBurstSize         (200000U) /* 200 KB/ResolutionTick */
+#define NWCF_NAME_MaxBurstSize        "MaxBurstSize"                           /* ulong */
+#define NWCF_DEF_MaxBurstSize         (0x3FFFFFFFU)               /* 1 GB/ResolutionTick*/
 #define NWCF_MIN_MaxBurstSize         (1024U)
 
 /* ------------------ Channels/Channel/Sending/ThrottleThreshold ---------------------- */
@@ -284,10 +286,12 @@
 #define NWCF_ATTRIB_X509Authentication "X509Authentication"
 #define NWCF_ATTRIB_Credentials        "Credentails"
 #define NWCF_ATTRIB_AccessControl      "AccessControl"
+#define NWCF_ATTRIB_MulticastTimeToLive "MulticastTimeToLive"
 #define NWCF_DEF_NWPartitionAddress    ""
 #define NWCF_DEF_Connected             (TRUE)
 #define NWCF_DEF_Compression           (FALSE)
 #define NWCF_DEF_NWSecurityPolicy      (NULL)
+#define NWCF_DEF_MulticastTimeToLive   (32U)
 
 /* ------------------------- Partitioning/PartitionMappings ----------------- */
 #define NWCF_ROOT_PartitionMappings   NWCF_SUBROOT(NWCF_ROOT_Partitioning, "PartitionMappings")

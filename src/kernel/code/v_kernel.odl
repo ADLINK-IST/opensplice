@@ -339,7 +339,7 @@ enum v_kind {
     K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST, K_WAITSETEVENTPERSISTENTSNAPSHOT,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
     K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
-    K_LEASEMANAGER,      K_LEASE,
+    K_LEASEMANAGER,      K_LEASE,              K_LEASEACTION,
     K_SPLICED,
     K_CONFIGURATION,
     K_REGISTRATION,
@@ -473,25 +473,29 @@ enum v_leaseActionId {
     V_LEASEACTION_COUNT /* This constant must always be the last */
 };
 
-const c_long V_LEASE_REPEAT_INFINITE = -1;
+class v_leaseManager;
 
 class v_lease extends v_object {
     attribute c_mutex                        mutex;
     attribute c_time                         expiryTime;
-    attribute c_long                         repeatCount;
-/* readonly attributes */
     attribute v_duration                     duration;
-    attribute v_handle                       object;
-    attribute v_leaseActionId                actionId;
-    attribute c_voidp                        leaseManager;
+    attribute SET<v_leaseManager>            observers;
+};
+
+class v_leaseAction extends v_object 
+{
+    attribute v_lease lease;
+    attribute v_leaseActionId actionId;
+    attribute v_handle actionObject;
+    attribute c_bool repeat;
 };
 
 class v_leaseManager extends v_object {
     attribute c_mutex                        mutex;
     attribute c_cond                         cond;
     attribute c_bool                         quit;
-    attribute v_lease                        head;
-    attribute SET<v_lease>                   leases;
+    attribute v_leaseAction                  firstLeaseToExpire;
+    attribute SET<v_leaseAction>             leases;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -563,6 +567,8 @@ struct v_livelinessChangedInfo {
 struct v_topicMatchInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
+    c_long                         currentCount;
+    c_long                         currentChanged;
     v_gid                          instanceHandle;
 };
 
@@ -1239,6 +1245,11 @@ struct v_owner {
     c_bool exclusive;
 };
 
+struct v_historyBookmark {
+    c_time sourceTimestamp;
+    v_gid gid;
+};
+
 class v_dataReaderInstance extends v_instance {
     attribute c_voidp                        index;
     attribute v_state                        instanceState;
@@ -1247,6 +1258,7 @@ class v_dataReaderInstance extends v_instance {
     attribute c_long                         sampleCount;
     attribute c_time                         purgeInsertionTime;
     attribute c_time                         epoch;
+    attribute v_historyBookmark              lastTaken;
     attribute c_voidp                        userDataDataReaderInstance;
     attribute c_long                         liveliness;
     attribute v_owner                        owner;
@@ -1350,6 +1362,7 @@ struct v_groupEntrySet {
 class v_groupPurgeItem {
     attribute v_groupInstance                instance;
     attribute c_time                         insertionTime;
+    attribute v_groupPurgeItem               next;
 };
 
 enum v_groupAttachState {
@@ -1396,8 +1409,11 @@ class v_group extends v_entity {
 
     /* group data storage */
     attribute SET<v_groupInstance>           instances;
-    attribute LIST<v_groupPurgeItem>          disposedInstances;
-    attribute LIST<v_groupPurgeItem>         purgeListEmpty;
+    attribute v_groupPurgeItem               disposedInstances;
+    attribute c_voidp                        disposedInstancesLast;
+    attribute v_groupPurgeItem               purgeListEmpty;
+    attribute c_voidp                        purgeListEmptyLast;
+
     attribute v_lifespanAdmin                lifespanAdmin;
 
     /* Group resource optimisation */
@@ -1814,6 +1830,7 @@ const c_long V_OWNERSTRENGTH_MINIMUM = 0x7fffffff;
 
 class v_index extends v_object {
     attribute ARRAY<c_field>                 sourceKeyList;
+	attribute ARRAY<c_field>                 messageKeyList;
     attribute c_voidp                        reader;
     attribute SET<v_object>                  objects;
     attribute SET<v_object>                  notEmptyList;
@@ -1884,6 +1901,7 @@ class v_dataReader extends v_reader {
     attribute c_long                         cachedSampleCount;
 #endif
     attribute c_long                         sampleCount;
+    attribute c_long                         notReadCount;
     attribute c_bool                         maxInstances;
     /* Attributes maintaining the current state wrt the policies */
     attribute c_long                         depth;
@@ -2118,6 +2136,17 @@ class v_kernel extends v_observable {
     attribute v_configuration                configuration;
     attribute c_ulong                        userCount;
     attribute c_ulong                        transactionCount;
+    /* ES: dds2235: added warning levels for resource limits
+     * whenever the value is exceed a warning message will be printed.
+     * To ensure the log files are not flooded by warning messages
+     * a boolean is maintained to ensure a warning is only printed once
+     */
+    attribute c_ulong                        maxSamplesWarnLevel;
+    attribute c_bool                         maxSamplesWarnShown;
+    attribute c_ulong                        maxSamplesPerInstanceWarnLevel;
+    attribute c_bool                         maxSamplesPerInstanceWarnShown;
+    attribute c_ulong                        maxInstancesWarnLevel;
+    attribute c_bool                         maxInstancesWarnShown;
 
     attribute v_builtin                      builtin;
 
@@ -2155,6 +2184,7 @@ class v_spliced extends v_service {
 
     attribute c_mutex         mtx;
     attribute c_mutex         cAndMCommandMutex;
+    attribute c_mutex         builtinDataMutex;
     attribute SET<v_message>  missedHB; /* c_table missedHB<v_message> */
 };
 

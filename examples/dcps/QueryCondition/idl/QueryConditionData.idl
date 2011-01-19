@@ -1,0 +1,11 @@
+
+module QueryConditionData
+{
+   struct Stock
+   {
+      string ticker; 
+      float price;
+   };
+   #pragma keylist Stock ticker
+
+};

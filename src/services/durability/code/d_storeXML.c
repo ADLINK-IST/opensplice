@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -2290,7 +2290,6 @@ renameTempToActual(
     c_char* tmpStorePath;
     struct os_stat statBuf;
     os_result osResult;
-    c_long status;
     c_bool result;
     d_storeFile storeFile, found;
 
@@ -2321,12 +2320,11 @@ renameTempToActual(
         }
         d_storeFileFree(storeFile);
 
-        status = remove(fileStorePath);
+        osResult = os_remove(fileStorePath);
+        if(osResult == os_resultSuccess){
+            osResult = os_rename(tmpStorePath, fileStorePath);
 
-        if(status == 0){
-            status = rename(tmpStorePath, fileStorePath);
-
-            if(status == 0){
+            if(osResult == os_resultSuccess){
                 result = TRUE;
             }
         }
@@ -4090,7 +4088,7 @@ d_storeBackupXML(
                     fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
                     backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
 
-                    if (rename(fileStorePath, backupStorePath) != 0)
+                    if (os_rename(fileStorePath, backupStorePath) == os_resultFail)
                     {
                         result = D_STORE_RESULT_IO_ERROR;
                     }
@@ -4142,7 +4140,7 @@ d_storeRestoreBackupXML (
                     fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
                     backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
 
-                    if (rename(backupStorePath, fileStorePath) != 0)
+                    if (os_rename(backupStorePath, fileStorePath) == os_resultFail)
                     {
                         result = D_STORE_RESULT_IO_ERROR;
                     }
@@ -4524,7 +4522,7 @@ d_storeMessagesInjectXML(
                             "Unable to insert persistent data from disk for group '%s.%s'. Reason: '%d'. Removing data for this group...",
                           partition, topic, result);
                     fileStorePath = getDataFileName(persistentStore, partition, topic);
-                    remove(fileStorePath);
+                    os_remove(fileStorePath);
                     os_free(fileStorePath);
                 }
 
@@ -4680,7 +4678,7 @@ d_storeNsMarkComplete_w_name (
         }
     }else
     {
-        if (completeFileExists && (remove (completeFile) != 0))
+        if (completeFileExists && (os_remove (completeFile) == os_resultFail))
         {
             result = D_STORE_RESULT_IO_ERROR;
         }
@@ -4771,4 +4769,5 @@ d_storeNsMarkCompleteXML (
 
     return result;
 }
+
 

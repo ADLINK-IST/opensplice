@@ -1,26 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <stdio.h>
 #include <string.h>
 
-#include <c_base.h>
-#include <c_metabase.h>
+#include "c_base.h"
+#include "c_metabase.h"
 #include "c_module.h"
 
 #include "idl_parser.h"
 #include "idl_unsupported.h"
 #include "idl_databaseValidation.h"
 
-c_base 
+c_base
 idl_parseFile(
     const char *filename,	/* the file that is processed */
     c_bool traceInput)
@@ -29,10 +29,10 @@ idl_parseFile(
 
     /* Create a database on heap */
     if (base == NULL) {
-        base = c_create("preprocessor",NULL,0);
+        base = c_create("preprocessor",NULL,0, 0);
         if (idl_defineUnsupportedTypes(base)) {
             base = NULL;
-        } 
+        }
     }
     if (base != NULL) {
         /* Initialize the IDL parser */

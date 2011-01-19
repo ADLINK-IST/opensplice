@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/win32/code/os_sharedmem.c
@@ -19,15 +19,20 @@
 #include "os_stdlib.h"
 #include "os_report.h"
 
-#include <os_heap.h>
-#include <os_report.h>
-#include <os_thread.h>
-#include <os_mutex.h>
-#include <code/os__debug.h>
+#include "os_heap.h"
+#include "os_report.h"
+#include "os_thread.h"
+#include "os_mutex.h"
+#include "os_cond.h"
+#include "code/os__debug.h"
 
 #include <assert.h>
 #include <stdio.h>
 
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#include <Sddl.h>
 
 #define OS_LOG_AUTH     LOG_AUTH
 #define OS_LOG_USER     LOG_USER
@@ -49,6 +54,14 @@ struct os_shmInfo {
 };
 
 struct os_shmInfo *shmInfo = NULL;
+
+static int os_isSharedMemGlobal = 1;
+
+int
+os_sharedMemIsGlobal(void)
+{
+    return os_isSharedMemGlobal;
+}
 
 void os_sharedMemoryInit(void)
 {
@@ -82,6 +95,33 @@ os_getDomainNameforMutex(
     }
     /* is no shm present name = null */
     return result;
+}
+
+char* os_getDomainNameforCond (os_cond* cond)
+{
+   /* get shm and look if pointer is in memory range */
+   os_address base, size, cnd;
+	struct os_shmInfo* shmInf;
+   char* result = NULL;
+   os_int32 foundName = 0;
+
+   assert(cond);
+
+   for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next)
+   {
+      base = (os_address)shmInf->sharedHandle->mapped_address;
+      size = (os_address)shmInf->sharedHandle->size;
+      cnd = (os_address)cond;
+
+      /* check if the cond is in the shm range */
+      if((base < cnd) && (cnd < (base+size) ))
+      {
+         result = (char*)shmInf->sharedHandle->name;
+         foundName =1;
+      }
+   }
+   /* is no shm present name = null */
+   return result;
 }
 
 os_address
@@ -218,11 +258,11 @@ os_findKeyFile(
     if (key_file_path == NULL) {
         key_file_path = os_getTempDir();
     }
-    
+
     if (key_file_path == NULL) {
         OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
     }
-    
+
     os_strcpy(key_file_name, key_file_path);
     os_strcat(key_file_name, "\\");
     os_strcat(key_file_name, key_file_prefix);
@@ -291,7 +331,7 @@ os_findKeyFile(
 }
 
 /** \brief Get a SVR4 IPC key for a shared meory segment by name
- *
+ * @todo This comment is junk.
  * \b os_getKey tries to find the SVR4 IPC key for a named
  * shared memory segment by calling \b os_findKeyFile.
  *
@@ -366,25 +406,23 @@ os_getShmFile(
     return shm_file_name;
 }
 
-/** \brief Get a SVR4 IPC key for a shared meory segment by name
+/** \brief Get a name for a file mappin object based on a domain
+ *  name.
  *
- * \b os_getKey tries to find the SVR4 IPC key for a named
- * shared memory segment by calling \b os_findKeyFile.
+ * \b Finds the key file for the given domain name with \b os_findKeyFile.
  *
- * If the key file is found, the key is created by calling \b ftok
- * which translates a file path into a key. The key is then returned.
+ * If the key file is found, uses it's unique 'temp' file name
+ * as the basis for the file mapping object name.
  *
- * If the key file could not be found, -1 is returned to the caller
- * if \b create = 0. If \b create is != 0 however, it creates a new
- * key file by calling \b mkstemp, which creates and opens a new
- * unique file based upon the provided path. The \b name is then
- * written in the key file after which it is closed. With the
- * call to \b ftok, the key file is then translated into a key
- * which is returned after the \b key_file_name is freed.
+ * If the key file could not be found, NULL is returned to the caller
+ *
+ * If the global_map arg is not zero then a name for a shared / global
+ * object is returned. The name will be local otherwise.
  */
 static char *
 os_getMapName(
-    const char *name)
+    const char *name,
+    int global_map)
 {
     char *key_file_name;
     char *map_name;
@@ -400,7 +438,15 @@ os_getMapName(
     }
     key++;
     map_name = (char*)os_malloc(MAX_PATH);
-    os_strcpy(map_name, key);
+    if (global_map)
+    {
+        os_strcpy(map_name, "Global\\");
+        os_strcat(map_name, key);
+    }
+    else
+    {
+        os_strcpy(map_name, key);
+    }
     os_strcat(map_name, "_MAP");
     os_free(key_file_name);
     return map_name;
@@ -444,6 +490,8 @@ os_sharedMemoryCreateFile(
     char *map_object_name;
     HANDLE dd;
     HANDLE md;
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
 
     shm_file_name = os_getShmFile(sharedHandle->name, 1);
     dd = CreateFile(shm_file_name,
@@ -471,15 +519,42 @@ os_sharedMemoryCreateFile(
         CloseHandle((HANDLE)dd);
         return os_resultFail;
     }
-    map_object_name = os_getMapName(sharedHandle->name);
-    md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, size, map_object_name);
-    if (md == NULL) {
-        OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
-                "Can not Create mapping object (%s) %d",
-                map_object_name, (int)GetLastError());
+    /* Try and create a global file mapping object first */
+    map_object_name = os_getMapName(sharedHandle->name, 1);
+
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list */
+    md = NULL;
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GA;;;IU)", /* grant all acess to system, admins, and users */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+    if (sec_descriptor_ok)
+    {
+        md = CreateFileMapping(dd, &security_attributes, PAGE_READWRITE, 0, size, map_object_name);
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    if (md == NULL)
+    {
+        /* Couldn't create a global mapping - we're probably not admin or local system */
         os_free(map_object_name);
-        CloseHandle((HANDLE)dd);
-        return os_resultFail;
+        os_isSharedMemGlobal = 0;
+        /* get a local file mapping name instead  and create that */
+        map_object_name = os_getMapName(sharedHandle->name, 0);
+        md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, size, map_object_name);
+        if (md == NULL) {
+            OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
+                    "Can not Create mapping object (%s) %d",
+                    map_object_name, (int)GetLastError());
+            os_free(map_object_name);
+            CloseHandle((HANDLE)dd);
+            return os_resultFail;
+        }
     }
     os_free(map_object_name);
     sharedHandle->dataFile = dd;
@@ -523,17 +598,29 @@ os_sharedMemoryAttachFile(
             return os_resultFail;
         }
         sharedHandle->size = size;
-        map_object_name = os_getMapName(sharedHandle->name);
+        /* Try first to open a global mapping. If that fails just open a local mapping
+        Doesn't matter which order we do this - the temp file naming means the handle name'll
+        have been unique */
+        map_object_name = os_getMapName(sharedHandle->name, 1);
+
         if (map_object_name == NULL) {
             return os_resultFail;
         }
         md = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, map_object_name);
         if (md == NULL) {
-            OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
-                    "Can not Open mapping object (%s) %d",
-                    map_object_name, (int)GetLastError());
+            /* Couldn't open a global mapping - must be local. Just free the name
+            get a local one instead and try again */
             os_free(map_object_name);
-            return os_resultFail;
+            os_isSharedMemGlobal = 0;
+            map_object_name = os_getMapName(sharedHandle->name, 0);
+            md = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, map_object_name);
+            if (md == NULL) {
+                OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
+                        "Can not Open mapping object (%s) %d",
+                        map_object_name, (int)GetLastError());
+                os_free(map_object_name);
+                return os_resultFail;
+            }
         }
         os_free(map_object_name);
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -68,31 +68,52 @@ v_networkReaderEntryCalculateHashValue(
     v_networkReaderEntry entry)
 {
     v_networkHashValue result = {0xa0, 0x22, 0x8d, 0x07};
+
     const char *partitionName;
     const char *topicName;
     const char *currentPtr;
     
     partitionName = v_partitionName(v_groupPartition(entry->group));
     topicName = v_topicName(v_groupTopic(entry->group));
-    
     currentPtr = partitionName;
+
     while (*currentPtr != '\0') {
-        result.h1 = NW_ROT_CHAR(result.h1, 1) + NW_ROT_CHAR(*currentPtr, 4);
-        result.h2 = NW_ROT_CHAR(result.h2, 2) + NW_ROT_CHAR(*currentPtr, 7);
-        result.h3 = NW_ROT_CHAR(result.h3, 3) + NW_ROT_CHAR(*currentPtr, 1);
-        result.h4 = NW_ROT_CHAR(result.h4, 4) + NW_ROT_CHAR(*currentPtr, 5);
+        /* gcc2.96 gave internal compile errrors (with optimisation enabled)
+         * when compiling the NW_ROT_CHAR macro twice in same command :
+         * these assignments are deliberatly split over 2 lines as workaround.
+         */
+
+        result.h1 = NW_ROT_CHAR(result.h1, 1);
+        result.h1 += NW_ROT_CHAR(*currentPtr, 4);
+
+        result.h2 = NW_ROT_CHAR(result.h2, 2);
+        result.h2 += NW_ROT_CHAR(*currentPtr, 7);
+
+        result.h3 = NW_ROT_CHAR(result.h3, 3);
+        result.h3 += NW_ROT_CHAR(*currentPtr, 1);
+
+        result.h4 = NW_ROT_CHAR(result.h4, 4);
+        result.h4 += NW_ROT_CHAR(*currentPtr, 5);
+
         currentPtr = &(currentPtr[1]);
     }
     
     currentPtr = topicName;
     while (*currentPtr != '\0') {
-        result.h1 = NW_ROT_CHAR(result.h1, 4) + NW_ROT_CHAR(*currentPtr, 7);
-        result.h2 = NW_ROT_CHAR(result.h2, 3) + NW_ROT_CHAR(*currentPtr, 1);
-        result.h3 = NW_ROT_CHAR(result.h3, 2) + NW_ROT_CHAR(*currentPtr, 5);
-        result.h4 = NW_ROT_CHAR(result.h4, 1) + NW_ROT_CHAR(*currentPtr, 4);
+        result.h1 = NW_ROT_CHAR(result.h1, 4);
+        result.h1 += NW_ROT_CHAR(*currentPtr, 7);
+
+        result.h2 = NW_ROT_CHAR(result.h2, 3);
+        result.h2 += NW_ROT_CHAR(*currentPtr, 1);
+
+        result.h3 = NW_ROT_CHAR(result.h3, 2);
+        result.h3 += NW_ROT_CHAR(*currentPtr, 5);
+
+        result.h4 = NW_ROT_CHAR(result.h4, 1);
+        result.h4 += NW_ROT_CHAR(*currentPtr, 4);
+
         currentPtr = &(currentPtr[1]);
     }
-    
     return result;
 }
  
@@ -193,6 +214,7 @@ v_networkReaderEntryWrite(
     assert(message != NULL);
 
     /* First check if there is any remote interest at all */
+    
     if (v_networkReader(v_entry(entry)->reader)->remoteActivity) {
         /* Only forward messages that come from this kernel */
         if (writingNetworkId == V_NETWORKID_LOCAL) {

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi.h"
@@ -22,7 +22,7 @@ MapUserErrorInfoCode(
     gapi_errorCode_t result = GAPI_ERRORCODE_UNDEFINED;
 
     switch (userCode) {
-    default: 
+    default:
         result = GAPI_ERRORCODE_UNDEFINED;
     break;
     }
@@ -31,7 +31,7 @@ MapUserErrorInfoCode(
     return result;
 }
 
-void
+gapi_boolean
 _ErrorInfoFree (
     void * _errorInfo)
 {
@@ -40,7 +40,7 @@ _ErrorInfoFree (
     if (errorinfo->source_line != NULL) {
         gapi_free(errorinfo->source_line);
     }
-  
+
     if (errorinfo->stack_trace != NULL) {
         gapi_free(errorinfo->stack_trace);
     }
@@ -52,6 +52,7 @@ _ErrorInfoFree (
     if (errorinfo->location != NULL) {
         gapi_free(errorinfo->location);
     }
+    return TRUE;
 }
 
 _ErrorInfo
@@ -97,7 +98,7 @@ gapi_errorInfo_update (
             }
             if (osInfo->sourceLine != NULL) {
                 info->source_line = gapi_string_dup(osInfo->sourceLine);
-            } 
+            }
             if (info->stack_trace != NULL) {
                 gapi_free(info->stack_trace);
                 info->stack_trace = NULL;

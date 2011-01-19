@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -67,39 +67,46 @@ resolveFields (
     q_expr p;
     c_long i;
     c_char *name;
+    c_bool result;
 
+    result = TRUE;
     switch(q_getKind(e)) {
-    case T_FNC:
-        switch(q_getTag(e)) {
-        case Q_EXPR_PROPERTY:
-            name = q_propertyName(e);
+        case T_FNC:
+            switch(q_getTag(e)) {
+                case Q_EXPR_PROPERTY:
+                    name = q_propertyName(e);
+                    p = resolveField(type,name);
+                    os_free(name);
+                    if (p != NULL) {
+                        q_swapExpr(e,p);
+                        q_dispose(p);
+                    } else {
+                        result = FALSE;
+                    }
+                    break;
+                default: /* process sub-expression, fail if a field cannot be resolved */
+                    i=0;
+                    while ((result) && ((p = q_getPar(e,i)) != NULL)) {
+                        result = resolveFields(type,p);
+                        i++;
+                    }
+                    break;
+            }
+            break;
+        case T_ID:
+            name = q_getId(e);
             p = resolveField(type,name);
-            os_free(name);
             if (p != NULL) {
                 q_swapExpr(e,p);
                 q_dispose(p);
+            } else {
+                result = FALSE;
             }
-        break;
-        default: /* process sub-expression */
-            i=0;
-            while ((p = q_getPar(e,i)) != NULL) {
-                resolveFields(type,p);
-                i++;
-            }
-        }
-    break;
-    case T_ID:
-        name = q_getId(e);
-        p = resolveField(type,name);
-        if (p != NULL) {
-            q_swapExpr(e,p);
-            q_dispose(p);
-        }
-    break;
-    default:
-    break;
+            break;
+        default:
+            break;
     }
-    return TRUE;
+    return result;
 }
 
 v_filter
@@ -118,9 +125,11 @@ v_filterNew(
     type = v_topicMessageType(t);
 
     if (!resolveFields(type,e)) {
-        return NULL;
+        filter = NULL;
+    } else {
+        filter = c_new(v_kernelType(kernel, K_FILTER));
     }
-    filter = c_new(v_kernelType(kernel, K_FILTER));
+
     if (filter) {
         filter->topic = c_keep(t);
         filter->predicate = c_filterNew(type,e,params);

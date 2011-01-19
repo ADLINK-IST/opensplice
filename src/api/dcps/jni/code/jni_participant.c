@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,6 +24,7 @@
 #include "c_stringSupport.h"
 #include "c_iterator.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 static c_bool jni_participantMayTopicBeDeleted(jni_participant p, const c_char* topicName);
 

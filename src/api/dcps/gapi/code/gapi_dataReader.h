@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,8 +14,8 @@
 
 #include "gapi.h"
 #include "gapi_common.h"
+#include "gapi_entity.h"
 #include "gapi_loanRegistry.h"
-#include "gapi_domainEntity.h"
 #include "gapi_status.h"
 #include "gapi_expression.h"
 #include "os_if.h"
@@ -31,8 +31,9 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define U_DATAREADER_GET(t)       u_dataReader(U_ENTITY_GET(t))
-#define U_DATAREADER_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
+#define U_READER_GET(t)       u_reader(U_ENTITY_GET(t))
+#define U_DATAREADER_GET(t)   u_dataReader(U_ENTITY_GET(t))
+#define U_DATAREADER_SET(t,e) _EntitySetUserEntity(_Entity(t), u_entity(e))
 
 #define _DataReader(o) ((_DataReader)(o))
 
@@ -52,10 +53,9 @@ extern "C" {
 
 
 C_STRUCT(_DataReader) {
-    C_EXTENDS(_DomainEntity);
+    C_EXTENDS(_Entity);
     _TopicDescription               topicDescription;
     struct gapi_dataReaderListener  _Listener;
-   _Subscriber                      subscriber;
     u_query                         uQuery;
     gapi_readerCopy                 readerCopy;
     gapi_copyIn                     copy_in;
@@ -66,31 +66,10 @@ C_STRUCT(_DataReader) {
     gapi_unsigned_long              allocSize;
     gapi_topicAllocBuffer           allocBuffer;
     gapi_readerMask                 reader_mask;
-    gapi_set                        conditionSet;
-    gapi_set                        viewSet;
     gapi_loanRegistry               loanRegistry;
     gapi_dataReaderViewQos          _defDataReaderViewQos;
 };
 
-typedef enum {
-    READER_READ,
-    READER_TAKE,
-    READER_READ_INSTANCE,
-    READER_TAKE_INSTANCE,
-    READER_READ_NEXT_INSTANCE,
-    READER_TAKE_NEXT_INSTANCE
-} readerOperation;
-
-typedef struct readerReadArg {
-    readerOperation       operation;
-    gapi_unsigned_long    messageOffset;
-    gapi_unsigned_long    userdataOffset;
-    gapi_boolean          withCondition;
-    u_query               uQuery;
-    gapi_instanceHandle_t handle;
-} readerReadArg;
-
-                                                                                                
 _DataReader
 _DataReaderNew (
     const _TopicDescription topicDescription,
@@ -108,17 +87,22 @@ _DataReaderInit (
     const _TypeSupport typesupport,
     const struct gapi_dataReaderListener *a_listener,
     const gapi_statusMask mask,
-    const u_dataReader uReader,
-    const c_bool enable);
+    const u_dataReader uReader);
 
-void
+gapi_returnCode_t
 _DataReaderFree (
     _DataReader _this);
 
 gapi_boolean
 _DataReaderPrepareDelete (
-    _DataReader   _this,
+    _DataReader _this,
     gapi_context *context);
+
+gapi_returnCode_t
+_DataReaderGetKeyValue (
+    _DataReader _this,
+    void *instance,
+    const gapi_instanceHandle_t handle);
 
 _Subscriber
 _DataReaderSubscriber (
@@ -134,79 +118,8 @@ _DataReaderCopy (
     gapi_readerInfo    *info);
 
 void
-_DataReaderSetDeleteAction (
-    _DataReader _this,
-    gapi_deleteEntityAction action,
-    void *argument);
-
-
-void
 _DataReaderTriggerNotify (
     _DataReader _this);
-
-#if 1
-
-gapi_boolean
-_DataReaderHasSamplesNotRead (
-    _DataReader _this);
-
-gapi_boolean
-_DataReaderContainsSamples (
-    _DataReader _this,
-    const gapi_sampleStateMask   sample_states,
-    const gapi_viewStateMask     view_states,
-    const gapi_instanceStateMask instance_states);
-#endif
-
-gapi_returnCode_t
-_DataReaderRead (
-    _DataReader        _this,
-    gapi_readerMask   *reader_mask,
-    readerReadArg     *readerArg,
-    gapi_readerInfo   *readerInfo);
-
-gapi_returnCode_t
-_DataReaderViewRead (
-    _DataReaderView    data_readerView,
-    gapi_readerMask   *reader_mask,
-    readerReadArg     *readerArg,
-    gapi_readerInfo   *readerInfo);
-
-gapi_returnCode_t
-_DataReader_get_sample_rejected_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_sampleRejectedStatus *status);
-
-gapi_returnCode_t
-_DataReader_get_liveliness_changed_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_livelinessChangedStatus *status);
-
-gapi_returnCode_t
-_DataReader_get_requested_deadline_missed_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_requestedDeadlineMissedStatus *status);
-
-gapi_returnCode_t
-_DataReader_get_requested_incompatible_qos_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_requestedIncompatibleQosStatus *status);
-
-gapi_returnCode_t
-_DataReader_get_subscription_matched_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_subscriptionMatchedStatus *status);
-
-gapi_returnCode_t
-_DataReader_get_sample_lost_status (
-    _DataReader _this,
-    c_bool reset,
-    gapi_sampleLostStatus *status);
 
 void
 _DataReaderNotifyListener(

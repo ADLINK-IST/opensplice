@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,7 +26,8 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define  u_waitset(o) ((u_waitset)(o))
+#define u_waitset(o) \
+        ((u_waitset)u_entityCheckType(u_entity(o), U_WAITSET))
 
 typedef void (*u_waitsetAction)(v_waitsetEvent e, c_voidp arg);
 

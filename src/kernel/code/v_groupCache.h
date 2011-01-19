@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,8 +14,8 @@
 #ifndef V_GROUPCACHE_H
 #define V_GROUPCACHE_H
 
-#include <v_kernel.h>
-#include <v_cache.h>
+#include "v_kernel.h"
+#include "v_cache.h"
 
 #define v_groupCache(o) (C_CAST((o),v_groupCache))
 #define v_groupCacheEmpty(_this) v_cacheEmpty(v_cache(_this))

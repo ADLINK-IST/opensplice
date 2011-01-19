@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,7 +12,6 @@
 #include "gapi_dataWriter.h"
 #include "gapi_qos.h"
 #include "gapi_publisher.h"
-#include "gapi_dataWriterStatus.h"
 #include "gapi_structured.h"
 #include "gapi_typeSupport.h"
 #include "gapi_topicDescription.h"
@@ -193,69 +192,76 @@ _DataWriterNew (
     newDataWriter = _DataWriterAlloc();
 
     if ( newDataWriter != NULL ) {
-        _DomainEntityInit(_DomainEntity(newDataWriter),
-                          _DomainEntityParticipant(_DomainEntity(publisher)),
-                          _Entity(publisher),
-                          FALSE);
+        _EntityInit(_Entity(newDataWriter),
+                    _Entity(publisher));
 
         newDataWriter->topic = topic;
         if ( a_listener ) {
             newDataWriter->listener = *a_listener;
         }
-        newDataWriter->publisher = publisher;
         writerQos = u_writerQosNew(NULL);
         if ( (writerQos != NULL) ) {
             if ( !copyWriterQosIn(qos, writerQos) ) {
                 u_writerQosFree (writerQos);
-                _DomainEntityDispose(_DomainEntity(newDataWriter));
+                _EntityDispose(_Entity(newDataWriter));
                 newDataWriter = NULL;
             }
         } else {
-            _DomainEntityDispose(_DomainEntity(newDataWriter));
+            _EntityDispose(_Entity(newDataWriter));
             newDataWriter = NULL;
         }
     }
 
     if ( newDataWriter != NULL ) {
-        if ( _TypeSupportGetWriterCopy(typeSupport) ) {
-            newDataWriter->uWriterCopy = _TypeSupportGetWriterCopy(typeSupport);
-        } else {
-            newDataWriter->uWriterCopy = _DataWriterCopy;
-        }
+        u_writerCopy copy_action;
+
         newDataWriter->copy_in    = _TypeSupportCopyIn(typeSupport);
         newDataWriter->copy_out   = _TypeSupportCopyOut(typeSupport);
         newDataWriter->copy_cache = _TypeSupportCopyCache(typeSupport);
 
+        copy_action = _TypeSupportGetWriterCopy(typeSupport);
+        if (!copy_action) {
+            copy_action = _DataWriterCopy;
+        }
+
         topicName = _TopicDescriptionGetName (_TopicDescription(topic));
         if (topicName) {
-            snprintf (dataWriterId, sizeof (dataWriterId), "%sWriter", topicName);
+            snprintf (dataWriterId,
+                      sizeof (dataWriterId),
+                      "%sWriter", topicName);
             gapi_free (topicName);
         } else {
-            snprintf (dataWriterId, sizeof (dataWriterId), "dataWriter");
+            snprintf (dataWriterId,
+                      sizeof (dataWriterId),
+                      "dataWriter");
         }
         uWriter = u_writerNew(_PublisherUpublisher(publisher),
                               dataWriterId,
                               _TopicUtopic(topic),
-                              newDataWriter->uWriterCopy,
+                              copy_action,
                               writerQos,
                               FALSE);
         if ( uWriter != NULL ) {
             U_WRITER_SET(newDataWriter, uWriter);
         } else {
-            _DomainEntityDispose(_DomainEntity(newDataWriter));
+            _EntityDispose(_Entity(newDataWriter));
             newDataWriter = NULL;
         }
         u_writerQosFree(writerQos);
     }
 
     if ( newDataWriter != NULL ) {
-       _EntityStatus(newDataWriter) = _Status(_DataWriterStatusNew(newDataWriter,
-                                              a_listener,mask));
-        if ( _EntityStatus(newDataWriter) != NULL ) {
+        _Status status;
+
+        status = _StatusNew(_Entity(newDataWriter),
+                            STATUS_KIND_DATAWRITER,
+                            (struct gapi_listener *)a_listener, mask);
+        _EntityStatus(newDataWriter) = status;
+        if (status) {
             _TopicDescriptionIncUse(_TopicDescription(topic));
         } else {
             u_writerFree(U_WRITER_GET(uWriter));
-            _DomainEntityDispose(_DomainEntity(newDataWriter));
+            _EntityDispose(_Entity(newDataWriter));
             newDataWriter = NULL;
         }
     }
@@ -264,34 +270,29 @@ _DataWriterNew (
 }
 
 
-void
+gapi_returnCode_t
 _DataWriterFree (
     _DataWriter _this)
 {
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _Status status;
+    u_writer w;
+
     assert(_this);
 
+    status = _EntityStatus(_this);
     _TopicDescriptionDecUse(_TopicDescription(_this->topic));
 
-    _DataWriterStatusSetListener(_DataWriterStatus(_Entity(_this)->status), NULL, 0);
+    _StatusSetListener(status, NULL, 0);
 
-    _DataWriterStatusFree(_DataWriterStatus(_Entity(_this)->status));
+    _EntityClaim(status);
+    _StatusDeinit(status);
 
-    _EntityFreeStatusCondition(_Entity(_this));
+    w = U_WRITER_GET(_this);
+    _EntityDispose (_Entity(_this));
+    u_writerFree(w);
 
-    u_writerFree(U_WRITER_GET(_this));
-
-    if ( _this->registry ) {
-        gapi_hashTableFree(_this->registry);
-    }
-
-    _DomainEntityDispose (_DomainEntity(_this));
-}
-
-gapi_boolean
-_DataWriterPrepareDelete (
-    _DataWriter _this)
-{
-    return TRUE;
+    return result;
 }
 
 gapi_dataWriterQos *
@@ -341,7 +342,7 @@ gapi_dataWriter_set_qos (
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
 
-    if (( result == GAPI_RETCODE_OK ) && (_Entity(dataWriter)->enabled)) {
+    if (( result == GAPI_RETCODE_OK ) && (_EntityEnabled(dataWriter))) {
         gapi_dataWriterQos *existing_qos = gapi_dataWriterQos__alloc();
 
         result = gapi_dataWriterQosCheckMutability(qos,
@@ -414,7 +415,7 @@ gapi_dataWriter_set_listener (
     datawriter = gapi_dataWriterClaim(_this, &result);
 
     if ( datawriter != NULL ) {
-        _DataWriterStatus status;
+        _Status status;
 
         if ( a_listener ) {
             datawriter->listener = *a_listener;
@@ -422,8 +423,11 @@ gapi_dataWriter_set_listener (
             memset(&datawriter->listener, 0, sizeof(datawriter->listener));
         }
 
-        status = _DataWriterStatus(_EntityStatus(datawriter));
-        if ( _DataWriterStatusSetListener(status, a_listener, mask) ) {
+        status = _EntityStatus(datawriter);
+        if ( _StatusSetListener(status,
+                                (struct gapi_listener *)a_listener,
+                                mask) )
+        {
             result = GAPI_RETCODE_OK;
         }
     }
@@ -481,16 +485,6 @@ gapi_dataWriter_get_topic (
     return (gapi_topic)_EntityRelease(topic);
 }
 
-#ifdef _NEWGAPI_
-static u_result
-_DataWriterGetPublisherAction (
-    v_entity _this,
-    c_voidp arg)
-{
-    c_voidp *publisher = (c_voidp *)arg;
-    *publisher = v_entityGetUserData(v_writerPublisher(_this));
-}
-
 /*     Publisher
  *     get_publisher();
  */
@@ -499,44 +493,18 @@ gapi_dataWriter_get_publisher (
     gapi_dataWriter _this)
 {
     _DataWriter datawriter;
-    _Publisher publisher = NULL;
+    gapi_publisher publisher = NULL;
+    u_publisher uPublisher;
 
     datawriter = gapi_dataWriterClaim(_this, NULL);
 
     if ( datawriter != NULL ) {
-        u_entityAction(U_ENTITY_GET(datawriter),
-                       _DataWriterGetPublisherAction,
-                       (c_voidp)&publisher);
-        _EntityClaim(publisher);
+        uPublisher = u_writerPublisher(U_WRITER_GET(datawriter));
+        publisher = u_entityGetUserData(u_entity(uPublisher));
+        _EntityRelease(datawriter);
     }
-
-    _EntityRelease(datawriter);
-
-    return (gapi_publisher)_EntityRelease(publisher);
+    return publisher;
 }
-#else
-/*     Publisher
- *     get_publisher();
- */
-gapi_publisher
-gapi_dataWriter_get_publisher (
-    gapi_dataWriter _this)
-{
-    _DataWriter datawriter;
-    _Publisher publisher = NULL;
-
-    datawriter = gapi_dataWriterClaim(_this, NULL);
-
-    if ( datawriter != NULL ) {
-        publisher = (_Publisher)datawriter->publisher;
-        _EntityClaim(publisher);
-    }
-
-    _EntityRelease(datawriter);
-
-    return (gapi_publisher)_EntityRelease(publisher);
-}
-#endif
 
 gapi_returnCode_t
 gapi_dataWriter_wait_for_acknowledgments (
@@ -582,16 +550,15 @@ copy_liveliness_lost_status(
 
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataWriter_get_liveliness_lost_status (
     _DataWriter _this,
-    c_bool reset,
     gapi_livelinessLostStatus *status)
 {
     u_result uResult;
     uResult = u_writerGetLivelinessLostStatus(
                   U_WRITER_GET(_this),
-                  reset,
+                  TRUE,
                   copy_liveliness_lost_status,
                   status);
 
@@ -609,10 +576,9 @@ gapi_dataWriter_get_liveliness_lost_status (
     datawriter = gapi_dataWriterClaim(_this, &result);
 
     if (datawriter != NULL) {
-        if (_Entity(datawriter)->enabled ) {
+        if (_EntityEnabled(datawriter) ) {
             result = _DataWriter_get_liveliness_lost_status(
                          datawriter,
-                         TRUE,
                          status);
         } else {
             result = GAPI_RETCODE_NOT_ENABLED;
@@ -648,16 +614,15 @@ copy_deadline_missed_status(
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataWriter_get_offered_deadline_missed_status (
     _DataWriter _this,
-    c_bool reset,
     gapi_offeredDeadlineMissedStatus *status)
 {
     u_result uResult;
     uResult = u_writerGetDeadlineMissedStatus(
                   U_WRITER_GET(_this),
-                  reset,
+                  TRUE,
                   copy_deadline_missed_status,
                   status);
 
@@ -675,10 +640,9 @@ gapi_dataWriter_get_offered_deadline_missed_status (
 
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
-        if (_Entity(datawriter)->enabled ) {
+        if (_EntityEnabled(datawriter)) {
             result = _DataWriter_get_offered_deadline_missed_status (
                           datawriter,
-                          TRUE,
                           status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
@@ -721,16 +685,15 @@ copy_IncompatibleQosStatus(
     return result;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataWriter_get_offered_incompatible_qos_status (
     _DataWriter _this,
-    c_bool reset,
     gapi_offeredIncompatibleQosStatus *status)
 {
     u_result uResult;
     uResult = u_writerGetIncompatibleQosStatus(
                   U_WRITER_GET(_this),
-                  reset,
+                  TRUE,
                   copy_IncompatibleQosStatus,
                   status);
     return kernelResultToApiResult(uResult);
@@ -746,10 +709,9 @@ gapi_dataWriter_get_offered_incompatible_qos_status (
 
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
-        if (_Entity(datawriter)->enabled ) {
+        if (_EntityEnabled(datawriter)) {
             result = _DataWriter_get_offered_incompatible_qos_status (
                           datawriter,
-                          TRUE,
                           status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
@@ -774,23 +736,22 @@ copy_publication_matched_status(
 
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
-    to->current_count = from->totalCount;
-    to->current_count_change = from->totalChanged;
+    to->current_count = from->currentCount;
+    to->current_count_change = from->currentChanged;
     to->last_subscription_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataWriter_get_publication_matched_status (
     _DataWriter _this,
-    c_bool reset,
     gapi_publicationMatchedStatus *status)
 {
     u_result uResult;
     uResult = u_writerGetPublicationMatchStatus(
                   U_WRITER_GET(_this),
-                  reset,
+                  TRUE,
                   copy_publication_matched_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -806,10 +767,9 @@ gapi_dataWriter_get_publication_matched_status (
 
     datawriter = gapi_dataWriterClaim(_this, &result);
     if (datawriter != NULL) {
-        if (_Entity(datawriter)->enabled ) {
+        if (_EntityEnabled(datawriter)) {
             result = _DataWriter_get_publication_matched_status (
                           datawriter,
-                          TRUE,
                           status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
@@ -836,7 +796,7 @@ gapi_dataWriter_assert_liveliness (
     datawriter = gapi_dataWriterClaim(_this, &result);
 
     if (datawriter != NULL) {
-        if (_Entity(datawriter)->enabled ) {
+        if (_EntityEnabled(datawriter)) {
             uResult = u_writerAssertLiveliness(U_WRITER_GET(datawriter));
             result = kernelResultToApiResult(uResult);
         } else {
@@ -849,6 +809,45 @@ gapi_dataWriter_assert_liveliness (
     return result;
 }
 
+static v_result
+copy_matched_subscription(
+    c_voidp info,
+    c_voidp arg)
+{
+    struct v_subscriptionInfo *subscriptionInfo;
+    gapi_instanceHandleSeq *to;
+    gapi_instanceHandle_t *tmp_buffer;
+
+    subscriptionInfo = (struct v_subscriptionInfo*)info;
+    to = (gapi_instanceHandleSeq *)arg;
+
+    if (to->_maximum <= to->_length) {
+        tmp_buffer = to->_buffer;
+        to->_buffer = gapi_instanceHandleSeq_allocbuf(to->_length + 10);
+        to->_maximum = to->_length + 10;
+        memcpy(to->_buffer, tmp_buffer, to->_length);
+        gapi_free(tmp_buffer);
+    }
+
+    to->_buffer[to->_length] = u_instanceHandleFromGID(subscriptionInfo->key);
+    ++to->_length;
+    return V_RESULT_OK;
+}
+
+static gapi_returnCode_t
+_DataWriter_get_matched_subscriptions (
+    _DataWriter _this,
+    gapi_instanceHandleSeq *subscription_handles)
+{
+    u_result uResult;
+    uResult = u_writerGetMatchedSubscriptions(
+                  U_WRITER_GET(_this),
+                  copy_matched_subscription,
+                  subscription_handles);
+    return kernelResultToApiResult(uResult);
+}
+
+
 /*     ReturnCode_t
  *     get_matched_subscriptions(
  *         inout InstanceHandleSeq subscription_handles);
@@ -858,8 +857,40 @@ gapi_dataWriter_get_matched_subscriptions (
     gapi_dataWriter _this,
     gapi_instanceHandleSeq *subscription_handles)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result;
+    _DataWriter datawriter;
+
+    datawriter = gapi_dataWriterClaim(_this, &result);
+    if (datawriter != NULL) {
+        if (_EntityEnabled(datawriter)) {
+            result = _DataWriter_get_matched_subscriptions (
+                          datawriter,
+                          subscription_handles);
+        } else {
+            result=GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+
+    _EntityRelease(datawriter);
+
+    return result;
 }
+
+static gapi_returnCode_t
+_DataWriter_get_matched_subscription_data (
+	    gapi_dataWriter _this,
+	    gapi_subscriptionBuiltinTopicData *subscription_data,
+	    const gapi_instanceHandle_t subscription_handle)
+{
+    u_result uResult;
+    uResult = u_writerGetMatchedSubscriptionData(
+                  U_WRITER_GET(_this),
+                  subscription_handle,
+                  gapi_subscriptionBuiltinTopicData__copyOut,
+                  subscription_data);
+    return kernelResultToApiResult(uResult);
+}
+
 
 /*     ReturnCode_t
  *     get_matched_subscription_data(
@@ -872,7 +903,24 @@ gapi_dataWriter_get_matched_subscription_data (
     gapi_subscriptionBuiltinTopicData *subscription_data,
     const gapi_instanceHandle_t subscription_handle)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result;
+    _DataWriter datawriter;
+
+    datawriter = gapi_dataWriterClaim(_this, &result);
+    if (datawriter != NULL) {
+        if (_EntityEnabled(datawriter)) {
+            result = _DataWriter_get_matched_subscription_data (
+                          datawriter,
+                          subscription_data,
+                          subscription_handle);
+        } else {
+            result=GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+
+    _EntityRelease(datawriter);
+
+    return result;
 }
 
 gapi_instanceHandle_t
@@ -957,257 +1005,77 @@ _DataWriterGetKeyValue (
     return result;
 }
 
-static void
-onOfferedDeadlineMissed (
-    _DataWriter _this)
-{
-    gapi_offeredDeadlineMissedStatus info;
-    gapi_listener_OfferedDeadlineMissedListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Status status;
-    _Entity entity;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataWriter_get_offered_deadline_missed_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_OFFERED_DEADLINE_MISSED_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_offered_deadline_missed;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onOfferedIncompatibleQos (
-    _DataWriter _this)
-{
-    gapi_offeredIncompatibleQosStatus info;
-    gapi_qosPolicyCount policyCount[MAX_POLICY_COUNT_ID];
-    gapi_listener_OfferedIncompatibleQosListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-
-        info.policies._maximum = MAX_POLICY_COUNT_ID;
-        info.policies._length  = 0;
-        info.policies._buffer  = policyCount;
-
-        result = _DataWriter_get_offered_incompatible_qos_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_OFFERED_INCOMPATIBLE_QOS_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_offered_incompatible_qos;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onLivelinessLost (
-    _DataWriter _this)
-{
-    gapi_livelinessLostStatus info;
-    gapi_listener_LivelinessLostListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataWriter_get_liveliness_lost_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_LIVELINESS_LOST_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_liveliness_lost;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onPublicationMatch (
-    _DataWriter _this)
-{
-    _Status status;
-    gapi_publicationMatchedStatus info;
-    gapi_listener_PublicationMatchedListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataWriter_get_publication_matched_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_PUBLICATION_MATCH_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_publication_match;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-
 void
 _DataWriterNotifyListener(
     _DataWriter _this,
     gapi_statusMask triggerMask)
 {
+    gapi_returnCode_t result;
+    gapi_object source;
+    _Status status;
+
+    if ( _this == NULL ) {
+        OS_REPORT(OS_ERROR,
+                  "_DataWriterNotifyListener",0,
+                  "Specified DataWriter = NULL.");
+        return;
+    }
+    status = _EntityStatus(_this);
+    source = _EntityHandle(_this);
     while ( _this && (triggerMask != GAPI_STATUS_KIND_NULL) ) {
         if ( triggerMask & GAPI_LIVELINESS_LOST_STATUS ) {
-            onLivelinessLost(_this);
+            gapi_livelinessLostStatus info;
+
+            result = _DataWriter_get_liveliness_lost_status (_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifyLivelinessLost(status, source, &info);
+            }
             triggerMask &= ~GAPI_LIVELINESS_LOST_STATUS;
         }
         if ( triggerMask & GAPI_OFFERED_DEADLINE_MISSED_STATUS ) {
-            onOfferedDeadlineMissed(_this);
+            gapi_offeredDeadlineMissedStatus info;
+
+            result = _DataWriter_get_offered_deadline_missed_status (_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifyOfferedDeadlineMissed(status, source, &info);
+            }
             triggerMask &= ~GAPI_OFFERED_DEADLINE_MISSED_STATUS;
         }
         if ( triggerMask & GAPI_OFFERED_INCOMPATIBLE_QOS_STATUS ) {
-            onOfferedIncompatibleQos(_this);
+            gapi_offeredIncompatibleQosStatus info;
+            gapi_qosPolicyCount policyCount[MAX_POLICY_COUNT_ID];
+
+            info.policies._maximum = MAX_POLICY_COUNT_ID;
+            info.policies._length  = 0;
+            info.policies._buffer  = policyCount;
+
+            result = _DataWriter_get_offered_incompatible_qos_status (_this, &info);
+
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifyOfferedIncompatibleQos(status, source, &info);
+            }
             triggerMask &= ~GAPI_OFFERED_INCOMPATIBLE_QOS_STATUS;
         }
         if ( triggerMask & GAPI_PUBLICATION_MATCH_STATUS ) {
-            onPublicationMatch(_this);
+            gapi_publicationMatchedStatus info;
+
+            result = _DataWriter_get_publication_matched_status (_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.current_count_change != 0) {
+                _StatusNotifyPublicationMatch(status, source, &info);
+            }
             triggerMask &= ~GAPI_PUBLICATION_MATCH_STATUS;
         }
     }

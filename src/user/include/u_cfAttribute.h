@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -114,6 +114,25 @@ u_cfAttributeLongValue(
  */
 OS_API c_bool
 u_cfAttributeULongValue(
+    u_cfAttribute attr,
+    c_ulong *ul);
+
+/**
+ * \brief Retrieves the specified attribute value as unsigned long with as input
+ * a numeric value with at the end a friendly name character (K,M,G).
+ * For example 10M result in 10485760.
+ *
+ * The attribute value is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param attribute the proxy to the kernel configuration attribute
+ * \param ul the storage location of the attribute value
+ *
+ * \return TRUE, when the value is correctly retrieved as unsigned long type
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfAttributeSizeValue(
     u_cfAttribute attr,
     c_ulong *ul);
 

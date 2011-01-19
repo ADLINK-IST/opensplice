@@ -65,7 +65,7 @@ CXXFLAGS         = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG
 CSFLAGS          = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS         = -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
+CPPFLAGS         = -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,11 +10,11 @@
  *
  */
 
-#include <gapi.h>
-#include <os_abstract.h>
-#include <os_heap.h>
-#include <c_metabase.h>
-#include <os_stdlib.h>
+#include "gapi.h"
+#include "os_abstract.h"
+#include "os_heap.h"
+#include "c_metabase.h"
+#include "os_stdlib.h"
 #include "saj_FooTypeSupport.h"
 #include "saj__fooDataReader.h"
 #include "saj_copyCache.h"
@@ -25,7 +25,7 @@
 
 #include "idl_genSajMeta.h"
 
-#include <gapi.h>
+#include "gapi.h"
 
 /* Defines the package of the java implementation classes */
 #define SAJ_PACKAGENAME "org/opensplice/dds/dcps/"
@@ -96,9 +96,7 @@ SAJ_FUNCTION(jniAlloc) (
             0,    /* alloc_size */
             NULL, /* alloc buffer */
             NULL, /* writer copy */
-            saj_dataReaderCopy, /* reader copy */
-            NULL, /* create datawriter */
-            NULL  /* create datareader */
+            saj_dataReaderCopy // , /* reader copy */
             );
         if (typeSupport) {
             saj_write_gapi_address (env, TypeSupport, typeSupport);
@@ -200,7 +198,7 @@ SAJ_FUNCTION(jniRegisterType) (
     /* Call GAPI register type function */
     result = gapi_fooTypeSupport_register_type (
             	(gapi_fooTypeSupport)saj_read_gapi_address (env, TypeSupport),
-            	(gapi_typeSupport)saj_read_gapi_address (env, participant),
+            	(gapi_domainParticipant)saj_read_gapi_address (env, participant),
             	(gapi_string)typeAlias);
     if (result == GAPI_RETCODE_OK) {
     	typeName = gapi_typeSupport_get_type_name ((gapi_typeSupport)saj_read_gapi_address (env, TypeSupport));

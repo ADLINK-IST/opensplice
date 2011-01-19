@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -83,10 +83,13 @@ struct c_mm_s {
     c_mmBinding  bindings;
     c_address    start;
     c_address    mapEnd;
+    c_address    mapEndThreshold;
     c_address    listEnd;
+    c_address    listEndThreshold;
     c_address    end;
     c_size       size;
-    c_address    lowMemoryWaterMark;
+    c_size       memoryThreshold;
+    c_memoryThreshold thresholdStatus;
     c_ulong      fails;
     c_mmCacheHeader cacheList; /* protect with cacheListLock */
     c_mutex      mapLock;
@@ -105,14 +108,6 @@ struct c_mm_s {
     c_voidp               outOfMemoryActionArg;
     c_mmLowOnMemoryAction lowOnMemoryAction;
     c_voidp               lowOnMemoryActionArg;
-#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-    /* dds1958: ES: Counter for how many low mem warning are issued. Currently this is used
-     * as a threadsafe boolean where 0 is no warning issue and > 0 means a
-     * warning has been issued previously
-     * This value is to be modified with pa_increment only.
-     */
-    c_ulong lowMemWarningCount;
-#endif
 };
 
 struct c_mmChunk {
@@ -142,10 +137,68 @@ struct c_mmCacheHeader {
 
 static c_long c_mmHeaderSize = (ALIGN_SIZE(sizeof(struct c_mmChunk)));
 
+#define EVALUATE_MEMORY_THRESHOLD_COMMON(mm)                                                                            \
+    {                                                                                                                   \
+        c_size freeSpace;                                                                                               \
+                                                                                                                        \
+        /* The determination of the freeSpace is not exact, and that is by                                              \
+         * choice. This calculation accesses different values and between each                                          \
+         * access this thread can be scheduled out and 1 or more values                                                 \
+         * that were read or not read can be changed. As a result the freeSpace                                         \
+         * calculated does not reflect the free space at any specific moment                                            \
+         * in time, but reflects a combination of multiple time intervals.                                              \
+         * This is ok for the problem we are trying to solve with the memory                                            \
+         * threshold which has as a goal to stop allocation of more shared memory                                       \
+         * when less then the threshold size of memory is free. And allow it once                                       \
+         * again when more memory is freed up. It is not an exact science, but                                          \
+         * covers almost all scenarios of memory exhaustion.                                                            \
+         */                                                                                                             \
+        freeSpace = CoreSize(mm) + mm->chunkMapStatus.garbage + mm->chunkListStatus.garbage;                            \
+        if(freeSpace > mm->memoryThreshold)                                                                             \
+        {                                                                                                               \
+            /* common case, more memory is available then the minimum amount as                                         \
+             * indicated by the threshold. Everything is ok.                                                            \
+             */                                                                                                         \
+            mm->thresholdStatus = C_MEMTHRESHOLD_OK;                                                                    \
+                                                                                                                        \
+        } else if(freeSpace > (mm->memoryThreshold/2))                                                                  \
+        {                                                                                                               \
+            /* Less memory is available then the minimum amount as indicated by                                         \
+             * the threshold but more memory is available then 50% of the                                               \
+             * threshold. Applications are not allowed to continue, but things                                          \
+             * are ok for services                                                                                      \
+             */                                                                                                         \
+            mm->thresholdStatus = C_MEMTHRESHOLD_APP_REACHED;                                                           \
+        } else                                                                                                          \
+        {                                                                                                               \
+            /* Less then 50% of the memory threshold is available as free memory.                                       \
+             * From now on not even services can continue                                                               \
+             */                                                                                                         \
+            mm->thresholdStatus = C_MEMTHRESHOLD_SERV_REACHED;                                                          \
+        }                                                                                                               \
+    }
+
+
+#define EVALUATE_MEMORY_THRESHOLD_AFTER_FREE(mm)                                                                        \
+    if(mm->thresholdStatus != C_MEMTHRESHOLD_OK)                                                                        \
+    {                                                                                                                   \
+        EVALUATE_MEMORY_THRESHOLD_COMMON(mm)                                                                            \
+    }/* else do nothing, enough memory was free and that will not change */
+
+
+#define EVALUATE_MEMORY_THRESHOLD_AFTER_ALLOC(mm)                                                                       \
+    if(mm->thresholdStatus != C_MEMTHRESHOLD_SERV_REACHED)                                                              \
+    {                                                                                                                   \
+        EVALUATE_MEMORY_THRESHOLD_COMMON(mm)                                                                            \
+    }/* else do nothing, not enough memory was free and that will not change */
+
+
+
 static void
 c_mmAdminInit (
     c_mm mm,
-    c_size size);
+    c_size size,
+    c_size threshold);
 
 static c_mmBinding
 c_mmAdminLookup (
@@ -174,7 +227,8 @@ c_mmAdminLookup (
 c_mm
 c_mmCreate (
     void *address,
-    c_size size)
+    c_size size,
+    c_size threshold)
 {
     c_mm mm;
     os_time delay = {0, 100000000 /* 0.1 sec */};
@@ -195,7 +249,7 @@ c_mmCreate (
         memset(mm, 0, size);
         mm->shared = TRUE;
     }
-    c_mmAdminInit(mm, size);
+    c_mmAdminInit(mm, size, threshold);
 
     return mm;
 }
@@ -236,40 +290,6 @@ c_mmSplitChunk(
         chunk->index = SizeToListIndex(remnant->size);
     }
     return remnant;
-}
-#endif
-
-#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-static void
-c_mmbaseIssueLowMemoryWarning(
-    c_mm mm)
-{
-    os_uint32 warningCount;
-
-    /* dds1958: ES: Check if the warning count is 0 at the moment. If so it
-     * means that no warning has been issued. If the value is not 0 however
-     * then we do not need to continue and do not need to do any increment
-     * and safe out on that code in situations where we get the low memory
-     * warning a lot. The idea is that just doing this check (although not
-     * a definate yes or no to doing the warning) is in the cases where
-     * a warning has already been issued much cheaper then doing the
-     * increment and then checking. Only in the situation where the warning
-     * is issued for the first time, is this check useless. But that is only
-     * 1 time vs many times.
-     */
-    if(mm->lowMemWarningCount == 0)
-    {
-        /*  increment the warning count
-         */
-        warningCount = pa_increment(&mm->lowMemWarningCount);
-        if(warningCount == 1)
-        {
-            OS_REPORT(OS_WARNING,
-                "c_mmbaseIssueLowMemoryWarning",0,
-                "Shared memory is running very low!");
-
-        }
-    }
 }
 #endif
 
@@ -338,23 +358,6 @@ c_mmMalloc(
         mm->chunkMapStatus.maxUsed = GETMAX(mm->chunkMapStatus.used,
                                             mm->chunkMapStatus.maxUsed);
         mm->chunkMapStatus.count++;
-        /* Is there a low on memory action registered? */
-        if (mm->lowOnMemoryAction)
-        {
-            /* Have we passed the memory warning water mark? */
-            if((mm->listEnd - mm->mapEnd) < mm->lowMemoryWaterMark)
-            {
-                /* call the action routine and set a static boolean
-                 * so that the warning is not issued again until we
-                 * dip below the memory threshold
-                 */
-#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-                mm->lowOnMemoryAction(mm->lowOnMemoryActionArg);
-#else
-               c_mmbaseIssueLowMemoryWarning(mm);
-#endif
-            }
-        }
         c_mutexUnlock(&mm->mapLock);
     } else {
         prvChunk = NULL;
@@ -426,23 +429,6 @@ c_mmMalloc(
             chunk = (c_mmChunk)mm->listEnd;
             chunk->size = size;
             chunk->index = listIndex;
-            /* Is there a low on memory action registered? */
-            if (mm->lowOnMemoryAction)
-            {
-                /* Have we passed the memory warning water mark? */
-                if((mm->listEnd - mm->mapEnd) < mm->lowMemoryWaterMark)
-                {
-                    /* call the action routine and set a static boolean
-                     * so that the warning is not issued again until we
-                     * dip below the memory threshold
-                     */
-#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-                mm->lowOnMemoryAction(mm->lowOnMemoryActionArg);
-#else
-               c_mmbaseIssueLowMemoryWarning(mm->lowOnMemoryActionArg);
-#endif
-                }
-            }
             c_mutexUnlock(&mm->mapLock);
 	    }
         mm->chunkListStatus.used += chunkSize;
@@ -451,7 +437,7 @@ c_mmMalloc(
         mm->chunkListStatus.count++;
         c_mutexUnlock(&mm->listLock);
     }
-
+    EVALUATE_MEMORY_THRESHOLD_AFTER_ALLOC(mm);
     chunk->next = NULL;
 #ifdef MM_CLUSTER
     chunk->prev = NULL;
@@ -707,7 +693,7 @@ c_mmFree(
          */
         c_mutexUnlock(&mm->listLock);
     }
-
+    EVALUATE_MEMORY_THRESHOLD_AFTER_FREE(mm);
 }
 
 
@@ -748,7 +734,8 @@ c_mmDestroy (
 void
 c_mmAdminInit (
     c_mm mm,
-    c_size size )
+    c_size size,
+    c_size threshold)
 {
     c_long mapIndex, listIndex;
 
@@ -762,7 +749,8 @@ c_mmAdminInit (
     mm->end = ALIGN_ADDRESS((C_ADDRESS(mm->end) / ALIGNMENT ) * ALIGNMENT );
 
     mm->size = C_ADDRESS(mm->end) - C_ADDRESS(mm->start);
-    mm->lowMemoryWaterMark = mm->size/10;/*10% */
+    mm->memoryThreshold = threshold;
+    mm->thresholdStatus = C_MEMTHRESHOLD_OK;
 
     for ( mapIndex = ALIGN_COUNT(MAX_BUCKET) - 1; mapIndex >= 0; mapIndex-- ) {
         mm->chunkMap[mapIndex] = NULL;
@@ -779,6 +767,10 @@ c_mmAdminInit (
 
     mm->mapEnd   = mm->start;
     mm->listEnd  = mm->end;
+    /* determine warning markers for list end map ends based on threshold */
+    mm->mapEndThreshold = mm->mapEnd + ((CoreSize(mm) - mm->memoryThreshold)/2);
+    mm->listEndThreshold = mm->listEnd - ((CoreSize(mm) - mm->memoryThreshold)/2);
+    assert(mm->mapEndThreshold <= mm->listEndThreshold);
     mm->bindings = NULL;
 
     mm->size = size - AdminSize;
@@ -803,9 +795,6 @@ c_mmAdminInit (
     mm->outOfMemoryActionArg = NULL;
     mm->lowOnMemoryAction = NULL;
     mm->lowOnMemoryActionArg = NULL;
-#ifndef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-    mm->lowMemWarningCount = 0;
-#endif
     mm->initialized = C_MM_INITIALIZED;
 }
 
@@ -1051,7 +1040,7 @@ c_mmOnOutOfMemory(
 {
     if (_this) {
         _this->outOfMemoryAction = action;
-	    _this->outOfMemoryActionArg = arg;
+        _this->outOfMemoryActionArg = arg;
     }
 }
 
@@ -1063,8 +1052,106 @@ c_mmOnLowOnMemory(
 {
     if (_this) {
         _this->lowOnMemoryAction = action;
-	    _this->lowOnMemoryActionArg = arg;
+        _this->lowOnMemoryActionArg = arg;
     }
 }
 
+c_memoryThreshold
+c_mmbaseGetMemThresholdStatus(
+    c_mm _this)
+{
+    return _this->thresholdStatus;
+}
+
+void *
+c_mmCheckPtr(
+    c_mm mm,
+    void *ptr)
+{
+    c_mmChunk  chunk;
+    c_mmChunk  curChunk;
+    c_address addr;
+
+    if (mm == NULL) {
+        return NULL;
+    }
+    if (ptr == NULL) {
+        return NULL;
+    }
+    if (mm->shared == FALSE) {
+        /* Heap Domain: cannot return memory info.
+         * ideally this status should be returned to inform the caller.
+         */
+        return NULL;
+    }
+    addr = C_ADDRESS(ptr);
+    if (addr < C_ADDRESS(mm)) {
+        /* Address is out of scope! */
+        return NULL;
+    }
+    if (addr > C_ADDRESS(mm->end)) {
+        /* Address is out of scope! */
+        return NULL;
+    }
+    if (addr < C_ADDRESS(mm->start)) {
+        /* Address is in MM Admin part! */
+        return NULL;
+    }
+    chunk = NULL;
+    if (addr < C_ADDRESS(mm->mapEnd)) {
+	while (addr >= C_ADDRESS(mm->start)) {
+            chunk = (c_mmChunk)(addr - ChunkHeaderSize);
+            if ((chunk->size > 0) &&
+                (chunk->size <= MAX_BUCKET_SIZE) &&
+                (chunk->index == SizeToMapIndex(chunk->size)))
+            {
+                c_mutexLock(&mm->mapLock);
+                curChunk = mm->chunkMap[chunk->index];
+                while (curChunk != NULL) {
+                    if (curChunk == chunk) {
+                        c_mutexUnlock(&mm->mapLock);
+                        /* memory is already freed!
+                         * ideally this status should be returned to
+                         * inform the caller.
+                         */
+                        return ChunkAddress(chunk);
+                    }
+                    curChunk =  curChunk->next;
+                }
+                c_mutexUnlock(&mm->mapLock);
+                return ChunkAddress(chunk);
+            }
+            addr -= 4;
+        }
+    }
+    if (addr > C_ADDRESS(mm->listEnd)) {
+        while (addr > C_ADDRESS(mm->listEnd)) {
+            chunk = (c_mmChunk)(addr - ChunkHeaderSize);
+            if ((chunk->size > MAX_BUCKET_SIZE) &&
+                (chunk->size <= (mm->end - C_ADDRESS(chunk))) &&
+                (chunk->index == SizeToListIndex(chunk->size)))
+            {
+                c_mutexLock(&mm->listLock);
+                curChunk = mm->chunkList[chunk->index];
+                while ((curChunk != NULL) && (curChunk->size < chunk->size)) {
+                    curChunk = curChunk->next;
+                }
+                if (curChunk == chunk) {
+                    /* memory is already freed!
+                     * ideally this status should be returned to
+                     * inform the caller.
+                     */
+                }
+                c_mutexUnlock(&mm->listLock);
+                return ChunkAddress(chunk);
+            }
+            addr -= 4;
+        }
+    }
+    /* The prt is in unformatted memory!
+     * So this is valid database memory but never allocated before.
+     * Ideally this status should be returned to inform the caller.
+     */
+    return NULL;
+}
 

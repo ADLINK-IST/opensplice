@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "ccpp_Utils.h"
@@ -59,7 +59,7 @@ void DDS::ccpp_CopySeqElemIn(char* & from, gapi_string & to)
   }
   else
   {
-    to = NULL; 
+    to = NULL;
   }
 }
 
@@ -124,14 +124,14 @@ void DDS::ccpp_sequenceCopyOut( const gapi_stringSeq &from, DDS::StringSeq &to)
    }
 }
 
-void DDS::ccpp_Duration_copyIn( const DDS::Duration_t & from, 
+void DDS::ccpp_Duration_copyIn( const DDS::Duration_t & from,
         gapi_duration_t & to)
 {
     to.sec = from.sec;
     to.nanosec = from.nanosec;
 }
 
-void DDS::ccpp_Duration_copyOut( const gapi_duration_t & from, 
+void DDS::ccpp_Duration_copyOut( const gapi_duration_t & from,
         DDS::Duration_t & to)
 {
     to.sec = from.sec;
@@ -160,8 +160,8 @@ void DDS::ccpp_TopicBuiltinTopicData_copyOut(
     DDS::TopicBuiltinTopicData & to)
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
-    to.name = from.name;
-    to.type_name = from.type_name;
+    to.name = CORBA::string_dup(from.name);
+    to.type_name = CORBA::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DurabilityServiceQosPolicy_copyOut(from.durability_service, to.durability_service);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
@@ -183,8 +183,8 @@ void DDS::ccpp_SubscriptionBuiltinTopicData_copyOut(
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
     DDS::ccpp_BuiltinTopicKey_copyOut(from.participant_key, to.participant_key);
-    to.topic_name = from.topic_name;
-    to.type_name = from.type_name;
+    to.topic_name = CORBA::string_dup(from.topic_name);
+    to.type_name = CORBA::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
     DDS::ccpp_LatencyBudgetQosPolicy_copyOut(from.latency_budget, to.latency_budget);
@@ -206,8 +206,8 @@ void DDS::ccpp_PublicationBuiltinTopicData_copyOut(
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
     DDS::ccpp_BuiltinTopicKey_copyOut(from.participant_key, to.participant_key);
-    to.topic_name = from.topic_name;
-    to.type_name = from.type_name;
+    to.topic_name = CORBA::string_dup(from.topic_name);
+    to.type_name = CORBA::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
     DDS::ccpp_LatencyBudgetQosPolicy_copyOut(from.latency_budget, to.latency_budget);
@@ -230,10 +230,13 @@ void DDS::ccpp_CallBack_DeleteUserData( void * entityData, void * userData)
   {
     CORBA::Object_ptr cObject;
     CORBA::LocalObject_ptr anObject;
+    DDS::ccpp_UserData_ptr myUD;
 
     cObject = static_cast<CORBA::Object_ptr>(entityData);
     anObject = dynamic_cast<CORBA::LocalObject_ptr>(cObject);
     CORBA::release(anObject);
+    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)userData);
+    delete myUD;
   }
 }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,9 @@
 #include "gapi_topicDescription.h"
 #include "gapi_topic.h"
 #include "gapi_expression.h"
+
+#include "v_filter.h"
+#include "v_topic.h"
 
 #include "os_report.h"
 #include "os_heap.h"
@@ -120,6 +123,7 @@ _ContentFilteredTopicNew (
 {
     gapi_string topicName;
     q_expr expr;
+    c_value *params;
     gapi_long max;
     _ContentFilteredTopic newTopic;
     
@@ -168,15 +172,22 @@ _ContentFilteredTopicNew (
     if ( newTopic ) {
         if(parameters->_length < 100){
             expr = _TopicDescriptionGetExpr(_TopicDescription(newTopic));
-            max = getMaxParameterNumber(expr, 0);
-            q_dispose(expr);
-            
-            if(max <= (gapi_long)parameters->_length){
+            max = getMaxParameterNumber(expr, -1) + 1;
+            if((max <= (gapi_long)parameters->_length)) {
                 newTopic->expression = gapi_string_dup(expression);
                 newTopic->parameters = gapi_stringSeq_dup(parameters);
-                if ( (newTopic->expression != NULL) && (newTopic->parameters != NULL) ) {
-                    _TopicDescriptionIncUse(_TopicDescription(relatedTopic));
-                    newTopic->relatedTopic = relatedTopic;
+                if ((newTopic->expression != NULL) && (newTopic->parameters != NULL)) {
+                    params = _ContentFilteredTopicParameters(newTopic);
+                    if (u_topicContentFilterValidate(_TopicUtopic(relatedTopic), expr, params)) {
+                        _TopicDescriptionIncUse(_TopicDescription(relatedTopic));
+                        newTopic->relatedTopic = relatedTopic;
+                    } else {
+                        OS_REPORT_1(OS_API_INFO,
+                            "_ContentFilteredTopicNew", 4,
+                            "ContentFilteredTopic cannot be created. Filter invalid: %s", expression);
+                        _ContentFilteredTopicFree(newTopic);
+                        newTopic = NULL;
+                    }
                 } else {
                     _ContentFilteredTopicFree(newTopic);
                     newTopic = NULL;
@@ -189,6 +200,7 @@ _ContentFilteredTopicNew (
                 _ContentFilteredTopicFree(newTopic);
                 newTopic = NULL;
             }
+            q_dispose(expr);
         } else {
             OS_REPORT_1(OS_API_INFO,
                 "_ContentFilteredTopicNew", 4,

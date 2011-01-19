@@ -76,9 +76,9 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from util.hh
 */
 
-#include <cppgen_iostream.h>
-#include <idl_fwd.h>
-#include <utl_string.h>
+#include "cppgen_iostream.h"
+#include "idl_fwd.h"
+#include "utl_string.h"
 
 class Identifier
 {

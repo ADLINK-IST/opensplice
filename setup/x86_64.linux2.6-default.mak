@@ -60,11 +60,11 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long -Wno-variadic-macros
 
 # Set compiler options for single threaded process
-CFLAGS		 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -D_GNU_SOURCE -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -D_GNU_SOURCE -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
-CPPFLAGS	 = -m64 -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
+CPPFLAGS	 = -m64 -pipe -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads

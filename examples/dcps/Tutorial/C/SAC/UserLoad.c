@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -48,10 +48,27 @@ delayedEscape(
     return NULL;
 }
 
-int
-main (
-    int argc,
-    char *argv[])
+#ifdef _VXWORKS
+int UserLoad_main (int argc, char ** argv);
+int UserLoad (char * args)
+{
+   int argc=1;
+   char *argv[256];
+   char *str1;
+   argv[0] = (char*) strdup ("UserLoad");
+   str1 = (char*) strtok(args, " ");
+   while (str1)
+   {
+      argv[argc] = (char*) strdup (str1);
+      argc++;
+      str1 = strtok(NULL, " ");
+   }
+   return UserLoad_main (argc, argv);
+}
+int UserLoad_main (int argc, char ** argv)
+#else
+int main (int argc, char ** argv)
+#endif
 {
     /* Generic DDS entities */
     DDS_DomainParticipant           participant;

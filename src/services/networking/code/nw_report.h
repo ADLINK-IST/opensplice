@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -39,8 +39,10 @@
     OS_REPORT_2(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2)
 #define NW_REPORT_WARNING_3(funcName, description, a1, a2, a3)                 \
     OS_REPORT_3(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3)
-#define NW_REPORT_WARNING_4(funcName, description, a1, a2, a3, a4)            \
+#define NW_REPORT_WARNING_4(funcName, description, a1, a2, a3, a4)                 \
     OS_REPORT_4(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4)
+#define NW_REPORT_WARNING_5(funcName, description, a1, a2, a3, a4, a5)                 \
+    OS_REPORT_5(OS_WARNING, NW_SERVICENAME ": " funcName, 0, description, a1, a2, a3, a4, a5)
 
     
 #define NW_REPORT_INFO(level, description)                                     \

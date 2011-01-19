@@ -1,0 +1,14 @@
+module LifecycleData
+{
+   typedef string writerState_t[10];
+
+   struct Msg
+   {
+      long userID;         // User ID
+      string message;      // content;
+	  string writerStates; // the different state of the writer
+    };
+   #pragma keylist Msg userID
+
+
+};

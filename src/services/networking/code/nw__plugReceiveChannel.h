@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,7 +30,7 @@ nw_plugChannel nw_plugReceiveChannelNew(
 void nw_plugReceiveChannelFree(
                    nw_plugChannel channel);
 
-os_uint32
+nw_partitionId
 nw_plugReceiveChannelLookUpPartitionHash(
         nw_plugReceiveChannel channel,
         nw_partitionId partitionHash);

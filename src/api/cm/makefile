@@ -7,7 +7,7 @@ SUBSYSTEMS :=
 SUBSYSTEMS += xml
 
 ifeq ($(INCLUDE_JAVA),yes)
-SUBSYSTEMS += java
+SUBSYSTEMS += java jni
 endif
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

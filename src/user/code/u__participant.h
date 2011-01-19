@@ -1,20 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U__PARTICIPANT_H
 #define U__PARTICIPANT_H
 
 #include "u_participant.h"
-/* exporting some functions from this header file is only needed, since cmxml 
- * uses these functions 
+/* exporting some functions from this header file is only needed, since cmxml
+ * uses these functions
  */
 #include "os_if.h"
 
@@ -27,7 +27,7 @@
 
 /** \brief The class initializer.
  *
- * The class initializer is called by the contructor of the class or a 
+ * The class initializer is called by the contructor of the class or a
  * initializer of one of its derived classes.
  * It should not be used in any other
  * manner.
@@ -39,11 +39,11 @@
 u_result
 u_participantInit(
     u_participant _this,
-    u_kernel kernel);
+    u_domain domain);
 
 /** \brief The class deinitializer.
  *
- * The class deinitializer is called by the destructor of the class or a 
+ * The class deinitializer is called by the destructor of the class or a
  * deinitializer of one of its derived classes. It should not be used in any
  * other manner.
  *
@@ -53,41 +53,6 @@ u_participantInit(
  */
 u_result
 u_participantDeinit (
-    u_participant _this);
-
-/** \brief Provides safe access to the kernel entity.
- *
- * This method protects the process from termination by increasing the
- * processes protect count and returns the shared memory reference of
- * the kernel entity associated to the given participant.
- * When access is no longer required the entity must be released by the
- * u_participantRelease method.
- * 
- * \param _this The participant to operate on.
- * \param p     The placeholder for the kernel participant reference.
- * \return U_RESULT_OK on a succesful operation or<br>
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- *         U_RESULT_INTERNAL_ERROR if the specified participant is has no
- *                                 associated kernel entity.
- */
-u_result
-u_participantClaim(
-    u_participant _this,
-    v_participant *p);
-
-/** \brief Releases the previously claimed entity.
- *
- * This method decreases the processes protect count and unprotects the
- * process from termination when the couter reaches zero.
- * The previously retrieved reference to the kernel entity should not be
- * used anymore after this call since it may not have a valid value anymore.
- * 
- * \param _this The participant to operate on.
- * \return U_RESULT_OK on a succesful operation or<br>
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
-u_result
-u_participantRelease(
     u_participant _this);
 
 /** \brief Detaches the participant from the associated kernel
@@ -103,6 +68,36 @@ u_participantRelease(
 u_result
 u_participantDetach(
     u_participant _this);
+
+u_result
+u_participantAddPublisher (
+    u_participant _this,
+    u_publisher publisher);
+
+u_result
+u_participantRemovePublisher (
+    u_participant _this,
+    u_publisher publisher);
+
+u_result
+u_participantAddSubscriber (
+    u_participant _this,
+    u_subscriber subscriber);
+
+u_result
+u_participantRemoveSubscriber (
+    u_participant _this,
+    u_subscriber subscriber);
+
+u_result
+u_participantAddTopic (
+    u_participant _this,
+    u_topic topic);
+
+u_result
+u_participantRemoveTopic (
+    u_participant _this,
+    u_topic topic);
 
 #undef OS_API
 

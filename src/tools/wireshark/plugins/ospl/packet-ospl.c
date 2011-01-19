@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -51,7 +51,7 @@
 
 /* define default ports: can be several ranges, for ex:
   "32828-32830,32832"  */
-#define OSPL_UDP_PORTS "53340,53350,53360"
+#define OSPL_UDP_PORTS "53370,53380,53390"
 
 
 /* Forward declaration we need below */

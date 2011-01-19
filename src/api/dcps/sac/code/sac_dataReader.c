@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,7 +10,7 @@
  *
  */
 
-#include <gapi.h>
+#include "gapi.h"
 
 #include "dds_dcps.h"
 #include "sac_structured.h"
@@ -94,8 +94,7 @@ DDS_DataReader_delete_contained_entities (
 {
     return (DDS_ReturnCode_t)
 	gapi_dataReader_delete_contained_entities (
-	    (gapi_dataReader)this, NULL, NULL
-	);
+	    (gapi_dataReader)this);
 }
 /*     DataReaderView
   *     create_view (

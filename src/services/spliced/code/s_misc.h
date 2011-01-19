@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,7 +20,7 @@ extern "C" {
 #define S_THREAD_KERNELMANAGER     "OSPL Kernel Manager"
 #define S_THREAD_RESENDMANAGER     "OSPL Builtin Resend Manager"
 #define S_THREAD_GARBAGE_COLLECTOR "OSPL Garbage Collector"
-#define S_THREAD_C_AND_M_COMMANDMANAGER "OSPL C and M Command Manager"
+#define S_THREAD_C_AND_M_COMMANDMANAGER "OSPL C&M Command Manager"
 #if defined (__cplusplus)
 }
 #endif

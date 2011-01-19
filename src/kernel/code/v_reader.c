@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -569,6 +569,7 @@ v_readerGetTopicMatchStatus(
             v_statusReset(status, V_EVENT_TOPIC_MATCHED);
         }
         v_readerStatus(status)->subscriptionMatch.totalChanged = 0;
+        v_readerStatus(status)->subscriptionMatch.currentChanged = 0;
         V_READER_UNLOCK(_this);
     }
     return result;

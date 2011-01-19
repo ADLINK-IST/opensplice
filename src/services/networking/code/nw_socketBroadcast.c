@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -39,7 +39,9 @@ nw_socketRetrieveBCInterface(
     char *addressDefault;
     os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
+    nw_bool forced = SK_FALSE;
 
+    forced = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Interface),forced);
     success = sk_interfaceInfoRetrieveAllBC(&interfaceList, &nofInterfaces,
                                           sockfd);
 
@@ -84,7 +86,7 @@ nw_socketRetrieveBCInterface(
                     i++;
                 }
             }
-            if (!found) {
+            if (!found && !forced) {
                 NW_REPORT_WARNING_2("retrieving broadcast interface",
                     "Requested interface %s not found or not broadcast enabled, "
                     "using %s instead",
@@ -92,14 +94,23 @@ nw_socketRetrieveBCInterface(
                 usedInterface = 0;
             }
         }
-        /* Store addresses found for later use */
-        *sockAddrPrimaryFound =
-            *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
-                                             interfaceList[usedInterface]);
-        *sockAddrBroadcastFound =
-            *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
-                                             interfaceList[usedInterface]);
-        result = SK_TRUE;
+        /* if the Ethernet adapter that is configured is not available and forced is true report false */
+        if (!found && forced) {
+            result = SK_FALSE;
+            NW_REPORT_WARNING_1("retrieving broadcast interface",
+                               "Requested interface %s not found or not broadcast enabled",
+                               addressLookingFor);
+        } else {
+            /* Store addresses found for later use */
+            *sockAddrPrimaryFound =
+                *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
+                                                 interfaceList[usedInterface]);
+            *sockAddrBroadcastFound =
+                *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
+                                                 interfaceList[usedInterface]);
+
+            result = SK_TRUE;
+        }
 
         /* Diagnostics */
         NW_TRACE_1(Configuration, 2, "Identified broadcast enabled interface %s ",

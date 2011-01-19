@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #ifndef CCPP_UTILS_H
 #define CCPP_UTILS_H
 
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
@@ -113,7 +113,11 @@ namespace DDS
             }
             if (ccpp_statusconditiondata)
             {
-                delete ccpp_statusconditiondata;
+// removed the follwing line because some bug in the gapi are fixed, which exposes
+// some really bad constructs in C++ language binding that must be removed
+// For now this seems to avoid running into problems but not sure if this
+// is bullet proof.
+//                delete ccpp_statusconditiondata;
             }
         }
     };

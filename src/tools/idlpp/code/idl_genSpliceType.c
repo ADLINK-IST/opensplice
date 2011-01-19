@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -31,8 +31,8 @@
 #include "idl_catsDef.h"
 
 #include <ctype.h>
-#include <os_stdlib.h>
-#include <c_typebase.h>
+#include "os_stdlib.h"
+#include "c_typebase.h"
 
 	/** indentation level */
 static c_long indent_level = 0;
@@ -135,7 +135,7 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    
+
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
         idl_fileOutPrintf(idl_fileCur(), "#include \"%sSplDcps.h\"\n", idl_depGet (idl_depDefGet(), i));

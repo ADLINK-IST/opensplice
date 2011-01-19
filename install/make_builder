@@ -1,7 +1,8 @@
 #!/bin/bash
+
 . ${OSPL_HOME}/install/make_functions
 
-echo $*
+echo "make_builder params are $*"
 
 installer_setup $*
 

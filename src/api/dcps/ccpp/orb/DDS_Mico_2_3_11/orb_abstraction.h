@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #define CCPP_ORB_ABSTRACTION_H
 
 #include "CORBA.h"
-#include "mico/value.h"
+#include <mico/value.h>
 
   namespace DDS
   {

@@ -1,0 +1,15 @@
+=== WaitSetDataSubscriber
+=== [WaitSetDataSubscriber] Query : message = "Hello again"
+=== [WaitSetDataSubscriber] Ready ...
+
+!!! a MsgWriter joined
+
+    --- New message received ---
+    userID  : 1
+    Message : "First Hello"
+
+    --- message received (with QueryCOndition on message field) ---
+    userID  : 1
+    Message : "Hello again"
+
+!!! a MsgWriter lost its liveliness

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,6 +13,7 @@
 #include "d_storeMMF.h"
 #include "u_entity.h"
 #include "sd_serializerXMLMetadata.h"
+#include "sd_serializerXMLTypeinfo.h"
 #include "sd_serializerXML.h"
 #include "v_entity.h"
 #include "v_topic.h"
@@ -356,6 +357,7 @@ createSampleType(
     return foundType;
 }
 
+#if 0
 static c_type
 cloneType(
     c_base src,
@@ -394,6 +396,46 @@ cloneType(
     }
     return result;
 }
+#else
+static c_type
+cloneType(
+    c_base src,
+    c_base dst,
+    c_type object)
+{
+    sd_serializer serializer, deserializer;
+    sd_serializedData data;
+    c_char* xmlData;
+    c_type result;
+
+    result = NULL;
+    serializer = sd_serializerXMLTypeinfoNew(src, FALSE);
+    deserializer = sd_serializerXMLTypeinfoNew(dst, FALSE);
+
+    if(serializer && deserializer){
+        data = sd_serializerSerialize(serializer, object);
+
+        if(data){
+            xmlData = sd_serializerToString(serializer, data);
+            sd_serializedDataFree(data);
+
+            if(xmlData){
+                data = sd_serializerFromString(deserializer, xmlData);
+
+                if(data){
+                    result = c_type(sd_serializerDeserializeValidated(
+                            deserializer, data));
+                    sd_serializedDataFree(data);
+                }
+                os_free(xmlData);
+            }
+        }
+        sd_serializerFree(serializer);
+        sd_serializerFree(deserializer);
+    }
+    return result;
+}
+#endif
 
 static c_object
 cloneObject(

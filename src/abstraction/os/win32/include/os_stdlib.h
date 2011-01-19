@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -18,7 +18,7 @@
 #include <winsock2.h> /* for gethostname */
 #include <iptypes.h>  /* needed for FIXED_INFO struct */
 #include <stdio.h>
-#include <io.h>
+#include "io.h"
 //#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -28,7 +28,7 @@
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include <os_if.h>
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -65,8 +65,6 @@ typedef HANDLE os_os_dirHandle;
 
 #define MAXHOSTNAMELEN MAX_HOSTNAME_LEN
 
-/* snprintf is not supported on windows, use _snprintf */
-/* The above comment has the ring of truth to it - sm */
 OS_API extern int snprintf(char *s, size_t n, const char *format, ...);
 
 OS_API extern char *optarg;

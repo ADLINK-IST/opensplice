@@ -1,0 +1,3 @@
+echo === DurabilityDataPublisher $*
+../exec/DurabilityDataPublisher $*
+

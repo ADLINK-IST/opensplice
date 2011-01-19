@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,11 +19,11 @@
  * - Heap
  */
 
-#include <os_heap.h>
+#include "os_heap.h"
 #include <assert.h>
 #include <strings.h>
 
-#include <../common/code/os_sharedmem_handle.c>
+#include "../common/code/os_sharedmem_handle.c"
 
 void
 os_sharedMemoryInit(void)

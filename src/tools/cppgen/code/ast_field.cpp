@@ -78,8 +78,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * nodes and AST_UnionBranch nodes.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

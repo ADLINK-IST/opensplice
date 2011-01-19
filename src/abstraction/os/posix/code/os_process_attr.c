@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,7 +16,7 @@
  * Implements os_procAttrInit and sets attributes
  * to platform independent values:
  * - scheduling class is OS_SCHED_DEFAULT
- * - process priority is sched_get_priority_min (SCHED_OTHER)
+ * - process priority is the middle of the available range
  * - locking policy is OS_UNLOCKED
  * - user credentials is default
  */
@@ -44,7 +44,7 @@ os_procAttrInit (
 {
     assert (procAttr != NULL);
     procAttr->schedClass = OS_SCHED_DEFAULT;
-    procAttr->schedPriority = sched_get_priority_min (SCHED_OTHER);
+    procAttr->schedPriority = (sched_get_priority_min (SCHED_OTHER) + sched_get_priority_max (SCHED_OTHER)) / 2;
     procAttr->lockPolicy = OS_LOCK_DEFAULT;
     procAttr->userCred.uid = 0;
     procAttr->userCred.gid = 0;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,7 +17,7 @@
 #ifndef JNI_PUBLISHERQOS_H
 #define JNI_PUBLISHERQOS_H
 
-#include "jni.h"
+#include <jni.h>
 #include "jni_typebase.h"
 #include "v_kernel.h"
 

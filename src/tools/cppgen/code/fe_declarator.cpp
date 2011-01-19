@@ -79,10 +79,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * an AST_Type node.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 /*
  * Constructor(s) and destructor

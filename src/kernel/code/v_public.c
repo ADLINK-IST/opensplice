@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -129,6 +129,15 @@ v_publicFree (
     assert(C_TYPECHECK(o,v_public));
 
     v_handleDeregister(o->handle);
+}
+
+v_handleResult
+v_publicRenew (
+    v_public o)
+{
+    assert(C_TYPECHECK(o,v_public));
+
+    return v_handleRenew(&o->handle);
 }
 
 static v_handle

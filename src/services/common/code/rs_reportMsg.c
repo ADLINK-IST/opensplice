@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,10 +9,10 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <rs_reportMsg.h>
+#include "rs_reportMsg.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 static const char *reportTypeText [] = {
     "INFO",
@@ -134,7 +134,7 @@ rs_reportMsgReport (
 	reportMsg->dateTime.seconds,
 	reportMsg->dateTime.nanoseconds);
 
-    write(fileno(stdout), buf, written);
+    os_write(fileno(stdout), buf, written);
 }
 
 rs_reportType

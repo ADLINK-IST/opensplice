@@ -8,7 +8,13 @@
 
 #include "gapi_common.h"
 #include "os_stdlib.h"
- 
+
+#ifdef WINCE
+#undef errno
+static int errno=0;
+#endif
+
+
 /**********************************************************************
  *
  * local macro definitions
@@ -249,3 +255,4 @@ getParameterValue (
     return value;
 }
     
+

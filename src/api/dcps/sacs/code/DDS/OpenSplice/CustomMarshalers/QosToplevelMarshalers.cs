@@ -988,6 +988,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static int offset_liveliness = (int)Marshal.OffsetOf(type, "liveliness");
         private static int offset_reliability = (int)Marshal.OffsetOf(type, "reliability");
         private static int offset_lifespan = (int)Marshal.OffsetOf(type, "lifespan");
+        private static int offset_destination_order = (int)Marshal.OffsetOf(type, "destination_order");
         private static int offset_user_data = (int)Marshal.OffsetOf(type, "user_data");
         private static int offset_ownership = (int)Marshal.OffsetOf(type, "ownership");
         private static int offset_ownership_strength = (int)Marshal.OffsetOf(type, "ownership_strength");
@@ -1048,6 +1049,9 @@ namespace DDS.OpenSplice.CustomMarshalers
                     result = LifespanQosPolicyMarshaler.CopyIn(from.Lifespan, to, offset_lifespan);
                 }
                 if (result == DDS.ReturnCode.Ok) {
+                    result = DestinationOrderQosPolicyMarshaler.CopyIn(from.DestinationOrder, to, offset_destination_order);
+                }
+                if (result == DDS.ReturnCode.Ok) {
                     result = UserDataQosPolicyMarshaler.CopyIn(from.UserData, to, offset_user_data);
                 }
                 if (result == DDS.ReturnCode.Ok) {
@@ -1099,6 +1103,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             LivelinessQosPolicyMarshaler.CleanupIn(nativePtr, offset_liveliness);
             ReliabilityQosPolicyMarshaler.CleanupIn(nativePtr, offset_reliability);
             LifespanQosPolicyMarshaler.CleanupIn(nativePtr, offset_lifespan);
+            DestinationOrderQosPolicyMarshaler.CleanupIn(nativePtr, offset_destination_order);
             UserDataQosPolicyMarshaler.CleanupIn(nativePtr, offset_user_data);
             OwnershipQosPolicyMarshaler.CleanupIn(nativePtr, offset_ownership);
             OwnershipStrengthQosPolicyMarshaler.CleanupIn(nativePtr, offset_ownership_strength);
@@ -1132,6 +1137,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             LivelinessQosPolicyMarshaler.CopyOut(from, ref to.Liveliness, offset_liveliness);
             ReliabilityQosPolicyMarshaler.CopyOut(from, ref to.Reliability, offset_reliability);
             LifespanQosPolicyMarshaler.CopyOut(from, ref to.Lifespan, offset_lifespan);
+            DestinationOrderQosPolicyMarshaler.CopyOut(from, ref to.DestinationOrder, offset_destination_order);
             UserDataQosPolicyMarshaler.CopyOut(from, ref to.UserData, offset_user_data);
             OwnershipQosPolicyMarshaler.CopyOut(from, ref to.Ownership, offset_ownership);
             OwnershipStrengthQosPolicyMarshaler.CopyOut(from, ref to.OwnershipStrength, offset_ownership_strength);

@@ -2,6 +2,7 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_DLIB := $(DDS_CONF)
+EXTRACTED_LIB = libddscore
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 

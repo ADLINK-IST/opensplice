@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -66,7 +66,6 @@ c_checkType (
             OS_REPORT_2(OS_ERROR, "Database", 0,
                     "Type mismatch: object type is %s but %s was expected\n",
                     str,name);
-            assert(FALSE);
         }
 #endif
 

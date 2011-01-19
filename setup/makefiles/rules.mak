@@ -57,7 +57,7 @@ else
 endif
 else
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
 endif
 
 ifeq (,$(findstring win32,$(SPLICE_HOST)))
@@ -70,7 +70,7 @@ else
 endif
 else
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed 's@ [A-Za-z]\:@ /cygdrive/$(CYGWIN_INSTALL_DRIVE)/@' | sed 's#\.o#$(OBJ_POSTFIX)#g' >$@
+	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
 endif
 
 %$(OBJ_POSTFIX): %.c
@@ -165,7 +165,10 @@ ODL_H		:= $(addsuffix .h,$(ODL_MODULES))
 ODL_C		:= $(addsuffix .c,$(ODL_MODULES))
 ODL_O		:= $(addsuffix $(OBJ_POSTFIX),$(ODL_MODULES))
 
-OBJECTS		:= $(C_FILES:%.c=%$(OBJ_POSTFIX)) $(CPP_FILES:%.cpp=%$(OBJ_POSTFIX)) $(Y_FILES:%.y=%$(OBJ_POSTFIX)) $(ODL_O) $(IDL_O)
+ifndef OBJECTS
+OBJECTS                := $(C_FILES:%.c=%$(OBJ_POSTFIX)) $(CPP_FILES:%.cpp=%$(OBJ_POSTFIX)) $(Y_FILES:%.y=%$(OBJ_POSTFIX)) $(ODL_O) $(IDL_O)
+endif
+
 DEPENDENCIES	:= $(C_FILES:%.c=%.d) $(CPP_FILES:%.cpp=%.d) $(Y_FILES:%.y=%.d) $(ODL_C:%.c=%.d)
 EXECUTABLES     := $(basename $(OBJECTS))
 H_FILES		:= $(L_FILES:%.l=%.h)

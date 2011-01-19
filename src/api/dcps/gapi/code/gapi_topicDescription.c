@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,6 +12,7 @@
 #include "gapi_domainParticipant.h"
 #include "gapi_typeSupport.h"
 #include "gapi_topicDescription.h"
+#include "gapi_contentFilteredTopic.h"
 #include "gapi_structured.h"
 #include "gapi_expression.h"
 
@@ -31,27 +32,15 @@ _TopicDescriptionInit (
     const gapi_char *expression,
     _DomainParticipant participant)
 {
-    v_participantQos participantQos;
-    u_participant uParticipant;
-    c_bool enable = TRUE;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     assert(participant);
 
-    uParticipant = u_participant(U_ENTITY_GET(participant));
-
-    if ( u_entityQoS(u_entity(uParticipant), (v_qos*)&participantQos) == U_RESULT_OK ) {
-        enable = participantQos->entityFactory.autoenable_created_entities;
-        u_participantQosFree(participantQos);
-    }
-
     if ( topicDescription ) {
         topicDescription->expr = gapi_parseExpression(expression);
         if (topicDescription->expr != NULL) {
-            _DomainEntityInit (_DomainEntity(topicDescription),
-                               participant,
-                               _Entity(participant),
-                               enable);
+            _EntityInit (_Entity(topicDescription),
+                               _Entity(participant));
 
             topicDescription->topic_name = gapi_string_dup(topic_name);
             if (topicDescription->topic_name == NULL) {
@@ -63,7 +52,6 @@ _TopicDescriptionInit (
                     os_free(topicDescription->topic_name);
                 } else {
                     topicDescription->useCount = 0;
-                    topicDescription->viewSet = NULL;
                 }
             }
         } else {
@@ -85,11 +73,7 @@ _TopicDescriptionDispose (
     topicDescription->type_name    = NULL;
     topicDescription->expr         = NULL;
 
-    if ( topicDescription->viewSet != NULL ) {
-        gapi_setFree(topicDescription->viewSet);
-    }
-
-    _DomainEntityDispose(_DomainEntity(topicDescription));
+    _EntityDispose(_Entity(topicDescription));
 }
 
 gapi_returnCode_t
@@ -193,12 +177,23 @@ gapi_topicDescription_get_participant (
     gapi_topicDescription _this)
 {
     _TopicDescription topicDescription;
+    _Topic topic;
     _DomainParticipant participant = NULL;
     
     topicDescription = gapi_topicDescriptionClaim(_this, NULL);   
 
     if ( topicDescription != NULL ) {
-        participant = _DomainEntityParticipant(_DomainEntity(topicDescription));
+        /* all entities except for content filtered topics have a reference
+         * to a user layer entity. So except for content filtered topics
+         * entities get their participant from the user layer entity.
+         * Content filters instead do this via the related topic.
+         */
+        if (_ObjectGetKind(_Object(topicDescription)) == OBJECT_KIND_CONTENTFILTEREDTOPIC) {
+            topic = _ContentFilteredTopicGetRelatedTopic(_ContentFilteredTopic(topicDescription));
+            participant = _EntityParticipant(_Entity(topic));
+        } else {
+            participant = _EntityParticipant(_Entity(topicDescription));
+        }
     }
 
     _EntityRelease(topicDescription);
@@ -297,7 +292,7 @@ _TopicDescriptionAllocBuffer (
     return topicDescription->allocBuffer;
 }
 
-
+#if 0
 gapi_expression
 _TopicDescriptionCreateExpression (
     const char *topicName)
@@ -319,6 +314,7 @@ _TopicDescriptionCreateExpression (
 
     return expr;
 }
+#endif
 
 void
 _TopicDescriptionCopyContext (
@@ -340,7 +336,7 @@ _TopicDescriptionGetTypeSupport (
     assert(topicDescr);
 
     typeSupport = _DomainParticipantFindType(
-                      _DomainEntityParticipant(_DomainEntity(topicDescr)),
+                      _EntityParticipant(_Entity(topicDescr)),
                       topicDescr->type_name);
     return typeSupport;
 }

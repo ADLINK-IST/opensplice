@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,12 +24,12 @@
 extern "C" {
 #endif
 
-#include <os_defs.h>
-#include <os_time.h> /* needed for os_stat */
+#include "os_defs.h"
+#include "os_time.h" /* needed for os_stat */
 
 /* include OS specific header file                              */
-#include <include/os_stdlib.h>
-#include <os_if.h>
+#include "include/os_stdlib.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -287,6 +287,21 @@ os_strncpy(
     const char *s2,
     size_t num);
 
+/** \brief os_strnlen wrapper
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return as strnlen
+ */
+OS_API size_t 
+os_strnlen(
+   char *ptr,
+   size_t maxlen);
+
 /** \brief sprintf wrapper
  *
  * Microsoft generates deprected warnings for sprintf,
@@ -517,6 +532,22 @@ os_readdir(
     os_dirHandle d,
     struct os_dirent *direntp);
 
+/** \brief Removes the file or directory given by name.
+  *
+  * This function is equivalent to POSIX remove(3)
+  *
+  */
+
+OS_API os_result os_remove (const char *name);
+
+/** \brief Renames a file or directory
+  *
+  * This function is equivalent to POSIX rename(3)
+  *
+  */
+
+OS_API os_result os_rename (const char *oldpath, const char *newpath);
+
 /** \brief Transforms the given filepath into a platform specific filepath.
  *
  * This translation function will replace any platform file seperator into
@@ -561,6 +592,35 @@ os_fsync(
  */
 OS_API char *
 os_getTempDir();
+
+/**
+ * \brief return string describing error number.
+ * 
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - char * of the string description of the errnum passed in
+ * if no string is associated then a string containing the errnum is returned
+ */
+OS_API char *
+os_strerror(int errnum, char *buf, size_t n);
+
+/**
+ * \brief writes up to count bytes from the buffer pointed buf to the file referred to by the file descriptor fd.
+ * 
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - On success, the number of bytes written is returned (zero indicates
+ * nothing was written). On error, -1 is returned
+ *
+ */
+OS_API ssize_t 
+os_write(int fd, const void *buf, size_t count);
 
 #undef OS_API
 

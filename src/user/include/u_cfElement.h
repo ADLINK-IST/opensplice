@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -162,6 +162,28 @@ u_cfElementAttributeLongValue(
     u_cfElement element,
     const c_char *attributeName,
     c_long *l);
+
+/**
+ * \brief Retrieves the specified attribute value as unsigned long with as input
+ * a numeric value with at the end a friendly name character (K,M,G).
+ * For example 10M result in 10485760.
+ *
+ * The specified attribute value is only stored in the last parameter,
+ * when the attribute exists and the value could be succesfully retrieved.
+ *
+ * \param element the proxy to the kernel configuration element
+ * \param attributeName the name of the attribute to retrieve the value from
+ * \param str the storage location of the attribute value
+ *
+ * \return TRUE, when the attribute exists and the value is correctly retrieved
+ *               as unsigned long
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfElementAttributeSizeValue(
+    u_cfElement element,
+    const c_char *attributeName,
+    c_ulong *ul);
 
 /**
  * \brief Retrieves the specified attribute value as unsigned long.

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -42,6 +42,7 @@ OS_API v_handle v_publicHandle    (v_public o);
 OS_API v_gid    v_publicGid       (v_public o);
 OS_API void     v_publicFree      (v_public o);
 OS_API void     v_publicDispose   (v_public o);
+OS_API v_handleResult v_publicRenew (v_public o);
 
 OS_API c_voidp  v_publicSetUserData (v_public o, c_voidp userData);
 OS_API c_voidp  v_publicGetUserData (v_public o);

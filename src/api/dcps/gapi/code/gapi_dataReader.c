@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,7 +21,6 @@
 #include "gapi_condition.h"
 #include "gapi_domainParticipant.h"
 #include "gapi_domainParticipantFactory.h"
-#include "gapi_dataReaderStatus.h"
 #include "gapi_structured.h"
 #include "gapi_objManag.h"
 #include "gapi_kernel.h"
@@ -134,10 +133,8 @@ _DataReaderInit (
     const _TypeSupport typesupport,
     const struct gapi_dataReaderListener *a_listener,
     const gapi_statusMask mask,
-    const u_dataReader uReader,
-    const c_bool enable)
+    const u_dataReader uReader)
 {
-    _DomainParticipant participant;
     gapi_expression expr;
     c_bool noError;
 
@@ -147,20 +144,12 @@ _DataReaderInit (
                (uReader != NULL));
 
     if (noError) {
-        participant = _DomainEntityParticipant(_DomainEntity(subscriber));
-        noError = (participant != NULL);
-    }
-
-    if (noError) {
-        _DomainEntityInit(_DomainEntity(_this),
-                          participant,
-                          _Entity(subscriber),
-                          enable);
+        _EntityInit(_Entity(_this),
+                          _Entity(subscriber));
 
         U_DATAREADER_SET(_this, uReader);
         u_entityAction(u_entity(uReader),getCopyInfo,_this);
 
-        _this->subscriber = subscriber;
         _this->topicDescription = topicDescription;
 
         if ( a_listener ) {
@@ -198,24 +187,18 @@ _DataReaderInit (
         }
     }
     if (noError) {
-        _EntityStatus(_this) = _Status(_DataReaderStatusNew(_this,
-                                                            a_listener,
-                                                            mask));
-        noError = (_EntityStatus(_this) != NULL);
-    }
-    if (noError) {
-        _this->conditionSet = gapi_setNew (gapi_objectRefCompare);
-        noError = (_this->conditionSet != NULL);
-    }
-    if (noError) {
-        _this->viewSet = gapi_setNew (gapi_objectRefCompare);
-        noError = (_this->viewSet != NULL);
+        _Status status;
+
+        status = _StatusNew(_Entity(_this),
+                            STATUS_KIND_DATAREADER,
+                            (struct gapi_listener *)a_listener, mask);
+        _EntityStatus(_this) = status;
+        if (!status) {
+            noError = FALSE;
+        }
     }
     if (noError) {
         _TopicDescriptionIncUse(topicDescription);
-    } else {
-        gapi_setFree(_this->conditionSet);
-        gapi_setFree(_this->viewSet);
     }
     return noError;
 }
@@ -280,10 +263,9 @@ _DataReaderNew (
                                               typesupport,
                                               a_listener,
                                               mask,
-                                              uReader,
-                                              FALSE);
+                                              uReader);
                     if (!noError) {
-                        _DomainEntityDispose(_DomainEntity(_this));
+                        _EntityDispose(_Entity(_this));
                     }
                 }
                 if (!noError) {
@@ -305,36 +287,49 @@ _DataReaderNew (
     return _this;
 }
 
-void
+gapi_returnCode_t
 _DataReaderFree (
     _DataReader _this)
 {
-    _DataReaderStatus status;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _Status status;
+    u_dataReader r;
 
     assert(_this);
 
+    /* The following refCount checking and destruction mechanism is not
+     * bullet proof and may cause leakage.
+     * This is a temporary situation during GAPI redesign and should be
+     * resolved when the GAPI redesign is finished.
+     */
+    r = U_DATAREADER_GET(_this);
     _TopicDescriptionDecUse(_this->topicDescription);
 
-    status = _DataReaderStatus(_Entity(_this)->status);
+    status = _EntityStatus(_this);
 
-    _DataReaderStatusSetListener(status, NULL, 0);
+    _StatusSetListener(status, NULL, 0);
 
-    _DataReaderStatusFree(status);
-
-    _EntityFreeStatusCondition(_Entity(_this));
+    _EntityClaim(status);
+    _StatusDeinit(status);
 
     u_queryFree(_this->uQuery);
-    u_dataReaderFree(U_DATAREADER_GET(_this));
-
-    gapi_setFree(_this->conditionSet);
-    _this->conditionSet = NULL;
-
-    gapi_setFree(_this->viewSet);
-    _this->viewSet = NULL;
 
     gapi_loanRegistry_free(_this->loanRegistry);
 
-    _DomainEntityDispose (_DomainEntity(_this));
+    /* Following the user layer reader object is deleted after the entity
+     * dispose because it will otherwise lead to a double free of the user
+     * layer reader.
+     * This is caused by the status condition which is attached to an exiting
+     * waitset and the fact that a status condition's user object is the user
+     * layer reader.
+     * This is a hack but besides of that the destruction of the user entity
+     * should be part of the entity dispose method.
+     * For now this works.
+     */
+    _EntityDispose(_Entity(_this));
+    u_dataReaderFree(r);
+
+    return result;
 }
 
 gapi_boolean
@@ -346,12 +341,12 @@ _DataReaderPrepareDelete (
 
     assert(_this);
 
-    if ( !gapi_setIsEmpty(_this->conditionSet) ) {
+    if (u_readerQueryCount(U_READER_GET(_this)) > 1) {
         gapi_errorReport(context, GAPI_ERRORCODE_CONTAINS_CONDITIONS);
         result = FALSE;
     }
 
-    if ( !gapi_setIsEmpty(_this->viewSet) ) {
+    if (u_dataReaderViewCount(U_DATAREADER_GET(_this)) > 0) {
         gapi_errorReport(context, GAPI_ERRORCODE_CONTAINS_ENTITIES);
         result = FALSE;
     }
@@ -371,13 +366,6 @@ _DataReaderUreader (
     return U_DATAREADER_GET(_this);
 }
 
-_Subscriber
-_DataReaderSubscriber (
-    _DataReader _this)
-{
-    return _this->subscriber;
-}
-
 gapi_dataReaderQos *
 _DataReaderGetQos (
     _DataReader dataReader,
@@ -390,7 +378,7 @@ _DataReaderGetQos (
     assert(dataReader);
 
     uDataReader = U_DATAREADER_GET(dataReader);
-    uResult = u_entityQoS(u_entity(uDataReader), (v_qos*)&dataReaderQos);
+    uResult = u_entityQoS(u_entity(uDataReader), (v_qos *)&dataReaderQos);
 
     if ( uResult == U_RESULT_OK ) {
         gapi_kernelReaderQosCopyOut(dataReaderQos,  qos);
@@ -412,31 +400,31 @@ gapi_dataReader_create_readcondition (
 
     datareader = gapi_dataReaderClaim(_this, NULL);
 
-    if ( datareader && _Entity(datareader)->enabled &&
-        gapi_stateMasksValid(sample_states, view_states, instance_states) ) {
-        readCondition = _ReadConditionNew (sample_states,
-                                           view_states,
-                                           instance_states,
-                                           datareader,
-                                           NULL);
-        if ( readCondition != NULL ) {
-            gapi_deleteEntityAction deleteAction;
-            void *actionArg;
+    if ( datareader ) {
+        if (_EntityEnabled(datareader) &&
+            gapi_stateMasksValid(sample_states, view_states, instance_states) )
+        {
+            readCondition = _ReadConditionNew (sample_states,
+                                               view_states,
+                                               instance_states,
+                                               datareader,
+                                               NULL);
+            if ( readCondition != NULL ) {
+                gapi_deleteEntityAction deleteAction;
+                void *actionArg;
 
-            gapi_setAdd(datareader->conditionSet, (gapi_object)readCondition);
-
-            if ( _ObjectGetDeleteAction(_Object(readCondition),
-                                        &deleteAction,
-                                        &actionArg) ) {
-                _ObjectSetDeleteAction(_Object(readCondition),
-                                       deleteAction,
-                                       actionArg);
+                if ( _ObjectGetDeleteAction(_Object(readCondition),
+                                            &deleteAction,
+                                            &actionArg) ) {
+                    _ObjectSetDeleteAction(_Object(readCondition),
+                                           deleteAction,
+                                           actionArg);
+                }
+                _ENTITY_REGISTER_OBJECT(_Entity(datareader), (_Object)readCondition);
             }
-            _ENTITY_REGISTER_OBJECT(_Entity(datareader), (_Object)readCondition);
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
 
     return (gapi_readCondition)_EntityRelease(readCondition);
 }
@@ -459,7 +447,7 @@ gapi_dataReader_create_querycondition (
     if(licensed == TRUE){
         datareader = gapi_dataReaderClaim(_this, NULL);
 
-        if ( datareader && _Entity(datareader)->enabled &&
+        if ( datareader && _EntityEnabled(datareader) &&
              query_expression && gapi_sequence_is_valid(query_parameters) &&
              gapi_stateMasksValid(sample_states, view_states, instance_states) ) {
 
@@ -470,8 +458,6 @@ gapi_dataReader_create_querycondition (
                                                 query_parameters,
                                                 datareader, NULL);
             if ( queryCondition != NULL ) {
-                gapi_setAdd(datareader->conditionSet,
-                            (gapi_object)queryCondition);
                 _ENTITY_REGISTER_OBJECT(_Entity(datareader),
                                         (_Object)queryCondition);
             }
@@ -489,46 +475,47 @@ gapi_dataReader_delete_readcondition (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DataReader datareader;
     _ReadCondition readCondition = NULL;
+    c_bool contains;
 
-    datareader = gapi_dataReaderClaim(_this, &result);
-
-    if ( datareader != NULL ) {
-        readCondition = gapi_readConditionClaim(a_condition, NULL);
-        if ( readCondition != NULL ) {
-            gapi_setIter iterSet;
-
-            iterSet = gapi_setFind (datareader->conditionSet,
-                                    (gapi_object)readCondition);
-            if ( gapi_setIterObject(iterSet) != NULL ) {
-                gapi_setRemove(datareader->conditionSet,
-                               (gapi_object)readCondition);
-                _ReadConditionFree(readCondition);
+    if (_this && a_condition) {
+        datareader = gapi_dataReaderClaim(_this, &result);
+        if (datareader != NULL) {
+            readCondition = gapi_readConditionClaim(a_condition, NULL);
+            if (readCondition != NULL ) {
+                contains = u_readerContainsQuery(U_READER_GET(datareader),
+                                                 U_QUERY_GET(readCondition));
+                if (contains) {
+                    _ReadConditionFree(readCondition);
+                } else {
+                    result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                    _EntityRelease(readCondition);
+                }
             } else {
-                result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-                _EntityRelease(readCondition);
+                result = GAPI_RETCODE_ALREADY_DELETED;
             }
-            gapi_setIterFree(iterSet);
+            _EntityRelease(datareader);
         } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+            result = GAPI_RETCODE_ALREADY_DELETED;
         }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
 gapi_returnCode_t
 gapi_dataReader_delete_contained_entities (
-    gapi_dataReader _this,
-    gapi_deleteEntityAction action,
-    void *action_arg)
+    gapi_dataReader _this)
 {
+    gapi_object handle;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DataReader datareader;
-    void *userData;
     gapi_context context;
-    gapi_setIter iterSet;
+    _Condition condition = NULL;
+    _DataReaderView view = NULL;
+    c_iter entities;
+    u_entity e;
+    u_result ur;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_DELETE_CONTAINED_ENTITIES);
 
@@ -537,36 +524,55 @@ gapi_dataReader_delete_contained_entities (
     if ( datareader != NULL ) {
         if (!gapi_loanRegistry_is_empty(datareader->loanRegistry)) {
             result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        }
-        iterSet = gapi_setFirst(datareader->conditionSet);
-
-        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-            _ReadCondition readCondition = (_ReadCondition)gapi_setIterObject(iterSet);
-            _EntityClaim(readCondition);
-            userData = _ObjectGetUserData(_Object(readCondition));
-            _ReadConditionPrepareDelete(readCondition);
-            if ( action ) {
-                action(userData, action_arg);
+        } else {
+            entities = u_readerLookupQueries(U_READER_GET(datareader));
+            e = c_iterTakeFirst(entities);
+            while (e) {
+                condition = u_entityGetUserData(e);
+                if (condition) {
+                    _ObjectReadClaimNotBusy(_Object(condition));
+                    _ConditionFree(condition);
+                } else {
+                    if (e == u_entity(datareader->uQuery)) {
+                        datareader->uQuery = NULL;
+                        ur = u_queryFree(u_query(e));
+                        if (ur == U_RESULT_OK) {
+                            result = GAPI_RETCODE_OK;
+                        } else {
+                            result = GAPI_RETCODE_BAD_PARAMETER;
+                        }
+                    } else {
+                        assert(condition);
+                        result = GAPI_RETCODE_BAD_PARAMETER;
+                    }
+                }
+                e = c_iterTakeFirst(entities);
             }
-            _ReadConditionFree(readCondition);
-            gapi_setIterRemove(iterSet);
-        }
-        gapi_setIterFree (iterSet);
-        iterSet = gapi_setFirst(datareader->viewSet);
+            c_iterFree(entities);
 
-        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-            _DataReaderView view = (_DataReaderView)gapi_setIterObject(iterSet);
-            _EntityClaim(view);
-            _DataReaderViewPrepareDelete(view, &context);
-            _DataReaderViewFree(view);
-            gapi_setIterRemove(iterSet);
+            entities = u_dataReaderLookupViews(U_DATAREADER_GET(datareader));
+            e = c_iterTakeFirst(entities);
+            while (e) {
+                handle = u_entityGetUserData(e);
+                view = _DataReaderView(gapi_conditionClaimNB(handle,&result));
+                if (view) {
+                    _DataReaderViewFree(view);
+                } else {
+                    ur = u_dataViewFree(u_dataView(e));
+                    if (ur == U_RESULT_OK) {
+                        result = GAPI_RETCODE_OK;
+                    } else {
+                        result = GAPI_RETCODE_BAD_PARAMETER;
+                    }
+                }
+                e = c_iterTakeFirst(entities);
+            }
+            c_iterFree(entities);
         }
-        gapi_setIterFree (iterSet);
         _EntityRelease(datareader);
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-
     return result;
 }
 
@@ -584,7 +590,7 @@ gapi_dataReader_create_view (
 
     datareader = gapi_dataReaderClaim(_this, NULL);
 
-    if ( datareader && _Entity(datareader)->enabled ) {
+    if ( datareader && _EntityEnabled(datareader)) {
         if ( qos == GAPI_DATAVIEW_QOS_DEFAULT ) {
             viewQos = (gapi_dataReaderViewQos *)&datareader->_defDataReaderViewQos;
         } else {
@@ -594,7 +600,6 @@ gapi_dataReader_create_view (
         if (gapi_dataReaderViewQosIsConsistent(viewQos,&context) == GAPI_RETCODE_OK) {
             view = _DataReaderViewNew (viewQos, datareader);
             if ( view ) {
-                gapi_setAdd(datareader->viewSet, (gapi_object)view);
                 _ENTITY_REGISTER_OBJECT(_Entity(datareader), (_Object)view);
             }
         }
@@ -613,6 +618,7 @@ gapi_dataReader_delete_view (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _DataReader datareader;
     _DataReaderView view = NULL;
+    c_bool contains;
 
     gapi_context context;
 
@@ -623,31 +629,26 @@ gapi_dataReader_delete_view (
     if ( datareader != NULL ) {
         view = gapi_dataReaderViewClaim(a_view, NULL);
         if ( view != NULL ) {
-            gapi_setIter iterSet = gapi_setFind (datareader->viewSet,
-                                                 (gapi_object)view);
-            if ( iterSet != NULL ) {
-                if ( gapi_setIterObject(iterSet) != NULL ) {
-                    if ( _DataReaderViewPrepareDelete(view, &context) ) {
-                        gapi_setRemove(datareader->viewSet, (gapi_object)view);
-                        _DataReaderViewFree(view);
-                        view = NULL;
-                    } else {
-                        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-                   }
+            contains = u_dataReaderContainsView(U_DATAREADER_GET(datareader),
+                                                U_DATAREADERVIEW_GET(view));
+            if (contains) {
+                if (_DataReaderViewPrepareDelete(view,&context)) {
+                    _DataReaderViewFree(view);
+                    view = NULL;
                 } else {
                     result = GAPI_RETCODE_PRECONDITION_NOT_MET;
                 }
-                gapi_setIterFree(iterSet);
             } else {
-                result = GAPI_RETCODE_OUT_OF_RESOURCES;
+                result = GAPI_RETCODE_PRECONDITION_NOT_MET;
             }
+            _EntityRelease(view);
         } else {
             result = GAPI_RETCODE_BAD_PARAMETER;
         }
+        _EntityRelease(datareader);
+    } else {
+        result = GAPI_RETCODE_ALREADY_DELETED;
     }
-    _EntityRelease(view);
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -674,7 +675,7 @@ gapi_dataReader_set_qos (
         }
     }
 
-    if (( result == GAPI_RETCODE_OK )  && (_Entity(dataReader)->enabled)){
+    if (( result == GAPI_RETCODE_OK )  && (_EntityEnabled(dataReader))){
         gapi_dataReaderQos * existing_qos = gapi_dataReaderQos__alloc();
 
         result = gapi_dataReaderQosCheckMutability(qos,
@@ -718,7 +719,6 @@ gapi_dataReader_get_qos (
     if ( dataReader && qos ) {
         _DataReaderGetQos(dataReader, qos);
     }
-
     _EntityRelease(dataReader);
     return result;
 }
@@ -735,7 +735,7 @@ gapi_dataReader_set_listener (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if ( datareader ) {
-        _DataReaderStatus status;
+        _Status status;
 
         if ( a_listener ) {
             datareader->_Listener = *a_listener;
@@ -743,15 +743,15 @@ gapi_dataReader_set_listener (
             memset(&datareader->_Listener, 0, sizeof(datareader->_Listener));
         }
 
-        status = _DataReaderStatus(_EntityStatus(datareader));
-        if ( _DataReaderStatusSetListener(status, a_listener, mask) ) {
+        status = _EntityStatus(datareader);
+        if ( _StatusSetListener(status,
+                                (struct gapi_listener *)a_listener,
+                                mask) )
+        {
             result = GAPI_RETCODE_OK;
         }
-
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -766,12 +766,10 @@ gapi_dataReader_get_listener (
 
     if ( datareader != NULL ) {
         listener = datareader->_Listener;
+        _EntityRelease(datareader);
     } else {
         memset(&listener, 0, sizeof(listener));
     }
-
-    _EntityRelease(datareader);
-
     return listener;
 }
 
@@ -786,9 +784,8 @@ gapi_dataReader_get_topicdescription (
     datareader = gapi_dataReaderClaim(_this, NULL);
     if ( datareader != NULL ) {
         topicDescription = (gapi_topicDescription)_EntityHandle(datareader->topicDescription);
+        _EntityRelease(datareader);
     }
-    _EntityRelease(datareader);
-
     return topicDescription;
 }
 
@@ -798,13 +795,14 @@ gapi_dataReader_get_subscriber (
 {
     gapi_subscriber subscriber = NULL;
     _DataReader datareader;
+    u_subscriber uSubscriber;
 
     datareader = gapi_dataReaderClaim(_this, NULL);
     if ( datareader != NULL ) {
-        subscriber = (gapi_subscriber)_EntityHandle(datareader->subscriber);
+        uSubscriber = u_dataReaderSubscriber(U_DATAREADER_GET(datareader));
+        subscriber = u_entityGetUserData(u_entity(uSubscriber));
+        _EntityRelease(datareader);
     }
-    _EntityRelease(datareader);
-
     return subscriber;
 }
 
@@ -841,16 +839,15 @@ copy_sample_rejected_status(
 
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_sample_rejected_status (
     _DataReader _this,
-    c_bool reset,
     gapi_sampleRejectedStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetSampleRejectedStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_sample_rejected_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -867,17 +864,15 @@ gapi_dataReader_get_sample_rejected_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_sample_rejected_status (
                          datareader,
-                         TRUE,
                          status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
 
     return result;
 }
@@ -903,16 +898,15 @@ copy_liveliness_changed_status(
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_liveliness_changed_status (
     _DataReader _this,
-    c_bool reset,
     gapi_livelinessChangedStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetLivelinessChangedStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_liveliness_changed_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -929,18 +923,15 @@ gapi_dataReader_get_liveliness_changed_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_liveliness_changed_status (
                          datareader,
-                         TRUE,
                          status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -952,7 +943,7 @@ copy_deadline_missed_status(
     struct v_deadlineMissedInfo *from;
     gapi_requestedDeadlineMissedStatus *to;
     v_handleResult result;
-    v_public instance;
+    v_object instance;
 
     from = (struct v_deadlineMissedInfo *)info;
     to = (gapi_requestedDeadlineMissedStatus *)arg;
@@ -960,25 +951,23 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    result = v_handleClaim(from->instanceHandle, (v_object*)&instance);
+    result = v_handleClaim(from->instanceHandle, &instance);
     if (result == V_HANDLE_OK) {
         to->last_instance_handle = u_instanceHandleNew(v_public(instance));
         result = v_handleRelease(from->instanceHandle);
     }
-
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_requested_deadline_missed_status (
     _DataReader _this,
-    c_bool reset,
     gapi_requestedDeadlineMissedStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetDeadlineMissedStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_deadline_missed_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -995,18 +984,15 @@ gapi_dataReader_get_requested_deadline_missed_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_requested_deadline_missed_status(
                          datareader,
-                         TRUE,
                          status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -1040,16 +1026,15 @@ copy_incompatible_qos_status(
     return result;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_requested_incompatible_qos_status (
     _DataReader _this,
-    c_bool reset,
     gapi_requestedIncompatibleQosStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetIncompatibleQosStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_incompatible_qos_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -1066,18 +1051,15 @@ gapi_dataReader_get_requested_incompatible_qos_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_requested_incompatible_qos_status(
                           datareader,
-                          TRUE,
                           status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -1094,22 +1076,21 @@ copy_subscription_matched_status(
 
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
-    to->current_count = from->totalCount;
-    to->current_count_change = from->totalChanged;
+    to->current_count = from->currentCount;
+    to->current_count_change = from->currentChanged;
     to->last_publication_handle = u_instanceHandleFromGID(from->instanceHandle);
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_subscription_matched_status (
     _DataReader _this,
-    c_bool reset,
     gapi_subscriptionMatchedStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetSubscriptionMatchStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_subscription_matched_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -1126,18 +1107,15 @@ gapi_dataReader_get_subscription_matched_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_subscription_matched_status (
                          datareader,
-                         TRUE,
                          status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -1158,16 +1136,15 @@ copy_sample_lost_status(
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _DataReader_get_sample_lost_status (
     _DataReader _this,
-    c_bool reset,
     gapi_sampleLostStatus *status)
 {
     u_result uResult;
     uResult = u_readerGetSampleLostStatus(
                   u_reader(U_DATAREADER_GET(_this)),
-                  reset,
+                  TRUE,
                   copy_sample_lost_status,
                   status);
     return kernelResultToApiResult(uResult);
@@ -1184,18 +1161,15 @@ gapi_dataReader_get_sample_lost_status (
     datareader = gapi_dataReaderClaim(_this, &result);
 
     if (datareader != NULL) {
-        if (_Entity(datareader)->enabled ) {
+        if (_EntityEnabled(datareader)) {
             result = _DataReader_get_sample_lost_status (
                           datareader,
-                          TRUE,
                           status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -1214,7 +1188,7 @@ gapi_dataReader_wait_for_historical_data (
     if (datareader) {
         if ( !max_wait || !gapi_validDuration(max_wait)) {
             result = GAPI_RETCODE_BAD_PARAMETER;
-        } else if (!_Entity(datareader)->enabled) {
+        } else if (!_EntityEnabled(datareader)) {
             result = GAPI_RETCODE_NOT_ENABLED;
         } else {
             kernelCopyInDuration(max_wait, &c_time_max_wait);
@@ -1224,10 +1198,8 @@ gapi_dataReader_wait_for_historical_data (
                           c_time_max_wait);
             result = kernelResultToApiResult(uResult);
         }
+        _EntityRelease(datareader);
     }
-
-    _EntityRelease(datareader);
-
     return result;
 }
 
@@ -1256,7 +1228,7 @@ gapi_dataReader_wait_for_historical_data_w_condition (
     if (datareader) {
         if ( !max_wait || !gapi_validDuration(max_wait)) {
             result = GAPI_RETCODE_BAD_PARAMETER;
-        } else if (!_Entity(datareader)->enabled) {
+        } else if (!_EntityEnabled(datareader)) {
             result = GAPI_RETCODE_NOT_ENABLED;
         } else if(filter_parameters && !gapi_stringSeqValid(filter_parameters)){
             result = GAPI_RETCODE_BAD_PARAMETER;
@@ -1292,11 +1264,48 @@ gapi_dataReader_wait_for_historical_data_w_condition (
 
             result = kernelResultToApiResult(uResult);
         }
+        _EntityRelease(datareader);
+    }
+    return result;
+}
+
+
+static v_result
+copy_matched_publication(
+    c_voidp info,
+    c_voidp arg)
+{
+	struct v_publicationInfo *publicationInfo;
+	gapi_instanceHandleSeq *to;
+    gapi_instanceHandle_t *tmp_buffer;
+
+    publicationInfo = (struct v_publicationInfo*)info;
+    to = (gapi_instanceHandleSeq *)arg;
+
+    if (to->_maximum <= to->_length) {
+        tmp_buffer = to->_buffer;
+        to->_buffer = gapi_instanceHandleSeq_allocbuf(to->_length + 10);
+        to->_maximum = to->_length + 10;
+        memcpy(to->_buffer, tmp_buffer, to->_length);
+        gapi_free(tmp_buffer);
     }
 
-    _EntityRelease(datareader);
+    to->_buffer[to->_length] = u_instanceHandleFromGID(publicationInfo->key);
+    ++to->_length;
+    return V_RESULT_OK;
+}
 
-    return result;
+static gapi_returnCode_t
+_DataReader_get_matched_publications (
+    _DataReader _this,
+    gapi_instanceHandleSeq *publication_handles)
+{
+    u_result uResult;
+    uResult = u_readerGetMatchedPublications(
+                  U_DATAREADER_GET(_this),
+                  copy_matched_publication,
+                  publication_handles);
+    return kernelResultToApiResult(uResult);
 }
 
 gapi_returnCode_t
@@ -1304,7 +1313,38 @@ gapi_dataReader_get_matched_publications (
     gapi_dataReader _this,
     gapi_instanceHandleSeq *publication_handles)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result;
+    _DataReader datareader;
+
+    datareader = gapi_dataReaderClaim(_this, &result);
+    if (datareader != NULL) {
+        if (_EntityEnabled(datareader)) {
+            result = _DataReader_get_matched_publications (
+                          datareader,
+                          publication_handles);
+        } else {
+            result=GAPI_RETCODE_NOT_ENABLED;
+        }
+    }
+
+    _EntityRelease(datareader);
+
+    return result;
+}
+
+static gapi_returnCode_t
+_DataReader_get_matched_publication_data (
+    _DataReader _this,
+    gapi_publicationBuiltinTopicData *publication_data,
+    const gapi_instanceHandle_t publication_handle)
+{
+    u_result uResult;
+    uResult = u_readerGetMatchedPublicationData(
+                  U_DATAREADER_GET(_this),
+                  publication_handle,
+                  gapi_publicationBuiltinTopicData__copyOut,
+                  publication_data);
+    return kernelResultToApiResult(uResult);
 }
 
 gapi_returnCode_t
@@ -1313,98 +1353,55 @@ gapi_dataReader_get_matched_publication_data (
     gapi_publicationBuiltinTopicData *publication_data,
     const gapi_instanceHandle_t publication_handle)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
-}
+    gapi_returnCode_t result;
+    _DataReader datareader;
 
-void
-_DataReaderSetDeleteAction (
-    _DataReader reader,
-    gapi_deleteEntityAction action,
-    void *argument)
-{
-     gapi_setIter iter;
-    _Condition condition;
-
-     assert(reader);
-
-    _ObjectSetDeleteAction(_Object(reader), action, argument);
-
-    iter = gapi_setFirst(reader->conditionSet);
-    if ( iter ) {
-        condition = _Condition(gapi_setIterObject(iter));
-        while ( condition ) {
-            _EntityClaim(condition);
-            _ObjectSetDeleteAction(_Object(condition), action, argument);
-            _EntityRelease(condition);
-            gapi_setIterNext(iter);
-            condition = _Condition(gapi_setIterObject(iter));
+    datareader = gapi_dataReaderClaim(_this, &result);
+    if (datareader != NULL) {
+        if (_EntityEnabled(datareader)) {
+            result = _DataReader_get_matched_publication_data (
+                          datareader,
+                          publication_data,
+                          publication_handle);
+        } else {
+            result=GAPI_RETCODE_NOT_ENABLED;
         }
-        gapi_setIterFree(iter);
     }
+
+    _EntityRelease(datareader);
+
+    return result;
 }
-
-#if 1
-
-gapi_boolean
-_DataReaderHasSamplesNotRead (
-    _DataReader dataReader)
-{
-    dataReader->reader_mask.sampleStateMask   = GAPI_NOT_READ_SAMPLE_STATE;
-    dataReader->reader_mask.viewStateMask     = 0U;
-    dataReader->reader_mask.instanceStateMask = 0U;
-
-
-    return u_queryTest(dataReader->uQuery);
-}
-
-gapi_boolean
-_DataReaderContainsSamples (
-    _DataReader dataReader,
-    const gapi_sampleStateMask   sample_states,
-    const gapi_viewStateMask     view_states,
-    const gapi_instanceStateMask instance_states)
-{
-    dataReader->reader_mask.sampleStateMask   = sample_states;
-    dataReader->reader_mask.viewStateMask     = view_states;
-    dataReader->reader_mask.instanceStateMask = instance_states;
-
-    return u_queryTest(dataReader->uQuery);
-}
-#endif
-
-static void
-_DataReaderNotifyDataAvailable (
-    _DataReader _this)
-{
-    _Status status = _Entity(_this)->status;
-    gapi_listener_DataAvailableListener callback;
-    void *listenerData;
-    gapi_object handle = _EntityHandle(_this);
-
-    callback     = status->callbackInfo.on_data_available;
-    listenerData = status->callbackInfo.listenerData;
-
-    _EntitySetBusy(_this);
-    _EntityRelease(_this);
-    if ( callback && listenerData ) {
-        callback(listenerData, handle);
-    }
-    gapi_objectClearBusy(handle);
-    gapi_dataReaderClaim(handle, NULL);
-}
-
 
 void
 _DataReaderTriggerNotify (
-    _DataReader dataReader)
+    _DataReader _this)
 {
-    assert(dataReader);
+    _Status status;
+    gapi_listener_DataAvailableListener callback;
+    void *listenerData;
+    gapi_object handle;
 
-    _EntityClaim(dataReader);
-    if ( _DataReaderHasSamplesNotRead(dataReader) ) {
-        _DataReaderNotifyDataAvailable(dataReader);
+    assert(_this);
+
+    status = _Entity(_this)->status;
+    callback     = status->callbackInfo.on_data_available;
+    listenerData = status->callbackInfo.listenerData;
+
+    if ( callback && listenerData ) {
+        _this->reader_mask.sampleStateMask   = GAPI_NOT_READ_SAMPLE_STATE;
+        _this->reader_mask.viewStateMask     = 0U;
+        _this->reader_mask.instanceStateMask = 0U;
+
+        if (u_dataReaderDataAvailableTest(U_DATAREADER_GET(_this))) {
+            handle = _EntityHandle(_this);
+            _EntitySetBusy(_this);
+            _EntityRelease(_this);
+            callback(listenerData, handle);
+            gapi_objectClearBusy(handle);
+            (void)gapi_dataReaderClaim(handle, NULL);
+        }
     }
-    _EntityRelease(dataReader);
 }
 
 gapi_returnCode_t
@@ -1429,10 +1426,8 @@ gapi_dataReader_set_default_datareaderview_qos (
         } else {
             result = GAPI_RETCODE_BAD_PARAMETER;
         }
+        _EntityRelease(dataReader);
     }
-
-    _EntityRelease(dataReader);
-
     return result;
 }
 
@@ -1446,10 +1441,12 @@ gapi_dataReader_get_default_datareaderview_qos (
 
     datareader = gapi_dataReaderClaim(_this, &result);
 
-    if ( datareader && qos ) {
-        gapi_dataReaderViewQosCopy (&datareader->_defDataReaderViewQos, qos);
+    if ( datareader) {
+        if ( qos ) {
+            gapi_dataReaderViewQosCopy (&datareader->_defDataReaderViewQos, qos);
+        }
+        _EntityRelease(datareader);
     }
-    _EntityRelease(datareader);
     return result;
 }
 
@@ -1500,38 +1497,6 @@ resetDataAvailable(
     v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
 }
 
-static void
-notifyDataOnReaders (
-    _DataReader _this,
-    gapi_object target)
-{
-    c_bool dataAvailable;
-    u_result result;
-    u_entity entity;
-    _Subscriber subscriber;
-    gapi_object source;
-
-    entity = U_ENTITY_GET(_this);
-    assert(entity);
-    if (entity) {
-        dataAvailable = FALSE;
-
-        result = u_entityAction(entity,
-                                checkDataAvailability,
-                                &dataAvailable);
-
-        assert(result == U_RESULT_OK);
-
-        if ((result == U_RESULT_OK) && (dataAvailable)) {
-            source = _EntityRelease(_this);
-            subscriber = _Subscriber(gapi_entityClaim(target,NULL));
-            _SubscriberOnDataOnReaders(subscriber);
-            _EntityRelease(subscriber);
-            gapi_entityClaim(source, NULL);
-        }
-    }
-}
-
 gapi_returnCode_t
 _DataReaderGetKeyValue (
     _DataReader _this,
@@ -1556,464 +1521,120 @@ _DataReaderGetKeyValue (
     return result;
 }
 
-static void
-onRequestedDeadlineMissed (
-    _DataReader _this)
-{
-    gapi_requestedDeadlineMissedStatus info;
-    gapi_listener_RequestedDeadlineMissedListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataReader_get_requested_deadline_missed_status(
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_REQUESTED_DEADLINE_MISSED_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_requested_deadline_missed;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onRequestedIncompatibleQos (
-    _DataReader _this)
-{
-    gapi_requestedIncompatibleQosStatus info;
-    gapi_qosPolicyCount policyCount[MAX_POLICY_COUNT_ID];
-    gapi_listener_RequestedIncompatibleQosListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        info.policies._maximum = MAX_POLICY_COUNT_ID;
-        info.policies._length  = 0;
-        info.policies._buffer  = policyCount;
-
-        result = _DataReader_get_requested_incompatible_qos_status(
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_REQUESTED_INCOMPATIBLE_QOS_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_requested_incompatible_qos;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onSampleRejected (
-    _DataReader _this)
-{
-    gapi_listener_SampleRejectedListener callback;
-    gapi_sampleRejectedStatus info;
-    gapi_returnCode_t result;
-    gapi_object source;
-    gapi_object target;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataReader_get_sample_rejected_status(
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_SAMPLE_REJECTED_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_sample_rejected;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onLivelinessChanged (
-    _DataReader _this)
-{
-    gapi_listener_LivelinessChangedListener callback;
-    gapi_livelinessChangedStatus info;
-    gapi_returnCode_t result;
-    gapi_object source;
-    gapi_object target;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataReader_get_liveliness_changed_status(
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if either alive_count_change or not_alive_count_change
-         * are non zero
-         */
-
-        if (result == GAPI_RETCODE_OK &&
-            (info.alive_count_change != 0 || info.not_alive_count_change != 0)) {
-
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_LIVELINESS_CHANGED_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_liveliness_changed;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-/*     void
- *     on_data_available(
- *         in DataReader reader);
- */
-static void
-onDataAvailable (
-    _DataReader _this)
-{
-    gapi_listener_DataAvailableListener callback;
-    gapi_object target;
-    gapi_object source;
-    _Entity entity;
-    _Status status;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        status = _Entity(_this)->status;
-        target = _StatusFindTarget(status,
-                                   GAPI_DATA_ON_READERS_STATUS);
-
-        /* The behaviour for the triggering of data_on_readers and data_available is described
-         * in the DDS specification:
-         * first, the middleware tries to trigger the SubscriberListener operation on_data_on_readers
-         * with a parameter of the related Subscriber;  if this does not succeed (no listener or
-         * operation non-enabled), it tries to trigger on_data_available on all the related
-         * DataReaderListener objects, with as parameter the related DataReader.
-         * This is implemented by the following if else block.
-         */
-
-        if ( target != NULL ) {
-            notifyDataOnReaders(_this, target);
-        } else {
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_DATA_AVAILABLE_STATUS);
-
-            if (target) {
-                u_result result;
-
-                /* No need to check the status again, control wouldn't be here unless the
-                 * data was available on this reader.  Just reset the status here before
-                 * the callback to the listener is made (a DDS 1.2 requirement)
-                 */
-
-                result = u_entityAction(U_ENTITY_GET(_this),
-                                        resetDataAvailable,
-                                        NULL);
-
-                assert(result == U_RESULT_OK);
-
-                if (result == U_RESULT_OK) {
-
-                    if ( target != source ) {
-                        entity = gapi_entityClaim(target, NULL);
-                        status = entity->status;
-                    } else {
-                        entity = NULL;
-                    }
-
-                    callback = status->callbackInfo.on_data_available;
-                    listenerData = status->callbackInfo.listenerData;
-
-                    _EntitySetBusy(_this);
-                    _EntityRelease(_this);
-
-                    if (entity) {
-                        _EntitySetBusy(entity);
-                        _EntityRelease(entity);
-                        callback(listenerData, source);
-                        gapi_objectClearBusy(target);
-                    } else {
-                        callback(listenerData, source);
-                    }
-
-                    gapi_objectClearBusy(source);
-                    gapi_entityClaim(source, NULL);
-                }
-            }
-        }
-    }
-}
-
-static void
-onSubscriptionMatch (
-    _DataReader _this)
-{
-    gapi_subscriptionMatchedStatus info;
-    gapi_listener_SubscriptionMatchedListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Status status;
-    _Entity entity;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataReader_get_subscription_matched_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_LIVELINESS_CHANGED_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_subscription_match;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
-static void
-onSampleLost (
-    _DataReader _this)
-{
-    gapi_sampleLostStatus info;
-    gapi_listener_SampleLostListener callback;
-    gapi_returnCode_t result;
-    gapi_object target;
-    gapi_object source;
-    _Status status;
-    _Entity entity;
-    c_voidp listenerData;
-
-    if ( _this ) {
-        result = _DataReader_get_sample_lost_status (
-                     _this, TRUE, &info);
-
-        /* Only allow the callback if there is a change since the last
-         * callback, i.e if total_count_change is non zero
-         */
-
-        if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
-            status = _Entity(_this)->status;
-            source = _EntityHandle(_this);
-            target = _StatusFindTarget(status,
-                                       GAPI_SAMPLE_LOST_STATUS);
-            if (target) {
-                if ( target != source ) {
-                    entity = gapi_entityClaim(target, NULL);
-                    status = entity->status;
-                } else {
-                    entity = NULL;
-                }
-
-                callback = status->callbackInfo.on_sample_lost;
-                listenerData = status->callbackInfo.listenerData;
-
-                _EntitySetBusy(_this);
-                _EntityRelease(_this);
-
-                if (entity) {
-                    _EntitySetBusy(entity);
-                    _EntityRelease(entity);
-                    callback(listenerData, source, &info);
-                    gapi_objectClearBusy(target);
-                } else {
-                    callback(listenerData, source, &info);
-                }
-
-                gapi_objectClearBusy(source);
-                gapi_entityClaim(source, NULL);
-            }
-        }
-    }
-}
-
 void
 _DataReaderNotifyListener(
     _DataReader _this,
     gapi_statusMask triggerMask)
 {
+    _Status status;
+    gapi_object source;
+    gapi_returnCode_t result;
+
+    if (_this == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "_DataReaderNotifyListener",0,
+                  "Specified DataReader = NULL.");
+        return;
+    }
+    status = _EntityStatus(_this);
+    source = _EntityHandle(_this);
+
     while ( _this && (triggerMask != GAPI_STATUS_KIND_NULL) ) {
         if ( triggerMask & GAPI_DATA_AVAILABLE_STATUS ) {
-            onDataAvailable(_this);
+            /* The behaviour for the triggering of data_on_readers and
+             * data_available is described in the DDS specification:
+             * first, the middleware tries to trigger the SubscriberListener
+             * operation on_data_on_readers with a parameter of the related
+             * Subscriber;
+             * if this does not succeed (no listener or operation non-enabled),
+             * it tries to trigger on_data_available on all the related
+             * DataReaderListener objects, with as parameter the related DataReader.
+             * This is implemented by the following if else block.
+             */
+            if (!_StatusNotifyDataOnReaders(status, source)) {
+                _StatusNotifyDataAvailable(status, source);
+            }
             triggerMask &= ~GAPI_DATA_AVAILABLE_STATUS;
         }
         if ( triggerMask & GAPI_SAMPLE_REJECTED_STATUS ) {
-            onSampleRejected(_this);
+            gapi_sampleRejectedStatus info;
+
+            result = _DataReader_get_sample_rejected_status(_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifySampleRejected(status, source, &info);
+            }
             triggerMask &= ~GAPI_SAMPLE_REJECTED_STATUS;
         }
         if ( triggerMask & GAPI_LIVELINESS_CHANGED_STATUS ) {
-            onLivelinessChanged(_this);
+            gapi_livelinessChangedStatus info;
+
+            result = _DataReader_get_liveliness_changed_status(_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if either alive_count_change or
+             * not_alive_count_change are non zero.
+             */
+            if (result == GAPI_RETCODE_OK &&
+                (info.alive_count_change != 0 ||
+                 info.not_alive_count_change != 0))
+            {
+                _StatusNotifyLivelinessChanged(status, source, &info);
+            }
             triggerMask &= ~GAPI_LIVELINESS_CHANGED_STATUS;
         }
         if ( triggerMask & GAPI_REQUESTED_DEADLINE_MISSED_STATUS ) {
-            onRequestedDeadlineMissed(_this);
+            gapi_requestedDeadlineMissedStatus info;
+
+            result = _DataReader_get_requested_deadline_missed_status(_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifyRequestedDeadlineMissed(status, source, &info);
+            }
             triggerMask &= ~GAPI_REQUESTED_DEADLINE_MISSED_STATUS;
         }
         if ( triggerMask & GAPI_REQUESTED_INCOMPATIBLE_QOS_STATUS ) {
-            onRequestedIncompatibleQos(_this);
+            gapi_requestedIncompatibleQosStatus info;
+            gapi_qosPolicyCount policyCount[MAX_POLICY_COUNT_ID];
+
+            info.policies._maximum = MAX_POLICY_COUNT_ID;
+            info.policies._length  = 0;
+            info.policies._buffer  = policyCount;
+
+            result = _DataReader_get_requested_incompatible_qos_status(_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifyRequestedIncompatibleQos(status, source, &info);
+            }
             triggerMask &= ~GAPI_REQUESTED_INCOMPATIBLE_QOS_STATUS;
         }
         if ( triggerMask & GAPI_SAMPLE_LOST_STATUS ) {
-            onSampleLost(_this);
+            gapi_sampleLostStatus info;
+
+            result = _DataReader_get_sample_lost_status (_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.total_count_change != 0) {
+                _StatusNotifySampleLost(status, source, &info);
+            }
             triggerMask &= ~GAPI_SAMPLE_LOST_STATUS;
         }
         if ( triggerMask & GAPI_SUBSCRIPTION_MATCH_STATUS ) {
-            onSubscriptionMatch(_this);
+            gapi_subscriptionMatchedStatus info;
+
+            result = _DataReader_get_subscription_matched_status (_this, &info);
+            /* Only allow the callback if there is a change since the last
+             * callback, i.e if total_count_change is non zero
+             */
+            if (result == GAPI_RETCODE_OK && info.current_count_change != 0) {
+                _StatusNotifySubscriptionMatch(status, source, &info);
+            }
             triggerMask &= ~GAPI_SUBSCRIPTION_MATCH_STATUS;
         }
     }

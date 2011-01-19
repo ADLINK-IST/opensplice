@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -25,6 +25,7 @@
 #include "kernelModule.h"
 
 #include "os_report.h"
+#include "os_stdlib.h"
 
 #include "u_user.h"
 
@@ -76,6 +77,9 @@ getStatusMask(
     } else {
         *mask = v_statusGetMask(e->status);
     }
+
+//    c_long *mask = (c_long *)arg;
+//    *mask = v_statusGetMask(e->status);
 }
 
 c_long
@@ -180,6 +184,9 @@ kernelResultToApiResult(
             break;
         case U_RESULT_PRECONDITION_NOT_MET:
             result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+            break;
+        case U_RESULT_ALREADY_DELETED:
+            result = GAPI_RETCODE_ALREADY_DELETED;
             break;
         case U_RESULT_UNSUPPORTED:
             result = GAPI_RETCODE_UNSUPPORTED;

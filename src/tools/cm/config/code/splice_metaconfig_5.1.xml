@@ -122,16 +122,28 @@
             <comment><![CDATA[
                     This element contains information about the nodal administration (shared memory) to be used.
             ]]></comment>
-            <leafLong name="Size" minOccurrences="1" maxOccurrences="1">
+            <leafSize name="Size" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
                         This element specifies the size of the shared memory segment holding the database. Change
                         this value if your system requires more memory than the default. Please note that the
                         operating system should be configured support the requested size. On most platforms you need
                         'root' privileges to set large sizes.
                 ]]></comment>
-                <minimum>1048567</minimum>
-                <default>10485670</default>
-            </leafLong>
+                <minimum>0</minimum>
+                <default>10485760</default>
+            </leafSize>
+            <leafSize name="Threshold" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                        This element specifies the threshold size used by OpenSplice DDS. Whenever there is less
+                        free shared memory then indicated by the threshold then no new allocations will be allowed
+                        within shared memory. Services are allowed to continue allocating shared memory until less then
+                        50% of the threshold value is available. It is strongly discouraged to configure a threshold
+                        value of less then the default value, but for some embedded systems it might be needed as
+                        only limited memory is available.
+                ]]></comment>
+                <minimum>0</minimum>
+                <default>1048576</default>
+            </leafSize>
             <leafString name="Address" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     <p>This element specifies the start address where the
@@ -419,7 +431,7 @@
             <comment><![CDATA[
                 This tag specifies the library to be loaded.
             ]]></comment>
-            <attributeString name="file_name" required="false">
+            <attributeString name="file_name" required="true">
                 <comment><![CDATA[
                     This attribute specifies the library to be loaded.
                 ]]></comment>
@@ -434,7 +446,7 @@
                 initially after loading the library to perform initialization of
                 the report facility if needed.
             ]]></comment>
-            <attributeString name="symbol_name" required="false">
+            <attributeString name="symbol_name" required="true">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be
                     assigned to the report Initialize operation. This operation
@@ -461,7 +473,7 @@
                 the report Report operation. This operation will be invoked
                 on all reports performed by the DDS service.
             ]]></comment>
-            <attributeString name="symbol_name" required="false">
+            <attributeString name="symbol_name" required="true">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be
                     assigned to the report Report operation. This operation will
@@ -478,7 +490,7 @@
                 invoked upon process termination to perform de-initialization
                 of the report facility if needed.
             ]]></comment>
-            <attributeString name="symbol_name" required="false">
+            <attributeString name="symbol_name" required="true">
                 <comment><![CDATA[
                     This attribute specifies the library symbol that will be assigned
                     to the report Finalize operation. This operation will be
@@ -489,7 +501,77 @@
                 <maxLength>0</maxLength>
             </attributeString>
         </element>
+        <leafBoolean name="SuppressDefaultLogs" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+            This attribute specifies whether the default error and info
+            report logs are to be produced when a user Report Plugin has
+            been defined.  If registration of the Report Plugin fails the 
+            default error and info logs will not be suppressed regardless of 
+            the value of this attribute
+            ]]></comment>
+            <default>false</default>
+        </leafBoolean>
     </element>
+    <element name="ResourceLimits" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+            This configuration tag allows for the specification of certain
+            characteristics of resource limits that will be applied throughout
+            the domain
+        ]]></comment>
+        <element name="MaxSamples" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This configuration tag allows for the specification of certain
+                characteristics of the max samples resource limit that will
+                be applied throughout the domain
+            ]]></comment>
+            <leafLong name="WarnAt" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                        This element specifies the number of samples that, once
+                        reached, will result in a warning message printed in
+                        the info log. This is to allow the detection of excessive
+                        use of resources within the domain more easily.
+                ]]></comment>
+                <minimum>1</minimum>
+                <default>5000</default>
+            </leafLong>
+        </element>
+        <element name="MaxInstances" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This configuration tag allows for the specification of certain
+                characteristics of the max instances resource limit that will
+                be applied throughout the domain
+            ]]></comment>
+            <leafLong name="WarnAt" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                        This element specifies the number of instances that, once
+                        reached, will result in a warning message printed in
+                        the info log. This is to allow the detection of excessive
+                        use of resources within the domain more easily.
+                ]]></comment>
+                <minimum>1</minimum>
+                <default>5000</default>
+            </leafLong>
+        </element>
+        <element name="MaxSamplesPerInstance" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This configuration tag allows for the specification of certain
+                characteristics of the max samples per instance resource limit
+                that will be applied throughout the domain
+            ]]></comment>
+            <leafLong name="WarnAt" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                        This element specifies the number of samples per
+                        instance that, once reached, will result in a warning
+                        message printed in the info log. This is to allow the
+                        detection of excessive use of resources within the
+                        domain more easily.
+                ]]></comment>
+                <minimum>1</minimum>
+                <default>5000</default>
+            </leafLong>
+        </element>
+    </element>
+
     <element name="PartitionAccess" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
             This configuration tag specifies the access rights for a
@@ -687,8 +769,8 @@
             ]]></comment>
             <element name="Scheduling" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
-                    This element specifies the type of OS scheduling class will be
-                    used by the thread that does local resends for buildin participant.
+                    This element specifies the type of OS scheduling class used by
+                    the thread that does local resends for the builtin participant.
                 ]]></comment>
                 <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
                     <comment><![CDATA[
@@ -912,7 +994,6 @@
                     ]]></comment>
                     <default>10.0</default>
                     <minimum>0.2</minimum>
-                    <maximum>20.0</maximum>
                     <attributeFloat name="update_factor" required="true">
                         <comment><![CDATA[
                             <p>In case of a (temporary) high CPU load, the scheduling
@@ -1260,9 +1341,9 @@
             <leafEnum name="StoreMode" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element specifies the plug-in that is used to store the
-                    persistent data on disk. With "XML" mode, the service will store 
-                    persistent data in XML files. With "MMF", the service will store 
-                    persistent data in a Memory Mapped File that exactly represents 
+                    persistent data on disk. With "XML" mode, the service will store
+                    persistent data in XML files. With "MMF", the service will store
+                    persistent data in a Memory Mapped File that exactly represents
                     the memory that is being used by the persistent store.
                     !!! The "MMF" store is currently only implemented on linux !!!
                 ]]></comment>
@@ -1270,33 +1351,34 @@
                 <value>MMF</value>
                 <default>XML</default>
             </leafEnum>
-            
+
             <element name="MemoryMappedFileStore" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
-                    This element specifies the memory mapped file store mode parameters. This 
-                    element is only valid when the Persistent/StoreMode element is set to "MMF". 
-                    The size and the starting address of the memory file must be supplied.
+                    This element specifies the memory mapped file store mode parameters. This
+                    element is only valid when the Persistent/StoreMode element is set to "MMF".
                 ]]></comment>
-                <leafLong name="Size" minOccurrences="1" maxOccurrences="1">
+                <leafLong name="Size" minOccurrences="0" maxOccurrences="1">
 	                <comment><![CDATA[
-	                        This element specifies the size of the memory mapped file used to 
-	                        store persistent data. Change this value according to the size of 
+	                        This element specifies the size of the memory mapped file used to
+	                        store persistent data. Change this value according to the size of
 	                        your persistent data. The file should be big enough to store:
 	                        <ul>
 	                        <li>all persistent data in your specified namespaces</li>
 	                        <li>PLUS a potential backup for all persistent data in
-	                        namespaces whose content may be replaced by persistent 
-	                        data from another master.</li> 
+	                        namespaces whose content may be replaced by persistent
+	                        data from another master.</li>
 	                        </ul>
-	                        As a rule of thumb, you could state that the persistent store should
-	                        be twice the size of your combined persistent data in your specified 
-	                        namespaces. Please note that the operating system should be configured 
-	                        to support the requested size.
+	                        <p>As a rule of thumb, you could state that the persistent store should
+	                        be twice the size of your combined persistent data in your specified
+	                        namespaces. Please note that the operating system should be configured
+	                        to support the requested size.</p>
+                            <p>If this value is not specified, the size of the persistent store will be
+                            set to twice the size of the shared memory segment.</p>
 	                ]]></comment>
 	                <minimum>1048576</minimum>
 	                <default>10485760</default>
             	</leafLong>
-                <leafString name="Address" minOccurrences="1" maxOccurrences="1">
+                <leafString name="Address" minOccurrences="0" maxOccurrences="1">
 	                <comment><![CDATA[
 	                    <p>This element specifies the start address where the
 	                    file is mapped into the virtual memory.
@@ -1304,6 +1386,8 @@
 	                    <p>Change this value if the default address is already in
 	                    use, for example by another Domain Service or another
 	                    product.</p>
+                        <p>If this value is not specified, the file will be mapped
+                        just after the shared memory segment.</p>
 	                ]]></comment>
 	                <maxLength>0</maxLength>
 	                <default>0x80000000</default>
@@ -1598,12 +1682,19 @@
             </leafString>
         </element>
         <element name="Tracing" minOccurrences="0" maxOccurrences="1">
-            <attributeBoolean name="synchronous" required="false">
-                <comment><![CDATA[
+            <comment><![CDATA[
                     This element controls the amount and type of information that is
                     written into the tracing log by the Durability Service. This is
                     useful to track the Durability Service during application
                     development. In the runtime system it should be turned off.
+            ]]></comment>
+            <attributeBoolean name="synchronous" required="false">
+                <comment><![CDATA[
+                    This attribute specifies whether tracing log updates are synchronous
+                    or not. A synchronous update is immediately flushed to disk: there is
+                    no buffering and therefore some performance overhead. Only use this
+                    option if you are debugging and you want to make sure all Tracing info
+                    is on disk when the service crashes.
                 ]]></comment>
                 <default>FALSE</default>
             </attributeBoolean>
@@ -1734,6 +1825,18 @@
                  ]]></comment>
                 <maxLength>15</maxLength>
                 <default>first available</default>
+                 <attributeBoolean name="forced" required="false">
+                    <comment><![CDATA[
+                    This attribute specifies whether only the selected NetworkInterfaceAddress should be used or others can be used too.
+                    <ul>
+                        <li>false - Specifies that the NetworkInterfaceAddress is first used but when not available another,
+                        when available, is used.
+                        (default).
+                        <li>true - Specifies that only the selected NetworkInterfaceAddress can be used.
+                     </ul>
+                     ]]></comment>
+                    <default>false</default>
+                </attributeBoolean>
             </leafString>
             <element name="Reconnection" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
@@ -1827,6 +1930,12 @@
                     <default>nullProfile</default>
                     <maxLength>0</maxLength>
                 </attributeString>
+                 <attributeLong name="MulticastTimeToLive" required="false">
+                    <comment><![CDATA[For each UDP packet sent out, The TimeToLive header value is set to this value for Multicast packets.]]></comment>
+                    <minimum>0</minimum>
+                    <maximum>255</maximum>
+                    <default>32</default>
+                 </attributeLong>
             </element>
             <element name="NetworkPartitions" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
@@ -1910,6 +2019,12 @@
 	                    <default>nullProfile</default>
 	                    <maxLength>0</maxLength>
                     </attributeString>
+                    <attributeLong name="MulticastTimeToLive" required="false">
+	                     <comment><![CDATA[For each UDP packet sent out, The TimeToLive header value is set to this value for Multicast packets.]]></comment>
+	                    <minimum>0</minimum>
+	                    <maximum>255</maximum>
+	                    <default>32</default>
+	                 </attributeLong>
                 </element>
             </element>
             <element name="IgnoredPartitions" minOccurrences="0" maxOccurrences="1">
@@ -2278,7 +2393,7 @@
                     <maximum>65535</maximum>
                     <default>3367</default>
                 </leafInt>
-                <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">
+                <leafSize name="FragmentSize" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         The networking module will fragment large message into smaller
                         fragments with size <b>FragmentSize</b>. These fragments
@@ -2288,7 +2403,7 @@
                     <minimum>200</minimum>
                     <maximum>65535</maximum>
                     <default>1300</default>
-                </leafInt>
+                </leafSize>
                 <leafInt name="Resolution" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         <p>The resolution indicates the number of milliseconds that
@@ -2341,14 +2456,15 @@
                         <minimum>1</minimum>
                         <default>400</default>
                     </leafInt>
-                    <leafInt name="MaxBurstSize" minOccurrences="0" maxOccurrences="1">
+                    <leafSize name="MaxBurstSize" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             Amount in bytes to be sent at maximum every
-                            "Resolution" milliseconds.
+                            "Resolution" milliseconds. The default value is set to 1GB per resolution tick. This can be
+                            considered "unlimited" as this far exceeds the capacity of modern physical networks.
                         ]]></comment>
                         <minimum>1024</minimum>
-                        <default>200000</default>
-                    </leafInt>
+                        <default>1073741824</default>
+                    </leafSize>
                     <leafInt name="ThrottleLimit" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             Throttling will enable you to further limit (below MaxBurstSize) the amount of data that is
@@ -2460,7 +2576,7 @@
                     ]]></comment>
                     <default>false</default>
                     </leafBoolean>
-                    <leafInt name="ReceiveBufferSize" minOccurrences="0" maxOccurrences="1">
+                    <leafSize name="ReceiveBufferSize" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             The UDP receive buffer of the best effort channel socket is
                             set to the value given. If many message are lost, the
@@ -2468,7 +2584,7 @@
                         ]]></comment>
                         <minimum>1024</minimum>
                         <default>1000000</default>
-                    </leafInt>
+                    </leafSize>
                     <element name="Scheduling" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             This element specifies the scheduling policies used to control the
@@ -2505,7 +2621,7 @@
                             <default>Default</default>
                         </leafEnum>
                     </element>
-                    <leafInt name="DefragBufferSize" minOccurrences="0" maxOccurrences="1">
+                    <leafSize name="DefragBufferSize" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             The maximum number of Fragment buffers that will be allocated for
                             this channel. These buffers are used to store incoming fragments
@@ -2513,7 +2629,7 @@
                         ]]></comment>
                         <minimum>500</minimum>
                         <default>5000</default>
-                    </leafInt>
+                    </leafSize>
                     <element name="SMPOptimization" minOccurrences="0" maxOccurrences="1">
                         <comment><![CDATA[
                             This option will distribute the processing done for incoming fragements over
@@ -2743,14 +2859,14 @@
                     <minimum>1</minimum>
                     <default>6</default>
                 </leafInt>
-                <leafInt name="ReceiveBufferSize" minOccurrences="0" maxOccurrences="1">
+                <leafSize name="ReceiveBufferSize" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         The UDP receive buffer of the Discovery Channel socket is set to the value given. If
                         many message are lost, the receive buffer size has to be increased.
                     ]]></comment>
                     <minimum>1</minimum>
                     <default>1000000</default>
-                </leafInt>
+                </leafSize>
             </element>
         </element>
 
@@ -3006,15 +3122,15 @@
                     <maximum>10000</maximum>
                     <default>500</default>
                 </leafInt>
-                <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">
+                <leafSize name="FragmentSize" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         This element defines the length of data fragments sent
                         by this channel.
                     ]]></comment>
                     <minimum>100</minimum>
                     <maximum>10000</maximum>
-                    <default>1200</default>
-                </leafInt>
+                    <default>1300</default>
+                </leafSize>
                 <leafInt name="PortNr" minOccurrences="0" maxOccurrences="1">
                     <comment><![CDATA[
                         Messages for the channel are sent to the given port number.
@@ -3022,7 +3138,7 @@
                     ]]></comment>
                     <minimum>0</minimum>
                     <maximum>65535</maximum>
-                    <default>53340</default>
+                    <default>53370</default>
                 </leafInt>
             </element>
         </element>
@@ -3047,15 +3163,15 @@
                 <maximum>65535</maximum>
                 <default>7400</default>
             </leafInt>
-            <leafInt name="FragmentSize" minOccurrences="0" maxOccurrences="1">
+            <leafSize name="FragmentSize" minOccurrences="0" maxOccurrences="1">
                 <comment><![CDATA[
                     This element defines the length of data fragments sent by
                     this channel.
                 ]]></comment>
                 <minimum>100</minimum>
                 <maximum>10000</maximum>
-                <default>1200</default>
-            </leafInt>
+                <default>1300</default>
+            </leafSize>
         </element>
         <element name="Tracing" minOccurrences="0" maxOccurrences="1">
             <comment><![CDATA[
@@ -3113,6 +3229,166 @@
                     <default>239.255.0.1</default>
                 </attributeString>
             </element>
+        </element>
+    </element>
+
+    <element name="DDSI2Service" minOccurrences="0" maxOccurrences="0">
+        <comment><![CDATA[
+            The DDSI2 Networking configuration expects a root element named
+            OpenSplice/DDSI2Service. Within this root element, the networking
+            daemon will look for several child-elements.
+        ]]></comment>
+        <attributeString name="name" required="true">
+            <comment><![CDATA[
+                This attribute identifies the configuration for the DDSI2
+                Networking Service. Multiple Networking Service configurations
+                can be specified in one single resource. The actual applicable
+                configuration is determined by the value of the name attribute,
+                which must match the specified under the element
+                OpenSplice/Domain/Service[@name] in the Domain Service configuration.
+            ]]></comment>
+            <maxLength>0</maxLength>
+            <default>ddsi2</default>
+        </attributeString>
+        <element name="General" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                The General element describes the networking service as a whole.
+            ]]></comment>
+            <leafString name="NetworkInterfaceAddress" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies which network interface card should
+                    be used.
+                    Every DDSI2 Networking Service is bound to only one network
+                    interface card (NIC). The card can be uniquely identified by
+                    its corresponding IP address. If the value "AUTO" is entered
+		    here, the OpenSplice middleware will try to look up an
+		    interface that has the required capabilities.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>AUTO</default>
+            </leafString>
+	    <leafBoolean name="AllowMulticast" minOccurrences="0" maxOccurrences="1">
+	        <comment><![CDATA[
+		    This element specifies whether the DDSI2 service may use
+		    IP multicasting.
+		    If set to FALSE, no multicast packets will ever be sent by
+		    the service, but it will still listen to multicast packets
+		    from other nodes. Generally speaking, the peer nodes will have
+		    to be listed as DDSI2Service/Discovery/Peer elements, but
+		    the service will automatically discover multicasting peers
+                    that advertise a unicast address.
+		    If set to TRUE, multicast is used preferentially. If any Peer
+		    elements are given, they will explicitly be included in the
+		    discovery by means of packets sent to the specified addresses.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>TRUE</default>
+	    </leafBoolean>
+	    <leafBoolean name="EnableMulticastLoopback" minOccurrences="0" maxOccurrences="1">
+	        <comment><![CDATA[
+		    This element specifies whether the DDSI2 service will allow
+		    IP multicast packets within the node to be visible to all
+		    DDSI participants in the node, including itself.
+		    It must be TRUE for intra-node multicast communications, but
+		    if a node runs only a single OpenSplice DDSI2 service and does
+		    not host any other DDSI-capable programs, it may be set to
+		    FALSE for improved performance.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>TRUE</default>
+	    </leafBoolean>
+	    <leafBoolean name="CoexistWithNativeNetworking" minOccurrences="0" maxOccurrences="1">
+	        <comment><![CDATA[
+		    This element specifies whether the OpenSplice DDSI2Service can
+		    operate in conjunction with the OpenSplice NetworkService.
+		    If FALSE, the DDSI2 service will take care of all
+		    communications, including those between OpenSplice nodes.
+		    If TRUE, the DDSI2 service will only communicate with DDS
+		    implementations other than OpenSplice. In this case the
+		    NetworkService must be configured as well.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>FALSE</default>
+	    </leafBoolean>
+        </element>
+        <element name="Discovery" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+	        The Discovery element allows specifying various parameters related
+	        to the discovery of peers.
+            ]]></comment>
+            <leafInt name="DomainId" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the DDSI domain id in which this
+                    instance of the DDSI2Service participates.
+                ]]></comment>
+                <minimum>0</minimum>
+                <maximum>229</maximum>
+                <default>0</default>
+            </leafInt>
+            <leafString name="ParticipantIndex" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the DDSI participant id used by this
+                    instance of the DDSI2 service for discovery purposes. Only one
+                    such participant id is used, independent of the number of
+                    actual DomainParticipants on the node.
+		    It is either "AUTO" (the default), which will attempt to
+		    automatically determine an available participant index, or a
+		    non-negative integer less than 120.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>AUTO</default>
+            </leafString>
+            <leafString name="Peer" minOccurrences="0" maxOccurrences="0">
+                <comment><![CDATA[
+                    This element specifies an IP address to which discovery
+                    packets must be sent, in addition to the default multicast
+                    address if multicasting is enabled (see
+                    DDSI2Service/General/AllowMulticast). Multiple Peers may be specified.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default></default>
+            </leafString>
+        </element>
+        <element name="Tracing" minOccurrences="0" maxOccurrences="1">
+            <comment><![CDATA[
+                This element controls the amount and type of information that is
+                written into the tracing log by the DDSI service. This is useful
+                to track the DDSI service during application development. In the
+                runtime system it should be turned off.
+            ]]></comment>
+            <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies the verbosity level of the logging.
+                ]]></comment>
+                <value>SEVERE</value>
+                <value>WARNING</value>
+                <value>INFO</value>
+                <value>CONFIG</value>
+                <value>FINE</value>
+                <value>FINER</value>
+                <value>FINEST</value>
+                <default>INFO</default>
+            </leafEnum>
+            <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This option specifies where the logging is printed to.
+                ]]></comment>
+                <maxLength>0</maxLength>
+                <default>ddsi-tracing-output.log</default>
+            </leafString>
+            <leafBoolean name="Timestamps" minOccurrences="0" maxOccurrences="1">
+                <comment><![CDATA[
+                    This element specifies whether the logging must contain timestamps.
+                ]]></comment>
+                <attributeBoolean name="absolute" required="false">
+                    <comment><![CDATA[
+                        This attribute specifies whether the timestamps are absolute or
+                        relative to the startup time of the service.
+                    ]]></comment>
+                    <default>true</default>
+                </attributeBoolean>
+                <default>true</default>
+            </leafBoolean>
         </element>
     </element>
 

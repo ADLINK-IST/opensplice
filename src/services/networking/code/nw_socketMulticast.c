@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,7 @@
 /* Implementation */
 #include "os_heap.h"
 #include "os_socket.h"
+#include "os_stdlib.h"
 #include "nw__socket.h"
 #include "nw_socket.h"
 #include "nw_socketMisc.h"
@@ -40,7 +41,9 @@ nw_socketRetrieveMCInterface(
     char *addressDefault;
     os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
+    nw_bool forced = SK_FALSE;
 
+    forced = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Interface),forced);
     success = sk_interfaceInfoRetrieveAllMC(&interfaceList, &nofInterfaces,
                                           sockfd);
 
@@ -74,8 +77,19 @@ nw_socketRetrieveMCInterface(
                     i++;
                 }
             }
-            if (!found) {
-            	result = SK_FALSE;
+            if (!found && !forced) {
+                NW_REPORT_WARNING_2("retrieving multicast interface",
+                    "Requested interface %s not found or not multicast enabled, "
+                    "using %s instead",
+                    addressLookingFor, NWCF_DEF(Interface));
+                usedInterface = 0;
+                result = SK_TRUE;
+            }
+            if (!found && forced) {
+                result = SK_FALSE;
+                NW_REPORT_WARNING_1("retrieving multicast interface",
+                                   "Requested interface %s not found or not multicast enabled",
+                                   addressLookingFor);
             }
         }
         if (result) {
@@ -163,16 +177,51 @@ nw_socketMulticastSetInterface(
     return result;
 }
 
+os_int
+nw_socketMulticastSetTTL(
+    nw_socket socket,
+    c_ulong timeToLive)
+{
+    os_int result = SK_TRUE;
+    os_result retVal = os_resultFail;
+    sk_bool hasDataSocket;
+    sk_bool hasControlSocket;
+    os_socket dataSocket;
+    os_socket controlSocket;
+
+    hasDataSocket = nw_socketGetDataSocket(socket, &dataSocket);
+    NW_CONFIDENCE(hasDataSocket);
+
+    if (hasDataSocket) {
+        retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_TTL,
+                                   &timeToLive, sizeof(timeToLive));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "setting multicast timetolive option", "setsockopt");
+    }
+
+    hasControlSocket = nw_socketGetControlSocket(socket, &controlSocket);
+    if ((retVal == os_resultSuccess) && hasControlSocket) {
+        retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_TTL,
+                                   &timeToLive, sizeof(timeToLive));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "setting multicast timetolive option", "setsockopt");
+    }
+
+    if (retVal != os_resultSuccess) {
+           result = SK_FALSE;
+    }
+
+    return result;
+}
+
 
 static os_int
 nw_socketMulticastSetOptions(
     nw_socket socket,
-    os_int loopsback,
-    os_uint timeToLive)
+    os_int loopsback)
 {
     os_int result = SK_TRUE;
     os_result retVal = os_resultFail;
-    unsigned char flag;
     sk_bool hasDataSocket;
     sk_bool hasControlSocket;
     os_socket dataSocket;
@@ -181,36 +230,18 @@ nw_socketMulticastSetOptions(
     hasDataSocket = nw_socketGetDataSocket(socket, &dataSocket);
     NW_CONFIDENCE(hasDataSocket);
     if (hasDataSocket) {
-        flag = (os_uint)loopsback;
         retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
-            &flag, sizeof(flag));
+                                   &loopsback, sizeof(loopsback));
         SK_REPORT_SOCKFUNC(2, retVal,
                            "setting multicast loopback option", "setsockopt");
-    }
-
-    if ((retVal == os_resultSuccess) && hasDataSocket) {
-        flag = timeToLive;
-        retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_TTL,
-            &flag, sizeof(flag));
-        SK_REPORT_SOCKFUNC(2, retVal,
-                           "setting multicast timetolive option", "setsockopt");
     }
 
     hasControlSocket = nw_socketGetControlSocket(socket, &controlSocket);
     if ((retVal == os_resultSuccess) && hasControlSocket) {
-        flag = (os_uint)loopsback;
         retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
-            &flag, sizeof(flag));
+                                   &loopsback, sizeof(loopsback));
         SK_REPORT_SOCKFUNC(2, retVal,
                            "setting multicast loopback option", "setsockopt");
-    }
-
-    if ((retVal == os_resultSuccess) && hasControlSocket) {
-        flag = timeToLive;
-        retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_TTL,
-            &flag, sizeof(flag));
-        SK_REPORT_SOCKFUNC(2, retVal,
-                           "setting multicast timetolive option", "setsockopt");
     }
 
     if (retVal != os_resultSuccess) {
@@ -262,9 +293,10 @@ nw_socketMulticastInitialize(
     struct sockaddr_in sockAddrPrimary;
     struct sockaddr_in sockAddrMulticast;
     c_ulong timeToLive;
+    os_result setRes;
 
 
-    timeToLive = NWCF_DEF(TimeToLive);
+    timeToLive = NWCF_DEF(MulticastTimeToLive);
 
 #ifdef OS_SOCKET_BIND_FOR_MULTICAST
     if (receiving) {
@@ -272,6 +304,8 @@ nw_socketMulticastInitialize(
         sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
         sockAddrMulticast.sin_addr.s_addr = address;
         nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
+    } else {
+        nw_socketBind(sock);
     }
     /* Do not set outgoing multicast interface, doesn't work yet on windows */
 #else
@@ -283,7 +317,13 @@ nw_socketMulticastInitialize(
     }
     nw_socketMulticastSetInterface(sock, sockAddrPrimary);
 #endif
-    nw_socketMulticastSetOptions(sock, nw_socketLoopsback(sock), timeToLive);
+
+    setRes = nw_socketMulticastSetTTL(sock, timeToLive);
+    if (setRes == os_resultFail) {
+        SK_REPORT_SOCKFUNC(1, os_resultFail,
+                        "setting multicast TTL failed", "MulticastInitialize");
+    }
+    nw_socketMulticastSetOptions(sock, nw_socketLoopsback(sock));
     /* Multicast socket should be capable of sending broadcast messages as well */
     nw_socketSetBroadcastOption(sock, SK_TRUE);
 }
@@ -293,14 +333,14 @@ void
 nw_socketMulticastAddPartition(
     nw_socket sock,
     const char *addressString,
-    sk_bool receiving)
+    sk_bool receiving,
+    c_ulong mTTL)
 {
     struct sockaddr_in sockAddrPrimary;
     struct sockaddr_in sockAddrMulticast;
     sk_address address;
-    c_ulong timeToLive;
     sk_bool initialized = FALSE;
-    timeToLive = NWCF_DEF(TimeToLive);
+    os_result setRes;
     if (!nw_socketGetMulticastSupported(sock)) {
     	NW_REPORT_ERROR("nw_socketMulticastAddPartition", "Partition uses multicast but multicast is not enabled");
     }
@@ -328,7 +368,12 @@ nw_socketMulticastAddPartition(
             nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
         }
 #endif
-        nw_socketMulticastSetOptions(sock,nw_socketLoopsback(sock),timeToLive);
+        setRes = nw_socketMulticastSetTTL(sock, mTTL);
+        if (setRes == os_resultFail) {
+            SK_REPORT_SOCKFUNC(1, os_resultFail,
+                            "setting multicast TTL failed", "MulticastAddPartition");
+        }
+        nw_socketMulticastSetOptions(sock,nw_socketLoopsback(sock));
         } else {
             NW_TRACE_1(Test, 4, "nw_socketMulticastAddPartition: "
                                 "Ignored invalid multicast addess %s", addressString);

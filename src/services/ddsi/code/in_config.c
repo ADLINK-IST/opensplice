@@ -2940,7 +2940,7 @@ in_configTraverseFragmentSizeElement(
         nodeKind = u_cfNodeKind(childNode);
         if(nodeKind == V_CFDATA)
         {
-            success = u_cfDataULongValue(u_cfData(childNode), &fragmentSize);
+            success = u_cfDataSizeValue(u_cfData(childNode), &fragmentSize);
             if(!success)
             {
                 IN_REPORT_WARNING_2(

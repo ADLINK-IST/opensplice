@@ -22,6 +22,9 @@ using System.Runtime.InteropServices;
 
 namespace DDS.OpenSplice
 {
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void DeleteEntityActionDelegate(IntPtr objPtr, IntPtr arg);
+
     /**
      * This interface is implemented by all DDS defined classes and holds the 
      * adress of the equivalent <code>gapi</code> object. The adress is stored as 
@@ -30,11 +33,12 @@ namespace DDS.OpenSplice
      */
     public class SacsSuperClass : IDisposable
     {
+        private bool WeakRef;
+        private DeleteEntityActionDelegate deleteEntityAction;
+
         /**
          * The adress of the equivalent object in the <code>gapi</code> 
          */
-        private bool weak;
-
         private IntPtr gapiPeer = IntPtr.Zero;
         public IntPtr GapiPeer { get { return gapiPeer; } }
 
@@ -42,39 +46,59 @@ namespace DDS.OpenSplice
         protected IntPtr HandleSelf { get { return handleSelf; } }
 
 
-        // This constructor is only used by the TypeSupport class. It is due
-        // to the fact that the FooTypeSupport.alloc() is called and returns 
-        // the peer that we need. The caller must call SetPeer in its ctor.
-        protected SacsSuperClass()
-        {/*Subclass...call SetPeer() */}
-
-        protected void SetPeer(IntPtr gapiPtr)
+        /* This constructor is only used by all DDS classes that have a 
+         * default constructor (i.e. TypeSupport, WaitSet, GuardCondition).
+         * It is due to the fact that the Gapi.<Entity>.alloc() needs to
+         * be called in order to get a gapi handle, but this cannot be done
+         * in the constructor in this stage. 
+         * The caller must call SetPeer and pass the gapi handle as soon as
+         * he has obtained it.
+         */
+        internal SacsSuperClass()
         {
-            if (gapiPeer == IntPtr.Zero)
-            {
-                // Get the GCHandle for the current C# object and cache the IntPtr of the GCHandle
-                // in the UserData field of its gapi pointer.
-                GCHandle tmpGCHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-                handleSelf = GCHandle.ToIntPtr(tmpGCHandle);
-                Gapi.Entity.set_user_data(gapiPtr, handleSelf);
-
-                // Store the gapi handle in the object itself.
-                gapiPeer = gapiPtr;
-            }
+            this.deleteEntityAction = null;
         }
 
-        internal SacsSuperClass(IntPtr gapiPtr)
-            : this(gapiPtr, false)
-        { }
-
-        protected SacsSuperClass(IntPtr gapiPtr, bool weak)
+        /* This is the default constructor that is to be used by all DDS 
+         * classes that have a corresponding Gapi.Create<Entity> operation.
+         * The constuctor of these classes should only be invoked AFTER the
+         * gapi has created the corresponding gapi handles. 
+         */
+        protected SacsSuperClass(IntPtr gapiPtr)
         {
-            this.weak = weak;
+            this.deleteEntityAction = DeleteEntityAction;
+            this.SetPeer(gapiPtr, false);
+        }
+
+
+
+        /* Only to be invoked when the default (empty) constructor has been used.
+         * Use this operation to register a gapi handle that has not yet 
+         * passed to the constructor before. The GCHandle created this way
+         * will be a weak handle, since the lifecycle of the C# object will
+         * need to be fully determined by the application: the gapi may not
+         * keep unreferenced C# objects alive. 
+         */
+        internal void SetPeer(IntPtr gapiPtr, bool isWeak)
+        {
+            GCHandleType backRefType;
+            this.WeakRef = isWeak;
+
+            // Determine the GCHandleType to be used.
+            if (isWeak)
+            {
+                backRefType = GCHandleType.Weak;
+            }
+            else
+            {
+                backRefType = GCHandleType.Normal;
+            }
+            
             // Get the GCHandle for the current C# object and cache the IntPtr of the GCHandle
             // in the UserData field of its gapi pointer.
-            GCHandle tmpGCHandle = GCHandle.Alloc(this, weak ? GCHandleType.Weak : GCHandleType.Normal);
+            GCHandle tmpGCHandle = GCHandle.Alloc(this, backRefType);
             handleSelf = GCHandle.ToIntPtr(tmpGCHandle);
-            Gapi.Entity.set_user_data(gapiPtr, handleSelf);
+            Gapi.Entity.set_user_data(gapiPtr, handleSelf, deleteEntityAction, IntPtr.Zero);
 
             // Store the gapi handle in the object itself.
             gapiPeer = gapiPtr;
@@ -86,46 +110,33 @@ namespace DDS.OpenSplice
         //Implement IDisposable.
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
+            // Weak references are slaved to their wrappers lifecycle. 
+            // So if the wrapper is disposed, so should the corresponding
+            // gapi handle.
+            if (WeakRef)
             {
-                // Free other state (managed objects).
+                Gapi.GenericAllocRelease.Free(gapiPeer);
             }
-            // Free your own state (unmanaged objects).
 
             GCHandle tmpGCHandle = GCHandle.FromIntPtr(handleSelf);
             tmpGCHandle.Free();
             handleSelf = IntPtr.Zero;
 
-            // TODO: Verify when we need to release unmanaged memory
-            if (weak)
-            {
-                try
-                {
-                    Gapi.GenericAllocRelease.Free(gapiPeer);
-                }
-                catch (AccessViolationException)
-                {
-                    // TODO: JLS - We should probably figure out why this is happening.
-                }
-            }
-
             // Reset the gapi handles stored in this object.
             gapiPeer = IntPtr.Zero;
 
-            // Set large fields to null.
+            GC.SuppressFinalize(this);
         }
 
         // Use C# destructor syntax for finalization code.
         ~SacsSuperClass()
         {
-            // Simply call Dispose(false).
-            Dispose(false);
+            // Check if the wrapper already disposed its gapi entity before.
+            if (handleSelf != IntPtr.Zero)
+            {
+                // If not, simply call Dispose.
+                Dispose();
+            }
         }
 
         internal static SacsSuperClass fromUserData(IntPtr gapiPtr)
@@ -149,5 +160,11 @@ namespace DDS.OpenSplice
 
             return entity;
         }
+
+        internal void DeleteEntityAction(IntPtr entityData, IntPtr arg)
+        {
+            Dispose();
+        }
+
     }
 }

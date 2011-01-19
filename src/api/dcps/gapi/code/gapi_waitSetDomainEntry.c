@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,9 +12,8 @@
 #include "gapi_waitSetDomainEntry.h"
 #include "gapi_waitSet.h"
 #include "gapi_condition.h"
+#include "gapi_entity.h"
 #include "gapi_domainParticipant.h"
-#include "gapi_domainEntity.h"
-#include "gapi_map.h"
 
 #include "u_waitset.h"
 #include "os_heap.h"
@@ -65,6 +64,7 @@ _WaitSetDomainEntryNew(
         _this->multimode = FALSE;
         _this->running = FALSE;
         _this->condition_count = 0;
+        _this->domainId = gapi_string_dup(domain_id);
         dp = gapi_domainParticipantFactory_lookup_participant(
                      gapi_domainParticipantFactory_get_instance(),
                      domain_id);
@@ -101,15 +101,23 @@ _WaitSetDomainEntryDelete(
             _this->thread = OS_THREAD_ID_NONE;
         } else {
             uresult = u_waitsetNotify(_this->uWaitset, NULL);
-            assert(uresult == U_RESULT_OK);
-            while (_this->busy) {
-                /* do nothing,
-                 * just wait until the blocked thread leaves the
-                 * u_waitset_wait.
-                 */
-                os_nanoSleep(delay);
+            if (uresult == U_RESULT_OK) {
+                while (_this->busy) {
+                    /* do nothing,
+                     * just wait until the blocked thread leaves the
+                     * u_waitset_wait.
+                     */
+                    os_nanoSleep(delay);
+                }
+            } else {
+                OS_REPORT_1(OS_ERROR,
+                            "_WaitSetDomainEntryDelete", 0,
+                            "Operation u_waitsetNotify failed, result = %s, "
+                            "so will not wait for thread to stop.",
+                            u_resultImage(uresult));
             }
         }
+        gapi_free(_this->domainId);
         u_waitsetFree(_this->uWaitset);
         _this->uWaitset = NULL;
     }

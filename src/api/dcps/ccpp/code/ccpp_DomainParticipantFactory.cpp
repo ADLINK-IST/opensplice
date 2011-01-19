@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,13 +9,14 @@
  *   for full copyright notice and license terms.
  *
  */
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp.h"
 #include "ccpp_dds_dcps.h"
 #include "ccpp_DomainParticipantFactory.h"
 #include "ccpp_DomainParticipant_impl.h"
 #include "ccpp_Domain_impl.h"
 #include "ccpp_ListenerUtils.h"
+#include "ccpp_QosUtils.h"
 
 class LocalFactoryMutex
 {
@@ -27,7 +28,8 @@ class LocalFactoryMutex
       os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
       if (os_mutexInit(&dpf_mutex, &mutexAttr) != os_resultSuccess)
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
+        OS_REPORT(OS_ERROR, "DDS::LocalFactoryMutex", 0,
+                  "Unable to create mutex");
       }
     }
 };
@@ -63,17 +65,23 @@ DDS::DomainParticipantFactory::get_instance(
              singletonSelf = dynamic_cast<DomainParticipantFactory_ptr>(myUD->ccpp_object);
              if (singletonSelf == NULL)
              {
-               OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Domain Participant Factory");
+               OS_REPORT(OS_ERROR,
+                         "DDS::DomainParticipantFactory::get_instance", 0,
+                         "Invalid Domain Participant Factory");
              }
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::get_instance", 0,
+                      "Unable to obtain userdata");
           }
         }
         else
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::get_instance", 0,
+                    "Unable to release mutex");
         }
       }
       else
@@ -87,27 +95,36 @@ DDS::DomainParticipantFactory::get_instance(
             myUD = new ccpp_UserData(singletonSelf);
             if (myUD)
             {
-              gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD);
+              gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
+                                        DDS::ccpp_CallBack_DeleteUserData,NULL);
             }
             else
             {
-              OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+              OS_REPORT(OS_ERROR,
+                        "DDS::DomainParticipantFactory::get_instance", 0,
+                        "Unable to allocate memory");
             }
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::get_instance", 0,
+                      "Unable to allocate memory");
           }
         }
         if (os_mutexUnlock(&(localMutex.dpf_mutex)) != os_resultSuccess)
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::get_instance", 0,
+                    "Unable to release mutex");
         }
       }
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
+      OS_REPORT(OS_ERROR,
+                "DDS::DomainParticipantFactory::get_instance", 0,
+                "Unable to obtain mutex");
     }
     return DomainParticipantFactoryInterface::_duplicate(singletonSelf);
 }
@@ -135,7 +152,9 @@ DDS::DomainParticipantFactory::create_participant (
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+        OS_REPORT(OS_ERROR,
+                  "DDS::DomainParticipantFactory::create_participant", 0,
+                  "Unable to allocate memory");
       }
     }
 
@@ -153,7 +172,9 @@ DDS::DomainParticipantFactory::create_participant (
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+        OS_REPORT(OS_ERROR,
+                  "DDS::DomainParticipantFactory::create_participant", 0,
+                  "Unable to allocate memory");
       }
     }
 
@@ -181,7 +202,8 @@ DDS::DomainParticipantFactory::create_participant (
           if (myUD)
           {
             gapi_domainParticipantFactoryQos *dpfqos = gapi_domainParticipantFactoryQos__alloc();
-            gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+            gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
             if(dpfqos){
                 if(gapi_domainParticipantFactory_get_qos(_gapi_self, dpfqos) == GAPI_RETCODE_OK){
                     if(dpfqos->entity_factory.autoenable_created_entities) {
@@ -190,23 +212,31 @@ DDS::DomainParticipantFactory::create_participant (
                 }
                 else
                 {
-                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain domainParticipantFactoryQos");
+                    OS_REPORT(OS_ERROR,
+                              "DDS::DomainParticipantFactory::create_participant", 0,
+                              "Unable to obtain domainParticipantFactoryQos");
                 }
                 gapi_free(dpfqos);
             }
             else
             {
-                OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                OS_REPORT(OS_ERROR,
+                          "DDS::DomainParticipantFactory::create_participant", 0,
+                          "Unable to allocate memory");
             }
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::create_participant", 0,
+                      "Unable to allocate memory");
           }
         }
         else
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::create_participant", 0,
+                    "Unable to allocate memory");
         }
     }
 
@@ -216,7 +246,9 @@ DDS::DomainParticipantFactory::create_participant (
       {
         delete_participant(myParticipant);
         myParticipant = NULL;
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to register TypeSupports for BuiltiTopics.");
+        OS_REPORT(OS_ERROR,
+                  "DDS::DomainParticipantFactory::create_participant", 0,
+                  "Unable to register TypeSupports for BuiltiTopics.");
       }
     }
 
@@ -241,35 +273,29 @@ DDS::DomainParticipantFactory::delete_participant (
     if (myParticipant)
     {
       gapi_domainParticipant handle = NULL;
-      ccpp_UserData_ptr myUD = NULL;
       handle = myParticipant->_gapi_self;
 
       if (os_mutexLock(&(myParticipant->dp_mutex)) == os_resultSuccess)
       {
-        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
-        status = gapi_domainParticipantFactory_delete_participant_w_action_ext(_gapi_self, handle, DDS::ccpp_CallBack_DeleteUserData, NULL);
-        if (os_mutexUnlock(&(myParticipant->dp_mutex)) == os_resultSuccess)
+        status = gapi_domainParticipantFactory_delete_participant(_gapi_self, handle);
+        if (status != DDS::RETCODE_OK)
         {
-          if (status == DDS::RETCODE_OK)
-          {
-            if (myUD)
-            {
-              delete myUD;
-            }
-            else
-            {
-              OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-            }
-          }
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::delete_participant", 0,
+                    "Unable to delete Participant");
         }
-        else
+        if (os_mutexUnlock(&(myParticipant->dp_mutex)) != os_resultSuccess)
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to release mutex");
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::delete_participant", 0,
+                    "Unable to release mutex");
         }
       }
       else
       {
-        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain mutex");
+        OS_REPORT(OS_ERROR,
+                  "DDS::DomainParticipantFactory::delete_participant", 0,
+                  "Unable to obtain mutex");
         status = DDS::RETCODE_ERROR;
       }
     }
@@ -302,12 +328,16 @@ DDS::DomainParticipantFactory::lookup_participant (
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Participant");
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::lookup_participant", 0,
+                      "Invalid Participant");
           }
         }
         else
         {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
+          OS_REPORT(OS_ERROR,
+                    "DDS::DomainParticipantFactory::lookup_participant", 0,
+                    "Unable to obtain userdata");
         }
      }
      return myParticipant;
@@ -356,7 +386,9 @@ DDS::DomainParticipantFactory::get_qos (
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::DomainParticipantFactory::get_qos", 0,
+                "Unable to allocate memory");
       result = DDS::RETCODE_OUT_OF_RESOURCES;
     }
     return result;
@@ -388,7 +420,9 @@ DDS::DomainParticipantFactory::lookup_domain (
           }
           else
           {
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Invalid Domain");
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::lookup_domain", 0,
+                      "Invalid Domain");
           }
         }
         else
@@ -401,14 +435,19 @@ DDS::DomainParticipantFactory::lookup_domain (
                 myUD = new ccpp_UserData(myDomain);
                 if (myUD)
                 {
-                    gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+                    gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                              DDS::ccpp_CallBack_DeleteUserData,NULL);
                 } else
                 {
-                    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                    OS_REPORT(OS_ERROR,
+                              "DDS::DomainParticipantFactory::lookup_domain", 0,
+                              "Unable to allocate memory");
                 }
             } else
             {
-                OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+                OS_REPORT(OS_ERROR,
+                          "DDS::DomainParticipantFactory::lookup_domain", 0,
+                          "Unable to allocate memory");
             }
         }
      }
@@ -426,21 +465,13 @@ DDS::DomainParticipantFactory::delete_domain (
     myDomain = dynamic_cast<DDS::Domain_impl_ptr>(a_domain);
     if (myDomain)
     {
-        gapi_domain handle = NULL;
-        ccpp_UserData_ptr myUD = NULL;
-        handle = myDomain->_gapi_self;
-        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        gapi_domain handle = myDomain->_gapi_self;
         status = gapi_domainParticipantFactory_delete_domain(_gapi_self, handle);
-        if (status == DDS::RETCODE_OK)
+        if (status != DDS::RETCODE_OK)
         {
-            if (myUD)
-            {
-                delete myUD;
-            }
-            else
-            {
-                OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-            }
+            OS_REPORT(OS_ERROR,
+                      "DDS::DomainParticipantFactory::delete_domain", 0,
+                      "Unable to delete Domain");
         }
 
 
@@ -454,10 +485,7 @@ DDS::DomainParticipantFactory::delete_contained_entities (
 {
     DDS::ReturnCode_t status;
 
-    status = gapi_domainParticipantFactory_delete_contained_entities(
-        _gapi_self,
-        DDS::ccpp_CallBack_DeleteUserData,
-        NULL);
+    status = gapi_domainParticipantFactory_delete_contained_entities(_gapi_self);
 
     return status;
 }
@@ -478,7 +506,9 @@ DDS::DomainParticipantFactory::set_default_participant_qos (
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::DomainParticipantFactory::set_default_participant_qos", 0,
+                "Unable to allocate memory");
       result = DDS::RETCODE_OUT_OF_RESOURCES;
     }
     return result;
@@ -501,7 +531,9 @@ DDS::DomainParticipantFactory::get_default_participant_qos (
     }
     else
     {
-      OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
+      OS_REPORT(OS_ERROR,
+                "DDS::DomainParticipantFactory::get_default_participant_qos", 0,
+                "Unable to allocate memory");
       result = DDS::RETCODE_OUT_OF_RESOURCES;
     }
     return result;

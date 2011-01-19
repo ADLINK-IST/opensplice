@@ -11,6 +11,11 @@
  *
  **********************************************************************/
 
+#ifdef WINCE
+#undef errno
+static int errno=0;
+#endif
+
 #define pc(x) q_parser_column+=x
 
 #define RETURN(t) q_parser_column+=strlen(yytext);return t

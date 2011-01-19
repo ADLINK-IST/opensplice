@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,6 +64,7 @@ v_cfDataInit (
     case V_LONGLONG:
     case V_USHORT:
     case V_ULONG:
+    case V_SIZE:
     case V_ULONGLONG:
     case V_FLOAT:
     case V_DOUBLE:

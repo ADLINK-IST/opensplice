@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -280,7 +280,9 @@ main (
                 jmax = PP_min_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_min_reader->return_loan (PP_min_dataList, infoList);
                 } else {
@@ -292,7 +294,9 @@ main (
                 jmax = PP_seq_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_seq_reader->return_loan (PP_seq_dataList, infoList);
                 } else {
@@ -304,7 +308,9 @@ main (
                 jmax = PP_string_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_string_reader->return_loan (PP_string_dataList, infoList);
                 } else {
@@ -317,7 +323,9 @@ main (
                 jmax = PP_fixed_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_fixed_reader->return_loan (PP_fixed_dataList, infoList);
                 } else {
@@ -329,7 +337,9 @@ main (
                 jmax = PP_array_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_array_reader->return_loan (PP_array_dataList, infoList);
                 } else {

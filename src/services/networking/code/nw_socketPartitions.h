@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,7 +26,8 @@ nw_bool              nw_socketPartitionsAdd(
                          sk_partitionId partitionId,
                          sk_address address,
                          sk_bool connected,
-                         sk_bool compression);
+                         sk_bool compression,
+                         c_ulong mTTL);
 
 /* Forward declaration */
 NW_CLASS(nw_addressList);
@@ -36,7 +37,8 @@ nw_bool              nw_socketPartitionsLookup(
                          nw_socketPartitions socketPartitions,
                          sk_partitionId partitionId,
                          nw_addressList *addressList,
-                         sk_bool *compression);
+                         sk_bool *compression,
+                         c_ulong *mTTL);
 
 
 /* addressList methods */

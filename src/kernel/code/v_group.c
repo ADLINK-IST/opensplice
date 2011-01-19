@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -386,6 +386,184 @@ onSampleExpired(
     return TRUE;
 }
 
+#define v_groupPurgeItem(_this) (C_CAST(_this,v_groupPurgeItem))
+
+static void
+_dispose_purgeList_insert(
+    v_group group,
+    v_groupInstance instance,
+    c_time insertTime)
+{
+    v_groupPurgeItem purgeItem;
+
+    if (group && instance) {
+        assert(C_TYPECHECK(group,v_group));
+        assert(C_TYPECHECK(instance,v_groupInstance));
+
+        v_groupInstanceDisconnect(instance);
+        v_groupInstanceSetEpoch(instance, insertTime);
+
+        purgeItem = c_new(v_kernelType(v_objectKernel(group),
+                          K_GROUPPURGEITEM));
+        purgeItem->instance = c_keep(instance);
+        purgeItem->insertionTime = insertTime;
+
+        purgeItem->next = NULL;
+        if (group->disposedInstancesLast) {
+            v_groupPurgeItem(group->disposedInstancesLast)->next = purgeItem;
+        } else {
+            assert(group->disposedInstances == NULL);
+            group->disposedInstances = purgeItem;
+        }
+        group->disposedInstancesLast = purgeItem;
+    }
+}
+
+static v_groupInstance
+_dispose_purgeList_take(
+    v_group group,
+    c_time timestamp)
+{
+    v_groupPurgeItem purgeItem;
+    c_equality equality;
+    v_groupInstance instance;
+
+    if (group) {
+        purgeItem = group->disposedInstances;
+        if (purgeItem) {
+            /* This implementation assumes that the list is timely ordered.
+             * The assumption is that the time when a purgeItem is inserted
+             * by the operation _dispose_purgeList_insert is reflected by
+             * the value of purgeItem->insertionTime.
+             */
+            equality = v_timeCompare(purgeItem->insertionTime,timestamp);
+            if (equality == C_LT) { 
+                group->disposedInstances = purgeItem->next;
+                purgeItem->next = NULL;
+                if (group->disposedInstances == NULL) {
+                    assert(group->disposedInstancesLast == purgeItem);
+                    group->disposedInstancesLast = NULL;
+                }
+                instance = purgeItem->instance;
+                purgeItem->instance = NULL;
+                /* The existance of an instance in the dispose purge list is
+                 * only valid if the purgeItem insertion time equals the instance
+                 * epoch time. If these timestamps are not equal then the instance
+                 * has been updated and should no longer be in this purge list.
+                 * for performance the instance is not removed from the list but
+                 * instead needs to be ignored and afterall removed at this point.
+                 */
+                equality = v_timeCompare(purgeItem->insertionTime,
+                                         instance->epoch);
+                if (equality == C_EQ) {
+                    assert(v_groupInstanceStateTest(instance, L_DISPOSED));
+                    group->count -= v_groupInstanceMessageCount(instance);
+                    v_groupInstancePurge(instance);
+                    group->count += v_groupInstanceMessageCount(instance);
+                }
+                c_free(purgeItem);
+            } else {
+                instance = NULL;
+            }
+        } else {
+            instance = NULL;
+        }
+    } else {
+        assert(0);
+        instance = NULL;
+    }
+    return instance;
+}
+
+static void
+_empty_purgeList_insert(
+    v_group group,
+    v_groupInstance instance,
+    c_time insertTime)
+{
+    v_groupPurgeItem purgeItem;
+
+    if (group && instance) {
+        assert(C_TYPECHECK(group,v_group));
+        assert(C_TYPECHECK(instance,v_groupInstance));
+
+        assert(v_groupInstanceStateTest(instance,L_EMPTY));
+
+        v_groupInstanceDisconnect(instance);
+        v_groupInstanceSetEpoch(instance, insertTime);
+
+        purgeItem = c_new(v_kernelType(v_objectKernel(group),
+                          K_GROUPPURGEITEM));
+        purgeItem->instance = c_keep(instance);
+        purgeItem->insertionTime = insertTime;
+        purgeItem->next = NULL;
+        if (group->purgeListEmptyLast) {
+            v_groupPurgeItem(group->purgeListEmptyLast)->next = purgeItem;
+            group->purgeListEmptyLast = purgeItem;
+        } else {
+            assert(group->purgeListEmpty == NULL);
+            group->purgeListEmpty = purgeItem;
+            group->purgeListEmptyLast = purgeItem;
+        }
+    }
+}
+
+static v_groupInstance
+_empty_purge_take(
+    v_group group,
+    c_time timestamp)
+{
+    v_groupPurgeItem purgeItem;
+    v_groupInstance removed;
+    v_groupInstance instance;
+    c_equality equality;
+
+    if (group) {
+        purgeItem = group->purgeListEmpty;
+        if (purgeItem) {
+            /* This implementation assumes that the list is timely ordered.
+             * The assumption is that the time when a purgeItem is inserted
+             * by the operation _empty_purgeList_insert is reflected by
+             * the value of purgeItem->insertionTime.
+             */
+            equality = v_timeCompare(purgeItem->insertionTime,timestamp);
+            if (equality == C_LT) { 
+                group->purgeListEmpty = purgeItem->next;
+                purgeItem->next = NULL;
+                if (group->purgeListEmptyLast == purgeItem) {
+                    assert(group->purgeListEmpty == NULL);
+                    group->purgeListEmptyLast = NULL;
+                }
+                instance = purgeItem->instance;
+                purgeItem->instance = NULL;
+                /* The existance of an instance in the empty-nowriter purge list is
+                 * only valid if the purgeItem insertion time equals the instance
+                 * epoch time. If these timestamps are not equal then the instance
+                 * has been updated and should no longer be in this purge list.
+                 * for performance the instance is not removed from the list but
+                 * instead needs to be ignored and afterall removed at this point.
+                 */
+                equality = v_timeCompare(purgeItem->insertionTime,
+                                         instance->epoch);
+                if (equality == C_EQ) {
+                    removed = c_remove(group->instances,instance,NULL,NULL);
+                    assert(removed != NULL);
+                    v_groupInstanceFree(removed);
+                }
+                c_free(purgeItem);
+            } else {
+                instance = NULL;
+            }
+        } else {
+            instance = NULL;
+        }
+    } else {
+        assert(0);
+        instance = NULL;
+    }
+    return instance;
+}
+
 static void
 updatePurgeList(
     v_group group,
@@ -393,132 +571,45 @@ updatePurgeList(
 {
     c_time delay = {5,0};
     c_time timestamp;
-    c_list purgeList;
-    v_groupPurgeItem purgeItem, found;
     v_groupInstance instance;
-    v_groupInstance removed;
     struct lifespanExpiry exp;
-    c_long purgeCount;
     v_message message;
-    c_long listGuard;
-    c_time guardSleep = {0,1e6};
 
     /* Purge all instances that are expired. */
     /* Precondition is that the instances in the purge list are not alive
      * and empty */
-
     exp.t     = now;
     exp.group = group;
 
     v_lifespanAdminTakeExpired(group->lifespanAdmin, onSampleExpired, &exp);
 
-    purgeItem = NULL;
-
-    purgeList = group->purgeListEmpty;
-    if (c_listCount(purgeList) > 0) {
+    if (group->purgeListEmpty) {
         timestamp = c_timeSub(now, delay);
-        purgeItem = c_removeAt(purgeList, 0);
-        purgeCount = 0;
-        /* listGuard is used to slow down a endless spinning loop caused
-         * by a programming error and enables run-time debugging.
-         */
-        listGuard = c_listCount(purgeList) + 5;
-        while ((purgeItem != NULL) ){
-            instance = purgeItem->instance;
-            if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
-                c_free(purgeItem); /* must be before v_groupInstanceFree */
-                if (v_timeCompare(purgeItem->insertionTime,
-                                  instance->epoch) == C_EQ) {
-                    assert(v_groupInstanceStateTest(instance, L_NOWRITERS));
-                    removed = c_remove(group->instances,instance,NULL,NULL);
-                    assert(removed != NULL);
-                    v_groupInstanceFree(instance);
-                }
-                purgeItem = c_removeAt(purgeList, 0);
-            } else {
-               /* the taken instance was not old enough yet and is
-                * therefore re-inserted.
-                */
-               found = c_listInsert(purgeList, purgeItem);
-               assert(found == purgeItem);
-               c_free(purgeItem);
-               /* Set purgeItem to Nil and break out of loop.
-                * all remaining purge items are not old enough.
-                */
-               purgeItem = NULL;
-            }
-            purgeCount++;
+        instance = _empty_purge_take(group, timestamp);
+        while (instance != NULL) {
+            v_groupInstanceFree(instance);
+            instance = _empty_purge_take(group, timestamp);
 
-            /* Spinning loop detection */
-            if (purgeCount >= listGuard) {
-                if (purgeCount == listGuard){
-                    OS_REPORT(OS_ERROR,
-                              "updatePurgeList",
-                              0, "Number of iterations exceeds listlength");
-                }
-                /* Slow down the spinning, to allow analysis with tooling */
-                c_timeNanoSleep(guardSleep);
-            }
         }
     }
 
-    purgeList = group->disposedInstances;
-    delay = v_topicQosRef(group->topic)->durabilityService.service_cleanup_delay;
-    if (c_listCount(purgeList) > 0) {
+    if (group->disposedInstances) {
+        delay = v_topicQosRef(group->topic)->durabilityService.service_cleanup_delay;
         timestamp = c_timeSub(now, delay);
-        purgeItem = c_removeAt(purgeList, 0);
-        purgeCount = 0;
-        while ((purgeItem != NULL) ) {
-            instance = c_keep(purgeItem->instance);
+        instance = _dispose_purgeList_take(group, timestamp);
+        while (instance != NULL) {
+            if (v_stateTest(instance->state, L_EMPTY | L_NOWRITERS)) {
+                message = v_groupInstanceCreateMessage(instance);
+                forwardMessageToStreams(group,
+                                        message,
+                                        now,
+                                        V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE);
+                c_free(message);
+                _empty_purgeList_insert(group, instance, now);
 
-            if (v_timeCompare(purgeItem->insertionTime,timestamp) == C_LT) {
-                if (v_timeCompare(purgeItem->insertionTime, instance->epoch) == C_EQ) {
-                    assert(v_groupInstanceStateTest(instance, L_DISPOSED));
-                    group->count -= v_groupInstanceMessageCount(instance);
-                    v_groupInstancePurge(instance);
-                    group->count += v_groupInstanceMessageCount(instance);
-                    if (v_stateTest(instance->state, L_EMPTY | L_NOWRITERS)) {
-#if 1
-                        /* put in purgelist */
-                        purgeItem->insertionTime = now;
-                        v_groupInstanceSetEpoch(instance,
-                                                purgeItem->insertionTime);
-                        message = v_groupInstanceCreateMessage(instance);
-                        forwardMessageToStreams(group,
-                                                message,
-                                                now,
-                                                V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE);
-                        c_free(message);
-                        c_append(group->purgeListEmpty, purgeItem);
-                        v_groupInstanceDisconnect(instance);
-#else
-                        message = v_groupInstanceCreateMessage(instance);
-                        forwardMessageToStreams(group,
-                                                message,
-                                                now,
-                                                V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE);
-                        c_free(message);
-                        removed = c_remove(group->instances,instance,NULL,NULL);
-                        assert(removed != NULL);
-                        v_groupInstanceFree(instance);
-#endif
-                    }
-                }
-                c_free(purgeItem);
-                purgeItem = c_removeAt(purgeList, 0);
-            } else {
-               /* the taken instance was not old enough yet and
-                * is therefore re-inserted. */
-               found = c_listInsert(purgeList, purgeItem);
-               assert(found == purgeItem);
-               c_free(purgeItem);
-               /* Set purgeItem to Nil and break out of loop.
-                * all remaining purge items are not old enough.
-                */
-               purgeItem = NULL;
             }
             v_groupInstanceFree(instance);
-            purgeCount++;
+            instance = _dispose_purgeList_take(group, timestamp);
         }
     }
 }
@@ -751,7 +842,10 @@ v_groupInit(
     group->sequenceNumber = id;
 
     group->lifespanAdmin = v_lifespanAdminNew(kernel);
-    group->purgeListEmpty = c_listNew(v_kernelType(kernel, K_GROUPPURGEITEM));
+
+    group->purgeListEmpty = NULL;
+    group->purgeListEmptyLast = NULL;
+
     v_groupEntrySetInit(&group->topicEntrySet);
     v_groupEntrySetInit(&group->networkEntrySet);
     v_groupEntrySetInit(&group->variantEntrySet);
@@ -801,7 +895,8 @@ v_groupInit(
     c_free(instanceType);
     c_free(sampleType);
 
-    group->disposedInstances = c_listNew(v_kernelType(kernel, K_GROUPPURGEITEM));
+    group->disposedInstances = NULL;
+    group->disposedInstancesLast = NULL;
 
     if(qos->durability.kind == V_DURABILITY_VOLATILE) {
         group->complete = TRUE;     /* no alignment necessary.*/
@@ -1641,7 +1736,6 @@ groupWrite (
     v_entry entry)
 {
     v_groupInstance instance, found;
-    v_groupPurgeItem purgeItem;
     v_writeResult result;
     v_topicQos qos;
     v_duration delay;
@@ -1821,39 +1915,13 @@ groupWrite (
                         } else {
                             actionKind = V_GROUP_ACTION_UNREGISTER;
                             if (!v_timeIsInfinite(delay)) {
-                                purgeItem = c_new(v_kernelType(v_objectKernel(group),
-                                                  K_GROUPPURGEITEM));
-                                if (purgeItem) {
-                                    purgeItem->instance = c_keep(instance);
-                                    purgeItem->insertionTime = now;
-                                    v_groupInstanceSetEpoch(instance,
-                                                            purgeItem->insertionTime);
-                                    c_append(group->disposedInstances, purgeItem);
-                                    c_free(purgeItem);
-                                } else {
-                                    OS_REPORT(OS_ERROR,
-                                              "v_groupWrite",0,
-                                              "Failed to purge instance.");
-                                }
+                                _dispose_purgeList_insert(group, instance, now);
                             }
                         }
                     }
                     if (v_timeIsZero(delay)) {
                         assert(v_groupInstanceStateTest(instance,L_EMPTY));
-                        purgeItem = c_new(v_kernelType(v_objectKernel(group),
-                                          K_GROUPPURGEITEM));
-                        if (purgeItem) {
-                            purgeItem->instance = c_keep(instance);
-                            purgeItem->insertionTime = now;
-                            v_groupInstanceSetEpoch(instance,
-                                                    purgeItem->insertionTime);
-                            c_append(group->purgeListEmpty, purgeItem);
-                            c_free(purgeItem);
-                        } else {
-                            OS_REPORT(OS_ERROR,
-                                      "v_groupWrite",0,
-                                      "Failed to purge instance.");
-                        }
+                        _empty_purgeList_insert(group, instance, now);
                     }
 				}
             	/* Only forward to stream when sample is inserted in groupInstance and
@@ -1877,24 +1945,12 @@ groupWrite (
         if ((v_messageStateTest(msg,L_UNREGISTER) &&
              v_groupInstanceStateTest(instance,L_NOWRITERS)))
         {
-            purgeItem = c_new(v_kernelType(v_objectKernel(group),
-                              K_GROUPPURGEITEM));
-            if (purgeItem) {
-                purgeItem->instance = c_keep(instance);
-                purgeItem->insertionTime = now;
-                v_groupInstanceSetEpoch(instance,
-                                    purgeItem->insertionTime);
-                if ((qos->durability.kind != V_DURABILITY_VOLATILE) &&
-                    v_groupInstanceStateTest(instance,L_DISPOSED)) {
-                    c_append(group->disposedInstances, purgeItem);
-                } else {
-                    c_append(group->purgeListEmpty, purgeItem);
-                }
-                c_free(purgeItem);
+            if ((qos->durability.kind != V_DURABILITY_VOLATILE) &&
+                v_groupInstanceStateTest(instance,L_DISPOSED))
+            {
+                _dispose_purgeList_insert(group, instance, now);
             } else {
-                OS_REPORT(OS_ERROR,
-                          "v_groupWrite",0,
-                          "Failed to purge instance.");
+                _empty_purgeList_insert(group, instance, now);
             }
         }
     }

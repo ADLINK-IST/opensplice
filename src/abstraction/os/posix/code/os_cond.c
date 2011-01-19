@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,10 +17,10 @@
  * is mapped onto the posix condition variable
  */
 
-#include <os_cond.h>
+#include "os_cond.h"
 #include <assert.h>
 #include <errno.h>
-#include <os_signature.h>
+#include "os_signature.h"
 
 /** \brief Initialize the condition variable taking the condition
  *         attributes into account

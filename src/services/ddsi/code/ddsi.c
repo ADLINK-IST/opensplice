@@ -6,6 +6,7 @@
 #include "in__config.h"
 #include "in_controller.h"
 #include "in_connectivityAdmin.h"
+#include "os.h"
 
 static void
 in_splicedaemonListener(
@@ -22,10 +23,7 @@ in_retrieveLeaseSettings(
     v_duration *leaseExpiryTime,
     os_time *sleepTime);
 
-int
-main(
-    int argc,
-    char *argv[])
+OPENSPLICE_MAIN (ospl_ddsi)
 {
     u_result retVal;
     /* First check command line arguments */

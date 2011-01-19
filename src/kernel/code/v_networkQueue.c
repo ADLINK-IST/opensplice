@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,7 +64,7 @@ v_networkQueueUpdateNextWakeup(
 {
     c_time now;
     c_time soon;
-    c_time oldWakeup;
+    c_time newWakeup;
     c_ulonglong msecsTime;
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
@@ -74,7 +74,6 @@ v_networkQueueUpdateNextWakeup(
     if (queue->periodic) {
         now = v_timeGet();
         soon = c_timeAdd(now, minSleepTime);
-        oldWakeup = queue->nextWakeup;
         TIME_TO_MSEC(soon, msecsTime);
         /* Do a ++ because we are doing a ceil and TIME_TO_MSEC is doing a trunc.
          * Only if time was an exact multiple of milliseconds, this approach is
@@ -82,9 +81,11 @@ v_networkQueueUpdateNextWakeup(
         msecsTime++;
         msecsLeftOver = (msecsTime - queue->phaseMilliSeconds) % queue->msecsResolution;
         msecsResult = msecsTime - msecsLeftOver + queue->msecsResolution;
-        MSEC_TO_TIME(msecsResult, queue->nextWakeup);
-        *hasChanged = (oldWakeup.nanoseconds != queue->nextWakeup.nanoseconds) ||
-                      (oldWakeup.seconds != queue->nextWakeup.seconds);
+        MSEC_TO_TIME(msecsResult, newWakeup);
+        if (c_timeCompare(newWakeup,queue->nextWakeup) == C_GT) {
+            queue->nextWakeup = newWakeup;
+            *hasChanged = TRUE;
+        }
     }
 }
 
@@ -518,7 +519,8 @@ v_networkQueueWait(
     /* Now go to sleep if needed */
     while (result == V_WAITRESULT_NONE) {
         if (queue->periodic) {
-            interval = c_timeSub(queue->nextWakeup, v_timeGet());
+            c_time org =  v_timeGet();
+            interval = c_timeSub(queue->nextWakeup,org);
             eq = c_timeCompare(minSleepTime, interval);
             if (eq == C_LT) {
                 queue->threadWaiting = TRUE;

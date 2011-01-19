@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,8 +12,8 @@
 #ifndef CCPP_ORB_ABSTRACTION_H
 #define CCPP_ORB_ABSTRACTION_H
   
-#include "tao/LocalObject.h"
-#include "tao/Valuetype/ValueBase.h"
+#include <tao/LocalObject.h>
+#include <tao/Valuetype/ValueBase.h>
 
 namespace DDS
 {

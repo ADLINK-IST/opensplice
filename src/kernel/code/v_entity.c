@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -140,6 +140,16 @@ v_entityEnable (
         }
     }
     return result;
+}
+
+c_bool
+v_entityEnabled (
+    v_entity _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_entity));
+
+    return _this->enabled;
 }
 
 c_voidp

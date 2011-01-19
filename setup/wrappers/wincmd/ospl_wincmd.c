@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -45,13 +45,28 @@ int main( int argc, char ** argv)
 {
    int count;
    int i;
+
+/* Executable name - strip off path if it was specified */
+
+   char *exe = strrchr (argv[1], '/');
+   if (exe)
+   {
+      exe += 1;
+   }
+   else
+   {
+      exe = argv[1];
+   }
+
+/* Argument processing */
+
    for ( count=1 ; count < argc; count++ )
    {
       char *arg = argv[count];
       if ( arg[0] == '-' )
       {
-         if ( !strcmp( argv[1], "idlpp" )
-              || !strcmp( argv[1], "tao_idl" )
+         if ( !strcmp( exe, "idlpp" )
+              || !strcmp( exe, "tao_idl" )
          )
          {
             switch ( arg[1] )
@@ -83,7 +98,7 @@ int main( int argc, char ** argv)
                }
             }
          }
-         else if ( !strcmp( argv[1], "mt" ))
+         else if ( !strcmp( exe, "mt" ))
          {
             if (!strcmp( arg, "-manifest" ))
             {
@@ -102,9 +117,9 @@ int main( int argc, char ** argv)
                addarg( "%s", argv[count] );
             }
          }
-         else if ( !strcmp( argv[1], "cl" )
-                   || !strcmp( argv[1], "link" )
-                   || !strcmp( argv[1], "lib" ))
+         else if ( !strcmp( exe, "cl" )
+                   || !strcmp( exe, "link" )
+                   || !strcmp( exe, "lib" ))
          {
             switch ( arg[1] )
             {

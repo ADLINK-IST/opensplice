@@ -15,8 +15,14 @@ TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 
 $(TARGET): $(OBJECTS)
 	$(LD_SO) $(LDFLAGS) $^ $(LDLIBS) -o $@
-ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
+ifneq (,$(findstring win,$(SPLICE_TARGET))) #windows
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#2"
+endif
+ifneq (,$(findstring vxworks5,$(SPLICE_TARGET)))
+ifdef EXTRACTED_LIB
+	mkdir -p $(OSPL_HOME)/extract/$(EXTRACTED_LIB)/bld/$(SPLICE_TARGET)
+	cp $(OBJECTS) $(OSPL_HOME)/extract/$(EXTRACTED_LIB)/bld/$(SPLICE_TARGET)
+endif
 endif
 endif
 endif
@@ -43,9 +49,9 @@ $(TARGET): $(OBJECTS)
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) -o $@
 else
-	$(LD_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
+	$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
 endif
-ifneq (,$(findstring win32,$(SPLICE_TARGET))) #windows
+ifneq (,$(findstring win,$(SPLICE_TARGET))) #windows
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
 endif 
 endif
@@ -147,10 +153,12 @@ WIN_PDB = $(TARGET_DLIB).pdb
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
+ifneq (,$(findstring win,$(SPLICE_TARGET)))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_LIB)
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_LIB) ]; then $(LN) `pwd`/$(WIN_LIB) $(TARGET_LINK_DIR)/$(WIN_LIB); fi
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif
 endif # TARGET_DLIB
 
 ifdef TARGET_SLIB
@@ -175,17 +183,21 @@ WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSLIB)$(CSLIB_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
+ifneq (, $(findstring win, $(SPLICE_TARGET)))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
-endif # TARGET_DLIB
+endif 
+endif # TARGET_CSLIB
 
 ifdef TARGET_CSEXEC
 WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSEXEC)$(CSEXEC_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
+ifneq (, $(findstring win, $(SPLICE_TARGET)))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif 
 endif # TARGET_CSEXEC
 
 ifdef TARGET_CSMOD
@@ -193,8 +205,10 @@ WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSMOD)$(CSMOD_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
+ifneq (, $(findstring win, $(SPLICE_TARGET)))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif 
 endif # TARGET_CSMOD
 
 endif # TARGET_LINK_DIR

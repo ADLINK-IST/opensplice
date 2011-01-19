@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,7 +11,6 @@
  */
 #include "gapi_fooDataReaderView.h"
 #include "gapi_dataReaderView.h"
-#include "gapi_dataReaderStatus.h"
 #include "gapi_dataReader.h"
 #include "gapi_qos.h"
 #include "gapi_kernel.h"
@@ -40,7 +39,7 @@ C_STRUCT(_FooDataReaderView) {
 };
 
 typedef struct readerViewActionArg_s {
-    _DataReaderStatus   readerStatus;
+    _Status             readerStatus;
     gapi_unsigned_long  max;
     gapi_unsigned_long  messageOffset;
     gapi_unsigned_long  userdataOffset;

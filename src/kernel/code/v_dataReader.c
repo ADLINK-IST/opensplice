@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -581,6 +581,7 @@ v_dataReaderNew (
         _this->shareCount = 1;
         _this->views = NULL;
         _this->sampleCount = 0;
+        _this->notReadCount = 0;
         _this->maxInstances = FALSE;
         _this->depth = 0x7fffffff; /* MAX_INT */
         _this->cachedSample = NULL;
@@ -975,6 +976,7 @@ instanceReadSamples(
              * the use case for optimization is not the case.
              * So the instance can now be registered to be removed.
              */
+            c_keep(instance);
             a->emptyList = c_iterInsert(a->emptyList,instance);
         }
     }
@@ -1023,6 +1025,7 @@ v_dataReaderRead(
         emptyInstance = c_iterTakeFirst(argument.emptyList);
         while (emptyInstance != NULL) {
             v_dataReaderRemoveInstance(_this,emptyInstance);
+            v_dataReaderInstanceFree(emptyInstance);
             emptyInstance = c_iterTakeFirst(argument.emptyList);
         }
         c_iterFree(argument.emptyList);
@@ -1050,6 +1053,16 @@ v_dataReaderKeyList(
     assert(C_TYPECHECK(_this, v_dataReader));
 
     return v_indexKeyList(_this->index);
+}
+
+c_array
+v_dataReaderSourceKeyList(
+    v_dataReader _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_dataReader));
+
+    return v_indexSourceKeyList(_this->index);
 }
 
 c_bool
@@ -1106,7 +1119,7 @@ v_dataReaderReadNextInstance(
 {
     c_iter entries;
     c_bool proceed = TRUE;
-    v_dataReaderInstance next;
+    v_dataReaderInstance next, cur;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
@@ -1116,19 +1129,21 @@ v_dataReaderReadNextInstance(
     v_dataReaderLock(_this);
     _this->readCnt++;
     dataReaderEntriesUpdatePurgeLists(entries, NULL);
-    next = v_dataReaderNextInstance(_this,instance);
-    while ((next != NULL) &&
-           v_dataReaderInstanceEmpty(next)) {
-        next = v_dataReaderNextInstance(_this,next);
-    }
-    if (next != NULL) {
-        proceed = v_dataReaderInstanceReadSamples(next, NULL,action,arg);
 
-        if (v_dataReaderInstanceEmpty(next)) {
-            v_dataReaderRemoveInstance(_this,next);
+    cur = v_dataReaderNextInstance(_this,instance);
+    while ((cur != NULL) && v_dataReaderInstanceEmpty(cur))
+    {
+        next = v_dataReaderNextInstance(_this,cur);
+        v_dataReaderRemoveInstance(_this,cur);
+        cur = next;
+    }
+
+    if (cur != NULL) {
+        proceed = v_dataReaderInstanceReadSamples(cur, NULL,action,arg);
+        if (v_dataReaderInstanceEmpty(cur)) {
+            v_dataReaderRemoveInstance(_this,cur);
         }
     }
-
 
     v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
 
@@ -1164,6 +1179,7 @@ instanceTakeSamples(
 
     if (v_dataReaderInstanceEmpty(instance)) {
         if (v_dataReaderInstanceInNotEmptyList(instance)) {
+            c_keep(instance);
             a->emptyList = c_iterInsert(a->emptyList,instance);
         }
         return proceed;
@@ -1318,6 +1334,7 @@ v_dataReaderTake(
         emptyInstance = c_iterTakeFirst(argument.emptyList);
         while (emptyInstance != NULL) {
             v_dataReaderRemoveInstance(_this,emptyInstance);
+            v_dataReaderInstanceFree(emptyInstance);
             emptyInstance = c_iterTakeFirst(argument.emptyList);
         }
         c_iterFree(argument.emptyList);
@@ -1403,7 +1420,7 @@ v_dataReaderTakeNextInstance(
     c_voidp arg)
 {
     c_iter entries;
-    v_dataReaderInstance next;
+    v_dataReaderInstance next, cur;
     c_bool proceed = TRUE;
     c_long count;
 
@@ -1419,26 +1436,29 @@ v_dataReaderTakeNextInstance(
     _this->readCnt++;
 
     dataReaderEntriesUpdatePurgeLists(entries, NULL);
-    next = v_dataReaderNextInstance(_this,instance);
+    cur = v_dataReaderNextInstance(_this,instance);
 
-    while ((next != NULL) &&
-            v_dataReaderInstanceEmpty(next)) {
-        next = v_dataReaderNextInstance(_this,next);
+    while ((cur != NULL) && v_dataReaderInstanceEmpty(cur))
+    {
+        next = v_dataReaderNextInstance(_this,cur);
+        v_dataReaderRemoveInstance(_this,cur);
+        cur = next;
     }
-    if (next != NULL) {
-        count = v_dataReaderInstanceSampleCount(next);
-        proceed = v_dataReaderInstanceTakeSamples(next,
+
+    if (cur != NULL) {
+        count = v_dataReaderInstanceSampleCount(cur);
+        proceed = v_dataReaderInstanceTakeSamples(cur,
                                                   NULL,
                                                   action,
                                                   arg);
-        count -= v_dataReaderInstanceSampleCount(next);
+        count -= v_dataReaderInstanceSampleCount(cur);
         assert(count >= 0);
         if (count > 0) {
             _this->sampleCount -= count;
             assert(_this->sampleCount >= 0);
 
-            if (v_dataReaderInstanceEmpty(next)) {
-                v_dataReaderRemoveInstance(_this,next);
+            if (v_dataReaderInstanceEmpty(cur)) {
+                v_dataReaderRemoveInstance(_this,cur);
             }
         }
     }
@@ -1480,6 +1500,7 @@ v_dataReaderNotify(
         V_EVENT_SAMPLE_LOST | \
         V_EVENT_DEADLINE_MISSED | \
         V_EVENT_INCOMPATIBLE_QOS | \
+        V_EVENT_TOPIC_MATCHED | \
         V_EVENT_LIVELINESS_CHANGED | \
         V_EVENT_DATA_AVAILABLE | \
         V_EVENT_ALL_DATA_DISPOSED
@@ -1595,6 +1616,35 @@ v_dataReaderNotifyIncompatibleQos(
         v_observerUnlock(v_observer(_this));
         v_observableNotify(v_observable(_this), &event);
     }
+}
+
+void
+v_dataReaderNotifySubscriptionMatched (
+	v_dataReader _this,
+    v_gid        writerGID,
+    c_bool       dispose)
+{
+    c_bool changed;
+    C_STRUCT(v_event) e;
+
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_dataReader));
+
+    v_dataReaderLock(_this);
+
+    changed = v_statusNotifySubscriptionMatched(v_entity(_this)->status, writerGID, dispose);
+    if (changed) {
+        e.kind = V_EVENT_TOPIC_MATCHED;
+        e.source = v_publicHandle(v_public(_this));
+        e.userData = NULL;
+        v_observerNotify(v_observer(_this), &e, NULL);
+        v_observableNotify(v_observable(_this), &e);
+    }
+
+    v_dataReaderUnLock(_this);
 }
 
 static c_bool
@@ -1968,16 +2018,22 @@ v_dataReaderContainsInstance (
     v_dataReader _this,
     v_dataReaderInstance instance)
 {
-    c_bool found = FALSE;
+    v_dataReader instanceReader;
+    c_bool result = FALSE;
 
     assert(C_TYPECHECK(_this,v_dataReader));
     assert(C_TYPECHECK(instance,v_dataReaderInstance));
 
-    if (v_dataReader(v_index(instance->index)->reader) == _this) {
-        found = TRUE;
+    instanceReader = v_dataReaderInstanceReader(instance);
+    if (instanceReader != NULL) {
+        result = (instanceReader == _this);
+    } else {
+        OS_REPORT_2(OS_ERROR, "v_dataReaderContainsInstance", 0,
+            "Invalid dataReaderInstance: no attached DataReader"
+            "<_this = 0x%x instance = 0x%x>", _this, instance);
+        result = FALSE;
     }
-
-    return found;
+    return result;
 }
 
 void
@@ -2034,20 +2090,26 @@ v_dataReaderAllocInstance(
     v_object(instance)->kernel = kernel;
     v_objectKind(instance) = K_DATAREADERINSTANCE;
 
-    v_instanceInit(v_instance(instance));
-
     instance->index = (c_voidp)_this->index;
     instance->sourceCache = v_groupCacheNew(kernel, V_CACHE_SOURCES);
 
     return instance;
 }
 
-void
-v_dataReaderDeallocInstance(
-    v_dataReaderInstance _this)
+c_long
+v_dataReaderNotReadCount(
+    v_dataReader _this)
 {
-    c_free(_this);
-}
+    c_long count;
 
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_dataReader));
+
+    v_dataReaderLock(_this);
+    count = _this->notReadCount;
+    v_dataReaderUnLock(_this);
+
+    return count;
+}
 
 

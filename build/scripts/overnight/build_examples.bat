@@ -26,7 +26,8 @@ ECHO Build examples
 
 IF "%VS80COMNTOOLS%"=="" devenv examples.sln /upgrade
 
-devenv /useenv examples.sln /Build %BUILD_CONFIG%
+devenv /useenv examples.sln /Clean %BUILD_CONFIG%
+devenv /useenv examples.sln /Rebuild %BUILD_CONFIG%
 
 ECHO Build Java examples
 ECHO Building dcps/standalone/Java/PingPong
@@ -43,6 +44,97 @@ call BUILD.bat
 
 ECHO Building dcps/CORBA/Java/JacORB/Tutorial
 cd "%OSPL_HOME%/examples/dcps/CORBA/Java/JacORB/Tutorial"
+call BUILD.bat
+
+REM  New examples - integrated since V5.4.0
+
+echo "*** New API C/C++/C# Standalone and CORBA Examples *********************************************************"
+
+
+IF "%VS80COMNTOOLS%"=="" devenv NewExamples.sln /upgrade
+cd "%OSPL_HOME%"/examples
+
+devenv NewExamples.sln /useenv /Clean %BUILD_CONFIG%
+devenv NewExamples.sln /useenv /Rebuild %BUILD_CONFIG%
+
+echo "*** New API Java examples **********************************************************************************"
+echo "Example dir is: %OSPL_HOME%/examples/dcps/HelloWorld/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/HelloWorld/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/HelloWorld/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/HelloWorld/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/ContentFilteredTopic/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/ContentFilteredTopic/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/ContentFilteredTopic/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/ContentFilteredTopic/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/Durability/Java/Standalone/Windows"
+cd "%OSPL_HOME%/examples/dcps/Durability/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/Durability/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/Durability/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/Listener/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/Listener/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/Listener/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/Listener/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/Ownership/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/Ownership/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+cd "%OSPL_HOME%/examples/dcps/Ownership/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/QueryCondition/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/QueryCondition/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/QueryCondition/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/QueryCondition/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/WaitSet/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/WaitSet/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/WaitSet/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/WaitSet/Java/Corba/JacORB/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/BuiltInTopics/Java/Standalone/VS2005"
+cd "%OSPL_HOME%/examples/dcps/BuiltInTopics/Java/Standalone/Windows"
+cd
+call BUILD.bat
+
+echo "Example dir is: %OSPL_HOME%/examples/dcps/BuiltInTopics/Java/Corba/JacORB/VS2005"
+cd "%OSPL_HOME%/examples/dcps/BuiltInTopics/Java/Corba/JacORB/Windows"
+cd
 call BUILD.bat
 
 cd "%OSPL_HOME%/examples"
@@ -73,9 +165,10 @@ cd "%~dp0\..\..\..\testsuite\tests"
 
 ECHO Building system testcases
 
-IF "%VS80COMNTOOLS%"=="" devenv tests.sln /upgrade
+REM IF "%VS80COMNTOOLS%"=="" devenv tests.sln /upgrade
 
-devenv /useenv tests.sln /Build %BUILD_CONFIG%
+REM devenv /useenv tests.sln /Clean %BUILD_CONFIG%
+REM devenv /useenv tests.sln /Rebuild %BUILD_CONFIG%
 
 ECHO OFF
 

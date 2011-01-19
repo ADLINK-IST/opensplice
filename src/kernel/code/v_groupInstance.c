@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -148,10 +148,12 @@ v_groupInstanceValidateRegistrations(
         if(!c_checkType(reg, "v_registration")){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
                     "instance->registrations is corrupted.");
+            assert(FALSE);
             result = FALSE;
         } else if(c_refCount(reg) != 1){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
                     "instance->registrations refCount != 1.");
+            assert(FALSE);
             result = FALSE;
         } else {
             while (reg != NULL) {
@@ -175,10 +177,12 @@ v_groupInstanceValidateRegistrations(
         if(!c_checkType(unreg, "v_registration")){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
                     "instance->unregisterMessages is corrupted.");
+            assert(FALSE);
             result = FALSE;
         } else if(c_refCount(unreg) != 1){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
                     "instance->unregisterMessages refCount != 1.");
+            assert(FALSE);
             result = FALSE;
         } else {
             while (unreg != NULL) {

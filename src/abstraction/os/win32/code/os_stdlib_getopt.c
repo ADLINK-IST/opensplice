@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -34,7 +34,7 @@ static const char Id[] = "$Id: os_stdlib_getopt.c,v 1.2 2008-11-17 09:53:45 hans
  * However, I am not about to post a copy of anything licensed by AT&T.
  */
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 #include <stdio.h>
 #include <string.h>
 

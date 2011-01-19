@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,6 +11,7 @@
  */
 #include "os.h"
 #include "u__cfValue.h"
+#include "u_cfData.h"
 #include "os_stdlib.h"
 
 #define CF_SPACES  " \t\n"
@@ -112,6 +113,15 @@ u_cfValueScan(
         __CASE__(LONGLONG,c_longlong);
         __CASE__(ULONGLONG,c_ulonglong);
         __CASE__(FLOAT,c_float);
+        case V_SIZE:
+        {
+            c_ulong dest;
+            result = u_cfDataSizeValueFromString(value.is.String,&dest);
+            if (result) {
+                *valuePtr = c_ulongValue(dest);
+            }
+        }
+        break;
         case V_BOOLEAN:
         {
             c_bool dest;

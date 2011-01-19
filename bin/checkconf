@@ -116,7 +116,7 @@ csharp_check ()
     return 0
 }
 
-# test if CL.exe is at least vs8
+# test if CL.exe is at least vs7
 msvs_check ()
 {
     echo -n "VS: "
@@ -151,7 +151,12 @@ msvs_check ()
         return 1
     fi
 
-    PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    if [ -d "$UNIX_CONV_PATH/Vc7" ]
+    then
+        PATH="$UNIX_CONV_PATH/Vc7/bin:$PATH"
+    else
+        PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    fi
     PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
     PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
     set_var PATH "$PATH"
@@ -163,15 +168,29 @@ msvs_check ()
         return 1
     fi
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
-    if [ $CL_MAJOR -lt 14 ]
+    if [ $CL_MAJOR -lt 13 ]
     then
         echo "ERROR - Only .NET 2005 and above supported"
+        echo "  got cl version [$COMPILER_VER]"
         return 1
+    fi
+
+    if [ $CL_MAJOR = 13 ]
+    then
+        COMPILER_VER="VS .NET 2003 (Visual Studio 7)"
+
+        LIBPATH="$DOS_CONV_PATH\Vc7\atlmfc\lib"
+        LIB="$DOS_CONV_PATH\Vc7\lib;$DOS_CONV_PATH\Vc7\atlmfc\lib"
+        FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v1.1"
+        set_var FrameworkSDKDir "$FrameworkSDKDir"
+        set_var LIBPATH "$LIBPATH"
+        set_var LIB "$LIB"
+
     fi
 
     if [ $CL_MAJOR = 14 ]
     then
-        COMPILER_VER="VS .NET 2005"
+        COMPILER_VER="VS .NET 2005 (Visual Studio 8)"
 
         LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
         LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
@@ -184,7 +203,7 @@ msvs_check ()
 
     if [ $CL_MAJOR = 15 ]
     then
-        COMPILER_VER="VS .NET 2008"
+        COMPILER_VER="VS .NET 2008 (Visual Studio 9)"
 
         LIB="$DOS_CONV_PATH\VC\LIB;"
         SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"

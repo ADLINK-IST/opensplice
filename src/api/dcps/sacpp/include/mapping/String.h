@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -84,9 +84,13 @@ public:
 
    inline String_out& operator = (char * s);
 
+   // (see below) ... so explicit assignment from String_out needs to be defined.
+   inline String_out &operator= (String_out const &s);
+
    inline operator char *& ();
    inline char *& ptr ();
 
+   // N.B. this is implicitly const (look up)
    char *& m_ptr;
 
 private:
@@ -291,6 +295,12 @@ inline DDS::String_out& DDS::String_out::operator = (char * s)
 {
    m_ptr = s;
    return *this;
+}
+
+inline DDS::String_out& DDS::String_out::operator = (DDS::String_out const &s)
+{
+  m_ptr = s.m_ptr;
+  return *this;
 }
 
 inline DDS::String_out::operator char *& ()

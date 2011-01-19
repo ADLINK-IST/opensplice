@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_SPLICED_H
@@ -18,6 +18,7 @@ extern "C" {
 
 #include "kernelModule.h"
 #include "os_if.h"
+#include "v_status.h"
 
 #ifdef OSPL_BUILD_KERNEL
 #define OS_API OS_API_EXPORT
@@ -41,11 +42,11 @@ OS_API void v_splicedFree(v_spliced spliced);
 OS_API void
 v_splicedGarbageCollector(
     v_spliced spliced);
-    
+
 OS_API void
 v_splicedKernelManager(
     v_spliced spliced);
-    
+
 OS_API void
 v_splicedBuiltinResendManager(
     v_spliced spliced);
@@ -71,6 +72,36 @@ v_splicedCAndMCommandDispatcherQuit(
 OS_API void
 v_splicedBuiltinCAndMCommandDispatcher(
    v_spliced spliced);
+
+OS_API v_result
+v_splicedGetMatchedSubscriptions(
+	v_spliced spliced,
+    v_writer w,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API v_result
+v_splicedGetMatchedSubscriptionData(
+	v_spliced spliced,
+    v_writer w,
+    v_gid subscription,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API v_result
+v_splicedGetMatchedPublications(
+	v_spliced spliced,
+    v_dataReader r,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API v_result
+v_splicedGetMatchedPublicationData(
+	v_spliced spliced,
+    v_dataReader r,
+    v_gid publication,
+    v_statusAction action,
+    c_voidp arg);
 
 #undef OS_API
 

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_READER_H
@@ -92,6 +92,19 @@ u_readerGetSubscriptionMatchStatus(
     c_voidp arg);
 
 OS_API u_result
+u_readerGetMatchedPublications (
+	u_reader _this,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API u_result
+u_readerGetMatchedPublicationData (
+    u_reader _this,
+    u_instanceHandle publication_handle,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API u_result
 u_readerRead (
     u_reader _this,
     u_readerAction action,
@@ -142,6 +155,35 @@ OS_API u_result
 u_readerTakeNextInstance (
     u_reader _this,
     u_instanceHandle handle,
+    u_readerAction action,
+    c_voidp actionArg);
+
+OS_API u_result
+u_readerAddQuery(
+    u_reader _this,
+    u_query query);
+
+OS_API u_result
+u_readerRemoveQuery(
+    u_reader _this,
+    u_query query);
+
+OS_API c_bool
+u_readerContainsQuery(
+    u_reader _this,
+    u_query query);
+
+OS_API c_long
+u_readerQueryCount(
+    u_reader _this);
+
+OS_API c_iter
+u_readerLookupQueries(
+    u_reader _this);
+
+OS_API c_bool
+u_readerWalkQueries(
+    u_reader _this,
     u_readerAction action,
     c_voidp actionArg);
 

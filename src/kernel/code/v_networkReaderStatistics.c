@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,7 +24,9 @@
  */
 static c_type networkReaderStatisticsType = NULL;
 
-v_networkReaderStatistics v_networkReaderStatisticsNew(v_kernel k)
+v_networkReaderStatistics
+v_networkReaderStatisticsNew(
+    v_kernel k)
 {
     v_networkReaderStatistics nrs;
 
@@ -32,27 +34,33 @@ v_networkReaderStatistics v_networkReaderStatisticsNew(v_kernel k)
     assert(C_TYPECHECK(k, v_kernel));
 
     if (networkReaderStatisticsType == NULL) {
-        networkReaderStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkReaderStatistics");
+        networkReaderStatisticsType = c_resolve(c_getBase(k),
+                                                "kernelModule::v_networkReaderStatistics");
     }
     nrs = v_networkReaderStatistics(v_new(k, networkReaderStatisticsType));
     v_networkReaderStatisticsInit(nrs);
     return nrs;
 }
 
-void v_networkReaderStatisticsInit(v_networkReaderStatistics nrs)
+void
+v_networkReaderStatisticsInit(
+    v_networkReaderStatistics nrs)
 {
 	v_kernel kernel;
-	os_uint32 i;
 	assert(nrs != NULL);
     assert(C_TYPECHECK(nrs,v_networkReaderStatistics));
     kernel = v_objectKernel(nrs);
     v_statisticsInit(v_statistics(nrs));
     nrs->queuesCount = 0; /* better to get the actual value from networking */
 
-    nrs->queues = c_arrayNew(c_resolve(c_getBase(kernel), "kernelModule::v_networkQueueStatistics"),64);
+    nrs->queues = c_arrayNew(c_resolve(c_getBase(kernel),
+                             "kernelModule::v_networkQueueStatistics"),64);
 }
 
-c_bool v_networkReaderStatisticsReset(v_networkReaderStatistics nrs, const c_char* fieldName)
+c_bool
+v_networkReaderStatisticsReset(
+    v_networkReaderStatistics nrs, 
+    const c_char* fieldName)
 {
     c_bool result;
 
@@ -69,13 +77,17 @@ c_bool v_networkReaderStatisticsReset(v_networkReaderStatistics nrs, const c_cha
     return result;
 }
 
-void v_networkReaderStatisticsDeinit(v_networkReaderStatistics nrs)
+void
+v_networkReaderStatisticsDeinit(
+    v_networkReaderStatistics nrs)
 {
     assert(nrs != NULL);
     assert(C_TYPECHECK(nrs, v_networkReaderStatistics));
 }
 
-void v_networkReaderStatisticsFree(v_networkReaderStatistics nrs)
+void
+v_networkReaderStatisticsFree(
+    v_networkReaderStatistics nrs)
 {
     assert(nrs != NULL);
     assert(C_TYPECHECK(nrs, v_networkReaderStatistics));

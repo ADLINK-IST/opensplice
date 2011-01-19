@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,7 +14,7 @@
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__participant.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "v_waitset.h"
 #include "v_observable.h"
 #include "v_observer.h"
@@ -23,48 +23,6 @@
 #include "os_report.h"
 
 #include "u__user.h"
-
-u_result
-u_waitsetClaim(
-    u_waitset _this,
-    v_waitset *waitset)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (waitset != NULL)) {
-        *waitset = v_waitset(u_entityClaim(u_entity(_this)));
-        if (*waitset == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_waitsetClaim", 0,
-                        "Claim Waitset failed. "
-                        "<_this = 0x%x, waitset = 0x%x>.",
-                         _this, waitset);
-            result = U_RESULT_ILL_PARAM;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_waitsetClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, waitset = 0x%x>.",
-                    _this, waitset);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_waitsetRelease(
-    u_waitset _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_waitsetRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 u_waitset
 u_waitsetNew(
@@ -76,8 +34,9 @@ u_waitsetNew(
     v_participant kp = NULL;
 
     if (p != NULL) {
-        result = u_participantClaim(p,&kp);
-        if ((result == U_RESULT_OK) && (kp != NULL)) {
+        result = u_entityWriteClaim(u_entity(p),(v_entity*)(&kp));
+        if (result == U_RESULT_OK) {
+            assert(kp);
             ke = v_entity(v_waitsetNew(kp));
             if (ke != NULL) {
                 v_observerSetEventMask(v_observer(ke), V_EVENTMASK_ALL);
@@ -88,7 +47,7 @@ u_waitsetNew(
                         OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
                                     "Initialisation failed. "
                                     "For Participant (0x%x)", p);
-                        u_entityFree(u_entity(_this));
+                        u_waitsetFree(_this);
                     }
                 } else {
                     OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
@@ -101,7 +60,7 @@ u_waitsetNew(
                             "Create kernel entity failed. "
                             "For Participant (0x%x)", p);
             }
-            result = u_participantRelease(p);
+            result = u_entityRelease(u_entity(p));
         } else {
             OS_REPORT_1(OS_WARNING, "u_waitsetNew", 0,
                         "Claim Participant (0x%x) failed.", p);
@@ -134,18 +93,46 @@ u_waitsetFree(
     u_waitset _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
-            result = u_waitsetDeinit(_this);
-            os_free(_this);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_waitsetDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_waitsetFree",0,
+                            "Operation u_waitsetDeinit failed: "
+                            "Waitset = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING,"u_waitsetFree",0,
-                  "The specified Waitset = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_waitsetFree",0,
+                    "Operation u_entityLock failed: "
+                    "Waitset = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
 }
@@ -185,10 +172,11 @@ u_waitsetNotify(
     v_waitset kw;
 
     if (w != NULL) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             v_waitsetTrigger(kw, eventArg);
-            r = u_waitsetRelease(w);
+            r = u_entityRelease(u_entity(w));
         }
     }
     return r;
@@ -203,11 +191,12 @@ u_waitsetWait(
     v_waitset kw;
 
     if ((w != NULL) && (list != NULL)) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             *list = NULL;
             r = u_resultFromKernel(v_waitsetWait(kw,collectEntities,list));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     } else {
         OS_REPORT_2(OS_ERROR, "u_waitsetWait", 0,
@@ -233,11 +222,12 @@ u_waitsetTimedWait(
     v_waitset kw;
 
     if ((w != NULL) && (list != NULL)) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             *list = NULL;
             r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEntities,list,t));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     } else {
         OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
@@ -263,10 +253,11 @@ u_waitsetWaitAction (
     v_waitset kw;
 
     if (w != NULL) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             r = u_resultFromKernel(v_waitsetWait(kw,action,arg));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     }else    {
         OS_REPORT(OS_ERROR, "u_waitsetWaitAction", 0,
@@ -287,10 +278,11 @@ u_waitsetTimedWaitAction (
     v_waitset kw;
 
     if (w != NULL) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             r = u_resultFromKernel(v_waitsetTimedWait(kw,action,arg,t));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     } else    {
         OS_REPORT(OS_ERROR, "u_waitsetTimedWaitAction", 0,
@@ -354,11 +346,12 @@ u_waitsetWaitEvents(
     v_waitset kw;
 
     if ((w != NULL) && (list != NULL)) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             *list = NULL;
             r = u_resultFromKernel(v_waitsetWait(kw,collectEvents,list));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     }else    {
         OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
@@ -383,11 +376,12 @@ u_waitsetTimedWaitEvents(
     v_waitset kw;
 
     if ((w != NULL) && (list != NULL)) {
-        r = u_waitsetClaim(w, &kw);
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
         if (r == U_RESULT_OK) {
+            assert(kw);
             *list = NULL;
             r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEvents,list,t));
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         }
     }else    {
         OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
@@ -413,21 +407,18 @@ u_waitsetAttach(
     v_entity ke;
 
     if ((w != NULL) && (e != NULL)) {
-        r = u_waitsetClaim(w,&kw);
-        if(r == U_RESULT_OK) {
-            ke = u_entityClaim(e);
-            if (ke) {
+        r = u_entityWriteClaim(u_entity(w), (v_entity*)(&kw));
+        if (r == U_RESULT_OK) {
+            assert(kw);
+            r = u_entityReadClaim(e, &ke);
+            if (r == U_RESULT_OK) {
                 v_waitsetAttach(kw,v_observable(ke),context);
                 u_entityRelease(e);
-            } else {
-                OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
-                          "Could not claim supplied entity.");
-                r = U_RESULT_ILL_PARAM;
             }
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         } else {
-            OS_REPORT(OS_WARNING, "u_waitSetAttach", 0,
-                      "Could not claim waitset.");
+            OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
+                      "Could not claim supplied entity.");
         }
     } else {
         OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
@@ -447,21 +438,18 @@ u_waitsetDetach(
     v_entity ke;
 
     if ((w != NULL) && (e != NULL)) {
-        r = u_waitsetClaim(w,&kw);
-        if ((r == U_RESULT_OK) && (kw != NULL)) {
-            ke = u_entityClaim(e);
-            if (ke) {
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
+        if (r == U_RESULT_OK) {
+            assert(kw);
+            r = u_entityReadClaim(e, &ke);
+            if (r == U_RESULT_OK) {
                 v_waitsetDetach(kw,v_observable(ke));
                 u_entityRelease(e);
-            } else {
-                OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
-                          "Could not claim supplied entity.");
-                r = U_RESULT_ILL_PARAM;
             }
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         } else {
-            OS_REPORT(OS_WARNING, "u_waitSetDetach", 0,
-                      "Could not claim waitset.");
+            OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
+                  "Could not claim supplied entity.");
         }
     } else {
         OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
@@ -480,8 +468,9 @@ u_waitsetGetEventMask(
     u_result r;
 
     if ((w != NULL) && (eventMask != NULL)) {
-        r = u_waitsetClaim(w,&kw);
-        if ((r == U_RESULT_OK) && (kw != NULL)) {
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
+        if (r == U_RESULT_OK) {
+            assert(kw);
             if (C_TYPECHECK(kw,v_waitset)) {
                 *eventMask = v_observerGetEventMask(v_observer(kw));
             } else {
@@ -489,7 +478,7 @@ u_waitsetGetEventMask(
                           "Class mismatch.");
                 r = U_RESULT_CLASS_MISMATCH;
             }
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         } else {
             OS_REPORT(OS_WARNING, "u_waitGetEventMask", 0,
                       "Could not claim waitset.");
@@ -511,8 +500,9 @@ u_waitsetSetEventMask(
     u_result r;
 
     if (w != NULL) {
-        r = u_waitsetClaim(w,&kw);
-        if ((r == U_RESULT_OK) && (kw != NULL)) {
+        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
+        if (r == U_RESULT_OK) {
+            assert(kw);
             if (C_TYPECHECK(kw,v_waitset)) {
                 v_observerSetEventMask(v_observer(kw), eventMask);
             } else {
@@ -520,7 +510,7 @@ u_waitsetSetEventMask(
                           "Class mismatch.");
                 r = U_RESULT_CLASS_MISMATCH;
             }
-            u_waitsetRelease(w);
+            u_entityRelease(u_entity(w));
         } else {
             OS_REPORT(OS_WARNING, "u_waitsetSetEventMask", 0,
                       "Could not claim waitset.");

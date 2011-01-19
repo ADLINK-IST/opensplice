@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,10 +12,10 @@
 #ifndef _XBE_ATTRIBUTE_HH
 #define _XBE_ATTRIBUTE_HH
 
-#include <xbe_codegen.h>
-#include <xbe_type.h>
-#include <xbe_classgen.h>
-#include <xbe_interface.h>
+#include "xbe_codegen.h"
+#include "xbe_type.h"
+#include "xbe_classgen.h"
+#include "xbe_interface.h"
 
 class be_attribute :
    public virtual AST_Attribute,

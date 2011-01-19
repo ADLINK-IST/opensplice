@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,7 +23,7 @@ extern "C" {
 
 #define D_MINIMUM_LIVELINESS_EXPIRY_TIME            ((float) 0.2e0)
 #define D_DEFAULT_LIVELINESS_EXPIRY_TIME            ((float)10.0e0)
-#define D_MAXIMUM_LIVELINESS_EXPIRY_TIME            ((float)20.0e0)
+#define D_MAXIMUM_LIVELINESS_EXPIRY_TIME            ((float)2147483647.2147483647)
 
 #define D_MINIMUM_LIVELINESS_UPDATE_INTERVAL        ((float)0.05e0)
 #define D_DEFAULT_LIVELINESS_UPDATE_INTERVAL        ((float)0.1e0)
@@ -288,6 +288,11 @@ void            d_configurationValueULong                   (d_configuration con
                                                              u_cfElement  element,
                                                              const char * tag,
                                                              void (* const setAction)(d_configuration config, c_ulong longValue));
+
+void            d_configurationValueSize                   (d_configuration configuration,
+                                                             u_cfElement  element,
+                                                             const char * tag,
+                                                             void (* const setAction)(d_configuration config, c_ulong ulongValue));
 
 void            d_configurationValueLong                    (d_configuration configuration,
                                                              u_cfElement  element,

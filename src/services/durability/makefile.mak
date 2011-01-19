@@ -2,7 +2,7 @@ ifeq (,$(findstring shmt,$(SPLICE_TARGET)))
 TARGET_EXEC	:= durability
 ODL_MODULES	:= durabilityModule2
 
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(findstring win,$(SPLICE_TARGET)))
 ODL_MODULES	+= kernelModule
 endif
 
@@ -27,7 +27,7 @@ else
 TARGET_DLIB := durability
 ODL_MODULES := durabilityModule2
 
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(findstring win,$(SPLICE_TARGET)))
 ODL_MODULES	+= kernelModule
 endif
 

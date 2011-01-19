@@ -76,8 +76,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * to compute coercions for labels based on the expected discriminator type.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -306,12 +306,12 @@ namespace DDS
    typedef DDS::Long QosPolicyId_t;
 
     const DDS::LongLong HANDLE_NIL = (DDS::LongLong) 0x0;
-    const DDS::Long LENGTH_UNLIMITED = (DDS::Long) -1UL;
+    const DDS::Long LENGTH_UNLIMITED = (DDS::Long) -1L;
     const DDS::Long DURATION_INFINITE_SEC = (DDS::Long) 2147483647UL;
     const DDS::ULong DURATION_INFINITE_NSEC = (DDS::ULong) 2147483647UL;
     const DDS::Long DURATION_ZERO_SEC = (DDS::Long) 0UL;
     const DDS::ULong DURATION_ZERO_NSEC = (DDS::ULong) 0UL;
-    const DDS::Long TIMESTAMP_INVALID_SEC = (DDS::Long) -1UL;
+    const DDS::Long TIMESTAMP_INVALID_SEC = (DDS::Long) -1L;
     const DDS::ULong TIMESTAMP_INVALID_NSEC = (DDS::ULong) 4294967295UL;
     const DDS::Long RETCODE_OK = (DDS::Long) 0UL;
     const DDS::Long RETCODE_ERROR = (DDS::Long) 1UL;

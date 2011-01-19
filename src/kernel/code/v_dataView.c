@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -336,7 +336,6 @@ v_dataViewDeinit(
     v_dataViewWipeSamples(dataView);
     if (dataView->takenInstance != NULL) {
         v_publicFree(v_public(dataView->takenInstance));
-        c_free(dataView->takenInstance);
         dataView->takenInstance = NULL;
     }
     v_collectionDeinit(v_collection(dataView));

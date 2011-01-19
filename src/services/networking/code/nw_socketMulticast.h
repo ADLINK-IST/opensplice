@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -34,7 +34,14 @@ void
 nw_socketMulticastAddPartition(
     nw_socket sock,
     const char *addressString,
-    sk_bool receiving);
+    sk_bool receiving,
+    c_ulong mTTL);
+
+os_int
+nw_socketMulticastSetTTL(
+    nw_socket socket,
+    c_ulong timeToLive);
+
 
 
 #endif /* NW_SOCKETMULTICAST_H */

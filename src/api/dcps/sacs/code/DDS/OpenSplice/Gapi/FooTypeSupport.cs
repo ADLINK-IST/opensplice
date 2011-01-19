@@ -46,8 +46,6 @@ namespace DDS.OpenSplice.Gapi
             uint alloc_size,
             IntPtr alloc_buffer,
             IntPtr writer_copy,
-            Delegate reader_copy,
-            IntPtr create_datawriter,
-            IntPtr create_datareader);
+            Delegate reader_copy);
     }
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,8 +17,10 @@
  */
 
 #include <../posix/code/os__mutex.h>
+#include <os_report.h>
 #include <os_signature.h>
 #include <assert.h>
+#include <string.h>
 #include <errno.h>
 
 static os_boolean ospl_mtx_prio_inherit = OS_FALSE;
@@ -103,13 +105,17 @@ os_mutexInit (
     }
     pthread_mutexattr_destroy (&mattr);
     if (result == 0) {
-        rv=  os_resultSuccess;
+        rv = os_resultSuccess;
 #ifdef OSPL_STRICT_MEM
         mutex->signature = OS_MUTEX_MAGIC_SIG;
 #endif
 
     } else {
-        rv=  os_resultFail;
+        OS_REPORT_2(OS_ERROR,"os_mutexInit",0,
+                    "Operation failed: mutex 0x%x, result = %s",
+                    mutex, strerror(result));
+        assert(OS_FALSE);
+        rv = os_resultFail;
     }
     return rv;
 }
@@ -143,6 +149,10 @@ os_mutexDestroy (
     } else if (result == EBUSY) {
         rv = os_resultBusy;
     } else {
+        OS_REPORT_2(OS_ERROR,"os_mutexDestroy",0,
+                    "Operation failed: mutex 0x%x, result = %s",
+                    mutex, strerror(result));
+        assert(OS_FALSE);
         rv=  os_resultFail;
     }
     return rv;
@@ -172,6 +182,10 @@ os_mutexLock (
     if (result == 0) {
         rv=  os_resultSuccess;
     } else {
+        OS_REPORT_2(OS_ERROR,"os_mutexLock",0,
+                    "Operation failed: mutex 0x%x, result = %s",
+                    mutex, strerror(result));
+        assert(OS_FALSE);
         rv=  os_resultFail;
     }
     return rv;
@@ -203,6 +217,10 @@ os_mutexTryLock (
     } else if (result == EBUSY) {
         rv=  os_resultBusy;
     } else {
+        OS_REPORT_2(OS_ERROR,"os_mutexTryLock",0,
+                    "Operation failed: mutex 0x%x, result = %s",
+                    mutex, strerror(result));
+        assert(OS_FALSE);
         rv=  os_resultFail;
     }
     return rv;
@@ -231,6 +249,10 @@ os_mutexUnlock (
     if (result == 0) {
         rv=  os_resultSuccess;
     } else {
+        OS_REPORT_2(OS_ERROR,"os_mutexUnlock",0,
+                    "Operation failed: mutex 0x%x, result = %s",
+                    mutex, strerror(result));
+        assert(OS_FALSE);
         rv=  os_resultFail;
     }
     return rv;

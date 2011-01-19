@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -444,6 +444,15 @@ d_sampleChainListenerDeinit(
             d_tableFree(listener->chains);
             listener->chains = NULL;
         }
+        if (listener->chainsWaiting) {
+            chain = d_chain(c_iterTakeFirst(listener->chainsWaiting));
+
+            while(chain){
+                d_chainFree(chain);
+                chain = d_chain(c_iterTakeFirst(listener->chainsWaiting));
+            }
+            c_iterFree(listener->chainsWaiting);
+        }
         if(listener->unfulfilledChains){
             chain = d_chain(c_iterTakeFirst(listener->unfulfilledChains));
 
@@ -824,6 +833,12 @@ d_sampleChainListenerNotifyFellowRemoved(
                     d_tableRemove(listener->mergeActions, mergeAction);
                     d_mergeActionFree(mergeAction);
                 }
+
+                /* Remove chain from chains list */
+                if(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE){
+                    chain = d_sampleChainListenerRemoveChain(listener, chain);
+                }
+
             } else {
                 /**
                  * Chain might be freed. This is a valid situation, because the
@@ -856,6 +871,7 @@ d_sampleChainListenerNotifyFellowRemoved(
                     d_readerRequestFree(readerRequest);
                 }
             }
+
             chain->request = NULL;
             d_chainFree(chain);
             chain = c_iterTakeFirst(data.toRemove);
@@ -1328,8 +1344,8 @@ d_sampleChainListenerAction(
                 assert(FALSE);
                 break;
         }
-        complete = d_sampleChainListenerCheckChainComplete(sampleChainListener, chain);
 
+        complete = d_sampleChainListenerCheckChainComplete(sampleChainListener, chain);
 
         if(complete == TRUE) {
             chain = d_sampleChainListenerRemoveChain (sampleChainListener, chain);

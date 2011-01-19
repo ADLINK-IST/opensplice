@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -280,8 +280,6 @@ gapi_expressionCreateQuery (
 
     if ( valid && expression->expr ) {
         if ( createAndValidateParameters(expression, parameters, &args) ) { 
-            /* add prefix sample.message.userData to all field names. */
-            q_prefixFieldNames(&expression->expr,"sample.message.userData");
             query = u_queryNew(reader, queryName, expression->expr, args);
             if ( !query ) {
                 OS_REPORT(OS_ERROR,
@@ -363,7 +361,13 @@ readerCallback (
         sample = v_readerSample(v_dataReaderInstanceHead(instance));
         sampleState = sample->sampleState;
     } else {
+        OS_REPORT_2(OS_ERROR,
+                    "readerCallback", 0,
+                    "Given object is not a reader type: "
+                    "object = 0x%x, kind = %d",
+                    o, v_objectKind(o));
         assert(FALSE);
+        return returnValue;
     }
     instanceState = instance->instanceState;
 

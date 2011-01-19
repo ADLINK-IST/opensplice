@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -27,11 +27,6 @@
 #include "u_user.h"
 #include "nw_misc.h"
 #include "nw__confidence.h"
-
-#ifdef VXWORKS_RTP
-#include <netdb.h>
-#include "os_socket.h"
-#endif
 
 /* --------------------------------- Private -------------------------------- */
 
@@ -60,13 +55,11 @@ struct nw_traceConfig {
 
 #endif /* NW_TRACING */
 
-#ifdef NW_DEBUGGING
 struct nw_lossyConfig {
     c_bool beLossy;
     c_ulong count;
     c_ulong threshold;
 };
-#endif
 
 #ifdef NW_PROFILING
 struct nw_lapAdmin {
@@ -104,9 +97,9 @@ typedef struct nw_configuration_s {
 #ifdef NW_TRACING
     struct nw_traceConfig traceConfig;
 #endif /* NW_TRACING */
-#ifdef NW_DEBUGGING
     struct nw_lossyConfig sendingLossiness;
     struct nw_lossyConfig receivingLossiness;
+#ifdef NW_DEBUGGING
     c_bool noPacking;
 #endif
 #ifdef NW_PROFILING
@@ -147,39 +140,6 @@ nw_configurationWaitIfRequested(
     }
 }
 
-#ifdef VXWORKS_RTP
-
-#define SERV_IP "10.1.0.3"
-
-static FILE * open_socket (short port)
-{
-   FILE * file = NULL;
-   os_int sock;
-   struct sockaddr_in sa;
-
-   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-   {
-      perror("socket");
-      return -1;
-   }
-
-   memset((char *)&sa, 0, sizeof(sa));
-   sa.sin_family = AF_INET;
-   sa.sin_port = htons(port);
-   inet_aton(SERV_IP, &sa.sin_addr);
-
-   if (connect(sock, (struct sockaddr *)&sa, sizeof(sa)) < 0)
-   {
-      perror("connect");
-      sock = -1;
-   }
-
-   file = fdopen (sock, "w");
-
-   return file;
-}
-#endif
-
 static void
 nw_configurationInitializeTracing(
     nw_configuration configuration)
@@ -206,12 +166,8 @@ nw_configurationInitializeTracing(
             if (strncmp(outFileName, NW_STDOUT, (os_uint)sizeof(NW_STDOUT)) == 0) {
                 traceConfig->outFile = stdout;
             } else {
-                char * filename = os_fileNormalize(outFileName); 
-#ifdef VXWORKS_RTP
-                traceConfig->outFile = open_socket (20008);
-#else
+                char * filename = os_fileNormalize(outFileName);
                 traceConfig->outFile = fopen(filename, "w");
-#endif
                 if (!traceConfig->outFile) {
                      NW_REPORT_WARNING_2("Configuration",
                          "Can not open trace outputfile %s, "
@@ -417,7 +373,7 @@ nw_configurationInitializeProfiling(
             if (strncmp(outFileName, NW_STDOUT, (os_uint)sizeof(NW_STDOUT)) == 0) {
                 profConfig->outFile = stdout;
             } else {
-                char * filename = os_fileNormalize(outFileName); 
+                char * filename = os_fileNormalize(outFileName);
                 profConfig->outFile = fopen(filename, "w");
                 if (!profConfig->outFile) {
                      NW_REPORT_WARNING_2("Configuration",
@@ -509,7 +465,6 @@ nw_configurationInitializeLoopback(
 }
 #endif /* NW_LOOPBACK */
 
-#ifdef NW_DEBUGGING
 
 static void
 nw_configurationInitializeLossiness(
@@ -554,6 +509,7 @@ nw_configurationInitializeLossiness(
     }
 }
 
+#ifdef NW_DEBUGGING
 static void
 nw_configurationInitializeNoPacking(
     nw_configuration configuration)
@@ -598,8 +554,8 @@ nw_configurationInitializeConditionals(
 #ifdef NW_LOOPBACK
     nw_configurationInitializeLoopback(configuration);
 #endif /* NW_LOOPBACK */
-#ifdef NW_DEBUGGING
     nw_configurationInitializeLossiness(configuration);
+#ifdef NW_DEBUGGING
     nw_configurationInitializeNoPacking(configuration);
     nw_configurationTestParameterTypes(configuration);
 #endif /* NW_DEBUGGING */
@@ -642,7 +598,6 @@ nw_configurationInterested(
 
 #endif /* NW_TRACING */
 
-#ifdef NW_DEBUGGING
 c_bool
 nw_configurationLoseSentMessage(
     void)
@@ -687,6 +642,7 @@ nw_configurationLoseReceivedMessage(
     return result;
 }
 
+#ifdef NW_DEBUGGING
 c_bool
 nw_configurationNoPacking(
     void)
@@ -1003,7 +959,7 @@ nw_configurationGetBoolParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %s",
@@ -1042,7 +998,7 @@ nw_configurationGetBoolAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             NW_TRACE_3(Configuration, 2,
@@ -1086,7 +1042,7 @@ nw_configurationGetLongParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %d",
@@ -1125,7 +1081,7 @@ c_long nw_configurationGetLongAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             NW_TRACE_3(Configuration, 2,
@@ -1169,7 +1125,43 @@ nw_configurationGetULongParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
+        result = defaultValue;
+        NW_TRACE_3(Configuration, 2,
+            "Could not retrieve parameter %s/%s, switching to default value %u",
+            parameterPath, parameterName, defaultValue);
+    }
+
+    return result;
+}
+
+c_ulong
+nw_configurationGetSizeParameter(
+    const c_char *parameterPath,
+    const c_char *parameterName,
+    c_ulong defaultValue)
+{
+    c_ulong result;
+    c_bool success = FALSE;
+    u_cfData data;
+
+    data = nw_configurationGetParameterData(parameterPath, parameterName);
+    if (data) {
+        success = u_cfDataSizeValue(data, &result);
+        if (success) {
+            NW_TRACE_3(Configuration, 1,
+                       "Retrieved parameter %s/%s, using value %u",
+                       parameterPath, parameterName, result);
+        } else {
+            NW_REPORT_WARNING_3("retrieving configuration parameters",
+                                "incorrect format for unsigned long parameter %s/%s,  "
+                                "switching to default value %u",
+                                parameterPath, parameterName, defaultValue);
+        }
+        u_cfDataFree(data);
+    }
+
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %u",
@@ -1207,7 +1199,52 @@ c_ulong nw_configurationGetULongAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
+        if (elmtFound) {
+            result = defaultValueNoAttr;
+            NW_TRACE_3(Configuration, 2,
+                "Could not retrieve attribute %s[@%s], switching to default value %u",
+                parameterPath, attributeName, result);
+        } else {
+            result = defaultValueNoElmt;
+            NW_TRACE_3(Configuration, 2,
+                "Could not retrieve element %s for attribute %s, switching to default value %u",
+                parameterPath, attributeName, result);
+        }
+    }
+
+    return result;
+}
+
+c_ulong nw_configurationGetSizeAttribute(
+    const c_char *parameterPath,
+    const c_char *attributeName,
+    c_ulong defaultValueNoElmt,
+    c_ulong defaultValueNoAttr)
+{
+    c_ulong result;
+    c_bool success = FALSE;
+    u_cfAttribute attr;
+    c_bool elmtFound;
+
+    attr = nw_configurationGetParameterAttribute(parameterPath, attributeName, &elmtFound);
+    if (attr) {
+        NW_CONFIDENCE(elmtFound);
+        success = u_cfAttributeSizeValue(attr, &result);
+        if (success) {
+            NW_TRACE_3(Configuration, 1,
+                       "Retrieved attribute %s[@%s], using value %u",
+                       parameterPath, attributeName, result);
+        } else {
+            NW_REPORT_WARNING_3("retrieving configuration parameters",
+                                "incorrect format for long attribute %s[@%s],  "
+                                "switching to default value %u",
+                                parameterPath, attributeName, defaultValueNoAttr);
+        }
+        u_cfAttributeFree(attr);
+    }
+
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             NW_TRACE_3(Configuration, 2,
@@ -1250,7 +1287,7 @@ nw_configurationGetFloatParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %f",
@@ -1288,7 +1325,7 @@ c_float nw_configurationGetFloatAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             NW_TRACE_3(Configuration, 2,
@@ -1333,7 +1370,7 @@ nw_configurationGetStringParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = nw_stringDup(defaultValue);
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %s",
@@ -1372,7 +1409,7 @@ nw_configurationGetStringAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = nw_stringDup(defaultValueNoAttr);
             NW_TRACE_3(Configuration, 2,
@@ -1752,7 +1789,7 @@ nw_configurationGetDomainFloatParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %f",
@@ -1788,7 +1825,7 @@ nw_configurationGetDomainStringParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %s",
@@ -1852,7 +1889,7 @@ nw_configurationGetDomainFloatAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         NW_TRACE_3(Configuration, 2,
             "Could not retrieve attribute %s[@%s], switching to default value %f",

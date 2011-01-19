@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -46,6 +46,7 @@ NW_STRUCT(nw_plugReceiveChannel) {
     /* Reading and defragmentation stuff */
     /* Boolean indicating if anybody wants to interrupt */
     nw_bool wakeupRequested;
+    os_mutex wakeupMtx;
     /* Linked list of known sending nodes */
     nw_plugSendingPartitionNode sendingPartitionNodes;
     /* Linked list of free buffers not in use */
@@ -69,6 +70,8 @@ NW_STRUCT(nw_plugReceiveChannel) {
     nw_seqNr maxReliabBacklog;
     nw_seqNr fragmentsOutOfOrderDropped;
     nw_seqNr lastReceivedFragment;
+    nw_seqNr nofBuffersWaiting;
+    nw_seqNr nofBuffersOutOfOrder;
 #ifdef NW_TRACING
     nw_seqNr buffersAllocatedTrace;
     nw_seqNr buffersUsedTrace;
@@ -771,6 +774,7 @@ nw_plugSendingPartitionNodeLookupOrCreateMsgHolderPtr(
 
 static nw_plugBufferDefragAdmin
 nw_plugSendingPartitionNodeOutOfOrderListTake(
+    nw_plugReceiveChannel receiveChannel,
     nw_plugSendingPartitionNode sendingPartitionNode,
     nw_bool orderPreservation)
 {
@@ -801,6 +805,8 @@ nw_plugSendingPartitionNodeOutOfOrderListTake(
     if (result) {
     	NW_CONFIDENCE(sendingPartitionNode->outOfOrderCount > 0);
     	sendingPartitionNode->outOfOrderCount--;
+    	NW_CONFIDENCE(receiveChannel->nofBuffersOutOfOrder > 0);
+    	receiveChannel->nofBuffersOutOfOrder--;
     }
 
     NW_CONFIDENCE(((sendingPartitionNode->outOfOrderAdminsHead.next->next == NULL) ==
@@ -885,6 +891,7 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
         if (result == NULL) {
 
         	sendingPartitionNode->outOfOrderCount++;
+            receiveChannel->nofBuffersOutOfOrder++;
 
             NW_CONFIDENCE(insertionNeeded || (currentAdmin->prev == NULL));
             admin->next = currentAdmin->next;
@@ -934,12 +941,20 @@ nw_plugSendingPartitionNodeOutOfOrderListInsert(
             nw_plugSendingPartitionNodeFree(receiveChannel,sendingPartitionNode);          
         } 
         
+        if (result == NULL) {
+            NW_TRACE_3(Send, 2,
+                "Waiting for packet %d from node 0x%x, received packet %d",
+                 sendingPartitionNode->packetNrWaitingFor, sendingPartitionNode->nodeId,packetNrLookingFor); 
+        }
+            
+
         /* Todo: recheck this assert NW_CONFIDENCE((result == NULL) == isOutOfOrder); */
     } else {
         /* Do not insert anywhere, but prepare for correct release */
         admin->prev = NULL;
         admin->next = NULL;
     }
+
     return result;
 }
 
@@ -1021,7 +1036,7 @@ nw_plugSendingPartitionNodeInsertAdmin(
     }
     /* Execute the following action only if the admin is directly available */
     if (insertedAdmin == admin) {
-        insertedAdmin = nw_plugSendingPartitionNodeOutOfOrderListTake(sendingPartitionNode, orderPreservation);
+        insertedAdmin = nw_plugSendingPartitionNodeOutOfOrderListTake(receiveChannel,sendingPartitionNode, orderPreservation);
         TRANSFER_USEDCOUNT(admin);
         
         NW_CONFIDENCE(insertedAdmin == admin);
@@ -1216,7 +1231,8 @@ nw_plugReceiveChannelCreateSendingPartitions(
     nw_bool connected;
     nw_bool compression;
     nw_networkSecurityPolicy securityPolicy;
-    os_int32 hash;
+    os_uint32 hash;
+    c_ulong mTTL;
 
 
     NW_CONFIDENCE(receiveChannel != NULL);
@@ -1225,7 +1241,7 @@ nw_plugReceiveChannelCreateSendingPartitions(
          partitionId < nw_plugPartitionsGetNofPartitions(partitions);
          partitionId++) {
         nw_plugPartitionsGetPartition(partitions, partitionId,
-            &found, &partitionAddress, &securityPolicy, &connected, &compression, &hash);
+            &found, &partitionAddress, &securityPolicy, &connected, &compression, &hash, &mTTL);
         NW_CONFIDENCE(found);
 
         /*add hash with partitionid value to the hashTree*/
@@ -1233,7 +1249,7 @@ nw_plugReceiveChannelCreateSendingPartitions(
         if (found) {
             nw_socketAddPartition(nw__plugChannelGetSocket(
                 nw_plugChannel(receiveChannel)), partitionId, partitionAddress,
-                connected, compression, TRUE);
+                connected, compression, TRUE, mTTL);
         }
     }
 }
@@ -1253,6 +1269,7 @@ nw_plugReceiveChannelNew(
 { 
     nw_plugReceiveChannel result;
     nw_seqNr DefDefragBuffersSize;
+    os_mutexAttr wakeAttr;
     nw_seqNr packetRetentionPeriodTemp;
     nw_seqNr ReliabilityRecoveryPeriodTemp;
     os_timeSec sectemp;
@@ -1263,6 +1280,9 @@ nw_plugReceiveChannelNew(
         nw_plugChannelInitialize(nw_plugChannel(result), seqNr, nodeId,
             NW_COMM_RECEIVE, partitions, userDataPtr, pathName,onFatal,onFatalUsrData);
         result->wakeupRequested = FALSE;
+	os_mutexAttrInit( &wakeAttr);
+        wakeAttr.scopeAttr = OS_SCOPE_PRIVATE;
+	os_mutexInit( &result->wakeupMtx, &wakeAttr );
         result->freeBuffers = NULL;
         result->sendingPartitionNodes = NULL;
         result->waitingDataBuffersHead = NULL;
@@ -1279,6 +1299,8 @@ nw_plugReceiveChannelNew(
         result->totNofBuffers = 0;
         result->fragmentsOutOfOrderDropped = 0;
         result->lastReceivedFragment = 0;
+        result->nofBuffersWaiting = 0;
+        result->nofBuffersOutOfOrder = 0;
         result->inUse = FALSE;
         result->backupBufferTail = NULL;
         result->backupBufferHead = NULL;
@@ -1313,7 +1335,7 @@ nw_plugReceiveChannelNew(
 
         result->crc_check = NWCF_DEFAULTED_SUBPARAM(Bool, pathName, Rx, CrcCheck,NWCF_DEF_CrcCheck);
 
-        result->maxNofBuffers = NWCF_DEFAULTED_SUBPARAM(ULong, pathName, Rx, DefragBufferSize,DefDefragBuffersSize);
+        result->maxNofBuffers = NWCF_DEFAULTED_SUBPARAM(Size, pathName, Rx, DefragBufferSize,DefDefragBuffersSize);
         result->maxReliabBacklog = NWCF_DEFAULTED_SUBPARAM(ULong, pathName, Rx, MaxReliabBacklog,NWCF_DEF_MaxReliabBacklog);
 #ifdef NW_TRACING
         result->buffersAllocatedTrace = DF_BUFUSE_MONITORING_START;
@@ -1386,6 +1408,7 @@ nw_plugReceiveChannelFree(
     NW_CONFIDENCE(i == receiveChannel->nofFreeBuffers);
     NW_SECURITY_DECODER_DEINIT(receiveChannel);
 
+    os_mutexDestroy( &receiveChannel->wakeupMtx );
     /* inherited finalization */
     nw_plugChannelFinalize(channel);
 
@@ -1424,21 +1447,28 @@ nw_plugReceiveChannelRemoveDefragmentationGarbage(
             if ( receiveChannel->waitingDataBuffersHead == NULL )
             {
                 /* no buffers to garbage collect and no buffers left to process.
-                 * there's no other option than to just deactivate this channel.
+                 * there's no other option than to just terminate the networking service.
                  */
                  
                 if ((channel->onFatal != NULL) &&
                     (nw__plugChannelGetReliabilityOffered(channel) != NW_REL_RELIABLE))
                 {
                     NW_REPORT_ERROR_1("receiving data from the network",
-                        "Channel \"%s\" no more buffers available, "
-                        "terminating Networking service",
+                        "Channel \"%s\" has no more fragmentbuffers available, "
+                        "An incoming fragmented message is too large to fit in "
+                        "the configured fragmentbuffers. Increase the size of the "
+                        "fragmentbuffers (config://NetworkService/Channels/Channel/FramentSize)"
+                        "and/or the maximum number of fragmentbuffers to use "
+                        "(config://NetworkService>Channels>Channel>Receiving>DefragBufferSize). "
+                        "Terminating Networking service",
                         nw__plugChannelGetName(channel));
                     channel->onFatal(channel->onFatalUsrData);
                     channel->onFatal = NULL;
                 }
                 os_nanoSleep(timeout); /* Give network mainthread chance to process the callback */ 
+		os_mutexLock( &receiveChannel->wakeupMtx );
                 receiveChannel->wakeupRequested = TRUE;
+		os_mutexUnlock( &receiveChannel->wakeupMtx );
             }
         }
     }
@@ -1489,7 +1519,7 @@ nw_plugReceiveChannelDropDefragmentationBuffers(
 
 
                 /* now process the fragments that have come available */
-                admin = nw_plugSendingPartitionNodeOutOfOrderListTake(sendingPartitionNode,
+                admin = nw_plugSendingPartitionNodeOutOfOrderListTake(receiveChannel,sendingPartitionNode,
                     TRUE);
                 while (admin != NULL) {
                     insertedAdmin = nw_plugSendingPartitionNodeInsertAdmin(receiveChannel,
@@ -1497,7 +1527,7 @@ nw_plugReceiveChannelDropDefragmentationBuffers(
                     NW_CONFIDENCE(insertedAdmin == admin);
                     /* Release this reference, buffer is refcounted by the list */
                     nw_plugBufferDefragAdminRelease(receiveChannel, admin);
-                    admin = nw_plugSendingPartitionNodeOutOfOrderListTake(sendingPartitionNode, TRUE);
+                    admin = nw_plugSendingPartitionNodeOutOfOrderListTake(receiveChannel,sendingPartitionNode, TRUE);
                 }
             }
             sendingPartitionNode = sendingPartitionNode->next;
@@ -1773,7 +1803,7 @@ nw_plugReceiveChannelCommunicateControlReceived(
     nw_plugInterChannel interChannel;
     nw_plugControlMessage message;
     nw_bool more;
-    os_int32 partitionHashToId;
+    nw_partitionId partitionHashToId;
     os_int32 partitionHash;
 
     NW_CONFIDENCE(nw__plugChannelGetReliabilityOffered(nw_plugChannel(channel)) == NW_REL_RELIABLE);
@@ -1791,15 +1821,6 @@ nw_plugReceiveChannelCommunicateControlReceived(
         NW_CONFIDENCE(message != NULL);
         partitionHash = nw_plugControlMessageGetPartitionId(message);
         partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
-
-        if (partitionHashToId == -1) {
-            partitionHashToId = 0;
-            NW_REPORT_WARNING_1("receive data",
-                                "PartitionId with hash 0x%x not found, using globalPartition",
-                                partitionHash);
-        }
-       /* partitionHashToId = (os_uint32)ut_get(channel->partionIdToHashAdmin,
-        		 (void *)&partitionHash);*/
 
         nw_plugInterChannelPostAckReceivedMessage(interChannel,
             sendingNodeId,
@@ -1828,10 +1849,11 @@ nw_plugReceiveChannelCommunicateDataReceivedReliably(
 
     nw_plugInterChannelPostDataReceivedMessage(interChannel,
         sendingNodeId, sendingPartitionId, sendingAddress,
-        nw_plugDataBufferGetPacketNr(buffer),channel->nofUsedBuffers-channel->nofBackupBuffers);
+        nw_plugDataBufferGetPacketNr(buffer),channel->nofBuffersWaiting + channel->nofBuffersOutOfOrder);
 
     NW_TRACE_2(Receive, 4, "plugChannel %s: Recvthread: sendACK : %d",
-        nw__plugChannelGetName(nw_plugChannel(channel)),channel->nofUsedBuffers-channel->nofBackupBuffers);
+        nw__plugChannelGetName(nw_plugChannel(channel)),
+        channel->nofBuffersWaiting + channel->nofBuffersOutOfOrder);
 }
 
 static void
@@ -1843,7 +1865,7 @@ nw_plugReceiveChannelProcessDataAnnounce(
 {
     nw_plugInterChannel interChannel;
     nw_plugControlAltMessage message;
-    os_int32 partitionHashToId;
+    nw_partitionId partitionHashToId;
     os_int32 partitionHash;
     nw_seqNr nodeId;
     nw_bool more;
@@ -1876,14 +1898,6 @@ nw_plugReceiveChannelProcessDataAnnounce(
             "announce message # node_id 0x%x part_hash 0x%x part_id 0x%x",
             nw__plugChannelGetName(nw_plugChannel(channel)), nodeId, partitionHash,partitionHashToId);
     
-        if (partitionHashToId == -1) {
-            partitionHashToId = 0;
-            NW_REPORT_WARNING_1("receive data",
-                                "PartitionId with hash 0x%x not found, using globalPartition",
-                                partitionHash);
-        }
-        
-        
         currentNode = channel->sendingPartitionNodes;
         found = FALSE;
         while ((currentNode != NULL) && !found) {
@@ -1892,7 +1906,7 @@ nw_plugReceiveChannelProcessDataAnnounce(
                 nw__plugChannelGetName(nw_plugChannel(channel)), currentNode->nodeId, currentNode->partitionId);
             found = (
                 (currentNode->nodeId == nodeId) &&
-                (((os_int32)currentNode->partitionId) == partitionHashToId));
+                ((currentNode->partitionId) == partitionHashToId));
             if (!found) {
                 currentNode = currentNode->next;
             }
@@ -1946,9 +1960,9 @@ nw_plugReceiveChannelProcessDataRequest(
 {
     nw_plugInterChannel interChannel;
     nw_bool found;
-    os_int32 partitionHashToId;
+    nw_partitionId partitionHashToId;
     os_int32 partitionHash;
-    os_int32 thisPartitionId;
+    nw_partitionId thisPartitionId;
     os_int32 thisPartitionHash;
     nw_plugControlAltMessage message = NULL;
     nw_seqNr nodeId;
@@ -1975,14 +1989,6 @@ nw_plugReceiveChannelProcessDataRequest(
         "Requested: deadnode 0x%x part 0x%x first %d last %d",
         nw__plugChannelGetName(nw_plugChannel(channel)),nodeId,partitionHashToId,nw_plugControlAltMessageGetFirstNr(message),nw_plugControlAltMessageGetLastNr(message));
     
-    if (partitionHashToId == -1) {
-        partitionHashToId = 0;
-        NW_REPORT_WARNING_1("receive data",
-                            "PartitionId with hash 0x%x not found, using globalPartition",
-                            partitionHash);
-    }
-
-   
     
     currentBackBuffer = channel->backupBufferHead;
     found = FALSE;
@@ -2102,7 +2108,7 @@ nw_plugReceiveChannelInsertDataReceived(
         nw_plugBufferDefragAdminRelease(receiveChannel, admin);
         if (insertedAdmin == admin) {
             /* Check if any buffers have become not out of order */
-            admin = nw_plugSendingPartitionNodeOutOfOrderListTake(currentNode,
+            admin = nw_plugSendingPartitionNodeOutOfOrderListTake(receiveChannel,currentNode,
                 orderPreservation);
             while (admin != NULL) {
                 TRANSFER_USEDCOUNT(admin);
@@ -2111,7 +2117,7 @@ nw_plugReceiveChannelInsertDataReceived(
                 NW_CONFIDENCE(insertedAdmin == admin);
                 /* Release this reference, buffer is refcounted by the list */
                 nw_plugBufferDefragAdminRelease(receiveChannel, admin);
-                admin = nw_plugSendingPartitionNodeOutOfOrderListTake(currentNode,
+                admin = nw_plugSendingPartitionNodeOutOfOrderListTake(receiveChannel,currentNode,
                         orderPreservation);
             }
         }
@@ -2124,25 +2130,16 @@ nw_plugReceiveChannelInsertDataReceived(
     }
 }
 
-os_uint32
+nw_partitionId
 nw_plugReceiveChannelLookUpPartitionHash(
         nw_plugReceiveChannel channel,
         nw_partitionId partitionHash)
 {
-    os_int32 partitionHashToId;
+    nw_partitionId partitionHashToId;
 
-    /*partitionHashToId = (os_uint32)ut_get(
-       channel->partionIdToHashAdmin,
-       (void *)&partitionHash);*/
 
     partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
 
-    if (partitionHashToId == -1) {
-        partitionHashToId = 0;
-        NW_REPORT_WARNING_1("receive data",
-                            "PartitionId with hash 0x%x not found, using globalPartition",
-                            partitionHash);
-    }
 
     return partitionHashToId;
 }
@@ -2170,8 +2167,8 @@ nw_plugReceiveChannelReadSocket(
     nw_bool compression;
     nw_bool crc_correct;
     os_uint32 crc;	
-    os_int32 partitionHashToId;
-    os_int32 partitionHash;
+    os_uint32 partitionHash;
+    c_ulong mTTL;
 
 
 
@@ -2255,18 +2252,11 @@ nw_plugReceiveChannelReadSocket(
 								NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_RECEIVE);
 
 								partitionHash = nw_plugDataBufferGetPartitionId(nw_plugDataBuffer(buffer));
-								partitionHashToId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
+								sendingPartitionId = nw_plugPartitionsGetPartitionIdByHash(nw_plugChannel(channel)->partitions,partitionHash);
 
-								if (partitionHashToId == -1) {
-								    partitionHashToId = 0;
-                                    NW_REPORT_WARNING_1("receive data",
-                                                        "PartitionId with hash 0x%x not found, using globalPartition",
-                                                        partitionHash);
-								}
 
                                 connected = FALSE;
-                                sendingPartitionId = partitionHashToId;
-                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &compression, &partitionHash);
+                                nw_plugChannelGetPartition(nw_plugChannel(channel), sendingPartitionId,&found, &addressString, &networkSecurityPolicy, &connected, &compression, &partitionHash, &mTTL);
 #ifdef FILTER_ON_SENDING_PARTITION
 								if (connected) {
 #endif
@@ -2290,6 +2280,7 @@ nw_plugReceiveChannelReadSocket(
 									}
 									admin->prev = channel->waitingDataBuffersTail;
 									channel->waitingDataBuffersTail = admin;
+                                    channel->nofBuffersWaiting++;
 
 #ifdef FILTER_ON_SENDING_PARTITION
 									TRANSFER_USEDCOUNT(admin);
@@ -2376,6 +2367,7 @@ nw_plugReceiveChannelTakeWaitingDataBuffer(
     nw_plugBufferDefragAdmin admin = NULL;
 
     if (channel->waitingDataBuffersHead) {
+        NW_CONFIDENCE(channel->nofBuffersWaiting > 0 );
         admin = channel->waitingDataBuffersHead;
         TRANSFER_USEDCOUNT(admin);
         /* set new head to the next of the current head */
@@ -2389,6 +2381,7 @@ nw_plugReceiveChannelTakeWaitingDataBuffer(
         } else {
             channel->waitingDataBuffersTail = NULL;
         }
+        channel->nofBuffersWaiting--;
     }
     return admin;
 }
@@ -2545,13 +2538,17 @@ nw_plugReceiveChannelMessageStart(
     *data = NULL;
     *length = 0;
 
+    os_mutexLock(&receiveChannel->wakeupMtx);
     if (!receiveChannel->wakeupRequested) {
+        os_mutexUnlock(&receiveChannel->wakeupMtx);
             /* Check if any message is waiting to be read.
              * This can be, for example, a message in a previously received
              * buffer. */
         messageWaiting = nw_plugReceiveChannelGetFragmentInstantly(
             receiveChannel, data, length, sender);
+        os_mutexLock(&receiveChannel->wakeupMtx);
         do {
+            os_mutexUnlock(&receiveChannel->wakeupMtx);
             /* First read from the socket in order to avoid rxbuffer overflow */
             nw_plugReceiveChannelProcessIncoming(channel);
             
@@ -2599,16 +2596,21 @@ nw_plugReceiveChannelMessageStart(
                             channel->onFatal = NULL;
                             os_nanoSleep(timeout); /* Give network mainthread chance to process the callback */ 
                         }
-                        receiveChannel->wakeupRequested = TRUE;
-                    }
+	                 os_mutexLock(&receiveChannel->wakeupMtx);
+                         receiveChannel->wakeupRequested = TRUE;
+                         os_mutexUnlock(&receiveChannel->wakeupMtx);
+                     }
                 }
             }
             NW_CONFIDENCE(messageWaiting == ((*data != NULL) && (*length != 0) && (sender->ipAddress != 0)));
+	    os_mutexLock(&receiveChannel->wakeupMtx);
+ 
         } while (!messageWaiting && !receiveChannel->wakeupRequested);
     }
 
     /* Always reset wakeup-flag */
     receiveChannel->wakeupRequested = FALSE;
+    os_mutexUnlock(&receiveChannel->wakeupMtx);
     receiveChannel->inUse = (*data != NULL);
     return receiveChannel->inUse;
 }
@@ -2682,7 +2684,9 @@ nw_plugReceiveChannelWakeUp(
     NW_CONFIDENCE(channel != NULL);
     NW_CONFIDENCE(nw__plugChannelGetCommunication(channel) == NW_COMM_RECEIVE);
 
+    os_mutexLock(&receiveChannel->wakeupMtx);
     receiveChannel->wakeupRequested = TRUE;
+    os_mutexUnlock(&receiveChannel->wakeupMtx);
 }
 
 

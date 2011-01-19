@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -82,7 +82,7 @@ OS_API u_result
 u_serviceInit(
     u_service _this,
     u_serviceKind kind,
-    u_kernel kernel);
+    u_domain kernel);
 
 
 OS_API u_result

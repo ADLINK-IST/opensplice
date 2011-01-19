@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,28 +10,28 @@
  *
  */
 #include "u__user.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "u_entity.h"
 
 #include "os.h"
 #include "os_report.h"
 
-#define MAX_KERNEL (128)
+#define MAX_DOMAINS (128)
 
 #define u_user(u) ((C_STRUCT(u_user) *)(u))
 
-C_CLASS(u_kernelAdmin);
-C_STRUCT(u_kernelAdmin) { /* protected by global user lock */
+C_CLASS(u_domainAdmin);
+C_STRUCT(u_domainAdmin) { /* protected by global user lock */
     c_long refCount;
-    u_kernel kernel;
-    /* The keepList holds all kernel references issues by u_userKeep().
+    u_domain domain;
+    /* The keepList holds all domain references issues by u_userKeep().
      * This list will keep the objects alive until the objects are removed by
-     * u_userFree() or when the kernel is detached from the process
+     * u_userFree() or when the domain is detached from the process
      * e.g. when a process terminates.
      */
     c_iter keepList;
-    /* The lower and upper address bounds of the kernels memory segment.
-     * These values are used to identify if an object belongs to the kernel.
+    /* The lower and upper address bounds of the domains memory segment.
+     * These values are used to identify if an object belongs to the domain.
      */
     c_address lowerBound;
     c_address upperBound;
@@ -44,21 +44,21 @@ C_STRUCT(u_user) {
      */
     os_mutex mutex;
     /*
-     * The kernelList attribute holds information about all connected kernels.
-     * The kernelCount attribute specifies the max index in the kernelList.
-     * So any search range on the list can be limited to 1..kernelCount.
-     * kernels that are detached are removed from the list and the entry in the
+     * The domainList attribute holds information about all connected doamins.
+     * The domainCount attribute specifies the max index in the domainList.
+     * So any search range on the list can be limited to 1..domainCount.
+     * domains that are detached are removed from the list and the entry in the
      * list is never used again.
-     * The value 0 is reserved for the 'no kernel' use-case,
-     * so if kernelCount = 0 then no kernels are attached.
-     * The reason why kernel entries are never reused and why kernelCount is not
-     * the actual number of kernels connected is unclear, it would be more intuitive,
-     * maintainable and flexible if entries in the kernelList could be reused and the
-     * kernelCount would reflect the actual number of connected kernels.
+     * The value 0 is reserved for the 'no domain' use-case,
+     * so if domainCount = 0 then no doamins are attached.
+     * The reason why domain entries are never reused and why domainCount is not
+     * the actual number of doamins connected is unclear, it would be more intuitive,
+     * maintainable and flexible if entries in the domainList could be reused and the
+     * domainCount would reflect the actual number of connected doamins.
      * So this is a subject for future improvement.
      */
-    C_STRUCT(u_kernelAdmin) kernelList[MAX_KERNEL];
-    c_long kernelCount;
+    C_STRUCT(u_domainAdmin) domainList[MAX_DOMAINS];
+    c_long domainCount;
     /* Should only be modified by pa_(in/de)crement! */
     os_uint32 protectCount;
     /* The detachThreadId will have to be set by the detaching thread while
@@ -99,6 +99,9 @@ u__userLock(void)
             /* The mutex is not valid so apparently the user-layer is either
              * destroyed or in process of destruction. */
             u = NULL;
+            OS_REPORT(OS_INFO,
+                      "User Layer",0,
+                      "User layer is corrupted or process is terminating");
         } else if ((os_threadIdToInteger(u->detachThreadId) != 0) &&
                    (os_threadIdToInteger(u->detachThreadId) !=
                     os_threadIdToInteger(os_threadIdSelf())))
@@ -109,10 +112,16 @@ u__userLock(void)
              */
             os_mutexUnlock(&u->mutex);
             u = NULL;
+            OS_REPORT(OS_INFO,
+                      "User Layer",0,
+                      "User layer is corrupted or process is terminating");
         }
     } else {
       /* The user-layer is not created or destroyed i.e. non existent, therefore return null.
        */
+        OS_REPORT(OS_ERROR,
+                  "User Layer",0,
+                  "User layer not initialized");
     }
     return u;
 }
@@ -138,7 +147,7 @@ static void
 u_userExit(void)
 {
     u_user u;
-    u_kernel kernel;
+    u_domain domain;
     os_result mr = os_resultFail;
     c_long i;
 
@@ -156,11 +165,11 @@ u_userExit(void)
          */
         u__userUnlock();
 
-        for (i = 1; (i <= u->kernelCount); i++) {
-            kernel = u->kernelList[i].kernel;
-            if (kernel) {
-                u_kernelDetachParticipants(kernel);
-                u_userKernelClose(kernel);
+        for (i = 1; (i <= u->domainCount); i++) {
+            domain = u->domainList[i].domain;
+            if (domain) {
+                u_domainDetachParticipants(domain);
+                u_userKernelClose(domain);
             }
         }
 
@@ -194,27 +203,27 @@ u_userKeep(
     c_object o)
 {
     u_user u;
-    u_kernelAdmin ka;
+    u_domainAdmin ka;
     c_long i;
 
     if (o) {
         u = u__userLock();
         if (u) {
-            /* the user-layer object exists so now find the kernel that holds
+            /* the user-layer object exists so now find the domain that holds
              * the given object.
              */
-            for (i=1; i <= u->kernelCount; i++) {
-                ka = &u->kernelList[i];
-                if (ka->kernel) {
-                    /* A valid kernel admin exists, now check if the objects
-                     * address is in the kernels address range.
+            for (i=1; i <= u->domainCount; i++) {
+                ka = &u->domainList[i];
+                if (ka->domain) {
+                    /* A valid domain admin exists, now check if the objects
+                     * address is in the domains address range.
                      */
                     if (((c_address)o >= ka->lowerBound) &&
                         ((c_address)o <= ka->upperBound))
                     {
                         c_keep(o);
                         ka->keepList = c_iterInsert(ka->keepList,o);
-                        i = u->kernelCount + 1; /* jump out of the loop */
+                        i = u->domainCount + 1; /* jump out of the loop */
                     }
                 }
             }
@@ -229,20 +238,20 @@ u_userFree (
     c_object o)
 {
     u_user u;
-    u_kernelAdmin ka;
+    u_domainAdmin ka;
     c_object found;
     c_long i;
 
     if (o) {
         u = u__userLock();
         if (u) {
-            for (i=1; i <= u->kernelCount; i++) {
-                ka = &u->kernelList[i];
-                if (ka->kernel) {
+            for (i=1; i <= u->domainCount; i++) {
+                ka = &u->domainList[i];
+                if (ka->domain) {
                     if (((c_address)o >= ka->lowerBound) &&
                         ((c_address)o <= ka->upperBound))
                     {
-                        /* o is in the address range of this kernel.
+                        /* o is in the address range of this domain.
                          * so take it from the keepList.
                          * and free it only if it is actually found in the keepList.
                          */
@@ -254,7 +263,7 @@ u_userFree (
                                        "User tries to free non existing object == 0x%x.",
                                         found);
                         }
-                        i = u->kernelCount + 1; /* jump out of the loop */
+                        i = u->domainCount + 1; /* jump out of the loop */
                     }
                 }
             }
@@ -264,46 +273,12 @@ u_userFree (
 }
 
 /* This method is depricated, it is only here untill all
- * usage of this method is re3moved from all other files.
+ * usage of this method is removed from all other files.
  */
 u_result
 u_userDetach()
 {
     return U_RESULT_OK;
-/*
-    u_kernelAdmin ka;
-    u_user u;
-    u_result r;
-    c_object object;
-    c_long i;
-
-    u = u__userLock();
-    if ( u ){
-        r = U_RESULT_OK;
-        for (i=1; i<=u->kernelCount; i++) {
-            ka = &u->kernelList[i];
-            if (ka->kernel) {
-                ka->refCount = 0;
-                object = c_iterTakeFirst(ka->keepList);
-                while (object) {
-                    c_free(object);
-                    object = c_iterTakeFirst(ka->keepList);
-                }
-                c_iterFree(ka->keepList);
-                ka->keepList = NULL;
-                u_kernelClose(ka->kernel);
-                ka->kernel = NULL;
-            }
-        }
-        u__userUnlock();
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userDetach",0,
-                "User layer not initialized");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-*/
 }
 
 u_result
@@ -321,7 +296,11 @@ u_userInitialise()
     assert(initCount != 0);
 
     if (initCount == 1) {
-
+#ifndef NDEBUG
+#if 0   /* Allow delay for debugging */
+        sleep(20);
+#endif
+#endif
         /* Will start allocating the object, so it should currently be empty. */
         assert(user == NULL);
         os_osInit();
@@ -342,7 +321,7 @@ u_userInitialise()
             os_mutexAttrInit(&mutexAttr);
             mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
             os_mutexInit(&u->mutex,&mutexAttr);
-            u->kernelCount = 0;
+            u->domainCount = 0;
             u->protectCount = 0;
             u->detachThreadId = OS_THREAD_ID_NONE;
             os_procAtExit(u_userExit);
@@ -351,8 +330,6 @@ u_userInitialise()
             user = initUser;
         }
     } else {
-        OS_REPORT_1(OS_INFO, "u_userInitialise", 1,
-                    "User-layer initialization called %d times", initCount);
         if(user == NULL){
             os_time sleep = {0, 100000}; /* 100ms */
             /* Another thread is currently initializing the user-layer. Since
@@ -366,79 +343,85 @@ u_userInitialise()
             /* Initialization did not succeed, undo increment and return error */
             initCount = pa_decrement(&_ospl_userInitCount);
             OS_REPORT_1(OS_ERROR,"u_userInitialise",0,
-                      "Internal error: User-layer should be initialized (initCount = %d), but user == NULL (waited 100ms).", initCount);
+                        "Internal error: User-layer should be initialized "
+                        "(initCount = %d), but user == NULL (waited 100ms).",
+                        initCount);
             rm = U_RESULT_INTERNAL_ERROR;
         }
     }
     return rm;
 }
 
-u_kernel
-u_userKernelNew(
-    const c_char *uri)
+u_result
+u_userAddDomain(
+    u_domain domain)
 {
-    u_kernel _this = NULL;
-    u_kernelAdmin ka;
+    u_domainAdmin ka;
     u_user u;
+    u_result result;
     os_sharedHandle shm;
     os_result osr;
 
-    _this = u_kernelNew(uri);
-    if(_this) {
+    if(domain) {
         u = u__userLock();
         if(u){
-            if (u->kernelCount + 1 < MAX_KERNEL) {
-                shm = u_kernelSharedMemoryHandle(_this);
-                u->kernelCount++;
-                ka = &u->kernelList[u->kernelCount];
-                ka->kernel = _this;
+            if (u->domainCount + 1 < MAX_DOMAINS) {
+                shm = u_domainSharedMemoryHandle(domain);
+                u->domainCount++;
+                ka = &u->domainList[u->domainCount];
+                ka->domain = domain;
                 ka->refCount = 1;
-                /* The keepList holds all kernel references issues by u_userKeep().
-                 * This list will keep the objects alive until the objects are removed by
-                 * u_userFree() or when the kernel is detached from the process
-                 * e.g. when a process terminates.
+                /* The keepList holds all domain references issues by
+                 * u_userKeep().
+                 * This list will keep the objects alive until the objects
+                 * are removed by u_userFree() or when the domain is detached
+                 * from the process e.g. when a process terminates.
                  */
                 ka->keepList = NULL;
                 ka->lowerBound = (c_address)os_sharedAddress(shm);
                 osr = os_sharedSize(shm, (os_address*)&ka->upperBound);
                 if (osr != os_resultSuccess) {
                     OS_REPORT(OS_ERROR,
-                            "u_userKernelNew",0,
+                            "u_userAddDomain",0,
                             "shared memory size cannot be determined");
+                    result = U_RESULT_INTERNAL_ERROR;
+                } else {
+                    result = U_RESULT_OK;
                 }
                 ka->upperBound += ka->lowerBound;
             } else {
                 OS_REPORT_1(OS_ERROR,
-                        "u_userKernelNew",0,
-                        "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
+                        "u_userAddDomain",0,
+                        "Max connected Domains (%d) reached!", MAX_DOMAINS - 1);
+                result = U_RESULT_OUT_OF_MEMORY;
             }
             u__userUnlock();
         } else {
             OS_REPORT(OS_ERROR,
-                    "u_userKernelNew",0,
+                    "u_userAddDomain",0,
                     "User layer not initialized");
+            result = U_RESULT_PRECONDITION_NOT_MET;
         }
-    } /* Fail already reported by u_kernelNew */
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "u_userAddDomain",0,
+                  "Invalid Domain specified: Domain = NULL");
+        result = U_RESULT_ILL_PARAM;
+    } /* Fail already reported by u_domainNew */
 
-    return _this;
+    return result;
 }
 
-/* timeout -1 identifies probe where no error
- * report is expected during normal flow
- */
-u_kernel
-u_userKernelOpen(
-    const c_char *uri,
-    c_long timeout)
+u_domain
+u_userLookupDomain(
+    const c_char *uri)
 {
     u_user u;
-    u_kernel result;
-    u_kernelAdmin ka;
-    os_sharedHandle shm;
-    c_long i, firstFreeIndex;
-    os_result osr;
+    u_domain domain;
+    u_domainAdmin ka;
+    c_long i;
 
-    result = NULL;
+    domain = NULL;
 
     if (uri == NULL || strlen (uri) == 0) {
         uri = os_getenv ("OSPL_URI");
@@ -446,84 +429,97 @@ u_userKernelOpen(
 
     u = u__userLock();
     if (u) {
-        /* If the kernel is already opened by the process,
-           return the kernel object.
-           Otherwise open the kernel and add to the administration */
-        ka = NULL;
-        firstFreeIndex = 0;
-        for (i=1; i<=u->kernelCount; i++) {
-            if (u_kernelCompareDomainId(u->kernelList[i].kernel,(void *)uri)) {
-                ka = &u->kernelList[i];
+        /* If the domain is already opened by the process,
+           return the domain object.
+           Otherwise open the domain and add to the administration */
+        for (i=1; (i<=u->domainCount && domain == NULL); i++) {
+            if (u_domainCompareDomainId(u->domainList[i].domain,(void *)uri)) {
+                ka = &u->domainList[i];
                 ka->refCount++;
-                result = ka->kernel;
-            } else if ((firstFreeIndex == 0) && (u->kernelList[i].kernel == NULL)) {
-                firstFreeIndex = i;
+                domain = ka->domain;
             }
         }
-        if (ka == NULL) {
-            if ((firstFreeIndex != 0) || (u->kernelCount + 1 < MAX_KERNEL)) {
-                result = u_kernelOpen(uri, timeout);
-                if (result != NULL) {
-                    shm = u_kernelSharedMemoryHandle(result);
-                    if (firstFreeIndex != 0) {
-                        ka = &u->kernelList[firstFreeIndex];
-                    } else {
-                        u->kernelCount++;
-                        ka = &u->kernelList[u->kernelCount];
-                    }
-                    ka->kernel = result;
-                    ka->refCount = 1;
-                    /* The keepList holds all kernel references issues by u_userKeep().
-                     * This list will keep the objects alive until the objects are removed by
-                     * u_userFree() or when the kernel is detached from the process
-                     * e.g. when a process terminates.
-                     */
-
-                    ka->keepList = NULL;
-                    ka->lowerBound = (c_address)os_sharedAddress(shm);
-                    osr = os_sharedSize(shm, (os_address*)&ka->upperBound);
-                    if (osr != os_resultSuccess) {
-                        OS_REPORT(OS_ERROR,
-                                "u_userKernelNew",0,
-                                "shared memory size cannot be determined");
-                    }
-                    ka->upperBound += ka->lowerBound;
-                } else {
-                    /* If timeout = -1, don't report */
-                    if (timeout >= 0) {
-                        if (uri == NULL) {
-                            OS_REPORT(OS_ERROR,
-                                      "u_userKernelOpen",0,
-                                      "Failed to open: The default domain");
-                        } else {
-                            OS_REPORT_1(OS_ERROR,
-                                        "u_userKernelOpen",0,
-                                        "Failed to open: %s",uri);
-                        }
-                    }
-                }
-            } else {
-                OS_REPORT_1(OS_ERROR,
-                          "u_userKernelOpen",0,
-                          "Max connected Domains (%d) reached!", MAX_KERNEL - 1);
-            }
-        }
-
         u__userUnlock();
     } else {
         OS_REPORT(OS_ERROR,
-                "u_userKernelOpen",0,
+                "u_userLookupDomain",0,
                 "User layer not initialized");
     }
+    return domain;
+}
 
-    return result;
+/* Only use for spliced, also see comment in body.
+ */
+u_domain
+u_userCreateDomain (
+    const c_char *uri)
+{
+    u_domain _this = NULL;
+    u_result result;
+
+    _this = u_domainNew(uri);
+
+    result = u_userAddDomain(_this);
+
+   /* The spliced will free this admin twice.
+    * As being a participant it will close the connection to
+    * the Domain in u_participantDeinit() and will destroy the
+    * Domain in u_domainFree.
+    * So besides creating a Domain with u_domainNew this method
+    * also lookups the Domain like normal participants do.
+    */
+    u_userLookupDomain(uri);
+    return _this;
+}
+
+/* timeout -1 identifies probe where no error
+ * report is expected during normal flow
+ */
+u_domain
+u_userFindDomain(
+    const c_char *uri,
+    c_long timeout)
+{
+    u_domain domain;
+    u_result result;
+
+    domain = u_userLookupDomain(uri);
+
+    if (domain == NULL) {
+        if (uri == NULL || strlen (uri) == 0) {
+            uri = os_getenv ("OSPL_URI");
+        }
+
+        domain = u_domainOpen(uri, timeout);
+        if (domain != NULL) {
+            result = u_userAddDomain(domain);
+            if (result != U_RESULT_OK) {
+                u_domainFree(domain);
+                domain = NULL;
+            }
+        } else {
+            /* If timeout = -1, don't report */
+            if (timeout >= 0) {
+                if (uri == NULL) {
+                    OS_REPORT(OS_ERROR,
+                              "u_userKernelOpen",0,
+                              "Failed to open: The default domain");
+                } else {
+                    OS_REPORT_1(OS_ERROR,
+                                "u_userKernelOpen",0,
+                                "Failed to open: %s",uri);
+                }
+            }
+        }
+    }
+    return domain;
 }
 
 u_result
 u_userKernelClose(
-    u_kernel kernel)
+    u_domain domain)
 {
-    u_kernelAdmin ka;
+    u_domainAdmin ka;
     u_user u;
     u_result r;
     c_object object;
@@ -533,9 +529,9 @@ u_userKernelClose(
     u = u__userLock();
     if ( u ){
         r = U_RESULT_ILL_PARAM;
-        for (i=1; (i<=u->kernelCount) && (r != U_RESULT_OK); i++) {
-            ka = &u->kernelList[i];
-            if (ka->kernel == kernel) {
+        for (i=1; (i<=u->domainCount) && (r != U_RESULT_OK); i++) {
+            ka = &u->domainList[i];
+            if (ka->domain == domain) {
                 ka->refCount--;
                 if (ka->refCount == 0) {
                     object = c_iterTakeFirst(ka->keepList);
@@ -545,7 +541,7 @@ u_userKernelClose(
                     }
                     c_iterFree(ka->keepList);
                     ka->keepList = NULL;
-                    u->kernelList[i].kernel = NULL;
+                    u->domainList[i].domain = NULL;
                     detach = TRUE;
                 }
                 r = U_RESULT_OK;
@@ -554,7 +550,7 @@ u_userKernelClose(
         u__userUnlock();
 
         if (detach) {
-            u_kernelClose(kernel);
+            u_domainClose(domain);
         }
     } else {
         OS_REPORT(OS_ERROR,
@@ -566,10 +562,10 @@ u_userKernelClose(
 }
 
 u_result
-u_userKernelFree(
-    u_kernel kernel)
+u_userDeleteDomain (
+    u_domain domain)
 {
-    u_kernelAdmin ka;
+    u_domainAdmin ka;
     u_user u;
     u_result r;
     c_long i;
@@ -578,16 +574,17 @@ u_userKernelFree(
     u = u__userLock();
     if ( u ){
         r = U_RESULT_ILL_PARAM;
-        for (i=1; (i<=u->kernelCount) && (r != U_RESULT_OK); i++) {
-            ka = &u->kernelList[i];
-            if (ka->kernel == kernel) {
-                u->kernelList[i].kernel = NULL;
+        for (i=1; (i<=u->domainCount) && (r != U_RESULT_OK); i++) {
+            ka = &u->domainList[i];
+            if (ka->domain == domain) {
+                u->domainList[i].domain = NULL;
                 ka->refCount--;
                 assert(ka->refCount == 0);
                 if (ka->refCount != 0) {
                     OS_REPORT_1(OS_ERROR,
-                        "u_userKernelFree",0,
-                        "Kernel being freed is still referenced %d time(s) in user-layer, should be 0",
+                        "u_userDeleteDomain",0,
+                        "Kernel being freed is still referenced %d time(s) "
+                        "in user-layer, should be 0",
                         ka->refCount);
                 }
                 /* Always free if found */
@@ -598,11 +595,11 @@ u_userKernelFree(
         u__userUnlock();
 
         if (free) {
-            u_kernelFree(kernel);
+            u_domainFree(domain);
         }
     } else {
         OS_REPORT(OS_ERROR,
-                "u_userKernelFree",0,
+                "u_userDeleteDomain",0,
                 "User layer not initialized");
         r = U_RESULT_NOT_INITIALISED;
     }
@@ -620,16 +617,12 @@ u_userServerId(
     u = u__userLock();
     if ( u ) {
         kernel = v_objectKernel(o);
-        for (i=1; i<=u->kernelCount; i++) {
-            if (u_kernelAddress(u->kernelList[i].kernel) == kernel) {
+        for (i=1; i<=u->domainCount; i++) {
+            if (u_domainAddress(u->domainList[i].domain) == kernel) {
                 id = i << 24;
             }
         }
         u__userUnlock();
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userServerId",0,
-                "User layer not initialized");
     }
     return id;
 }
@@ -638,27 +631,24 @@ c_address
 u_userServer(
     c_long id)
 {
-    u_kernel kernel;
+    u_domain domain;
     c_long idx;
     c_address server;
     u_user u;
 
-    kernel = NULL;
+    domain = NULL;
     server = 0;
+
     u = u__userLock();
     if ( u ) {
         idx = id >> 24;
-        if ((idx > 0) && (idx <= u->kernelCount)) {
-            kernel = u->kernelList[idx].kernel;
+        if ((idx > 0) && (idx <= u->domainCount)) {
+            domain = u->domainList[idx].domain;
         }
         u__userUnlock();
-    } else {
-        OS_REPORT(OS_INFO,
-                "u_userServer",0,
-                "User layer not initialized");
-    }
-    if (kernel) {
-        server = u_kernelHandleServer(kernel);
+        if (domain) {
+            server = u_domainHandleServer(domain);
+        }
     }
     return server;
 }

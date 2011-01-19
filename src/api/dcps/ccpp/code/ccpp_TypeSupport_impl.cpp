@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -38,16 +38,17 @@ DDS::TypeSupport_impl::TypeSupport_impl(
             0,    /* alloc_size */
             NULL, /* alloc buffer */
             NULL, /* writer copy */
-            reader_copy, /* reader copy */
-            NULL, /* create datawriter */
-            NULL  /* create datareader */
+            reader_copy//, /* reader copy */
+//            NULL, /* create datawriter */
+//            NULL  /* create datareader */
         );
         
         // When successful, store handle in the user-data field of the handle..
         if (_gapi_self)
         {
             CORBA::Object_ptr anObject = dynamic_cast<CORBA::Object_ptr>(factory);
-            gapi_object_set_user_data( _gapi_self, static_cast<void *>(anObject) );
+            gapi_object_set_user_data(_gapi_self, static_cast<void *>(anObject),
+                                      DDS::ccpp_CallBack_DeleteUserData,NULL );
         }
         else
         {
@@ -67,6 +68,7 @@ DDS::TypeSupport_impl::~TypeSupport_impl()
         // Obtain the TypeSupportFactory object from the user_data field.
         anObject = static_cast<CORBA::Object_ptr>( gapi_object_get_user_data(_gapi_self) );
         factory = dynamic_cast<DDS::TypeSupportFactory_ptr>(anObject);
+        gapi_object_set_user_data(_gapi_self,static_cast<void *>(anObject),NULL,NULL);
 
         // If applicable, release the pointer to the TypeSupportFactory.
         if (factory)

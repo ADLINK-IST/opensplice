@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -27,7 +27,7 @@
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "v_builtin.h"
-
+#include "u_domain.h"
 
 
 
@@ -110,7 +110,12 @@ d_configurationNew(
 
             if(found){
                 u_cfElementFree(found);
+            }else {
+                OS_REPORT_1(OS_WARNING, D_CONTEXT, 0,
+                                "No DurabilityService configurations found for serviceName '%s'. Defaults applied.",
+                                serviceName);
             }
+
             if(domainElement){
                 u_cfElementFree(domainElement);
             }
@@ -146,6 +151,7 @@ d_configurationDeinit(
                 policy = d_policy(c_iterTakeFirst(configuration->policies));
             }
             c_iterFree(configuration->policies);
+            configuration->policies = NULL;
         }
         if(configuration->nameSpaces){
             ns = d_nameSpace(c_iterTakeFirst(configuration->nameSpaces));
@@ -155,9 +161,11 @@ d_configurationDeinit(
                 ns = d_nameSpace(c_iterTakeFirst(configuration->nameSpaces));
             }
             c_iterFree(configuration->nameSpaces);
+            configuration->nameSpaces = NULL;
         }
         if(configuration->networkServiceNames){
             d_tableFree(configuration->networkServiceNames);
+            configuration->networkServiceNames = NULL;
         }
         if(configuration->services){
             name = (c_char*)(c_iterTakeFirst(configuration->services));
@@ -222,15 +230,24 @@ d_configurationInit(
     c_long i;
     c_bool found;
 
+    u_domain domain = NULL;
+
     if(config != NULL){
         /** First apply all defaults. */
         d_printTimedEvent(durability, D_LEVEL_FINER,
                             D_THREAD_MAIN, "Initializing configuration...\n");
 
+        domain = u_participantDomain(u_participant(d_durabilityGetService(durability)));
+
         config->persistentStoreDirectory    = NULL;
         config->persistentStoreMode         = D_STORE_TYPE_XML;
         config->persistentMMFStoreAddress   = 0;
         config->persistentMMFStoreSize      = 10485760;
+        if(domain)
+        {
+            config->persistentMMFStoreAddress   = (c_address)u_domainMemoryAddress(domain) + u_domainMemorySize(domain);
+            config->persistentMMFStoreSize      = u_domainMemorySize(domain) * 2;
+        }
         config->partitionName               = NULL;
         config->publisherName               = NULL;
         config->subscriberName              = NULL;
@@ -310,7 +327,7 @@ d_configurationInit(
             d_configurationValueULong  (config, element, "Persistent/QueueSize/#text", d_configurationSetPersistentQueueSize);
             d_configurationValueString (config, element, "Persistent/StoreMode/#text", d_configurationSetPersistentStoreMode);
 
-            d_configurationValueULong (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
+            d_configurationValueSize (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
             d_configurationValueMemAddr (config, element, "Persistent/MemoryMappedFileStore/Address/#text", d_configurationSetPersistentMMFStoreAddress);
 
             d_configurationValueULong  (config, element, "Persistent/StoreOptimizeInterval/#text", d_configurationSetOptimizeUpdateInterval);
@@ -1845,6 +1862,32 @@ d_configurationValueULong(
 }
 
 void
+d_configurationValueSize(
+    d_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(d_configuration config, c_ulong ulongValue))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_ulong  ulongValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+    while (data != NULL) {
+        found = u_cfDataSizeValue(data, &ulongValue);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            setAction(configuration, ulongValue);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+void
 d_configurationValueMemAddr(
 	    d_configuration configuration,
 	    u_cfElement  element,
@@ -2035,6 +2078,7 @@ d_configurationResolveMergePolicies(
     c_string            mergeType_str, scope;
     d_mergePolicy       mergeType;
 
+    mergeType = D_MERGE_IGNORE;
     iter = u_cfElementXPath(elementParent, mergePolicyName);
 
     element = (u_cfElement)c_iterTakeFirst(iter);
@@ -2263,6 +2307,9 @@ d_configurationResolveNameSpaces(
     iter = u_cfElementXPath(elementParent, nameSpaceName);
     element = c_iterTakeFirst(iter);
     useDeprecated = FALSE;
+    akind = D_ALIGNEE_INITIAL;
+    dkind = D_DURABILITY_ALL;
+    isAligner = TRUE;
 
     while (element) {
         useDeprecated =

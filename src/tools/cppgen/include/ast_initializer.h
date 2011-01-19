@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -22,12 +22,12 @@
 ** USE: included from ast.hh
 */
 
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <utl_list.h>
-#include <ast_decl.h>
-#include <utl_scope.h>
-#include <utl_scoped_name.h>
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "utl_list.h"
+#include "ast_decl.h"
+#include "utl_scope.h"
+#include "utl_scoped_name.h"
 
 
 class AST_Initializer : public virtual AST_Decl, public virtual UTL_Scope

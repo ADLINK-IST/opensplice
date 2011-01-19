@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -140,9 +140,60 @@ v_serviceInit(
     */
     v_leaseManagerDeregister(kernel->livelinessLM, v_participant(service)->lease);
     c_free(v_participant(service)->lease);
-    v_participant(service)->lease = v_leaseManagerRegister(kernel->livelinessLM,
-        v_public(service->state),
-        lp, V_LEASEACTION_SERVICESTATE_EXPIRED, 0/* never repeat */);
+    v_participant(service)->lease = v_leaseNew(kernel, lp);
+    if(v_participant(service)->lease)
+    {
+        v_result result;
+
+        result = v_leaseManagerRegister(
+            kernel->livelinessLM,
+            v_participant(service)->lease,
+            V_LEASEACTION_SERVICESTATE_EXPIRED,
+            v_public(service->state),
+            FALSE/*do not repeat */);
+        if(result != V_RESULT_OK)
+        {
+            c_free(v_participant(service)->lease);
+            v_participant(service)->lease = NULL;
+            OS_REPORT_1(OS_ERROR, "v_service", 0,
+                "A fatal error was detected when trying to register the liveliness lease "
+                "to the liveliness lease manager of the kernel. The result code was %d.", result);
+        }
+    } else
+    {
+        OS_REPORT(OS_ERROR, "v_service", 0,
+            "Unable to create a liveliness lease! Most likely not enough shared "
+            "memory available to complete the operation.");
+    }
+    if(v_participant(service)->lease)/* aka everything is ok so far */
+    {
+        v_result result;
+        c_iter participants;
+        v_participant splicedParticipant;
+
+
+        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
+        assert(c_iterLength(participants) == 1 || 0 == strcmp(name, V_SPLICED_NAME));
+        splicedParticipant = v_participant(c_iterTakeFirst(participants));
+        if(splicedParticipant)
+        {
+            result = v_leaseManagerRegister(
+                v_participant(service)->leaseManager,
+                splicedParticipant->lease,
+                V_LEASEACTION_SERVICESTATE_EXPIRED,
+                v_public(v_service(splicedParticipant)->state),
+                FALSE /* only observing, do not repeat */);
+            if(result != V_RESULT_OK)
+            {
+                c_free(v_participant(service)->lease);
+                v_participant(service)->lease = NULL;
+                OS_REPORT_3(OS_ERROR, "v_service", 0,
+                    "A fatal error was detected when trying to register the spliced's liveliness lease "
+                    "to the lease manager of participant %p (%s). The result code was %d.", service, name, result);
+            }
+        }
+    }
+
     if (service->state != NULL) {
       /* check if state has correct type */
         typeName = c_metaScopedName(c_metaObject(c_getType(c_object(service->state))));

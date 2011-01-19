@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,9 +12,9 @@
 #include "idl_genCHelper.h"
 #include "idl_genLanguageHelper.h"
 
-#include <os_iterator.h>
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_iterator.h"
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 static os_iter definitions = NULL;
 

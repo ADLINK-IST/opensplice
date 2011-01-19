@@ -1,27 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
-#include <os_heap.h>
-#include <os_abstract.h>
+#include "os_heap.h"
+#include "os_abstract.h"
 #include <string.h>
 
-#include <gapi.h>
+#include "gapi.h"
 
 #include "dds_dcps.h"
 #include "dds_dcps_private.h"
-    
+
 void *
 DDS__malloc (
-    void (*ff)(void *),
+    DDS_boolean (*ff)(void *),
     DDS_unsigned_long hl,
     DDS_unsigned_long len)
 {
@@ -89,7 +89,7 @@ DDS_string_dup (
     );
 }
 
-void 
+void
 DDS_string_clean (
     DDS_char **string
     )
@@ -99,7 +99,7 @@ DDS_string_clean (
     );
 }
 
-void 
+void
 DDS_string_replace (
     DDS_char *src,
     DDS_char **dst
@@ -111,15 +111,15 @@ DDS_string_replace (
     );
 }
 
-void 
+DDS_boolean
 DDS_sequence_free (
     void *sequence
     )
 {
-    gapi_sequence_free ( sequence );
+    return gapi_sequence_free ( sequence );
 }
 
-void 
+void
 DDS_sequence_clean (
     void *sequence
     )
@@ -137,7 +137,7 @@ DDS_sequence_malloc (
 
 void *
 DDS_sequence_allocbuf (
-    void (*ff)(void *),
+    DDS_boolean (*ff)(void *),
     DDS_unsigned_long len,
     DDS_unsigned_long count
     )
@@ -158,14 +158,14 @@ DDS_sequence_replacebuf (
 {
     gapi_sequence_replacebuf (
         sequence,
-        allocbuf,               
+        allocbuf,
         (gapi_unsigned_long) count
     );
 }
 
 void *
 DDS_sequence_create (
-    void (*ff)(void *),
+    DDS_boolean (*ff)(void *),
     DDS_unsigned_long len,
     DDS_unsigned_long count
     )
@@ -238,7 +238,7 @@ DDS_InstanceHandleSeq_allocbuf (
 
 }
 
-void DDS_sequence_string_freebuf (void *buffer)
+gapi_boolean DDS_sequence_string_freebuf (void *buffer)
 {
     DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);
     DDS_string *b = (DDS_string *)buffer;
@@ -246,6 +246,7 @@ void DDS_sequence_string_freebuf (void *buffer)
     for (i = 0; i < *count; i++) {
         DDS_string_clean (&b[i]);
     }
+    return TRUE;
 }
 
 DDS_sequence_string *DDS_sequence_string__alloc (void)

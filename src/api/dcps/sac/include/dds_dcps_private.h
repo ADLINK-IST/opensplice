@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -17,8 +17,8 @@
 #ifndef DDS_DCPS_PRIVATE_H
 #define DDS_DCPS_PRIVATE_H
 
-#include <dds_dcps.h>
-#include <os_if.h>
+#include "dds_dcps.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_DCPSSAC
 #define OS_API OS_API_EXPORT
@@ -35,7 +35,7 @@ DDS_string_dup (
 
 OS_API void *
 DDS__malloc (
-    void (*ff)(void *),
+    DDS_boolean (*ff)(void *),
     DDS_unsigned_long hl,
     DDS_unsigned_long len);
 
@@ -63,20 +63,20 @@ OS_API DDS_char *
 DDS_string_dup (
     DDS_char *src);
 
-OS_API void 
+OS_API void
 DDS_string_clean (
     DDS_char **string);
 
-OS_API void 
+OS_API void
 DDS_string_replace (
     DDS_char *src,
     DDS_char **dst);
 
-OS_API void 
+OS_API DDS_boolean
 DDS_sequence_free (
     void *sequence);
 
-OS_API void 
+OS_API void
 DDS_sequence_clean (
     void *sequence);
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,7 +15,7 @@
  * Implements os_threadAttrInit and sets attributes
  * to platform independent values:
  * - scheduling class is OS_SCHED_DEFAULT
- * - thread priority is sched_get_priority_min (SCHED_OTHER)
+ * - thread priority is the middle of the available range
  */
 #include <assert.h>
 #include <limits.h>
@@ -43,7 +43,7 @@ os_threadAttrInit (
 {
     assert (threadAttr != NULL);
     threadAttr->schedClass = OS_SCHED_DEFAULT;
-    threadAttr->schedPriority = sched_get_priority_min (SCHED_OTHER);
+    threadAttr->schedPriority = (sched_get_priority_min (SCHED_OTHER) + sched_get_priority_max (SCHED_OTHER)) / 2;
 
     if (OS_STACKSIZE_DEFAULT < PTHREAD_STACK_MIN) 
     { 

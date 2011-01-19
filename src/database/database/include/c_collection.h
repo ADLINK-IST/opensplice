@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -98,6 +98,7 @@
 #include "c_metabase.h"
 #include "c_iterator.h"
 #include "q_expr.h"
+#include "c_querybase.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -715,7 +716,7 @@ c_tableNext (
  */
 OS_API c_bool
 c_querySetParams (
-    c_query query,
+    c_query _this,
     c_value params[]);
 
 /**
@@ -732,8 +733,29 @@ c_querySetParams (
  */
 OS_API c_bool
 c_queryEval (
-    c_query query,
+    c_query _this,
     c_object o);
+
+/**
+ * \brief This operation returns the predicate that belongs to the given query.
+ *
+ * \param q the query of which the predicate must be returned
+ * \return the predicate of the given query
+ */
+OS_API c_qPred
+c_queryGetPred(
+		c_query _this);
+
+/**
+ * \brief This operation sets the predicate of the given query to the given predicate.
+ *
+ * \param q the query who's predicate must be set
+ * \param p the predicate to which the query's predicate must be set
+ */
+OS_API void
+c_querySetPred(
+		c_query _this,
+		c_qPred p);
 
 /**
  * \brief This table operation inspects the specified object and fills a
@@ -750,19 +772,19 @@ c_queryEval (
  *
  * \return The number of keys returned in the array
  */
-OS_API int
+OS_API c_long
 c_tableGetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API int
+OS_API c_long
 c_tableSetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API int
+OS_API c_long
 c_tableNofKeys (
     c_table _this);
 

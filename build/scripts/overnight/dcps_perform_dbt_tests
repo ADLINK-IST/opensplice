@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . buildsys/functions
 
@@ -33,7 +33,7 @@ ArchiveLogs
 
 BUILD_TYPE=`echo $SETUP_TYPE | awk -F'-' '{ print$NF }'`
 
-/bin/bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect $BUILD_TYPE
+sh $OSPL_OUTER_HOME/bin/management_dbt_run run collect $BUILD_TYPE
 
 (
     cd $OSPL_OUTER_HOME/Results

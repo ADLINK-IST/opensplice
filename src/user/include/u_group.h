@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_GROUP_H
@@ -28,31 +28,29 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define  u_group(o)  ((u_group)(o))
+#define u_group(o) \
+        ((u_group)u_entityCheckType(u_entity(o), U_GROUP))
 
 /* To be called from protected threads only */
-OS_API u_group   u_groupCreate(
-              v_group group,
-              u_participant participant);
+OS_API u_group
+u_groupCreate(
+    v_group group,
+    u_participant participant);
 
 /* Functions taking care of the protection themselves */
-OS_API u_result  
-u_groupClaim(
-    u_group group,
-    v_group *kg);
-    
-OS_API u_result  
-u_groupRelease(
-    u_group group);
-    
-OS_API u_group   
+
+OS_API u_result
+u_groupFree(
+    u_group _this);
+
+OS_API u_group
 u_groupNew(
     u_participant participant,
     const c_char *partitionName,
     const c_char *topicName,
     v_duration timeout);
-              
-OS_API u_result  
+
+OS_API u_result
 u_groupFlush(
     u_group group);
 

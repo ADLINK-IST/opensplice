@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -27,6 +27,7 @@ DDS_StdString BE_Globals::MTPrefix = "xps_mt_";
 DDS_StdString BE_Globals::TCBasePrefix = "_tcbase_";
 DDS_StdString BE_Globals::TCRepPrefix = "_tcrep_";
 DDS_StdString BE_Globals::UserDLL = "";
+DDS_StdString BE_Globals::UserDLLHeader = "";
 DDS_StdString BE_Globals::DLLExtension = "";
 DDS_StdString BE_Globals::hExtension = "h";
 DDS_StdString BE_Globals::CExtension = "cpp";
@@ -68,7 +69,7 @@ pbbool BE_Globals::collocated_direct = pbfalse;
 unsigned long BE_Globals::max_char_per_line = 1024;
 
 const char* BE_Globals::_keywords[] =
-{ 
+{
    "and",
    "and_eq",
    "asm ",
@@ -234,7 +235,7 @@ DDS_StdString BE_Globals::resolveScope
          escope = OuterMostScope (ep);
       }
 
-      /* 
+      /*
          The following test is actually too strict. If we have type
          AA::BB::CC::Type used in module AA::BB if can be referred to
          as CC::Type, but when used in module AA::CC it must be fully
@@ -252,7 +253,7 @@ DDS_StdString BE_Globals::resolveScope
    }
    scope = Scope (ep, name);
 
-   /* 
+   /*
       To disambiguate types from differently scoped modules with the
       same name. Scoped types need to be made absolute with a :: prefix
       if they cannot be resolved within a common containing scope.
@@ -261,10 +262,10 @@ DDS_StdString BE_Globals::resolveScope
       to be checked. This needs fixing. - Steve
    */
 
-   if 
+   if
    (
-      !common&& 
-      (withinScope != "") && 
+      !common&&
+      (withinScope != "") &&
       (enclosingScope != "") &&
       (enclosingScope != "DDS") &&
       (enclosingScope != "const DDS") &&
@@ -334,7 +335,7 @@ DDS_StdString BE_Globals::RelativeScope
 {
    DDS_StdString enclosingScope = ScopeOf (scopedName);
    DDS_StdString name = NameOf (scopedName);
-   return resolveScope (withinScope, enclosingScope, name); 
+   return resolveScope (withinScope, enclosingScope, name);
 }
 
 pbbool

@@ -103,9 +103,9 @@ namespace test.sacs
                 return result;
             }
             returnCode = participant.DeleteSubscriber(subscriber);
-            if (returnCode == DDS.ReturnCode.Ok)
+            if (returnCode != DDS.ReturnCode.Ok)
             {
-                result.Result = "Delete builtin Subscriber succeeded.";
+                result.Result = "Delete builtin Subscriber failed.";
                 return result;
             }
             result.Verdict = Test.Framework.TestVerdict.Pass;

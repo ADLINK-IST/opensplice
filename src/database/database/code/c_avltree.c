@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,7 +19,7 @@
  *
  ***********************************************************************/
 #include "c_avltree.h"
-#include "assert.h"
+#include <assert.h>
 
 /**
  * Local definitions:
@@ -965,6 +965,6 @@ c_avlTreeFree (
     c_avlTree this)
 {
     assert(this != NULL);
-    c_avlNodeFree(this->mm,this->root);
+    assert(this->root == NULL); /* if this fail then comment it out (and write ticket), causes a tiny memory leak */
     c_mmFree(this->mm, this);
 }

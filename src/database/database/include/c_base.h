@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -76,6 +76,8 @@ extern "C" {
  * \param name The name that will be associated to the created database.
  * \param addr The base address of the database memory segment.
  * \param size The size in bytes of the specified memory.
+ * \param threshold The size in bytes of the specified memory threshold, i.e.,
+ *                  the minimum free memory.
  *
  * \return A successful operation will return the database object,
  *         otherwise the operation will return NULL.
@@ -84,7 +86,8 @@ OS_API c_base
 c_create (
     const c_char *name,
     void *addr,
-    c_size size);
+    c_size size,
+    c_size threshold);
 
 /**
  * \brief This operation opens an existing database.
@@ -149,6 +152,10 @@ c_resolve (
 OS_API c_object
 c_new (
     c_type type);
+
+OS_API c_memoryThreshold
+c_baseGetMemThresholdStatus(
+    c_base _this);
 
 /* c_new() method specificly for arrays and sequences (only).
  *
@@ -435,6 +442,16 @@ OS_API c_type c_valueKind_t (c_base _this);
 
 OS_API void c_baseSerLock   (c_base _this);
 OS_API void c_baseSerUnlock (c_base _this);
+
+/* This operation checks if the given address is in the database
+ * address space and if it is the begin address of a database object.
+ * This operation will return NULL if the address is outside the
+ * database address space and return the begin address of the database
+ * object the ptr refers to. Note that if the ptr refers to an address
+ * inside an object (so not the begin address) it will return the begin
+ * addres of the object.
+ */
+OS_API c_object c_baseCheckPtr (c_base _this, void *ptr);
 
 /* The following define enables the DAT tool functionality:
  * #define OBJECT_WALK

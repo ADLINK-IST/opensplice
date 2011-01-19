@@ -1,28 +1,28 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
  * @file api/dcps/saj/include
- * @brief Utility functions for use the saj JNI implementation.  
+ * @brief Utility functions for use the saj JNI implementation.
  */
- 
+
 #ifndef SAJ_UTILITIES_H
 #define SAJ_UTILITIES_H
  
-#include <gapi.h> 
+#include "gapi.h" 
 #include <jni.h>
 #include <stdio.h>
-#include <os_abstract.h>
-#include <saj_listener.h>
-#include <os_if.h>
+#include "os_abstract.h"
+#include "saj_listener.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_DCPSSAJ
 #define OS_API OS_API_EXPORT
@@ -44,12 +44,12 @@ enum saj_returnCode {SAJ_RETCODE_ERROR, SAJ_RETCODE_OK};
 /**
  * Represents the SAJ userdata object of a GAPI entity object.
  * It contains:
- * - saj_object              --> A reference to the Java object associated with 
+ * - saj_object              --> A reference to the Java object associated with
  *                               the GAPI object it is in.
- * - listenerData            --> A reference to the data in the listener object 
- *                               that is attached to the saj_object in this 
+ * - listenerData            --> A reference to the data in the listener object
+ *                               that is attached to the saj_object in this
  *                               userData.
- * - statusConditionUserData --> Userdata of the GAPI statusCondition 
+ * - statusConditionUserData --> Userdata of the GAPI statusCondition
  *                               object that belongs to the saj_object's GAPI
  *                               object.
  */
@@ -64,13 +64,13 @@ C_STRUCT(saj_userData){
 #define saj_userData(d) ((saj_userData)(d))
 
 typedef struct jni_cache_t {
-    /* cache the class reference to a GapiSuperClass object */   
-    jclass gapiSuperClass_class;  
-    
+    /* cache the class reference to a GapiSuperClass object */
+    jclass gapiSuperClass_class;
+
     /* field id of the gapiPeer field */
-    jfieldID sajSuperClassGapiPeer_fid;     
-    
-    /* Caching the field id's of the QosPolicy attributes */ 
+    jfieldID sajSuperClassGapiPeer_fid;
+
+    /* Caching the field id's of the QosPolicy attributes */
     jfieldID deadlineQosPolicy_period_fid;
     jfieldID destinationOrderQosPolicy_kind_fid;
     jfieldID durabilityQosPolicy_kind_fid;
@@ -81,7 +81,7 @@ typedef struct jni_cache_t {
     jfieldID durabilityServiceQosPolicy_maxInstances_fid;
     jfieldID durabilityServiceQosPolicy_maxSamplesPerInstance_fid;
     jfieldID durabilityServiceQosPolicy_serviceCleanupDelay_fid;
-    
+
     jfieldID entityFactoryQosPolicy_autoenableCreatedEntities_fid;
     jfieldID groupDataQosPolicy_value_fid;
     jfieldID historyQosPolicy_kind_fid;
@@ -117,7 +117,7 @@ typedef struct jni_cache_t {
     jfieldID schedulingQosPolicy_schedulingClass_fid;
     jfieldID schedulingQosPolicy_schedulingPriorityKind_fid;
     jfieldID schedulingQosPolicy_schedulingPriority_fid;
-    
+
     jfieldID shareQosPolicy_enable_fid;
     jfieldID shareQosPolicy_name_fid;
 
@@ -132,13 +132,13 @@ typedef struct jni_cache_t {
 
     /* caching the field id's for the DomainParticipantFactoryQos */
     jfieldID domainParticipantFactoryQos_entityFactory_fid;
-    
+
     /* caching the field id's for the DomainParticipantQos */
     jfieldID domainParticipantQos_userData_fid;
     jfieldID domainParticipantQos_entityFactory_fid;
     jfieldID domainParticipantQos_watchdogScheduling_fid;
     jfieldID domainParticipantQos_listenerScheduling_fid;
-    
+
     /* caching the field id's for the DataReaderQos */
     jfieldID dataReaderQos_durability_fid;
     jfieldID dataReaderQos_deadline_fid;
@@ -155,7 +155,7 @@ typedef struct jni_cache_t {
     jfieldID dataReaderQos_share_fid;
     jfieldID dataReaderQos_readerLifespan_fid;
     jfieldID dataReaderQos_subscriptionKeys_fid;
-    
+
     /* caching the field id's for the DataReaderViewQos */
     jfieldID dataReaderViewQos_viewKeys_fid;
 
@@ -174,7 +174,7 @@ typedef struct jni_cache_t {
     jfieldID dataWriterQos_ownership_fid;
     jfieldID dataWriterQos_ownershipStrength_fid;
     jfieldID dataWriterQos_writerDataLifecycle_fid;
-    
+
     /* caching the field id's for the TopicQos */
     jfieldID topicQos_topicData_fid;
     jfieldID topicQos_durability_fid;
@@ -189,20 +189,59 @@ typedef struct jni_cache_t {
     jfieldID topicQos_transportPriority_fid;
     jfieldID topicQos_lifespan_fid;
     jfieldID topicQos_ownership_fid;
-    
+
     /* caching the field id's for the PublisherQos */
     jfieldID publisherQos_presentation_fid;
     jfieldID publisherQos_partition_fid;
     jfieldID publisherQos_groupData_fid;
     jfieldID publisherQos_entityFactory_fid;
-    
+
     /* caching the field id's for the SubscriberQos */
     jfieldID subscriberQos_presentation_fid;
     jfieldID subscriberQos_partition_fid;
     jfieldID subscriberQos_groupData_fid;
     jfieldID subscriberQos_entityFactory_fid;
     jfieldID subscriberQos_share_fid;
-    
+
+    /* caching the field id's for the SubscriptionBuiltinTopicData */
+    jfieldID subscriptionBuiltinTopicData_key_fid;
+    jfieldID subscriptionBuiltinTopicData_participantKey_fid;
+    jfieldID subscriptionBuiltinTopicData_topicName_fid;
+    jfieldID subscriptionBuiltinTopicData_typeName_fid;
+    jfieldID subscriptionBuiltinTopicData_durability_fid;
+    jfieldID subscriptionBuiltinTopicData_latencyBudget_fid;
+    jfieldID subscriptionBuiltinTopicData_liveliness_fid;
+    jfieldID subscriptionBuiltinTopicData_reliability_fid;
+    jfieldID subscriptionBuiltinTopicData_ownership_fid;
+    jfieldID subscriptionBuiltinTopicData_destinationOrder_fid;
+    jfieldID subscriptionBuiltinTopicData_userData_fid;
+    jfieldID subscriptionBuiltinTopicData_timeBasedFilter_fid;
+    jfieldID subscriptionBuiltinTopicData_deadline_fid;
+    jfieldID subscriptionBuiltinTopicData_presentation_fid;
+    jfieldID subscriptionBuiltinTopicData_partition_fid;
+    jfieldID subscriptionBuiltinTopicData_topicData_fid;
+    jfieldID subscriptionBuiltinTopicData_groupData_fid;
+
+    /* caching the field id's for the PublicationBuiltinTopicData */
+    jfieldID publicationBuiltinTopicData_key_fid;
+    jfieldID publicationBuiltinTopicData_participantKey_fid;
+    jfieldID publicationBuiltinTopicData_topicName_fid;
+    jfieldID publicationBuiltinTopicData_typeName_fid;
+    jfieldID publicationBuiltinTopicData_durability_fid;
+    jfieldID publicationBuiltinTopicData_latencyBudget_fid;
+    jfieldID publicationBuiltinTopicData_liveliness_fid;
+    jfieldID publicationBuiltinTopicData_lifespan_fid;
+    jfieldID publicationBuiltinTopicData_reliability_fid;
+    jfieldID publicationBuiltinTopicData_ownership_fid;
+    jfieldID publicationBuiltinTopicData_ownershipStrength_fid;
+    jfieldID publicationBuiltinTopicData_destinationOrder_fid;
+    jfieldID publicationBuiltinTopicData_userData_fid;
+    jfieldID publicationBuiltinTopicData_deadline_fid;
+    jfieldID publicationBuiltinTopicData_presentation_fid;
+    jfieldID publicationBuiltinTopicData_partition_fid;
+    jfieldID publicationBuiltinTopicData_topicData_fid;
+    jfieldID publicationBuiltinTopicData_groupData_fid;
+
     /* caching the field id of the attribute 'value' for the Qos Holder classes */
     jfieldID domainParticipantFactoryQosHolder_value_fid;
     jfieldID conditionSeqHolder_value_fid;
@@ -250,7 +289,7 @@ typedef struct jni_cache_t {
     jmethodID time_t_constructor_mid;
     jfieldID  time_t_sec_fid;
     jfieldID  time_t_nanosec_fid;
-    
+
     /* cache the class reference to status objects */
     jclass    qosPolicyCount_class;
     jmethodID qosPolicyCount_constructor_mid;
@@ -280,7 +319,7 @@ typedef struct jni_cache_t {
     jmethodID subscriptionMatchStatus_constructor_mid;
     jclass    sampleLostStatus_class;
     jmethodID sampleLostStatus_constructor_mid;
-    
+
     /* caching the field id of the attribute 'value' for the Status Holder classes */
     jfieldID inconsistentTopicStatusHolder_value_fid;
     jfieldID allDataDisposedTopicStatusHolder_value_fid;
@@ -288,21 +327,21 @@ typedef struct jni_cache_t {
     jfieldID offeredDeadlineMissedStatusHolder_value_fid;
     jfieldID offeredIncompatibleQosStatusHolder_value_fid;
     jfieldID publicationMatchedStatusHolder_value_fid;
-    
+
     jfieldID livelinessChangedStatusHolder_value_fid;
     jfieldID requestedDeadlineMissedStatusHolder_value_fid;
     jfieldID requestedIncompatibleQosStatusHolder_value_fid;
     jfieldID subscriptionMatchedStatusHolder_value_fid;
     jfieldID sampleRejectedStatusHolder_value_fid;
     jfieldID sampleLostStatusHolder_value_fid;
-    
+
     /*Caching Typesupport*/
     jclass    typeSupport_class;
     jfieldID  typeSupportDataReader_fid;
     jfieldID  typeSupportDataReaderView_fid;
     jfieldID  typeSupportDataWriter_fid;
     jfieldID  typeSupportConstructorSignature_fid;
-    
+
     /*Listener cache*/
     /*topic listener*/
     jclass    listener_topic_class;
@@ -328,7 +367,7 @@ typedef struct jni_cache_t {
     /*subscriber listener*/
     jclass    listener_subscriber_class;
     jmethodID listener_onDataOnReaders_mid;
-    
+
     /*utilities cache*/
     jclass    utilities_class;
     jmethodID utilities_throwException_mid;
@@ -357,7 +396,7 @@ saj_exceptionCheck (
  * @brief Initialize the SAJ library.
  * @param env The JNI environment.
  */
-saj_returnCode 
+saj_returnCode
 saj_InitializeSAJ(
     JNIEnv *env);
 
@@ -367,9 +406,9 @@ saj_InitializeSAJ(
  * @param java_object The java object from which the address will be read.
  * @return the adress of the gapi object.
  */
-OS_API PA_ADDRCAST 
+OS_API PA_ADDRCAST
 saj_read_gapi_address(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject java_object);
 
 /**
@@ -378,15 +417,15 @@ saj_read_gapi_address(
  * @param java_object The Java object to which the adress will be written.
  * @param address The adress of the gapi object.
  */
-void 
+void
 saj_write_gapi_address (
-    JNIEnv *env, 
-    jobject java_object, 
+    JNIEnv *env,
+    jobject java_object,
     PA_ADDRCAST address);
 
 /**
  * @brief Reads the address of a java object from a gapi object.
- * @param gapi_obj The gapi object from which the address of the java object will be 
+ * @param gapi_obj The gapi object from which the address of the java object will be
  * read.
  * @return The java object that is associated with the gapi object.
  */
@@ -396,7 +435,7 @@ saj_read_java_address(
 
 /**
  * @brief Reads the address of a java Listener object from a gapi object.
- * @param gapi_obj The gapi object from which the address of the java object 
+ * @param gapi_obj The gapi object from which the address of the java object
  * will be read.
  * @return The java listener object that is associated with the gapi entity.
  */
@@ -406,14 +445,14 @@ saj_read_java_listener_address(
 
 /**
  * @brief Reads the address of a java StatusCondition object from a gapi object.
- * @param gapi_obj The gapi object from which the address of the java object 
+ * @param gapi_obj The gapi object from which the address of the java object
  * will be read.
  * @return The java statusCondition object that is associated with the gapi entity.
  */
 jobject
 saj_read_java_statusCondition_address(
     gapi_object gapi_obj);
-    
+
 /**
  * @brief Writes the address of a java object to a gapi object.
  * This function reads the address from the java object and stores it in the
@@ -422,63 +461,63 @@ saj_read_java_statusCondition_address(
  * @param gapi_obj The gapi object where the java object will be stored in.
  * @param java_object The java object who's address will be stored in the gapi.
  */
-void 
+void
 saj_write_java_address(
     JNIEnv *env,
-    gapi_object gapi_obj, 
+    gapi_object gapi_obj,
     jobject java_object);
 
 /**
- * @brief Does the same as the saj_write_java_address, but creates a 
+ * @brief Does the same as the saj_write_java_address, but creates a
  *        weak global reference for the Java object.
  * @param env JNI environment.
  * @param gapi_obj The gapi object where the java object will be stored in.
  * @param java_object The java object who's address will be stored in the gapi.
  */
-void 
+void
 saj_write_weak_java_address(
     JNIEnv *env,
-    gapi_object gapi_obj, 
+    gapi_object gapi_obj,
     jobject java_object);
 
 /**
  * @brief Writes the address of the java listener object to the user_data
  * of the gapi object. If there already is a listener, it is replaced.
- * 
+ *
  * @param env The JNI environment.
  * @param gapi_obj The gapi object to store the listener in.
- * @param listenerData The listener data that contains a reference to the 
+ * @param listenerData The listener data that contains a reference to the
  *                     java vm, the java listener and the callback routines.
  */
 void
 saj_write_java_listener_address(
-    JNIEnv *env, 
+    JNIEnv *env,
     gapi_object gapi_obj,
     saj_listenerData listenerData);
 
 /**
  * @brief Writes the address of the java StatusCondition object to the user_data
  * of the gapi object. If there already is a statusCondition, it is replaced.
- * 
+ *
  * @param env The JNI environment.
  * @param gapi_obj The gapi object to store the listener in.
- * @param condition The gapi statuscondition, which userdata is also stored in 
+ * @param condition The gapi statuscondition, which userdata is also stored in
  *                  the userdata of gapi_obj.
  * @param java_object The Java StatusCondition object to store in the gapi object.
  */
 void
 saj_write_java_statusCondition_address(
-    JNIEnv *env, 
+    JNIEnv *env,
     gapi_object gapi_obj,
     gapi_statusCondition condition,
     jobject java_object);
 
 /**
- * @brief Callback routine for delete_contained_entities functions. 
- * 
+ * @brief Callback routine for delete_contained_entities functions.
+ *
  * This function deletes the global java references in a gapi object after it
  * has been deleted.
- * 
+ *
  * @param entityUserData The user data in the gapi object.
  * @param userData The user data provided to the delete_contained_entities
  *                 function. This must be the JNI environment.
@@ -489,7 +528,7 @@ saj_destroy_user_data_callback(
     void* userData);
 
 /**
- * @brief Deletes global references in the data and completely frees the 
+ * @brief Deletes global references in the data and completely frees the
  * memory used by the userdata.
  * @param env The JNI environment.
  * @param ud The user data to free.
@@ -500,7 +539,7 @@ saj_destroy_user_data(
     saj_userData ud);
 
 /**
- * @brief Deletes WEAK global references in the data and completely frees the 
+ * @brief Deletes WEAK global references in the data and completely frees the
  * memory used by the userdata.
  * @param env The JNI environment.
  * @param ud The user data to free.
@@ -509,115 +548,115 @@ void
 saj_destroy_weak_user_data(
     JNIEnv *env,
     saj_userData ud);
-    
+
 /**
  * @brief Creates a new java object, stores the address of the equivalent
  * gapi object in it and stores the java pbject as a GLOBAL reference in the
- * gapi object. 
+ * gapi object.
  * @param env The JNI environment.
- * @param classname The fully qualified classname in which the "." seperator 
+ * @param classname The fully qualified classname in which the "." seperator
  * has been replaced with a "/".
  * @param gapi_obj_address The memory address of the gapi object.
  * @param java_object A pointer to the newly created java object. May not be NULL.
- * @return Return code. 
+ * @return Return code.
  */
-saj_returnCode 
+saj_returnCode
 saj_construct_java_object(
-    JNIEnv *env, 
-    const char *classname, 
-    PA_ADDRCAST gapi_obj_address, 
+    JNIEnv *env,
+    const char *classname,
+    PA_ADDRCAST gapi_obj_address,
     jobject *java_object);
 
 /**
  * @brief Same as saj_construct_java_object, except it does not call the
  *        default constructor but the one with the supplied signature and
- *        with the typeSupport arg as argument. 
+ *        with the typeSupport arg as argument.
  * @param env The JNI environment.
- * @param classname The fully qualified classname in which the "." seperator 
+ * @param classname The fully qualified classname in which the "." seperator
  * has been replaced with a "/".
  * @param gapi_obj_address The memory address of the gapi object.
  * @param java_object A pointer to the newly created java object. May not be NULL.
  * @param constructorSignature The signature of the constructor to call.
  * @param typeSupport the typeSupport arg to pass on to the constructor.
- * @return Return code. 
+ * @return Return code.
  */
 saj_returnCode
 saj_construct_typed_java_object(
-    JNIEnv *env, 
-    const char *classname, 
-    PA_ADDRCAST gapi_obj_address, 
+    JNIEnv *env,
+    const char *classname,
+    PA_ADDRCAST gapi_obj_address,
     jobject *new_java_object,
     const char *constructorSignature,
     jobject typeSupport);
 
 /**
- * @brief Stores the address of the gapi object in the Java object and stores 
- * Jhe java object as a WEAK GLOBAL reference in the gapi object. 
- * 
+ * @brief Stores the address of the gapi object in the Java object and stores
+ * Jhe java object as a WEAK GLOBAL reference in the gapi object.
+ *
  * @param env The JNI environment.
  * @param gapi_obj_address The memory address of the gapi object.
  * @param java_object A pointer to the newly created java object. May not be NULL.
- * @return Return code. 
+ * @return Return code.
  */
 saj_returnCode
 saj_register_weak_java_object(
-    JNIEnv *env, 
-    PA_ADDRCAST gapi_obj_address, 
+    JNIEnv *env,
+    PA_ADDRCAST gapi_obj_address,
     jobject new_java_object);
 
 /**
  * @brief Creates a new java object.
  * @param env The JNI environment.
- * @param classname The fully qualified classname in which the "." seperator 
+ * @param classname The fully qualified classname in which the "." seperator
  * has been replaced with a "/".
  * @param java_object A pointer to the newly created java object. May not be NULL.
- * @return Return code. 
+ * @return Return code.
  */
-saj_returnCode 
+saj_returnCode
 saj_create_new_java_object(
-    JNIEnv *env, 
-    const char *classname, 
+    JNIEnv *env,
+    const char *classname,
     jobject *new_java_object);
 
 
-saj_returnCode 
+saj_returnCode
 saj_create_new_typed_java_object(
-    JNIEnv *env, 
-    const char *classname, 
+    JNIEnv *env,
+    const char *classname,
     jobject *new_java_object,
     const char* signature,
     jobject typeSupport);
 
 /**
- * @brief Copies the duration defined in the java object to a gapi 
+ * @brief Copies the duration defined in the java object to a gapi
  * gapi_duration_t struct.
  * @param env The JNI environment.
  * @param in The java Duration object.
  * @param out The gapi gapi_duration_t struct.
  */
-saj_returnCode 
+saj_returnCode
 saj_durationCopyIn(
-    JNIEnv *env, 
-    jobject in, 
+    JNIEnv *env,
+    jobject in,
     gapi_duration_t *out);
 
 /**
- * @brief Copies the duration defined in the gapi_duration_t object to a java 
+ * @brief Copies the duration defined in the gapi_duration_t object to a java
  * Duration_t object.
  * @param env The JNI environment.
  * @param src The gapi Duration_t object.
  * @param dst The java Duration_t object.
  * @return Return code.
  */
-saj_returnCode 
+saj_returnCode
 saj_durationCopyOut(
-    JNIEnv *env, 
-    gapi_duration_t *src, 
+    JNIEnv *env,
+    gapi_duration_t *src,
     jobject *dst
 );
 
 /**
- * @brief Copies the time defined in the java object to a gapi 
+ * @brief Copies the time defined in the java object to a gapi
  * gapi_time_t struct.
  * @param env The JNI environment.
  * @param in The java Time object.
@@ -625,12 +664,12 @@ saj_durationCopyOut(
  */
 saj_returnCode
 saj_timeCopyIn(
-    JNIEnv *env, 
-    jobject src, 
+    JNIEnv *env,
+    jobject src,
     gapi_time_t *dst);
 
 /**
- * @brief Copies the time defined in the gapi_time_t object to a java 
+ * @brief Copies the time defined in the gapi_time_t object to a java
  * Time_t object.
  * @param env The JNI environment.
  * @param src The gapi Time_t object.
@@ -639,8 +678,8 @@ saj_timeCopyIn(
  */
 saj_returnCode
 saj_timeCopyOut(
-    JNIEnv *env, 
-    gapi_time_t *src, 
+    JNIEnv *env,
+    gapi_time_t *src,
     jobject *dst
 );
 
@@ -657,10 +696,10 @@ saj_timeCopyOut(
  */
 saj_returnCode
 saj_stringSequenceCopyIn(
-    JNIEnv *env, 
-    jobjectArray stringArray, 
+    JNIEnv *env,
+    jobjectArray stringArray,
     gapi_stringSeq *out);
-                                        
+
 /**
  * @brief Copies the values of a java byte array to a gapi_sequence_octet struct.
  * First call gapi_sequence_octet__alloc to allocate a new sequence.
@@ -672,10 +711,10 @@ saj_stringSequenceCopyIn(
  * @param out The gapi_sequence_octet struct.
  * @return Return code.
  */
-saj_returnCode 
+saj_returnCode
 saj_octetSequenceCopyIn(
-    JNIEnv *env, 
-    jbyteArray jArray, 
+    JNIEnv *env,
+    jbyteArray jArray,
     gapi_octetSeq *in);
 
 /**
@@ -684,19 +723,31 @@ saj_octetSequenceCopyIn(
  * @param src The gapi_sequence_octet struct.
  * @param dst Java byte array.
  * @return Return code.
- */                                     
-saj_returnCode 
+ */
+saj_returnCode
 saj_octetSequenceCopyOut(
-    JNIEnv *env, 
-    gapi_octetSeq *src, 
+    JNIEnv *env,
+    gapi_octetSeq *src,
     jbyteArray *dst);
-    
-    
+
+
 saj_returnCode
 saj_instanceHandleSequenceCopyOut(
     JNIEnv* env,
     gapi_instanceHandleSeq *src,
     jintArray *dst);
+
+saj_returnCode
+saj_subscriptionBuiltinTopicDataCopyOut(
+    JNIEnv* env,
+    gapi_subscriptionBuiltinTopicData *src,
+    jobject *dst);
+
+saj_returnCode
+saj_publicationBuiltinTopicDataCopyOut(
+    JNIEnv* env,
+    gapi_publicationBuiltinTopicData *src,
+    jobject *dst);
 
 /**
  * @brief Copies the value of a java enumerated type to an integer.
@@ -705,10 +756,10 @@ saj_instanceHandleSequenceCopyOut(
  * @param dst Enumeration.
  * @return Return code.
  */
-saj_returnCode 
+saj_returnCode
 saj_EnumCopyIn(
-    JNIEnv *env, 
-    jobject src, 
+    JNIEnv *env,
+    jobject src,
     gapi_unsigned_long *dst);
 
 /**
@@ -718,11 +769,11 @@ saj_EnumCopyIn(
  * @parem src Enumeration.
  * @param dst Java enumerated type.
  * @return Return code.
- */    
-saj_returnCode 
+ */
+saj_returnCode
 saj_EnumCopyOut(
-    JNIEnv              *env, 
-    const char          *classname, 
+    JNIEnv              *env,
+    const char          *classname,
     gapi_unsigned_long  src,
     jobject             *dst);
 
@@ -732,11 +783,11 @@ saj_EnumCopyOut(
  * @param src The gapi_stringSeq struct containing the strings.
  * @param dst Pointer to a java String array.
  * @return Return code.
- */    
-saj_returnCode 
+ */
+saj_returnCode
 saj_stringSequenceCopyOut(
-    JNIEnv *env, 
-    gapi_stringSeq src, 
+    JNIEnv *env,
+    gapi_stringSeq src,
     jobjectArray *dst);
 
 /**
@@ -745,7 +796,7 @@ saj_stringSequenceCopyOut(
  * @param src The gapi_smapleInfo struct containing the sample info.
  * @param dst Pointer to a SampleInfo object.
  * @return Return code.
- */    
+ */
 saj_returnCode
 saj_sampleInfoCopyOut(
     JNIEnv *env,
@@ -758,7 +809,7 @@ saj_sampleInfoCopyOut(
  * @param src The gapi_smapleInfo struct containing the sample info.
  * @param dst Pointer to a SampleInfoHolder object.
  * @return Return code.
- */    
+ */
 saj_returnCode
 saj_sampleInfoHolderCopyOut(
     JNIEnv *env,
@@ -766,24 +817,24 @@ saj_sampleInfoHolderCopyOut(
     jobject *dst);
 
 /**
- * @brief Copies references of java objects to a typed object array. 
- * It is assumed that the gapi and the java object already exist and that 
+ * @brief Copies references of java objects to a typed object array.
+ * It is assumed that the gapi and the java object already exist and that
  * this function is called by a function which looks up an existing sequence.
  * @param env JNI environment.
  * @param src Input parameter for the gapi sequence.
  * @param dst Output parameter for the java sequence.
  * @return Return code.
- */     
+ */
 saj_returnCode
 saj_LookupExistingConditionSeq(
-    JNIEnv *env, 
-    gapi_conditionSeq *src, 
+    JNIEnv *env,
+    gapi_conditionSeq *src,
     jobjectArray *dst);
 
 saj_returnCode
 saj_LookupExistingDataReaderSeq(
-    JNIEnv *env, 
-    gapi_dataReaderSeq *src, 
+    JNIEnv *env,
+    gapi_dataReaderSeq *src,
     jobjectArray *dst);
 
 saj_returnCode
@@ -791,7 +842,7 @@ saj_LookupTypeSupportDataReader(
     JNIEnv* env,
     jobject jtypeSupport,
     gapi_char** result);
-    
+
 saj_returnCode
 saj_LookupTypeSupportDataReaderView(
     JNIEnv* env,
@@ -809,6 +860,17 @@ saj_LookupTypeSupportConstructorSignature(
     JNIEnv* env,
     jobject jtypeSupport,
     gapi_char** result);
+
+c_bool
+saj_setThreadEnv(
+    JNIEnv *env);
+
+JNIEnv *
+saj_getThreadEnv();
+
+void
+saj_delThreadEnv(
+    c_bool value);
 
 #undef OS_API
 

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_hello_sub"
-	ProjectGUID="{0A6E3CC9-FECA-1BAD-3AAD-8A6DDEFA88D5}"
+	ProjectGUID="{EACB9B80-FECA-1BAD-3AAD-8A0DE5988CE1}"
 	RootNamespace="ccpp_hello_sub"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -50,8 +50,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
-				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -67,16 +67,16 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_hello_sub.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -132,8 +132,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
-				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
 				RuntimeTypeInfo="true"
@@ -146,16 +146,16 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_hello_sub.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -213,8 +213,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
-				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -230,9 +230,9 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub;_WIN64"
+				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -240,7 +240,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_hello_sub.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -296,8 +296,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
-				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub"
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
 				RuntimeTypeInfo="true"
@@ -310,9 +310,9 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;OTHER_PROCESS_NAME=ccpp_hello_sub;_WIN64"
+				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -320,7 +320,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_hello_sub.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -376,6 +376,18 @@
 			<File
 				RelativePath="CPPSubscriberProcess.h">
 			</File>
+			<File
+				RelativePath="TestTopicsC.h">
+			</File>
+			<File
+				RelativePath="TestTopicsDcps_impl.h">
+			</File>
+			<File
+				RelativePath="TestTopicsDcpsC.h">
+			</File>
+			<File
+				RelativePath="TestTopicsSplDcps.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Build Files"
@@ -401,6 +413,101 @@
 					Name="Release|x64"
 					ExcludedFromBuild="true"
 				>
+				</FileConfiguration>
+			</File>
+		</Filter>
+		<Filter
+			Name="Inline Files"
+			Filter="i;inl">
+			<File
+				RelativePath="TestTopicsC.inl">
+			</File>
+			<File
+				RelativePath="TestTopicsDcpsC.inl">
+			</File>
+		</Filter>
+		<Filter
+			Name="Documentation"
+			Filter="">
+			<File
+				RelativePath="package-frame.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="package-overview.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="run_test.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

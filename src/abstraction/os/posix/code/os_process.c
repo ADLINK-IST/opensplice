@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,11 +15,11 @@
  * Implements process management for POSIX
  */
 
-#include <os_process.h>
-#include <../posix/code/os__process.h>
-#include <os_heap.h>
-#include <os_report.h>
-#include <os_stdlib.h>
+#include "os_process.h"
+#include "../posix/code/os__process.h"
+#include "os_heap.h"
+#include "os_report.h"
+#include "os_stdlib.h"
 
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -745,11 +745,13 @@ os_procFigureIdentity(
 {
     os_int32 size = 0;
     char *process_name;
+    size_t r = 0;
+    int missingBytes = 0;
 
     process_name = os_getenv("SPLICE_PROCNAME");
     if (process_name != NULL) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
-                process_name, os_procIdToInteger(os_procIdSelf()));
+                        process_name, os_procIdToInteger(os_procIdSelf()));
     } else {
         char *procPath;
 
@@ -765,71 +767,53 @@ os_procFigureIdentity(
                             os_procIdToInteger(os_procIdSelf()));
                 } else {
                     /* Memory-claim failed, revert to default (just pid) */
-                    os_free(procPath);
                     size = 0;
                 }
             }
             /* procPath is set */
             if (size > 0) {
-                if (os_access(procPath, OS_ROK) == os_resultSuccess) {
-                    FILE *proc;
+               if (os_access(procPath, OS_ROK) == os_resultSuccess) {
+                  FILE *proc = fopen(procPath, "r");
+                  if (proc) {
+                     do {
+                        r += fread((void*)&procIdentity[r], 1L, procIdentitySize-r,proc);
+                     } while( ferror(proc) && errno == EINTR );
+                     
+                     /* Only count characters till the first null */
+                     r = os_strnlen( procIdentity, r );
+                     if ( r == procIdentitySize )
+                     {
+                        char altbuffer[16];
+                        int usefullRead;
 
-                    proc = fopen(procPath, "r");
-                    if (proc) {
-                        char *cmdline = (char*) os_malloc(_OS_PROCESS_DEFAULT_CMDLINE_LEN_);
-                        if (cmdline) {
-                            int r;
-                            int allocated = _OS_PROCESS_DEFAULT_CMDLINE_LEN_;
-                            int readBytes = 0;
-
-                            do {
-                                /* allocated - readBytes == free_bytes_in_buffer from (cmdline + readBytes) onwards */
-                                r = read(fileno(proc),
-                                        (void*) ((os_address) cmdline
-                                                + (os_address) readBytes),
-                                        allocated - readBytes);
-                                if (r == (allocated - readBytes)) {
-                                    /* There may be more data available */
-                                    char *tmp = (char*) os_realloc(cmdline, allocated + _OS_PROCESS_DEFAULT_CMDLINE_LEN_);
-                                    if (tmp) {
-                                        allocated += _OS_PROCESS_DEFAULT_CMDLINE_LEN_;
-                                        cmdline = tmp;
-                                    } else {
-                                        /* Error, back-off */
-                                        size = 0;
-                                        r = -1;
-                                    }
-                                }
-                                readBytes += r;
-                            }
-                            while (r > 0);
-
-                            if (r >= 0) {
-                                size = snprintf(procIdentity, procIdentitySize,
-                                        "%s <%d>", cmdline, os_procIdToInteger(os_procIdSelf()));
-                            }
-                            os_free(cmdline);
-                        } else {
-                            /* Memory-claim failed, revert to default (just pid) */
-                            size = 0;
-                        }
-                        fclose(proc);
-                    } else {
-                        /* Error occurred while opening the file, default to pid */
-                        size = 0;
-                    }
-                } else {
-                    /* No procfs or no read rights for procfs, default to pid */
-                    size = 0;
-                }
+                        /* Buffer is full null terminate it */
+                        procIdentity[r-1] = '\0';
+                        /* There may be more bytes - count them*/
+                        do {
+                           int p=0;
+                           do {
+                              p += fread((void*)&altbuffer, 1L, 
+                                         sizeof(altbuffer)-p,proc);
+                           } while( ferror(proc) && errno == EINTR );
+                           usefullRead=os_strnlen(&altbuffer[0], sizeof(altbuffer));
+                           missingBytes+=usefullRead;
+                        } while ( usefullRead == sizeof(altbuffer) );
+                        /* Account for space before pid */
+                        missingBytes++;
+                     }
+                     else if ( r > 1 ) {
+                        /* Add a space before the pid */
+                        procIdentity[r++] = ' ';
+                     }
+                     fclose(proc);
+                  }
+               }
             }
             os_free(procPath);
         }
-        if (size == 0) {
-            /* No processname could be determined, so default to PID */
-            size = snprintf(procIdentity, procIdentitySize, "<%d>",
-                    os_procIdToInteger(os_procIdSelf()));
-        }
+        size = snprintf(&procIdentity[r], procIdentitySize-r,
+                        "<%d>", os_procIdToInteger(os_procIdSelf()));
+        size = size+r+missingBytes;
     }
 
     return size;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,8 @@
 #include "idl_scope.h"
 #include "idl_keyDef.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 /* This module registers the key list defined for
    structures and unions as well as the scope and

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,10 +23,10 @@
 #include <sys/wait.h>
 #endif
 
-#include <os.h>
-#include <os_report.h>
-#include <cfg_parser.h>
-#include <cf_config.h>
+#include "os.h"
+#include "os_report.h"
+#include "cfg_parser.h"
+#include "cf_config.h"
 
 #include "ospl_proc.h"
 
@@ -337,7 +337,7 @@ findSpliceSystemAndRemove(
 }
 
 static int
-findSpliceSystemAndShow(void)
+findSpliceSystemAndShow(const char* specific_domain_name)
 {
     DIR *key_dir;
     struct dirent *entry;
@@ -357,8 +357,12 @@ findSpliceSystemAndShow(void)
                 key_file_name = os_malloc (key_file_name_size);
                 snprintf (key_file_name, key_file_name_size, "%s/%s", dir_name, entry->d_name);
                 if ((shmName = matchUid (key_file_name, geteuid()))) {
-                                    printf ("Splice System with domain name \"%s\" is found running\n", shmName);
-                                    ++found_count;
+                    if (specific_domain_name == NULL
+                        || (strcmp(specific_domain_name, shmName) == 0))
+                    {
+                        printf("Splice System with domain name \"%s\" is found running\n", shmName);
+                        ++found_count;
+                    }
                     os_free (shmName);
                 }
                 os_free(key_file_name);
@@ -828,7 +832,7 @@ main(
         }
     } else if (strcmp (command, "list") == 0)
     {
-        findSpliceSystemAndShow ();
+        retCode = findSpliceSystemAndShow (domain_name);
     } else
     {
         print_usage (argv[0]);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -96,6 +96,8 @@ v_dataReaderSampleNew(
     v_lifespanAdminInsert(v_dataReaderEntry(index->entry)->lifespanAdmin,
                           v_lifespanSample(sample));
 
+    dataReader->notReadCount++;
+
     return sample;
 }
 
@@ -116,6 +118,9 @@ v_dataReaderSampleFree(
             instance = v_readerSample(sample)->instance;
             index = v_index(instance->index);
             dataReader = v_dataReader(index->reader);
+            if (!v_readerSampleTestState(sample,L_READ)) {
+                dataReader->notReadCount--;
+            }
 #ifdef _SL_
             if (dataReader->cachedSampleCount < 1000) {
                 message = v_dataReaderSampleMessage(sample);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,8 @@
 #ifndef SAC_BUILTINTOPICS_H
 #define SAC_BUILTINTOPICS_H
 
-#include <gapi.h>
-#include <dds_dcps.h>
+#include "gapi.h"
+#include "dds_dcps.h"
 
 DDS_ReturnCode_t
 sac_builtinTopicRegisterTypeSupport (

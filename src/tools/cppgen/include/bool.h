@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #ifndef _BOOL_H_
 #define _BOOL_H_
 
-#include <sacpp_DDS_DCPS.h>
+#include "sacpp_DDS_DCPS.h"
 
 typedef DDS::Boolean pbbool;
 

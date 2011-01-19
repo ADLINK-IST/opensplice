@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,8 +9,8 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <os_stdlib.h>
-#include <os_heap.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,6 +18,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+
 
 #include "os_stdlib_locate.c"
 
@@ -135,6 +136,15 @@ os_strncpy(
    return strncpy(s1, s2, num);
 }
 
+size_t os_strnlen(char *ptr, size_t maxlen)
+{
+   size_t len;
+   for ( len = 0; len < maxlen && ptr[len] != '\0'; len++ )
+   {
+   }
+   return(len);
+}
+
 int
 os_sprintf(
     char *s,
@@ -205,6 +215,8 @@ os_strtoll(
     long long sign = 1LL;
     long long radix;
     long long dvalue;
+
+    errno = 0;
 
     if (endptr) {
         *endptr = (char *)str;
@@ -472,6 +484,16 @@ os_readdir(
     return result;
 }
 
+os_result os_remove (const char *pathname)
+{
+    return (remove (pathname) == 0) ? os_resultSuccess : os_resultFail;
+}
+
+os_result os_rename (const char *oldpath, const char *newpath)
+{
+    return (rename (oldpath, newpath) == 0) ? os_resultSuccess : os_resultFail;
+}
+
 /* The result of os_fileNormalize should be freed with os_free */
 char *
 os_fileNormalize(
@@ -535,3 +557,13 @@ os_getTempDir()
     return dir_name;
 }
 
+char * os_strerror(int errnum, char *buf, size_t n)
+{
+    strerror_r(errnum, buf, n);
+    return buf;
+}
+
+ssize_t os_write(int fd, const void *buf, size_t count)
+{
+  return write(fd, buf, count);
+}

@@ -1,0 +1,31 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching ContentFilteredTopic "
+sh ./startPublisher.sh  > pubResult.txt	&
+
+sleep 2
+
+sh ./startSubscriber.sh "./subResult.txt" 
+
+echo "=== Checking ContentFilteredTopic Subscriber results"
+NB_GE=`grep GE subResult.txt | wc -l`; echo NB_GE=$NB_GE
+NB_MSFT=`grep MSFT subResult.txt | wc -l`; echo NB_MSFT=$NB_MSFT
+if [ $NB_GE -gt 0 ] && [ $NB_MSFT -eq 0 ] ;then
+   echo OK
+else
+   echo NOK 
+   echo "*** ERROR : example ContentFilteredTopic failed ";
+   cat subResult.txt;
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

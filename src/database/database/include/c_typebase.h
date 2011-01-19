@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -163,8 +163,16 @@ typedef enum c_valueKind {
     V_WCHAR,   V_WSTRING,
     V_FIXED,   V_OBJECT,
     V_VOIDP,
-    V_COUNT
+    V_COUNT,
+    V_SIZE
 } c_valueKind;
+
+typedef enum c_memoryThreshold_e
+{
+    C_MEMTHRESHOLD_OK,
+    C_MEMTHRESHOLD_APP_REACHED,
+    C_MEMTHRESHOLD_SERV_REACHED
+} c_memoryThreshold;
 
 typedef struct c_value {
     c_valueKind kind;
@@ -187,6 +195,7 @@ typedef struct c_value {
         c_bool       Boolean;
         c_voidp      Object;
         c_voidp      Voidp;
+        c_ulong      Size;
     } is;
 } c_value;
 

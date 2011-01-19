@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -830,7 +830,7 @@ q_prefixFieldNames (
         break;
         case Q_EXPR_PROPERTY:
             list = q_listCopy(q_getLst(*e,0));
-            list = q_insert(list,q_newId("userData"));
+            list = q_insert(list,q_newId(prefix));
             p = q_newFnc(Q_EXPR_PROPERTY,list);
             q_swapExpr(*e,p);
             q_dispose(p);
@@ -855,7 +855,7 @@ q_prefixFieldNames (
     break;
     case T_ID:
         list = q_insert(NULL,q_newId(q_getId(*e)));
-        list = q_insert(list,q_newId("userData"));
+        list = q_insert(list,q_newId(prefix));
         p = q_newFnc(Q_EXPR_PROPERTY,list);
         q_swapExpr(*e,p);
         q_dispose(p);
@@ -896,6 +896,16 @@ q_insertPar(
 {
     assert(expr->kind == T_FNC);
     expr->info.function->params = q_insert(expr->info.function->params,par);
+}
+
+void
+q_addPar(
+    q_expr expr,
+    q_expr par)
+{
+    assert(expr->kind == T_FNC);
+
+    expr->info.function->params = q_append(expr->info.function->params, par);
 }
 
 void

@@ -250,11 +250,9 @@ namespace DDS
             DomainParticipant participant = a_participant as DomainParticipant;
             if (participant != null)
             {
-                result = OpenSplice.Gapi.DomainParticipantFactory.delete_participant_w_action(
+                result = OpenSplice.Gapi.DomainParticipantFactory.delete_participant(
                     GapiPeer,
-                    participant.GapiPeer,
-                    DeleteEntityAction,
-                    IntPtr.Zero);
+                    participant.GapiPeer);
             }
 
             return result;
@@ -344,19 +342,6 @@ namespace DDS
 
             return result;
         }
-
-        internal void DeleteEntityAction(IntPtr entityData, IntPtr userData)
-        {
-            // Translate the UserData pointer into a valid C# language object.
-            SacsSuperClass entity = SacsSuperClass.fromUserData(entityData);
-
-            // If the UserData contained a valid object, then destruct it.
-            if (entity != null)
-            {
-                entity.Dispose();
-            }
-        }
-
     }
 
 }

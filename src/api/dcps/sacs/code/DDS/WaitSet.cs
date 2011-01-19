@@ -36,8 +36,20 @@ namespace DDS
         /// The default WaitSet constructor. Creates a WaitSet object.
         /// </summary>
         public WaitSet()
-            : base(OpenSplice.Gapi.WaitSet.alloc(), true)
-        { }
+        {
+            IntPtr ptr = OpenSplice.Gapi.WaitSet.alloc();
+            if (ptr != IntPtr.Zero)
+            {
+                SetPeer(ptr, true);
+            }
+            else
+            {
+                // Gapi already logged that the WaitSet has not been created 
+                // successfully. Now create a deliberate null pointer exception
+                // to let the current constructor fail.
+                throw new System.NullReferenceException("gapi_waitSet__alloc returned a NULL pointer.");
+            }
+        }
 
         /// <summary>
         /// This operation allows an application thread to wait for the occurrence of at least one 

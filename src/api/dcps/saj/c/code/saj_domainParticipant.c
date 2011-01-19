@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -123,16 +123,15 @@ SAJ_FUNCTION(jniDeletePublisher) (
     gapi_publisher gapiPublisher;
     gapi_domainParticipant participant;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant) saj_read_gapi_address(env, this);
     gapiPublisher = (gapi_publisher) saj_read_gapi_address(env, publisher);
-    ud = gapi_object_get_user_data(gapiPublisher);
-    grc = gapi_domainParticipant_delete_publisher(participant, gapiPublisher);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
+    must_free = saj_setThreadEnv(env);
+    grc = gapi_domainParticipant_delete_publisher(participant, gapiPublisher);
+    saj_delThreadEnv(must_free);
+
     return (jint)grc;
 }
 
@@ -219,17 +218,15 @@ SAJ_FUNCTION(jniDeleteSubscriber) (
     gapi_domainParticipant participant;
     gapi_subscriber subscriber;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
 
-    ud = gapi_object_get_user_data(subscriber);
+    must_free = saj_setThreadEnv(env);
     grc = gapi_domainParticipant_delete_subscriber(participant, subscriber);
+    saj_delThreadEnv(must_free);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 
@@ -332,7 +329,7 @@ SAJ_FUNCTION(jniCreateTopic) (
         if(result == JNI_FALSE) {
             OS_REPORT(OS_ERROR, "dcpssaj", GAPI_ERRORCODE_INCONSISTENT_VALUE, "ExtTopicListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
   	    rc = SAJ_RETCODE_ERROR;
-        }  
+        }
     }
 
     if(rc == SAJ_RETCODE_OK){
@@ -386,16 +383,15 @@ SAJ_FUNCTION(jniDeleteTopic) (
     gapi_domainParticipant participant;
     gapi_topic topic;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
     topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-    ud = gapi_object_get_user_data(topic);
-    grc = gapi_domainParticipant_delete_topic(participant, topic);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
+    must_free = saj_setThreadEnv(env);
+    grc = gapi_domainParticipant_delete_topic(participant, topic);
+    saj_delThreadEnv(must_free);
+
     return (jint)grc;
 }
 
@@ -473,6 +469,7 @@ SAJ_FUNCTION(jniLookupTopicdescription) (
     gapi_topicDescription gapiTopicDescription;
     const gapi_char* topicName;
     saj_returnCode rc;
+    gapi_duration_t duration_zero = GAPI_DURATION_ZERO;
 
     javaTopicDescription = NULL;
     gapiTopicDescription = GAPI_OBJECT_NIL;
@@ -485,7 +482,16 @@ SAJ_FUNCTION(jniLookupTopicdescription) (
     }
     gapiTopicDescription = gapi_domainParticipant_lookup_topicdescription(
                                                     participant, topicName);
-
+    if (gapiTopicDescription == GAPI_OBJECT_NIL) {
+        /* this is not entirely MT-safe with respect to having one unique
+         * instance per topic, what is needed is a user layer participant
+         * method lookup_or_create.
+         */
+        gapiTopicDescription = (gapi_topicDescription)
+            gapi_domainParticipant_find_topic(participant,
+                                              topicName,
+                                              &duration_zero);
+    }
     if (gapiTopicDescription != GAPI_OBJECT_NIL){
         javaTopicDescription = saj_read_java_address(gapiTopicDescription);
 
@@ -600,17 +606,15 @@ SAJ_FUNCTION(jniDeleteContentfilteredtopic) (
     gapi_domainParticipant participant;
     gapi_contentFilteredTopic cft;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
-    cft = (gapi_contentFilteredTopic)saj_read_gapi_address(env,
-                                                           contentFilterTopic);
-    ud = gapi_object_get_user_data(cft);
-    grc = gapi_domainParticipant_delete_contentfilteredtopic(participant,cft);
+    cft = (gapi_contentFilteredTopic)saj_read_gapi_address(env, contentFilterTopic);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
+    must_free = saj_setThreadEnv(env);
+    grc = gapi_domainParticipant_delete_contentfilteredtopic(participant,cft);
+    saj_delThreadEnv(must_free);
+
     return (jint)grc;
 }
 
@@ -710,16 +714,15 @@ SAJ_FUNCTION(jniDeleteMultitopic) (
     gapi_domainParticipant participant;
     gapi_multiTopic multiTopic;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
     multiTopic = (gapi_multiTopic)saj_read_gapi_address(env, jMultiTopic);
-    ud = gapi_object_get_user_data(multiTopic);
-    grc = gapi_domainParticipant_delete_multitopic(participant, multiTopic);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
+    must_free = saj_setThreadEnv(env);
+    grc = gapi_domainParticipant_delete_multitopic(participant, multiTopic);
+    saj_delThreadEnv(must_free);
+
     return (jint)grc;
 }
 
@@ -733,11 +736,16 @@ SAJ_FUNCTION(jniDeleteContainedEntities) (
     jobject       this)
 {
     gapi_domainParticipant participant;
+    jint result;
+    c_bool must_free;
 
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
 
-    return (jint)gapi_domainParticipant_delete_contained_entities(
-                            participant, saj_destroy_user_data_callback, env);
+    must_free = saj_setThreadEnv(env);
+    result = (jint)gapi_domainParticipant_delete_contained_entities(participant);
+    saj_delThreadEnv(must_free);
+
+    return result;
 }
 
 /*
@@ -829,7 +837,7 @@ SAJ_FUNCTION(jniSetListener) (
     struct gapi_domainParticipantListener *listener;
     gapi_domainParticipant participant;
     gapi_returnCode_t grc = GAPI_RETCODE_OK;
-    
+
     jclass tempClass;
     jboolean result;
 
@@ -844,7 +852,7 @@ SAJ_FUNCTION(jniSetListener) (
         if(result == JNI_FALSE) {
             OS_REPORT(OS_ERROR, "dcpssaj", 0, "ExtDomainParticipantListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
             grc = GAPI_RETCODE_BAD_PARAMETER;
-        }  
+        }
     }
 
     if(grc == GAPI_RETCODE_OK){

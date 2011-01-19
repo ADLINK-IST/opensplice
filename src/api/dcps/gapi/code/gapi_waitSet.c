@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,20 +14,20 @@
 #include "gapi_condition.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_domainParticipant.h"
-#include "gapi_domainEntity.h"
-#include "gapi_map.h"
+#include "gapi_entity.h"
 
 #include "u_waitset.h"
 #include "v_event.h"
 #include "v_handle.h"
 #include "v_entity.h"
 #include "os_heap.h"
+#include "os_report.h"
 
 #define _ConditionEntry(o) \
         ((_ConditionEntry)(o))
 
 #define getDomainCount(waitset) \
-        gapi_mapLength(((_WaitSet)waitset)->domains)
+        c_iterLength(((_WaitSet)waitset)->domains)
 
 C_CLASS(_ConditionEntry);
 C_STRUCT(_ConditionEntry) {
@@ -37,9 +37,10 @@ C_STRUCT(_ConditionEntry) {
     _WaitSetDomainEntry domain;
 };
 
-static gapi_domainId_t
+static gapi_returnCode_t
 getConditionDomainId(
-    _Condition condition);
+    _Condition condition,
+    gapi_domainId_t *id);
 
 static gapi_equality
 domainCompare(
@@ -57,13 +58,12 @@ domainCompare(
     return GAPI_NE;
 }
 
-void
+gapi_boolean
 _WaitSetFree(
     void *_waitset)
 {
     _ConditionEntry c_entry;
     _WaitSetDomainEntry wsde;
-    gapi_mapIter iter;
     _WaitSet waitset = (_WaitSet)_waitset;
 
     if (waitset->busy) {
@@ -95,21 +95,17 @@ _WaitSetFree(
 
     /* now iterate though all WaitSetDomainEnties, and remove them */
     if (waitset->domains) {
-        iter = gapi_mapFirst(waitset->domains);
-        wsde = _WaitSetDomainEntry(gapi_mapIterObject(iter));
+        wsde = _WaitSetDomainEntry(c_iterTakeFirst(waitset->domains));
         while (wsde != NULL) {
-            gapi_mapIterRemove(iter);
-            if (wsde != NULL) {
-                _WaitSetDomainEntryDelete(wsde);
-            }
-            wsde = _WaitSetDomainEntry(gapi_mapIterObject (iter));
+            _WaitSetDomainEntryDelete(wsde);
+            wsde = _WaitSetDomainEntry(c_iterTakeFirst(waitset->domains));
         }
-        gapi_mapIterFree(iter);
-
-        gapi_mapFree(waitset->domains);
+        c_iterFree(waitset->domains);
+        waitset->domains = NULL;
     }
     os_condDestroy(&waitset->cv);
     os_mutexDestroy(&waitset->mutex);
+    return TRUE;
 }
 
 _WaitSet
@@ -125,11 +121,7 @@ _WaitSetNew(void)
         newWaitSet->multidomain= TRUE;
         newWaitSet->conditions = NULL;
         newWaitSet->length     = 0;
-        newWaitSet->domains    = gapi_mapNew(domainCompare, FALSE, FALSE);
-        if (!newWaitSet->domains) {
-            gapi_free(newWaitSet);
-            newWaitSet = NULL;
-        }
+        newWaitSet->domains    = NULL;
     }
 
     if (newWaitSet) {
@@ -171,24 +163,26 @@ _WaitSetNew(void)
     return newWaitSet;
 }
 
+static void
+notifyDomain (
+    c_object o,
+    c_voidp arg)
+{
+    _WaitSetDomainEntry entry = (_WaitSetDomainEntry)o;
+
+    u_waitsetNotify(entry->uWaitset, arg);
+}
+
 void
 _WaitSetNotify(
     _WaitSet _this,
     _Condition cond)
 {
-    gapi_mapIter iter;
-    _WaitSetDomainEntry entry;
-
     if (_this->busy) {
         if (_this->multidomain) {
             os_condSignal(&_this->cv);
         } else {
-            iter = gapi_mapFirst(_this->domains);
-            entry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-            if (entry) {
-                u_waitsetNotify(entry->uWaitset, (c_voidp)cond);
-            }
-            gapi_mapIterFree(iter);
+            c_iterWalk(_this->domains, notifyDomain, (c_voidp)cond);
         }
     }
 }
@@ -285,7 +279,16 @@ TestAndList(
                      *                  gapi_entity_get_status_changes(entity) &
                      *                  statuscondition->enabledStatusMask;
                      */
-                    cd = (_Condition) go;
+                    /* Should'nt the following operations make sure that the objects
+                     * are locked?
+                     */
+                    if (u_entityKind(ue) == U_QUERY) {
+                        cd = (_Condition) go;
+                    } else {
+                        _Entity entity;
+                        entity = _Entity(gapi_objectPeekUnchecked((gapi_object)go));
+                        cd = _Condition(_EntityStatusCondition(entity));
+                    }
                     getTriggerValue = cd->getTriggerValue;
 
                     if (_ObjectIsValid(_Object(cd))) {
@@ -323,7 +326,6 @@ gapi_waitSet_wait(
     u_result          uResult     = U_RESULT_OK;
     _WaitSetDomainEntry wsentry;
     c_time waitTime;
-    gapi_mapIter iter;
     struct TestAndListArg args;
 
     waitset = gapi_waitSetClaim(_this, &result);
@@ -447,10 +449,7 @@ gapi_waitSet_wait(
                 }
             } else {
                 /* Enter the single domain wait. */
-                iter = gapi_mapFirst(waitset->domains);
-                wsentry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-                gapi_mapIterFree (iter);
-
+                wsentry = _WaitSetDomainEntry(c_iterObject(waitset->domains,0));
                 if (wsentry) {
                     _EntityRelease(waitset);
                     wsentry->busy = TRUE;
@@ -519,11 +518,19 @@ gapi_waitSet_wait(
 }
 
 static void
+set_multi_node (
+    c_object o,
+    c_voidp arg)
+{
+    _WaitSetDomainEntry entry = (_WaitSetDomainEntry)o;
+
+    _WaitSetDomainEntryMultiMode(entry, *(c_bool *)arg);
+}
+
+static void
 _WaitSet_set_multi_mode(
     _WaitSet _this)
 {
-    gapi_mapIter iter;
-    _WaitSetDomainEntry entry;
     c_bool mode;
 
     /* Only in case of one domain the waitset can operate in
@@ -537,17 +544,34 @@ _WaitSet_set_multi_mode(
     mode = (getDomainCount(_this) != 1); /* multi mode if (count != 1). */
 
     if (_this->multidomain != mode) {
-        iter = gapi_mapFirst(_this->domains);
-        entry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-        while (entry) {
-            _WaitSetDomainEntryMultiMode(entry, mode);
-            gapi_mapIterNext(iter);
-            entry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-        }
-        gapi_mapIterFree(iter);
+        c_iterWalk(_this->domains, set_multi_node, (c_voidp)&mode);
+        /* First notify according to the current mode before modifying the mode
+         * otherwise triggers will not arrive!
+         */
         _WaitSetNotify(_this, NULL);
         _this->multidomain = mode;
     }
+}
+
+static c_equality
+compareDomainId (
+    c_object o,
+    c_voidp arg)
+{
+    _WaitSetDomainEntry entry = (_WaitSetDomainEntry)o;
+    gapi_domainId_t *id = (gapi_domainId_t *)arg;
+    c_equality result;
+
+    if (entry->domainId == *id) {
+        result = C_EQ;
+    } else if (*id == NULL) {
+        result = C_NE;
+    } else if (strcmp(entry->domainId, *id) == 0) {
+        result = C_EQ;
+    } else {
+        result = C_NE;
+    }
+    return result;
 }
 
 gapi_returnCode_t
@@ -555,7 +579,6 @@ gapi_waitSet_attach_condition(
     gapi_waitSet _this,
     const gapi_condition cond)
 {
-    gapi_mapIter    iter;
     gapi_domainId_t DomainId;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _WaitSetDomainEntry wsdEntry = NULL;
@@ -585,33 +608,40 @@ gapi_waitSet_attach_condition(
                                                   _EntityHandle(waitset),
                                                   NULL);
                 } else {
-                    DomainId = getConditionDomainId(condition);
-                    iter = gapi_mapFind(waitset->domains, (gapi_object)DomainId);
-                    wsdEntry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-                    if (wsdEntry == NULL) {
-                        /* Create a new WaitSetDomainEntry */
-                        wsdEntry = _WaitSetDomainEntryNew(waitset, DomainId);
-                        if (wsdEntry) {
-                            result = gapi_mapAdd(waitset->domains,
-                                                 (gapi_object)DomainId,
-                                                 (gapi_object)wsdEntry);
-                        } else {
-                            result = GAPI_RETCODE_OUT_OF_RESOURCES;
-                        }
-                    }
-
-                    /* Now there is a domain-entry for this condition,
-                     * lets add it.
-                     */
+                    result = getConditionDomainId(condition, &DomainId);
                     if (result == GAPI_RETCODE_OK) {
-                        _EntityClaim(condition);
-                        result = _WaitSetDomainEntryAttachCondition(wsdEntry,
-                                                                    condition);
-                        _EntityRelease(condition);
-                    }
-                    gapi_mapIterFree(iter);
+                        wsdEntry = c_iterResolve(waitset->domains, compareDomainId, &DomainId);
+                        if (wsdEntry == NULL) {
+                            /* Create a new WaitSetDomainEntry */
+                            wsdEntry = _WaitSetDomainEntryNew(waitset, DomainId);
+                            if (wsdEntry) {
+                                waitset->domains = c_iterInsert(waitset->domains, wsdEntry);
+                            } else {
+                                result = GAPI_RETCODE_OUT_OF_RESOURCES;
+                                OS_REPORT_2(OS_WARNING,
+                                            "gapi_waitSet_attach_condition", 0,
+                                            "Attach Condition 0x%x to Waitset 0x%x skipped, "
+                                            "Out of resources, failed to allocate internal WaitSet entry.",
+                                            cond, _this);
+                            }
+                        }
 
-                    _WaitSet_set_multi_mode(waitset);
+                        /* Now there is a domain-entry for this condition,
+                         * lets add it.
+                         */
+                        if (result == GAPI_RETCODE_OK) {
+                            _EntityClaim(condition);
+                            result = _WaitSetDomainEntryAttachCondition(wsdEntry,
+                                                                        condition);
+                            _EntityRelease(condition);
+                        }
+                        _WaitSet_set_multi_mode(waitset);
+                    } else {
+                        OS_REPORT_2(OS_WARNING, "gapi_waitSet_attach_condition", 0,
+                                    "Attach Condition 0x%x to Waitset 0x%x skipped, "
+                                    "Could not get the Domain Id from the Condition.",
+                                    cond, _this);
+                    }
                 }
 
                 if (result == GAPI_RETCODE_OK) {
@@ -624,6 +654,11 @@ gapi_waitSet_attach_condition(
                         waitset->conditions = entry;
                         waitset->length++;
                     } else {
+                        OS_REPORT_2(OS_WARNING,
+                                    "gapi_waitSet_attach_condition", 0,
+                                    "Attach Condition 0x%x to Waitset 0x%x skipped, "
+                                    "Out of resources, failed to allocate internal WaitSet entry.",
+                                    cond, _this);
                         result = GAPI_RETCODE_OUT_OF_RESOURCES;
                     }
                 }
@@ -637,6 +672,11 @@ gapi_waitSet_attach_condition(
                         _EntityRelease(condition);
                     }
                 }
+            } else {
+                OS_REPORT_2(OS_INFO, "gapi_waitSet_attach_condition", 0,
+                            "Attach Condition 0x%x to Waitset 0x%x skipped, "
+                            "The Condition was already attached.",
+                            cond, _this);
             }
         } else {
             /* The given condition is already attached to the waitset.
@@ -660,7 +700,7 @@ gapi_waitSet_detach_condition(
     _ConditionEntry entry, prev;
     _WaitSetDomainEntry wsdEntry = NULL;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
-    gapi_mapIter iter;
+    gapi_domainId_t DomainId;
 
     waitset = gapi_waitSetClaim(_this, &result);
     if (waitset != NULL) {
@@ -692,15 +732,14 @@ gapi_waitSet_detach_condition(
                     result =_WaitSetDomainEntryDetachCondition(entry->domain,
                                                                condition);
                     if (_WaitSetDomainEntryConditionCount(entry->domain) == 0) {
-                        iter = gapi_mapFind(waitset->domains,
-                                            (gapi_object)getConditionDomainId(condition));
-
-                        wsdEntry = (_WaitSetDomainEntry)gapi_mapIterObject(iter);
-                        (void)gapi_mapIterRemove(iter);
-                        gapi_mapIterFree(iter);
-
-                        assert(wsdEntry);
-                        _WaitSetDomainEntryDelete(wsdEntry);
+                        result = getConditionDomainId(condition, &DomainId);
+                        if (result == GAPI_RETCODE_OK) {
+                            wsdEntry = c_iterResolve(waitset->domains, compareDomainId, &DomainId);
+                            if (wsdEntry != NULL) {
+                                c_iterTake(waitset->domains, wsdEntry);
+                                _WaitSetDomainEntryDelete(wsdEntry);
+                            }
+                        }
                     }
                 } else {
                     result = _ConditionRemoveWaitset(condition,
@@ -762,18 +801,28 @@ gapi_waitSet_get_conditions(
     return GAPI_RETCODE_OK;
 }
 
-static gapi_domainId_t
+static gapi_returnCode_t
 getConditionDomainId(
-    _Condition condition)
+    _Condition condition,
+    gapi_domainId_t *id)
 {
     _DomainParticipant participant;
     _Entity entity = _ConditionEntity(condition);
+    gapi_returnCode_t result;
 
     if ( _ObjectGetKind(_Object(entity)) == OBJECT_KIND_DOMAINPARTICIPANT ) {
         participant = _DomainParticipant(entity);
+    } else if (_ObjectGetKind(_Object(entity)) == OBJECT_KIND_UNDEFINED) {
+        participant = NULL;
     } else {
-        participant = _DomainEntityParticipant(_DomainEntity(entity));
+        participant = _EntityParticipant(_Entity(entity));
     }
-    return _DomainParticipantGetDomainId(participant);
+    if (participant) {
+        *id = _DomainParticipantGetDomainId(participant);
+        result = GAPI_RETCODE_OK;
+    } else {
+        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    }
+    return result;
 }
 

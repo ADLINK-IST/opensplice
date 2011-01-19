@@ -890,7 +890,7 @@ in_configurationGetBoolParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %s",
@@ -929,7 +929,7 @@ in_configurationGetBoolAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             IN_TRACE_3(Configuration, 2,
@@ -973,7 +973,7 @@ in_configurationGetLongParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %d",
@@ -1012,7 +1012,7 @@ c_long in_configurationGetLongAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             IN_TRACE_3(Configuration, 2,
@@ -1056,7 +1056,43 @@ in_configurationGetULongParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
+        result = defaultValue;
+        IN_TRACE_3(Configuration, 2,
+            "Could not retrieve parameter %s/%s, switching to default value %u",
+            parameterPath, parameterName, defaultValue);
+    }
+
+    return result;
+}
+
+c_ulong
+in_configurationGetSizeParameter(
+    const c_char *parameterPath,
+    const c_char *parameterName,
+    c_ulong defaultValue)
+{
+    c_ulong result;
+    c_bool success = FALSE;
+    u_cfData data;
+
+    data = in_configurationGetParameterData(parameterPath, parameterName);
+    if (data) {
+        success = u_cfDataSizeValue(data, &result);
+        if (success) {
+            IN_TRACE_3(Configuration, 1,
+                       "Retrieved parameter %s/%s, using value %u",
+                       parameterPath, parameterName, result);
+        } else {
+            IN_REPORT_WARNING_3("retrieving configuration parameters",
+                                "incorrect format for unsigned long parameter %s/%s,  "
+                                "switching to default value %u",
+                                parameterPath, parameterName, defaultValue);
+        }
+        u_cfDataFree(data);
+    }
+
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %u",
@@ -1094,7 +1130,52 @@ c_ulong in_configurationGetULongAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
+        if (elmtFound) {
+            result = defaultValueNoAttr;
+            IN_TRACE_3(Configuration, 2,
+                "Could not retrieve attribute %s[@%s], switching to default value %u",
+                parameterPath, attributeName, result);
+        } else {
+            result = defaultValueNoElmt;
+            IN_TRACE_3(Configuration, 2,
+                "Could not retrieve element %s for attribute %s, switching to default value %u",
+                parameterPath, attributeName, result);
+        }
+    }
+
+    return result;
+}
+
+c_ulong in_configurationGetSizeAttribute(
+    const c_char *parameterPath,
+    const c_char *attributeName,
+    c_ulong defaultValueNoElmt,
+    c_ulong defaultValueNoAttr)
+{
+    c_ulong result;
+    c_bool success = FALSE;
+    u_cfAttribute attr;
+    c_bool elmtFound;
+
+    attr = in_configurationGetParameterAttribute(parameterPath, attributeName, &elmtFound);
+    if (attr) {
+        assert(elmtFound);
+        success = u_cfAttributeSizeValue(attr, &result);
+        if (success) {
+            IN_TRACE_3(Configuration, 1,
+                       "Retrieved attribute %s[@%s], using value %u",
+                       parameterPath, attributeName, result);
+        } else {
+            IN_REPORT_WARNING_3("retrieving configuration parameters",
+                                "incorrect format for long attribute %s[@%s],  "
+                                "switching to default value %u",
+                                parameterPath, attributeName, defaultValueNoAttr);
+        }
+        u_cfAttributeFree(attr);
+    }
+
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             IN_TRACE_3(Configuration, 2,
@@ -1137,7 +1218,7 @@ in_configurationGetFloatParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %f",
@@ -1175,7 +1256,7 @@ c_float in_configurationGetFloatAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = defaultValueNoAttr;
             IN_TRACE_3(Configuration, 2,
@@ -1220,7 +1301,7 @@ in_configurationGetStringParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = in_stringDup(defaultValue);
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %s",
@@ -1259,7 +1340,7 @@ in_configurationGetStringAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         if (elmtFound) {
             result = in_stringDup(defaultValueNoAttr);
             IN_TRACE_3(Configuration, 2,
@@ -1595,7 +1676,7 @@ in_configurationGetDomainFloatParameter(
         u_cfDataFree(data);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve parameter %s/%s, switching to default value %f",
@@ -1660,7 +1741,7 @@ in_configurationGetDomainFloatAttribute(
         u_cfAttributeFree(attr);
     }
 
-    if (!(int)success) {
+    if (!success) {
         result = defaultValue;
         IN_TRACE_3(Configuration, 2,
             "Could not retrieve attribute %s[@%s], switching to default value %f",

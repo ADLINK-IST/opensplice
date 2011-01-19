@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -36,6 +36,7 @@
 #include "v_message.h"
 #include "v__messageQos.h"
 #include "v__deliveryService.h"
+#include "v__kernel.h"
 
 #include "os_report.h"
 
@@ -58,6 +59,7 @@ lifespanTakeAction(
     v_lifespanArg lifespanArg = (v_lifespanArg)arg;
     v_dataReaderInstance instance;
     c_long sampleCount;
+    v_message message;
 
     /* Data is expired, remove the sample from its instance
      * NOTE: the sampleCount of index is decreased by this function */
@@ -69,10 +71,27 @@ lifespanTakeAction(
     if (result) {
         instance = v_dataReaderInstance(v_readerSample(sample)->instance);
         sampleCount = instance->sampleCount;
+        /* If the sample taken is newer than the previously taken
+         * sample, then update the history bookmark to indicate that
+         * all samples prior to the current sample are consumed.
+         */
+        message = v_dataReaderSampleMessage(sample);
+        if (c_timeCompare(message->writeTime, instance->lastTaken.sourceTimestamp) == C_GT ||
+           (
+                c_timeCompare(message->writeTime, instance->lastTaken.sourceTimestamp) == C_EQ &&
+                v_gidCompare(message->writerGID, instance->lastTaken.gid) == C_GT
+           )
+        )
+        {
+            instance->lastTaken.sourceTimestamp = v_dataReaderSampleMessage(sample)->writeTime;
+            instance->lastTaken.gid = v_dataReaderSampleMessage(sample)->writerGID;
+        }
+
         v_dataReaderSampleTake(v_dataReaderSample(sample),NULL,NULL);
         sampleCount -= instance->sampleCount;
         assert(sampleCount >= 0);
         v_dataReader(lifespanArg->index->reader)->sampleCount -= sampleCount;
+
         assert(v_dataReader(lifespanArg->index->reader)->sampleCount >= 0);
         if (v_dataReaderInstanceEmpty(instance)) {
             v_dataReaderRemoveInstance(lifespanArg->index->reader, instance);
@@ -247,7 +266,7 @@ transactionListUpdate(
             }
         } else if (update.remove) {
             /* An existing transaction has become complete and can therefore
-             * all data belonging to the transaction can be made available and 
+             * all data belonging to the transaction can be made available and
              * the transaction info record can be removed from the administration.
              */
             if (v_entryReaderQos(entry)->userKey.enable) {
@@ -571,7 +590,7 @@ v_dataReaderEntryWrite(
     /* Reject data if max sample limit is reached. */
     if ((maxSamples != V_LENGTH_UNLIMITED) &&
         (count >= maxSamples) &&
-        v_stateTest(state, L_WRITE))
+        (v_stateTest(state, L_WRITE)))
     {
         onSampleRejected(v_dataReader(reader),
                          S_REJECTED_BY_SAMPLES_LIMIT,
@@ -579,6 +598,7 @@ v_dataReaderEntryWrite(
         v_observerUnlock(v_observer(reader));
         return V_WRITE_REJECTED;
     }
+
 
     result = V_WRITE_SUCCESS;
     if ((instancePtr == NULL) || (*instancePtr == NULL)) {
@@ -679,6 +699,7 @@ v_dataReaderEntryWrite(
         res = v_dataReaderInstanceInsert(found,message,lastDisposeAll);
         v_dataReader(reader)->sampleCount +=
                  v_dataReaderInstanceSampleCount(found);
+        v_checkMaxSamplesWarningLevel(v_objectKernel(reader), v_dataReader(reader)->sampleCount);
         switch (res) {
         case V_DATAREADER_INSERTED:
             UPDATE_READER_STATISTICS(_this->index,found,oldState);

@@ -3,7 +3,7 @@
 #ifndef EXT_PARTICIPANT_LISTENER_IMPL_H_
 #define EXT_PARTICIPANT_LISTENER_IMPL_H_
 
-#include <ccpp_dds_dcps.h>
+#include "ccpp_dds_dcps.h"
 
 using namespace std;
 using namespace DDS;

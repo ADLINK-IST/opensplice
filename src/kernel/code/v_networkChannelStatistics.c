@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -131,7 +131,6 @@ void v_networkChannelStatisticsDeinit(v_networkChannelStatistics ncs)
 {
     assert(ncs != NULL);
     assert(C_TYPECHECK(ncs, v_networkChannelStatistics));
-    //c_free(ncs->name);
 }
 
 void v_networkChannelStatisticsFree(v_networkChannelStatistics ncs)

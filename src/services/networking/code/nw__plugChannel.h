@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -107,7 +107,8 @@ void    nw_plugChannelGetPartition(
          nw_networkSecurityPolicy *securityPolicy,
          nw_bool *connected,
          nw_bool *compression,
-         os_int32 *hash);
+         os_uint32 *hash,
+         c_ulong *mTTL);
 
 #endif /* NW__PLUGCHANNEL_H */
 

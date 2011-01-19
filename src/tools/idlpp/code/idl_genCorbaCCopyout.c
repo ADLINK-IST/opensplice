@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,8 +25,8 @@
 #include "idl_tmplExp.h"
 #include "idl_catsDef.h"
 
-#include <c_typebase.h>
-#include <os_stdlib.h>
+#include "c_typebase.h"
+#include "os_stdlib.h"
 
 #include <stdio.h>
 
@@ -1529,7 +1529,7 @@ idl_unionOpen (
 	idl_scopeStackC (scope, "_", name),
 	idl_scopeStackC (scope, "_", name));
     if (idl_typeSpecHasRef (idl_typeSpec (unionSpec))) {
-        idl_fileOutPrintf (idl_fileCur(), "    void %s__free (void *object);\n\n",
+        idl_fileOutPrintf (idl_fileCur(), "    DDS_boolean %s__free (void *object);\n\n",
             idl_scopeStack (scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "    if (from->_d != to->_d) {\n");
 	idl_fileOutPrintf (idl_fileCur(), "        %s__free (_to);\n",

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -67,6 +67,12 @@ v_groupSetGet (
     v_groupSet _this,
     const c_char *partitionName,
     const c_char *topicName);
+
+OS_API c_iter
+v_groupSetLookup (
+    v_groupSet _this,
+    const c_char *partitionExpr,
+    const c_char *topicExpr);
 
 OS_API c_iter
 v_groupSetSelectAll(

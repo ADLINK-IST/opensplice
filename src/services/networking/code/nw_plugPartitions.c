@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -32,6 +32,7 @@ NW_STRUCT(nw_plugPartition) {
     nw_bool connected;
     nw_bool compression;
     os_uint32 hash;
+    c_ulong mTTL;
 };
 
 NW_STRUCT(nw_plugPartitions) {
@@ -92,7 +93,8 @@ nw_plugPartitionsSetPartition(
     nw_networkSecurityPolicy securityPolicy,
     os_uint32 hash,
     nw_bool connected,
-    nw_bool compression)
+    nw_bool compression,
+    c_ulong mTTL)
 {
     nw_plugPartition newPartition;
     
@@ -113,6 +115,7 @@ nw_plugPartitionsSetPartition(
             newPartition->compression = compression;
             plugPartitions->partitions[partitionId] = newPartition;
             newPartition->hash = hash;
+            newPartition->mTTL = mTTL;
         }
     }
 }
@@ -122,9 +125,10 @@ nw_plugPartitionsSetDefaultPartition(
     nw_plugPartitions plugPartitions,
     nw_partitionAddress partitionAddress,
     nw_networkSecurityPolicy securityPolicy,
-    os_uint32 hash)
+    os_uint32 hash,
+    c_ulong mTTL)
 {
-    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, securityPolicy, hash, TRUE, FALSE);
+    nw_plugPartitionsSetPartition(plugPartitions, 0, partitionAddress, securityPolicy, hash, TRUE, FALSE, mTTL);
 
 }
 
@@ -145,25 +149,28 @@ nw_plugPartitionsGetPartitionIdByHash(
         nw_partitionId hash)
 {
     nw_bool foundHash = FALSE;
-    nw_partitionId partitionHashToId = -1;
+    nw_partitionId partitionId = 0;
     nw_seqNr counter = 0;
     nw_seqNr maxsize = plugPartitions->nofPartitions;
 
     while(!foundHash) {
 
         if (counter >= maxsize) {
+            NW_REPORT_WARNING_1("receive data",
+                                "PartitionId with hash 0x%x not found, using globalPartition",
+                                hash);
             foundHash = TRUE;
         } else {
             if (plugPartitions->partitions[counter] != NULL) {
                if (plugPartitions->partitions[counter]->hash == hash) {
-                    partitionHashToId = plugPartitions->partitions[counter]->id;
+                    partitionId = plugPartitions->partitions[counter]->id;
                     foundHash =TRUE;
                 }
             }
         }
         counter++;
     }
-    return partitionHashToId;
+    return partitionId;
 }
 
 void
@@ -175,7 +182,8 @@ nw_plugPartitionsGetPartition(
     nw_networkSecurityPolicy *securityPolicy, /* may be NULL */
     nw_bool *connected,
     nw_bool *compression,
-    os_int32 *hash)
+    os_uint32 *hash,
+    c_ulong *mTTL)
 {
     *found = FALSE;
     
@@ -190,6 +198,7 @@ nw_plugPartitionsGetPartition(
             *connected = plugPartitions->partitions[partitionId]->connected;
             *compression = plugPartitions->partitions[partitionId]->compression;
             *hash = plugPartitions->partitions[partitionId]->hash;
+            *mTTL =  plugPartitions->partitions[partitionId]->mTTL;
             NW_CONFIDENCE(plugPartitions->partitions[partitionId]->id == partitionId);
             if (securityPolicy) { /* may be NULL */
                *securityPolicy = plugPartitions->partitions[partitionId]->securityPolicy;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <os.h>
+#include "os.h"
 
 
 enum destination {
@@ -207,14 +207,12 @@ shmFromFile(
     return r;
 }
 
-int
 #ifdef INTEGRITY
-shmdump_main (
+int shmdump_main (int argc,
+	      char * argv[])
 #else
-main (
+OPENSPLICE_MAIN(ospl_shmdump)
 #endif
-    int argc,
-    char *argv[])
 {
     struct arguments args;
     int result;

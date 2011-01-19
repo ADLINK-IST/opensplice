@@ -25,9 +25,19 @@ namespace DDS
     public class GuardCondition : Condition, IGuardCondition
     {
         public GuardCondition()
-            : base(OpenSplice.Gapi.GuardCondition.alloc(), true)
         {
-            // Base class handles everything.
+            IntPtr ptr = OpenSplice.Gapi.GuardCondition.alloc();
+            if (ptr != IntPtr.Zero)
+            {
+                SetPeer(ptr, true);
+            }
+            else
+            {
+                // Gapi already logged that the GuardCondition has not been created 
+                // successfully. Now create a deliberate null pointer exception
+                // to let the current constructor fail.
+                throw new System.NullReferenceException("gapi_guardCondition__alloc returned a NULL pointer.");
+            }
         }
 
         public ReturnCode SetTriggerValue(bool value)

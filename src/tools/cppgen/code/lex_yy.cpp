@@ -43,7 +43,7 @@
 #ifdef __TURBOC__
  #pragma warn -rch
  #pragma warn -use
-#include <io.h>
+#include "io.h"
 #include <stdlib.h>
 #define YY_USE_CONST
 #define YY_USE_PROTOS
@@ -744,22 +744,22 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * idl.ll - Lexical scanner for IDL 1.1
  */
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
-#include <utl_incl.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
+#include "utl_incl.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 #ifdef VERSION
 #undef VERSION
 #endif
 
-#include <y_tab.h>
+#include "y_tab.h"
 #include <string.h>
 
-#include <preprocess.h>
+#include "preprocess.h"
 
 #undef input
 #define input() ((yytchar=yysptr>yysbuf?U(*--yysptr):preprocess_getc())==10?(yylineno++,yytchar):yytchar)

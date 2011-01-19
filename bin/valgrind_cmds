@@ -18,7 +18,7 @@ fi
 # cannot easily distinguish memory errors from leaks.  For now set --leak-check to "summary"
 # which will report leaks but unfortunately not give stack traces of where they exist.
 
-VALGRIND_OPTIONS_QUOTED="\"--num-callers=50\" \"--leak-check=summary\" \"--show-reachable=yes\" \"--leak-resolution=high\" \"--tool=memcheck\" \"-v\""
+VALGRIND_OPTIONS_QUOTED="\"--num-callers=50\" \"--leak-check=summary\" \"--show-reachable=yes\" \"--leak-resolution=high\" \"--tool=memcheck\" \"-v\" \"--gen-suppressions=all\" \"--suppressions=$OSPL_HOME/etc/valgrind-suppressions.txt\""
 # for VALGRIND_OPTIONS remove the \"
 VALGRIND_OPTIONS=`echo $VALGRIND_OPTIONS_QUOTED | sed 's@\"@@g'`
 

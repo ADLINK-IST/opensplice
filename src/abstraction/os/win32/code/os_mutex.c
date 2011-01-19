@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,15 +19,15 @@
 #endif
 #include <Windows.h>
 #include "os_stdlib.h"
-#include <os_mutex.h>
-#include <code/os__debug.h>
-#include <code/os__service.h>
-#include <code/os__sharedmem.h>
+#include "os_mutex.h"
+#include "code/os__debug.h"
+#include "code/os__service.h"
+#include "code/os__sharedmem.h"
 
 #include <stdio.h>
 #include <assert.h>
 
-#include <../common/code/os_mutex_attr.c>
+#include "../common/code/os_mutex_attr.c"
 
 
 /*** Public functions *****/
@@ -96,7 +96,7 @@ os_mutexInit (
                 lastError = ERROR_SUCCESS;
             }
         } while((!result) && (lastError == ERROR_PIPE_BUSY));
-        
+
         if (!result || (nRead != sizeof(reply))) {
             OS_DEBUG_4("os_mutexInit", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
             osr = os_resultFail;
@@ -174,7 +174,7 @@ os_mutexDestroy (
            } else {
               osr = os_resultFail;
            }
-        }        
+        }
     } else { /* private so don't return to pool */
         CloseHandle((HANDLE)mutex->id);
         osr = os_resultSuccess;
@@ -203,8 +203,11 @@ os_mutexLock(
     lc = InterlockedIncrement(&mutex->lockCount);
     if (lc > 1) {
         if (mutex->scope == OS_SCOPE_SHARED) {
-            _snprintf(name, sizeof(name), "%s%d%d",
-                      OS_SERVICE_EVENT_NAME_PREFIX, mutex->id,os_getShmBaseAddressFromPointer(mutex));
+            _snprintf(name, sizeof(name), "%s%s%d%d",
+                      (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+                      OS_SERVICE_EVENT_NAME_PREFIX,
+                      mutex->id,
+                      os_getShmBaseAddressFromPointer(mutex));
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
                 OS_DEBUG_2("os_mutexLock", "Failed to open mutex %s %d", name, GetLastError());
@@ -272,8 +275,11 @@ os_mutexUnlock (
     lc = InterlockedDecrement(&mutex->lockCount);
     if (lc > 0) {
         if (mutex->scope == OS_SCOPE_SHARED) {
-            _snprintf(name, sizeof(name), "%s%d%d",
-                      OS_SERVICE_EVENT_NAME_PREFIX, mutex->id,os_getShmBaseAddressFromPointer(mutex));
+            _snprintf(name, sizeof(name), "%s%s%d%d",
+                      (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+                      OS_SERVICE_EVENT_NAME_PREFIX,
+                      mutex->id,
+                      os_getShmBaseAddressFromPointer(mutex));
 
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,6 +29,8 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define _Topic(o) ((_Topic)(o))
+
+#define U_TOPIC_GET(t) u_topic(U_ENTITY_GET(t))
 
 #define gapi_topicClaim(h,r) \
         (_Topic(gapi_objectClaim(h,OBJECT_KIND_TOPIC,r)))
@@ -65,9 +67,6 @@ extern "C" {
 #define _TopicGetTypeName(_this) \
         _TopicDescriptionGetTypeName(_TopicDescription(_this))
 
-#define _TopicSetDeleteAction(_this,action,arg) \
-        _ObjectSetDeleteAction(_Object(_this),action,arg)
-
 _Topic
 _TopicNew (
     const gapi_char *topic_name,
@@ -89,6 +88,12 @@ _TopicFromKernelTopic (
     const gapi_context *context);
 
 _Topic
+_TopicFromUserTopic (
+    u_topic uTopic,
+    const _DomainParticipant participant,
+    const gapi_context *context);
+
+_Topic
 _TopicFromTopic (
     _Topic _this,
     const _DomainParticipant participant,
@@ -104,6 +109,10 @@ _TopicIncRef (
 
 gapi_long
 _TopicDecRef (
+    _Topic _this);
+
+gapi_long
+_TopicRefCount (
     _Topic _this);
 
 OS_API u_topic

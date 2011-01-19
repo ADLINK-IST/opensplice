@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -150,13 +150,15 @@ jni_deleteWriter(
         
         if(found){
             c_iterTake(pub->writers, wri);
-            r = jni_writerFree(wri);
+            r = jni_convertResult(u_writerFree(wri->uwriter));
+            sd_serializerFree(wri->deserializer);
+            os_free(wri);
         
-            if(r != JNI_RESULT_OK){
-                c_iterInsert(pub->writers, wri);    
+            if(r != JNI_RESULT_OK) {
+                c_iterInsert(pub->writers, wri);
             }
         }
-        else{
+        else {
             r = JNI_RESULT_PRECONDITION_NOT_MET;
         }
     }

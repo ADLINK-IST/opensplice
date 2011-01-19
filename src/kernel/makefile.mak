@@ -3,6 +3,7 @@
 
 TARGET_DLIB	:= $(DDS_KERNEL)
 ODL_MODULES	:= kernelModule
+EXTRACTED_LIB = libddscore
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 

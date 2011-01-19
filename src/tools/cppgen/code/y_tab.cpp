@@ -1,13 +1,13 @@
 
 # line 72 "idl.yy"
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
-#include <utl_incl.h>
-#include <xbe_scopestack.h>
+#include "fe_private.h"
+#include "utl_incl.h"
+#include "xbe_scopestack.h"
 
 #include <stdio.h>
 

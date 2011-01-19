@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,7 +19,7 @@
 #include "c_misc.h"
 #include "c_field.h"
 #include "c_filter.h"
-#include "c_querybase.h"
+#include "c__querybase.h"
 #include "c_collection.h"
 
 #include <errno.h>
@@ -68,6 +68,23 @@
          (b->baseCache.queryCache.c_qExpr_t != NULL ? \
          c_keep(b->baseCache.queryCache.c_qExpr_t) : \
          c_keep(b->baseCache.queryCache.c_qExpr_t = c_resolve((b),"c_querybase::c_qExpr")))
+
+/* returns the head of the iterator as a c_qRange object (non-destructive, i.e. a read, not a take) */
+#define c_qRangeIterHead(l) (c_qRange(c_iterObject(l, 0)))
+
+/* a nilRange is a range which contains no elements: e.g. <4..4> */
+#define isNilRange(r) \
+        (r && \
+        (c_valueCompare(r->start, r->end) == C_EQ) && \
+        r->startKind == B_EXCLUDE && \
+        r->endKind == B_EXCLUDE)
+
+/*
+ * Optimizes the predicate and returns the optimized predicate.
+ */
+static c_qPred
+c_qPredOptimize(
+        c_qPred _this);
 
 c_filter
 c_filterNew(
@@ -704,8 +721,23 @@ c_qRangeListAnd(
         eq = c_qRangeCompare(r1,r2);
         switch (eq) {
         case C_LT:
-            c_free(r1);
-            r1 = c_iterTakeFirst(list1);
+            /* in this case the range is such that no value could ever satisfy it
+               e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
+               so the result is <x>, i.e. a list which no variable can satisfy */
+            c_setRange(r1,r1->start,r1->startExpr,B_EXCLUDE,
+						  r1->start,r2->startExpr,B_EXCLUDE);
+			result = c_iterAppend(result,c_keep(r1));
+			while (r1 != NULL) {
+				c_free(r1);
+				r1 = c_iterTakeFirst(list1);
+			}
+			c_iterFree(list1);
+			while (r2 != NULL) {
+				c_free(r2);
+				r2 = c_iterTakeFirst(list2);
+			}
+			c_iterFree(list2);
+			return result;
         break;
         case C_LE:
             c_setRange(r1,r2->start,r2->startExpr,r2->startKind,
@@ -786,9 +818,6 @@ makeRange(
             valueExpr = _RIGHT_PARAM_(e);
             inverse = FALSE;
         } else if (_RIGHT_PARAM_(e)->kind == CQ_FIELD) {
-            if (_LEFT_PARAM_(e)->kind == CQ_FIELD) {
-                return NULL;
-            }
             field = c_qField(_RIGHT_PARAM_(e));
             valueExpr = _LEFT_PARAM_(e);
             inverse = TRUE;
@@ -882,7 +911,7 @@ static c_iter
 makeRangeQuery(
     c_qExpr *expr)
 {
-    c_qExpr *leftPar,*rightPar;
+	c_qExpr *leftPar,*rightPar;
     c_iter leftList,rightList;
     c_qExpr e;
     c_iter rangeList;
@@ -900,6 +929,10 @@ makeRangeQuery(
         rightPar = (c_qExpr *)(&c_qFunc(e)->params[1]);
         leftList  = makeRangeQuery(leftPar);
         rightList = makeRangeQuery(rightPar);
+        if((leftList && isNilRange(c_qRangeIterHead(leftList))) ||
+           (rightList && isNilRange(c_qRangeIterHead(rightList)))){
+            return (leftList && isNilRange(c_qRangeIterHead(leftList))) ? leftList : rightList;
+        }
         if (leftList == NULL) {
             if (rightList != NULL) {
                 *expr = c_keep(*leftPar);
@@ -1471,14 +1504,12 @@ c_qVarInit(
             }
         break;
         case V_LONGLONG:
-	    errno = 0;
 	    parValue.is.LongLong = os_atoll (v.is.String);
 	    if (errno) {
 		parValue.kind = V_UNDEFINED;
 	    }
         break;
         case V_ULONGLONG:
-	    errno = 0;
 	    parValue.is.LongLong = os_atoll (v.is.String);
 	    if (errno) {
 		parValue.kind = V_UNDEFINED;
@@ -1694,17 +1725,6 @@ c_qPredInitVars (
     return TRUE;
 }
 
-#define SHOW_EXPR (0)
-#if SHOW_EXPR
-#define PRINT_EXPR(msg,expr) \
-    printf(msg); q_print(expr,0); printf("\n")
-#define PRINT_PRED(msg,pred) \
-    printf(msg); c_qPredPrint(pred); printf("\n")
-#else
-#define PRINT_EXPR(msg,expr)
-#define PRINT_PRED(msg,pred)
-#endif
-
 c_qResult
 c_qPredNew(
     c_type type,
@@ -1795,28 +1815,92 @@ c_qPredNew(
         assert(c_refCount(p->keyField) == 1);
     }
     p->fixed = fixed;
-    *qPred = p;
+    *qPred = c_qPredOptimize(p);
     return CQ_RESULT_OK;
 }
 
-void
+static c_qPred
 c_qPredOptimize(
-    c_qPred p)
+        c_qPred _this)
 {
+#define nextPred(p) (p ? p->next : NULL)
     c_long k,nrOfKeys;
-    c_qPred pred = p;
+    c_qPred pred;
+    c_qPred next;
+    c_qPred predPrev = NULL;
+    c_qPred resultPred;
+    c_bool delete;
 
-    PRINT_PRED("Predicate (before optimize):\n",p);
-    while (pred != NULL) {
-        nrOfKeys = c_arraySize(pred->keyField);
-        for (k=0;k<nrOfKeys;k++) {
-            p->fixed = optimizeKey(pred->keyField[k]) || p->fixed;
-        }
-        PRINT_PRED("Predicate (during optimize):\n",p);
-        pred = pred->next;
+    /*
+     * Note: predicate _this is the first in a list of predicates which together
+     * are AND'ed (i.e. _this AND _this->next AND _this->next->next AND ... etc.
+     */
+
+    if(_this == NULL)
+    {
+        return NULL;
     }
-    PRINT_PRED("Predicate (after optimize):\n",p);
+
+    pred = _this;
+    next = nextPred(pred);
+    resultPred = _this;
+
+    PRINT_PRED("Predicate (before optimize):\n",pred);
+    while (pred != NULL) {
+        next = nextPred(pred);
+        delete = FALSE;
+        nrOfKeys = c_arraySize(pred->keyField);
+        for (k=0;!delete && k<nrOfKeys;k++) {
+            pred->fixed = optimizeKey(pred->keyField[k]) || pred->fixed;
+
+            /* if the 1st field of the pred's range is a nilRange, i.e. a range
+             * not containing any values (e.g. <4..4>), then delete it from the
+             * list, as it will always result to FALSE. This means that in an or
+             * statement it does not contribute.
+             */
+            if(c_qKey(pred->keyField[k])->range &&
+                    (c_arraySize(c_qKey(pred->keyField[k])->range) > 0) &&
+                    isNilRange(c_qRange(c_qKey(pred->keyField[k])->range[0]))){
+                delete = TRUE;
+            }
+        }
+
+
+        if(delete){
+            PRINT_PRED("Going to delete predicate (during optimize):\n",pred);
+            /* delete pred from the predicate list of queries */
+            if(!predPrev){
+                /* if predPrev == null then pred is the first pred in the list.
+                 * Instead of deleting it, we transform it to a FALSE const predicate.
+                 * This way, when all predicates are FALSE, there is at least one
+                 * predicate left to indicate that this list of predicates evaluates to
+                 * false.
+                 */
+                c_free(resultPred->expr);
+                resultPred->expr = c_qExpr(c_new(c_qConstType(c__getBase(_this))));
+                resultPred->expr->kind = CQ_CONST;
+                c_qConst(resultPred->expr)->value = c_boolValue(FALSE);
+                predPrev = pred;
+            } else {
+                predPrev->next = c_keep(pred->next);
+                c_free(pred);
+            }
+        } else {
+            PRINT_PRED("Predicate (during optimize):\n",pred);
+            predPrev = pred;
+        }
+
+        pred = next;
+
+    }
+
+    PRINT_PRED("Predicate (after optimize):\n",resultPred);
+
+    return resultPred;
+
+#undef nextPred
 }
+
 
 static c_bool
 setArg (
@@ -1910,14 +1994,12 @@ setArg (
         }
     break;
     case V_LONGLONG:
-        errno = 0;
         v->is.LongLong = os_atoll (par);
         if (errno) {
 	    v->kind = V_UNDEFINED;
         }
     break;
     case V_ULONGLONG:
-        errno = 0;
         v->is.LongLong = os_atoll (par);
         if (errno) {
             v->kind = V_UNDEFINED;

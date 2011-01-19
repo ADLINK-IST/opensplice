@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -49,7 +49,7 @@
 #include "os.h"
 #include "os_stdlib.h"
 #include "sd_serializer.h"
-#include <os_abstract.h>
+#include "os_abstract.h"
 #include <stdio.h>
 
 /* Number of escape-characters. This determines the size of the arrays used for
@@ -187,7 +187,6 @@ cmx_entityNewFromWalk(
         cmx_registerEntity(proxy);
     } else {
         proxy = arg->entity;
-        
     }
     if((proxy != NULL) || (arg->create == FALSE)){
         special = cmx_entityInit(entity, proxy, arg->create);
@@ -236,7 +235,7 @@ cmx_entityInit(
     c_bool init)
 {
     c_char* result;
-    u_kernel uk;
+    u_domain domain;
     u_participant up;
     u_result ur;
     
@@ -249,9 +248,9 @@ cmx_entityInit(
         up = u_entityParticipant(proxy);
         
         if(up != NULL){
-            uk = u_participantKernel(up);
+            domain = u_participantDomain(up);
         
-            if(uk == NULL){
+            if(domain == NULL){
                 ur = U_RESULT_ILL_PARAM;
                 OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, 
                           "cmx_entityInit proxy == NULL && init == TRUE "

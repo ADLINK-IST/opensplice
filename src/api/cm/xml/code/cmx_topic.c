@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,8 +24,8 @@
 #include "v_topicQos.h"
 #include "c_typebase.h"
 #include "c_metabase.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 struct cmx_topicQos{
@@ -95,27 +95,33 @@ c_char*
 cmx_topicInit(
     v_topic entity)
 {
-    char buf[512];
+
+    os_uint32 metaLength = 60; /* length of the base string */
+    c_char* buf;
     c_char* metaName;
     c_char* keyExpr;
     
     metaName = c_metaScopedName((c_metaObject)(v_topicDataType(entity)));
+    assert(metaName);
     keyExpr = v_topicMessageKeyExpr(entity);
     
+
     if(keyExpr){
+        buf = (char *)os_malloc(strlen(metaName)+strlen(keyExpr)+metaLength+1);
         os_sprintf(buf, 
             "<keyList>%s</keyList><typename>%s</typename><kind>TOPIC</kind>",
             keyExpr,
             metaName);
         os_free(keyExpr);
     } else {
+        buf = (char *)os_malloc(strlen(metaName)+metaLength+1);
         os_sprintf(buf, 
             "<keyList></keyList><typename>%s</typename><kind>TOPIC</kind>", 
             metaName);
     }
     os_free(metaName);
     
-    return (c_char*)(os_strdup(buf));
+    return buf;
 }
 
 struct cmx_topicArg {

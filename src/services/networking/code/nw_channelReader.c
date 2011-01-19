@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,8 +13,10 @@
 #include "nw_channelReader.h"
 
 /* Implementation */
+#include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_time.h"
+#include "os_stdlib.h"
 #include "c_base.h"
 #include "nw__confidence.h"
 #include "nw__channelUser.h"
@@ -181,7 +183,7 @@ nw_channelReaderMain(
     os_time nextupdate = {0,0};
     os_time now;
     os_time period = {0,20e6}; /* todo resolution time */
-    NW_STRUCT(plugReceiveStatistics) prs = {0};
+    NW_STRUCT(plugReceiveStatistics) prs = {0,0,0,0,0,0,0,0,0,0,0,0,0};
 
     reader = v_networkReader(e);
     channelReader = (nw_channelReader)arg;

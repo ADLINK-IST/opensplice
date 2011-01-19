@@ -68,9 +68,7 @@ namespace DDS.OpenSplice.Gapi
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
-            IntPtr _this,
-            gapi_deleteEntityAction action,
-            IntPtr action_arg);
+            IntPtr _this);
 
         /*     DataReaderView
           *     create_view (

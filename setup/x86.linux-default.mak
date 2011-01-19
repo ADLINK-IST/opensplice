@@ -60,8 +60,8 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
 
 # Set compiler options for single threaded process
-CFLAGS		 = -m32 -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -m32 -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -m32 -pipe -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -m32 -pipe -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,11 +11,11 @@
  */
 #include <jni.h>
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <os_abstract.h>
-#include <c_base.h>
-#include <c_iterator.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "os_abstract.h"
+#include "c_base.h"
+#include "c_iterator.h"
 
 #include "saj_copyCache.h"
 #include "saj_utilities.h"
@@ -445,6 +445,7 @@ saj_metaObject(
     case M_UNIONCASE:
     case M_CONSTANT:
     case M_EXTENT:
+    case M_EXTENTSYNC:
     case M_MODULE:
 	assert (FALSE);
         break;
@@ -1672,7 +1673,7 @@ saj_scopeNameRefersToDDSObject(
 
     assert(scopeName);
 
-    tmp = strdup(scopeName);
+    tmp = os_strdup(scopeName);
     ptr = strchr(tmp, separator);
     if(ptr)
     {
@@ -2031,6 +2032,7 @@ saj_fieldDescriptor (
     case M_UNIONCASE:
     case M_CONSTANT:
     case M_EXTENT:
+    case M_EXTENTSYNC:
 	assert (FALSE);
         break;
     case M_PRIMITIVE:
@@ -2158,6 +2160,7 @@ saj_classDescriptor (
     case M_UNIONCASE:
     case M_CONSTANT:
     case M_EXTENT:
+    case M_EXTENTSYNC:
 	assert (FALSE);
         break;
     case M_PRIMITIVE:

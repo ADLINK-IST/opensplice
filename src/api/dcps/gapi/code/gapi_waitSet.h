@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_WAITSET_H
@@ -15,7 +15,7 @@
 #include "gapi_common.h"
 #include "gapi_domainParticipant.h"
 #include "gapi_condition.h"
-#include "gapi_map.h"
+#include "c_iterator.h"
 
 #define _WaitSet(o) ((_WaitSet)(o))
 
@@ -41,11 +41,15 @@ C_STRUCT(_WaitSet) {
     os_cond      cv;
     c_voidp      conditions;
     c_long       length;
-    gapi_map     domains;
+    c_iter       domains;
 };
 
 _WaitSet
 _WaitSetNew(void);
+
+gapi_boolean
+_WaitSetFree(
+    void *_waitset);
 
 void
 _WaitSetNotify(

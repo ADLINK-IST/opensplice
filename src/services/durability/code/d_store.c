@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -780,6 +780,7 @@ d_storeDirNew(
                                     "Directory '%s' is not available.",
                                     dirName);
                             result = FALSE;
+                            os_free(pdir);
                             pdir = NULL;
                         }
                     } else {
@@ -790,6 +791,7 @@ d_storeDirNew(
                                     "Directory '%s' is not a directory.",
                                     pdir);
                         result = FALSE;
+                        os_free(pdir);
                         pdir = NULL;
                     }
 #else
@@ -800,6 +802,7 @@ d_storeDirNew(
                                     "'%s' is not a directory.",
                                     dirName);
                     result = FALSE;
+                    os_free(pdir);
                     pdir = NULL;
 #endif
                 }
@@ -831,6 +834,7 @@ d_storeDirNew(
                                 "'%s' cannot be found.",
                                 dirName);
                     result = FALSE;
+                    os_free(pdir);
                     pdir = NULL;
                 }
             } else {
@@ -841,6 +845,7 @@ d_storeDirNew(
                         "Specified directory '%s' is not writable.",
                         pdir);
                 result = FALSE;
+                os_free(pdir);
                 pdir = NULL;
             }
 #else
@@ -851,6 +856,7 @@ d_storeDirNew(
                             "Specified directory '%s' is not writable.",
                             pdir);
             result = FALSE;
+            os_free(pdir);
             pdir = NULL;
 #endif
         }

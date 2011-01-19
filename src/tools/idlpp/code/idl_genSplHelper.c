@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 /* Print the specified indentation the the default output file,
    the indent is specified in units of 4 space characters

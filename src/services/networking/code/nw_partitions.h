@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -46,13 +46,13 @@ void                  nw_partitionsAddPartition(
                           v_networkPartitionId partitionId,
                           const nw_networkPartitionName partitionName,
                           const nw_networkPartitionAddress partitionAddress,
-			  const nw_networkSecurityPolicy securityPolicy,
+                          const nw_networkSecurityPolicy securityPolicy,
                           nw_bool connected);
 
 void                  nw_partitionsSetGlobalPartition(
                           nw_partitions partitions,
                           const nw_networkPartitionAddress partitionAddress,
-			  const nw_networkSecurityPolicy securityPolicy);
+                          const nw_networkSecurityPolicy securityPolicy);
 
 void                  nw_partitionsAddMapping(
                           nw_partitions partitions,

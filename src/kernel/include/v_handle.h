@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -184,6 +184,11 @@ v_handleRelease(
 OS_API v_handleResult
 v_handleDeregister(
     v_handle _this);
+
+OS_API v_handleResult
+v_handleRenew(
+    v_handle *_this);
+
 
 /**
  * \brief Future extensions.

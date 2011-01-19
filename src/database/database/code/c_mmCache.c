@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,7 +10,7 @@
  *
  */
 #include "c_mmCache.h"
-#include "assert.h"
+#include <assert.h>
 
 #ifndef NDEBUG
 #define C_MM_CONFIDENCE (0x214D444A)

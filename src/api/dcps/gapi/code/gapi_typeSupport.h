@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_TYPESUPPORT_H
@@ -46,6 +46,7 @@ extern "C" {
 
 C_STRUCT(_TypeSupport) {
     C_EXTENDS(_Object);
+    gapi_unsigned_long    refCount;
     gapi_string           type_name;
     gapi_string           type_keys;
     gapi_string           type_def;
@@ -57,8 +58,6 @@ C_STRUCT(_TypeSupport) {
     gapi_copyCache        copy_cache;
     gapi_readerCopy       reader_copy;
     gapi_writerCopy       writer_copy;
-    gapi_createDataWriter create_datawriter;
-    gapi_createDataReader create_datareader;
     c_metaObject          typeSpec;
     gapi_boolean          useTypeinfo;
 };
@@ -74,9 +73,7 @@ _TypeSupportNew (
     gapi_unsigned_long alloc_size,
     gapi_topicAllocBuffer alloc_buffer,
     gapi_readerCopy reader_copy,
-    gapi_writerCopy writer_copy,
-    gapi_createDataReader create_datareader,
-    gapi_createDataWriter create_datawriter);
+    gapi_writerCopy writer_copy);
 
 OS_API gapi_returnCode_t
 gapi_typeSupport_register_type (
@@ -84,13 +81,10 @@ gapi_typeSupport_register_type (
     gapi_domainParticipant dp,
     gapi_string name);
 
-OS_API _TypeSupport
+OS_API void
 _TypeSupportDup (
     _TypeSupport _this);
 
-OS_API void
-_TypeSupportFree (
-    _TypeSupport _this);
 
 OS_API gapi_typeSupportLoad
 _TypeSupportTypeLoad (
@@ -104,20 +98,12 @@ OS_API gapi_char *
 _TypeSupportTypeKeys (
     _TypeSupport _this);
 
-OS_API gapi_writerCopy
-_TypeSupportGetWriterCopy (
-    _TypeSupport _this);
-
 OS_API gapi_readerCopy
 _TypeSupportGetReaderCopy (
     _TypeSupport _this);
 
-OS_API gapi_createDataWriter
-_TypeSupportGetDataWriter (
-    _TypeSupport _this);
-
-OS_API gapi_createDataReader
-_TypeSupportGetDataReader (
+OS_API gapi_writerCopy
+_TypeSupportGetWriterCopy (
     _TypeSupport _this);
 
 OS_API gapi_copyIn
@@ -145,21 +131,11 @@ OS_API gapi_boolean
 _TypeSupportEquals (
     _TypeSupport t1,
     _TypeSupport t2);
-   
+
 OS_API gapi_returnCode_t
 _TypeSupportGenericCopyInit (
     _TypeSupport       _this,
     _DomainParticipant participant);
-
-#if 0
-OS_API gapi_unsigned_long
-_TypeSupportMessageOffset (
-    _TypeSupport _this);
-
-OS_API gapi_unsigned_long
-_TypeSupportUserdataOffset (
-    _TypeSupport _this);
-#endif
 
 #undef OS_API
 

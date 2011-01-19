@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -29,7 +29,7 @@
 #include "ccpp_Chat.h"
 #include "multitopic.h"
 
-#include "Windows.h"
+#include <Windows.h>
 
 using namespace DDS;
 using namespace Chat;

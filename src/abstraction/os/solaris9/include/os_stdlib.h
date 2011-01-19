@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,7 +16,10 @@
 extern "C" {
 #endif
 
-#include <../posix/include/os_stdlib.h>
+/* local function of the required posix function, Solaris 9 does not contain strerror_r */
+char * strerror_r(int errnum, char *buf, size_t n);
+
+#include "../posix/include/os_stdlib.h"
 
 #if defined (__cplusplus)
 }

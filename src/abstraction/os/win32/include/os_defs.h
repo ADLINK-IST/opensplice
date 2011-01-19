@@ -1,16 +1,21 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_WIN32_DEFS_H
 #define OS_WIN32_DEFS_H
+
+// Suppress spurious 'child' : inherits 'parent::member' via dominance warnings
+#if defined (_MSC_VER)
+    #pragma warning(disable:4250)
+#endif /* _MSC_VER */
 
 #if defined (__cplusplus)
 extern "C" {
@@ -46,6 +51,9 @@ typedef _off_t os_os_size_t;
 /* keep in sync with st_mode field def in struct stat in sys/stat.h */
 typedef unsigned short os_os_mode_t;
 
+#ifndef ssize_t 
+#define ssize_t signed long 
+#endif 
 
 #if defined (__cplusplus)
 }

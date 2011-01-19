@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,9 +30,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <os_mutex.h>
-#include <os_heap.h>
-#include <os_report.h>
+#include "os_mutex.h"
+#include "os_heap.h"
+#include "os_report.h"
 
 /** \brief Structure providing linked list for keeping
  *         shared memory data

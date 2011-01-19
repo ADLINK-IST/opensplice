@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,9 +12,9 @@
 #ifndef _XBE_DIRECTION_H
 #define _XBE_DIRECTION_H
 
-#include <idl.h>
-#include <ast.h>
-#include <ast_argument.h>
+#include "idl.h"
+#include "ast.h"
+#include "ast_argument.h"
 #include "xbe_type.h"
 
 // a be_ArgumentDirection is which way an argument to an operation is

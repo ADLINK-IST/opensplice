@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,8 +26,8 @@
 #include "idl_tmplExp.h"
 #include "idl_catsDef.h"
 
-#include <c_typebase.h>
-#include <os_stdlib.h>
+#include "c_typebase.h"
+#include "os_stdlib.h"
         /** Base variable for array dimension */
 #define BOUNDSCHECK ("OSPL_BOUNDS_CHECK")
 #define DEBUG_INFO idl_fileOutPrintf(idl_fileCur(), "/* Code generated in file: %s at line: %d */\n", __FILE__, __LINE__);

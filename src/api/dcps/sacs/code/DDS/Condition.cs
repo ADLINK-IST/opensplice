@@ -25,10 +25,12 @@ namespace DDS
 {
     public class Condition : SacsSuperClass, ICondition
     {
-        protected Condition(IntPtr gapiPtr, bool weak)
-            : base(gapiPtr, weak)
-        { }
-
+        internal Condition()
+            : base()
+        {
+            // Base class handles everything.
+        }
+                
         internal Condition(IntPtr gapiPtr)
             : base(gapiPtr)
         {

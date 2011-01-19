@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -54,6 +54,10 @@
 #define MMF_STORE_DATABASE_NAME "OsplDurabilityDatabase"
 #define MMF_STORE_KERNEL_NAME   "OsplDurabilityKernel"
 #define UNKNOWN   "Unknown"
+
+c_bool  action_started = FALSE;
+os_time first_time;
+os_time last_time;
 
 static void
 initStoreFilePath(
@@ -184,7 +188,7 @@ createNewMMF(
             /* create c_base */
             base = c_create(MMF_STORE_DATABASE_NAME,
                             os_mmfAddress(storeMMF->mmfHandle),
-                            size);
+                            size, 0);
             if (base != NULL) {
                 /* get storeKernel */
                 kernel = d_storeMMFKernelNew(base, MMF_STORE_KERNEL_NAME);
@@ -506,6 +510,17 @@ d_storeActionStartMMF(
     assert(d_store(store)->type == D_STORE_TYPE_MEM_MAPPED_FILE);
 
     if(store != NULL){
+        /* Code used to benchmark MMF store (DDS1582) */
+    	if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+    	{
+            action_started = TRUE;
+            first_time.tv_sec = 0;
+            first_time.tv_nsec = 0;
+            last_time.tv_sec = 0;
+            last_time.tv_nsec = 0;
+        }
+        /* end of benchmark code */
+
         /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStartMMF.\n");*/
         result = D_STORE_RESULT_OK;
     } else {
@@ -519,11 +534,29 @@ d_storeActionStopMMF(
     const d_store store)
 {
     d_storeResult result;
+    os_time diff_time;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_MEM_MAPPED_FILE);
 
     if(store != NULL){
+        /* Code used to benchmark MMF store (DDS1582) */
+    	if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+    	{
+    		action_started = FALSE;
+    		d_storeReport(store, D_LEVEL_FINEST,
+    				"Start time %d.%09d\n",
+    				first_time.tv_sec, first_time.tv_nsec);
+    		d_storeReport(store, D_LEVEL_FINEST,
+    				"End time   %d.%09d\n",
+    				last_time.tv_sec, last_time.tv_nsec);
+    		diff_time = os_timeSub(last_time, first_time);
+    		d_storeReport(store, D_LEVEL_FINEST,
+    				"Diff time  %d.%09d seconds \n",
+    				diff_time.tv_sec, diff_time.tv_nsec);
+    	}
+        /* end of benchmark code */
+
         /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStopMMF.\n");*/
         result = D_STORE_RESULT_OK;
     } else {
@@ -596,7 +629,6 @@ d_storeGroupInjectMMF(
             if(groupInfo) {
                 result = d_groupInfoInject(groupInfo, store, participant, group);
                 c_free(groupInfo);
-                result = D_STORE_RESULT_OK;
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
             }
@@ -645,6 +677,17 @@ d_storeMessageStoreMMF(
     d_storeResult result;
     d_groupInfo group;
 
+    /* Code used to benchmark MMF store (DDS1582) */
+    if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+    {
+    	if(action_started)
+    	{
+    		first_time = os_timeGet();
+    		action_started = FALSE;
+    	}
+    }
+    /* end of benchmark code */
+
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_MEM_MAPPED_FILE);
 
@@ -672,6 +715,14 @@ d_storeMessageStoreMMF(
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
+
+    /* Code used to benchmark MMF store (DDS1582) */
+    if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+    {
+    	last_time = os_timeGet();
+    }
+    /* end of benchmark code */
+
     return result;
 }
 
@@ -1124,7 +1175,7 @@ d_storeCreatePersistentSnapshotMMF(
                 storeMMF->mmfHandle = NULL;
 
                 initStoreFilePath(storeMMF, (c_char*)uri, MMF_STORE_SNAPSHOT);
-                remove(storeMMF->storeFilePath);
+                os_remove(storeMMF->storeFilePath);
 
                 result = d_storeCopyFile(originalPath, storeMMF->storeFilePath);
                 os_free(originalPath);

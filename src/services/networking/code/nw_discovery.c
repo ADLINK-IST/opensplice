@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -683,6 +683,7 @@ nw_discoveryWriterMain(
                     discoveryWriter->respondToNode = TRUE;
                 break;
             }
+            os_free(msg);
         }
 
         nw_discoveryWriterWriteMessageToNetwork(discoveryWriter,
@@ -850,6 +851,7 @@ NW_STRUCT(nw_discoveryReader) {
     nw_aliveNodesHashItem *aliveNodesHash;
     /* Request for alive-check has been submitted */
     nw_bool checkRequested;
+    os_mutex checkRequestedMtx;
     /* Immediate interaction with the networking plug */
     nw_plugChannel receiveChannel;
     /* Allow reconnection of nodes that stopped or died earlier */
@@ -1009,7 +1011,8 @@ nw_discoveryReaderReceivedHeartbeat(
     nw_bool wasCreated;
     nw_bool endReached = FALSE;
     os_uint32 i;
-    nw_name  role = "";
+    nw_name  no_role = "";
+    nw_name  role = no_role;
     nw_name  reqscope = NULL;
     nw_data  Nodelist = NULL;
     nw_seqNr NodelistLen = 0;
@@ -1054,7 +1057,6 @@ nw_discoveryReaderReceivedHeartbeat(
     }
 
 
-
     /* filter out heartbeats that are not in our scope,
      * if we have defined one.
      */
@@ -1063,7 +1065,7 @@ nw_discoveryReaderReceivedHeartbeat(
 
         NW_TRACE_4(
             Discovery, 6,
-            "Received heartbeat from node with id 0x%x, address 0x%x, role %s "
+            "Received heartbeat from node with id 0x%x, address 0x%x, role \"%s\" "
             "state is %s",
             networkId, address, role, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
@@ -1111,11 +1113,11 @@ nw_discoveryReaderReceivedHeartbeat(
                     }
                     itemFound->lastHeartbeatReceivedTime = receivedTime;
                     itemFound->hasDied = FALSE;
-                    itemFound->role = role;
+                    itemFound->role = os_strdup(role);
                     itemFound->networkId = networkId;
 
                     discoveryReader->aliveNodesCount++;
-                    NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role %s", networkId, address, role);
+                    NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role \"%s\"", networkId, address, role);
                     NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
                         heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
                     NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
@@ -1151,7 +1153,7 @@ nw_discoveryReaderReceivedHeartbeat(
                         }
                         itemFound->lastHeartbeatReceivedTime = receivedTime;
                         itemFound->hasDied = FALSE;
-                        itemFound->role = role;
+                        itemFound->role = os_strdup(role);
                         itemFound->networkId = networkId;
                         if ( Nodelist ) {
                             itemFound->state = NW_DISCSTATE_FULL;
@@ -1160,7 +1162,7 @@ nw_discoveryReaderReceivedHeartbeat(
                         }
 
                         discoveryReader->aliveNodesCount++;
-                        NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role %s", networkId, address, role);
+                        NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role \"%s\"", networkId, address, role);
                         NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
                             heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
                         NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
@@ -1258,9 +1260,15 @@ nw_discoveryReaderReceivedHeartbeat(
             reqscope = NULL;
         }
     } else {
-        NW_TRACE_1(Discovery, 4, "Ignoring out of scope role %s", role);
+        NW_TRACE_1(Discovery, 4, "Ignoring out of scope role \"%s\"", role);
+    }
+    
+    if ( role != no_role) {
+        
+        os_free(role);
     }
 }
+
 
 
 static void
@@ -1272,7 +1280,7 @@ nw_discoveryReaderCheckForDiedNodes(
     nw_aliveNodesHashItem hashItem;
     c_time diffTime;
     c_equality eq;
-    nw_aliveNodesHashItem itemFound;
+    nw_aliveNodesHashItem itemFound = NULL;
 
     NW_TRACE(Discovery, 5, "Checking liveliness of nodes");
     for (i=0; i<discoveryReader->aliveNodesHashSize; i++) {
@@ -1363,12 +1371,13 @@ nw_discoveryReaderMain(
                                                     sender.ipAddress,
                                                     now);
             }
+	    os_mutexLock( &discoveryReader->checkRequestedMtx );
             if (discoveryReader->checkRequested) {
                 nw_discoveryReaderCheckForDiedNodes(discoveryReader, now);
                 discoveryReader->checkRequested = FALSE;
 
             }
-
+	    os_mutexUnlock( &discoveryReader->checkRequestedMtx );
         }
     }
 
@@ -1399,6 +1408,7 @@ nw_discoveryReaderNew(
     char *pathName;
     char *schedPathName;
     size_t schedPathNameSize;
+    os_mutexAttr checkReqAttr;
     nw_aliveNodesHashItem itemFound;
     nw_bool wasCreated;
     c_time heartbeatInterval;
@@ -1439,6 +1449,9 @@ nw_discoveryReaderNew(
         result->discoveryWriter  = discoveryWriter;
         result->arg = arg;
         result->checkRequested = FALSE;
+	os_mutexAttrInit(&checkReqAttr);
+	checkReqAttr.scopeAttr = OS_SCOPE_PRIVATE;
+	os_mutexInit(&result->checkRequestedMtx, &checkReqAttr);
         result->receiveChannel = nw_plugNetworkNewReceiveChannel(
             ((nw_discovery)result)->network, name, NULL,NULL);
 
@@ -1539,6 +1552,7 @@ nw_discoveryReaderFinalize(
     }
     os_free(discoveryReader->aliveNodesHash);
 
+    os_mutexDestroy(&discoveryReader->checkRequestedMtx);
     /* Finalize parent */
     nw_discoveryFinalize(runnable);
 }
@@ -1547,7 +1561,9 @@ void
 nw_discoveryReaderInitiateCheck(
     nw_discoveryReader discoveryReader)
 {
+    os_mutexLock( &discoveryReader->checkRequestedMtx );
     discoveryReader->checkRequested = TRUE;
+    os_mutexUnlock( &discoveryReader->checkRequestedMtx );
     NW_TRACE(Discovery, 5, "Triggering discoveryReader for liveliness checking");
     nw_discoveryReaderTrigger((nw_runnable)discoveryReader);
 }

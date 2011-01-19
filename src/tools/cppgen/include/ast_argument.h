@@ -77,9 +77,9 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <ast_field.h>
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "ast_field.h"
 
 
 class AST_Argument : public virtual AST_Field

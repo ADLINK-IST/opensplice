@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -53,9 +53,10 @@ c_bool nw_configurationUseLoopback();
 c_bool nw_configurationUseComplementPartitions();
 #endif
 
-#ifdef NW_DEBUGGING
 c_bool nw_configurationLoseSentMessage();
 c_bool nw_configurationLoseReceivedMessage();
+
+#ifdef NW_DEBUGGING
 c_bool nw_configurationNoPacking();
 #endif
 
@@ -74,6 +75,11 @@ c_long nw_configurationGetLongParameter(
            c_long defaultValue);
 
 c_ulong nw_configurationGetULongParameter(
+           const c_char *parameterPath,
+           const c_char *parameterName,
+           c_ulong defaultValue);
+
+c_ulong nw_configurationGetSizeParameter(
            const c_char *parameterPath,
            const c_char *parameterName,
            c_ulong defaultValue);
@@ -98,6 +104,12 @@ c_bool nw_configurationGetBoolAttribute(
            c_bool defaultValueNoAttr);
 
 c_ulong nw_configurationGetULongAttribute(
+           const c_char *parameterPath,
+           const c_char *attribyteName,
+           c_ulong defaultValueNoElmt,
+           c_ulong defaultValueNoAttrib);
+
+c_ulong nw_configurationGetSizeAttribute(
            const c_char *parameterPath,
            const c_char *attribyteName,
            c_ulong defaultValueNoElmt,

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -83,7 +83,7 @@ os_getenv(
     const char *variable)
 {
    char * result;
-	result = getenv(variable);
+   result = getenv(variable);
 
    return result;
 }
@@ -270,6 +270,8 @@ os_strtoll(
     long long sign = 1LL;
     long long radix;
     long long dvalue;
+
+    errno = 0;
 
     if (endptr) {
         *endptr = (char *)str;
@@ -519,6 +521,16 @@ os_readdir(
     return result;
 }
 
+os_result os_remove (const char *pathname)
+{
+    return (remove (pathname) == 0) ? os_resultSuccess : os_resultFail;
+}
+
+os_result os_rename (const char *oldpath, const char *newpath)
+{
+    return (rename (oldpath, newpath) == 0) ? os_resultSuccess : os_resultFail;
+}
+
 /* The result of os_fileNormalize should be freed with os_free */
 char *
 os_fileNormalize(
@@ -675,4 +687,15 @@ snprintf(
    va_end(args);
 
    return result;
+}
+
+char * os_strerror(int errnum, char *buf, size_t n)
+{
+    strerror_s(buf, n, errnum);
+    return buf;
+}
+
+ssize_t os_write(int fd, const void *buf, size_t count)
+{
+  return write(fd, buf, count);
 }

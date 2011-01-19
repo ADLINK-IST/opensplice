@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,6 +41,8 @@ extern "C" {
         (_DomainParticipant(_ObjectAlloc(OBJECT_KIND_DOMAINPARTICIPANT, \
                                           C_SIZEOF(_DomainParticipant), \
                                           NULL)))
+#define U_PARTICIPANT_GET(t)       u_participant(U_ENTITY_GET(t))
+#define U_PARTICIPANT_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
 
 _DomainParticipant
 _DomainParticipantNew (
@@ -136,13 +138,6 @@ _DomainParticipantFindBuiltinTopic (
     _DomainParticipant _this,
     const gapi_char   *topic_name);
 
-void
-_DomainParticipantSetBuiltinDeleteAction (
-    _DomainParticipant      _this,
-    gapi_deleteEntityAction action,
-    void                   *action_arg,
-    gapi_boolean            onTypeSupport    );
-
 _Subscriber
 _DomainParticipantGetBuiltinSubscriber (
     _DomainParticipant participant);
@@ -170,9 +165,7 @@ _DomainParticipantCleanup (
 
 gapi_returnCode_t
 _DomainParticipantDeleteContainedEntitiesNoClaim (
-    _DomainParticipant _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    _DomainParticipant _this);
 
 #undef OS_API
 #if defined (__cplusplus)

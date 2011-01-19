@@ -71,8 +71,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  */
 
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 // Narrowing functions for AST
 

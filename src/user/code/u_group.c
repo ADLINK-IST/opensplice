@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -44,53 +44,57 @@ u_groupCreate(
     }
 
     return _this;
-}    
+}
+
+u_result
+u_groupFree(
+    u_group _this)
+{
+    u_result result;
+    c_bool destroy;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            /* This user entity is a proxy, meaning that it is not fully
+             * initialized, therefore only the entity part of the object
+             * can be deinitialized.
+             * It would be better to either introduce a separate proxy
+             * entity for clarity or fully initialize entities and make
+             * them robust against missing information.
+             */
+            result = u_entityDeinit(u_entity(_this));
+
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_groupFree",0,
+                            "Operation u_groupDeinit failed: "
+                            "Waitset = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
+        } else {
+            u_entityUnlock(u_entity(_this));
+        }
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_groupFree",0,
+                    "Operation u_entityLock failed: "
+                    "Waitset = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
+    }
+    return result;
+}
 
 /* -------------------------- "Normal" functions ---------------------------- */
 /* These functions can be called by any application having a u_group entity.
  * The functions themselves do the protecting */
-
-u_result
-u_groupClaim(
-    u_group _this,
-    v_group *group)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (group != NULL)) {
-        *group = v_group(u_entityClaim(u_entity(_this)));
-        if (*group == NULL) {
-            OS_REPORT_2(OS_ERROR, "u_groupClaim", 0,
-                        "Group could not be claimed. "
-                        "<_this = 0x%x, group = 0x%x>.",
-                         _this, group);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_groupClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, group = 0x%x>.",
-                    _this, group);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_groupRelease(
-    u_group _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_groupRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 u_group
 u_groupNew(
@@ -111,8 +115,9 @@ u_groupNew(
 
     if ((partitionName != NULL) && (topicName != NULL)) {
         if (participant != NULL) {
-            r = u_participantClaim(participant, &kparticipant);
-            if ((r == U_RESULT_OK) && (kparticipant != NULL)) {                
+            r = u_entityWriteClaim(u_entity(participant), (v_entity*)(&kparticipant));
+            if (r == U_RESULT_OK){
+                assert(kparticipant);
                 kernel = v_objectKernel(kparticipant);
                 topics = v_resolveTopics(kernel,topicName);
                 if (c_iterLength(topics) == 0) {
@@ -157,6 +162,11 @@ u_groupNew(
                                     partitionName, topicName);
                     }
                     c_free(ktopic);
+                }else {
+                    OS_REPORT_2(OS_ERROR,"u_groupNew", 0,
+                                    "Topic not (yet) known. "
+                                    "For Partition <%s> and Topic <%s>.",
+                                    partitionName, topicName);
                 }
                 ktopic = c_iterTakeFirst(topics);
                 while (ktopic != NULL) {
@@ -164,7 +174,7 @@ u_groupNew(
                     ktopic = c_iterTakeFirst(topics);
                 }
                 c_iterFree(topics);
-                r = u_participantRelease(participant);
+                r = u_entityRelease(u_entity(participant));
             } else {
                 OS_REPORT_2(OS_ERROR,"u_groupNew",0,
                             "Claim kernel participant failed."
@@ -192,17 +202,16 @@ u_groupFlush(
 {
     v_group kgroup;
     u_result result;
-    
-    result = u_groupClaim(group, &kgroup);
-    
+
+    result = u_entityReadClaim(u_entity(group), (v_entity*)(&kgroup));
     if (result == U_RESULT_OK) {
         v_groupFlush(kgroup);
-        u_groupRelease(group);
+        u_entityRelease(u_entity(group));
     } else {
         OS_REPORT(OS_ERROR, "u_groupFlush", 0, "Could not claim group.");
     }
     return result;
-}    
+}
 
 #if defined (__cplusplus)
 }

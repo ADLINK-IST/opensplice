@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,39 +21,9 @@
 #define GAPI_STATUS_KIND_FULL 0x1fffU
 #define GAPI_STATUS_KIND_NULL 0x0U
 
-#define TOPIC_STATUS_MASK           (GAPI_INCONSISTENT_TOPIC_STATUS|\
-                                     GAPI_ALL_DATA_DISPOSED_STATUS)
-#define READER_STATUS_MASK          (GAPI_SAMPLE_REJECTED_STATUS            |\
-                                     GAPI_LIVELINESS_CHANGED_STATUS         |\
-                                     GAPI_REQUESTED_DEADLINE_MISSED_STATUS  |\
-                                     GAPI_REQUESTED_INCOMPATIBLE_QOS_STATUS |\
-                                     GAPI_DATA_AVAILABLE_STATUS             |\
-                                     GAPI_SAMPLE_LOST_STATUS                |\
-                                     GAPI_SUBSCRIPTION_MATCH_STATUS)
-#define WRITER_STATUS_MASK          (GAPI_LIVELINESS_LOST_STATUS            |\
-                                     GAPI_OFFERED_DEADLINE_MISSED_STATUS    |\
-                                     GAPI_OFFERED_INCOMPATIBLE_QOS_STATUS   |\
-                                     GAPI_PUBLICATION_MATCH_STATUS)
-#define SUBSCRIBER_STATUS_MASK      (GAPI_DATA_ON_READERS_STATUS)
-#define PUBLISHER_STATUS_MASK       (GAPI_STATUS_KIND_NULL)
-#define PARTICIPANT_STATUS_MASK     (GAPI_STATUS_KIND_NULL)
- 
-    
-#define TOPIC_STATUS_INTEREST       (TOPIC_STATUS_MASK)
-#define READER_STATUS_INTEREST      (READER_STATUS_MASK)
-#define WRITER_STATUS_INTEREST      (WRITER_STATUS_MASK)
-#define SUBSCRIBER_STATUS_INTEREST  (READER_STATUS_INTEREST    | SUBSCRIBER_STATUS_MASK)
-#define PUBLISHER_STATUS_INTEREST   (WRITER_STATUS_INTEREST    | PUBLISHER_STATUS_MASK)
-#define PARTICIPANT_STATUS_INTEREST (TOPIC_STATUS_INTEREST     | SUBSCRIBER_STATUS_INTEREST |\
-                                     PUBLISHER_STATUS_INTEREST | PARTICIPANT_STATUS_MASK)
-
-#define _STATUS_ENTITY(s)            (_Status(s)->entity)
-#define _STATUS_PARENT(s)            (_Status(s)->parent)
-#define _STATUS_USER_ENTITY(s)       (_Status(s)->userEntity)
-
 typedef struct _ListenerInfo_s {
-    gapi_object             handle;
-    gapi_statusMask       mask;
+    gapi_object handle;
+    gapi_statusMask mask;
 } _ListenerInfo;
 
 #define _Status(o) ((_Status)(o))
@@ -95,7 +65,6 @@ C_STRUCT(_Status) {
     _Entity               entity;
     _ListenerInfo         listenerInfo[MAX_LISTENER_DEPTH];
     long                  depth;
-    gapi_boolean          dispatchOn;
     gapi_statusMask       enabled;
     gapi_statusMask       validMask;
     gapi_statusMask       interestMask;
@@ -104,43 +73,30 @@ C_STRUCT(_Status) {
     ListenerAction        notify;
 };
 
-typedef struct ListenerEvent {
-    gapi_statusMask event;
-    gapi_object     source;
-} ListenerEvent;
-
+_Status
+_StatusNew(
+    _Entity entity,
+    _StatusKind kind,
+    const struct gapi_listener *info,
+    gapi_statusMask mask);
 
 void
 _StatusInit(
-    _Status info,
+    _Status _this,
     _Entity entity,
-    _Status parent,
-    long depth,
     _StatusKind kind,
-    gapi_statusMask valid,
-    gapi_statusMask interest,
-    gapi_statusMask initmask,
-    gapi_boolean active,
-    ListenerAction notify);
+    const struct gapi_listener *info,
+    gapi_statusMask mask);
 
 void
 _StatusDeinit(
     _Status info);
 
-void
-_StatusDefaultListener(
-    _Entity entity,
-    gapi_statusMask mask);
-
 gapi_boolean
 _StatusSetListener(
     _Status status,
+    const struct gapi_listener *info,
     gapi_statusMask mask);
-
-gapi_boolean
-_StatusSetListenerInterest (
-    _Status status,
-    _ListenerInterestInfo info);
 
 gapi_object
 _StatusFindTarget(
@@ -151,9 +107,90 @@ gapi_statusMask
 _StatusGetCurrentStatus(
     _Status status);
 
-gapi_statusMask
-_StatusGetMaskStatus (
+void
+_StatusNotifyEvent (
     _Status status,
-    c_long eventKindMask);
+    c_ulong events);
+
+void
+_StatusNotifyDataAvailable (
+    _Status status,
+    gapi_object source);
+
+c_bool
+_StatusNotifyDataOnReaders (
+    _Status status,
+    gapi_object source);
+
+void
+_StatusNotifySubscriptionMatch (
+    _Status status,
+    gapi_object source,
+    gapi_subscriptionMatchedStatus *info);
+
+void
+_StatusNotifyRequestedIncompatibleQos (
+    _Status status,
+    gapi_object source,
+    gapi_requestedIncompatibleQosStatus *info);
+
+void
+_StatusNotifyRequestedDeadlineMissed (
+    _Status status,
+    gapi_object source,
+    gapi_requestedDeadlineMissedStatus *info);
+
+void
+_StatusNotifySampleRejected (
+    _Status status,
+    gapi_object source,
+    gapi_sampleRejectedStatus *info);
+
+void
+_StatusNotifyLivelinessChanged (
+    _Status status,
+    gapi_object source,
+    gapi_livelinessChangedStatus *info);
+
+void
+_StatusNotifySampleLost (
+    _Status status,
+    gapi_object source,
+    gapi_sampleLostStatus *info);
+
+void
+_StatusNotifyPublicationMatch (
+    _Status status,
+    gapi_object source,
+    gapi_publicationMatchedStatus *info);
+
+void
+_StatusNotifyLivelinessLost (
+    _Status status,
+    gapi_object source,
+    gapi_livelinessLostStatus *info);
+
+void
+_StatusNotifyOfferedIncompatibleQos (
+    _Status status,
+    gapi_object source,
+    gapi_offeredIncompatibleQosStatus *info);
+
+void
+_StatusNotifyOfferedDeadlineMissed (
+    _Status status,
+    gapi_object source,
+    gapi_offeredDeadlineMissedStatus *info);
+
+void
+_StatusNotifyAllDataDisposed (
+    _Status status,
+    gapi_object source);
+
+void
+_StatusNotifyInconsistentTopic (
+    _Status status,
+    gapi_object source,
+    gapi_inconsistentTopicStatus *info);
 
 #endif

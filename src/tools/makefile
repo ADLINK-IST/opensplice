@@ -20,6 +20,7 @@ endif
 
 ifeq ($(INCLUDE_TOOLS_MMSTAT),yes)
 SUBSYSTEMS	+= mmstat
+SUBSYSTEMS	+= dbd
 endif
 
 

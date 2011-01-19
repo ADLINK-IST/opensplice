@@ -106,6 +106,7 @@ CALL :RunExample
 :CCPPTutorial
 SET EXAMPLE=dcps/CORBA/C++/OpenFusion/Tutorial
 SET NEXT=DLRL
+REM SET NEXT=SACPPHelloWorld
 CALL :RunExample
 
 :DLRL
@@ -113,7 +114,7 @@ ECHO Run dlrl examples
 cd "%OSPL_HOME%/examples"
 ECHO Check for DLRL directory
 IF NOT EXIST "%OSPL_HOME%/examples/dlrl/" (GOTO NODLRL) ELSE (GOTO DLRLSAJTutorial)
-REM Excluded because we don't have a BUILD.bat file
+REM Excluded because we dont have a BUILD.bat file
 REM SET EXAMPLE=dlrl/standalone/C++/Tutorial
 REM SET NEXT=DLRLSAJTutorial
 REM CALL :RunExample
@@ -128,7 +129,9 @@ REM SET EXAMPLE=services/dbmsconnect/SQL/C++/ODBC
 REM CALL :RunExample
 
 :Done
-ECHO Finished running examples
+ECHO Finished running standard examples, start running new examples
+ECHO DO NOT RUN THE REMAINING EXAMPLES 
+REM call %OSPLI_BASE%/run_new_examples.bat %FAILURES% %PASS% %COUNT%
 GOTO END
 
 REM ###################
@@ -145,6 +148,7 @@ ECHO Starting %EXAMPLE% >> %LOGFILE%
 call RUN.bat >> %LOGFILE%
 %SLEEP10% >NUL
 CALL :ErrorChecking
+
 
 REM #####################
 REM ErrorChecking section
@@ -172,6 +176,10 @@ if %NOCLASSDEFFOUND% EQU 1 SET FAIL=1
 if %ASSERTFAILED% EQU 1 SET FAIL=1
 if EXIST %OSPL_HOME%examples\%EXAMPLE%\ospl-error.log SET FAIL=1
 if EXIST %OSPL_HOME%examples\%EXAMPLE%\ospl-error.log echo ospl-error.log found for %EXAMPLE% >> %RUN_SUMMARY_LOG%
+findstr /c:"WARNING" %OSPL_HOME%examples\%EXAMPLE%\ospl-info.log
+if %ERRORLEVEL% EQU 0 SET FAIL=1
+findstr /c:"WARNING" %OSPL_HOME%examples\%EXAMPLE%\ospl-info.log
+if %ERRORLEVEL% EQU 0 echo WARNING found in ospl-info.log for %EXAMPLE% >> %RUN_SUMMARY_LOG%
 REM Append result to %LOGFILE%
 if %FAIL% EQU 1 (echo Run %EXAMPLE% FAILED >> %LOGFILE%) ELSE (echo Run %EXAMPLE% PASSED >> %LOGFILE%)
 REM Append result to %RUN_SUMMARY_LOG%
@@ -214,7 +222,7 @@ REM the individual example results to the examples.log that is uploaded to
 REM the scoreboard.
 cd %LOGDIR%\examples\run
 type run_results_summary.txt >> examples.log
-REM try the above as this following line doesn't appear to work
+REM try the above as this following line doesnt appear to work
 REM type %RUN_SUMMARY_LOG% >> %SUMMARY_LOG%
 %SLEEP10% >NUL
 REM Delete the run_results_summary.txt file as we have appended the

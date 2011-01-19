@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -32,10 +32,10 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_keyDef.h"
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 #include <ctype.h>
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 	/** indentation level */
 static c_long indent_level = 0;
@@ -49,6 +49,16 @@ static c_long varIndex;
 
 static void idl_arrayDimensions (idl_typeArray typeArray);
 static void idl_arrayElements (idl_typeArray typeArray, const char *identifier, c_long indent);
+static void
+idl_arrayLoopRemoveBody(
+    idl_typeArray typeArray,
+    const char *identifier,
+    c_long indent);
+static void
+idl_arrayLoopRemove(
+    idl_typeArray typeArray,
+    const char *identifier,
+    c_long indent);
 
 static c_char *
 idl_valueFromLabelVal(
@@ -176,7 +186,7 @@ idl_structureOpen(
     if (idl_typeSpecHasRef(idl_typeSpec(structSpec))) {
         idl_fileOutPrintf(
             idl_fileCur(),
-            "    void %s__free (void *object);\n\n",
+            "    DDS_boolean %s__free (void *object);\n\n",
             idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf(
             idl_fileCur(),
@@ -200,7 +210,7 @@ idl_structureOpen(
         /* Deallocation routine are required */
         idl_fileOutPrintf(
             idl_fileCur(),
-            "void %s__free (void *object)\n",
+            "DDS_boolean %s__free (void *object)\n",
             idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf(idl_fileCur(), "{\n");
         idl_fileOutPrintf(
@@ -237,6 +247,7 @@ idl_structureClose(
     void *userData)
 {
     if (struct_hasRef) {
+        idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     }
 }
@@ -269,7 +280,7 @@ idl_structureMemberOpenClose(
 
 	    /* case 6148 */
             idl_fileOutPrintf(idl_fileCur(), "    {\n");
-            idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
+            idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
                 idl_scopedTypeName(typeSpec));
 
             idl_fileOutPrintf(
@@ -344,7 +355,7 @@ idl_unionOpen(
     if (idl_typeSpecHasRef(idl_typeSpec(unionSpec))) {
         idl_fileOutPrintf(
             idl_fileCur(),
-            "    void %s__free (void *object);\n\n",
+            "    DDS_boolean %s__free (void *object);\n\n",
             idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf(
             idl_fileCur(),
@@ -368,7 +379,7 @@ idl_unionOpen(
 	/* Deallocation routine are required */
         idl_fileOutPrintf(
             idl_fileCur(),
-            "void %s__free (void *object)\n",
+            "DDS_boolean %s__free (void *object)\n",
             idl_scopeStack (scope, "_", name));
         idl_fileOutPrintf(idl_fileCur(), "{\n");
         idl_fileOutPrintf(
@@ -407,6 +418,7 @@ idl_unionClose(
 {
     if (union_hasRef) {
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     }
 }
@@ -531,8 +543,11 @@ static void
 idl_arrayDimensions (
     idl_typeArray typeArray)
 {
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {	
-        idl_arrayDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
+    idl_typeSpec idlSubtype;
+
+    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
+    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
+        idl_arrayDimensions(idl_typeArray(idlSubtype));
     }
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
 }
@@ -542,35 +557,42 @@ idl_arrayLoopVariables(
     idl_typeArray typeArray,
     c_long indent)
 {
+    idl_typeSpec idlSubtype;
     loopIndent++;
     idl_printIndent(indent);
     idl_fileOutPrintf(idl_fileCur(), "    int i%d;\n", loopIndent);
     /* QAC EXPECT 3416; No side effect here */
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
+    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
+
+    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
-        idl_arrayLoopVariables(idl_typeArray(idl_typeArrayType(typeArray)), indent);
+        idl_arrayLoopVariables(idl_typeArray(idlSubtype), indent);
     } else {
         idl_fileOutPrintf(idl_fileCur(), "\n");
     }
     loopIndent--;
 }
 
+
 static void
 idl_arrayLoopRemoveOpen(
     idl_typeArray typeArray,
     c_long indent)
 {
+    idl_typeSpec idlSubtype;
+
     loopIndent++;
+    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
     idl_printIndent(loopIndent + indent);
     idl_fileOutPrintf(idl_fileCur(), "for (i%d = 0; i%d < %d; i%d++) {\n",
-    loopIndent,
-    loopIndent,
-    idl_typeArraySize(typeArray),
-    loopIndent);
+        loopIndent,
+        loopIndent,
+        idl_typeArraySize(typeArray),
+        loopIndent);
     /* QAC EXPECT 3416; No side effect here */
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
+    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
-        idl_arrayLoopRemoveOpen (idl_typeArray(idl_typeArrayType(typeArray)), indent);
+        idl_arrayLoopRemoveOpen (idl_typeArray(idlSubtype), indent);
     }
 }
 
@@ -578,12 +600,15 @@ static void
 idl_arrayLoopRemoveIndex (
     idl_typeArray typeArray)
 {
+    idl_typeSpec idlSubtype;
+
     varIndex++;
+    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
     idl_fileOutPrintf(idl_fileCur(), "[i%d]", varIndex);
     /* QAC EXPECT 3416; No side effect here */
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
+    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
 	/* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
-        idl_arrayLoopRemoveIndex(idl_typeArray(idl_typeArrayType(typeArray)));
+        idl_arrayLoopRemoveIndex(idl_typeArray(idlSubtype));
     }
     varIndex--;
 }
@@ -608,7 +633,7 @@ idl_typedefRemove(
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
+        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
         idl_printIndent(indent);
@@ -640,6 +665,9 @@ idl_typedefRemove(
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf (idl_fileCur(), ");\n");
 	break;
+    case idl_tarray:
+        idl_arrayLoopRemoveBody(idl_typeArray(typeSpec), identifier, indent);
+        break;
     default:
         /* QAC EXPECT 3416; No side effect here */
         assert (0);
@@ -647,7 +675,7 @@ idl_typedefRemove(
     }
 }
 
-static void
+void
 idl_arrayLoopRemoveBody(
     idl_typeArray typeArray,
     const char *identifier,
@@ -665,7 +693,7 @@ idl_arrayLoopRemoveBody(
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    extern void %s__free(void *object);\n",
+        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
             idl_scopedSacTypeIdent(typeSpec));
 
         idl_printIndent(indent);
@@ -714,13 +742,16 @@ idl_arrayLoopRemoveClose(
     idl_typeArray typeArray,
     c_long indent)
 {
+    idl_typeSpec idlSubtype;
+
+    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
     idl_printIndent(loopIndent + indent);
     loopIndent--;
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     /* QAC EXPECT 3416; No side effect here */
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
+    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
-        idl_arrayLoopRemoveClose(idl_typeArray(idl_typeArrayType(typeArray)), indent);
+        idl_arrayLoopRemoveClose(idl_typeArray(idlSubtype), indent);
     }
 }
 
@@ -738,7 +769,7 @@ idl_indexSize(
     return return_val;
 }
 
-static void
+void
 idl_arrayLoopRemove(
     idl_typeArray typeArray,
     const char *identifier,
@@ -793,7 +824,7 @@ idl_arraySliceDimensions(
     idl_typeArray typeArray)
 {
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray &&
-        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {	
+        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {
         idl_arraySliceDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
     }
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
@@ -836,13 +867,14 @@ idl_typedefOpenClose(
         if (idl_typeSpecHasRef(idl_typeDefRefered(defSpec))) {
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "void %s__free (void *object)\n",
+                "DDS_boolean %s__free (void *object)\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "{\n");
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "    %s__free (object);\n",
                 idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))));
+            idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
             idl_fileOutPrintf(idl_fileCur(), "}\n\n");
         }
     } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_ttypedef) {
@@ -874,7 +906,7 @@ idl_typedefOpenClose(
             if (idl_typeSpecHasRef(idl_typeDefRefered(defSpec))) {
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "    void %s__free (void *array);\n",
+                    "    DDS_boolean %s__free (void *array);\n",
                     idl_scopeStack (scope, "_", name));
                 idl_fileOutPrintf(
                     idl_fileCur(),
@@ -894,7 +926,7 @@ idl_typedefOpenClose(
                 /* Deallocation routine for the array elements is required */
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "\nvoid %s__free (void *array)\n",
+                    "\nDDS_boolean %s__free (void *array)\n",
                     idl_scopeStack(scope, "_", name));
                 idl_fileOutPrintf(idl_fileCur(), "{\n");
                 idl_fileOutPrintf(
@@ -903,6 +935,7 @@ idl_typedefOpenClose(
                     idl_scopeStack(scope, "_", name),
                     idl_scopeStack (scope, "_", name));
                     idl_arrayElements(idl_typeArray(idl_typeDefRefered(defSpec)), "(*a)", 0);
+                    idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
                     idl_fileOutPrintf(idl_fileCur(), "}\n");
             }
             idl_fileOutPrintf (idl_fileCur(), "\n");
@@ -949,7 +982,7 @@ idl_sequenceOpenClose(
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
-    if (idl_definitionExists("objManagImpl", sequenceName)) 
+    if (idl_definitionExists("objManagImpl", sequenceName))
     {
         return;
     }
@@ -982,7 +1015,7 @@ idl_sequenceOpenClose(
              "/* Ignoring code generation for %s *%s_allocbuf (void)*/\n",
              sequenceName,
              sequenceName);
-       } 
+       }
        else
        {
           /* Generate allocation routine for the sequence buffer */
@@ -992,11 +1025,11 @@ idl_sequenceOpenClose(
              sequenceElementName,
              sequenceName);
           idl_fileOutPrintf(idl_fileCur(), "{\n");
-          if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) 
+          if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq)))
           {
              idl_fileOutPrintf(
                 idl_fileCur(),
-                "    void %s_freebuf (void *buffer);\n\n",
+                "    DDS_boolean %s_freebuf (void *buffer);\n\n",
                 sequenceName);
              idl_fileOutPrintf(
                 idl_fileCur(),
@@ -1004,7 +1037,7 @@ idl_sequenceOpenClose(
                 sequenceElementName,
                 sequenceName,
                 sequenceElementName);
-        
+
           }
           else
           {
@@ -1021,7 +1054,7 @@ idl_sequenceOpenClose(
           /* Deallocation routine for the buffer is required */
           idl_fileOutPrintf(
              idl_fileCur(),
-             "\nvoid %s_freebuf (void *buffer)\n",
+             "\nDDS_boolean %s_freebuf (void *buffer)\n",
              sequenceName);
           idl_fileOutPrintf(idl_fileCur(), "{\n");
           idl_fileOutPrintf(idl_fileCur(),
@@ -1031,7 +1064,7 @@ idl_sequenceOpenClose(
                             sequenceElementName,
                             sequenceElementName);
           idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
-          if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) 
+          if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq)
           {
              idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
              idl_fileOutPrintf(
@@ -1039,23 +1072,23 @@ idl_sequenceOpenClose(
                 "        DDS_sequence_free (&b[i]);\n",
                 sequenceElementName);
              idl_fileOutPrintf(idl_fileCur(), "    }\n");
-          } 
-          else 
+          }
+          else
           {
              if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) ||
                  ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
-                  (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic))) 
+                  (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic)))
              {
                 /* Only string has reference */
                 idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
                 idl_fileOutPrintf(idl_fileCur(), "        DDS_string_clean (&b[i]);\n");
                 idl_fileOutPrintf(idl_fileCur(), "    }\n");
-             } 
-             else 
+             }
+             else
              {
                 idl_fileOutPrintf(
                    idl_fileCur(),
-                   "    void %s__free (void *object);\n\n",
+                   "    DDS_boolean %s__free (void *object);\n\n",
                    sequenceElementName);
                 idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
                 idl_fileOutPrintf(
@@ -1065,6 +1098,7 @@ idl_sequenceOpenClose(
                 idl_fileOutPrintf(idl_fileCur(), "    }\n");
              }
           }
+          idl_fileOutPrintf (idl_fileCur(), "    return TRUE;\n");
           idl_fileOutPrintf (idl_fileCur(), "}\n");
        }
        idl_fileOutPrintf (idl_fileCur(), "\n");

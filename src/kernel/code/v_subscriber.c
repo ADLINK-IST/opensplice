@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -479,10 +479,14 @@ lookupReaderByTopic(
     c_voidp arg)
 {
     struct lookupReaderByTopicArg *a = (struct lookupReaderByTopicArg *)arg;
+    c_bool found = FALSE;
 
-    if (v_readerWalkEntries(reader,checkTopic, (c_voidp)a->topicName) == FALSE)
-    {
-        /* FALSE means that the topic name is found! */
+    if (a->topicName) {
+        found = !v_readerWalkEntries(reader,
+                                     checkTopic,
+                                     (c_voidp)a->topicName);
+    }
+    if (found) {
         a->list = c_iterInsert(a->list, c_keep(reader));
     }
     return TRUE;

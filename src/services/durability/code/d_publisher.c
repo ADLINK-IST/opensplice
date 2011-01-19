@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -333,8 +333,10 @@ d_publisherStatusWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_status message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_status message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -395,8 +397,10 @@ d_publisherNewGroupWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_newGroup message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_newGroup message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -455,8 +459,10 @@ d_publisherGroupsRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_groupsRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_groupsRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -515,8 +521,10 @@ d_publisherStatusRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_statusRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_statusRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -575,8 +583,10 @@ d_publisherSampleRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_sampleRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -635,8 +645,10 @@ d_publisherSampleChainWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -695,8 +707,10 @@ d_publisherNameSpacesRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_nameSpaceRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaceRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -755,8 +769,10 @@ d_publisherNameSpacesWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_nameSpaces message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaces message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -815,8 +831,10 @@ d_publisherDeleteDataWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_deleteData message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_deleteData message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }

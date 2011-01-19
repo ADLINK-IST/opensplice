@@ -63,10 +63,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 // drv_args.c - Argument parsing for IDL compiler main driver
 
-#include <idl.h>
-#include <idl_extern.h>
-#include <drv_private.h>
-#include <drv_link.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "drv_private.h"
+#include "drv_link.h"
 #include <stdio.h>
 
 #if defined(_WIN32)

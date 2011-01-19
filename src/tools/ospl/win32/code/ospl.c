@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,13 +11,13 @@
  */
 #include "ospl_proc.h"
 
-#include <os.h>
-#include <os_iterator.h>
-#include <os_report.h>
-#include <os_signal.h>
+#include "os.h"
+#include "os_iterator.h"
+#include "os_report.h"
+#include "os_signal.h"
 
-#include <cfg_parser.h>
-#include <cf_config.h>
+#include "cfg_parser.h"
+#include "cf_config.h"
 
 #define SPLICED_NAME "spliced" OS_EXESUFFIX
 
@@ -52,7 +52,7 @@ print_usage(
             "               started.\n");
     printf ("               Upon exit an exit code will be provided to indicated the cause of\n"
             "               termination. The following exit codes are supported:\n"
-            "               * 0 : normal termination as result of ‘OSPL stop’.\n"
+            "               * 0 : normal termination as result of Â‘OSPL stopÂ’.\n"
             "               * -1: a recoverable error occurred.\n"
             "                     The system has encountered a runtime error and has terminated.\n"
             "                     A restart of the system is possible. E.g., the system ran out\n"
@@ -77,7 +77,7 @@ print_usage(
             "               running splice systems started by the current user.\n");
     printf ("               Upon exit an exit code will be provided to indicated the cause\n"
             "               of termination. The following exit codes are supported:\n"
-            "               * 0 : normal termination as result of  ‘OSPL stop’.\n"
+            "               * 0 : normal termination as result of  Â‘OSPL stopÂ’.\n"
             "               * -1: Not Applicable\n");
     printf ("               * -2: an unrecoverable error occurred.\n"
             "                     The system has encountered an error that cannot be\n"
@@ -119,26 +119,25 @@ static void
 removeKeyfile(
     const char *key_file_name)
 {
-   char dbf_file_name[MAX_PATH];
-   char * ptr;
-                    
-   /* try to unlink the key file. This is a fallback option. In normal circumstances
-    * the spliced process will have deleted the key file, but something it failed
-    * and we have to unlink it here. But in general the unlink call below will
-    * fail because the file is already gone. This failure can be ignored.
-    */
-   unlink(key_file_name);
-   
-   /* as this is a fallback option we should also try to remove the corresponding
-    * DBF file as the process may have been killed leaving both files behind.
-    */
-   os_strcpy(dbf_file_name, key_file_name);
-   ptr = strchr(dbf_file_name, '.');
-   dbf_file_name[ptr - dbf_file_name + 1] = 'D';
-   dbf_file_name[ptr - dbf_file_name + 2] = 'B';
-   dbf_file_name[ptr - dbf_file_name + 3] = 'F';
-   unlink(dbf_file_name);
-    
+    char dbf_file_name[MAX_PATH];
+    char * ptr;
+
+    /* try to unlink the key file. This is a fallback option. In normal circumstances
+     * the spliced process will have deleted the key file, but something it failed
+     * and we have to unlink it here. But in general the unlink call below will
+     * fail because the file is already gone. This failure can be ignored.
+     */
+    os_remove(key_file_name);
+
+    /* as this is a fallback option we should also try to remove the corresponding
+     * DBF file as the process may have been killed leaving both files behind.
+     */
+    os_strcpy(dbf_file_name, key_file_name);
+    ptr = strchr(dbf_file_name, '.');
+    dbf_file_name[ptr - dbf_file_name + 1] = 'D';
+    dbf_file_name[ptr - dbf_file_name + 2] = 'B';
+    dbf_file_name[ptr - dbf_file_name + 3] = 'F';
+    os_remove(dbf_file_name);
 }
 
 static void
@@ -176,7 +175,7 @@ clean(void)
                 fgets(buf, sizeof(buf), key_file);
                 sscanf(buf, "%d", &pid);
                 fclose(key_file);
-                
+
                 hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
                 if (hProcess == NULL) {
                    /* no associated process - remove tmp and DBF file */
@@ -219,7 +218,7 @@ clean(void)
 
        while (!last) {
           char * ptr;
-          
+
           /* check that it does not have a matching tmp file, any matching tmp file will be valid */
           os_strcpy(key_file_name, dbf_file_name);
           ptr = strchr(key_file_name, '.');
@@ -236,7 +235,7 @@ clean(void)
           {
              fclose(key_file);
           }
-       
+
           if (FindNextFile(hFile, &fileData) == 0) {
              last = 1;
           } else {
@@ -248,7 +247,6 @@ clean(void)
     }
     FindClose(hFile);
 }
-
 
 static int
 shutdownDDS(
@@ -269,7 +267,7 @@ shutdownDDS(
     kf = fopen(key_file_name, "r");
     if (kf) {
        HANDLE hProcess;
-       
+
        fgets(uri, sizeof(uri), kf);
        len = strlen(uri);
        if (len > 0) {
@@ -281,13 +279,13 @@ shutdownDDS(
        fgets(creator_pid, sizeof(creator_pid), kf);
        fclose(kf);
        printf("Signalling Shutdown\n\n");
-       
+
        sscanf(creator_pid, "%d", &pid);
 
        hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
-       
+
        if (hProcess == INVALID_HANDLE_VALUE) {
-          int err = GetLastError(); 
+          int err = GetLastError();
           printf("Access was denied for the process (%d) with error code (%d)", pid, err);
           return os_resultFail;
        }
@@ -381,7 +379,7 @@ findSpliceSystemAndRemove(
 }
 
 static int
-findSpliceSystemAndShow(void)
+findSpliceSystemAndShow(const char* specific_domain_name)
 {
     HANDLE hFile;
     WIN32_FIND_DATA fileData;
@@ -400,7 +398,7 @@ findSpliceSystemAndShow(void)
     hFile = FindFirstFile(key_file_name, &fileData);
 
     if (hFile == INVALID_HANDLE_VALUE) {
-        return -2;
+        return 0;
     }
 
     found_count = 0;
@@ -416,8 +414,14 @@ findSpliceSystemAndShow(void)
                 if (len > 0) {
                     uri[len-1] = 0;
                 }
-                printf("Splice System with domain name \"%s\" is found running\n", uri);
-                ++found_count;
+                /* Confusion between URIs and domain names here. And elsewhere.
+                This 'uri' is the domain name from the tag of that name in the XML config file */
+                if (specific_domain_name == NULL
+                    || (strcmp(specific_domain_name, uri) == 0))
+                {
+                    printf("Splice System with domain name \"%s\" is found running\n", uri);
+                    ++found_count;
+                }
             }
         }
 
@@ -433,7 +437,7 @@ findSpliceSystemAndShow(void)
     }
     fclose(key_file);
     FindClose(hFile);
-    return OSPL_EXIT_CODE_OK;
+    return found_count;
 }
 
 static int
@@ -497,7 +501,7 @@ spliceSystemRunning(
                     fclose(key_file);
                     /* try to delete the file in case applications/services were not terminated correctly! */
                     removeKeyfile(key_file_name);
- 
+
                     search++;
                     /* restart search! */
                     os_strcpy(key_file_name, key_file_path);
@@ -638,10 +642,14 @@ safeUri(
     }
 }
 
+#ifdef WINDOWS_SERVICE
 int
-main(
-    int argc,
-    char *argv[])
+ospl_main(
+     int argc,
+     char *argv[])
+#else
+OPENSPLICE_MAIN(ospl)
+#endif
 {
     int opt;
     int retCode = OSPL_EXIT_CODE_OK;
@@ -660,11 +668,16 @@ main(
     os_boolean blockingDefined = OS_FALSE;
 
     os_osInit();
+
     uri = os_getenv("OSPL_URI");
 
     if (key_file_path == NULL) {
         key_file_path = os_getTempDir();
     }
+
+    /* (re)set default optind & opterr to make this re-entrant */
+    optind = 1;
+    opterr = 1;
 
     while ((opt = getopt(argc, argv, "hvafd:")) != -1)
     {
@@ -723,6 +736,7 @@ main(
     }
 
     command = argv[optind];
+
     if (command && argv[optind+1])
     {
         uri = argv[optind+1];
@@ -752,6 +766,7 @@ main(
             exit(OSPL_EXIT_CODE_UNRECOVERABLE_ERROR);
         }
     }
+
     if ((command == NULL) || (strcmp(command, "stop") == 0))
     {
         if (domain_name == NULL)
@@ -808,12 +823,18 @@ main(
             {
                 printf("Splice System with domain name \"%s\" is found running, ignoring command\n",
                     domain_name);
+                if (blocking)
+                {
+                    /* If we requested blocking start then this is an error as we did not succeed
+                    in starting the service and then blocking until spliced exits as per */
+                    retCode = OSPL_EXIT_CODE_RECOVERABLE_ERROR;
+                }
             }
         } else
         {
             if (strcmp(command, "list") == 0)
             {
-                return findSpliceSystemAndShow();
+                return findSpliceSystemAndShow(domain_name);
             } else
             {
                 print_usage(argv[0]);
@@ -825,3 +846,4 @@ main(
     uri = NULL;
     return retCode;
 }
+

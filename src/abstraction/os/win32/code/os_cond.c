@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,7 +21,7 @@
 #include "os_stdlib.h"
 #include "code/os__debug.h"
 #include "code/os__service.h"
-#include <code/os__sharedmem.h>
+#include "code/os__sharedmem.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -69,7 +69,7 @@ InterlockedOr(
 
 static os_result
 getSem(
-    long *semId)
+    os_cond* cond)
 {
     const char *pipename;
     struct os_servicemsg request;
@@ -78,10 +78,12 @@ getSem(
     DWORD nRead;
     os_result osr;
     DWORD lastError;
-
-    assert(semId != NULL);
-
-    pipename = os_servicePipeName();
+    
+    pipename = os_createPipeNameFromCond(cond);
+    if (pipename == NULL) {
+       pipename = os_servicePipeName();
+       OS_DEBUG_1("getSem", "Failed to get a domain name from cond, using default %s %d", pipename);
+    }
     request.kind = OS_SRVMSG_CREATE_SEMAPHORE;
     reply.result = os_resultFail;
     reply.kind = OS_SRVMSG_UNDEFINED;
@@ -106,7 +108,7 @@ getSem(
     } else {
         if ((reply.result == os_resultSuccess) &&
             (reply.kind == OS_SRVMSG_CREATE_SEMAPHORE)) {
-            *semId = reply._u.id;
+            cond->qId = reply._u.id;
             osr = os_resultSuccess;
         } else {
             osr = os_resultFail;
@@ -117,7 +119,7 @@ getSem(
 
 static os_result
 returnSem(
-    long semId)
+    os_cond* cond)
 {
     const char *pipename;
     struct os_servicemsg request;
@@ -126,9 +128,13 @@ returnSem(
     DWORD nRead;
     os_result osr;
 
-    pipename = os_servicePipeName();
+    pipename = os_createPipeNameFromCond(cond);
+    if (pipename == NULL) {
+       pipename = os_servicePipeName();
+       OS_DEBUG_1("returnSem", "Failed to get a domain name from cond, using default %s %d", pipename);
+    }
     request.kind = OS_SRVMSG_DESTROY_SEMAPHORE;
-    request._u.id = semId;
+    request._u.id = cond->qId;
     reply.result = os_resultFail;
     reply.kind = OS_SRVMSG_UNDEFINED;
     result = CallNamedPipe(
@@ -168,8 +174,11 @@ condTimedWait(
 
     result = os_resultSuccess;
     if (cond->scope == OS_SCOPE_SHARED) {
-        _snprintf(name, sizeof(name), "%s%d%d",
-            OS_SERVICE_SEM_NAME_PREFIX, cond->qId,os_getShmBaseAddressFromPointer(cond));
+        _snprintf(name, sizeof(name), "%s%s%d%d",
+            (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+            OS_SERVICE_SEM_NAME_PREFIX,
+            cond->qId,
+            os_getShmBaseAddressFromPointer(cond));
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
@@ -178,8 +187,11 @@ condTimedWait(
             return os_resultFail;
         }
 
-        _snprintf(name, sizeof(name), "%s%d%d",
-            OS_SERVICE_EVENT_NAME_PREFIX, mutex->id,os_getShmBaseAddressFromPointer(cond));
+        _snprintf(name, sizeof(name), "%s%s%d%d",
+            (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+            OS_SERVICE_EVENT_NAME_PREFIX,
+            mutex->id,
+            os_getShmBaseAddressFromPointer(cond));
         hMtx = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
         if (hMtx == NULL) {
             OS_DEBUG_1("condTimedWait", "OpenEvent failed %d", (int)GetLastError());
@@ -236,8 +248,11 @@ condSignal(
 
     if (cond->scope == OS_SCOPE_SHARED) {
 
-        _snprintf(name, sizeof(name), "%s%d%d",
-            OS_SERVICE_SEM_NAME_PREFIX, cond->qId,os_getShmBaseAddressFromPointer(cond));
+        _snprintf(name, sizeof(name), "%s%s%d%d",
+            (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+            OS_SERVICE_SEM_NAME_PREFIX,
+            cond->qId,
+            os_getShmBaseAddressFromPointer(cond));
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
@@ -295,7 +310,7 @@ os_condInit (
     cond->scope = condAttr->scopeAttr;
     cond->state = 0;
     if (cond->scope == OS_SCOPE_SHARED) {
-        result = getSem(&cond->qId);
+        result = getSem(cond);
         if (result != os_resultSuccess) {
             return result;
         }
@@ -322,7 +337,7 @@ os_condDestroy(
     assert (cond != NULL);
 
     if (cond->scope == OS_SCOPE_SHARED) {
-        result = returnSem(cond->qId);
+        result = returnSem(cond);
         return result;
     } else {
         CloseHandle((HANDLE)cond->qId);

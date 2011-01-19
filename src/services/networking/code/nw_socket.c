@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -85,6 +85,7 @@ NW_STRUCT(nw_socket) {
     nw_socketPartitions partitions;
     sk_bool multicastSupported;
     sk_bool multicastInitialized;
+    c_ulong currentMulticastTTL;
 };
 
 
@@ -522,7 +523,8 @@ nw_socketAddPartition(
     const char *addressString,
     sk_bool connected,
     sk_bool compression,
-    sk_bool receiving)
+    sk_bool receiving,
+    c_ulong mTTL)
 {
     sk_address address;
     nw_stringList addressNameList;
@@ -563,12 +565,12 @@ nw_socketAddPartition(
             NW_TRACE_3(Test, 4, "Adding host \"%s\" (%s) to partition %d",
                 currentAddress, inet_ntoa(*((struct in_addr *)(&address))), partitionId);
 
-            nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected, compression);
+            nw_socketPartitionsAdd(sock->partitions, partitionId, address, connected, compression, mTTL);
             /* Do any multicast related actions if needed */
             if (partitionId != 0 && connected) {
                 /* No need to add first the default partition,
                    that already happened with socket initialisation */
-                nw_socketMulticastAddPartition(sock, currentAddress, receiving);
+                nw_socketMulticastAddPartition(sock, currentAddress, receiving, mTTL);
             }
         }
     }
@@ -677,6 +679,7 @@ nw_socketNew(
         }
         result->multicastSupported = SK_FALSE;
         result->multicastInitialized = SK_FALSE;
+        result->currentMulticastTTL = NWCF_DEF(MulticastTimeToLive);
 
         FD_ZERO(&result->sockSet);
 
@@ -745,7 +748,7 @@ nw_socketNew(
             /* Set option to avoid sendbuffer */
             success = success && nw_socketSetSendBufferSize(result, 0);
             /* Set option for custom receive buffer size */
-            bufSizeRequested = NWCF_SIMPLE_SUBPARAM(ULong, name, Rx, ReceiveBufferSize);
+            bufSizeRequested = NWCF_SIMPLE_SUBPARAM(Size, name, Rx, ReceiveBufferSize);
             success = success && nw_socketSetReceiveBufferSize(result, (os_int)bufSizeRequested);
 
             /* Bind to socket */
@@ -765,8 +768,21 @@ nw_socketNew(
                                      portNr, portNr+1);
                 }
                 NW_TRACE_1(Test, 1, "Creation and binding of receiving "
-                                  "multicast socket \"%s\" succeeded.",
+                                  "socket \"%s\" succeeded.",
                                   name);
+            } else {
+                if (!supportsControl) {
+                    NW_REPORT_ERROR_3("socketNew", "Creation and binding of receiving socket \"%s\" failed "
+                                        "for interface %s, port %u",
+                                     name,
+                                     inet_ntoa(result->sockAddrPrimary.sin_addr), portNr);
+                } else {
+                    NW_REPORT_ERROR_4("socketNew", "Creation and binding of receiving socket \"%s\" failed "
+                                        "for interface %s, ports %u and %u",
+                                     name,
+                                     inet_ntoa(result->sockAddrPrimary.sin_addr),
+                                     portNr, portNr+1);
+                }
             }
         } else {
             /* Set option to avoid receivebuffer */
@@ -790,19 +806,34 @@ nw_socketNew(
             success = success && nw_socketSetTimeToLive(result, TTLRequested);  
 
             if (success) {
-                    NW_REPORT_INFO_3(2, "Created sending socket \"%s\"for "
-                                        "interface %s, port %u",
-                                     name,
-                                     inet_ntoa(result->sockAddrPrimary.sin_addr), portNr);
+                if (!supportsControl) {
+                        NW_REPORT_INFO_3(2, "Created sending socket \"%s\"for "
+                                            "interface %s, port %u",
+                                         name,
+                                         inet_ntoa(result->sockAddrPrimary.sin_addr), portNr);
+                } else {
+                        NW_REPORT_INFO_4(2, "Created sending socket \"%s\"for "
+                                            "interface %s, ports %u and %u",
+                                         name,
+                                         inet_ntoa(result->sockAddrPrimary.sin_addr),
+                                         portNr, portNr+1);
+                }
+                NW_TRACE_1(Test, 1, "Creation of sending socket \"%s\" succeeded.",
+                                  name);
             } else {
-                    NW_REPORT_INFO_4(2, "Created sending socket \"%s\"for "
-                                        "interface %s, ports %u and %u",
-                                     name,
-                                     inet_ntoa(result->sockAddrPrimary.sin_addr),
-                                     portNr, portNr+1);
+                if (!supportsControl) {
+                        NW_REPORT_ERROR_3("socketNew", "Creation of sending socket \"%s\" failed for "
+                                            "interface %s, port %u",
+                                         name,
+                                         inet_ntoa(result->sockAddrPrimary.sin_addr), portNr);
+                } else {
+                        NW_REPORT_ERROR_4("socketNew", "Creation of sending socket \"%s\" failed for "
+                                            "interface %s, ports %u and %u",
+                                         name,
+                                         inet_ntoa(result->sockAddrPrimary.sin_addr),
+                                         portNr, portNr+1);
+                }
             }
-            NW_TRACE_1(Test, 1, "Creation of sending multicast socket \"%s\" succeeded.",
-                              name);
         }
 
         switch (defaultAddressType) {
@@ -969,7 +1000,7 @@ nw_socketSendDataToPartition(
     sk_partitionId partitionId,
     plugSendStatistics pss,
     void *buffer,
-    sk_length length)
+    sk_length* length   /*in/out*/)
 {
     sk_length result = 0;
     os_int32 sendRes = 0, sendResAll = 0;
@@ -982,6 +1013,8 @@ nw_socketSendDataToPartition(
     unsigned long zlen;
     unsigned char *zbuff;
     int zresult;
+    c_ulong mTTL;
+    os_result setRes;
 
     NW_CONFIDENCE(sock != NULL);
 
@@ -990,26 +1023,26 @@ nw_socketSendDataToPartition(
     NW_PROF_LAPSTART(SendTo);
 
     found = nw_socketPartitionsLookup(sock->partitions, partitionId,
-        &addressList, &compression);
+        &addressList, &compression, &mTTL);
     /* NW_CONFIDENCE(found); */
 
 #ifndef OSPL_NO_ZLIB
     /* Compress the payload if so enabled, unless it's just little */
 
-    if (length > 255 && compression)
+    if (*length > 255 && compression)
     {
-        zlen = length;
+        zlen = *length;
         zbuff = (unsigned char *)alloca (zlen);
-        zresult = compress (zbuff, &zlen, buffer, length);
+        zresult = compress (zbuff, &zlen, buffer, *length);
         if (zresult == Z_OK)
         {
             if (pss != NULL)
             {
-               pss->nofBytesBeforeCompression += length;
+               pss->nofBytesBeforeCompression += *length;
                pss->nofBytesAfterCompression += zlen;
             }
             buffer = zbuff;
-            length = zlen;
+            *length = zlen;
         }
         else
         {
@@ -1033,8 +1066,20 @@ nw_socketSendDataToPartition(
 
         NW_TRACE_1(Test, 5, "SendTo expanded to 0x%x ", partitionAddress);
         NW_STAMP(nw_plugDataBuffer(buffer),NW_BUF_TIMESTAMP_SEND);
+        /* check if current socket has the right multicast TimetoLive value */
+        if (sock->currentMulticastTTL != mTTL) {
+            NW_TRACE_2(Test, 4, "socket: "
+                       "Changed mTTL from %d to %d", sock->currentMulticastTTL,mTTL);
+            setRes = nw_socketMulticastSetTTL(sock, mTTL);
+            if (setRes == os_resultFail) {
+                SK_REPORT_SOCKFUNC(1, os_resultFail,
+                                "setting multicast TTL failed", "sendto");
+            } else {
+                sock->currentMulticastTTL = mTTL;
+            }
+        }
 
-        sendRes = os_sockSendto(sock->socketData, buffer, length,
+        sendRes = os_sockSendto(sock->socketData, buffer, *length,
           (const struct sockaddr *)&sockAddrForPartition,
           (socklen_t)sizeof(sockAddrForPartition));
         NW_PROF_LAPSTOP(SendTo);
@@ -1228,11 +1273,9 @@ nw_socketReceive(
         }
 #endif   /* OSPL_NO_ZLIB */
 
-#ifdef NW_DEBUGGING
-            if ((os_int)nw_configurationLoseReceivedMessage()) {
-               recvRes = 0; 
-            }
-#endif
+        if ((os_int)nw_configurationLoseReceivedMessage()) {
+           recvRes = 0; 
+        }
 
 
         if (recvRes > 0) {

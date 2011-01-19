@@ -24,7 +24,7 @@ namespace test.sacs
                     Test.Framework.TestVerdict.Pass, 
                     Test.Framework.TestVerdict.Fail);
             participant = (DDS.IDomainParticipant)this.ResolveObject("participant");
-            topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSParticipant");
+            topic = (DDS.ITopic)participant.FindTopic("DCPSParticipant", DDS.Duration.Infinite);
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSParticipant could not be found.";
@@ -41,7 +41,7 @@ namespace test.sacs
                 result.Result = "Resolved topics do not match for DCPSParticipant.";
                 return result;
             }
-            topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSPublication");
+            topic = (DDS.ITopic)participant.FindTopic("DCPSPublication", DDS.Duration.Infinite);
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSPublication could not be found.";
@@ -58,7 +58,7 @@ namespace test.sacs
                 result.Result = "Resolved topics do not match for DCPSPublication.";
                 return result;
             }
-            topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSSubscription");
+            topic = (DDS.ITopic)participant.FindTopic("DCPSSubscription", DDS.Duration.Infinite);
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSSubscription could not be found.";
@@ -75,7 +75,7 @@ namespace test.sacs
                 result.Result = "Resolved topics do not match for DCPSSubscription.";
                 return result;
             }
-            topic = (DDS.ITopic)participant.LookupTopicDescription("DCPSTopic");
+            topic = (DDS.ITopic)participant.FindTopic("DCPSTopic", DDS.Duration.Infinite);
             if (topic == null)
             {
                 result.Result = "Builtin Topic DCPSTopic could not be found.";

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -179,14 +179,14 @@
 //  *        function: checkUnsupportedTypeUsage (called from idl_checkKeyListTypeName)
 //
 */
-#include <c_iterator.h>
-#include <c_metabase.h>
-#include <c_misc.h>
-#include <c_base.h>
-#include <c_typebase.h>
-#include <c_stringSupport.h>
+#include "c_iterator.h"
+#include "c_metabase.h"
+#include "c_misc.h"
+#include "c_base.h"
+#include "c_typebase.h"
+#include "c_stringSupport.h"
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 #include "idl_sematicRules.h"
 #include "idl_program.h"

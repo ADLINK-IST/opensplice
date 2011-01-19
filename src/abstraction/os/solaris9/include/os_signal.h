@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,7 +14,7 @@
 #define OS_SOLARIS_SIGNAL_H
 
 /* Include common header file              */
-#include <../common/include/os_signal.h>
+#include "../common/include/os_signal.h"
 
 typedef sigset_t		os_os_sigset;
 

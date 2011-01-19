@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -15,42 +15,11 @@
 #include "u_user.h"
 #include "u__cfAttribute.h"
 #include "u__cfValue.h"
+#include "u__entity.h"
 
 #include "v_cfNode.h"
 
 #define U_CFATTRIBUTE_SIZE (sizeof(C_STRUCT(u_cfAttribute)))
-
-u_result
-u_cfAttributeClaim(
-    u_cfAttribute _this,
-    v_cfAttribute *kAttr)
-{
-    u_result r = U_RESULT_OK;
-
-    if ((_this == NULL) || (kAttr == NULL)) {
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        *kAttr = v_cfAttribute(u_cfNodeClaim(u_cfNode(_this)));
-        if (*kAttr == NULL) {
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-    }
-    return r;
-}
-
-u_result
-u_cfAttributeRelease(
-    u_cfAttribute _this)
-{
-    u_result r = U_RESULT_OK;
-
-    if (_this == NULL) {
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        u_cfNodeRelease(u_cfNode(_this));
-    }
-    return r;
-}
 
 u_cfAttribute
 u_cfAttributeNew(
@@ -90,9 +59,9 @@ u_cfAttributeStringValue(
     c_value value;
     c_value resultValue;
 
-    result = FALSE;   
+    result = FALSE;
     if ((attr != NULL) && (str != NULL)) {
-        r = u_cfAttributeClaim(attr, &kAttr);
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
             result = u_cfValueScan(value, V_STRING, &resultValue);
@@ -100,7 +69,7 @@ u_cfAttributeStringValue(
             if (result == TRUE) {
                 *str = resultValue.is.String;
             }
-            u_cfAttributeRelease(attr);
+            u_cfNodeRelease(u_cfNode(attr));
         }
     }
     return result;
@@ -119,7 +88,7 @@ u_cfAttributeBoolValue(
 
     result = FALSE;
     if ((attr != NULL) && (b != NULL)) {
-        r = u_cfAttributeClaim(attr, &kAttr);
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
             result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
@@ -127,7 +96,7 @@ u_cfAttributeBoolValue(
             if (result == TRUE) {
                 *b = resultValue.is.Boolean;
             }
-            u_cfAttributeRelease(attr);
+            u_cfNodeRelease(u_cfNode(attr));
         }
     }
     return result;
@@ -146,7 +115,7 @@ u_cfAttributeLongValue(
 
     result = FALSE;
     if ((attr != NULL) && (lv != NULL)) {
-        r = u_cfAttributeClaim(attr, &kAttr);
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
             result = u_cfValueScan(value, V_LONG, &resultValue);
@@ -154,7 +123,7 @@ u_cfAttributeLongValue(
             if (result == TRUE) {
                 *lv = resultValue.is.Long;
             }
-            u_cfAttributeRelease(attr);
+            u_cfNodeRelease(u_cfNode(attr));
         }
     }
     return result;
@@ -173,7 +142,7 @@ u_cfAttributeULongValue(
 
     result = FALSE;
     if ((attr != NULL) && (ul != NULL)) {
-        r = u_cfAttributeClaim(attr, &kAttr);
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
             result = u_cfValueScan(value, V_ULONG, &resultValue);
@@ -181,7 +150,34 @@ u_cfAttributeULongValue(
             if (result == TRUE) {
                 *ul = resultValue.is.ULong;
             }
-            u_cfAttributeRelease(attr);
+            u_cfNodeRelease(u_cfNode(attr));
+        }
+    }
+    return result;
+}
+
+c_bool
+u_cfAttributeSizeValue(
+    u_cfAttribute attr,
+    c_ulong *ul)
+{
+    u_result r;
+    c_bool result;
+    v_cfAttribute kAttr;
+    c_value value;
+    c_value resultValue;
+
+    result = FALSE;
+    if ((attr != NULL) && (ul != NULL)) {
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+        if (r == U_RESULT_OK) {
+            value = v_cfAttributeValue(kAttr);
+            result = u_cfValueScan(value, V_SIZE, &resultValue);
+
+            if (result == TRUE) {
+                *ul = resultValue.is.ULong;
+            }
+            u_cfNodeRelease(u_cfNode(attr));
         }
     }
     return result;
@@ -200,7 +196,7 @@ u_cfAttributeFloatValue(
 
     result = FALSE;
     if ((attr != NULL) && (f != NULL)) {
-        r = u_cfAttributeClaim(attr, &kAttr);
+        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
             result = u_cfValueScan(value, V_FLOAT, &resultValue);
@@ -208,7 +204,7 @@ u_cfAttributeFloatValue(
             if (result == TRUE) {
                 *f = resultValue.is.Float;
             }
-            u_cfAttributeRelease(attr);
+            u_cfNodeRelease(u_cfNode(attr));
         }
     }
     return result;

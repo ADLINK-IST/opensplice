@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__serviceManager.h"
@@ -14,7 +14,7 @@
 #include "u__entity.h"
 #include "u__dispatcher.h"
 #include "u__participant.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "u_user.h"
 
 #include "v_kernel.h"
@@ -25,63 +25,22 @@
 #include "os_heap.h"
 #include "os_report.h"
 
-u_result
-u_serviceManagerClaim(
-    u_serviceManager _this,
-    v_serviceManager *serviceManager)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (serviceManager != NULL)) {
-        *serviceManager = v_serviceManager(u_entityClaim(u_entity(_this)));
-        if (*serviceManager == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_serviceManagerClaim", 0,
-                        "Claim ServiceManager failed. "
-                        "<_this = 0x%x, serviceManager = 0x%x>.",
-                         _this, serviceManager);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_serviceManagerClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, serviceManager = 0x%x>.",
-                    _this, serviceManager);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_serviceManagerRelease(
-    u_serviceManager _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_serviceManagerRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_serviceManager 
+u_serviceManager
 u_serviceManagerNew(
     u_participant participant)
 {
     u_result result;
     u_serviceManager m;
-    u_kernel k;
+    u_domain domain;
     v_kernel kk;
     v_serviceManager sm;
 
-    m = NULL;    
+    m = NULL;
     if (participant != NULL) {
-        k = u_participantKernel(participant);
-        result = u_kernelClaim(k,&kk);
-        if ((result == U_RESULT_OK) && (kk != NULL)) {
+        domain = u_participantDomain(participant);
+        result = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
+        if (result == U_RESULT_OK) {
+            assert(kk);
             sm = v_getServiceManager(kk);
             if (sm != NULL) {
                 m = u_entityAlloc(participant,u_serviceManager,sm,TRUE);
@@ -95,10 +54,10 @@ u_serviceManagerNew(
                 OS_REPORT(OS_ERROR,"u_serviceManagerNew",0,
                           "Retrieval Service Manager failed.");
             }
-            result = u_kernelRelease(k);
+            result = u_entityRelease(u_entity(domain));
         } else {
             OS_REPORT(OS_WARNING,"u_serviceManagerNew",0,
-                      "Claim Kernel failed.");
+                      "Claim Domain failed.");
         }
     } else {
         OS_REPORT(OS_ERROR,"u_serviceManagerNew",0,
@@ -112,7 +71,7 @@ u_serviceManagerInit(
     u_serviceManager _this)
 {
     u_result result;
-    
+
     if (_this != NULL) {
         result = u_dispatcherInit(u_dispatcher(_this));
         u_entity(_this)->flags |= U_ECREATE_INITIALISED;
@@ -127,23 +86,46 @@ u_serviceManagerFree(
     u_serviceManager _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
-            /* The following two statements are not according to
-               the guidelines of how an entity should be deleted
-               because the service manager is shared and the owner
-               is the kernel.
-             */
-            result = u_serviceManagerDeinit(_this);
-            os_free(_this);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_serviceManagerDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_serviceManagerFree",0,
+                            "Operation u_serviceManagerDeinit failed: "
+                            "ServiceManager = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING,"u_serviceManagerFree",0,
-                  "The specified Service Manager = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_serviceManagerFree",0,
+                    "Operation u_entityLock failed: "
+                    "ServiceManager = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
 }
@@ -172,13 +154,13 @@ u_serviceManagerGetServiceStateKind(
     if (_this == NULL) {
         kind = STATE_NONE;
     } else {
-        result = u_serviceManagerClaim(_this, &kServiceManager);
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
         if (result == U_RESULT_OK) {
             kind = v_serviceManagerGetServiceStateKind(kServiceManager, serviceName);
-            u_serviceManagerRelease(_this);
+            u_entityRelease(u_entity(_this));
         } else {
             kind = STATE_NONE;
-            OS_REPORT(OS_WARNING, "u_serviceManagerGetServiceStateKind", 0, 
+            OS_REPORT(OS_WARNING, "u_serviceManagerGetServiceStateKind", 0,
                       "Could not claim serviceManager.");
         }
     }
@@ -199,10 +181,10 @@ u_serviceManagerGetServices(
 
     names = c_iterNew(NULL);
     if (_this != NULL) {
-        result = u_serviceManagerClaim(_this, &kServiceManager);
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
         if (result == U_RESULT_OK) {
             vNames = v_serviceManagerGetServices(kServiceManager, kind);
-            u_serviceManagerRelease(_this);
+            u_entityRelease(u_entity(_this));
             str = (c_string)c_iterTakeFirst(vNames);
             while (str != NULL) {
                 n = os_strdup(str);
@@ -211,7 +193,7 @@ u_serviceManagerGetServices(
             }
             c_iterFree(vNames);
         } else {
-            OS_REPORT(OS_WARNING, "u_serviceManagerGetServices", 0, 
+            OS_REPORT(OS_WARNING, "u_serviceManagerGetServices", 0,
                       "Could not claim serviceManager.");
         }
     }

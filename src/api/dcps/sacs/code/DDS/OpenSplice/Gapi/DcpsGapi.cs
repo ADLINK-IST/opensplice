@@ -919,6 +919,7 @@ namespace DDS.OpenSplice.Gapi
         gapi_livelinessQosPolicy liveliness;
         gapi_reliabilityQosPolicy reliability;
         gapi_lifespanQosPolicy lifespan;
+        gapi_destinationOrderQosPolicy destination_order;
         gapi_userDataQosPolicy user_data;
         gapi_ownershipQosPolicy ownership;
         gapi_ownershipStrengthQosPolicy ownership_strength;

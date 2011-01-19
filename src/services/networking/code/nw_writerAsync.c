@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -330,15 +330,15 @@ nw_writerAsyncMain(
 {
     nw_writerAsync this = (nw_writerAsync)arg;
     c_time timeOut = {0, 200000000};
-    nw_bool messageAvailable;
-    v_networkReaderEntry entry;
-    v_writeResult write_result;
-    v_message message;
-    c_ulong messageId;
-    v_gid   sender;
-    c_bool  sendTo;
+    nw_bool messageAvailable = FALSE;
+    v_networkReaderEntry entry = NULL;
+    v_writeResult write_result = V_WRITE_SUCCESS;
+    v_message message = NULL;
+    c_ulong messageId = 0;
+    v_gid   sender = {0,0,0};
+    c_bool  sendTo = FALSE;
     c_time sleep = {0,1000000};
-    v_gid   receiver;
+    v_gid   receiver = {0,0,0};
 
     c_ulong level = BUFFERSIZE/2;
 

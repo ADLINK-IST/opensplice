@@ -12,6 +12,11 @@
 #include <os_report.h>
 #include <os_stdlib.h>
 
+#ifdef WINCE
+#undef errno
+static int errno=0;
+#endif
+
 /* cfg_curState is initialized when parser is called:
  * see cfg_parse_ospl() in cfg_parser.y
  */

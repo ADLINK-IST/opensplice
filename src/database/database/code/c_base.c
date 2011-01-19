@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,7 @@
 #include "c__base.h"
 #include "c_metafactory.h"
 #include "c_querybase.h"
+#include "c__querybase.h"
 #include "c__collection.h"
 #include "c__field.h"
 #include "c__metabase.h"
@@ -123,7 +124,7 @@ c_stringMalloc(
     c_long length)
 {
     c_header header;
-    c_string s;
+    c_string s = NULL;
 
     if (base == NULL) {
         return NULL;
@@ -134,6 +135,7 @@ c_stringMalloc(
         header->type = c_keep(base->string_type);
         pa_increment(&base->string_type->objectCount);
         header->refCount = 1;
+        s = (c_string)c_oid(header);
 #ifndef NDEBUG
         header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
@@ -145,7 +147,6 @@ c_stringMalloc(
 #endif
 #endif
     }
-    s = (c_string)c_oid(header);
     return s;
 }
 
@@ -672,6 +673,7 @@ c_baseInit (
 
     o = c_metaDeclare(c_metaObject(base),"c_threadId",M_STRUCTURE);
     c_metaTypeInit(o,sizeof(c_threadId),C_ALIGNMENT(c_threadId));
+    c_free(o);
 
     o = c_metaDefine(c_metaObject(base),M_STRUCTURE);
     type = c_member_t(base);
@@ -1165,7 +1167,8 @@ c_base
 c_create (
     const c_char *name,
     void *address,
-    c_size size)
+    c_size size,
+    c_size threshold)
 {
     c_mm  mm;
     c_base base;
@@ -1179,7 +1182,7 @@ c_create (
                     size,MIN_DB_SIZE);
         return NULL;
     }
-    mm = c_mmCreate(address,size);
+    mm = c_mmCreate(address,size, threshold);
 
     header = (c_header)c_mmMalloc(mm, MEMSIZE(C_SIZEOF(c_base)));
     if (header) {
@@ -1195,9 +1198,19 @@ c_create (
         tempbase = (c_base)c_oid(header);
         base = (c_base)c_mmBind(mm, name, tempbase);
         if (base != tempbase) {
+            const c_char *_name;
+            if (name) {
+                _name = name;
+            } else {
+                _name = "NULL";
+            }
+            OS_REPORT_4(OS_ERROR,
+                        "c_base::c_create",0,
+                        "Internal error, memory management seems corrupted.\n"
+                        "             mm = 0x%x, name = %s,\n"
+                        "             tempbase = 0x%x, base = 0x%x",
+                        mm, name, tempbase, base);
             c_mmFree(mm, tempbase);
-            OS_REPORT(OS_ERROR,"c_base::c_create",0,
-                      "Internal error, memory management seems corrupted");
             return NULL;
         }
         base->mm = mm;
@@ -1242,9 +1255,9 @@ c_open (
     namelength = strlen(name);
 
     if (namelength == 0) {
-        return c_create("HEAPDATABASE", NULL, 0);
+        return c_create("HEAPDATABASE", NULL, 0, 0);
     }
-    mm = c_mmCreate(address,0);
+    mm = c_mmCreate(address,0, 0);
     base = (c_base)c_mmLookup(mm, name);
     if (base == NULL) {
         OS_REPORT_1(OS_ERROR,
@@ -1367,6 +1380,13 @@ c_memsize (
     c_type type)
 {
     return MEMSIZE(c_typeSize(type));
+}
+
+c_memoryThreshold
+c_baseGetMemThresholdStatus(
+    c_base _this)
+{
+    return c_mmbaseGetMemThresholdStatus(_this->mm);
 }
 
 c_object
@@ -2222,6 +2242,86 @@ c_sequenceSize(
     } else {
         return 0;
     }
+}
+
+c_object
+c_baseCheckPtr(
+    c_base _this,
+    void *ptr)
+{
+    c_object o;
+    c_type type;
+    c_arrayHeader hdr;
+    c_header header;
+    c_voidp addr;
+    c_mm mm;
+
+    o = NULL;
+    if (_this != NULL) {
+        mm = c_baseMM(_this);
+        if (mm != NULL) {
+            /* First assume that the address refers to an array object.
+             * Note that not the array headre size is substracted but
+             * the header size instead. This is not correct but is
+             * compensated by shifting the address at the end of the loop.
+             * Fixing this issue requires a partial redesign of this
+             * operation.
+             */
+            hdr = c_mmCheckPtr(c_baseMM(_this), c_header(ptr));
+            while ((hdr != NULL) && (o == NULL)) {
+                /* Check if header->type refers to valid type. */
+                header = &hdr->_parent;
+                addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                if (addr != NULL) {
+                    type = c_oid(addr);
+                    if ((type == NULL) ||
+                        (type->base != _this) ||
+                        (!c_objectIsType(type)))
+                    {
+                        /* Invalid array hdr, so try if it is a normal header. */
+                        header = (c_header)hdr;
+                        addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                        if (addr != NULL) {
+                            type = c_oid(addr);
+                            if ((type != NULL) &&
+                                (type->base == _this) &&
+                                (c_objectIsType(type)))
+                            {
+                                /* We have a valid address! */
+                                o = c_oid(header);
+                            }
+                        }
+                    } else {
+                        /* We have a valid address! */
+                        o = c_oid(header);
+                    }
+                } else {
+                    /* Invalid array hdr, so try if it is a normal header. */
+                    header = (c_header)hdr;
+                    addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                    if (addr != NULL) {
+                        type = c_oid(addr);
+                        if ((type != NULL) &&
+                            (type->base == _this) &&
+                            (c_objectIsType(type)))
+                        {
+                            /* We have a valid address! */
+                            o = c_oid(header);
+                        }
+                    }
+                }
+                hdr = (c_arrayHeader)(C_ADDRESS(hdr) - 4);
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR,"c_baseCheckPtr", 0,
+                        "Could not resolve Memory Manager for Database (0x%x)",
+                        _this);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,"c_baseCheckPtr", 0,
+                  "Bad Parameter: Database = NULL");
+    }
+    return o;
 }
 
 #ifndef NDEBUG

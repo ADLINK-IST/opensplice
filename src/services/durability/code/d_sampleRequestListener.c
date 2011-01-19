@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -566,9 +566,9 @@ d_sampleRequestListenerAction(
             sampleChain->msgBody._u.link.nrSamples = 0;
             sampleChain->msgBody._u.link.completeness = D_GROUP_UNKNOWN;
             d_publisherSampleChainWrite(publisher, sampleChain, addr);
+            d_sampleChainFree(sampleChain);
         }
 
-        d_sampleChainFree(sampleChain);
         stats->alignerRequestsIgnoredDif = 1;
     } else {
         d_printTimedEvent(durability, D_LEVEL_FINE,

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,7 +40,7 @@ void
 _DomainFree(
     _Domain _this);
 
-u_kernel
+u_domain
 _DomainGetKernel(
      _Domain _this);
 

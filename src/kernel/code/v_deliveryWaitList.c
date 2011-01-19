@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,14 @@ v_deliveryWaitListWait (
 
     if (_this->readerGID != NULL) {
         c_mutexLock(&_this->mutex);
-        r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
+        if(c_timeCompare(timeout, C_TIME_INFINITE) != C_EQ)
+        {
+            r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
+        }
+        else
+        {
+            r = c_condWait(&_this->cv,&_this->mutex);
+        }
         c_mutexUnlock(&_this->mutex);
 
         switch (r) {

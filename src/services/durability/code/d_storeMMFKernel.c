@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -132,14 +132,26 @@ d_storeMMFKernelAttach (
     c_base base,
     const c_char *name)
 {
-    d_storeMMFKernel kernel;
+    d_storeMMFKernel kernel = NULL;
 
-    kernel = c_lookup(base, name);
-
-    if (kernel != NULL) {
-        if (c_checkType(kernel,"d_storeMMFKernel") != kernel) {
+    if (name == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "d_storeMMFKernelAttach",0,
+                  "Failed to lookup kernel, specified kernel name = <NULL>");
+    } else {
+        kernel = c_lookup(base,name);
+        if (kernel == NULL) {
+            OS_REPORT_1(OS_ERROR,
+                        "d_storeMMFKernelAttach",0,
+                        "Failed to lookup kernel '%s' in Database",
+                        name);
+        } else if (c_checkType(kernel,"d_storeMMFKernel") != kernel) {
             c_free(kernel);
             kernel = NULL;
+            OS_REPORT_1(OS_ERROR,
+                        "d_storeMMFKernelAttach",0,
+                        "Object '%s' is apparently not of type 'd_storeMMFKernel'",
+                        name);
         }
     }
     return kernel;

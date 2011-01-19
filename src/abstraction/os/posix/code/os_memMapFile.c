@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,13 +16,13 @@
  * Implements memory mapped file management for POSIX.
  */
 
-#include <os_report.h>
-#include <os_stdlib.h>
+#include "os_report.h"
+#include "os_stdlib.h"
 #include <sys/mman.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include <../common/code/os_memMapFileHandle.c>
+#include "../common/code/os_memMapFileHandle.c"
 
 /** Defines the permissions for the created memory mapped file */
 #define OS_PERMISSION \

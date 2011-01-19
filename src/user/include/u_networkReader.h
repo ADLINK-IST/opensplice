@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,7 +28,8 @@
 extern "C" {
 #endif
 
-#define         u_networkReader(o)         ((u_networkReader)(o))
+#define u_networkReader(o) \
+        ((u_networkReader)u_entityCheckType(u_entity(o), U_NETWORKREADER))
 
 OS_API u_networkReader
 u_networkReaderNew(
@@ -39,11 +40,12 @@ u_networkReaderNew(
     
 OS_API u_result        
 u_networkReaderInit(
-    u_networkReader r);
+    u_networkReader _this,
+    u_subscriber s);
     
 OS_API u_result        
 u_networkReaderCreateQueue(
-    u_networkReader r,
+    u_networkReader _this,
     c_ulong queueSize,
     c_ulong priority,
     c_bool reliable,
@@ -55,24 +57,24 @@ u_networkReaderCreateQueue(
     
 OS_API u_result        
 u_networkReaderTrigger(
-    u_networkReader r,
+    u_networkReader _this,
     c_ulong queueId);
     
 OS_API u_result       
 u_networkReaderFree(
-    u_networkReader r);
+    u_networkReader _this);
     
 OS_API u_result        
 u_networkReaderDeinit(
-    u_networkReader r);
+    u_networkReader _this);
 
 OS_API u_result        
 u_networkReaderRemoteActivityDetected(
-    u_networkReader r);
+    u_networkReader _this);
     
 OS_API u_result        
 u_networkReaderRemoteActivityLost(
-    u_networkReader r);
+    u_networkReader _this);
 
 #undef OS_API
 

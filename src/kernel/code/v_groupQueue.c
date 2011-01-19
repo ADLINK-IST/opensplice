@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -39,7 +39,7 @@ v_groupQueueNew(
 
     kernel = v_objectKernel(subscriber);
     q = v_readerQosNew(kernel,qos);
-    
+
     if (q != NULL) {
         queue = v_groupQueue(v_objectNew(kernel,K_GROUPQUEUE));
         v_groupQueueInit(queue, subscriber, name, maxSize, q);
@@ -64,12 +64,12 @@ v_groupQueueInit(
 {
     assert(C_TYPECHECK(queue, v_groupQueue));
     assert(C_TYPECHECK(subscriber, v_subscriber));
-    
+
     queue->head    = NULL;
     queue->tail    = NULL;
     queue->maxSize = maxSize;
     queue->size    = 0;
-    
+
     v_groupStreamInit(v_groupStream(queue), name, subscriber, qos);
 }
 
@@ -78,13 +78,13 @@ v_groupQueueDeinit(
     v_groupQueue queue)
 {
     v_groupAction action;
-    
+
     assert(C_TYPECHECK(queue, v_groupQueue));
-    
+
     v_groupStreamDeinit(v_groupStream(queue));
-    
+
     action = v_groupQueueTake(queue);
-    
+
     while(action){
         c_free(action);
         action = v_groupQueueTake(queue);
@@ -111,7 +111,7 @@ v_groupQueueRead(
     assert(C_TYPECHECK(queue,v_groupQueue));
 
     v_observerLock(v_observer(queue));
-    
+
     if (queue->head) {
         action = c_keep(queue->head->action);
     } else {
@@ -130,9 +130,9 @@ v_groupQueueTake(
     v_groupAction action;
 
     assert(C_TYPECHECK(queue,v_groupQueue));
-    
+
     v_observerLock(v_observer(queue));
-    
+
     if(queue->head){
         sample = queue->head;
         action = c_keep(sample->action);
@@ -140,7 +140,7 @@ v_groupQueueTake(
         sample->next = NULL;
         queue->size--;
         c_free(sample);
-        
+
         if(queue->size == 0){
             queue->tail = NULL;
             v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
@@ -161,18 +161,19 @@ v_groupQueueWrite(
     v_writeResult result;
     v_kernel kernel;
     v_groupQueueSample sample;
-    
+
     assert(C_TYPECHECK(queue,v_groupQueue));
     assert(C_TYPECHECK(action,v_groupAction));
 
     v_observerLock(v_observer(queue));
 
-    result = V_WRITE_SUCCESS; 
-        
+    result = V_WRITE_SUCCESS;
+
     switch(action->kind){
     case V_GROUP_ACTION_REGISTER:             /*fallthrough on purpose.*/
-    case V_GROUP_ACTION_UNREGISTER:
-    	/*Do not handle register & unregister messages*/
+    case V_GROUP_ACTION_UNREGISTER:           /*fallthrough on purpose.*/
+    case V_GROUP_ACTION_DISPOSE_ALL:
+    	/*Do not handle register & unregister * dispose_all messages*/
     	break;
     case V_GROUP_ACTION_WRITE:                /*fallthrough on purpose.*/
     case V_GROUP_ACTION_DISPOSE:              /*fallthrough on purpose.*/
@@ -190,7 +191,7 @@ v_groupQueueWrite(
             if (sample) {
                 sample->action = c_keep(action);
                 sample->next   = NULL;
-            
+
                 if(queue->tail){
                     queue->tail->next = sample;
                     queue->tail = sample;

@@ -120,6 +120,27 @@
             </i>
           </td>
         </tr>
+        <tr>
+          <td>
+            dds1117
+          </td>
+          <td>
+            <b>Implicit unregister messages can corrupt copy-out functions</b><br/>
+            <i>
+              On all language bindings there are methods that only use the key 
+              fields of a sample, as for example the register, unregister and 
+              dispose methods. However, currently the complete sample (including 
+              the non-key fields) need to adhere to the IDL to language mapping 
+              rules, as all fields are validated. This means that when a sample 
+              contains garbage data in its non-key fields, the sample could be 
+              rejected and the application might even crash in case of dangling 
+              pointers (segmentation fault). <br> 
+              The work-around is that no values should be initalised to NULL 
+              values, no values should contain dangling pointers, all unions 
+              should explicitly be initialized to a valid value and any 
+              enumeration value should remain within its bounds.
+            </i>
+          </td>
         </tr>
         <tr>
           <td>
@@ -147,6 +168,22 @@
             <i>
               There are still numerous warnings when using the Studio12 compiler. These can be ignored and will
               be tidied in future releases.
+            </i>
+          </td>
+        </tr>      
+        <tr>
+          <td>
+            dds2565
+          </td>
+          <td>
+            <b>Sequences are not currently supported in multi-domain applications.</b><br/>
+            <i>
+              Sequences can be used in case the application only writes them in one domain,
+              and never in the other domain(s). Because of the current implementation, this
+              restriction only applies on topic level, so for each topic it means that you can
+              only write sequences on that topic in one single domain. Another option is that
+              instead of using sequences, use arrays, with the downside that you always use the
+              worst-case amount of resources.
             </i>
           </td>
         </tr>      

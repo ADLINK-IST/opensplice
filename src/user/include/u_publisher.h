@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -44,6 +44,10 @@ extern "C" {
 #endif
 
 #include "u_types.h"
+
+typedef c_bool (*u_publisherAction)(u_publisher publisher, c_voidp arg);
+
+#include "u_writer.h"
 #include "os_if.h"
 
 #ifdef OSPL_BUILD_USER
@@ -58,7 +62,8 @@ extern "C" {
  * In comparison with kernel classes this cast method will not perform
  * runtime type checking due to the lack of type information.
  */
-#define u_publisher(p) ((u_publisher)(p))
+#define u_publisher(p) \
+        ((u_publisher)u_entityCheckType(u_entity(p), U_PUBLISHER))
 
 /** \brief The class constructor.
  *
@@ -181,6 +186,30 @@ u_publisherCoherentBegin (
  */
 OS_API u_result
 u_publisherCoherentEnd (
+    u_publisher _this);
+
+OS_API c_long
+u_publisherWriterCount(
+    u_publisher _this);
+
+OS_API c_iter
+u_publisherLookupWriters(
+    u_publisher _this,
+    const c_char *topic_name);
+
+OS_API c_bool
+u_publisherContainsWriter(
+    u_publisher _this,
+    u_writer writer);
+
+OS_API u_result
+u_publisherWalkWriters(
+    u_publisher _this,
+    u_writerAction action,
+    c_voidp actionArg);
+
+OS_API u_result
+u_publisherDeleteContainedEntities (
     u_publisher _this);
 
 #undef OS_API 

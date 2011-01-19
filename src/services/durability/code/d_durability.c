@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,7 +40,7 @@
 #include "d_store.h"
 
 #ifdef INTEGRITY
-#include <include/os_getRSObjects.h>
+#include "include/os_getRSObjects.h"
 #endif
 /**
  * TODO: \todo
@@ -804,10 +804,7 @@ ospl_main(
     int argc,
     char* argv[])
 #else
-int
-main(
-    int argc,
-    char* argv[])
+OPENSPLICE_MAIN (ospl_durability)
 #endif
 {
     c_char *uri;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -43,7 +43,7 @@
  * implementation. The scope will then be system wide.
  */
 
-#include <os_cond.h>
+#include "os_cond.h"
 
 /* include OS specific condition variable implementation 	*/
-#include <code/os_cond.c>
+#include "code/os_cond.c"

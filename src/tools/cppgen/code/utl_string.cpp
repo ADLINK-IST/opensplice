@@ -67,8 +67,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // utl_string.cc - Implementation of quick and dirty TEMPORARY String
 //     for IDL compiler
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructors

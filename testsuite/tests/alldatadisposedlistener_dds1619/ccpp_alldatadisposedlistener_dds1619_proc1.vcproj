@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_alldatadisposedlistener_dds1619_proc1"
-	ProjectGUID="{AA04C074-FECA-1BAD-8B3B-016F4F6AF1A2}"
+	ProjectGUID="{9FB45984-FECA-1BAD-BE19-FFFD8328F0FE}"
 	RootNamespace="ccpp_alldatadisposedlistener_dds1619_proc1"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -50,7 +50,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -69,14 +69,14 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_alldatadisposedlistener_dds1619_proc1.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -132,7 +132,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -148,14 +148,14 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_alldatadisposedlistener_dds1619_proc1.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -213,7 +213,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -232,7 +232,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -240,7 +240,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_alldatadisposedlistener_dds1619_proc1.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -296,7 +296,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -312,7 +312,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -320,7 +320,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib"
 				OutputFile="$(OutDir)\ccpp_alldatadisposedlistener_dds1619_proc1.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -379,6 +379,18 @@
 			<File
 				RelativePath="ext_participant_listener_impl.h">
 			</File>
+			<File
+				RelativePath="SpaceC.h">
+			</File>
+			<File
+				RelativePath="SpaceDcps_impl.h">
+			</File>
+			<File
+				RelativePath="SpaceDcpsC.h">
+			</File>
+			<File
+				RelativePath="SpaceSplDcps.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Build Files"
@@ -404,6 +416,101 @@
 					Name="Release|x64"
 					ExcludedFromBuild="true"
 				>
+				</FileConfiguration>
+			</File>
+		</Filter>
+		<Filter
+			Name="Inline Files"
+			Filter="i;inl">
+			<File
+				RelativePath="SpaceC.inl">
+			</File>
+			<File
+				RelativePath="SpaceDcpsC.inl">
+			</File>
+		</Filter>
+		<Filter
+			Name="Documentation"
+			Filter="">
+			<File
+				RelativePath="package-frame.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="package-overview.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="run_test.html">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -18,18 +18,6 @@
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#define S_CFG_KERNELMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_KERNELMANAGERSCHEDULING_CLASS_DEFAULT     ""
-
-#define S_CFG_GCSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_GCSCHEDULING_CLASS_DEFAULT    ""
-
-#define S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT     ""
-
-#define S_CFG_C_AND_M_COMMAND_SCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_C_AND_M_COMMANDSCHEDULING_CLASS_DEFAULT     ""
 
 #define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (0.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_DEFAULT (10.0F)

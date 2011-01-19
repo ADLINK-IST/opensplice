@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -41,7 +41,7 @@
  * (on all platforms, but the scope on UNIX like platforms is process).
  */
 
-#include <os_sharedmem.h>
+#include "os_sharedmem.h"
 
 /* include OS specific shared memory implementation		*/
-#include <code/os_sharedmem.c>
+#include "code/os_sharedmem.c"

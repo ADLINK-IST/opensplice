@@ -71,11 +71,11 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** one which is in Sunsoft\'s version and which uses Solaris dlopen.
 */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <drv_private.h>
-#include        <drv_link.h>
+#include "drv_private.h"
+#include        "drv_link.h"
 
 DRV_PF_FE_init_stage1 DRV_FE_init_stage1;
 DRV_PF_FE_init_stage2 DRV_FE_init_stage2;

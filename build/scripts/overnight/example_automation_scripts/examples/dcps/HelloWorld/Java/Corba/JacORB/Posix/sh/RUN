@@ -1,0 +1,50 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+if [ -z "$JAVA_HOME" ]; then
+    echo "WARNING: JAVA_HOME not defined. Cannot find libjsig.so and set LD_PRELOAD"
+    echo "         This could prevent cleanup of Java application at exit"
+else
+   LD_PRELOAD=`find $JAVA_HOME -follow -name libjsig.so | grep -v server/libjsig.so | grep -v client/libjsig.so`
+   export LD_PRELOAD
+   if [ -z "$LD_PRELOAD" ]; then
+      echo "WARNING: libjsig.so not found in JAVA_HOME: $JAVA_HOME"
+      echo "         This could prevent cleanup of Java application at exit"
+   fi
+fi
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching HelloWorld "
+sh ./startPublisher.sh  > pubResult.txt &
+sh ./startSubscriber.sh "./subResult.txt"
+
+echo "=== Checking HelloWorld Subscriber results"
+tail -3 subResult.txt > tail_subResult.txt
+# 
+IS_CORBA=`echo $PWD | grep Corba | wc -l`
+if [  "$IS_CORBA" =  1 ];then
+   # Corba
+   diff -B -w tail_subResult.txt ../../../../../expected_results/subResult.txt > subdiff.txt
+else
+   # Standalone
+   diff -B -w tail_subResult.txt ../../../../expected_results/subResult.txt > subdiff.txt
+fi
+
+if [ -s subdiff.txt ] || [ ! -r subResult.txt ];then
+   echo NOK
+   echo "*** ERROR : example HelloWorld failed ";
+   cat subdiff.txt;
+else
+   echo OK
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2
+

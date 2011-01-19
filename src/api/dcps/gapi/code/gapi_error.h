@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -338,5 +338,8 @@ void
 gapi_typeParseError (
     sd_errorReport report);
 
+const char *
+gapi_retcode_image (
+    gapi_returnCode_t retcode);
 
 #endif /* GAPI_ERROR_H */

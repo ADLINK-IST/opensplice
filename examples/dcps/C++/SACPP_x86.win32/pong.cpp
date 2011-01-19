@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -98,7 +98,7 @@ main (
     int                               i;
     int                               imax;
     ULong                             j;
-    int                               jmax;
+    ULong                             jmax;
 
     //
     // Evaluate cmdline arguments
@@ -124,7 +124,7 @@ main (
         exit(1);
     }
 
-    // 
+    //
     // Create PONG publisher
     //
 
@@ -132,7 +132,7 @@ main (
     pQos.partition.name.length (1);
     pQos.partition.name[0] = string_dup (write_partition);
     p = dp->create_publisher (pQos, NULL, DDS::STATUS_MASK_NONE);
-    
+
     //
     // Create PING subscriber
     //
@@ -145,7 +145,7 @@ main (
     //
     // PP_min_msg
     //
-    
+
     //  Create Topic
     PP_min_dt.register_type (dp, "pingpong::PP_min_msg");
     PP_min_topic = dp->create_topic ("PP_min_topic", "pingpong::PP_min_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -183,11 +183,11 @@ main (
     PP_seq_sc = PP_seq_reader->get_statuscondition ();
     PP_seq_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_seq_sc);
-    
+
     //
     // PP_string_msg
     //
-    
+
     //  Create Topic
     PP_string_dt.register_type (dp, "pingpong::PP_string_msg");
     PP_string_topic = dp->create_topic ("PP_string_topic", "pingpong::PP_string_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -204,11 +204,11 @@ main (
     PP_string_sc = PP_string_reader->get_statuscondition ();
     PP_string_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_string_sc);
-    
+
     //
     // PP_fixed_msg
     //
-    
+
     //  Create Topic
     PP_fixed_dt.register_type (dp, "pingpong::PP_fixed_msg");
     PP_fixed_topic = dp->create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -225,11 +225,11 @@ main (
     PP_fixed_sc = PP_fixed_reader->get_statuscondition ();
     PP_fixed_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_fixed_sc);
-    
+
     //
     // PP_array_msg
     //
-    
+
     //  Create Topic
     PP_array_dt.register_type (dp, "pingpong::PP_array_msg");
     PP_array_topic = dp->create_topic ("PP_array_topic", "pingpong::PP_array_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -250,7 +250,7 @@ main (
     //
     // PP_quit_msg
     //
-    
+
     //  Create Topic
     PP_quit_dt.register_type (dp, "pingpong::PP_quit_msg");
     PP_quit_topic = dp->create_topic ("PP_quit_topic", "pingpong::PP_quit_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -281,7 +281,9 @@ main (
                 jmax = PP_min_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_min_reader->return_loan (PP_min_dataList, infoList);
                 } else {
@@ -293,7 +295,9 @@ main (
                 jmax = PP_seq_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_seq_reader->return_loan (PP_seq_dataList, infoList);
                 } else {
@@ -305,7 +309,9 @@ main (
                 jmax = PP_string_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_string_reader->return_loan (PP_string_dataList, infoList);
                 } else {
@@ -318,7 +324,9 @@ main (
                 jmax = PP_fixed_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_fixed_reader->return_loan (PP_fixed_dataList, infoList);
                 } else {
@@ -330,7 +338,9 @@ main (
                 jmax = PP_array_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; j < jmax; j++) {
-                        result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
+                        if (infoList[j].valid_data) {
+                            result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
+                        }
                     }
                     result = PP_array_reader->return_loan (PP_array_dataList, infoList);
                 } else {
@@ -374,6 +384,6 @@ main (
     result = dp->delete_topic (PP_array_topic);
     result = dp->delete_topic (PP_quit_topic);
     result = dpf->delete_participant (dp);
-    
+
     return 0;
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,7 +15,9 @@
 
 #include "v_networkingStatistics.h"
 
-v_networkingStatistics v_networkingStatisticsNew(v_kernel k)
+v_networkingStatistics
+v_networkingStatisticsNew(
+    v_kernel k)
 {
     v_networkingStatistics _this;
     c_type networkingStatisticsType;
@@ -24,17 +26,19 @@ v_networkingStatistics v_networkingStatisticsNew(v_kernel k)
     assert(C_TYPECHECK(k, v_kernel));
 
     /* not necessary to cache this type since it is looked up only once per process */
-    networkingStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkingStatistics");
+    networkingStatisticsType = c_resolve(c_getBase(k),
+                                         "kernelModule::v_networkingStatistics");
 
     _this = v_networkingStatistics(v_new(k, networkingStatisticsType));
     v_networkingStatisticsInit(_this,k);
     return _this;
 }
 
-void v_networkingStatisticsInit(v_networkingStatistics _this, v_kernel k)
+void
+v_networkingStatisticsInit(
+    v_networkingStatistics _this,
+    v_kernel k)
 {
-	v_networkChannelStatistics ncs;
-	int i;
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
 
@@ -42,17 +46,22 @@ void v_networkingStatisticsInit(v_networkingStatistics _this, v_kernel k)
 
     _this->numberOfErrors = 0;
     _this->channelsCount = 0;
-    _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(k)),"kernelModule::v_networkChannelStatistics"),64);
+    _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(k)),
+                                 "kernelModule::v_networkChannelStatistics"),64);
 
 }
 
-void v_networkingStatisticsDeinit(v_networkingStatistics _this)
+void
+v_networkingStatisticsDeinit(
+    v_networkingStatistics _this)
 {
     assert(_this!=NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
 }
 
-c_bool v_networkingStatisticsReset(v_networkingStatistics _this, const c_char* fieldName)
+c_bool
+v_networkingStatisticsReset(
+    v_networkingStatistics _this, const c_char* fieldName)
 {
     c_bool result;
 
@@ -70,7 +79,9 @@ c_bool v_networkingStatisticsReset(v_networkingStatistics _this, const c_char* f
     return result;
 }
 
-void v_networkingStatisticsFree(v_networkingStatistics _this)
+void
+v_networkingStatisticsFree(
+    v_networkingStatistics _this)
 {
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));

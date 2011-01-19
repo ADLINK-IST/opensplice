@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,13 +11,13 @@
  */
 #include <assert.h>
 
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 #include "idl_scope.h"
 #include "idl_genCxxHelper.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 #define IDL_MAXSCOPE	(20)
 

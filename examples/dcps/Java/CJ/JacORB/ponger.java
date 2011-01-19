@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -300,7 +300,9 @@ public class ponger {
                         jmax = PP_min_dataList.value.length;
                         if (jmax != 0) {
                             for (j = 0; j < jmax; j++) {
-                                result = PP_min_writer.write (PP_min_dataList.value[j], DDS.HANDLE_NIL.value);
+                                if(infoList.value[j].valid_data) {
+                                    result = PP_min_writer.write (PP_min_dataList.value[j], DDS.HANDLE_NIL.value);
+                                }
                             }
                             result = PP_min_reader.return_loan (PP_min_dataList, infoList);
                         } else {
@@ -313,7 +315,9 @@ public class ponger {
                         jmax = PP_seq_dataList.value.length;
                         if (jmax != 0) {
                             for (j = 0; j < jmax; j++) {
-                                result = PP_seq_writer.write (PP_seq_dataList.value[j], DDS.HANDLE_NIL.value);
+                                if(infoList.value[j].valid_data) {
+                                    result = PP_seq_writer.write (PP_seq_dataList.value[j], DDS.HANDLE_NIL.value);
+                                }
                             }
                             result = PP_seq_reader.return_loan (PP_seq_dataList, infoList);
                         } else {
@@ -326,12 +330,7 @@ public class ponger {
                         jmax = PP_string_dataList.value.length;
                         if (jmax != 0) {
                             for (j = 0; j < jmax; j++) {
-                                /* PP_fixed struct contains a string, which is inited to null by JacORB. This means when
-                                 * we deal with invalid data that any strings will be set to null pointers, which we can
-                                 * not write away. So invalid data is ignored.
-                                 */
-                                if(infoList.value[j].valid_data)
-                                {
+                                if(infoList.value[j].valid_data) {
                                     result = PP_string_writer.write (PP_string_dataList.value[j], DDS.HANDLE_NIL.value);
                                 }
                             }
@@ -346,12 +345,7 @@ public class ponger {
                         jmax = PP_fixed_dataList.value.length;
                         if (jmax != 0) {
                             for (j = 0; j < jmax; j++) {
-                                /* PP_fixed struct contains a string, which is inited to null by JacORB. This means when
-                                 * we deal with invalid data that any strings will be set to null pointers, which we can
-                                 * not write away. So invalid data is ignored.
-                                 */
-                                if(infoList.value[j].valid_data)
-                                {
+                                if(infoList.value[j].valid_data) {
                                     result = PP_fixed_writer.write (PP_fixed_dataList.value[j], DDS.HANDLE_NIL.value);
                                 }
                             }
@@ -366,7 +360,9 @@ public class ponger {
                         jmax = PP_array_dataList.value.length;
                         if (jmax != 0) {
                             for (j = 0; j < jmax; j++) {
-                                result = PP_array_writer.write (PP_array_dataList.value[j], DDS.HANDLE_NIL.value);
+                                if(infoList.value[j].valid_data) {
+                                    result = PP_array_writer.write (PP_array_dataList.value[j], DDS.HANDLE_NIL.value);
+                                }
                             }
                             result = PP_array_reader.return_loan (PP_array_dataList, infoList);
                         } else {

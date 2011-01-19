@@ -132,7 +132,7 @@ d_policyAddMergeRule(
     assert (rule);
 
     rule->mergeType = mergeType;
-    rule->scope = strdup(scope);
+    rule->scope = os_strdup(scope);
 
     if (!policy->mergePolicyRules){
         policy->mergePolicyRules = c_iterNew (rule);

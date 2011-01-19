@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,22 +26,27 @@ typedef struct in_interfaceInfo_s *in_interfaceInfo;
 
 #include <errno.h>
 #include <string.h>
-#include <os_socket.h>
+#include "os_socket.h"
 #include "in_report.h"
 
 extern os_sockErrno inLastSockError;
+
+#define MAX_ERROR_BUFFER_SIZE     1024
 
 /* Socketfunctions all return -1 on error */
 #define IN_REPORT_SOCKFUNC(level, retval, context,function)          \
     if ((retval) != os_resultSuccess) {                                    \
         os_sockErrno sockError = os_sockError();                             \
+        char buf[MAX_ERROR_BUFFER_SIZE];                                                    \
+        buf[0] = '\0';                                                      \
+        os_strerror(sockError,buf,MAX_ERROR_BUFFER_SIZE);                    \
         if ( sockError != inLastSockError ){                                 \
             IN_REPORT_ERROR_3(context, "%s returned errno %d (%s)", function,  \
-                              sockError, strerror(sockError));   \
+                              sockError, buf);   \
             inLastSockError = sockError;   \
         } else {                                                            \
             IN_REPORT_INFO_4(level, "%s: %s returned errno %d (%s)", context, function,    \
-                             sockError, strerror(sockError));                               \
+                             sockError, buf);                               \
         }                                                                  \
     } else {                                                               \
         IN_REPORT_INFO_2(level, "%s: %s succeeded", context, function);    \

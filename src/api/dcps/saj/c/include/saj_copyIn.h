@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,10 +14,10 @@
 
 #include <jni.h>
 
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 #include "saj_copyCache.h"
-#include <os_if.h>
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_DCPSSAJ
 #define OS_API OS_API_EXPORT

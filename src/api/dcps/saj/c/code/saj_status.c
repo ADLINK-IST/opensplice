@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,9 +10,9 @@
  *
  */
   
-#include <saj_status.h> 
+#include "saj_status.h" 
 #include <jni.h>
-#include <saj_utilities.h>
+#include "saj_utilities.h"
 
 saj_returnCode
 saj_statusCopyOutSampleRejectedStatusKind(

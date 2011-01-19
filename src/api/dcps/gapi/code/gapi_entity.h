@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,22 +27,27 @@
 #define gapi_entityClaimNB(h,r) \
         (_Entity(gapi_objectClaimNB(h,OBJECT_KIND_ENTITY,r)))
 
+#define gapi_entityRelease(h) \
+        gapi_objectRelease(h)
+
 #define U_ENTITY_GET(e)            (_Entity(e)->uEntity)
 #define U_ENTITY_SET(e,u)           _Entity(e)->uEntity = u_entity(u)
 #define ENTITY_STATUS_GET(e)       (_Entity(e)->status)
         
 #define _EntityUEntity(e)           _Entity(e)->uEntity
 #define _EntityStatus(e)            _Entity(e)->status
-#define _EntityEnabled(e)           _Entity(e)->enabled
+#define _EntityStatusCondition(e)   _Entity(e)->StatusCondition
+#define _EntityEnabled(e)           u_entityEnabled(U_ENTITY_GET(e))
+#define _EntitySetEnable(e)         u_entityEnable(U_ENTITY_GET(e))
 
 #define _EntityDelete(e)            _ObjectDelete((_Object)e)
 #define _EntityClaim(e)             _ObjectClaim((_Object)e)
 #define _EntityClaimNotBusy(e)      _ObjectClaimNotBusy((_Object)e)
 #define _EntityRelease(e)           _ObjectRelease((_Object)e)
 #define _EntityReadRelease(e)       _ObjectReadRelease((_Object)e)
-#define gapi_entityRelease(h) gapi_objectRelease(h)
 #define _EntityHandle(e)            _ObjectToHandle((_Object)e)
 #define _EntitySetBusy(e)           _ObjectSetBusy((_Object)e)
+#define _EntityClearBusy(e)         _ObjectClearBusy((_Object)e)
 
 #define _EntityGetFactory(e) (_Entity(e)->factory)
 #define _EntityGetStatus(e) (_Entity(e)->status)
@@ -50,7 +55,6 @@
 
 C_STRUCT(_Entity) {
     C_EXTENDS(_Object);
-    gapi_boolean          enabled;
     _Entity               factory;
     _ObjectRegistry       registry;    
     _StatusCondition      StatusCondition;
@@ -64,27 +68,16 @@ C_STRUCT(_Entity) {
 void
 _EntityInit (
     _Entity _this,
-    _DomainEntity domainEntity,
-    _Entity       factory,
-    gapi_boolean  enabled);
+    _Entity factory);
 
 void
 _EntityDispose (
     _Entity _this);
 
-gapi_boolean
-_EntitySetListenerInterest (
-    _Entity _this,
-    _ListenerInterestInfo info);
-
 void
 _EntitySetUserEntity (
     _Entity _this,
     u_entity uEntity);
-
-void
-_EntityFreeStatusCondition (
-    _Entity entity);
 
 void
 _EntityRegisterObject (
@@ -104,5 +97,9 @@ void
 gapi_entityNotifyEvent (
     gapi_entity _this,
     c_ulong events);
+
+_DomainParticipant
+_EntityParticipant (
+    _Entity _this);
    
 #endif /* GAPI_ENTITY_H */

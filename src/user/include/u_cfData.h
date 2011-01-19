@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -116,6 +116,42 @@ OS_API c_bool
 u_cfDataULongValue(
     u_cfData data,
     c_ulong *ul);
+
+/**
+ * \brief Retrieves the data as a unsigned long value.
+ *
+ * The data is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param data the proxy to the kernel configuration data
+ * \param ul the storage location of the data
+ *
+ * \return TRUE, when the data is correctly retrieved as unsigned long value
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfDataSizeValue(
+    u_cfData data,
+    c_ulong *ul);
+
+/**
+ * \brief Retrieves a string which contains a friendly name (K,M,G,T) as a unsigned long value.
+ *
+ * The data is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param str the string representation of the configuration data
+ * \param ul the storage location of the data
+ *
+ * \return TRUE, when the data is correctly retrieved as unsigned long value
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfDataSizeValueFromString(
+    c_char *str,
+    c_ulong *ul);
+
+
 
 /**
  * \brief Retrieves the data as a floating point value.

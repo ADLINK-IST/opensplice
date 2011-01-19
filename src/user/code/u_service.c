@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,7 +16,7 @@
 #include "u__user.h"
 #include "u__types.h"
 #include "u__entity.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "u__participant.h"
 #include "u__serviceManager.h"
 #include "u__cfValue.h"
@@ -56,48 +56,6 @@ serviceTermHandler(os_terminationType reason)
 	} else {   /* OS_TERMINATION_ERROR */
 	    result = 1;  /* continue termination process */
 	}
-    return result; 
-}
-
-static u_result
-u_serviceClaim(
-    u_service _this,
-    v_service *service)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (service != NULL)) {
-        *service = v_service(u_entityClaim(u_entity(_this)));
-        if (*service == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_serviceClaim", 0,
-                        "Claim Service failed. "
-                        "<_this = 0x%x, service = 0x%x>.",
-                         _this, service);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_serviceClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, service = 0x%x>.",
-                    _this, service);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-static u_result
-u_serviceRelease(
-    u_service _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_serviceRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
     return result;
 }
 
@@ -200,7 +158,7 @@ u_serviceNew(
     u_serviceKind kind,
     v_qos qos)
 {
-    u_kernel k;
+    u_domain domain;
     v_kernel kk;
     v_service ks;
     v_serviceManager sm;
@@ -209,18 +167,19 @@ u_serviceNew(
     os_result osr;
 
     ks = NULL;
-    k = u_userKernelOpen(uri, timeout);
-    if (k == NULL) {
+    domain = u_userFindDomain(uri, timeout);
+    if (domain == NULL) {
         OS_REPORT(OS_ERROR,"u_serviceNew",0,
                   "Failure to open the kernel");
         return NULL;
     }
 
-	
+
     s = NULL;
-    if (k != NULL) {
-        r = u_kernelClaim(k,&kk);
-        if ((r == U_RESULT_OK) && (kk != NULL)) {
+    if (domain != NULL) {
+        r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
+        if (r == U_RESULT_OK) {
+            assert(kk);
             sm = v_getServiceManager(kk);
             if (sm != NULL) {
 #ifndef INTEGRITY
@@ -276,7 +235,7 @@ u_serviceNew(
 #endif
             if (ks != NULL) {
                 s = u_entityAlloc(NULL,u_service,ks,TRUE);
-                r = u_serviceInit(s, kind, k);
+                r = u_serviceInit(s, kind, domain);
                 if (r != U_RESULT_OK) {
                     OS_REPORT_1(OS_ERROR,"u_serviceNew",0,
                                 "Failed to initialize service: %s", name);
@@ -287,7 +246,7 @@ u_serviceNew(
                 OS_REPORT(OS_WARNING,"u_serviceNew",0,
                           "Failed to retrieve the Service Manager");
             }
-            r = u_kernelRelease(k);
+            r = u_entityRelease(u_entity(domain));
         }
     }
     return s;
@@ -295,43 +254,67 @@ u_serviceNew(
 
 u_result
 u_serviceFree(
-    u_service service)
+    u_service _this)
 {
-    u_result r;
-    u_kernel kernel;
+    u_result result;
+    c_bool destroy;
 
-    if (service != NULL) {
-
-        if (u_entity(service)->flags & U_ECREATE_INITIALISED) {
-            kernel = u_participant(service)->kernel;
-            r = u_serviceDeinit(service);
-            os_free(service);
-            u_userKernelClose(kernel);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_serviceDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_serviceFree",0,
+                            "Operation u_serviceDeinit failed: "
+                            "Service = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            r = u_entityFree(u_entity(service));
-		}
+            u_entityUnlock(u_entity(_this));
+        }
     } else {
-        OS_REPORT(OS_WARNING,"u_serviceFree",0,
-                  "The specified Service = NIL>");
-        r = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_serviceFree",0,
+                    "Operation u_entityLock failed: "
+                    "Service = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
-    return r;
+    return result;
 }
 
 u_result
 u_serviceInit(
     u_service service,
     u_serviceKind kind,
-    u_kernel kernel)
+    u_domain domain)
 {
     u_result r;
     watchSplicedAdmin admin;
 
-    if ((service != NULL) && (kernel != NULL)) {
+    if ((service != NULL) && (domain != NULL)) {
         admin = watchSplicedAdmin(os_malloc((os_uint32)C_SIZEOF(watchSplicedAdmin)));
         if (admin != NULL) {
             service->serviceKind = kind;
-            r = u_participantInit(u_participant(service), kernel);
+            r = u_participantInit(u_participant(service), domain);
             if (r == U_RESULT_OK) {
                 admin->serviceManager = u_serviceManagerNew(u_participant(service));
                 admin->callback = NULL;
@@ -367,12 +350,14 @@ u_serviceDeinit(
         u_dispatcherRemoveListener(u_dispatcher(service),
                                    u_serviceSpliceListener);
         admin = watchSplicedAdmin(service->privateData);
-        admin->callback = NULL;
-        admin->usrData = NULL;
-        if (admin->serviceManager != NULL) {
-            u_serviceManagerFree(admin->serviceManager);
+        if (admin) {
+            admin->callback = NULL;
+            admin->usrData = NULL;
+            if (admin->serviceManager != NULL) {
+                u_serviceManagerFree(admin->serviceManager);
+            }
+            os_free(admin);
         }
-        os_free(admin);
         service->privateData = NULL;
         r = u_participantDeinit(u_participant(service));
     } else {
@@ -396,10 +381,11 @@ u_serviceChangeState(
     c_bool result = FALSE;
 
     if (service != NULL) {
-        r = u_serviceClaim(service, &s);
-        if ((r== U_RESULT_OK) && (s != NULL)) {
+        result = u_entityReadClaim(u_entity(service), (v_entity*)(&s));
+        if (result == U_RESULT_OK) {
+            assert(s);
             result = v_serviceChangeState(s, newState);
-            r = u_serviceRelease(service);
+            r = u_entityRelease(u_entity(service));
         } else {
             OS_REPORT(OS_WARNING, "u_serviceChangeState", 0,
                       "Could not claim service.");
@@ -418,10 +404,11 @@ u_serviceGetName(
 
     name = NULL;
     if (service != NULL) {
-        result = u_serviceClaim(service, &s);
-        if ((result == U_RESULT_OK) && (s != NULL)) {
+        result = u_entityReadClaim(u_entity(service), (v_entity*)(&s));
+        if (result == U_RESULT_OK) {
+            assert(s);
             name = os_strdup(v_serviceGetName(s));
-            u_serviceRelease(service);
+            u_entityRelease(u_entity(service));
         } else {
             OS_REPORT(OS_WARNING, "u_serviceGetName", 0,
                       "Could not claim service.");
@@ -473,10 +460,11 @@ u_serviceEnableStatistics(
     u_result result = U_RESULT_UNDEFINED;
 
     if (service != NULL) {
-        result = u_serviceClaim(service, &s);
-        if ((result == U_RESULT_OK) && (s != NULL)) {
+        result = u_entityReadClaim(u_entity(service), (v_entity*)(&s));
+        if (result == U_RESULT_OK) {
+            assert(s);
             v_enableStatistics(v_objectKernel(s), categoryName);
-            result = u_serviceRelease(service);
+            result = u_entityRelease(u_entity(service));
         } else {
             OS_REPORT(OS_WARNING, "u_serviceEnableStatistics", 0,
                       "Could not claim service.");

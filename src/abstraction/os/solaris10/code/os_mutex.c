@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,5 +17,5 @@
  * by including the POSIX implementation
  */
 
-#include <../posix/code/os_mutex.c>
-#include <../common/code/os_mutex_attr.c>
+#include "../posix/code/os_mutex.c"
+#include "../common/code/os_mutex_attr.c"

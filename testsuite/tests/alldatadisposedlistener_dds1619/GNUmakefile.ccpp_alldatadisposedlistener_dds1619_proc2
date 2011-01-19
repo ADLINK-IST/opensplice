@@ -27,10 +27,10 @@ FILES = \
 #----------------------------------------------------------------------------
 override no_hidden_visibility = 1
 
-LDLIBS = -lospl_testlib -lTAO_PortableServer -lTAO_AnyTypeCode -lTAO -lACE -ldcpsccpp -ldcpsgapi -lddskernel -lddsserialization -lddsdatabase -lddsutil -lddsuser -lddsos -lddsosnet
+LDLIBS = -lospl_testlib -lTAO_PortableServer -lTAO_AnyTypeCode -lTAO -lACE -ldcpsccpp -ldcpsgapi -lddsuser -lddskernel -lddsserialization -lddsconfparser -lddsconf -lddsdatabase -lddsutil -lddsos
 TAO_IDL = $(ACE_ROOT)/bin/tao_idl
 TAO_IDL_DEP = $(ACE_ROOT)/bin/tao_idl$(EXEEXT)
-TAO_IDLFLAGS = -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I $(TAO_ROOT)
+TAO_IDLFLAGS = -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h -I$(TAO_ROOT)
 
 PRJ_TYPE = rtp
 
@@ -104,7 +104,7 @@ LDLIBPATH     = -L. -L$(OSPL_HOME)/lib -L$(ACE_ROOT)/lib -L../testlibs
 else
 LDFLAGS      += -L. -L$(OSPL_HOME)/lib -L$(ACE_ROOT)/lib -L../testlibs
 endif
-CPPFLAGS     += -I$(OSPL_HOME)/include -I$(OSPL_HOME)/include/sys -I$(OSPL_HOME)/include/dcps/C++/CCPP -I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB) -I$(ACE_ROOT) -I$(TAO_ROOT) -I$(TAO_ROOT)/include -I..
+CPPFLAGS     += -I$(OSPL_HOME)/include/dcps/C++/CCPP -I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB) -I$(OSPL_HOME)/include -I$(OSPL_HOME)/include/sys -I$(ACE_ROOT) -I$(TAO_ROOT) -I$(TAO_ROOT)/include -I..
 ifeq ($(static_libs),1)
   CPPFLAGS += -DACE_AS_STATIC_LIBS -DTAO_AS_STATIC_LIBS
   ifeq ($(link_groups), 1)
@@ -153,7 +153,7 @@ endif
 ifneq ($(VXWORKSLINK),true)
 ifeq ($(static_libs_only), 1)
   ifeq ($(use_dep_libs), 1)
-    DEPLIBS = $(foreach lib, ospl_testlib TAO_PortableServer TAO_AnyTypeCode TAO ACE dcpsccpp dcpsgapi ddskernel ddsserialization ddsdatabase ddsutil ddsuser ddsos ddsosnet, $(foreach libpath, . $(OSPL_HOME)/lib $(ACE_ROOT)/lib ../testlibs, $(wildcard $(libpath)/lib$(lib).a)))
+    DEPLIBS = $(foreach lib, ospl_testlib TAO_PortableServer TAO_AnyTypeCode TAO ACE dcpsccpp dcpsgapi ddsuser ddskernel ddsserialization ddsconfparser ddsconf ddsdatabase ddsutil ddsos, $(foreach libpath, . $(OSPL_HOME)/lib $(ACE_ROOT)/lib ../testlibs, $(wildcard $(libpath)/lib$(lib).a)))
   endif
 endif
 

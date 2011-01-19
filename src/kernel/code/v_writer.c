@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -28,6 +28,9 @@
 #include "v__messageQos.h"
 #include "v__deliveryGuard.h"
 #include "v__deliveryWaitList.h"
+#include "v__dataReader.h"
+#include "v__dataReaderSample.h"
+#include "v__dataReaderInstance.h"
 
 #include "v_partition.h"
 #include "v_groupSet.h"
@@ -220,6 +223,7 @@ keepSample (
         c_free(removed);
     } else {
         writer->count++;
+        v_checkMaxSamplesWarningLevel(v_objectKernel(writer), writer->count);
     }
 
     if (!instance->resend) {
@@ -650,7 +654,6 @@ writerWrite(
 
                 if (sample) {
                     v_writerSampleSetSentBefore(sample, TRUE);
-//                    v_writerSampleResend(sample,grouparg.resendScope);
                     v_writerSampleResend(sample,grouparg.rejectScope);
                     keepSample(writer,instance,sample);
                     c_free(sample);
@@ -660,7 +663,6 @@ writerWrite(
             sample = v_writerSampleNew(writer,message);
 
             if (sample) {
-//                v_writerSampleResend(sample,grouparg.resendScope);
                 v_writerSampleResend(sample,grouparg.rejectScope);
                 keepSample(writer,instance,sample);
                 c_free(sample);
@@ -831,7 +833,7 @@ writerDispose(
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
-            if(result == V_WRITE_TIMEOUT){
+            if(result == V_WRITE_TIMEOUT) {
                 v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
             }
             return result;
@@ -847,10 +849,10 @@ writerDispose(
             result = instanceCheckResources(found,message,until);
         } else {
             assert(c_refCount(instance) == 2);
-            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+            if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_count(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
-                result = doWait(w,until);
+                result = V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -943,7 +945,6 @@ writerUnregister(
     if (!w->infWait) {
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
-
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
@@ -1494,12 +1495,24 @@ v_writerEnable(
         if (qos->liveliness.kind != V_LIVELINESS_AUTOMATIC) {
             if (c_timeCompare(qos->liveliness.lease_duration,
                               C_TIME_INFINITE) != C_EQ) {
-                writer->livelinessLease =
-                    v_leaseManagerRegister(kernel->livelinessLM,
-                                           v_public(writer),
-                                           qos->liveliness.lease_duration,
-                                           V_LEASEACTION_LIVELINESS_CHECK,
-                                           V_LEASE_REPEAT_INFINITE);
+                writer->livelinessLease = v_leaseNew(kernel, qos->liveliness.lease_duration);
+                if(writer->livelinessLease)
+                {
+                    result = v_leaseManagerRegister(
+                        kernel->livelinessLM,
+                        writer->livelinessLease,
+                        V_LEASEACTION_LIVELINESS_CHECK,
+                        v_public(writer),
+                        TRUE /* repeat lease if expired */);
+                    if(result != V_RESULT_OK)
+                    {
+                        c_free(writer->livelinessLease);
+                        writer->livelinessLease = NULL;
+                        OS_REPORT_2(OS_ERROR, "v_writer", 0,
+                            "A fatal error was detected when trying to register writer's %p liveliness lease "
+                            "to the liveliness lease manager of the kernel. The result code was %d.", writer, result);
+                    }
+                }
             } /* else liveliness also determined by liveliness of node */
         }
 
@@ -1706,6 +1719,36 @@ v_writerNotifyIncompatibleQos(
 
 }
 
+
+void
+v_writerNotifyPublicationMatched (
+    v_writer w,
+    v_gid    readerGID,
+    c_bool   dispose)
+{
+    c_bool changed;
+    C_STRUCT(v_event) e;
+
+    v_kernel kernel;
+    v_message builtinMsg;
+
+    assert(w != NULL);
+    assert(C_TYPECHECK(w,v_writer));
+
+    v_observerLock(v_observer(w));
+
+    changed = v_statusNotifyPublicationMatched(v_entity(w)->status, readerGID, dispose);
+    if (changed) {
+        e.kind = V_EVENT_TOPIC_MATCHED;
+        e.source = v_publicHandle(v_public(w));
+        e.userData = NULL;
+        v_observerNotify(v_observer(w), &e, NULL);
+        v_observableNotify(v_observable(w), &e);
+    }
+
+    v_observerUnlock(v_observer(w));
+}
+
 void
 v_writerNotifyChangedQos(
     v_writer w,
@@ -1848,7 +1891,6 @@ v_writerRegister(
     if (!w->infWait) {
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
-
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
@@ -1876,10 +1918,10 @@ v_writerRegister(
             until = c_timeAdd(message->writeTime,
                               w->qos->reliability.max_blocking_time);
         }
-        while ((w->qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+        if ((w->qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                (c_tableCount(w->instances) > w->qos->resource.max_instances) &&
                (result == V_WRITE_SUCCESS)) {
-            result = doWait(w,until);
+            result = V_WRITE_TIMEOUT;
         }
         if (result == V_WRITE_SUCCESS) {
             v_publicInit(v_public(instance));
@@ -2000,7 +2042,6 @@ v_writerWrite(
     if (!w->infWait) {
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
-
     blocked = 0;
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
@@ -2028,15 +2069,10 @@ v_writerWrite(
             result = instanceCheckResources(found,message,until);
         } else {
             assert(c_refCount(instance) == 2);
-            blocked = 0;
-            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
-                   (c_tableCount(w->instances) > qos->resource.max_instances) &&
-                   (result == V_WRITE_SUCCESS)) {
-                blocked++;
-                if(blocked == 1){ /* We only count a blocked write once */
-                    v_statisticsULongValueInc(v_writer, numberOfWritesBlockedByInstanceLimit, w);
-                }
-                result = doWait(w,until);
+            if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+                (c_tableCount(w->instances) > qos->resource.max_instances) &&
+                (result == V_WRITE_SUCCESS)) {
+                result = V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -2223,7 +2259,6 @@ v_writerWriteDispose(
     if (!w->infWait) {
         until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
     }
-
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
@@ -2240,10 +2275,10 @@ v_writerWriteDispose(
         if (found != instance) {
             /* Noop */
         } else {
-            while ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
+            if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_tableCount(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
-                result = doWait(w,until);
+                result = V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -2528,6 +2563,14 @@ v_writerResend(
 
     v_observerLock(v_observer(writer));
 
+    if (v_writerPublisher(writer) == NULL) {
+        /* The DataWriter is being deleted.
+         * apparently this resend thread hasn't noticed it.
+         * skip operation.
+         */
+        v_observerUnlock(v_observer(writer));
+        return;
+    }
     c_tableWalk(writer->resendInstances,(c_action)resendInstance,&emptyList);
     length = c_iterLength(emptyList);
     while ((instance = c_iterTakeFirst(emptyList)) != NULL) {
@@ -2683,6 +2726,7 @@ v_writerGetTopicMatchStatus(
             v_statusReset(status, V_EVENT_TOPIC_MATCHED);
         }
         v_writerStatus(status)->publicationMatch.totalChanged = 0;
+        v_writerStatus(status)->publicationMatch.currentChanged = 0;
         v_observerUnlock(v_observer(_this));
     }
     return result;
@@ -2966,4 +3010,25 @@ v_writerCoherentEnd (
     return result;
 }
 
+c_bool
+v_writerContainsInstance(
+    v_writer _this,
+    v_writerInstance instance)
+{
+    v_writer instanceWriter;
+    c_bool result = FALSE;
 
+    assert(C_TYPECHECK(_this, v_writer));
+    assert(C_TYPECHECK(instance, v_writerInstance));
+
+    instanceWriter = v_writerInstanceWriter(instance);
+    if (instanceWriter != NULL) {
+        result = (instanceWriter == _this);
+    } else {
+        OS_REPORT_2(OS_ERROR, "v_writerContainsInstance", 0,
+            "Invalid writerInstance: no attached DataWriter"
+            "<_this = 0x%x instance = 0x%x>", _this, instance);
+        result = FALSE;
+    }
+    return result;
+}

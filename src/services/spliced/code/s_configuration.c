@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -203,7 +203,7 @@ s_configurationValueLong(
 }
 
 static void
-d_configurationValueULong(
+s_configurationValueULong(
     s_configuration configuration,
     u_cfElement     element,
     const char      *tag,
@@ -229,6 +229,32 @@ d_configurationValueULong(
                 }
             }
             ulongValue = (c_ulong)longValue;
+            setAction(configuration, ulongValue);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+static void
+s_configurationValueSize(
+    s_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(s_configuration config, c_ulong ulongValue))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_ulong  ulongValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+    while (data != NULL) {
+        found = u_cfDataSizeValue(data, &ulongValue);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
             setAction(configuration, ulongValue);
         }
         u_cfDataFree(data);
@@ -577,23 +603,15 @@ s_configurationInit(
         /* Apply defaults to rest of configuration */
         os_threadAttrInit(&config->kernelManagerScheduling);
         config->kernelManagerScheduling.stackSize = 512*1024; /* 512KB */
-        s_configurationSetKernelManagerSchedulingClass(config, S_CFG_KERNELMANAGERSCHEDULING_CLASS_DEFAULT);
-        s_configurationSetKernelManagerSchedulingPriority(config, S_CFG_KERNELMANAGERSCHEDULING_PRIORITY_DEFAULT);
 
         os_threadAttrInit(&config->garbageCollectorScheduling);
         config->garbageCollectorScheduling.stackSize = 512*1024; /* 512KB */
-        s_configurationSetGCSchedulingClass(config, S_CFG_GCSCHEDULING_CLASS_DEFAULT);
-        s_configurationSetGCSchedulingPriority(config, S_CFG_GCSCHEDULING_PRIORITY_DEFAULT);
 
         os_threadAttrInit(&config->resendManagerScheduling);
         config->resendManagerScheduling.stackSize = 512*1024; /* 512KB */
-        s_configurationSetResendManagerSchedulingClass(config, S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT);
-        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT);
 
         os_threadAttrInit(&config->cAndMCommandScheduling);
         config->cAndMCommandScheduling.stackSize = 512*1024; /* 512KB */
-        s_configurationSetResendManagerSchedulingClass(config, S_CFG_C_AND_M_COMMANDSCHEDULING_CLASS_DEFAULT);
-        s_configurationSetResendManagerSchedulingPriority(config, S_CFG_C_AND_M_COMMAND_SCHEDULING_PRIORITY_DEFAULT);
     }
 }
 

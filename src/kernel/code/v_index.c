@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -231,6 +231,45 @@ indexCompare(
     return (currentTopic == topic);
 }
 
+#define PREFIX "sample.message"
+static c_array
+createKeyList(c_type instanceType, c_array keyList){
+    int size, i;
+    c_array newKeyList = NULL;
+    c_type fieldType;
+
+    assert(instanceType);
+
+    if(keyList){
+		size = c_arraySize(keyList);
+
+		fieldType = c_field_t(c_getBase(instanceType));
+		newKeyList = c_arrayNew(fieldType, size);
+		c_free(fieldType);
+
+		if(newKeyList){
+			for(i = 0; i<size; i++){
+				c_field f = c_fieldNew(instanceType, PREFIX);
+				assert(f);
+				if(f){
+				    newKeyList[i] = c_fieldConcat(f, keyList[i]);
+				    c_free(f);
+				} else {
+				    OS_REPORT(OS_ERROR,
+                                "createKeyList", 0,
+                                "Could not create c_field");
+				}
+			}
+		} else {
+			OS_REPORT(OS_ERROR,
+						"createKeyList", 0,
+						"Could not create array");
+		}
+    }
+    return newKeyList;
+}
+#undef PREFIX
+
 void
 v_indexInit(
     v_index index,
@@ -287,8 +326,8 @@ v_indexInit(
 
     kernel = v_objectKernel(index);
     index->reader = reader;
-    index->sourceKeyList = c_keep(keyList);
-
+    index->sourceKeyList = createKeyList(instanceType, keyList);
+    index->messageKeyList = c_keep(keyList);    /* keyList is either topic->messageKeyList or a user-defined keylist */
     index->objects = c_tableNew(instanceType,keyExpr);
     index->notEmptyList = c_tableNew(instanceType,keyExpr);
 

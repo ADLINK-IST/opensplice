@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,7 +19,7 @@
 #include "u_entity.h"
 #include "os_heap.h"
 #include <stdio.h>
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 c_char*
 cmx_domainNew(

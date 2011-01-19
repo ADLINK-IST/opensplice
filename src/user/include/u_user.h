@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2010 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -118,14 +118,14 @@ OS_API u_result u_userInitialise();
 OS_API u_result
 u_userDetach ();
 
-OS_API u_kernel
-u_userKernelOpen (
+OS_API u_domain
+u_userFindDomain (
     const c_char *uri,
     c_long timeout);
 
 OS_API u_result
 u_userKernelClose (
-    u_kernel kernel);
+    u_domain domain);
 
 /** \brief Increases the refCount of the object only within the lifespan of the process.
  */

@@ -15,7 +15,7 @@
     <DDSIService name="ddsi">
         <Channels>
             <Channel name="Channel-0" default="true" enabled="true">
-                <PortNr>53340</PortNr>
+                <PortNr>53370</PortNr>
             </Channel>
         </Channels>
          <Discovery enabled="true">
