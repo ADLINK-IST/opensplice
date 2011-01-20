@@ -476,18 +476,18 @@ make_mirror_and_builder ()
 
     sh ./make_${TYPE}_mirror "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
         "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}"
-    if [ "$INSTALLER" == "true" ]
+    if [ "$INSTALLER" = "true" ]
     then
         echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform "${SOURCE_TARGET}, environment ${ENV}"
         sh ./make_builder "${INSTTYPE}" "${FULLINSTTYPE}" "${SOURCE_TARGET}" \
             "${BUILDER_TARGET}" "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}" "true"
-        if [ "$SOURCE" == "false" -a "$TYPE" == "hde" ]
+        if [ "$SOURCE" = "false" -a "$TYPE" = "hde" ]
         then
             set_hde_envs "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
                 "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}"
             if [ -d "$HDE_dir/src" ]
             then
-                #Move the source and do another distro as the tests check the HDE directory 
+                #Move the source and do another distro as the tests check the HDE directory
                 echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform \
                     "${SOURCE_TARGET}, environment ${ENV} With NO SOURCE"
                 sleep 3 &
@@ -527,7 +527,7 @@ installer_setup ()
     # set SOURCE_TARGET_SHORT to be used in bitrock
     SOURCE_TARGET_SHORT=`expr "${SOURCE_TARGET}" : '[a-zA-Z0-9_]*\.\([a-zA-Z]*\)'`
 
-    if [ "$SOURCE" == "false" -a "$INSTTYPE" == "HDE" ]
+    if [ "$SOURCE" = "false" -a "$INSTTYPE" = "HDE" ]
     then
         EXTRA=-nosrc
     fi
@@ -1388,7 +1388,7 @@ install_hde_target ()
         install_example "WaitSet"
         install_example "BuiltInTopics"
         # oall end new examples
-    
+
 
         # Copy the common include files directory;
         # it contain the platform specific implementations for features like sleep, threads, etc.
@@ -1576,7 +1576,7 @@ install_hde_target ()
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial/MessageBoard
             install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C++/SACPP_x86.win32/UserLoad/*.vcproj" \
                 ${HDE_dir}/examples/dcps/standalone/C++/Tutorial/UserLoad
-        fi        
+        fi
 
         echo "*           Ready"
     fi
@@ -1797,7 +1797,7 @@ install_hde_target ()
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Data
         install_ascii_fileset "${OSPL_HOME}/examples/dcps/Tutorial/C#/SAC#/UserLoad/Properties/*.cs" \
             ${HDE_dir}/examples/dcps/standalone/CS/Tutorial/UserLoad/Properties
-        echo "*           Ready"        
+        echo "*           Ready"
         echo "*         C# Ready"
     fi
 
@@ -2009,7 +2009,7 @@ install_hde_target ()
         RELF=${HDE_dir}/release.bat
         echo "@echo off" >> $RELF
         echo "echo \"<<< OpenSplice HDE Release ${target_version} For ${target}${target_env}, Date ${target_date} >>>\"" >> ${RELF}
-        echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+        echo "if \"%SPLICE_ORB%\"=\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
         if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
@@ -2240,7 +2240,7 @@ install_rts_target ()
        csmodfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.netmodule"`
        csoutfile="${csoutdir}${CS_ASSEMBLY_NAME}.dll"
 
-       al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutfile}" "${csmodfile}"        
+       al /t:library /keyfile:"${cskeyfile}" /v:${CS_DLL_VERSION} /out:"${csoutfile}" "${csmodfile}"
     fi
     # This needs to be changed when we support C# for linux and add an else part
     # that will set all these variables correctly and call the appropriate mono
@@ -2291,7 +2291,7 @@ install_rts_target ()
         printf "*     Prepare default release.bat ... "
         RELF=${RTS_dir}/release.bat
         echo "@echo off" >> $RELF
-        echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+        echo "if \"%SPLICE_ORB%\"=\"\" set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
         echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%PATH%" >> $RELF
