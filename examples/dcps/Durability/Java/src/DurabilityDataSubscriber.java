@@ -105,7 +105,7 @@ public class DurabilityDataSubscriber {
 				// nothing to do
 			}
 			++count;
-		} while (!closed && count < 1500) ; // We dont want the example to run undefinitely
+		} while (!closed && count < 1500) ; // We dont want the example to run indefinitely
 
                 status = DurabilityDataReader.return_loan(msgList, infoSeq);
                 ErrorHandler.checkStatus(status, "MsgDataReader.return_loan");

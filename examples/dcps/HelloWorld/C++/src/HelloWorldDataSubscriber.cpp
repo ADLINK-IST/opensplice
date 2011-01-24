@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   bool closed = false;
   ReturnCode_t status =  - 1;
   int count = 0;
-  while (!closed && count < 1500) // We dont want the example to run undefinitely
+  while (!closed && count < 1500) // We dont want the example to run indefinitely
   {
     status = HelloWorldReader->take(msgList, infoSeq, LENGTH_UNLIMITED,
       ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);

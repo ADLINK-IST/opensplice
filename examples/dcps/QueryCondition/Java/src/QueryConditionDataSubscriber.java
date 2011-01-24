@@ -82,7 +82,7 @@ public class QueryConditionDataSubscriber {
 		boolean terminate = false;
                 int count = 0;
 		System.out.println("Ready");
-		while (!terminate && count < 1500) { // We dont want the example to run undefinitely
+		while (!terminate && count < 1500) { // We dont want the example to run indefinitely
 			stockReader.take_w_condition(msgSeq, infoSeq,
 					LENGTH_UNLIMITED.value, qc);
 

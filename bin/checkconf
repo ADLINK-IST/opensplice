@@ -628,30 +628,25 @@ tao_check()
 tao_check_fn ()
 {
     echo -n "TAO: "
-    pathcheck tao_idl
-    if [ $? != 0 ]
+    if [ -z "$TAO_ROOT" ]
     then
-        if [ -z "$TAO_ROOT" ]
+        pathcheck tao_idl
+        TAOIDL_EXE="$PATHCHECK_FOUND"
+        if [ "$?" != "0" ]
         then
             echo "$1 - No TAO found"
             return 1
         fi
+        TAO_ROOT1=`dirname "$TAOIDL_EXE"`
+        TAO_ROOT=`dirname "$TAO_ROOT1"`
+        set_var TAO_ROOT "$TAO_ROOT"
+    else
         if [ ! -d "$TAO_ROOT" ]
         then
             echo "$1 - $TAO_ROOT is not set to a directory"
             return 1
         fi
-    else
-        TAOIDL_EXE="$PATHCHECK_FOUND"
-        if [ "$?" != "0" ]
-        then
-            echo "$1 - Not TAO found"
-            return 1
-        fi
-        TAO_ROOT1=`dirname "$TAOIDL_EXE"`
-  	    TAO_ROOT=`dirname "$TAO_ROOT1"`
-        set_var TAO_ROOT "$TAO_ROOT"
-  	fi
+    fi
     LD_LIBRARY_PATH="$TAO_ROOT/lib:$LD_LIBRARY_PATH"
     set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH

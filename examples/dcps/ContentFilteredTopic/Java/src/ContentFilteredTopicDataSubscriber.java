@@ -67,7 +67,7 @@ public class ContentFilteredTopicDataSubscriber {
 		boolean terminate = false;
 		int count = 0;
 		System.out.println("Ready");
-		while (!terminate && count < 1500) { // We dont want the example to run undefinitely
+		while (!terminate && count < 1500) { // We dont want the example to run indefinitely
 			stockReader.take(msgSeq, infoSeq, LENGTH_UNLIMITED.value,
 					ANY_SAMPLE_STATE.value, ANY_VIEW_STATE.value,
 					ANY_INSTANCE_STATE.value);
