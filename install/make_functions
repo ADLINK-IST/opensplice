@@ -575,7 +575,7 @@ set_envs ()
     do
         case $1 in
             -noinstaller)
-                INSTALLER=flase
+                INSTALLER=false
                 shift 1
                 ;;
             -nosrc)
