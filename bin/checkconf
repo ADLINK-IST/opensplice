@@ -133,10 +133,10 @@ csharp_check ()
                     PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/"
                 fi
             else
-                PATH="$PATH:/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/"  
-            fi                
+                PATH="$PATH:/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/"
+            fi
         fi
-    fi           
+    fi
 
     echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
     return 0
@@ -492,17 +492,20 @@ javac_check ()
             JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
         else
-            echo "ERROR - Only JAVA 1.6 and above is supported"
-            return 1
+            echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
+            no_javac
+            return $?
         fi
         if [ ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
         then
-            echo "ERROR - Only JAVA 1.6 is supported"
-            return 1
+            echo "ERROR - Only ORACLE JAVA 1.6 is supported"
+            no_javac
+            return $?
         fi
     else
-        echo "ERROR - Only JAVA 1.6 and above is supported"
-        return 1
+        echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
+        no_javac
+        return $?
     fi
 
     LD_LIBRARY_PATH="$JAVA_HOME/lib:$LD_LIBRARY_PATH"

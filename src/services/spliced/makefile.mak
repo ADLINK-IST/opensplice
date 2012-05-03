@@ -4,10 +4,15 @@
 
 TARGET_EXEC	:= spliced
 
+IDLPP = $(WINCMD) idlpp
+IDL_FILE = dds_builtInTypes.idl
+IDL_DIR = $(OSPL_HOME)/etc/idl/
+IDL_FILES = $(IDL_DIR)$(IDL_FILE)
+
 include	$(OSPL_HOME)/setup/makefiles/test_idl_c.mak
 
-IDL_C		   = $(IDL_FILES:%.idl=%_register.c)
-IDL_H		   = $(IDL_FILES:%.idl=%_register.h)
+IDL_C             = $(IDL_FILE:%.idl=%_register.c)
+IDL_H             = $(IDL_FILE:%.idl=%_register.h)
 IDLPPTYPES  = DDS::Time_t,DDS::Duration_t
 IDLPPFLAGS := -S -l c
 
